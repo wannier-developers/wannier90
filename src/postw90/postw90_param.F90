@@ -217,7 +217,8 @@ end module pw90_parameters
 module pw90_param_methods
 
   use w90_constants, only: dp
-  use w90_io, only: stdout, maxlen
+! use w90_io, only: stdout, maxlen
+  use w90_io, only: maxlen
   use w90_param_types, only: parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_type, &
     fermi_data_type, atom_data_type, special_kpoints_type
@@ -273,7 +274,7 @@ contains
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
-                                gyrotropic, geninterp, boltz, eig_found)
+                                gyrotropic, geninterp, boltz, eig_found, bohr, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -283,7 +284,6 @@ contains
     !!
     !                                                                  !
     !===================================================================
-    !use w90_constants, only: bohr, eps6, cmplx_i
     !use w90_utility, only: utility_recip_lattice
     !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
     implicit none
@@ -311,6 +311,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
     !integer, intent(inout) :: num_proj
@@ -332,6 +333,8 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    real(kind=dp), intent(in) :: bohr
+    character(len=50), intent(in)  :: seedname
 
     !local variables
     logical                                  :: found_fermi_energy
@@ -339,334 +342,361 @@ contains
     character(len=20) :: energy_unit
 
     library = .false.
-    call param_in_file
-    call param_read_verbosity(param_input)
-    call param_read_pw90_calcs(pw90_calcs)
-    call param_read_effective_model(pw90_common%effective_model)
-    call param_read_units(param_input, energy_unit)
-    call param_read_oper(postw90_oper)
-    call param_read_num_wann(num_wann)
-    call param_read_exclude_bands(param_input) !for read_chkpt
+    call param_in_file(stdout, seedname)
+    call param_read_verbosity(param_input, stdout, seedname)
+    call param_read_pw90_calcs(pw90_calcs, stdout, seedname)
+    call param_read_effective_model(pw90_common%effective_model, stdout, seedname)
+    call param_read_units(param_input, energy_unit, bohr, stdout, seedname)
+    call param_read_oper(postw90_oper, stdout, seedname)
+    call param_read_num_wann(num_wann, stdout, seedname)
+    call param_read_exclude_bands(param_input, stdout, seedname) !for read_chkpt
     call param_read_num_bands(pw90_common%effective_model, library, &
-                              param_input, num_bands, num_wann, .false.)
+                              param_input, num_bands, num_wann, .false., stdout, seedname)
     disentanglement = (num_bands > num_wann)
-    call param_read_devel(param_input%devel_flag)
-    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts)
-    call param_read_system(library, param_input)
-    call param_read_kpath(library, spec_points, ok)
-    call param_read_fermi_energy(found_fermi_energy, fermi)
-    call param_read_kslice(pw90_calcs%kslice, kslice)
+    call param_read_devel(param_input%devel_flag, stdout, seedname)
+    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout, seedname)
+    call param_read_system(library, param_input, stdout, seedname)
+    call param_read_kpath(library, spec_points, ok, stdout, seedname)
+    call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
+    call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(smr_index, adpt_smr_fac, adpt_smr_max, &
-                             smr_fixed_en_width, adpt_smr)
-    call param_read_scissors_shift(pw90_common)
-    call param_read_pw90spin(pw90_common, param_input)
-    call param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width)
+                             smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_scissors_shift(pw90_common, stdout, seedname)
+    call param_read_pw90spin(pw90_common, param_input, stdout, seedname)
+    call param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
-                          smr_fixed_en_width, adpt_smr)
-    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall)
-    call param_read_pw90ham(pw90_ham)
-    call param_read_pw90_kpath(pw90_calcs, kpath, spec_points)
+                          smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, stdout, seedname)
+    call param_read_pw90ham(pw90_ham, stdout, seedname)
+    call param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
     call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, &
-                        adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, adpt_smr)
-    call param_read_ws_data(param_input)
+                        adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_ws_data(param_input, stdout, seedname)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, &
-                            eig_found, eigval, library, .false., num_bands, num_kpts)
+                            eig_found, eigval, library, .false., num_bands, num_kpts, stdout, seedname)
     dis_data%win_min = -1.0_dp
     dis_data%win_max = 0.0_dp
     if (eig_found) dis_data%win_min = minval(eigval)
     if (eig_found) dis_data%win_max = maxval(eigval)
-    call param_read_disentangle_all(eig_found, dis_data)
-    call param_read_geninterp(geninterp)
+    call param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
+    call param_read_geninterp(geninterp, stdout, seedname)
     call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, &
-                              adpt_smr_max, smr_fixed_en_width, adpt_smr)
-    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
-    call param_read_lattice(library, real_lattice, recip_lattice)
-    call param_read_kmesh_data(kmesh_data)
-    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, recip_lattice)
-    call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
+                              adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, stdout, seedname)
+    call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
+    call param_read_kmesh_data(kmesh_data, stdout, seedname)
+    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, &
+                            recip_lattice, bohr, stdout, seedname)
+    call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
     call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
-                                pw90_spin, gyrotropic, boltz, recip_lattice)
-    call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
-    call param_clean_infile()
+                                pw90_spin, gyrotropic, boltz, recip_lattice, stdout, seedname)
+    call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname) !pw90_write
+    call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(param_input, atoms, spec_points)
-    call param_read_final_alloc(disentanglement, dis_data, wann_data, num_wann, num_bands, num_kpts)
+    call param_read_final_alloc(disentanglement, dis_data, wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
   end subroutine param_postw90_read
 
-  subroutine param_read_pw90_calcs(pw90_calcs)
+  subroutine param_read_pw90_calcs(pw90_calcs, stdout, seedname)
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(out) :: pw90_calcs
+    character(len=50), intent(in)  :: seedname
     logical :: found
 
     pw90_calcs%dos = .false.
-    call param_get_keyword('dos', found, l_value=pw90_calcs%dos)
+    call param_get_keyword(stdout, seedname, 'dos', found, l_value=pw90_calcs%dos)
 
     pw90_calcs%berry = .false.
-    call param_get_keyword('berry', found, l_value=pw90_calcs%berry)
+    call param_get_keyword(stdout, seedname, 'berry', found, l_value=pw90_calcs%berry)
 
     pw90_calcs%kpath = .false.
-    call param_get_keyword('kpath', found, l_value=pw90_calcs%kpath)
+    call param_get_keyword(stdout, seedname, 'kpath', found, l_value=pw90_calcs%kpath)
 
     pw90_calcs%kslice = .false.
-    call param_get_keyword('kslice', found, l_value=pw90_calcs%kslice)
+    call param_get_keyword(stdout, seedname, 'kslice', found, l_value=pw90_calcs%kslice)
 
     pw90_calcs%gyrotropic = .false.
-    call param_get_keyword('gyrotropic', found, l_value=pw90_calcs%gyrotropic)
+    call param_get_keyword(stdout, seedname, 'gyrotropic', found, l_value=pw90_calcs%gyrotropic)
 
     pw90_calcs%geninterp = .false.
-    call param_get_keyword('geninterp', found, l_value=pw90_calcs%geninterp)
+    call param_get_keyword(stdout, seedname, 'geninterp', found, l_value=pw90_calcs%geninterp)
     pw90_calcs%boltzwann = .false.
-    call param_get_keyword('boltzwann', found, l_value=pw90_calcs%boltzwann)
+    call param_get_keyword(stdout, seedname, 'boltzwann', found, l_value=pw90_calcs%boltzwann)
 
   end subroutine param_read_pw90_calcs
 
-  subroutine param_read_effective_model(effective_model)
+  subroutine param_read_effective_model(effective_model, stdout, seedname)
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(inout) :: effective_model
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     !ivo
-    call param_get_keyword('effective_model', found, l_value=effective_model)
+    call param_get_keyword(stdout, seedname, 'effective_model', found, l_value=effective_model)
   end subroutine param_read_effective_model
 
-  subroutine param_read_oper(postw90_oper)
+  subroutine param_read_oper(postw90_oper, stdout, seedname)
     implicit none
+    integer, intent(in) :: stdout
     type(postw90_oper_type), intent(inout) :: postw90_oper
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     postw90_oper%spn_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword('spn_formatted', found, l_value=postw90_oper%spn_formatted)
+    call param_get_keyword(stdout, seedname, 'spn_formatted', found, l_value=postw90_oper%spn_formatted)
 
     postw90_oper%uHu_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword('uhu_formatted', found, l_value=postw90_oper%uHu_formatted)
+    call param_get_keyword(stdout, seedname, 'uhu_formatted', found, l_value=postw90_oper%uHu_formatted)
   end subroutine param_read_oper
 
-  subroutine param_read_kslice(pw90_kslice, kslice)
+  subroutine param_read_kslice(pw90_kslice, kslice, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(in) :: pw90_kslice
     type(kslice_type), intent(inout) :: kslice
+    character(len=50), intent(in)  :: seedname
+
     integer :: i
     logical :: found
 
     kslice%task = 'fermi_lines'
-    call param_get_keyword('kslice_task', found, c_value=kslice%task)
+    call param_get_keyword(stdout, seedname, 'kslice_task', found, c_value=kslice%task)
     if (pw90_kslice .and. index(kslice%task, 'fermi_lines') == 0 .and. &
         index(kslice%task, 'curv') == 0 .and. &
         index(kslice%task, 'morb') == 0 .and. &
         index(kslice%task, 'shc') == 0) call io_error &
-      ('Error: value of kslice_task not recognised in param_read')
+      ('Error: value of kslice_task not recognised in param_read', stdout, seedname)
     if (pw90_kslice .and. index(kslice%task, 'curv') > 0 .and. &
         index(kslice%task, 'morb') > 0) call io_error &
-      ("Error: kslice_task cannot include both 'curv' and 'morb'")
+      ("Error: kslice_task cannot include both 'curv' and 'morb'", stdout, seedname)
     if (pw90_kslice .and. index(kslice%task, 'shc') > 0 .and. &
         index(kslice%task, 'morb') > 0) call io_error &
-      ("Error: kslice_task cannot include both 'shc' and 'morb'")
+      ("Error: kslice_task cannot include both 'shc' and 'morb'", stdout, seedname)
     if (pw90_kslice .and. index(kslice%task, 'shc') > 0 .and. &
         index(kslice%task, 'curv') > 0) call io_error &
-      ("Error: kslice_task cannot include both 'shc' and 'curv'")
+      ("Error: kslice_task cannot include both 'shc' and 'curv'", stdout, seedname)
 
     kslice%kmesh2d(1:2) = 50
-    call param_get_vector_length('kslice_2dkmesh', found, length=i)
+    call param_get_vector_length(stdout, seedname, 'kslice_2dkmesh', found, length=i)
     if (found) then
       if (i == 1) then
-        call param_get_keyword_vector('kslice_2dkmesh', found, 1, &
+        call param_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 1, &
                                       i_value=kslice%kmesh2d)
         kslice%kmesh2d(2) = kslice%kmesh2d(1)
       elseif (i == 2) then
-        call param_get_keyword_vector('kslice_2dkmesh', found, 2, &
+        call param_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 2, &
                                       i_value=kslice%kmesh2d)
       else
         call io_error('Error: kslice_2dkmesh must be provided as either' &
-                      //' one integer or a vector of two integers')
+                      //' one integer or a vector of two integers', stdout, seedname)
       endif
       if (any(kslice%kmesh2d <= 0)) &
         call io_error('Error: kslice_2dkmesh elements must be' &
-                      //' greater than zero')
+                      //' greater than zero', stdout, seedname)
     endif
 
     kslice%corner = 0.0_dp
-    call param_get_keyword_vector('kslice_corner', found, 3, r_value=kslice%corner)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 3, r_value=kslice%corner)
 
     kslice%b1(1) = 1.0_dp
     kslice%b1(2) = 0.0_dp
     kslice%b1(3) = 0.0_dp
-    call param_get_keyword_vector('kslice_b1', found, 3, r_value=kslice%b1)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 3, r_value=kslice%b1)
 
     kslice%b2(1) = 0.0_dp
     kslice%b2(2) = 1.0_dp
     kslice%b2(3) = 0.0_dp
-    call param_get_keyword_vector('kslice_b2', found, 3, r_value=kslice%b2)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 3, r_value=kslice%b2)
 
     kslice%fermi_lines_colour = 'none'
-    call param_get_keyword('kslice_fermi_lines_colour', found, &
+    call param_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found, &
                            c_value=kslice%fermi_lines_colour)
     if (pw90_calcs%kslice .and. index(kslice%fermi_lines_colour, 'none') == 0 .and. &
         index(kslice%fermi_lines_colour, 'spin') == 0) call io_error &
       ('Error: value of kslice_fermi_lines_colour not recognised ' &
-       //'in param_read')
+       //'in param_read', stdout, seedname)
 
 !    slice_plot_format         = 'plotmv'
 !    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
   end subroutine param_read_kslice
 
   subroutine param_read_smearing(smr_index, adpt_smr_fac, adpt_smr_max, &
-                                 smr_fixed_en_width, adpt_smr)
+                                 smr_fixed_en_width, adpt_smr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     integer, intent(out) :: smr_index
     real(kind=dp), intent(out) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(out) :: adpt_smr
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     ! [gp-begin, Apr 20, 2012]
 
     ! By default: Gaussian
     smr_index = 0
-    call param_get_keyword('smr_type', found, c_value=ctmp)
-    if (found) smr_index = get_smearing_index(ctmp, 'smr_type')
+    call param_get_keyword(stdout, seedname, 'smr_type', found, c_value=ctmp)
+    if (found) smr_index = get_smearing_index(ctmp, 'smr_type', stdout, seedname)
 
     ! By default: adaptive smearing
     adpt_smr = .true.
-    call param_get_keyword('adpt_smr', found, l_value=adpt_smr)
+    call param_get_keyword(stdout, seedname, 'adpt_smr', found, l_value=adpt_smr)
 
     ! By default: a=sqrt(2)
     adpt_smr_fac = sqrt(2.0_dp)
-    call param_get_keyword('adpt_smr_fac', found, r_value=adpt_smr_fac)
+    call param_get_keyword(stdout, seedname, 'adpt_smr_fac', found, r_value=adpt_smr_fac)
     if (found .and. (adpt_smr_fac <= 0._dp)) &
-      call io_error('Error: adpt_smr_fac must be greater than zero')
+      call io_error('Error: adpt_smr_fac must be greater than zero', stdout, seedname)
 
     ! By default: 1 eV
     adpt_smr_max = 1.0_dp
-    call param_get_keyword('adpt_smr_max', found, r_value=adpt_smr_max)
+    call param_get_keyword(stdout, seedname, 'adpt_smr_max', found, r_value=adpt_smr_max)
     if (adpt_smr_max <= 0._dp) &
-      call io_error('Error: adpt_smr_max must be greater than zero')
+      call io_error('Error: adpt_smr_max must be greater than zero', stdout, seedname)
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
     smr_fixed_en_width = 0.0_dp
-    call param_get_keyword('smr_fixed_en_width', found, r_value=smr_fixed_en_width)
+    call param_get_keyword(stdout, seedname, 'smr_fixed_en_width', found, r_value=smr_fixed_en_width)
     if (found .and. (smr_fixed_en_width < 0._dp)) &
-      call io_error('Error: smr_fixed_en_width must be greater than or equal to zero')
+      call io_error('Error: smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
     ! [gp-end]
   end subroutine param_read_smearing
 
-  subroutine param_read_scissors_shift(pw90_common)
+  subroutine param_read_scissors_shift(pw90_common, stdout, seedname)
     implicit none
+    integer, intent(in) :: stdout
     type(postw90_common_type), intent(inout) :: pw90_common
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     pw90_common%scissors_shift = 0.0_dp
-    call param_get_keyword('scissors_shift', found, r_value=pw90_common%scissors_shift)
+    call param_get_keyword(stdout, seedname, 'scissors_shift', found, r_value=pw90_common%scissors_shift)
 
   end subroutine param_read_scissors_shift
 
-  subroutine param_read_pw90spin(pw90_common, param_input)
+  subroutine param_read_pw90spin(pw90_common, param_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(postw90_common_type), intent(inout) :: pw90_common
     type(parameter_input_type), intent(in) :: param_input
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     pw90_common%spin_moment = .false.
-    call param_get_keyword('spin_moment', found, l_value=pw90_common%spin_moment)
+    call param_get_keyword(stdout, seedname, 'spin_moment', found, l_value=pw90_common%spin_moment)
 
     pw90_spin%spin_axis_polar = 0.0_dp
-    call param_get_keyword('spin_axis_polar', found, r_value=pw90_spin%spin_axis_polar)
+    call param_get_keyword(stdout, seedname, 'spin_axis_polar', found, r_value=pw90_spin%spin_axis_polar)
 
     pw90_spin%spin_axis_azimuth = 0.0_dp
-    call param_get_keyword('spin_axis_azimuth', found, r_value=pw90_spin%spin_axis_azimuth)
+    call param_get_keyword(stdout, seedname, 'spin_axis_azimuth', found, r_value=pw90_spin%spin_axis_azimuth)
 
     pw90_common%spin_decomp = .false.
-    call param_get_keyword('spin_decomp', found, l_value=pw90_common%spin_decomp)
+    call param_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=pw90_common%spin_decomp)
 
     if (pw90_common%spin_decomp .and. (param_input%num_elec_per_state .ne. 1)) then
-      call io_error('spin_decomp can be true only if num_elec_per_state is 1')
+      call io_error('spin_decomp can be true only if num_elec_per_state is 1', stdout, seedname)
     end if
 
   end subroutine param_read_pw90spin
 
-  subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width)
+  subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(gyrotropic_type), intent(out) :: gyrotropic
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: smr_fixed_en_width
     real(kind=dp) :: smr_max_arg
+    character(len=50), intent(in)  :: seedname
+
     integer :: i, ierr, loop
     logical :: found
 
     ! Stepan
     gyrotropic%task = 'all'
-    call param_get_keyword('gyrotropic_task', found, c_value=gyrotropic%task)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_task', found, c_value=gyrotropic%task)
     gyrotropic%box(:, :) = 0.0
     gyrotropic%degen_thresh = 0.0_dp
-    call param_get_keyword('gyrotropic_degen_thresh', found, r_value=gyrotropic%degen_thresh)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_degen_thresh', found, r_value=gyrotropic%degen_thresh)
 
     do i = 1, 3
       gyrotropic%box(i, i) = 1.0_dp
       gyrotropic_box_tmp(:) = 0.0_dp
-      call param_get_keyword_vector('gyrotropic_box_b'//achar(48 + i), found, 3, r_value=gyrotropic_box_tmp)
+      call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b'//achar(48 + i), found, 3, r_value=gyrotropic_box_tmp)
       if (found) gyrotropic%box(i, :) = gyrotropic_box_tmp(:)
     enddo
     gyrotropic%box_corner(:) = 0.0_dp
-    call param_get_keyword_vector('gyrotropic_box_center', found, 3, r_value=gyrotropic_box_tmp)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 3, r_value=gyrotropic_box_tmp)
     if (found) gyrotropic%box_corner(:) = &
       gyrotropic_box_tmp(:) - 0.5*(gyrotropic%box(1, :) + gyrotropic%box(2, :) + gyrotropic%box(3, :))
 
-    call param_get_range_vector('gyrotropic_band_list', found, gyrotropic%num_bands, lcount=.true.)
+    call param_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, gyrotropic%num_bands, lcount=.true.)
     if (found) then
-      if (gyrotropic%num_bands < 1) call io_error('Error: problem reading gyrotropic_band_list')
+      if (gyrotropic%num_bands < 1) call io_error('Error: problem reading gyrotropic_band_list', stdout, seedname)
       if (allocated(gyrotropic%band_list)) deallocate (gyrotropic%band_list)
       allocate (gyrotropic%band_list(gyrotropic%num_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in param_read')
-      call param_get_range_vector('gyrotropic_band_list', found, gyrotropic%num_bands, .false., gyrotropic%band_list)
+      if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in param_read', stdout, seedname)
+   call param_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, gyrotropic%num_bands, .false., gyrotropic%band_list)
       if (any(gyrotropic%band_list < 1) .or. any(gyrotropic%band_list > num_wann)) &
-        call io_error('Error: gyrotropic_band_list asks for a non-valid bands')
+        call io_error('Error: gyrotropic_band_list asks for a non-valid bands', stdout, seedname)
     else
       ! include all bands in the calculation
       gyrotropic%num_bands = num_wann
       if (allocated(gyrotropic%band_list)) deallocate (gyrotropic%band_list)
       allocate (gyrotropic%band_list(gyrotropic%num_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in param_read')
+      if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in param_read', stdout, seedname)
       do loop = 1, num_wann
         gyrotropic%band_list(loop) = loop
       end do
     end if
 
     smr_max_arg = 5.0
-    call param_get_keyword('smr_max_arg', found, r_value=smr_max_arg)
+    call param_get_keyword(stdout, seedname, 'smr_max_arg', found, r_value=smr_max_arg)
     if (found .and. (smr_max_arg <= 0._dp)) &
-      call io_error('Error: smr_max_arg must be greater than zero')
+      call io_error('Error: smr_max_arg must be greater than zero', stdout, seedname)
 
     gyrotropic%smr_max_arg = smr_max_arg
-    call param_get_keyword('gyrotropic_smr_max_arg', found, &
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found, &
                            r_value=gyrotropic%smr_max_arg)
     if (found .and. (gyrotropic%smr_max_arg <= 0._dp)) call io_error &
-      ('Error: gyrotropic_smr_max_arg must be greater than zero')
+      ('Error: gyrotropic_smr_max_arg must be greater than zero', stdout, seedname)
 
     gyrotropic%smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found, &
                            r_value=gyrotropic%smr_fixed_en_width)
     if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
-      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
     gyrotropic%smr_index = smr_index
-    call param_get_keyword('gyrotropic_smr_type', found, c_value=ctmp)
-    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type')
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found, c_value=ctmp)
+    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type', stdout, seedname)
 
   end subroutine param_read_gyrotropic
 
   subroutine param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
-                              smr_fixed_en_width, adpt_smr)
+                              smr_fixed_en_width, adpt_smr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(berry_type), intent(out) :: berry
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
 !-------------------------------------------------------
@@ -681,187 +711,199 @@ contains
 !-------------------------------------------------------
 
     berry%transl_inv = .false.
-    call param_get_keyword('transl_inv', found, l_value=berry%transl_inv)
+    call param_get_keyword(stdout, seedname, 'transl_inv', found, l_value=berry%transl_inv)
 
     berry%task = ' '
-    call param_get_keyword('berry_task', found, c_value=berry%task)
+    call param_get_keyword(stdout, seedname, 'berry_task', found, c_value=berry%task)
     if (pw90_calcs%berry .and. .not. found) call io_error &
-      ('Error: berry=T and berry_task is not set')
+      ('Error: berry=T and berry_task is not set', stdout, seedname)
     if (pw90_calcs%berry .and. index(berry%task, 'ahc') == 0 .and. index(berry%task, 'morb') == 0 &
         .and. index(berry%task, 'kubo') == 0 .and. index(berry%task, 'sc') == 0 &
         .and. index(berry%task, 'shc') == 0) call io_error &
-      ('Error: value of berry_task not recognised in param_read')
+      ('Error: value of berry_task not recognised in param_read', stdout, seedname)
 
     berry%curv_adpt_kmesh = 1
-    call param_get_keyword('berry_curv_adpt_kmesh', found, &
+    call param_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found, &
                            i_value=berry%curv_adpt_kmesh)
     if (berry%curv_adpt_kmesh < 1) &
       call io_error( &
-      'Error:  berry_curv_adpt_kmesh must be a positive integer')
+      'Error:  berry_curv_adpt_kmesh must be a positive integer', stdout, seedname)
 
     berry%curv_adpt_kmesh_thresh = 100.0_dp
-    call param_get_keyword('berry_curv_adpt_kmesh_thresh', found, &
+    call param_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh_thresh', found, &
                            r_value=berry%curv_adpt_kmesh_thresh)
 
     berry%curv_unit = 'ang2'
-    call param_get_keyword('berry_curv_unit', found, c_value=berry%curv_unit)
+    call param_get_keyword(stdout, seedname, 'berry_curv_unit', found, c_value=berry%curv_unit)
     if (berry%curv_unit .ne. 'ang2' .and. berry%curv_unit .ne. 'bohr2') &
       call io_error &
-      ('Error: value of berry_curv_unit not recognised in param_read')
+      ('Error: value of berry_curv_unit not recognised in param_read', stdout, seedname)
 
     berry%wanint_kpoint_file = .false.
-    call param_get_keyword('wanint_kpoint_file', found, &
+    call param_get_keyword(stdout, seedname, 'wanint_kpoint_file', found, &
                            l_value=berry%wanint_kpoint_file)
 
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
     berry%kubo_adpt_smr = adpt_smr
-    call param_get_keyword('kubo_adpt_smr', found, l_value=berry%kubo_adpt_smr)
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, l_value=berry%kubo_adpt_smr)
 
     berry%kubo_adpt_smr_fac = adpt_smr_fac
-    call param_get_keyword('kubo_adpt_smr_fac', found, &
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found, &
                            r_value=berry%kubo_adpt_smr_fac)
     if (found .and. (berry%kubo_adpt_smr_fac <= 0._dp)) call io_error &
-      ('Error: kubo_adpt_smr_fac must be greater than zero')
+      ('Error: kubo_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     berry%kubo_adpt_smr_max = adpt_smr_max
-    call param_get_keyword('kubo_adpt_smr_max', found, &
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found, &
                            r_value=berry%kubo_adpt_smr_max)
     if (berry%kubo_adpt_smr_max <= 0._dp) call io_error &
-      ('Error: kubo_adpt_smr_max must be greater than zero')
+      ('Error: kubo_adpt_smr_max must be greater than zero', stdout, seedname)
 
     berry%kubo_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('kubo_smr_fixed_en_width', found, &
+    call param_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found, &
                            r_value=berry%kubo_smr_fixed_en_width)
     if (found .and. (berry%kubo_smr_fixed_en_width < 0._dp)) call io_error &
-      ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+      ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     berry%sc_phase_conv = 1
-    call param_get_keyword('sc_phase_conv', found, i_value=berry%sc_phase_conv)
+    call param_get_keyword(stdout, seedname, 'sc_phase_conv', found, i_value=berry%sc_phase_conv)
     if ((berry%sc_phase_conv .ne. 1) .and. ((berry%sc_phase_conv .ne. 2))) &
-      call io_error('Error: sc_phase_conv must be either 1 or 2')
+      call io_error('Error: sc_phase_conv must be either 1 or 2', stdout, seedname)
 
     ! By default: use the "global" smearing index
     berry%kubo_smr_index = smr_index
-    call param_get_keyword('kubo_smr_type', found, c_value=ctmp)
-    if (found) berry%kubo_smr_index = get_smearing_index(ctmp, 'kubo_smr_type')
+    call param_get_keyword(stdout, seedname, 'kubo_smr_type', found, c_value=ctmp)
+    if (found) berry%kubo_smr_index = get_smearing_index(ctmp, 'kubo_smr_type', stdout, seedname)
 
     berry%sc_eta = 0.04
-    call param_get_keyword('sc_eta', found, r_value=berry%sc_eta)
+    call param_get_keyword(stdout, seedname, 'sc_eta', found, r_value=berry%sc_eta)
 
     berry%sc_w_thr = 5.0d0
-    call param_get_keyword('sc_w_thr', found, r_value=berry%sc_w_thr)
+    call param_get_keyword(stdout, seedname, 'sc_w_thr', found, r_value=berry%sc_w_thr)
 
   end subroutine param_read_berry
 
-  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall)
+  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
     type(spin_hall_type), intent(out) :: spin_hall
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     spin_hall%freq_scan = .false.
-    call param_get_keyword('shc_freq_scan', found, l_value=spin_hall%freq_scan)
+    call param_get_keyword(stdout, seedname, 'shc_freq_scan', found, l_value=spin_hall%freq_scan)
 
     spin_hall%alpha = 1
-    call param_get_keyword('shc_alpha', found, i_value=spin_hall%alpha)
+    call param_get_keyword(stdout, seedname, 'shc_alpha', found, i_value=spin_hall%alpha)
     if (found .and. (spin_hall%alpha < 1 .or. spin_hall%alpha > 3)) call io_error &
-      ('Error:  shc_alpha must be 1, 2 or 3')
+      ('Error:  shc_alpha must be 1, 2 or 3', stdout, seedname)
 
     spin_hall%beta = 2
-    call param_get_keyword('shc_beta', found, i_value=spin_hall%beta)
+    call param_get_keyword(stdout, seedname, 'shc_beta', found, i_value=spin_hall%beta)
     if (found .and. (spin_hall%beta < 1 .or. spin_hall%beta > 3)) call io_error &
-      ('Error:  shc_beta must be 1, 2 or 3')
+      ('Error:  shc_beta must be 1, 2 or 3', stdout, seedname)
 
     spin_hall%gamma = 3
-    call param_get_keyword('shc_gamma', found, i_value=spin_hall%gamma)
+    call param_get_keyword(stdout, seedname, 'shc_gamma', found, i_value=spin_hall%gamma)
     if (found .and. (spin_hall%gamma < 1 .or. spin_hall%gamma > 3)) call io_error &
-      ('Error:  shc_gamma must be 1, 2 or 3')
+      ('Error:  shc_gamma must be 1, 2 or 3', stdout, seedname)
 
     spin_hall%bandshift = .false.
-    call param_get_keyword('shc_bandshift', found, l_value=spin_hall%bandshift)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift', found, l_value=spin_hall%bandshift)
     spin_hall%bandshift = spin_hall%bandshift .and. pw90_calcs%berry .and. .not. (index(berry%task, 'shc') == 0)
     if ((abs(pw90_common%scissors_shift) > 1.0e-7_dp) .and. spin_hall%bandshift) &
-      call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously')
+      call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously', stdout, seedname)
 
     spin_hall%bandshift_firstband = 0
-    call param_get_keyword('shc_bandshift_firstband', found, i_value=spin_hall%bandshift_firstband)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift_firstband', found, i_value=spin_hall%bandshift_firstband)
     if (spin_hall%bandshift .and. (.not. found)) &
-      call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided')
+      call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided', stdout, seedname)
     if ((spin_hall%bandshift_firstband < 1) .and. found) &
-      call io_error('Error: shc_bandshift_firstband must >= 1')
+      call io_error('Error: shc_bandshift_firstband must >= 1', stdout, seedname)
 
     spin_hall%bandshift_energyshift = 0._dp
-    call param_get_keyword('shc_bandshift_energyshift', found, r_value=spin_hall%bandshift_energyshift)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found, r_value=spin_hall%bandshift_energyshift)
     if (spin_hall%bandshift .and. (.not. found)) &
-      call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+      call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided', stdout, seedname)
 
   end subroutine param_read_spin_hall
 
-  subroutine param_read_pw90ham(pw90_ham)
-    use w90_io, only: io_error
+  subroutine param_read_pw90ham(pw90_ham, stdout, seedname)
+!   use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(postw90_ham_type), intent(out) :: pw90_ham
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     pw90_ham%use_degen_pert = .false.
-    call param_get_keyword('use_degen_pert', found, l_value=pw90_ham%use_degen_pert)
+    call param_get_keyword(stdout, seedname, 'use_degen_pert', found, l_value=pw90_ham%use_degen_pert)
 
     pw90_ham%degen_thr = 1.0d-4
-    call param_get_keyword('degen_thr', found, r_value=pw90_ham%degen_thr)
+    call param_get_keyword(stdout, seedname, 'degen_thr', found, r_value=pw90_ham%degen_thr)
 
   end subroutine param_read_pw90ham
 
-  subroutine param_read_pw90_kpath(pw90_calcs, kpath, spec_points)
+  subroutine param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(kpath_type), intent(out) :: kpath
     type(special_kpoints_type), intent(in) :: spec_points
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     kpath%task = 'bands'
-    call param_get_keyword('kpath_task', found, c_value=kpath%task)
+    call param_get_keyword(stdout, seedname, 'kpath_task', found, c_value=kpath%task)
     if (pw90_calcs%kpath .and. index(kpath%task, 'bands') == 0 .and. &
         index(kpath%task, 'curv') == 0 .and. &
         index(kpath%task, 'morb') == 0 .and. &
         index(kpath%task, 'shc') == 0) call io_error &
-      ('Error: value of kpath_task not recognised in param_read')
+      ('Error: value of kpath_task not recognised in param_read', stdout, seedname)
     if (spec_points%bands_num_spec_points == 0 .and. pw90_calcs%kpath) &
-      call io_error('Error: a kpath plot has been requested but there is no kpoint_path block')
+      call io_error('Error: a kpath plot has been requested but there is no kpoint_path block', stdout, seedname)
 
     kpath%num_points = 100
-    call param_get_keyword('kpath_num_points', found, &
+    call param_get_keyword(stdout, seedname, 'kpath_num_points', found, &
                            i_value=kpath%num_points)
     if (kpath%num_points < 0) &
-      call io_error('Error: kpath_num_points must be positive')
+      call io_error('Error: kpath_num_points must be positive', stdout, seedname)
 
     kpath%bands_colour = 'none'
-    call param_get_keyword('kpath_bands_colour', found, &
+    call param_get_keyword(stdout, seedname, 'kpath_bands_colour', found, &
                            c_value=kpath%bands_colour)
     if (pw90_calcs%kpath .and. index(kpath%bands_colour, 'none') == 0 .and. &
         index(kpath%bands_colour, 'spin') == 0 .and. &
         index(kpath%bands_colour, 'shc') == 0) call io_error &
-      ('Error: value of kpath_bands_colour not recognised in param_read')
+      ('Error: value of kpath_bands_colour not recognised in param_read', stdout, seedname)
     if (pw90_calcs%kpath .and. index(kpath%task, 'shc') > 0 .and. &
         index(kpath%task, 'spin') > 0) call io_error &
-      ("Error: kpath_task cannot include both 'shc' and 'spin'")
+      ("Error: kpath_task cannot include both 'shc' and 'spin'", stdout, seedname)
 
   end subroutine param_read_pw90_kpath
 
   subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
-                            adpt_smr_max, smr_fixed_en_width, adpt_smr)
+                            adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(dos_plot_type), intent(out) :: dos_data
     logical, intent(in) :: found_fermi_energy
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    character(len=50), intent(in)  :: seedname
+
     integer :: i, ierr
     logical :: found
 
@@ -871,15 +913,15 @@ contains
     else
       dos_plot = .false.
     endif
-    call param_get_keyword('dos_task', found, c_value=dos_data%task)
+    call param_get_keyword(stdout, seedname, 'dos_task', found, c_value=dos_data%task)
     if (pw90_calcs%dos) then
       if (index(dos_data%task, 'dos_plot') == 0 .and. &
           index(dos_data%task, 'find_fermi_energy') == 0) call io_error &
-        ('Error: value of dos_task not recognised in param_read')
+        ('Error: value of dos_task not recognised in param_read', stdout, seedname)
       if (index(dos_data%task, 'dos_plot') > 0) dos_plot = .true.
       if (index(dos_data%task, 'find_fermi_energy') > 0 .and. found_fermi_energy) &
         call io_error &
-        ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"')
+        ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"', stdout, seedname)
     end if
 
 !    sigma_abc_onlyorb=.false.
@@ -890,30 +932,30 @@ contains
     !IVO_END
 
     dos_data%energy_step = 0.01_dp
-    call param_get_keyword('dos_energy_step', found, &
+    call param_get_keyword(stdout, seedname, 'dos_energy_step', found, &
                            r_value=dos_data%energy_step)
 
     dos_data%adpt_smr = adpt_smr
-    call param_get_keyword('dos_adpt_smr', found, &
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr', found, &
                            l_value=dos_data%adpt_smr)
 
     dos_data%adpt_smr_fac = adpt_smr_fac
-    call param_get_keyword('dos_adpt_smr_fac', found, &
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found, &
                            r_value=dos_data%adpt_smr_fac)
     if (found .and. (dos_data%adpt_smr_fac <= 0._dp)) &
-      call io_error('Error: dos_adpt_smr_fac must be greater than zero')
+      call io_error('Error: dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     dos_data%adpt_smr_max = adpt_smr_max
-    call param_get_keyword('dos_adpt_smr_max', found, &
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found, &
                            r_value=dos_data%adpt_smr_max)
     if (dos_data%adpt_smr_max <= 0._dp) call io_error &
-      ('Error: dos_adpt_smr_max must be greater than zero')
+      ('Error: dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
     dos_data%smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('dos_smr_fixed_en_width', found, &
+    call param_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found, &
                            r_value=dos_data%smr_fixed_en_width)
     if (found .and. (dos_data%smr_fixed_en_width < 0._dp)) &
-      call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero')
+      call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
 !    dos_gaussian_width        = 0.1_dp
 !    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
@@ -921,25 +963,25 @@ contains
 !    dos_plot_format           = 'gnuplot'
 !    call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
-    call param_get_range_vector('dos_project', found, &
+    call param_get_range_vector(stdout, seedname, 'dos_project', found, &
                                 dos_data%num_project, lcount=.true.)
     if (found) then
-      if (dos_data%num_project < 1) call io_error('Error: problem reading dos_project')
+      if (dos_data%num_project < 1) call io_error('Error: problem reading dos_project', stdout, seedname)
       if (allocated(dos_data%project)) deallocate (dos_data%project)
       allocate (dos_data%project(dos_data%num_project), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating dos_project in param_read')
-      call param_get_range_vector('dos_project', found, &
+      if (ierr /= 0) call io_error('Error allocating dos_project in param_read', stdout, seedname)
+      call param_get_range_vector(stdout, seedname, 'dos_project', found, &
                                   dos_data%num_project, .false., &
                                   dos_data%project)
       if (any(dos_data%project < 1) .or. &
           any(dos_data%project > num_wann)) &
-        call io_error('Error: dos_project asks for out-of-range Wannier functions')
+        call io_error('Error: dos_project asks for out-of-range Wannier functions', stdout, seedname)
     else
       ! by default plot all
       dos_data%num_project = num_wann
       if (allocated(dos_data%project)) deallocate (dos_data%project)
       allocate (dos_data%project(dos_data%num_project), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating dos_project in param_read')
+      if (ierr /= 0) call io_error('Error allocating dos_project in param_read', stdout, seedname)
       do i = 1, dos_data%num_project
         dos_data%project(i) = i
       end do
@@ -947,42 +989,48 @@ contains
 
     ! By default: use the "global" smearing index
     dos_data%smr_index = smr_index
-    call param_get_keyword('dos_smr_type', found, c_value=ctmp)
-    if (found) dos_data%smr_index = get_smearing_index(ctmp, 'dos_smr_type')
+    call param_get_keyword(stdout, seedname, 'dos_smr_type', found, c_value=ctmp)
+    if (found) dos_data%smr_index = get_smearing_index(ctmp, 'dos_smr_type', stdout, seedname)
 
   end subroutine param_read_dos
 
-  subroutine param_read_geninterp(geninterp)
+  subroutine param_read_geninterp(geninterp, stdout, seedname)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
     !%%%%%%%%%%%%%%%%%%%%
-    use w90_io, only: io_error
+!   use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(geninterp_type), intent(out) :: geninterp
+    character(len=50), intent(in)  :: seedname
+
     logical :: found
 
     geninterp%alsofirstder = .false.
-    call param_get_keyword('geninterp_alsofirstder', found, l_value=geninterp%alsofirstder)
+    call param_get_keyword(stdout, seedname, 'geninterp_alsofirstder', found, l_value=geninterp%alsofirstder)
     geninterp%single_file = .true.
-    call param_get_keyword('geninterp_single_file', found, l_value=geninterp%single_file)
+    call param_get_keyword(stdout, seedname, 'geninterp_single_file', found, l_value=geninterp%single_file)
     ! [gp-end, Jun 1, 2012]
 
   end subroutine param_read_geninterp
 
   subroutine param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
-                                  smr_fixed_en_width, adpt_smr)
+                                  smr_fixed_en_width, adpt_smr, stdout, seedname)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
     !%%%%%%%%%%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(boltzwann_type), intent(inout) :: boltz
     integer, intent(in) :: smr_index
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    character(len=50), intent(in)  :: seedname
+
     logical :: found, found2
 
     ! [gp-begin, Apr 12, 2012]
@@ -992,14 +1040,14 @@ contains
     ! Note: to be put AFTER the disentanglement routines!
 
     boltz%calc_also_dos = .false.
-    call param_get_keyword('boltz_calc_also_dos', found, l_value=boltz%calc_also_dos)
+    call param_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found, l_value=boltz%calc_also_dos)
 
     boltz%calc_also_dos = boltz%calc_also_dos .and. pw90_calcs%boltzwann
 
     ! 0 means the normal 3d case for the calculation of the Seebeck coefficient
     ! The other valid possibilities are 1,2,3 for x,y,z respectively
     boltz%dir_num_2d = 0
-    call param_get_keyword('boltz_2d_dir', found, c_value=boltz_2d_dir)
+    call param_get_keyword(stdout, seedname, 'boltz_2d_dir', found, c_value=boltz_2d_dir)
     if (found) then
       if (trim(boltz_2d_dir) == 'no') then
         boltz%dir_num_2d = 0
@@ -1010,14 +1058,14 @@ contains
       elseif (trim(boltz_2d_dir) == 'z') then
         boltz%dir_num_2d = 3
       else
-        call io_error('Error: boltz_2d_dir can only be "no", "x", "y" or "z".')
+        call io_error('Error: boltz_2d_dir can only be "no", "x", "y" or "z".', stdout, seedname)
       end if
     end if
 
     boltz%dos_energy_step = 0.001_dp
-    call param_get_keyword('boltz_dos_energy_step', found, r_value=boltz%dos_energy_step)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_step', found, r_value=boltz%dos_energy_step)
     if (found .and. (boltz%dos_energy_step <= 0._dp)) &
-      call io_error('Error: boltz_dos_energy_step must be positive')
+      call io_error('Error: boltz_dos_energy_step must be positive', stdout, seedname)
 
     if (allocated(eigval)) then
       boltz%dos_energy_min = minval(eigval) - 0.6667_dp
@@ -1026,7 +1074,7 @@ contains
       ! We just set here a default numerical value.
       boltz%dos_energy_min = -1.0_dp
     end if
-    call param_get_keyword('boltz_dos_energy_min', found, r_value=boltz%dos_energy_min)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_min', found, r_value=boltz%dos_energy_min)
     if (allocated(eigval)) then
       boltz%dos_energy_max = maxval(eigval) + 0.6667_dp
     else
@@ -1034,118 +1082,121 @@ contains
       ! We just set here a default numerical value.
       boltz%dos_energy_max = 0.0_dp
     end if
-    call param_get_keyword('boltz_dos_energy_max', found, r_value=boltz%dos_energy_max)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_max', found, r_value=boltz%dos_energy_max)
     if (boltz%dos_energy_max <= boltz%dos_energy_min) &
-      call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')
+      call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', stdout, seedname)
 
     boltz%dos_adpt_smr = adpt_smr
-    call param_get_keyword('boltz_dos_adpt_smr', found, l_value=boltz%dos_adpt_smr)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found, l_value=boltz%dos_adpt_smr)
 
     boltz%dos_adpt_smr_fac = adpt_smr_fac
-    call param_get_keyword('boltz_dos_adpt_smr_fac', found, r_value=boltz%dos_adpt_smr_fac)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found, r_value=boltz%dos_adpt_smr_fac)
     if (found .and. (boltz%dos_adpt_smr_fac <= 0._dp)) &
-      call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero')
+      call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     boltz%dos_adpt_smr_max = adpt_smr_max
-    call param_get_keyword('boltz_dos_adpt_smr_max', found, r_value=boltz%dos_adpt_smr_max)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, r_value=boltz%dos_adpt_smr_max)
     if (boltz%dos_adpt_smr_max <= 0._dp) call io_error &
-      ('Error: boltz_dos_adpt_smr_max must be greater than zero')
+      ('Error: boltz_dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
     boltz%dos_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smr_fixed_en_width)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smr_fixed_en_width)
     if (found .and. (boltz%dos_smr_fixed_en_width < 0._dp)) &
-      call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero')
+      call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     boltz%mu_min = -999._dp
-    call param_get_keyword('boltz_mu_min', found, r_value=boltz%mu_min)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_min', found, r_value=boltz%mu_min)
     if ((.not. found) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_mu_min provided')
+      call io_error('Error: BoltzWann required but no boltz_mu_min provided', stdout, seedname)
     boltz%mu_max = -999._dp
-    call param_get_keyword('boltz_mu_max', found2, r_value=boltz%mu_max)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_max', found2, r_value=boltz%mu_max)
     if ((.not. found2) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_mu_max provided')
+      call io_error('Error: BoltzWann required but no boltz_mu_max provided', stdout, seedname)
     if (found .and. found2 .and. (boltz%mu_max < boltz%mu_min)) &
-      call io_error('Error: boltz_mu_max must be greater than boltz_mu_min')
+      call io_error('Error: boltz_mu_max must be greater than boltz_mu_min', stdout, seedname)
     boltz%mu_step = 0._dp
-    call param_get_keyword('boltz_mu_step', found, r_value=boltz%mu_step)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_step', found, r_value=boltz%mu_step)
     if ((.not. found) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_mu_step provided')
+      call io_error('Error: BoltzWann required but no boltz_mu_step provided', stdout, seedname)
     if (found .and. (boltz%mu_step <= 0._dp)) &
-      call io_error('Error: boltz_mu_step must be greater than zero')
+      call io_error('Error: boltz_mu_step must be greater than zero', stdout, seedname)
 
     boltz%temp_min = -999._dp
-    call param_get_keyword('boltz_temp_min', found, r_value=boltz%temp_min)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_min', found, r_value=boltz%temp_min)
     if ((.not. found) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_temp_min provided')
+      call io_error('Error: BoltzWann required but no boltz_temp_min provided', stdout, seedname)
     boltz%temp_max = -999._dp
-    call param_get_keyword('boltz_temp_max', found2, r_value=boltz%temp_max)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_max', found2, r_value=boltz%temp_max)
     if ((.not. found2) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_temp_max provided')
+      call io_error('Error: BoltzWann required but no boltz_temp_max provided', stdout, seedname)
     if (found .and. found2 .and. (boltz%temp_max < boltz%temp_min)) &
-      call io_error('Error: boltz_temp_max must be greater than boltz_temp_min')
+      call io_error('Error: boltz_temp_max must be greater than boltz_temp_min', stdout, seedname)
     if (found .and. (boltz%temp_min <= 0._dp)) &
-      call io_error('Error: boltz_temp_min must be greater than zero')
+      call io_error('Error: boltz_temp_min must be greater than zero', stdout, seedname)
     boltz%temp_step = 0._dp
-    call param_get_keyword('boltz_temp_step', found, r_value=boltz%temp_step)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_step', found, r_value=boltz%temp_step)
     if ((.not. found) .and. pw90_calcs%boltzwann) &
-      call io_error('Error: BoltzWann required but no boltz_temp_step provided')
+      call io_error('Error: BoltzWann required but no boltz_temp_step provided', stdout, seedname)
     if (found .and. (boltz%temp_step <= 0._dp)) &
-      call io_error('Error: boltz_temp_step must be greater than zero')
+      call io_error('Error: boltz_temp_step must be greater than zero', stdout, seedname)
 
     ! The interpolation mesh is read later on
 
     ! By default, the energy step for the TDF is 1 meV
     boltz%tdf_energy_step = 0.001_dp
-    call param_get_keyword('boltz_tdf_energy_step', found, r_value=boltz%tdf_energy_step)
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_energy_step', found, r_value=boltz%tdf_energy_step)
     if (boltz%tdf_energy_step <= 0._dp) &
-      call io_error('Error: boltz_tdf_energy_step must be greater than zero')
+      call io_error('Error: boltz_tdf_energy_step must be greater than zero', stdout, seedname)
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
     boltz%TDF_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('boltz_tdf_smr_fixed_en_width', found, r_value=boltz%TDF_smr_fixed_en_width)
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, r_value=boltz%TDF_smr_fixed_en_width)
     if (found .and. (boltz%TDF_smr_fixed_en_width < 0._dp)) &
-      call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero')
+      call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
     boltz%TDF_smr_index = smr_index
-    call param_get_keyword('boltz_tdf_smr_type', found, c_value=ctmp)
-    if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type')
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found, c_value=ctmp)
+    if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
 
     ! By default: use the "global" smearing index
     boltz%dos_smr_index = smr_index
-    call param_get_keyword('boltz_dos_smr_type', found, c_value=ctmp)
-    if (found) boltz%dos_smr_index = get_smearing_index(ctmp, 'boltz_dos_smr_type')
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found, c_value=ctmp)
+    if (found) boltz%dos_smr_index = get_smearing_index(ctmp, 'boltz_dos_smr_type', stdout, seedname)
 
     ! By default: 10 fs relaxation time
     boltz%relax_time = 10._dp
-    call param_get_keyword('boltz_relax_time', found, r_value=boltz%relax_time)
+    call param_get_keyword(stdout, seedname, 'boltz_relax_time', found, r_value=boltz%relax_time)
 
     boltz%bandshift = .false.
-    call param_get_keyword('boltz_bandshift', found, l_value=boltz%bandshift)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift', found, l_value=boltz%bandshift)
     boltz%bandshift = boltz%bandshift .and. pw90_calcs%boltzwann
 
     boltz%bandshift_firstband = 0
-    call param_get_keyword('boltz_bandshift_firstband', found, i_value=boltz%bandshift_firstband)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found, i_value=boltz%bandshift_firstband)
     if (boltz%bandshift .and. (.not. found)) &
-      call io_error('Error: boltz_bandshift required but no boltz_bandshift_firstband provided')
+      call io_error('Error: boltz_bandshift required but no boltz_bandshift_firstband provided', stdout, seedname)
     boltz%bandshift_energyshift = 0._dp
-    call param_get_keyword('boltz_bandshift_energyshift', found, r_value=boltz%bandshift_energyshift)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift_energyshift', found, r_value=boltz%bandshift_energyshift)
     if (boltz%bandshift .and. (.not. found)) &
-      call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided')
+      call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided', stdout, seedname)
     ! [gp-end, Apr 12, 2012]
   end subroutine param_read_boltzwann
 
-  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
+  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, stdout, seedname)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     type(berry_type), intent(inout) :: berry
     type(dos_plot_type), intent(inout) :: dos_data
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    character(len=50), intent(in)  :: seedname
+
     integer :: i, ierr
     logical :: found
 
@@ -1156,7 +1207,7 @@ contains
     else
       dos_data%energy_max = dis_data%win_max + 0.6667_dp
     end if
-    call param_get_keyword('dos_energy_max', found, &
+    call param_get_keyword(stdout, seedname, 'dos_energy_max', found, &
                            r_value=dos_data%energy_max)
 
     if (allocated(eigval)) then
@@ -1164,12 +1215,12 @@ contains
     else
       dos_data%energy_min = dis_data%win_min - 0.6667_dp
     end if
-    call param_get_keyword('dos_energy_min', found, &
+    call param_get_keyword(stdout, seedname, 'dos_energy_min', found, &
                            r_value=dos_data%energy_min)
 
     kubo_freq_min = 0.0_dp
     gyrotropic_freq_min = kubo_freq_min
-    call param_get_keyword('kubo_freq_min', found, r_value=kubo_freq_min)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_min', found, r_value=kubo_freq_min)
     !
     if (dis_data%frozen_states) then
       kubo_freq_max = dis_data%froz_max - fermi%energy_list(1) + 0.6667_dp
@@ -1179,13 +1230,13 @@ contains
       kubo_freq_max = dis_data%win_max - dis_data%win_min + 0.6667_dp
     end if
     gyrotropic_freq_max = kubo_freq_max
-    call param_get_keyword('kubo_freq_max', found, r_value=kubo_freq_max)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_max', found, r_value=kubo_freq_max)
 
     !
     kubo_freq_step = 0.01_dp
-    call param_get_keyword('kubo_freq_step', found, r_value=kubo_freq_step)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_step', found, r_value=kubo_freq_step)
     if (found .and. kubo_freq_step < 0.0_dp) call io_error( &
-      'Error: kubo_freq_step must be positive')
+      'Error: kubo_freq_step must be positive', stdout, seedname)
     !
     berry%kubo_nfreq = nint((kubo_freq_max - kubo_freq_min)/kubo_freq_step) + 1
     if (berry%kubo_nfreq <= 1) berry%kubo_nfreq = 2
@@ -1194,7 +1245,7 @@ contains
     if (allocated(berry%kubo_freq_list)) deallocate (berry%kubo_freq_list)
     allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
     if (ierr /= 0) &
-      call io_error('Error allocating kubo_freq_list in param_read')
+      call io_error('Error allocating kubo_freq_list in param_read', stdout, seedname)
     do i = 1, berry%kubo_nfreq
       berry%kubo_freq_list(i) = kubo_freq_min &
                                 + (i - 1)*(kubo_freq_max - kubo_freq_min)/(berry%kubo_nfreq - 1)
@@ -1204,16 +1255,16 @@ contains
     !       the length of the list
 
     gyrotropic_freq_step = 0.01_dp
-    call param_get_keyword('gyrotropic_freq_min', found, r_value=gyrotropic_freq_min)
-    call param_get_keyword('gyrotropic_freq_max', found, r_value=gyrotropic_freq_max)
-    call param_get_keyword('gyrotropic_freq_step', found, r_value=gyrotropic_freq_step)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found, r_value=gyrotropic_freq_min)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found, r_value=gyrotropic_freq_max)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found, r_value=gyrotropic_freq_step)
     gyrotropic%nfreq = nint((gyrotropic_freq_max - gyrotropic_freq_min)/gyrotropic_freq_step) + 1
     if (gyrotropic%nfreq <= 1) gyrotropic%nfreq = 2
     gyrotropic_freq_step = (gyrotropic_freq_max - gyrotropic_freq_min)/(gyrotropic%nfreq - 1)
     if (allocated(gyrotropic%freq_list)) deallocate (gyrotropic%freq_list)
     allocate (gyrotropic%freq_list(gyrotropic%nfreq), stat=ierr)
     if (ierr /= 0) &
-      call io_error('Error allocating gyrotropic_freq_list in param_read')
+      call io_error('Error allocating gyrotropic_freq_list in param_read', stdout, seedname)
     do i = 1, gyrotropic%nfreq
       gyrotropic%freq_list(i) = gyrotropic_freq_min &
                                 + (i - 1)*(gyrotropic_freq_max - gyrotropic_freq_min)/(gyrotropic%nfreq - 1) &
@@ -1229,13 +1280,14 @@ contains
     end if
     gyrotropic%eigval_max = berry%kubo_eigval_max
 
-    call param_get_keyword('kubo_eigval_max', found, r_value=berry%kubo_eigval_max)
-    call param_get_keyword('gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
+    call param_get_keyword(stdout, seedname, 'kubo_eigval_max', found, r_value=berry%kubo_eigval_max)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_read_energy_range
 
   subroutine param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
-                                    pw90_spin, gyrotropic, boltz, recip_lattice)
+                                    pw90_spin, gyrotropic, boltz, recip_lattice, stdout, seedname)
     implicit none
+    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
     type(berry_type), intent(inout) :: berry
@@ -1244,35 +1296,36 @@ contains
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    character(len=50), intent(in)  :: seedname
 
     ! To be called after having read the global flag
-    call get_module_kmesh(recip_lattice, moduleprefix='boltz', &
+    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='boltz', &
                           should_be_defined=pw90_calcs%boltzwann, &
                           module_kmesh=boltz%kmesh, &
                           module_kmesh_spacing=boltz%kmesh_spacing)
 
-    call get_module_kmesh(recip_lattice, moduleprefix='berry', &
+    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='berry', &
                           should_be_defined=pw90_calcs%berry, &
                           module_kmesh=berry%kmesh, &
                           module_kmesh_spacing=berry%kmesh_spacing)
 
-    call get_module_kmesh(recip_lattice, moduleprefix='gyrotropic', &
+    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='gyrotropic', &
                           should_be_defined=pw90_calcs%gyrotropic, &
                           module_kmesh=gyrotropic%kmesh, &
                           module_kmesh_spacing=gyrotropic%kmesh_spacing)
 
-    call get_module_kmesh(recip_lattice, moduleprefix='spin', &
+    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='spin', &
                           should_be_defined=pw90_common%spin_moment, &
                           module_kmesh=pw90_spin%spin_kmesh, &
                           module_kmesh_spacing=pw90_spin%spin_kmesh_spacing)
 
-    call get_module_kmesh(recip_lattice, moduleprefix='dos', &
+    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='dos', &
                           should_be_defined=pw90_calcs%dos, &
                           module_kmesh=dos_data%kmesh, &
                           module_kmesh_spacing=dos_data%kmesh_spacing)
   end subroutine param_read_local_kmesh
 
-  subroutine get_module_kmesh(recip_lattice, moduleprefix, should_be_defined, &
+  subroutine get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix, should_be_defined, &
                               module_kmesh, module_kmesh_spacing)
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
@@ -1282,6 +1335,7 @@ contains
     !!  The function takes care also of setting the default value to the global one if no local
     !!       keyword is defined
     use w90_io, only: io_error
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=*), intent(in)       :: moduleprefix
     !!The prefix that is appended before the name of the variables. In particular,
@@ -1296,6 +1350,7 @@ contains
     real(kind=dp), intent(out)         :: module_kmesh_spacing
     !! the real number on which the min mesh spacing is saved. -1 if it the
     !!user specifies in input the mesh and not the mesh_spacing
+    character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
     integer :: i
@@ -1303,30 +1358,30 @@ contains
     ! Default values
     module_kmesh_spacing = -1._dp
     module_kmesh = 0
-    call param_get_keyword(trim(moduleprefix)//'_kmesh_spacing', found, r_value=module_kmesh_spacing)
+    call param_get_keyword(stdout, seedname, trim(moduleprefix)//'_kmesh_spacing', found, r_value=module_kmesh_spacing)
     if (found) then
       if (module_kmesh_spacing .le. 0._dp) &
-        call io_error('Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero')
+        call io_error('Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero', stdout, seedname)
 
       call internal_set_kmesh(module_kmesh_spacing, recip_lattice, module_kmesh)
     end if
-    call param_get_vector_length(trim(moduleprefix)//'_kmesh', found2, length=i)
+    call param_get_vector_length(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, length=i)
     if (found2) then
       if (found) &
         call io_error('Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
-                      //trim(moduleprefix)//'_kmesh_spacing')
+                      //trim(moduleprefix)//'_kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
-        call param_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, 1, i_value=module_kmesh)
+        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, 1, i_value=module_kmesh)
         module_kmesh(2) = module_kmesh(1)
         module_kmesh(3) = module_kmesh(1)
       elseif (i .eq. 3) then
-        call param_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, 3, i_value=module_kmesh)
+        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, 3, i_value=module_kmesh)
       else
         call io_error('Error: '//trim(moduleprefix)// &
-                      '_kmesh must be provided as either one integer or a vector of 3 integers')
+                      '_kmesh must be provided as either one integer or a vector of 3 integers', stdout, seedname)
       end if
       if (any(module_kmesh <= 0)) &
-        call io_error('Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero')
+        call io_error('Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero', stdout, seedname)
     end if
 
     if ((found .eqv. .false.) .and. (found2 .eqv. .false.)) then
@@ -1338,7 +1393,7 @@ contains
         module_kmesh_spacing = kmesh_spacing
       else
         if (should_be_defined) &
-          call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.')
+          call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', stdout, seedname)
       end if
     end if
   end subroutine get_module_kmesh
@@ -1348,7 +1403,7 @@ contains
                                  real_lattice, recip_lattice, spec_points, &
                                  pw90_calcs, postw90_oper, pw90_common, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
-                                 gyrotropic, geninterp, boltz)
+                                 gyrotropic, geninterp, boltz, stdout)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
@@ -1362,6 +1417,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
@@ -1716,12 +1772,12 @@ contains
       write (stdout, '(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '| Compute Gyrotropic properties              :', pw90_calcs%gyrotropic, '|'
       write (stdout, '(1x,a46,10x,a20,1x,a1)') '| gyrotropic_task                            :', gyrotropic%task, '|'
-      call parameters_gyro_write_task(gyrotropic%task, '-d0', 'calculate the D tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-dw', 'calculate the tildeD tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-c', 'calculate the C tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-k', 'calculate the K tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity')
-      call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states')
+      call parameters_gyro_write_task(gyrotropic%task, '-d0', 'calculate the D tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-dw', 'calculate the tildeD tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-c', 'calculate the C tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-k', 'calculate the K tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states', stdout)
 
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for tildeD,NOA            :', gyrotropic_freq_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency                           :', gyrotropic_freq_max, '|'
@@ -1827,9 +1883,10 @@ contains
   end subroutine param_postw90_write
 
   subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_data, fermi, &
-                                atoms, eigval, spec_points, dos_data, berry)
+                                atoms, eigval, spec_points, dos_data, berry, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
@@ -1845,31 +1902,33 @@ contains
     type(special_kpoints_type), intent(inout) :: spec_points
     type(dos_plot_type), intent(inout) :: dos_data
     type(berry_type), intent(inout) :: berry
+    character(len=50), intent(in)  :: seedname
 
     integer :: ierr
 
     call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
-                       dis_data, atoms, eigval, spec_points)
+                       dis_data, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating dos_project in param_pw90_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating dos_project in param_pw90_dealloc', stdout, seedname)
     endif
     if (allocated(fermi%energy_list)) then
       deallocate (fermi%energy_list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating fermi_energy_list in param_pw90_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating fermi_energy_list in param_pw90_dealloc', stdout, seedname)
     endif
     if (allocated(berry%kubo_freq_list)) then
       deallocate (berry%kubo_freq_list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kubo_freq_list in param_pw90_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating kubo_freq_list in param_pw90_dealloc', stdout, seedname)
     endif
   end subroutine param_pw90_dealloc
 
   ! extra postw90 memory
-  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann)
+  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann, stdout)
     use w90_comms, only: on_root
     implicit none
     type(disentangle_type), intent(in) :: dis_data
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp
@@ -1934,9 +1993,10 @@ contains
 
   end subroutine param_pw90_mem_estimate
 
-  subroutine parameters_gyro_write_task(task, key, comment)
-    use w90_io, only: stdout
+  subroutine parameters_gyro_write_task(task, key, comment, stdout)
+!   use w90_io, only: stdout
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: task, key, comment
     character(len=42) :: comment1
 

@@ -24,9 +24,9 @@ module w90_io
   include 'mpif.h'
 #endif
 
-  integer, public, save           :: stdout
+! integer, public, save           :: stdout
   !! Unit on which stdout is written
-  character(len=50), public, save :: seedname
+! character(len=50), public, save :: seedname
   !! The seedname for this run
   integer, parameter, public      :: maxlen = 255
   !! Max column width of input file
@@ -67,7 +67,7 @@ module w90_io
 contains
 
   !=====================================
-  subroutine io_stopwatch(tag, mode)
+  subroutine io_stopwatch(tag, mode, stdout, seedname)
     !=====================================
     !! Stopwatch to time parts of the code
     !=====================================
@@ -77,9 +77,11 @@ contains
     character(len=*), intent(in) :: tag
     !! Which stopwatch to act upon
     integer, intent(in)          :: mode
+    character(len=50), intent(in)  :: seedname
     !! Action  1=start 2=stop
 
     integer :: i
+    integer :: stdout
     real(kind=dp) :: t
 
     call cpu_time(t)
@@ -97,7 +99,7 @@ contains
       enddo
 
       nnames = nnames + 1
-      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded')
+      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded', stdout, seedname)
 
       clocks(nnames)%label = tag
       clocks(nnames)%ctime = 0.0_dp
@@ -118,7 +120,7 @@ contains
     case default
 
       write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
-      call io_error('Value of mode not recognised in io_stopwatch')
+      call io_error('Value of mode not recognised in io_stopwatch', stdout, seedname)
 
     end select
 
@@ -127,7 +129,7 @@ contains
   end subroutine io_stopwatch
 
   !=====================================
-  subroutine io_print_timings()
+  subroutine io_print_timings(stdout)
     !=====================================
     !! Output timing information to stdout
     !=====================================
@@ -135,6 +137,7 @@ contains
     implicit none
 
     integer :: i
+    integer :: stdout
 
     write (stdout, '(/1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|                             TIMING INFORMATION                            |'
@@ -152,7 +155,7 @@ contains
   end subroutine io_print_timings
 
   !=======================================
-  subroutine io_get_seedname()
+  subroutine io_get_seedname(seedname)
     !=======================================
     !
     !! Get the seedname from the commandline
@@ -162,6 +165,7 @@ contains
 
     integer :: num_arg
     character(len=50) :: ctemp
+    character(len=50), intent(inout)  :: seedname
 
     post_proc_flag = .false.
 
@@ -196,7 +200,7 @@ contains
   end subroutine io_get_seedname
 
   !=======================================
-  subroutine io_commandline(prog, dryrun)
+  subroutine io_commandline(prog, dryrun, seedname)
     !=======================================
     !
     !! Parse the commandline
@@ -208,6 +212,7 @@ contains
     !! Name of the calling program
     logical, intent(out) :: dryrun
     !! Have we been asked for a dryrun
+    character(len=50), intent(inout)  :: seedname
 
     integer :: num_arg, loop
     character(len=50), allocatable :: ctemp(:)
@@ -304,17 +309,19 @@ contains
   end subroutine io_commandline
 
   !========================================
-  subroutine io_error(error_msg)
+  subroutine io_error(error_msg, stdout, seedname)
     !========================================
     !! Abort the code giving an error message
     !========================================
 
     implicit none
     character(len=*), intent(in) :: error_msg
+    character(len=50), intent(in)  :: seedname
 
 #ifdef MPI
     character(len=50) :: filename
     integer           :: stderr, ierr, whoami, num_nodes
+    integer           :: stdout
 
     call mpi_comm_rank(mpi_comm_world, whoami, ierr)
     call mpi_comm_size(mpi_comm_world, num_nodes, ierr)

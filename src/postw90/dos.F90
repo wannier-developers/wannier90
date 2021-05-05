@@ -33,7 +33,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main
+  subroutine dos_main(stdout, seedname)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -43,8 +43,7 @@ contains
     !                                                       !
     !=======================================================!
 
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, &
-      seedname, stdout
+    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
@@ -58,6 +57,9 @@ contains
     ! 'dos_all' from all nodes/k-points (first summed on one node and
     ! then reduced (i.e. summed) over all nodes)
     !
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
     real(kind=dp), allocatable :: dos_k(:, :)
     real(kind=dp), allocatable :: dos_all(:, :)
 
@@ -78,22 +80,22 @@ contains
 
     allocate (dos_energyarray(num_freq), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating dos_energyarray in ' &
-                                 //'dos subroutine')
+                                 //'dos subroutine', stdout, seedname)
     do ifreq = 1, num_freq
       dos_energyarray(ifreq) = dos_data%energy_min + real(ifreq - 1, dp)*d_omega
     end do
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in dos')
+    if (ierr /= 0) call io_error('Error in allocating HH in dos', stdout, seedname)
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in dos')
+    if (ierr /= 0) call io_error('Error in allocating delHH in dos', stdout, seedname)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in dos')
+    if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R
+    call get_HH_R(stdout, seedname)
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R
+      call get_SS_R(stdout, seedname)
     else
       ndim = 1
     end if
@@ -103,7 +105,7 @@ contains
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('dos', 1)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 1, stdout, seedname)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -151,18 +153,18 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -185,18 +187,18 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -208,7 +210,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', world)
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, world)
 
     if (on_root) then
       write (stdout, '(1x,a)') 'Output data files:'
@@ -221,15 +223,15 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (param_input%timing_level > 1) call io_stopwatch('dos', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 2, stdout, seedname)
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main', stdout, seedname)
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main', stdout, seedname)
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main', stdout, seedname)
 
   end subroutine dos_main
 
@@ -461,7 +463,7 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, smr_index, &
+  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, seedname, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
@@ -472,6 +474,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)               :: kpt
     real(kind=dp), dimension(:), intent(in)               :: EnergyArray
     real(kind=dp), dimension(:), intent(in)               :: eig_k
@@ -480,6 +483,8 @@ contains
     real(kind=dp), intent(in), optional                    :: smr_fixed_en_width
     real(kind=dp), intent(in), optional                    :: adpt_smr_fac
     real(kind=dp), intent(in), optional                    :: adpt_smr_max
+    character(len=50), intent(in)  :: seedname
+
     real(kind=dp), dimension(:), intent(in), optional      :: levelspacing_k
     complex(kind=dp), dimension(:, :), intent(in), optional :: UU
 
@@ -497,30 +502,30 @@ contains
     if (present(levelspacing_k)) then
       if (present(smr_fixed_en_width)) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'with smr_fixed_en_width parameters together')
+                      //'with smr_fixed_en_width parameters together', stdout, seedname)
       if (.not. (present(adpt_smr_fac))) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_fac parameter')
+                      //'without adpt_smr_fac parameter', stdout, seedname)
       if (.not. (present(adpt_smr_max))) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_max parameter')
+                      //'without adpt_smr_max parameter', stdout, seedname)
     else
       if (present(adpt_smr_fac)) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_fac parameter')
+                      //'with adpt_smr_fac parameter', stdout, seedname)
       if (present(adpt_smr_max)) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_max parameter')
+                      //'with adpt_smr_max parameter', stdout, seedname)
       if (.not. (present(smr_fixed_en_width))) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'without smr_fixed_en_width parameter')
+                      //'without smr_fixed_en_width parameter', stdout, seedname)
     end if
 
     r_num_elec_per_state = real(param_input%num_elec_per_state, kind=dp)
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
@@ -565,7 +570,7 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smr_index)/eta_smr
+          rdum = utility_w0gauss(arg, smr_index, stdout, seedname)/eta_smr
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if

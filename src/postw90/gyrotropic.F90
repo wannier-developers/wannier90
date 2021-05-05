@@ -47,8 +47,8 @@ module w90_gyrotropic
   ! 5 <--> xz
   ! 6 <--> yz
   !
-  integer, dimension(6), parameter :: alpha_S = (/1, 2, 3, 1, 1, 2/)
-  integer, dimension(6), parameter ::  beta_S = (/1, 2, 3, 2, 3, 3/)
+  !integer, dimension(6), parameter :: alpha_S = (/1, 2, 3, 1, 1, 2/)
+  !integer, dimension(6), parameter ::  beta_S = (/1, 2, 3, 2, 3, 3/)
 
 contains
 
@@ -56,7 +56,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main
+  subroutine gyrotropic_main(physics, stdout, seedname)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -68,12 +68,11 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, elem_charge_SI, hbar_SI, &
-      eV_au, bohr, elec_mass_SI, twopi, eps0_SI
+    use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
     use w90_utility, only: utility_det3
-    use w90_io, only: io_error, stdout, io_file_unit, &
-      io_stopwatch
+!   use w90_io, only: io_error, stdout, io_file_unit, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_stopwatch
     !use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
     !  weight
     use w90_postw90_common, only: cell_volume
@@ -81,6 +80,10 @@ contains
     use pw90_parameters, only: gyrotropic, berry, world
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R
+
+    type(pw90_physical_constants), intent(in) :: physics
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
     real(kind=dp), allocatable    :: gyro_DOS(:)
@@ -101,9 +104,9 @@ contains
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
     if (fermi%n == 0) call io_error( &
-      'Must specify one or more Fermi levels when gyrotropic=true')
+      'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
 
     ! Mesh spacing in reduced coordinates
     !
@@ -139,22 +142,22 @@ contains
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
     if ((.not. param_input%spinors) .and. eval_spn) call io_error( &
-      "spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
+      "spin contribution requested for gyrotropic, but the wavefunctions are not spinors", stdout, seedname)
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R
+    call get_HH_R(stdout, seedname)
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
-      call get_AA_R
+      call get_AA_R(stdout, seedname)
     endif
 
     if (eval_spn) then
-      call get_SS_R
+      call get_SS_R(stdout, seedname)
     endif
 
     if (eval_K) then
-      call get_BB_R
-      call get_CC_R
+      call get_BB_R(stdout, seedname)
+      call get_CC_R(stdout, seedname)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
@@ -225,7 +228,7 @@ contains
 
       if (berry%transl_inv) then
         if (eval_K) &
-          call io_error('transl_inv=T disabled for K-tensor')
+          call io_error('transl_inv=T disabled for K-tensor', stdout, seedname)
         write (stdout, '(/,1x,a)') &
           'Using a translationally-invariant discretization for the'
         write (stdout, '(1x,a)') &
@@ -233,8 +236,8 @@ contains
       endif
 
       if (param_input%timing_level > 1) then
-        call io_stopwatch('gyrotropic: prelims', 2)
-        call io_stopwatch('gyrotropic: k-interpolation', 1)
+        call io_stopwatch('gyrotropic: prelims', 2, stdout, seedname)
+        call io_stopwatch('gyrotropic: k-interpolation', 1, stdout, seedname)
       endif
 
       write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic%kmesh(1:3)
@@ -258,7 +261,7 @@ contains
       kpt(3) = loop_z*db3
       kpt(:) = gyrotropic%box_corner(:) + matmul(kpt, gyrotropic%box)
 
-      call gyrotropic_get_k_list(kpt, kweight, &
+      call gyrotropic_get_k_list(kpt, stdout, seedname, kweight, &
                                  gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, &
                                  eval_K, eval_D, eval_Dw, eval_NOA, eval_spn, eval_C, eval_dos)
@@ -268,31 +271,34 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', world)
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, &
+                                      seedname, world)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', world)
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
+                        seedname, world)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', world)
+      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', stdout, seedname, world)
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', world)
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
+                        seedname, world)
       if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, &
-                                      'SUM', world)
+                                      'SUM', stdout, seedname, world)
     endif
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, stdout, seedname)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)
@@ -311,12 +317,13 @@ contains
           ! ==============================
           ! fac = 10^20*e*hbar/(2.m_e.V_c)
           ! ==============================
-          fac = -1.0e20_dp*elem_charge_SI*hbar_SI/(2.*elec_mass_SI*cell_volume)
+          fac = -1.0e20_dp*physics%elem_charge_SI*physics%hbar_SI/(2.*physics%elec_mass_SI &
+                                                                   *cell_volume)
           gyro_K_spn(:, :, :) = gyro_K_spn(:, :, :)*fac
           f_out_name_tmp = 'K_spin'
           units_tmp = "Ampere"
           comment_tmp = "spin part of the K tensor -- Eq. 3 of TAS17"
-          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_K_spn, units=units_tmp, &
+          call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEf=gyro_K_spn, units=units_tmp, &
                                           comment=comment_tmp)
         endif  ! eval_K && eval_spin
 
@@ -333,13 +340,13 @@ contains
         ! ====================================
         ! fac = e^2/(2.hbar.V_c)
         ! ====================================
-        fac = elem_charge_SI**2/(2.*hbar_SI*cell_volume)
+        fac = physics%elem_charge_SI**2/(2.*physics%hbar_SI*cell_volume)
         gyro_K_orb(:, :, :) = gyro_K_orb(:, :, :)*fac
 
         f_out_name_tmp = 'K_orb'
         units_tmp = "Ampere"
         comment_tmp = "orbital part of the K tensor -- Eq. 3 of TAS17"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_K_orb, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEf=gyro_K_orb, units=units_tmp, &
                                         comment=comment_tmp)
       endif ! eval_K
 
@@ -350,7 +357,7 @@ contains
         f_out_name_tmp = 'D'
         units_tmp = "dimensionless"
         comment_tmp = "the D tensor -- Eq. 2 of TAS17"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_D, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEf=gyro_D, units=units_tmp, &
                                         comment=comment_tmp)
       endif
 
@@ -361,7 +368,7 @@ contains
         f_out_name_tmp = 'tildeD'
         units_tmp = "dimensionless"
         comment_tmp = "the tildeD tensor -- Eq. 12 of TAS17"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_Dw, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEfW=gyro_Dw, units=units_tmp, &
                                         comment=comment_tmp)
       endif
 
@@ -377,13 +384,13 @@ contains
         ! multiply by 10^8*e in SI to get J/cm
         ! multiply by e/h in SI
         !
-        fac = 1.0e+8_dp*elem_charge_SI**2/(twopi*hbar_SI*cell_volume)
+        fac = 1.0e+8_dp*physics%elem_charge_SI**2/(twopi*physics%hbar_SI*cell_volume)
         gyro_C(:, :, :) = gyro_C(:, :, :)*fac
 
         f_out_name_tmp = 'C'
         units_tmp = "Ampere/cm"
         comment_tmp = "the C tensor -- Eq. B6 of TAS17"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_C, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEf=gyro_C, units=units_tmp, &
                                         comment=comment_tmp)
       endif
 
@@ -394,12 +401,12 @@ contains
         !   * Divide by e in SI to get J^{-1}
         !   * multiply by e^2/eps_0 to get meters
         !   *multiply dy 1e10 to get Ang
-        fac = 1e+10_dp*elem_charge_SI/(cell_volume*eps0_SI)
+        fac = 1e+10_dp*physics%elem_charge_SI/(cell_volume*physics%eps0_SI)
         gyro_NOA_orb = gyro_NOA_orb*fac
         f_out_name_tmp = 'NOA_orb'
         units_tmp = "Ang"
         comment_tmp = "the tensor $gamma_{abc}^{orb}$ (Eq. C12,C14 of TAS17)"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_NOA_orb, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEfW=gyro_NOA_orb, units=units_tmp, &
                                         comment=comment_tmp, symmetrize=.false.)
 
         if (eval_spn) then
@@ -410,12 +417,12 @@ contains
           !   * multiply by e^2/eps_0 to get (J.m)^{-1}
           !   *multiply dy hbar^2/m_e to get m
           !   *multiply by 1e10 to get Ang
-          fac = 1e+30_dp*hbar_SI**2/(cell_volume*eps0_SI*elec_mass_SI)
+          fac = 1e+30_dp*physics%hbar_SI**2/(cell_volume*physics%eps0_SI*physics%elec_mass_SI)
           gyro_NOA_spn = gyro_NOA_spn*fac
           f_out_name_tmp = 'NOA_spin'
           units_tmp = "Ang"
           comment_tmp = "the tensor $gamma_{abc}^{spin}$ (Eq. C12,C15 of TAS17)"
-          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_NOA_spn, units=units_tmp, &
+          call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEfW=gyro_NOA_spn, units=units_tmp, &
                                           comment=comment_tmp, symmetrize=.false.)
         endif
       endif  !eval_NOA
@@ -429,7 +436,7 @@ contains
         f_out_name_tmp = 'DOS'
         units_tmp = "eV^{-1}.Ang^{-3}"
         comment_tmp = "density of states"
-        call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf1d=gyro_DOS, units=units_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, f_out_name_tmp, arrEf1d=gyro_DOS, units=units_tmp, &
                                         comment=comment_tmp)
       endif
 
@@ -437,7 +444,7 @@ contains
 
   end subroutine gyrotropic_main
 
-  subroutine gyrotropic_get_k_list(kpt, kweight, &
+  subroutine gyrotropic_get_k_list(kpt, stdout, seedname, kweight, &
                                    gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                    gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, &
                                    eval_K, eval_D, eval_Dw, eval_NOA, eval_spn, eval_C, eval_dos)
@@ -471,7 +478,7 @@ contains
     !                                                                      !
     !======================================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
     use w90_parameters, only: num_wann, fermi
     use pw90_parameters, only: gyrotropic
@@ -485,6 +492,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)                      :: kpt(3), kweight
     real(kind=dp), dimension(:, :, :), intent(inout)   :: gyro_K_spn, &
                                                           gyro_K_orb, &
@@ -495,6 +503,7 @@ contains
 
     logical, intent(in) :: eval_K, eval_D, eval_Dw, &
                            eval_C, eval_NOA, eval_spn, eval_dos
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: HH(:, :)
@@ -520,12 +529,12 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, UU, eig, D_h)
-      call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
       enddo
@@ -564,7 +573,7 @@ contains
         ! Spin is computed for all bands simultaneously
         !
         if (eval_spn .and. .not. got_spin) then
-          call spin_get_S(kpt, S)
+          call spin_get_S(kpt, S, stdout, seedname)
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
         ! Orbital quantities are computed for each band separately
@@ -573,7 +582,7 @@ contains
             ! Fake occupations: band n occupied, others empty
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imfgh_klist(kpt, imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k, img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -581,7 +590,7 @@ contains
           else if (eval_D) then
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imf_klist(kpt, imf_k, occ)
+            call berry_get_imf_klist(kpt, stdout, seedname, imf_k, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo
@@ -593,7 +602,7 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, gyrotropic%smr_index)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        delta = utility_w0gauss(arg, gyrotropic%smr_index, stdout, seedname)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
         !
         ! Loop over Cartesian tensor components
         !
@@ -620,9 +629,9 @@ contains
 
     if (eval_NOA) then
       if (eval_spn) then
-        call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, gyro_NOA_spn)
+        call gyrotropic_get_NOA_k(kpt, stdout, seedname, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, gyro_NOA_spn)
       else
-        call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb)
+        call gyrotropic_get_NOA_k(kpt, stdout, seedname, kweight, eig, del_eig, AA, UU, gyro_NOA_orb)
       endif
     endif
 
@@ -670,7 +679,7 @@ contains
 
   end subroutine gyrotropic_get_curv_w_k
 
-  subroutine gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, gyro_NOA_spn)
+  subroutine gyrotropic_get_NOA_k(kpt, stdout, seedname, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, gyro_NOA_spn)
     !====================================================================!
     !                                                                    !
     ! Contribution from point k to the real (antisymmetric) part         !
@@ -690,12 +699,12 @@ contains
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
     !====================================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, cmplx_1
+    use w90_constants, only: dp, cmplx_1
     use w90_utility, only: utility_rotate
     use w90_parameters, only: num_wann, fermi, param_input
     use pw90_parameters, only: gyrotropic
 
-    use w90_io, only: stdout, io_time, io_error
+    use w90_io, only: io_time, io_error
 
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_get_oper, only: SS_R
@@ -703,6 +712,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)       :: kpt(3), kweight
     real(kind=dp), dimension(:, :, :, :), optional, intent(inout)    :: gyro_NOA_spn
     real(kind=dp), dimension(:, :, :, :), intent(inout)    :: gyro_NOA_orb
@@ -710,6 +720,7 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)       :: UU
     real(kind=dp), dimension(:), intent(in)       :: eig
     real(kind=dp), dimension(:, :), intent(in)       :: del_eig
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: Bnl_orb(:, :, :, :)
     complex(kind=dp), allocatable :: Bnl_spin(:, :, :, :)
@@ -730,7 +741,7 @@ contains
       allocate (SS(num_wann, num_wann, 3))
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
-        call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, j), OO=SS(:, :, j))
+        call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, SS_R(:, :, :, j), OO=SS(:, :, j))
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
       enddo
     endif
@@ -889,10 +900,12 @@ contains
 
   end subroutine gyrotropic_get_NOA_Bnl_spin
 
-  subroutine gyrotropic_outprint_tensor(f_out_name, arrEf, arrEF1D, arrEfW, units, comment, symmetrize)
+  subroutine gyrotropic_outprint_tensor(stdout, seedname, f_out_name, arrEf, arrEF1D, arrEfW, units, comment, symmetrize)
     use pw90_parameters, only: gyrotropic
-    use w90_io, only: io_file_unit, seedname, stdout
+!   use w90_io, only: io_file_unit, seedname, stdout
+    use w90_io, only: io_file_unit
 
+    integer, intent(in) :: stdout
     character(len=30), intent(in) :: f_out_name
     character(len=30), intent(in), optional :: units
     character(len=120), intent(in), optional :: comment
@@ -900,6 +913,7 @@ contains
     real(kind=dp), dimension(:, :, :, :), intent(in), optional :: arrEfW
     real(kind=dp), dimension(:), intent(in), optional :: arrEf1D
     logical, optional, intent(in) :: symmetrize
+    character(len=50), intent(in)  :: seedname
 
     character(len=120)  :: file_name
     integer             :: i, file_unit

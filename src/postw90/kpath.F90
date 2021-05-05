@@ -40,23 +40,28 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path
+  subroutine k_path(bohr, stdout, seedname)
     !! Main routine
 
     use w90_comms
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
-    use w90_io, only: io_error, io_file_unit, seedname, &
-      io_time, io_stopwatch, stdout
+!   use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch, stdout
+    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, spec_points, fermi
     use pw90_parameters, only: berry, spin_hall, kpath, world
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_FF_R, get_SS_R, get_SHC_R
+      !     get_FF_R, get_SS_R, get_SHC_R
+      get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, &
       berry_get_shc_klist
-    use w90_constants, only: bohr
+    !use w90_constants, only: bohr
+
+    integer, intent(in) :: stdout
+    real(kind=dp), intent(in) :: bohr
+    character(len=50), intent(in)  :: seedname
 
     integer, dimension(0:num_nodes - 1) :: counts, displs
 
@@ -96,35 +101,35 @@ contains
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
         if (berry%kubo_adpt_smr) call io_error( &
-          'Error: Must use fixed smearing when plotting spin Hall conductivity')
+          'Error: Must use fixed smearing when plotting spin Hall conductivity', stdout, seedname)
       end if
       if (plot_shc) then
         if (fermi%n == 0) then
-          call io_error('Error: must specify Fermi energy')
+          call io_error('Error: must specify Fermi energy', stdout, seedname)
         else if (fermi%n /= 1) then
           call io_error('Error: kpath plot only accept one Fermi energy, ' &
-                        //'use fermi_energy instead of fermi_energy_min')
+                        //'use fermi_energy instead of fermi_energy_min', stdout, seedname)
         end if
       end if
     end if
 
-    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
+    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout, seedname)
 
     ! Set up the needed Wannier matrix elements
-    call get_HH_R
-    if (plot_curv .or. plot_morb) call get_AA_R
+    call get_HH_R(stdout, seedname)
+    if (plot_curv .or. plot_morb) call get_AA_R(stdout, seedname)
     if (plot_morb) then
-      call get_BB_R
-      call get_CC_R
+      call get_BB_R(stdout, seedname)
+      call get_CC_R(stdout, seedname)
     endif
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
-      call get_AA_R
-      call get_SS_R
-      call get_SHC_R
+      call get_AA_R(stdout, seedname)
+      call get_SS_R(stdout, seedname)
+      call get_SHC_R(stdout, seedname)
     endif
 
-    if (plot_bands .and. kpath%bands_colour == 'spin') call get_SS_R
+    if (plot_bands .and. kpath%bands_colour == 'spin') call get_SS_R(stdout, seedname)
 
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as
@@ -139,10 +144,11 @@ contains
     end if
 
     ! Broadcast number of k-points on the path
-    call comms_bcast(total_pts, 1, world)
+    call comms_bcast(total_pts, 1, stdout, seedname, world)
 
     ! Partition set of k-points into junks
-    call comms_array_split(total_pts, counts, displs); 
+!   call comms_array_split(total_pts, counts, displs);
+    call comms_array_split(total_pts, counts, displs)
     !kpt_lo = displs(my_node_id)+1
     !kpt_hi = displs(my_node_id)+counts(my_node_id)
     my_num_pts = counts(my_node_id)
@@ -150,7 +156,7 @@ contains
     ! Distribute coordinates
     allocate (my_plot_kpoint(3, my_num_pts))
     call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
-                        plot_kpoint, 3*counts, 3*displs, world)
+                        plot_kpoint, 3*counts, 3*displs, stdout, seedname, world)
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -173,14 +179,14 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(kpt, spn_k)
+          call spin_get_nk(kpt, spn_k, stdout, seedname)
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing
@@ -195,13 +201,13 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(kpt, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, stdout, seedname, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
+        call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -212,7 +218,7 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(kpt, imf_k_list)
+          call berry_get_imf_klist(kpt, stdout, seedname, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -220,7 +226,7 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, stdout, seedname, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt
@@ -229,11 +235,11 @@ contains
     if (plot_bands) then
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
-                         eig, num_wann*counts, num_wann*displs, world)
+                         eig, num_wann*counts, num_wann*displs, stdout, seedname, world)
       if (kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
-                           color, num_wann*counts, num_wann*displs, world)
+                           color, num_wann*counts, num_wann*displs, stdout, seedname, world)
       end if
     end if
 
@@ -241,7 +247,7 @@ contains
       allocate (curv(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_curv(:, i), my_num_pts, &
-                           curv(:, i), counts, displs, world)
+                           curv(:, i), counts, displs, stdout, seedname, world)
       end do
     end if
 
@@ -249,13 +255,13 @@ contains
       allocate (morb(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_morb(:, i), my_num_pts, &
-                           morb(:, i), counts, displs, world)
+                           morb(:, i), counts, displs, stdout, seedname, world)
       end do
     end if
 
     if (plot_shc) then
       allocate (shc(total_pts))
-      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, world)
+      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, stdout, seedname, world)
     end if
 
     if (on_root) then
@@ -966,14 +972,16 @@ contains
   !===========================================================!
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
-  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
+  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout, seedname)
 
     use w90_comms, only: on_root, w90commtype
     use w90_parameters, only: fermi ! berry_curv_unit
     use pw90_parameters, only: kpath, berry, world
-    use w90_io, only: stdout, io_error
+    use w90_io, only: io_error
 
+    integer, intent(in) :: stdout
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
+    character(len=50), intent(in)  :: seedname
 
     if (on_root) then
       write (stdout, '(/,/,1x,a)') &
@@ -998,13 +1006,13 @@ contains
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=curv')
+          'Must specify one Fermi level when kpath_task=curv', stdout, seedname)
       end if
       if (plot_morb) then
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=morb')
+          'Must specify one Fermi level when kpath_task=morb', stdout, seedname)
       end if
       if (plot_shc) then
         if (berry%curv_unit == 'ang2') then
@@ -1015,7 +1023,7 @@ contains
             //' spin Hall conductivity in Bohr^2'
         end if
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=shc')
+          'Must specify one Fermi level when kpath_task=shc', stdout, seedname)
       end if
     end if ! on_root
 

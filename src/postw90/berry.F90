@@ -71,7 +71,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine berry_main
+  subroutine berry_main(physics, stdout, seedname)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -83,17 +83,19 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, elem_charge_SI, hbar_SI, &
-      eV_au, bohr, pi, eV_seconds
+    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_stopwatch
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
       weight, cell_volume
     use w90_parameters, only: param_input, fermi
     use pw90_parameters, only: berry, pw90_common, spin_hall, world
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
+
+    type(pw90_physical_constants), intent(in) :: physics
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     real(kind=dp), allocatable    :: adkpt(:, :)
 
@@ -149,9 +151,9 @@ contains
     logical           :: ladpt(fermi%n)
 
     if (fermi%n == 0) call io_error( &
-      'Must specify one or more Fermi levels when berry=true')
+      'Must specify one or more Fermi levels when berry=true', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('berry: prelims', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('berry: prelims', 1, stdout, seedname)
 
     ! Mesh spacing in reduced coordinates
     !
@@ -173,17 +175,17 @@ contains
     ! Wannier matrix elements, allocations and initializations
     !
     if (eval_ahc) then
-      call get_HH_R
-      call get_AA_R
+      call get_HH_R(stdout, seedname)
+      call get_AA_R(stdout, seedname)
       imf_list = 0.0_dp
       adpt_counter_list = 0
     endif
 
     if (eval_morb) then
-      call get_HH_R
-      call get_AA_R
-      call get_BB_R
-      call get_CC_R
+      call get_HH_R(stdout, seedname)
+      call get_AA_R(stdout, seedname)
+      call get_BB_R(stdout, seedname)
+      call get_CC_R(stdout, seedname)
       imf_list2 = 0.0_dp
       img_list = 0.0_dp
       imh_list = 0.0_dp
@@ -194,11 +196,11 @@ contains
     not_scannable = eval_kubo .or. (eval_shc .and. spin_hall%freq_scan)
     if (not_scannable .and. fermi%n .ne. 1) call io_error( &
       'The berry_task(s) you chose require that you specify a single ' &
-      //'Fermi energy: scanning the Fermi energy is not implemented')
+      //'Fermi energy: scanning the Fermi energy is not implemented', stdout, seedname)
 
     if (eval_kubo) then
-      call get_HH_R
-      call get_AA_R
+      call get_HH_R(stdout, seedname)
+      call get_AA_R(stdout, seedname)
       allocate (kubo_H_k(3, 3, berry%kubo_nfreq))
       allocate (kubo_H(3, 3, berry%kubo_nfreq))
       allocate (kubo_AH_k(3, 3, berry%kubo_nfreq))
@@ -209,7 +211,7 @@ contains
       kubo_AH = cmplx_0
       jdos = 0.0_dp
       if (pw90_common%spin_decomp) then
-        call get_SS_R
+        call get_SS_R(stdout, seedname)
         allocate (kubo_H_k_spn(3, 3, 3, berry%kubo_nfreq))
         allocate (kubo_H_spn(3, 3, 3, berry%kubo_nfreq))
         allocate (kubo_AH_k_spn(3, 3, 3, berry%kubo_nfreq))
@@ -223,8 +225,8 @@ contains
     endif
 
     if (eval_sc) then
-      call get_HH_R
-      call get_AA_R
+      call get_HH_R(stdout, seedname)
+      call get_AA_R(stdout, seedname)
       allocate (sc_k_list(3, 6, berry%kubo_nfreq))
       allocate (sc_list(3, 6, berry%kubo_nfreq))
       sc_k_list = 0.0_dp
@@ -232,10 +234,10 @@ contains
     endif
 
     if (eval_shc) then
-      call get_HH_R
-      call get_AA_R
-      call get_SS_R
-      call get_SHC_R
+      call get_HH_R(stdout, seedname)
+      call get_AA_R(stdout, seedname)
+      call get_SS_R(stdout, seedname)
+      call get_SHC_R(stdout, seedname)
 
       if (spin_hall%freq_scan) then
         allocate (shc_freq(berry%kubo_nfreq))
@@ -292,7 +294,7 @@ contains
 
       if (berry%transl_inv) then
         if (eval_morb) &
-          call io_error('transl_inv=T disabled for morb')
+          call io_error('transl_inv=T disabled for morb', stdout, seedname)
         write (stdout, '(/,1x,a)') &
           'Using a translationally-invariant discretization for the'
         write (stdout, '(1x,a)') &
@@ -300,8 +302,8 @@ contains
       endif
 
       if (param_input%timing_level > 1) then
-        call io_stopwatch('berry: prelims', 2)
-        call io_stopwatch('berry: k-interpolation', 1)
+        call io_stopwatch('berry: prelims', 2, stdout, seedname)
+        call io_stopwatch('berry: k-interpolation', 1, stdout, seedname)
       endif
 
     end if !on_root
@@ -309,7 +311,7 @@ contains
     ! Set up adaptive refinement mesh
     !
     allocate (adkpt(3, berry%curv_adpt_kmesh**3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating adkpt in berry')
+    if (ierr /= 0) call io_error('Error in allocating adkpt in berry', stdout, seedname)
     ikpt = 0
     !
     ! OLD VERSION (only works correctly for odd grids including original point)
@@ -362,13 +364,13 @@ contains
         ! ***BEGIN COPY OF CODE BLOCK 1***
         !
         if (eval_ahc) then
-          call berry_get_imf_klist(kpt, imf_k_list)
+          call berry_get_imf_klist(kpt, stdout, seedname, imf_k_list)
           ladpt = .false.
           do if = 1, fermi%n
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
             vdum(3) = sum(imf_k_list(:, 3, if))
-            if (berry%curv_unit == 'bohr2') vdum = vdum/bohr**2
+            if (berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry%curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
@@ -381,7 +383,7 @@ contains
             do loop_adpt = 1, berry%curv_adpt_kmesh**3
               ! Using imf_k_list here would corrupt values for other
               ! frequencies, hence dummy. Only if-th element is used
-              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
+              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), stdout, seedname, &
                                        imf_k_list_dummy, ladpt=ladpt)
               do if = 1, fermi%n
                 if (ladpt(if)) then
@@ -394,7 +396,7 @@ contains
         end if
 
         if (eval_morb) then
-          call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
+          call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, img_k_list, imh_k_list)
           imf_list2 = imf_list2 + imf_k_list*kweight
           img_list = img_list + img_k_list*kweight
           imh_list = imh_list + imh_k_List*kweight
@@ -402,10 +404,10 @@ contains
 
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
-            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, &
+            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, stdout, seedname, &
                                   kubo_H_k_spn, kubo_AH_k_spn, jdos_k_spn)
           else
-            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k)
+            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -418,7 +420,7 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(kpt, sc_k_list)
+          call berry_get_sc_klist(kpt, sc_k_list, stdout, seedname)
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -431,9 +433,9 @@ contains
           ! than later calls due to the time spent on
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
-          call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1)
+          call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1, stdout)
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, stdout, seedname, shc_k_fermi=shc_k_fermi)
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -447,7 +449,7 @@ contains
             if (berry%curv_adpt_kmesh > 1) then
               do if = 1, fermi%n
                 rdum = abs(shc_k_fermi(if))
-                if (berry%curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (berry%curv_unit == 'bohr2') rdum = rdum/physics%bohr**2
                 if (rdum > berry%curv_adpt_kmesh_thresh) then
                   adpt_counter_list(1) = adpt_counter_list(1) + 1
                   ladpt_kmesh = .true.
@@ -461,7 +463,7 @@ contains
               do loop_adpt = 1, berry%curv_adpt_kmesh**3
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
-                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), stdout, seedname, &
                                          shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
@@ -469,7 +471,7 @@ contains
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, stdout, seedname, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -494,13 +496,13 @@ contains
         ! ***BEGIN CODE BLOCK 1***
         !
         if (eval_ahc) then
-          call berry_get_imf_klist(kpt, imf_k_list)
+          call berry_get_imf_klist(kpt, stdout, seedname, imf_k_list)
           ladpt = .false.
           do if = 1, fermi%n
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
             vdum(3) = sum(imf_k_list(:, 3, if))
-            if (berry%curv_unit == 'bohr2') vdum = vdum/bohr**2
+            if (berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry%curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
@@ -513,7 +515,7 @@ contains
             do loop_adpt = 1, berry%curv_adpt_kmesh**3
               ! Using imf_k_list here would corrupt values for other
               ! frequencies, hence dummy. Only if-th element is used
-              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
+              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), stdout, seedname, &
                                        imf_k_list_dummy, ladpt=ladpt)
               do if = 1, fermi%n
                 if (ladpt(if)) then
@@ -526,7 +528,7 @@ contains
         end if
 
         if (eval_morb) then
-          call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
+          call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, img_k_list, imh_k_list)
           imf_list2 = imf_list2 + imf_k_list*kweight
           img_list = img_list + img_k_list*kweight
           imh_list = imh_list + imh_k_List*kweight
@@ -534,10 +536,10 @@ contains
 
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
-            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, &
+            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, stdout, seedname, &
                                   kubo_H_k_spn, kubo_AH_k_spn, jdos_k_spn)
           else
-            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k)
+            call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -550,7 +552,7 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(kpt, sc_k_list)
+          call berry_get_sc_klist(kpt, sc_k_list, stdout, seedname)
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -563,9 +565,9 @@ contains
           ! than later calls due to the time spent on
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
-          call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry%kmesh) - 1, num_nodes)
+          call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry%kmesh) - 1, num_nodes, stdout)
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, stdout, seedname, shc_k_fermi=shc_k_fermi)
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -579,7 +581,7 @@ contains
             if (berry%curv_adpt_kmesh > 1) then
               do if = 1, fermi%n
                 rdum = abs(shc_k_fermi(if))
-                if (berry%curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (berry%curv_unit == 'bohr2') rdum = rdum/physics%bohr**2
                 if (rdum > berry%curv_adpt_kmesh_thresh) then
                   adpt_counter_list(1) = adpt_counter_list(1) + 1
                   ladpt_kmesh = .true.
@@ -593,7 +595,7 @@ contains
               do loop_adpt = 1, berry%curv_adpt_kmesh**3
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
-                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), stdout, seedname, &
                                          shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
@@ -601,7 +603,7 @@ contains
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, stdout, seedname, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -613,43 +615,43 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_ahc) then
-      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
-      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', world)
+      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', stdout, seedname, world)
     endif
 
     if (eval_morb) then
-      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM', world)
-      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
-      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
     end if
 
     if (eval_kubo) then
-      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', world)
-      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', world)
-      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM', world)
+      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
+      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
+      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM', stdout, seedname, world)
       if (pw90_common%spin_decomp) then
-        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', world)
-        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', world)
-        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM', world)
+        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
+        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
+        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
       endif
     endif
 
     if (eval_sc) then
-      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM', world)
+      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM', stdout, seedname, world)
     end if
 
     if (eval_shc) then
       if (spin_hall%freq_scan) then
-        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM', world)
+        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM', stdout, seedname, world)
       else
-        call comms_reduce(shc_fermi(1), fermi%n, 'SUM', world)
-        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', world)
+        call comms_reduce(shc_fermi(1), fermi%n, 'SUM', stdout, seedname, world)
+        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', stdout, seedname, world)
       end if
     end if
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2, stdout, seedname)
       write (stdout, '(1x,a)') ' '
       if (eval_ahc .and. berry%curv_adpt_kmesh .ne. 1) then
         if (.not. berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
@@ -765,7 +767,7 @@ contains
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
         !
-        fac = -1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+        fac = -1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
         ahc_list(:, :, :) = imf_list(:, :, :)*fac
         if (fermi%n > 1) then
           write (stdout, '(/,1x,a)') &
@@ -853,7 +855,7 @@ contains
         !       by 2 to convert it to Bohr magnetons
         ! --------------------------------------------------------------------
         !
-        fac = -eV_au/bohr**2
+        fac = -physics%eV_au/physics%bohr**2
         if (fermi%n > 1) then
           write (stdout, '(/,1x,a)') &
             '---------------------------------'
@@ -911,7 +913,7 @@ contains
       if (eval_kubo) then
         !
         ! Convert to S/cm
-        fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+        fac = 1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
         kubo_H = kubo_H*fac
         kubo_AH = kubo_AH*fac
         if (pw90_common%spin_decomp) then
@@ -1054,7 +1056,7 @@ contains
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
 
-        fac = eV_seconds*pi*elem_charge_SI**3/(4*hbar_SI**(2)*cell_volume)
+        fac = physics%eV_seconds*pi*physics%elem_charge_SI**3/(4*physics%hbar_SI**(2)*cell_volume)
         write (stdout, '(/,1x,a)') &
           '----------------------------------------------------------'
         write (stdout, '(1x,a)') &
@@ -1101,7 +1103,7 @@ contains
         !   fac = 1.0e8 * e^2 / hbar / V / 2.0
         ! and the final unit of spin Hall conductivity is (hbar/e)S/cm
         !
-        fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
+        fac = 1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)/2.0_dp
         if (spin_hall%freq_scan) then
           shc_freq = shc_freq*fac
         else
@@ -1147,7 +1149,7 @@ contains
 
   end subroutine berry_main
 
-  subroutine berry_get_imf_klist(kpt, imf_k_list, occ, ladpt)
+  subroutine berry_get_imf_klist(kpt, stdout, seedname, imf_k_list, occ, ladpt)
     !============================================================!
     !                                                            !
     !! Calculates the Berry curvature traced over the occupied
@@ -1157,24 +1159,26 @@ contains
     !============================================================!
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:, :, :) :: imf_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
     logical, intent(in), optional, dimension(:) :: ladpt
+    character(len=50), intent(in)  :: seedname
 
     if (present(occ)) then
-      call berry_get_imfgh_klist(kpt, imf_k_list, occ=occ)
+      call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, occ=occ)
     else
       if (present(ladpt)) then
-        call berry_get_imfgh_klist(kpt, imf_k_list, ladpt=ladpt)
+        call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, ladpt=ladpt)
       else
-        call berry_get_imfgh_klist(kpt, imf_k_list)
+        call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list)
       endif
     endif
 
   end subroutine berry_get_imf_klist
 
-  subroutine berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list, occ, ladpt)
+  subroutine berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, img_k_list, imh_k_list, occ, ladpt)
     !=========================================================!
     !
     !! Calculates the three quantities needed for the orbital
@@ -1193,7 +1197,7 @@ contains
     !
     !=========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod
     use w90_parameters, only: num_wann, fermi
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k
@@ -1203,11 +1207,13 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)     :: kpt(3)
     real(kind=dp), intent(out), dimension(:, :, :), optional &
       :: imf_k_list, img_k_list, imh_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
     logical, intent(in), optional, dimension(:) :: ladpt
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
@@ -1252,14 +1258,14 @@ contains
     !
 
     if (present(occ)) then
-      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, occ=occ)
-      call wham_get_occ_mat_list(UU, f_list, g_list, occ=occ)
+      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname, occ=occ)
+      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, occ=occ)
     else
-      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list)
-      call wham_get_occ_mat_list(UU, f_list, g_list, eig=eig)
+      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname)
+      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, eig=eig)
     endif
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
 
     if (present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
@@ -1301,10 +1307,10 @@ contains
       ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
       ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
-      call pw90common_fourier_R_to_k_vec(kpt, BB_R, OO_true=BB)
+      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, BB_R, OO_true=BB)
       do j = 1, 3
         do i = 1, j
-          call pw90common_fourier_R_to_k(kpt, CC_R(:, :, :, i, j), CC(:, :, i, j), 0)
+          call pw90common_fourier_R_to_k(kpt, CC_R(:, :, :, i, j), CC(:, :, i, j), 0, stdout, seedname)
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
         end do
       end do
@@ -1373,7 +1379,7 @@ contains
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, &
+  subroutine berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, stdout, seedname, &
                               kubo_H_k_spn, kubo_AH_k_spn, jdos_k_spn)
     !====================================================================!
     !                                                                    !
@@ -1398,6 +1404,7 @@ contains
     ! Last three arguments should be present iff spin_decomp=T (but
     ! this is not checked: do it?)
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     complex(kind=dp), dimension(:, :, :), intent(out) :: kubo_H_k
     complex(kind=dp), dimension(:, :, :), intent(out) :: kubo_AH_k
@@ -1405,6 +1412,7 @@ contains
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out) :: kubo_H_k_spn
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out) :: kubo_AH_k_spn
     real(kind=dp), optional, dimension(:, :), intent(out) :: jdos_k_spn
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
@@ -1429,19 +1437,19 @@ contains
     allocate (AA(num_wann, num_wann, 3))
 
     if (berry%kubo_adpt_smr) then
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
       Delta_k = pw90common_kmesh_spacing(berry%kmesh)
     else
-      call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
+      call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, HH_R, OO=HH, &
                                          OO_dx=delHH(:, :, 1), &
                                          OO_dy=delHH(:, :, 2), &
                                          OO_dz=delHH(:, :, 3))
-      call utility_diagonalize(HH, num_wann, eig, UU)
+      call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     endif
     call pw90common_get_occ(eig, occ, fermi%energy_list(1))
     call wham_get_D_h(delHH, UU, eig, D_h)
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1456,7 +1464,7 @@ contains
     kubo_AH_k = cmplx_0
     jdos_k = 0.0_dp
     if (pw90_common%spin_decomp) then
-      call spin_get_nk(kpt, spn_nk)
+      call spin_get_nk(kpt, spn_nk, stdout, seedname)
       kubo_H_k_spn = cmplx_0
       kubo_AH_k_spn = cmplx_0
       jdos_k_spn = 0.0_dp
@@ -1500,7 +1508,7 @@ contains
           arg = (eig(m) - eig(n) - real(omega, dp))/eta_smr
           ! If only Hermitean part were computed, could speed up
           ! by inserting here 'if(abs(arg)>10.0_dp) cycle'
-          delta = utility_w0gauss(arg, berry%kubo_smr_index)/eta_smr
+          delta = utility_w0gauss(arg, berry%kubo_smr_index, stdout, seedname)/eta_smr
           !
           ! Lorentzian shape (for testing purposes)
 !             delta=1.0_dp/(1.0_dp+arg*arg)/pi
@@ -1533,7 +1541,7 @@ contains
 
   end subroutine berry_get_kubo_k
 
-  subroutine berry_get_sc_klist(kpt, sc_k_list)
+  subroutine berry_get_sc_klist(kpt, sc_k_list, stdout, seedname)
     !====================================================================!
     !                                                                    !
     !  Contribution from point k to the nonlinear shift current
@@ -1565,8 +1573,10 @@ contains
     use w90_utility, only: utility_rotate, utility_zdotu
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)                        :: kpt(3)
     real(kind=dp), intent(out), dimension(:, :, :)     :: sc_k_list
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: AA(:, :, :), AA_bar(:, :, :)
@@ -1610,17 +1620,17 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb)
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
-      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(stdout, seedname, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
-      call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU)
+      call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU, stdout, seedname)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
-      call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb)
-      call pw90common_fourier_R_to_k_vec_dadb(kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
-      call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU)
+      call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
+      call pw90common_fourier_R_to_k_vec_dadb(stdout, seedname, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
+      call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU, stdout, seedname)
     end if
 
     ! get electronic occupations
@@ -1730,7 +1740,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr_index)/eta_smr
+            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr_index, stdout, seedname)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
         ! same for delta(E_mn-w)
@@ -1739,7 +1749,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr_index)/eta_smr
+            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr_index, stdout, seedname)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
 
@@ -1748,7 +1758,7 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  subroutine berry_get_shc_klist(kpt, shc_k_fermi, shc_k_freq, shc_k_band)
+  subroutine berry_get_shc_klist(kpt, stdout, seedname, shc_k_fermi, shc_k_freq, shc_k_band)
     !====================================================================!
     !                                                                    !
     ! Contribution from a k-point to the spin Hall conductivity on a list
@@ -1781,10 +1791,12 @@ contains
     use w90_get_oper, only: AA_R
 
     ! args
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), optional, intent(out) :: shc_k_fermi(fermi%n)
     complex(kind=dp), optional, intent(out) :: shc_k_freq(berry%kubo_nfreq)
     real(kind=dp), optional, intent(out) :: shc_k_band(num_wann)
+    character(len=50), intent(in)  :: seedname
 
     ! internal vars
     logical                       :: lfreq, lfermi, lband
@@ -1830,7 +1842,7 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
     call wham_get_D_h(delHH, UU, eig, D_h)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -1838,7 +1850,7 @@ contains
       eig(spin_hall%bandshift_firstband:) = eig(spin_hall%bandshift_firstband:) + spin_hall%bandshift_energyshift
     end if
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1970,14 +1982,14 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
-      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, spin_hall%gamma), OO=S_w)
+      call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, SS_R(:, :, :, spin_hall%gamma), OO=S_w)
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
       ! QZYZ18 Eq.(37)
-      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, spin_hall%gamma, :), OO_true=SR_w)
+      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, SR_R(:, :, :, spin_hall%gamma, :), OO_true=SR_w)
       ! QZYZ18 Eq.(31)
       SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, spin_hall%alpha), UU, num_wann)
       K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
@@ -1985,11 +1997,11 @@ contains
       !=========== L_k ===========
       ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
       ! QZYZ18 Eq.(38)
-      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, spin_hall%gamma, :), OO_true=SHR_w)
+      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, SHR_R(:, :, :, spin_hall%gamma, :), OO_true=SHR_w)
       ! QZYZ18 Eq.(32)
       SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, spin_hall%alpha), UU, num_wann)
       ! QZYZ18 Eq.(39)
-      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
+      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, SH_R, OO_true=SH_w)
       ! QZYZ18 Eq.(32)
       SH_k = utility_rotate(SH_w(:, :, spin_hall%gamma), UU, num_wann)
       L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
@@ -2016,7 +2028,7 @@ contains
 
   end subroutine berry_get_shc_klist
 
-  subroutine berry_print_progress(loop_k, start_k, end_k, step_k)
+  subroutine berry_print_progress(loop_k, start_k, end_k, step_k, stdout)
     !============================================================!
     ! print k-points calculation progress, seperated into 11 points,
     ! from 0%, 10%, ... to 100%
@@ -2024,10 +2036,10 @@ contains
     ! loop_k should in the array start_k to end_k with step step_k
     !============================================================!
     use w90_comms, only: on_root, w90commtype
-    use pw90_parameters, only: world
-    use w90_io, only: stdout, io_wallclocktime
+    use w90_io, only: io_wallclocktime
 
     integer, intent(in) :: loop_k, start_k, end_k, step_k
+    integer, intent(in) :: stdout
 
     real(kind=dp) :: cur_time, finished
     real(kind=dp), save :: prev_time
