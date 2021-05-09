@@ -1973,6 +1973,7 @@ contains
     character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
     integer :: ierr
+    integer :: iprintroot !JJ
 
     if (mpirank(comm) == 0) on_root = .true.
 
@@ -1987,7 +1988,15 @@ contains
     !endif
     call comms_bcast(num_wann, 1, stdout, seedname, comm)
     call comms_bcast(param_input%timing_level, 1, stdout, seedname, comm)
+
+    !______________________________________
+    !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
+    iprintroot = param_input%iprint
+    param_input%iprint = 0
     call comms_bcast(param_input%iprint, 1, stdout, seedname, comm)
+    if (on_root) param_input%iprint = iprintroot
+    !______________________________________
+
     call comms_bcast(energy_unit, 1, stdout, seedname, comm)
     call comms_bcast(param_input%length_unit, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%wvfn_formatted, 1, stdout, seedname, comm)

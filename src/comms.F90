@@ -191,8 +191,8 @@ contains
     !!
     use w90_io
     integer, intent(in) :: numpoints  !! Number of elements of the array to be scattered
-    integer, intent(out) :: counts(:) !! Array (of size num_nodes) with the number of elements of the array on each node
-    integer, intent(out) :: displs(:) !! Array (of size num_nodes) with the displacement relative to the global array
+    integer, intent(inout) :: counts(0:) !! Array (of size num_nodes) with the number of elements of the array on each node
+    integer, intent(inout) :: displs(0:) !! Array (of size num_nodes) with the displacement relative to the global array
     type(w90commtype), intent(in) :: comm
 
     integer :: ratio, remainder, i
