@@ -61,6 +61,8 @@ module w90_comms
   public :: comms_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
   public :: comms_send       ! send data from one node to another
   public :: comms_setup
+  public :: mpirank
+  public :: mpisize
 
   type, public :: w90commtype
 #ifdef MPI08

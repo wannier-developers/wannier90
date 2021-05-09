@@ -22,8 +22,8 @@ program postw90
   use w90_io
 
   use w90_kmesh
-  use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, comms_barrier, &
-    w90commtype
+  use w90_comms, only: comms_setup, comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, &
+    mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, cell_volume
 
@@ -53,10 +53,16 @@ program postw90
   character(len=20) :: checkpoint
   ! this is a dummy that is not used in postw90, DO NOT use
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+  logical :: on_root = .false.
+  integer :: my_node_id, num_nodes
 
-  call comms_setup(world)
+  ! this can't work -- stdout and seedname aren't defined yet --FIXME JJ
+  call comms_setup(stdout, seedname, world)
 
-  !ispostw90 = .true.
+  my_node_id = mpirank(world)
+  num_nodes = mpisize(world)
+
+  if (my_node_id == 0) on_root = .true.
 
   if (on_root) then
     time0 = io_time()
@@ -238,7 +244,7 @@ program postw90
   ! Spin magnetic moment
   ! --------------------
   !
-  if (pw90_common%spin_moment) call spin_get_moment(stdout, seedname)
+  if (pw90_common%spin_moment) call spin_get_moment(param_input%iprint, stdout, seedname)
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also

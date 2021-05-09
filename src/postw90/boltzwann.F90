@@ -104,18 +104,25 @@ contains
     real(kind=dp)                                  :: Determinant
     integer :: tdf_unit, elcond_unit, sigmas_unit, seebeck_unit, kappa_unit, ndim
 
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
     integer :: LocalIdx, GlobalIdx
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects
     real(kind=dp), parameter :: TDF_exceeding_energy_times_smr = 3._dp
     real(kind=dp) :: TDF_exceeding_energy
     integer :: NumberZeroDet
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
+    integer, allocatable :: counts(:), displs(:)
+    integer :: my_node_id, num_nodes
+    logical :: on_root = .false.
 
-    if (on_root) then
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    if (my_node_id == 0) on_root = .true.
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
+
+    if (param_input%iprint > 0 .and. param_input%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
+
+    if (param_input%iprint > 0) then
       write (stdout, *)
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                   Boltzmann Transport (BoltzWann module)                  |'
@@ -128,7 +135,7 @@ contains
       write (stdout, *)
     end if
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
       if (boltz%dir_num_2d /= 0) then
         write (stdout, '(1x,a)') '>                                                                           <'
         write (stdout, '(1x,a)') '> NOTE! Using the 2D version for the calculation of the Seebeck             <'
@@ -138,13 +145,16 @@ contains
           write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is y.                 <'
         elseif (boltz%dir_num_2d == 3) then
           write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is z.                 <'
-        else
-          call io_error('Unrecognized value of boltz_2d_dir_num', stdout, seedname)
         end if
         write (stdout, '(1x,a)') '>                                                                           <'
         write (stdout, '(1x,a)') ''
       end if
     end if
+
+    ! separate error condition from info printout above (which may be avoided entirely in lib mode?)
+    if (boltz%dir_num_2d < 0 .or. boltz%dir_num_2d > 3) then
+      call io_error('Unrecognized value of boltz_2d_dir_num', stdout, seedname)
+    endif
 
     ! I precalculate the TempArray and the MuArray
     TempNumPoints = int(floor((boltz%temp_max - boltz%temp_min)/boltz%temp_step)) + 1
@@ -227,7 +237,7 @@ contains
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
-    call comms_array_split(TempNumPoints*MuNumPoints, counts, displs)
+    call comms_array_split(TempNumPoints*MuNumPoints, counts, displs, world)
 
     ! I allocate the arrays for the spectra
     ! Allocate at least 1 entry
@@ -654,8 +664,15 @@ contains
     real(kind=dp), parameter :: SPACING_THRESHOLD = 1.e-3
     real(kind=dp) :: min_spacing, max_spacing
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
-    if (on_root) then
+    integer :: my_node_id, num_nodes
+    logical :: on_root = .false.
+
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    if (my_node_id) on_root = .true.
+
+    if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
+    if (param_input%iprint > 0) then
       if (boltz%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
       else

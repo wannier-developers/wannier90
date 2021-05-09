@@ -92,7 +92,10 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    integer        :: ierr, ir, file_unit, num_wann_loc
+    integer :: ierr, ir, file_unit, num_wann_loc
+    logical :: on_root = .false.
+
+    if (mpirank(world) == 0) on_root = .true.
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
     !
@@ -170,8 +173,14 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    integer       :: loop_nodes, loop_kpt, i, ierr
+    integer       :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes
     real(kind=dp) :: sum
+    logical :: on_root = .false.
+
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+
+    if (my_node_id) on_root = .true.
 
     k_unit = io_file_unit()
     if (on_root) then
@@ -214,9 +223,9 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(int_kpts(1, 1), 3*num_int_kpts_on_node(my_node_id), root_id, stdout, &
+      call comms_recv(int_kpts(1, 1), 3*num_int_kpts_on_node(my_node_id), 0, stdout, &
                       seedname, world)
-      call comms_recv(weight(1), num_int_kpts_on_node(my_node_id), root_id, stdout, seedname, world)
+      call comms_recv(weight(1), num_int_kpts_on_node(my_node_id), 0, stdout, seedname, world)
     end if
 
     return
@@ -243,6 +252,9 @@ contains
     integer :: ierr
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    logical :: on_root = .false.
+
+    if (mpirank(world) == 0) on_root = .true.
 
     call comms_bcast(pw90_common%effective_model, 1, stdout, seedname, world)
     call comms_bcast(eig_found, 1, stdout, seedname, world)
@@ -507,6 +519,9 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: ierr, loop_kpt, m, i, j
+    logical :: on_root = .false.
+
+    if (mpirank(world) == 0) on_root = .true.
 
     if (.not. on_root) then
       ! wannier_centres is allocated in param_read, so only on root node
@@ -1467,6 +1482,8 @@ contains
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
     real(kind=dp) :: real_metric(3, 3)
     character(len=50), intent(in)  :: seedname
+    logical :: on_root = .false.
+    if (mpirank(world) == 0) on_root = .true.
 
     if (param_input%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 1, stdout, seedname)

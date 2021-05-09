@@ -1924,7 +1924,8 @@ contains
 
   ! extra postw90 memory
   subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann, stdout)
-    use w90_comms, only: on_root
+
+    ! JJ, should only be called from root node
     implicit none
     type(disentangle_type), intent(in) :: dis_data
     integer, intent(in) :: num_wann
@@ -1938,7 +1939,6 @@ contains
     integer :: NumPoints1, NumPoints2, NumPoints3, ndim
     real(kind=dp) :: TDF_exceeding_energy
 
-    !if (ispostw90) then
     if (pw90_calcs%boltzwann) then
       if (pw90_common%spin_decomp) then
         ndim = 3
@@ -1982,14 +1982,9 @@ contains
       mem_bw = mem_bw + ndim*NumPoints1*size_real                    !DOS_k
       mem_bw = mem_bw + ndim*NumPoints1*size_real                    !DOS_all
     end if
-    !end if
 
-    if (on_root) then
-      !if (ispostw90) then
-      if (pw90_calcs%boltzwann) &
-        write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:', (mem_param + mem_bw)/(1024**2), ' Mb'
-      !end if
-    endif
+    if (pw90_calcs%boltzwann) &
+      write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:', (mem_param + mem_bw)/(1024**2), ' Mb'
 
   end subroutine param_pw90_mem_estimate
 

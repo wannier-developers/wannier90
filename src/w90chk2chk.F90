@@ -612,7 +612,7 @@ program w90chk2chk
 ! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv
-  use w90_comms, only: comms_setup, comms_end, w90commtype
+  use w90_comms, only: comms_setup, comms_end, w90commtype, mpisize
   implicit none
 
   ! Export mode:
@@ -623,10 +623,12 @@ program w90chk2chk
   integer :: file_unit
   character(len=20) :: checkpoint
   character(len=50) :: seedname
+  integer :: num_nodes
 
   type(w90commtype) :: comm
 
   call comms_setup(stdout, seedname, comm)
+  num_nodes = mpisize(comm)
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')

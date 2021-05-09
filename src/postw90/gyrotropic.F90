@@ -69,12 +69,9 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, twopi, pw90_physical_constants
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
+    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_utility, only: utility_det3
-!   use w90_io, only: io_error, stdout, io_file_unit, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    !use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
-    !  weight
     use w90_postw90_common, only: cell_volume
     use w90_parameters, only: param_input, fermi
     use pw90_parameters, only: gyrotropic, berry, world
@@ -103,10 +100,14 @@ contains
     integer           :: loop_x, loop_y, loop_z, loop_xyz
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
+    integer :: my_node_id, num_nodes
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+
     if (fermi%n == 0) call io_error( &
       'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
 
     ! Mesh spacing in reduced coordinates
     !
@@ -195,7 +196,7 @@ contains
       endif
     endif
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
       flush(stdout)
       write (stdout, '(/,/,1x,a)') 'Properties calculated in module  g y r o t r o p i c'
       write (stdout, '(1x,a)') '------------------------------------------'
@@ -244,7 +245,7 @@ contains
 
       flush(stdout)
 
-    end if !on_root
+    end if ! param_input%iprint >0, aka "on_root"
 
     ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
@@ -296,7 +297,7 @@ contains
                                       'SUM', stdout, seedname, world)
     endif
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
 
       if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, stdout, seedname)
       write (stdout, '(1x,a)') ' '
@@ -440,7 +441,7 @@ contains
                                         comment=comment_tmp)
       endif
 
-    end if !on_root
+    end if !param_input%iprint >0, aka "on_root"
 
   end subroutine gyrotropic_main
 

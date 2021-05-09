@@ -44,7 +44,7 @@ contains
     !=======================================================!
 
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
+    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, param_input
@@ -73,6 +73,13 @@ contains
     complex(kind=dp), allocatable :: UU(:, :)
     real(kind=dp) :: del_eig(num_wann, 3)
     real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
+
+    logical :: on_root = .false.
+    integer :: my_node_id, num_nodes
+
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    if (my_node_id == 0) on_root = .true.
 
     num_freq = nint((dos_data%energy_max - dos_data%energy_min)/dos_data%energy_step) + 1
     if (num_freq == 1) num_freq = 2
@@ -103,7 +110,7 @@ contains
     allocate (dos_k(num_freq, ndim))
     allocate (dos_all(num_freq, ndim))
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
 
       if (param_input%timing_level > 1) call io_stopwatch('dos', 1, stdout, seedname)
 
@@ -145,7 +152,7 @@ contains
       !
       ! Unlike for optical properties, this should always work for the DOS
       !
-      if (on_root) write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
+      if (param_input%iprint > 0) write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
 
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
       ! read from file 'kpoint.dat'
@@ -174,7 +181,7 @@ contains
 
     else
 
-      if (on_root) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
+      if (param_input%iprint) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
 
       kweight = 1.0_dp/real(PRODUCT(dos_data%kmesh), kind=dp)
       do loop_tot = my_node_id, PRODUCT(dos_data%kmesh) - 1, num_nodes
@@ -212,7 +219,7 @@ contains
     !
     call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, world)
 
-    if (on_root) then
+    if (param_input%iprint) then
       write (stdout, '(1x,a)') 'Output data files:'
       write (stdout, '(/,3x,a)') trim(seedname)//'-dos.dat'
       dos_unit = io_file_unit()

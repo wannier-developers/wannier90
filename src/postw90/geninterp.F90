@@ -89,10 +89,15 @@ contains
     logical                                         :: absoluteCoords
     character(len=200)                              :: outdat_filename
 
-    integer, dimension(0:num_nodes - 1)               :: counts
-    integer, dimension(0:num_nodes - 1)               :: displs
+    integer, allocatable :: counts(:), displs(:)
+    integer :: my_node_id, num_nodes
+    logical :: on_root = .false.
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    if (my_node_id == 0) on_root = .true.
+
+    if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
     if (on_root) then
       write (stdout, *)
@@ -165,7 +170,7 @@ contains
     end if
 
     ! I precalculate how to split on different nodes
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, world)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, seedname)

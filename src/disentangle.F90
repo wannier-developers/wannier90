@@ -35,8 +35,8 @@ contains
 
   subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                       m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                      dis_data, kmesh_info, k_points, param_input, on_root, lsitesymmetry, sym, &
-                      stdout, seedname, comm)
+                      dis_data, kmesh_info, k_points, param_input, lsitesymmetry, sym, stdout, &
+                      seedname, comm)
 
     !==================================================================!
     !! Main disentanglement routine
@@ -49,7 +49,7 @@ contains
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: stdout
 
-    logical, intent(in) :: lsitesymmetry, on_root
+    logical, intent(in) :: lsitesymmetry
 
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -63,11 +63,12 @@ contains
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
     type(disentangle_type), intent(inout) :: dis_data
-    type(kmesh_info_type), intent(in)    :: kmesh_info
-    type(k_point_type), intent(in)    :: k_points
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(inout) :: param_input ! omega_invariant alone is modified
     type(sitesym_data), intent(inout) :: sym
     type(w90commtype), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
 
     ! internal variables
@@ -89,15 +90,17 @@ contains
     integer, allocatable :: counts(:)
     integer, allocatable :: displs(:)
     integer :: num_nodes, my_node_id
+    logical :: on_root = .false.
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
+    if (my_node_id == 0) on_root = .true.
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
     if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1, stdout, seedname)
 
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
 
     if (on_root) write (stdout, '(/1x,a)') &
       '*------------------------------- DISENTANGLE --------------------------------*'
@@ -120,7 +123,8 @@ contains
     ! (Sec. III.G SMV)
     if (linner) then
       if (lsitesymmetry) then
-        call io_error('in symmetry-adapted mode, frozen window not implemented yet', stdout, seedname) !YN: RS:
+        call io_error('in symmetry-adapted mode, frozen window not implemented yet', stdout, &
+                      seedname) !YN: RS:
       endif
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(param_input%timing_level, on_root, num_kpts, dis_data%ndimwin, &
@@ -135,9 +139,9 @@ contains
                                   on_root, u_matrix_opt, stdout, seedname)
 
     ! Slim down the original Mmn(k,b)
-    call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_data%ndimwin, on_root, &
-                         my_node_id, kmesh_info%nntot, kmesh_info%nnlist, nfirstwin, &
-                         m_matrix_orig_local, num_nodes, stdout, seedname)
+    call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_data%ndimwin, &
+                         kmesh_info%nntot, kmesh_info%nnlist, nfirstwin, m_matrix_orig_local, &
+                         stdout, seedname, comm)
 
     dis_data%lwindow = .false.
     do nkp = 1, num_kpts
@@ -162,7 +166,8 @@ contains
     else
       call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                              num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                             param_input, kmesh_info, dis_data, lsitesymmetry, sym, stdout, seedname)
+                             param_input, kmesh_info, dis_data, lsitesymmetry, sym, stdout, &
+                             seedname)
 
     end if
 
@@ -218,7 +223,8 @@ contains
       enddo
       rewind (page_unit)
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout, &
+                                   seedname)
       if (on_root) then
         deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
         allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
@@ -226,7 +232,8 @@ contains
       endif
       deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, &
+                                   seedname)
       do nkp = 1, counts(my_node_id)
         do nn = 1, kmesh_info%nntot
           read (page_unit) m_matrix_local(:, :, nn, nkp)
@@ -246,7 +253,8 @@ contains
       endif
       deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, &
+                                   seedname)
       ! Update the m_matrix accordingly
       do nkp = 1, counts(my_node_id)
         nkp_global = nkp + displs(my_node_id)
@@ -264,7 +272,8 @@ contains
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                          num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout, &
+                                   seedname)
 
     endif
 
@@ -299,7 +308,8 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, stdout, seedname)
+    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, stdout, &
+                                                                      seedname)
 
     return
     !================================================================!
@@ -378,14 +388,15 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: check_orthonorm', 2, stdout, seedname)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: check_orthonorm', 2, stdout, &
+                                                          seedname)
 
     return
     !================================================================!
   end subroutine internal_check_orthonorm
 
-  subroutine internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root, my_node_id, &
-                             nntot, nnlist, nfirstwin, m_matrix_orig_local, num_nodes, stdout, seedname)
+  subroutine internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, nntot, nnlist, nfirstwin, &
+                             m_matrix_orig_local, stdout, seedname, comm)
     !================================================================!
     !                                                                !
     !! This subroutine slims down the original Mmn(k,b), removing
@@ -397,7 +408,9 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: timing_level, num_nodes, my_node_id
+    type(w90commtype), intent(in) :: comm
+
+    integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
@@ -406,21 +419,28 @@ contains
 
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
 
-    logical, intent(in) :: on_root
     character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: nkp, nkp2, nn, i, j, m, n, ierr
     integer :: nkp_global
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
 
     complex(kind=dp), allocatable :: cmtmp(:, :)
 
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+    integer :: num_nodes, my_node_id
+    logical :: on_root = .false.
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+    if (my_node_id == 0) on_root = .true.
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
+
     if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 1, stdout, seedname)
 
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (cmtmp(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating cmtmp in dis_main', stdout, seedname)
@@ -1766,7 +1786,7 @@ contains
     if (ierr /= 0) call io_error('Error allocating cz in dis_extract', stdout, seedname)
 
     ! for MPI
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
     allocate (u_matrix_opt_loc(num_bands, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating u_matrix_opt_loc in dis_extract', stdout, seedname)
     ! Copy matrix elements from global U matrix to local U matrix
@@ -3180,7 +3200,8 @@ contains
     ! [if index(devel_flag,'compspace')>0]
 
     deallocate (history, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating history in dis_extract_gamma', stdout, seedname)
+    if (ierr /= 0) call io_error('Error deallocating history in dis_extract_gamma', stdout, &
+                                 seedname)
 
     deallocate (cham, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating cham in dis_extract_gamma', stdout, seedname)
@@ -3191,16 +3212,15 @@ contains
     deallocate (ceamp, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating ceamp in dis_extract_gamma', stdout, seedname)
     deallocate (wkomegai1, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract_gamma', stdout, seedname)
+    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract_gamma', stdout, &
+                                 seedname)
 
-!@@@
     deallocate (rz, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating rz in dis_extract_gamma', stdout, seedname)
     deallocate (cap_r, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating cap_r in dis_extract_gamma', stdout, seedname)
     deallocate (work, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating work in dis_extract_gamma', stdout, seedname)
-!@@@
     deallocate (cz, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating cz in dis_extract_gamma', stdout, seedname)
     deallocate (w, stat=ierr)
@@ -3239,12 +3259,10 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: num_bands, num_wann
-    integer, intent(in) :: nkp
-    integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level, stdout
+    integer, intent(in) :: num_bands, num_wann, nkp, nntot
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
-    integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
+    integer, intent(in) :: nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) !(num_bands,num_kpts)
 
@@ -3254,13 +3272,15 @@ contains
     complex(kind=dp), intent(in) :: cbw(:, :)
     complex(kind=dp), intent(in) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) !(num_bands, num_wann, num_kpts)
+
     character(len=50), intent(in)  :: seedname
 
     ! Internal variables
-    integer          :: l, m, n, p, q, nn, nkp2, ndimk
+    integer :: l, m, n, p, q, nn, nkp2, ndimk
     complex(kind=dp) :: csum
 
-    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 1, stdout, &
+                                            seedname)
 
     rmtrx = 0.0_dp
     ndimk = ndimwin(nkp) - ndimfroz(nkp)
@@ -3283,7 +3303,8 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 2, stdout, &
+                                            seedname)
 
     return
     !==================================================================!

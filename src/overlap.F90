@@ -17,39 +17,38 @@ module w90_overlap
   !! and performs simple operations on them.
 
   use w90_constants, only: dp, cmplx_0, cmplx_1
-  use w90_comms, only: comms_bcast, w90commtype
+  use w90_comms
 
   implicit none
 
   private
 
-!~  public :: overlap_dis_read
   public :: overlap_allocate
   public :: overlap_read
   public :: overlap_dealloc
   public :: overlap_project
   public :: overlap_project_gamma  ![ysl]
-!~  public :: overlap_check_m_symmetry
 
 contains
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, &
                               m_matrix_orig_local, m_matrix_orig, timing_level, nntot, num_kpts, &
-                              num_wann, num_bands, disentanglement, stdout, seedname)
+                              num_wann, num_bands, disentanglement, stdout, seedname, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
 
     use w90_io, only: io_error, io_stopwatch
-    use w90_comms, only: comms_array_split
 
+    ! passed variables
     integer, intent(in) :: nntot
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
+
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
     complex(kind=dp), allocatable :: u_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
@@ -57,29 +56,34 @@ contains
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+
     logical, intent(in) :: disentanglement
+
+    type(w90commtype), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
 
+    ! local variables
     integer :: ierr
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
+    integer :: num_nodes, my_node_id
+    logical :: on_root = .false.
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+
+    if (my_node_id == 0) on_root = .true.
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, stdout, seedname)
 
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating u_matrix in overlap_read', stdout, seedname)
     u_matrix = cmplx_0
-
-! m_matrix
-! m_matrix_orig
-! m_matrix_local
-! m_matrix_orig_local
-! a_matrix
-! u_matrix_opt
-! a_matrix
 
     if (disentanglement) then
       if (on_root) then
@@ -135,51 +139,63 @@ contains
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_comms, only: num_nodes, comms_array_split, comms_scatterv
     use w90_sitesym, only: sitesym_data
     use w90_param_types, only: parameter_input_type, kmesh_info_type
     use wannier_param_types, only: w90_calculation_type, select_projection_type
 
     implicit none
 
+    ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(select_projection_type), intent(in) :: select_proj
     type(parameter_input_type), intent(in) :: param_input
-    type(w90_calculation_type), intent(in) :: w90_calcs
-
+    type(select_projection_type), intent(in) :: select_proj
     type(sitesym_data), intent(in) :: sym
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands
-    integer, intent(in) :: stdout
-    integer, intent(in) :: num_proj
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
+    integer, intent(in) :: stdout
+
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+
     logical, intent(in) :: lsitesymmetry
-    type(w90commtype), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
 
-    integer :: nkp, nkp2, inn, nn, n, m
+    ! local variables
     integer :: mmn_in, amn_in, num_mmn, num_amn
-    integer :: nnl, nnm, nnn, ncount
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
+    integer :: nkp, nkp2, inn, nn, n, m
+    integer :: nnl, nnm, nnn, ncount
+    logical :: nn_found
     real(kind=dp) :: m_real, m_imag, a_real, a_imag
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
-    logical :: nn_found
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
+
+    integer :: num_nodes, my_node_id
+    logical :: on_root = .false.
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+
+    if (my_node_id == 0) on_root = .true.
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
 
     if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, seedname)
 
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
 
     if (w90_calcs%disentanglement) then
       if (on_root) then
@@ -619,7 +635,7 @@ contains
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                             a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname)
+                             a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
@@ -627,17 +643,23 @@ contains
 
     implicit none
 
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
-    complex(kind=dp), allocatable :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
-    complex(kind=dp), allocatable :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
-    character(len=50), intent(in)  :: seedname
-
-    integer :: ierr
+    ! passed variables
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: a_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig_local(:, :, :, :)
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: comm
+
+    ! local variables
+    integer :: ierr
+    logical :: on_root = .false.
+
+    if (mpirank(comm) == 0) on_root = .true.
 
     if (allocated(u_matrix_opt)) then
       deallocate (u_matrix_opt, stat=ierr)
@@ -657,21 +679,6 @@ contains
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in overlap_dealloc', stdout, seedname)
     endif
-!~![ysl-b]
-!~    if (allocated( ph_g)) then
-!~       deallocate( ph_g, stat=ierr )
-!~       if (ierr/=0) call io_error('Error deallocating ph_g in overlap_dealloc')
-!~    endif
-!~![ysl-e]
-
-!    if (on_root) then
-!    deallocate ( m_matrix, stat=ierr )
-!    if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
-!    endif
-!    deallocate ( m_matrix_local, stat=ierr )
-!    if (ierr/=0) call io_error('Error deallocating m_matrix_local in overlap_dealloc')
-!    deallocate ( u_matrix, stat=ierr )
-!    if (ierr/=0) call io_error('Error deallocating u_matrix in overlap_dealloc')
     if (on_root) then
       if (allocated(m_matrix)) then
         deallocate (m_matrix, stat=ierr)
@@ -707,28 +714,29 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
-    use w90_comms, only: comms_array_split, comms_scatterv, comms_gatherv
 
     implicit none
 
-!   from w90_parameters
-    integer, intent(in) :: nntot
-    integer, intent(in) :: stdout
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: nnlist(:, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
-    logical, intent(in) :: lsitesymmetry
-    character(len=50), intent(in)  :: seedname
-!   end w90_parameters
     type(sitesym_data), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
-    ! internal variables
+    integer, intent(in) :: nnlist(:, :)
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
+
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+
+    logical, intent(in) :: lsitesymmetry
+
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
     real(kind=dp), allocatable :: svals(:)
     real(kind=dp)                 :: rwork(5*num_bands)
@@ -736,13 +744,22 @@ contains
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cvdag(:, :)
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
+
+    ! pllel setup
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+    integer :: num_nodes, my_node_id
+    logical :: on_root = .false.
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+    if (my_node_id == 0) on_root = .true.
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 1) call io_stopwatch('overlap: project', 1, stdout, seedname)
 
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (svals(num_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating svals in overlap_project', stdout, seedname)

@@ -29,7 +29,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(stdout, seedname)
+  subroutine spin_get_moment(iprint, stdout, seedname)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -37,26 +37,30 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, pi, cmplx_i
-    use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce, w90commtype
+    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
     use pw90_parameters, only: pw90_spin, berry, world !wanint_kpoint_file
     use w90_parameters, only: fermi
     use w90_get_oper, only: get_HH_R, get_SS_R
 
-    integer, intent(in) :: stdout
+    integer, intent(in) :: stdout, iprint
     character(len=50), intent(in)  :: seedname
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv
 
+    integer :: my_node_id, num_nodes
+
+    my_node_id = mpirank(world); 
+    num_nodes = mpisize(world); 
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
     call get_HH_R(stdout, seedname)
     call get_SS_R(stdout, seedname)
 
-    if (on_root) then
+    if (iprint > 0) then
       write (stdout, '(/,/,1x,a)') '------------'
       write (stdout, '(1x,a)') 'Calculating:'
       write (stdout, '(1x,a)') '------------'
@@ -66,7 +70,7 @@ contains
     spn_all = 0.0_dp
     if (berry%wanint_kpoint_file) then
 
-      if (on_root) then
+      if (iprint > 0) then
         write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
         write (stdout, '(5x,a)') &
           'WARNING: - IBZ implementation is currently limited to simple cases:'
@@ -86,7 +90,7 @@ contains
 
     else
 
-      if (on_root) &
+      if (iprint > 0) &
         write (stdout, '(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
       kweight = 1.0_dp/real(PRODUCT(pw90_spin%spin_kmesh), kind=dp)
       do loop_tot = my_node_id, PRODUCT(pw90_spin%spin_kmesh) - 1, num_nodes
@@ -112,7 +116,7 @@ contains
     !
     spn_mom(1:3) = -spn_all(1:3)
 
-    if (on_root) then
+    if (iprint > 0) then
       write (stdout, '(/,1x,a)') 'Spin magnetic moment (Bohr magn./cell)'
       write (stdout, '(1x,a,/)') '===================='
       write (stdout, '(1x,a18,f11.6)') 'x component:', spn_mom(1)

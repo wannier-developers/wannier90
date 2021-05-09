@@ -76,106 +76,47 @@ contains
 
     implicit none
 
-    integer, intent(in) :: num_wann
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-
-    !integer, intent(in) :: conv_noise_num
-    !integer, intent(in) :: num_guide_cycles, num_no_guide_iter
-    !integer, intent(in) :: num_print_cycles, num_dump_cycles
-    !integer, intent(in) :: conv_window
-    !integer, intent(in) :: num_cg_steps, num_iter
-    !integer, intent(in) :: optimisation
-    !integer, intent(in) :: slwf_num
-    !logical, intent(in) :: lfixstep
-    !logical, intent(inout) :: guiding_centres
-    !logical, intent(in) :: precond
-    !logical, intent(in) :: selective_loc, slwf_constrain
-    !logical, intent(in) :: translate_home_cell
-    !logical, intent(in) :: write_proj
-    !logical, intent(in) :: write_r2mn
-    !logical, intent(in) :: write_vdw_data, write_hr_diag
-    !real(kind=dp), intent(in) :: ccentres_cart(:, :)
-    !real(kind=dp), intent(in) :: conv_noise_amp
-    !real(kind=dp), intent(in) :: conv_tol
-    !real(kind=dp), intent(in) :: fixed_step
-    !real(kind=dp), intent(in) :: proj_site(:, :)
-    !real(kind=dp), intent(inout) :: omega_total, omega_tilde
-    !real(kind=dp), intent(in) :: slwf_lambda
-    !real(kind=dp), intent(in) :: trial_step
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    !integer, intent(in) :: neigh(:, :)
-    !integer, intent(in) :: nnh
-    !integer, intent(in) :: nnlist(:, :)
-    !integer, intent(in) :: nntot
-    !real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
-    !real(kind=dp), intent(in) :: wb(:)
-    !real(kind=dp), intent(in) :: wbtot
-    type(parameter_input_type), intent(inout) :: param_input
-    !integer, intent(in) :: iprint, timing_level
-    !integer, intent(in) :: num_valence_bands, num_elec_per_state
-    !real(kind=dp), intent(in) :: ws_distance_tol
-    !integer, intent(in) :: ws_search_size(3)
-    !logical, intent(in) :: have_disentangled
-    !logical, intent(in) :: write_xyz
-    !real(kind=dp), intent(inout) :: omega_invariant
-    !character(len=*), intent(in) :: length_unit
-    !real(kind=dp), intent(in) :: lenconfac
-    !character(len=20), intent(in) :: bands_plot_mode
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    integer, intent(in) :: num_kpts
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    integer, intent(in) :: num_proj
-    type(wannier_data_type), intent(inout) :: wann_data
-    !real(kind=dp), intent(inout) :: wannier_centres(:, :)
-    !real(kind=dp), intent(inout) :: wannier_spreads(:)
-    type(k_point_type), intent(in) :: k_points
-    integer, intent(in):: num_bands
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-    type(disentangle_type), intent(in) :: dis_data
-    !integer, intent(in) :: ndimwin(:)
-    !logical, intent(in) :: lwindow(:, :)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    type(atom_data_type), intent(in) :: atoms
-    !integer, intent(in) :: num_atoms
-    !integer, intent(in) :: num_species
-    !integer, intent(in) :: atoms_species_num(:)
-    !real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-    !character(len=2), intent(in) :: atoms_symbol(:)
-    logical, intent(in) :: lsitesymmetry
-    integer, intent(in) :: stdout
-    integer, intent(in) :: mp_grid(3)
-    type(w90_calculation_type), intent(in) :: w90_calcs
-    !logical, intent(in) :: bands_plot
-    !logical, intent(in) :: transport
-    character(len=*), intent(in) :: transport_mode
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
-    !real(kind=dp), intent(inout) :: translation_centre_frac(3)
-    !logical, intent(in) :: automatic_translation
-
-    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-
-    !   logical, intent(inout) :: ham_have_setup
-!   logical, intent(inout) :: have_translated
-!   logical, intent(inout) :: use_translation
-    type(ham_logical), intent(inout) :: hmlg
-
     ! passed variables
+    type(atom_data_type), intent(in) :: atoms
+    type(disentangle_type), intent(in) :: dis_data
+    type(ham_logical), intent(inout) :: hmlg
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(inout) :: param_input
+    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(sitesym_data), intent(in) :: sym
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(inout) :: wann_data
 
-!   from w90_hamiltonian
-    integer, intent(inout) :: rpt_origin
-    integer, intent(inout) :: nrpts
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_proj
+    integer, intent(in) :: num_wann
+    integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: shift_vec(:, :)
-    integer, intent(inout), allocatable :: irvec(:, :)
-    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-!   end w90_hamiltonian
+    integer, intent(inout) :: nrpts
+    integer, intent(inout) :: rpt_origin
+    integer, intent(in) :: stdout
 
-    type(sitesym_data), intent(in) :: sym
-    type(w90commtype), intent(in) :: comm
-    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+
+    complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+
+    logical, intent(in) :: lsitesymmetry
+
+    character(len=*), intent(in) :: transport_mode
+    character(len=50), intent(in) :: seedname
 
     ! local variables
     type(localisation_vars) :: old_spread
@@ -191,18 +132,12 @@ contains
     ! for MPI
     complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
     complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-    !complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
-    !complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
-    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
-    ! from process to process
-    ! in the main loop
+    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent from process to process in the main loop
     complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
     integer, allocatable  :: counts(:)
     integer, allocatable  :: displs(:)
 
-    logical :: first_pass
-    !! Used to trigger the calculation of the invarient spread
-    !! we only need to do this on entering wann_main (_gamma)
+    logical :: first_pass !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
     real(kind=dp) :: lambda_loc
     ! end of wannierise module data
 
@@ -253,12 +188,14 @@ contains
     real(kind=dp), allocatable :: rnr0n2(:)
 
     ! pllel setup
+    logical :: on_root = .false.
     integer :: num_nodes, my_node_id
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
+    if (my_node_id == 0) on_root = .true.
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 1, stdout, seedname)
+    if (param_input%timing_level > 0 .and. param_input%iprint > 0) call io_stopwatch('wann: main', 1, stdout, seedname)
 
     first_pass = .true.
 
@@ -347,7 +284,7 @@ contains
     if (ierr /= 0) then
       call io_error('Error in allocating displs in wann_main', stdout, seedname)
     end if
-    call comms_array_split(num_kpts, counts, displs)
+    call comms_array_split(num_kpts, counts, displs, comm)
     allocate (rnkb_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating rnkb_loc in wann_main', stdout, seedname)
     allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
@@ -419,7 +356,7 @@ contains
 !       end if
     end if
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
       write (stdout, *)
       write (stdout, '(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
       write (stdout, '(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
@@ -436,7 +373,7 @@ contains
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout, seedname, comm)
+                       stdout, seedname, param_input%iprint, comm)
       irguide = 1
     endif
 
@@ -472,7 +409,7 @@ contains
     old_spread%om_tot = 0.0_dp
 
     ! print initial state
-    if (on_root) then
+    if (param_input%iprint > 0) then
       write (stdout, '(1x,a78)') repeat('-', 78)
       write (stdout, '(1x,a)') 'Initial State'
       do iw = 1, num_wann
@@ -534,13 +471,13 @@ contains
       if ((param_wannierise%num_dump_cycles .gt. 0) .and. &
           (mod(iter, param_wannierise%num_dump_cycles) .eq. 0)) ldump = .true.
 
-      if (lprint .and. on_root) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
+      if (lprint .and. param_input%iprint > 0) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
 
       if (param_wannierise%guiding_centres .and. (iter .gt. param_wannierise%num_no_guide_iter) &
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                         stdout, seedname, comm)
+                         stdout, seedname, param_input%iprint, comm)
         irguide = 1
       endif
 
@@ -550,14 +487,15 @@ contains
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
                          cdodq_loc, lambda_loc, param_input%timing_level, stdout, seedname, sym, &
-                         comm cdodq)
+                         comm, param_input%iprint, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, seedname, sym, comm)
+                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, seedname, sym, &
+                         comm, param_input%iprint)
       endif
 
-      if (lprint .and. param_input%iprint > 2 .and. on_root) &
+      if (lprint .and. param_input%iprint > 2) &
         write (stdout, *) ' LINE --> Iteration                     :', iter
 
       ! calculate search direction (cdq)
@@ -615,7 +553,7 @@ contains
       endif
 
       ! print line search information
-      if (lprint .and. param_input%iprint > 2 .and. on_root) then
+      if (lprint .and. param_input%iprint > 2) then
         write (stdout, *) ' LINE --> Spread at initial point       :', &
           wann_spread%om_tot*param_input%lenconfac**2
         if (.not. param_wannierise%lfixstep) &
@@ -678,7 +616,7 @@ contains
       endif
 
       ! print the new centers and spreads
-      if (lprint .and. on_root) then
+      if (lprint .and. param_input%iprint > 0) then
         do iw = 1, num_wann
           write (stdout, 1000) iw, (rave(ind, iw)*param_input%lenconfac, ind=1, 3), &
             (r2ave(iw) - rave2(iw))*param_input%lenconfac**2
@@ -796,7 +734,7 @@ contains
     call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
                        u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout, &
                        seedname, comm)
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
 
     ! Evaluate the penalty functional
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
@@ -808,7 +746,7 @@ contains
       end do
     end if
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
       write (stdout, '(1x,a)') 'Final State'
       do iw = 1, num_wann
         write (stdout, 1000) iw, (rave(ind, iw)*param_input%lenconfac, ind=1, 3), &
@@ -866,7 +804,7 @@ contains
                               u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
                               irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
 
-      if (on_root) then
+      if (param_input%iprint > 0) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
         write (stdout, '(3x,a)') '  n        <0n|H|0n> (eV)'
@@ -881,12 +819,13 @@ contains
     if (param_wannierise%guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout, seedname, comm)
+                       stdout, seedname, param_input%iprint, comm)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout, seedname)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, &
+                              param_input%iprint, stdout, seedname)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
@@ -904,7 +843,8 @@ contains
     ! calculate and write projection of WFs on original bands in outer window
     if (param_input%have_disentangled .and. param_wannierise%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_data%lwindow, param_input%timing_level, stdout, seedname)
+                                dis_data%lwindow, param_input%timing_level, param_input%iprint, &
+                                stdout, seedname)
 
     ! aam: write data required for vdW utility
     if (param_wannierise%write_vdw_data .and. on_root) then
@@ -1001,7 +941,7 @@ contains
     deallocate (history, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating history in wann_main', stdout, seedname)
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 2, stdout, seedname)
+    if (param_input%timing_level > 0 .and. param_input%iprint > 0) call io_stopwatch('wann: main', 2, stdout, seedname)
 
     return
 
@@ -1223,7 +1163,7 @@ contains
       real(kind=dp) :: alpha_precond
       integer :: irpt, loop_kpt
 
-      if (param_input%timing_level > 1 .and. on_root) &
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('wann: main: search_direction', 1, stdout, seedname)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
@@ -1344,7 +1284,7 @@ contains
       ! local
       complex(kind=dp), external :: zdotc
 
-      if ((.not. param_wannierise%precond) .and. param_input%timing_level > 1 .and. on_root) &
+      if ((.not. param_wannierise%precond) .and. param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('wann: main: search_direction', 1, stdout, seedname)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
@@ -1366,7 +1306,7 @@ contains
           gcfac = gcnorm1/gcnorm0     ! Fletcher-Reeves CG coefficient
           ! prevent CG coefficient from getting too large
           if (gcfac .gt. 3.0_dp) then
-            if (lprint .and. param_input%iprint > 2 .and. on_root) &
+            if (lprint .and. param_input%iprint > 2) &
               write (stdout, *) ' LINE --> CG coeff too large. Resetting :', gcfac
             gcfac = 0.0_dp
             ncg = 0
@@ -1392,7 +1332,7 @@ contains
 
       ! add some random noise to search direction, if required
       if (lrandom) then
-        if (on_root) write (stdout, '(a,i3,a,i3,a)') &
+        if (param_input%iprint > 0) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', &
           param_wannierise%conv_noise_num, ' ]'
         call internal_random_noise(param_wannierise%conv_noise_amp, num_wann, counts, cdq_loc, &
@@ -1410,7 +1350,7 @@ contains
       if (doda0 .gt. 0.0_dp) then
         ! if doing a CG step then reset CG
         if (ncg .gt. 0) then
-          if (lprint .and. param_input%iprint > 2 .and. on_root) &
+          if (lprint .and. param_input%iprint > 2 .and. param_input%iprint > 0) &
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
           if (lrandom) call internal_random_noise(param_wannierise%conv_noise_amp, num_wann, &
@@ -1425,14 +1365,14 @@ contains
           doda0 = doda0/(4.0_dp*wbtot)
           ! if search direction still uphill then reverse search direction
           if (doda0 .gt. 0.0_dp) then
-            if (lprint .and. param_input%iprint > 2 .and. on_root) &
+            if (lprint .and. param_input%iprint > 2 .and. param_input%iprint > 0) &
               write (stdout, *) ' LINE --> Search direction still uphill: reversing'
             cdq_loc(:, :, :) = -cdq_loc(:, :, :)
             doda0 = -doda0
           endif
           ! if doing a SD step then reverse search direction
         else
-          if (lprint .and. param_input%iprint > 2 .and. on_root) &
+          if (lprint .and. param_input%iprint > 2 .and. param_input%iprint > 0) &
             write (stdout, *) ' LINE --> Search direction uphill: reversing'
           cdq_loc(:, :, :) = -cdq_loc(:, :, :)
           doda0 = -doda0
@@ -1442,7 +1382,7 @@ contains
       !~     ! calculate search direction
       !~     cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
-      if (param_input%timing_level > 1 .and. on_root) &
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('wann: main: search_direction', 2, stdout, seedname)
 
       lrandom = .false.
@@ -1480,7 +1420,7 @@ contains
       ! local
       real(kind=dp) :: fac, shift, eqa, eqb
 
-      if (param_input%timing_level > 1 .and. on_root) &
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('wann: main: optimal_step', 1, stdout, seedname)
 
       fac = trial_spread%om_tot - wann_spread%om_tot
@@ -1499,7 +1439,7 @@ contains
         falphamin = wann_spread%om_tot &
                     - 0.25_dp*eqb*eqb/(fac*eqa)*(trial_step**2)
       else
-        if (lprint .and. param_input%iprint > 2 .and. on_root) write (stdout, *) &
+        if (lprint .and. param_input%iprint > 2) write (stdout, *) &
           ' LINE --> Parabolic line search unstable: using trial step'
         lquad = .false.
         alphamin = trial_step
@@ -1507,14 +1447,14 @@ contains
       endif
 
       if (doda0*alphamin .gt. 0.0_dp) then
-        if (lprint .and. param_input%iprint > 2 .and. on_root) write (stdout, *) &
+        if (lprint .and. param_input%iprint > 2) write (stdout, *) &
           ' LINE --> Line search unstable : using trial step'
         lquad = .false.
         alphamin = trial_step
         falphamin = trial_spread%om_tot
       endif
 
-      if (param_input%timing_level > 1 .and. on_root) &
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('wann: main: optimal_step', 2, stdout, seedname)
 
       return
@@ -1568,7 +1508,7 @@ contains
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
 
-      if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: u_and_m', 1, stdout, seedname)
+      if (timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: main: u_and_m', 1, stdout, seedname)
 
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
@@ -1580,16 +1520,16 @@ contains
         ! Hermitian matrix eigen-solver
         call zheev('V', 'U', num_wann, tmp_cdq, num_wann, evals, cwork, 4*num_wann, rwork, info)
         if (info .ne. 0) then
-          if (on_root) write (stdout, *) &
+          if (param_input%iprint > 0) write (stdout, *) &
             'wann_main: ZHEEV in internal_new_u_and_m failed, info= ', info
-          if (on_root) write (stdout, *) '           trying Schur decomposition instead'
+          if (param_input%iprint > 0) write (stdout, *) '           trying Schur decomposition instead'
 !!$            call io_error('wann_main: problem in ZHEEV in internal_new_u_and_m')
           tmp_cdq(:, :) = cdq_loc(:, :, nkp_loc)
           call zgees('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
                      cwschur1, cz, num_wann, cwschur2, 10*num_wann, cwschur3, &
                      cwschur4, info)
           if (info .ne. 0) then
-            if (on_root) write (stdout, *) 'wann_main: SCHUR failed, info= ', info
+            if (param_input%iprint > 0) write (stdout, *) 'wann_main: SCHUR failed, info= ', info
             call io_error('wann_main: problem computing schur form 1', stdout, seedname)
           endif
           do i = 1, num_wann
@@ -1853,7 +1793,7 @@ contains
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, &
-                         seedname, comm, m_w)
+                         seedname, iprint, comm, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1862,7 +1802,7 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
-    use w90_comms, only: comms_allreduce, w90commtype
+    use w90_comms, only: comms_allreduce, w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type
 
     implicit none
@@ -1889,12 +1829,13 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     logical, intent(in) :: gamma_only
     ! end of vars from parameter module
-    integer, intent(in) :: counts(0:)
-    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     complex(kind=dp), allocatable, intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(out) :: rnkb(:, :, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    integer, intent(in) :: iprint
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     character(len=50), intent(in)  :: seedname
@@ -1909,8 +1850,11 @@ contains
     real(kind=dp)    :: xx0, det, brn
     complex(kind=dp) :: csumt
     integer :: loop_wann, na, nkp, i, j, nn, ind, m, nkp_loc
+    integer :: my_node_id
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 1, stdout, seedname)
+    my_node_id = mpirank(comm)
+
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: phases', 1, stdout, seedname)
 
     csum = cmplx_0; xx = 0.0_dp
 
@@ -2086,7 +2030,7 @@ contains
 !       enddo
 !    enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 2, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: phases', 2, stdout, seedname)
 
     return
 
@@ -2105,7 +2049,7 @@ contains
     ! Radu Miron at Implerial College London
     !===================================================================
     use w90_io, only: io_stopwatch
-    use w90_comms, only: comms_allreduce, w90commtype
+    use w90_comms, only: comms_allreduce, w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type, parameter_input_type
     use wannier_param_types, only: param_wannierise_type
 
@@ -2149,8 +2093,11 @@ contains
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
     integer :: ind, nkp, nn, m, n, iw, nkp_loc
+    integer :: my_node_id
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 1, stdout, seedname)
+    my_node_id = mpirank(comm)
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: omega', 1, stdout, seedname)
 
     do nkp_loc = 1, counts(my_node_id)
       nkp = nkp_loc + displs(my_node_id)
@@ -2391,7 +2338,7 @@ contains
       wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
     end if
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: omega', 2, stdout, seedname)
 
     return
 
@@ -2400,7 +2347,8 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, stdout, seedname, sym, comm, cdodq)
+                         cdodq_loc, lambda_loc, timing_level, stdout, seedname, sym, comm, iprint, &
+                         cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2413,7 +2361,7 @@ contains
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
-      w90commtype
+      w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: param_wannierise_type
 
@@ -2441,7 +2389,7 @@ contains
 !    integer, intent(in) :: slwf_num
 !   real(kind=dp), intent(in) :: ccentres_cart(:, :)
     logical, intent(in) :: lsitesymmetry
-    integer, intent(in) :: timing_level
+    integer, intent(in) :: timing_level, iprint
     character(len=50), intent(in)  :: seedname
 
     ! end parameters
@@ -2460,8 +2408,11 @@ contains
     real(kind=dp), allocatable :: r0kb(:, :, :)
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
+    integer :: my_node_id
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 1, stdout, seedname)
+    my_node_id = mpirank(comm)
+
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: domega', 1, stdout, seedname)
 
     allocate (cr(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating cr in wann_domega', stdout, seedname)
@@ -2656,7 +2607,7 @@ contains
     deallocate (crt, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating crt in wann_domega', stdout, seedname)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 2, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: domega', 2, stdout, seedname)
 
     return
 
@@ -2690,7 +2641,7 @@ contains
 
   !==================================================================!
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
-                                  timing_level, stdout, seedname)
+                                  timing_level, iprint, stdout, seedname)
     !==================================================================!
     !                                                                  !
     ! Calculates and writes the projection of each Wannier function    !
@@ -2710,7 +2661,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     real(kind=dp), intent(in) :: eigval(:, :)
     logical, intent(in) :: lwindow(:, :)
-    integer, intent(in) :: timing_level
+    integer, intent(in) :: timing_level, iprint
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     ! end of vars from parameter module
@@ -2718,9 +2669,9 @@ contains
     integer :: nw, nb, nkp, counter
     real(kind=dp) :: summ
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 1, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: calc_projection', 1, stdout, seedname)
 
-    if (on_root) then
+    if (iprint > 0) then
       write (stdout, '(/1x,a78)') repeat('-', 78)
       write (stdout, '(1x,9x,a)') &
         'Projection of Bands in Outer Window on all Wannier Functions'
@@ -2738,14 +2689,14 @@ contains
           do nw = 1, num_wann
             summ = summ + abs(u_matrix_opt(counter, nw, nkp))**2
           enddo
-          if (on_root) write (stdout, '(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
+          if (iprint > 0) write (stdout, '(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
             nkp, nb, eigval(nb, nkp), summ
         endif
       enddo
     enddo
-    if (on_root) write (stdout, '(1x,a78/)') repeat('-', 78)
+    if (iprint > 0) write (stdout, '(1x,a78/)') repeat('-', 78)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 2, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: calc_projection', 2, stdout, seedname)
 
     return
 
@@ -3006,7 +2957,8 @@ contains
   end subroutine wann_write_vdw_data
 
   !========================================!
-  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, stdout, seedname)
+  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
+                                  seedname)
     !========================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
@@ -3015,17 +2967,16 @@ contains
 
     implicit none
 
-    ! from parameters
-    integer, intent(in) :: num_kpts, num_wann
+    ! passed variables
+    integer, intent(in) :: num_kpts, num_wann, timing_level, iprint, stdout
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
+    ! local variables
     integer :: nkp, i, j, m
     complex(kind=dp) :: ctmp1, ctmp2
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 1, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: check_unitarity', 1, stdout, seedname)
 
     do nkp = 1, num_kpts
       do i = 1, num_wann
@@ -3038,23 +2989,23 @@ contains
           enddo
           if ((i .eq. j) .and. (abs(ctmp1 - cmplx_1) .gt. eps5)) &
             then
-            if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
+            if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
             call io_error('wann_check_unitarity: error 1', stdout, seedname)
           endif
           if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) &
             then
-            if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
+            if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
             call io_error('wann_check_unitarity: error 2', stdout, seedname)
           endif
           if ((i .ne. j) .and. (abs(ctmp1) .gt. eps5)) then
-            if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
+            if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
             call io_error('wann_check_unitarity: error 3', stdout, seedname)
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
-            if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
+            if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
             call io_error('wann_check_unitarity: error 4', stdout, seedname)
           endif
@@ -3062,7 +3013,7 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 2, stdout, seedname)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: check_unitarity', 2, stdout, seedname)
 
     return
 
@@ -3160,7 +3111,7 @@ contains
     integer :: nkp, nn, nb, na, ind
     real(kind=dp) :: omt1, omt2, omt3
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: svd_omega_i', 1, stdout, seedname)
 
     allocate (cw1(10*num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating cw1 in wann_svd_omega_i', stdout, seedname)
@@ -3205,7 +3156,7 @@ contains
     omt1 = omt1/real(num_kpts, dp)
     omt2 = omt2/real(num_kpts, dp)
     omt3 = omt3/real(num_kpts, dp)
-    if (on_root) then
+    if (param_input%iprint > 0) then
       write (stdout, *) ' '
       write (stdout, '(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ', &
         omt1*param_input%lenconfac**2, '('//trim(param_input%length_unit)//'^2)'
@@ -3228,7 +3179,7 @@ contains
     deallocate (cw1, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating cw1 in wann_svd_omega_i', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: svd_omega_i', 2, stdout, seedname)
 
     return
 
@@ -3256,6 +3207,8 @@ contains
     use w90_comms, only: w90commtype
 
     implicit none
+
+    !JJ this function has not yet been pllelised
 
     !subroutine args from parameters module
     integer, intent(in) :: num_wann
@@ -3451,9 +3404,9 @@ contains
 !~       irguide=1
 !~    endif
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
-                       num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
+                       .true., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
+                       stdout, seedname, param_input%iprint, comm)
       irguide = 1
     endif
 
@@ -3519,7 +3472,7 @@ contains
       ldump = .false.
       if ((param_wannierise%num_dump_cycles .gt. 0) .and. (mod(iter, param_wannierise%num_dump_cycles) .eq. 0)) ldump = .true.
 
-      if (lprint .and. on_root) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
+      if (lprint .and. param_input%iprint > 0) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
 
 !~       ! initialize rguide as rave for use_bloch_phases
 !~       if ( (iter.gt.num_no_guide_iter) .and. lguide ) then
@@ -3534,9 +3487,9 @@ contains
 
       if (param_wannierise%guiding_centres .and. (iter .gt. param_wannierise%num_no_guide_iter) &
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
-        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
-                         num_kpts, m_matrix, .true., counts, displs, &
-                         m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname, comm, m_w)
+        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
+                         .true., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
+                         stdout, seedname, param_input%iprint, comm, m_w)
         irguide = 1
       endif
 
@@ -3635,7 +3588,7 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*param_input%lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (param_input%write_xyz .and. on_root) then
+    if (param_input%write_xyz) then
       call wann_write_xyz(param_wannierise%translate_home_cell, num_wann, wann_data%centres, &
                           real_lattice, recip_lattice, atoms, &
                           param_input, &
@@ -3643,20 +3596,20 @@ contains
     endif
 
     if (param_wannierise%guiding_centres) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
-                       num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
+                       .true., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
+                       stdout, seedname, param_input%iprint, comm)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout, seedname)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, &
+                              param_input%iprint, stdout, seedname)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
     if (param_input%iprint > 2) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, &
-                            stdout, seedname)
+      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, stdout, seedname)
     endif
 
     ! write matrix elements <m|r^2|n> to file
@@ -3666,8 +3619,8 @@ contains
 
     ! calculate and write projection of WFs on original bands in outer window
     if (param_input%have_disentangled .and. param_wannierise%write_proj) &
-      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, &
-                                eigval, lwindow, param_input%timing_level, stdout, seedname)
+      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
+                                param_input%timing_level, param_input%iprint, stdout, seedname)
 
     ! aam: write data required for vdW utility
     if (param_wannierise%write_vdw_data) then

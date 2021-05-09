@@ -45,7 +45,6 @@ contains
 
     use w90_comms
     use w90_constants, only: dp, twopi, eps8
-!   use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch, stdout
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_postw90_common, only: pw90common_fourier_R_to_k
@@ -61,8 +60,6 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
-
-    integer, dimension(0:num_nodes - 1) :: counts, displs
 
     integer           :: iloc, itot, i1, i2, n, n1, n2, n3, i, nkpts, my_nkpts
     integer           :: scriptunit, dataunit, loop_kpt
@@ -88,6 +85,16 @@ contains
                                      bandsdata(:, :), my_bandsdata(:, :), &
                                      zdata(:, :), my_zdata(:, :)
     logical, allocatable          :: spnmask(:, :), my_spnmask(:, :)
+
+    integer, allocatable :: counts(:), displs(:)
+    logical :: on_root = .false.
+    integer :: my_node_id, num_nodes
+
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
+    if (my_node_id == 0) on_root = .true.
 
     plot_fermi_lines = index(kslice%task, 'fermi_lines') > 0
     plot_curv = index(kslice%task, 'curv') > 0
@@ -174,7 +181,7 @@ contains
     nkpts = (kslice%kmesh2d(1) + 1)*(kslice%kmesh2d(2) + 1)
 
     ! Partition set of k-points into junks
-    call comms_array_split(nkpts, counts, displs); 
+    call comms_array_split(nkpts, counts, displs, world); 
     my_nkpts = counts(my_node_id)
 
     allocate (my_coords(2, my_nkpts))

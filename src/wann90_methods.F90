@@ -13,11 +13,8 @@
 !------------------------------------------------------------!
 
 module wannier_methods
-  ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
-! use w90_io, only: stdout, maxlen
-! use w90_io, only: stdout
   use w90_param_types
   use w90_param_methods
   use wannier_param_types
@@ -38,7 +35,7 @@ module wannier_methods
   integer, allocatable, save :: select_projections(:)
 
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
-  logical                            :: hr_plot
+  logical :: hr_plot
 
   ! was in driver, only used by wannier_lib
   type(projection_type), save, public :: proj
@@ -53,15 +50,12 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
-                        param_wannierise, lsitesymmetry, symmetrize_eps, &
-                        wann_data, param_hamil, kmesh_data, kmesh_info, &
-                        k_points, num_kpts, dis_data, fermi_surface_data, &
-                        fermi, tran, atoms, num_bands, num_wann, eigval, &
-                        mp_grid, num_proj, select_proj, real_lattice, &
-                        recip_lattice, spec_points, eig_found, library, &
+  subroutine param_read(driver, w90_calcs, pp_calc, param_input, param_plot, param_wannierise, &
+                        lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
+                        kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
+                        tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, select_proj, &
+                        real_lattice, recip_lattice, spec_points, eig_found, library, &
                         library_param_read_first_pass, bohr, stdout, seedname)
-    !subroutine param_read(library)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -72,8 +66,6 @@ contains
     !                                                                  !
     !===================================================================
     use w90_constants, only: w90_physical_constants
-    !use w90_utility, only: utility_recip_lattice
-!   use w90_io, only: io_error !, io_file_unit, seedname, post_proc_flag
     implicit none
 
     !data from parameters module
@@ -1107,13 +1099,11 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(driver, w90_calcs, param_input, param_plot, &
-                         param_wannierise, lsitesymmetry, symmetrize_eps, &
-                         wann_data, param_hamil, kmesh_data, k_points, &
-                         num_kpts, dis_data, fermi_surface_data, fermi, tran, &
-                         atoms, num_bands, num_wann, mp_grid, num_proj, &
-                         select_proj, real_lattice, recip_lattice, &
-                         spec_points, stdout)
+  subroutine param_write(driver, w90_calcs, param_input, param_plot, param_wannierise, &
+                         lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
+                         k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, &
+                         num_bands, num_wann, mp_grid, num_proj, select_proj, real_lattice, &
+                         recip_lattice, spec_points, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1882,7 +1872,7 @@ contains
     if (w90_calcs%disentanglement) &
       mem_wan = mem_wan + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx       !m_matrix
 
-    if (on_root) then
+    if (param_input%iprint > 0) then
       write (stdout, '(1x,a)') '*============================================================================*'
       write (stdout, '(1x,a)') '|                              MEMORY ESTIMATE                               |'
       write (stdout, '(1x,a)') '|         Maximum RAM allocated during each phase of the calculation         |'
@@ -1920,13 +1910,11 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(driver, w90_calcs, pp_calc, param_input, param_plot, &
-                        param_wannierise, lsitesymmetry, symmetrize_eps, &
-                        wann_data, param_hamil, kmesh_data, kmesh_info, &
-                        k_points, num_kpts, dis_data, fermi_surface_data, &
-                        fermi, tran, atoms, num_bands, num_wann, eigval, &
-                        mp_grid, num_proj, real_lattice, recip_lattice, &
-                        eig_found, stdout, seedname, comm)
+  subroutine param_dist(driver, w90_calcs, pp_calc, param_input, param_plot, param_wannierise, &
+                        lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
+                        kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
+                        tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, real_lattice, &
+                        recip_lattice, eig_found, stdout, seedname, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1935,7 +1923,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time
-    use w90_comms, only: comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     implicit none
     !data from parameters module
@@ -1983,8 +1971,10 @@ contains
     logical, intent(inout) :: eig_found
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in)  :: seedname
-
+    logical :: on_root = .false.
     integer :: ierr
+
+    if (mpirank(comm) == 0) on_root = .true.
 
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, stdout, seedname, comm)

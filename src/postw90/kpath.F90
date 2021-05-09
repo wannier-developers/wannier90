@@ -45,7 +45,6 @@ contains
 
     use w90_comms
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
-!   use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch, stdout
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
@@ -62,8 +61,6 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
-
-    integer, dimension(0:num_nodes - 1) :: counts, displs
 
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
                          total_pts, loop_i, dataunit, gnuunit, pyunit, &
@@ -86,6 +83,16 @@ contains
                                      plot_kpoint(:, :), my_plot_kpoint(:, :), &
                                      shc(:), my_shc(:)
     character(len=3), allocatable  :: glabel(:)
+
+    integer, allocatable :: counts(:), displs(:)
+    logical :: on_root = .false.
+    integer :: my_node_id, num_nodes
+
+    my_node_id = mpirank(world)
+    num_nodes = mpisize(world)
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
+    if (my_node_id == 0) on_root = .true.
 
     ! Everything is done on the root node (not worthwhile parallelizing)
     ! However, we still have to read and distribute the data if we
@@ -148,7 +155,7 @@ contains
 
     ! Partition set of k-points into junks
 !   call comms_array_split(total_pts, counts, displs);
-    call comms_array_split(total_pts, counts, displs)
+    call comms_array_split(total_pts, counts, displs, world)
     !kpt_lo = displs(my_node_id)+1
     !kpt_hi = displs(my_node_id)+counts(my_node_id)
     my_num_pts = counts(my_node_id)
@@ -974,7 +981,7 @@ contains
   !===========================================================!
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout, seedname)
 
-    use w90_comms, only: on_root, w90commtype
+    use w90_comms, only: w90commtype, mpirank
     use w90_parameters, only: fermi ! berry_curv_unit
     use pw90_parameters, only: kpath, berry, world
     use w90_io, only: io_error
@@ -982,6 +989,9 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
     character(len=50), intent(in)  :: seedname
+
+    logical :: on_root = .false.
+    if (mpirank(world) == 0) on_root = .true.
 
     if (on_root) then
       write (stdout, '(/,/,1x,a)') &

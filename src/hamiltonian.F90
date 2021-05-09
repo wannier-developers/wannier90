@@ -485,7 +485,7 @@ contains
       ! NEVER overwrite wannier_centres
       !wannier_centres = r_home
 
-      if (on_root) then
+      if (param_input%iprint > 0) then
         write (stdout, '(1x,a)') 'Translated centres'
         write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', &
           param_hamil%translation_centre_frac(:)
@@ -710,7 +710,7 @@ contains
       tot = tot + 1.0_dp/real(ndegen(i), dp)
     enddo
 
-    if (param_input%iprint >= 3 .and. on_root) then
+    if (param_input%iprint >= 3) then
       write (stdout, '(1x,i4,a,/)') nrpts, ' lattice points in Wigner-Seitz supercell:'
       do i = 1, nrpts
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, i), irvec(2, i), &

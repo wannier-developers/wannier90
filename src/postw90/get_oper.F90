@@ -77,7 +77,7 @@ contains
       eigval, u_matrix, param_input, real_lattice
     use pw90_parameters, only: pw90_common, world
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -89,17 +89,18 @@ contains
     complex(kind=dp), allocatable :: HH_q(:, :, :)
     logical                       :: new_ir
 
-    !ivo
     complex(kind=dp), allocatable :: sciss_q(:, :, :)
     complex(kind=dp), allocatable :: sciss_R(:, :, :)
-    !real(kind=dp)                 :: sciss_shift
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
+    logical :: on_root = .false.
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, nrpts))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     end if
 
@@ -177,7 +178,7 @@ contains
       call comms_bcast(ndegen(1), nrpts, stdout, seedname, world)
       call comms_bcast(irvec(1, 1), 3*nrpts, stdout, seedname, world)
       call comms_bcast(crvec(1, 1), 3*nrpts, stdout, seedname, world)
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     endif
 
@@ -237,7 +238,7 @@ contains
       HH_R = HH_R + sciss_R
     endif
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
     return
 
 101 call io_error('Error in get_HH_R: problem opening file '// &
@@ -261,7 +262,7 @@ contains
     use pw90_parameters, only: pw90_common, berry, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -280,13 +281,16 @@ contains
                                      rdum2_real, rdum2_imag, rdum3_real, rdum3_imag
     logical                       :: nn_found
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     end if
 
@@ -335,7 +339,7 @@ contains
         endif
       endif
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     endif
 
@@ -486,7 +490,7 @@ contains
 
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
     return
 
 101 call io_error &
@@ -513,7 +517,7 @@ contains
     use pw90_parameters, only: pw90_common, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -531,11 +535,15 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
+    logical :: on_root = .false.
+
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
       return
     end if
 
@@ -635,7 +643,7 @@ contains
 
     call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
     return
 
 103 call io_error &
@@ -660,7 +668,7 @@ contains
     use pw90_parameters, only: pw90_common, postw90_oper, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -674,13 +682,16 @@ contains
     complex(kind=dp), allocatable :: H_qb1_q_qb2(:, :)
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
       return
     end if
 
@@ -795,7 +806,7 @@ contains
 
     call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
     return
 
 105 call io_error &
@@ -820,7 +831,7 @@ contains
     use w90_postw90_common, only: nrpts, v_matrix
     use pw90_parameters, only: world
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -833,13 +844,16 @@ contains
     complex(kind=dp), allocatable :: Lo_qb1_q_qb2(:, :)
     complex(kind=dp), allocatable :: L_qb1_q_qb2(:, :)
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
       return
     end if
 
@@ -945,7 +959,7 @@ contains
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
 
 107 call io_error &
@@ -970,7 +984,7 @@ contains
     use pw90_parameters, only: postw90_oper, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     implicit none
 
@@ -983,8 +997,11 @@ contains
     integer                       :: m, n, spn_in, ik, is, &
                                      nb_tmp, nkp_tmp, ierr, s, counter
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -1092,7 +1109,7 @@ contains
 
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
     return
 
 109 call io_error &
@@ -1119,7 +1136,7 @@ contains
     use pw90_parameters, only: postw90_oper, pw90_common, spin_hall, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_comms, only: on_root, comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -1150,25 +1167,28 @@ contains
     real(kind=dp)                 :: m_real, m_imag
     logical                       :: nn_found
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
+    if (mpirank(world) == 0) on_root = .true.
+
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
 
@@ -1441,7 +1461,7 @@ contains
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
     return
 
 101 call io_error &

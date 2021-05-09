@@ -1697,7 +1697,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_comms, only: comms_bcast, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     implicit none
 
@@ -1716,6 +1716,10 @@ contains
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in)  :: seedname
     integer :: ierr
+
+    logical :: on_root = .false.
+
+    if (mpirank(comm) == 0) on_root = .true.
 
     call comms_bcast(checkpoint, len(checkpoint), stdout, seedname, comm)
 
