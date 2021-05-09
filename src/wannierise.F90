@@ -3186,10 +3186,9 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
-                             param_input, u_matrix, m_matrix, num_kpts, &
-                             real_lattice, wann_data, num_bands, u_matrix_opt, &
-                             eigval, lwindow, recip_lattice, atoms, k_points, &
+  subroutine wann_main_gamma(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, &
+                             m_matrix, num_kpts, real_lattice, wann_data, num_bands, &
+                             u_matrix_opt, eigval, lwindow, recip_lattice, atoms, k_points, &
                              dis_data, mp_grid, stdout, seedname, comm)
     !==================================================================!
     !                                                                  !
@@ -3210,71 +3209,42 @@ contains
 
     !JJ this function has not yet been pllelised
 
-    !subroutine args from parameters module
-    integer, intent(in) :: num_wann
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    !integer, intent(in) :: num_guide_cycles, num_no_guide_iter
-    !integer, intent(in) :: num_print_cycles, num_dump_cycles
-    !integer, intent(in) :: conv_window
-    !integer, intent(in) :: num_iter
-    !logical, intent(inout) :: guiding_centres
-    !logical, intent(in) :: translate_home_cell
-    !logical, intent(in) :: write_proj
-    !logical, intent(in) :: write_r2mn
-    !logical, intent(in) :: write_vdw_data
-    !real(kind=dp), intent(in) :: conv_tol
-    !real(kind=dp), intent(in) :: proj_site(:, :)
-    !real(kind=dp), intent(inout) :: omega_total, omega_tilde
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    !integer, intent(in) :: neigh(:, :)
-    !integer, intent(in) :: nnh
-    !integer, intent(in) :: nntot
-    !real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
-    !real(kind=dp), intent(in) :: wb(:)
-    !real(kind=dp), intent(in) :: wbtot
-    type(parameter_input_type), intent(inout) :: param_input
-    !integer, intent(in) :: iprint, timing_level
-    !integer, intent(in) :: num_valence_bands, num_elec_per_state
-    !logical, intent(in) :: have_disentangled
-    !logical, intent(in) :: write_xyz
-    !real(kind=dp), intent(inout) :: omega_invariant
-    !character(len=*), intent(in) :: length_unit
-    !real(kind=dp), intent(in) :: lenconfac
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    integer, intent(in) :: num_kpts
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    ! passed variables
     type(wannier_data_type), intent(inout) :: wann_data
-    !real(kind=dp), intent(inout) :: wannier_centres(:, :)
-    !real(kind=dp), intent(inout) :: wannier_spreads(:)
-    integer, intent(in):: num_bands
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-    logical, intent(in) :: lwindow(:, :)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    type(atom_data_type), intent(in) :: atoms
-    !integer, intent(in) :: num_atoms
-    !integer, intent(in) :: num_species
-    !integer, intent(in) :: atoms_species_num(:)
-    !real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-    !character(len=2), intent(in) :: atoms_symbol(:)
-    type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
-    type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
-    integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
-    integer, intent(in) :: stdout
     type(w90commtype), intent(in) :: comm
-    character(len=50), intent(in)  :: seedname
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(parameter_input_type), intent(inout) :: param_input
+    type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
+    type(atom_data_type), intent(in) :: atoms
 
-    ! local
+    logical, intent(in) :: lwindow(:, :)
+    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
+
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: eigval(:, :)
+
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
 
-    ! data from the wannierise module
     integer :: counts(0:0)
     integer :: displs(0:0)
-    real(kind=dp), allocatable  :: rnkb(:, :, :)
-    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), allocatable :: rnkb(:, :, :)
+    real(kind=dp), allocatable :: ln_tmp(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
     logical :: first_pass
 
     ! guiding centres
@@ -3294,11 +3264,11 @@ contains
     complex(kind=dp), allocatable  :: cz(:, :)
 
     real(kind=dp) :: sqwb
-    integer       :: i, n, nn, iter, ind, ierr, iw
-    integer       :: tnntot
-    logical       :: lprint, ldump
+    integer :: i, n, nn, iter, ind, ierr, iw
+    integer :: tnntot
+    logical :: lprint, ldump
     real(kind=dp), allocatable :: history(:)
-    logical                    :: lconverged
+    logical :: lconverged
 
     if (param_input%timing_level > 0) call io_stopwatch('wann: main_gamma', 1, stdout, seedname)
 
@@ -3315,7 +3285,6 @@ contains
 !~       ph_g = cmplx_1
 !~    endif
 
-    ! module data
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating rnkb in wann_main_gamma', stdout, seedname)
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
@@ -3453,6 +3422,8 @@ contains
       ' O_TOT=', wann_spread%om_tot*param_input%lenconfac**2, ' <-- SPRD'
     write (stdout, '(1x,a78)') repeat('-', 78)
 
+!JJ so far so good...
+
     lconverged = .false.
 
     ! initialize ur_rot
@@ -3499,9 +3470,8 @@ contains
       call wann_spread_copy(wann_spread, old_spread)
 
       ! calculate the new centers and spread
-      call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                            num_wann, kmesh_info%nntot, kmesh_info%wbtot, &
-                            kmesh_info%wb, kmesh_info%bk, &
+      call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
+                            kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
                             param_input%omega_invariant, ln_tmp, first_pass, &
                             param_input%timing_level, stdout, seedname)
 
@@ -3539,15 +3509,15 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
-                               k_points, num_kpts, dis_data, num_bands, &
-                               num_wann, u_matrix, u_matrix_opt, m_matrix, &
+        call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
+                               dis_data, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                mp_grid, real_lattice, recip_lattice, stdout, seedname)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, history, &
-                                             iter, lconverged, param_wannierise%conv_window, param_wannierise%conv_tol, stdout)
+                                             iter, lconverged, param_wannierise%conv_window, &
+                                             param_wannierise%conv_tol, stdout)
       endif
 
       if (lconverged) then
@@ -4004,26 +3974,29 @@ contains
 
     implicit none
 
-    real(kind=dp), intent(in)  :: m_w(:, :, :)
-    complex(kind=dp), intent(in)  :: csheet(:, :, :)
-    real(kind=dp), intent(in)  :: sheet(:, :, :)
-    real(kind=dp), intent(out) :: rave(:, :)
-    real(kind=dp), intent(out) :: r2ave(:)
-    real(kind=dp), intent(out) :: rave2(:)
+    ! passed variables
     type(localisation_vars), intent(out)  :: wann_spread
 
-    ! from w90_parameters
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: nntot
+
+    real(kind=dp), intent(out) :: rave2(:)
+    real(kind=dp), intent(out) :: rave(:, :)
+    real(kind=dp), intent(out) :: r2ave(:)
+    real(kind=dp), intent(out) :: ln_tmp(:, :, :)
     real(kind=dp), intent(in) :: wbtot
     real(kind=dp), intent(in) :: wb(:)
-    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: sheet(:, :, :)
     real(kind=dp), intent(in) :: omega_invariant
-    integer, intent(in) :: timing_level
-    ! end parameters
-    real(kind=dp), intent(out) :: ln_tmp(:, :, :)
+    real(kind=dp), intent(in) :: m_w(:, :, :)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+
+    complex(kind=dp), intent(in)  :: csheet(:, :, :)
+
     logical, intent(inout) :: first_pass
-    integer, intent(in) :: stdout
+
     character(len=50), intent(in)  :: seedname
 
     !local variables
@@ -4108,8 +4081,7 @@ contains
       do nn = 1, nntot
         do n = 1, num_wann
           brn = sum(bk(:, nn, 1)*rave(:, n))
-          wann_spread%om_d = wann_spread%om_d + wb(nn) &
-                             *(ln_tmp(n, nn, 1) + brn)**2
+          wann_spread%om_d = wann_spread%om_d + wb(nn)*(ln_tmp(n, nn, 1) + brn)**2
         enddo
       enddo
     end if
@@ -4117,7 +4089,8 @@ contains
     wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
 
     deallocate (m_w_nn2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma', &
+                                 stdout, seedname)
 
     if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 2, stdout, seedname)
 
