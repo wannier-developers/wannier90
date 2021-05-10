@@ -20,10 +20,6 @@ module w90_io
 
   private
 
-#ifdef MPI
-  include 'mpif.h'
-#endif
-
 ! integer, public, save           :: stdout
   !! Unit on which stdout is written
 ! character(len=50), public, save :: seedname
@@ -317,40 +313,42 @@ contains
     implicit none
     character(len=*), intent(in) :: error_msg
     character(len=50), intent(in)  :: seedname
+    integer           :: stderr, ierr, stdout
 
-#ifdef MPI
-    character(len=50) :: filename
-    integer           :: stderr, ierr, whoami, num_nodes
-    integer           :: stdout
-
-    call mpi_comm_rank(mpi_comm_world, whoami, ierr)
-    call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
-    if (num_nodes > 1) then
-      if (whoami > 99999) then
-        write (filename, '(a,a,I0,a)') trim(seedname), '.node_', whoami, '.werr'
-      else
-        write (filename, '(a,a,I5.5,a)') trim(seedname), '.node_', whoami, '.werr'
-      endif
-      stderr = io_file_unit()
-      open (unit=stderr, file=trim(filename), form='formatted', err=105)
-      write (stderr, '(1x,a)') trim(error_msg)
-      close (stderr)
-    end if
-
-105 write (*, '(1x,a)') trim(error_msg)
-106 write (*, '(1x,a,I0,a)') "Error on node ", &
-      whoami, ": examine the output/error files for details"
-
-    if (whoami == 0) then
-      write (stdout, *) 'Exiting.......'
-      write (stdout, '(1x,a)') trim(error_msg)
-      close (stdout)
-    end if
-
-    !JJ not necessarily comm_world!
-    call MPI_abort(MPI_comm_world, 1, ierr)
-
-#else
+! JJ, remove MPI section; calling mpi_abort is the privilege of the calling program
+!#ifdef MPI
+!    character(len=50) :: filename
+!    integer           :: stderr, ierr, whoami, num_nodes
+!    integer           :: stdout
+!
+!    call mpi_comm_rank(mpi_comm_world, whoami, ierr)
+!    call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+!    if (num_nodes > 1) then
+!      if (whoami > 99999) then
+!        write (filename, '(a,a,I0,a)') trim(seedname), '.node_', whoami, '.werr'
+!      else
+!        write (filename, '(a,a,I5.5,a)') trim(seedname), '.node_', whoami, '.werr'
+!      endif
+!      stderr = io_file_unit()
+!      open (unit=stderr, file=trim(filename), form='formatted', err=105)
+!      write (stderr, '(1x,a)') trim(error_msg)
+!      close (stderr)
+!    end if
+!
+!105 write (*, '(1x,a)') trim(error_msg)
+!106 write (*, '(1x,a,I0,a)') "Error on node ", &
+!      whoami, ": examine the output/error files for details"
+!
+!    if (whoami == 0) then
+!      write (stdout, *) 'Exiting.......'
+!      write (stdout, '(1x,a)') trim(error_msg)
+!      close (stdout)
+!    end if
+!
+!    !JJ not necessarily comm_world!
+!    call MPI_abort(MPI_comm_world, 1, ierr)
+!
+!#else
 
     write (stdout, *) 'Exiting.......'
     write (stdout, '(1x,a)') trim(error_msg)
@@ -359,7 +357,7 @@ contains
 
     write (*, '(1x,a)') trim(error_msg)
     write (*, '(A)') "Error: examine the output/error file for details"
-#endif
+!#endif
 
 #ifdef EXIT_FLAG
     call exit(1)
