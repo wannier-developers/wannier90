@@ -1491,9 +1491,7 @@ contains
       complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
       complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
       complex(kind=dp), intent(inout) :: cz(:, :)
-!     integer, intent(in) :: num_wann, num_kpts, nntot
       integer, intent(in) :: num_wann, num_kpts
-!     integer, intent(in) :: nnlist(:, :)
       logical, intent(in) :: lsitesymmetry
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
@@ -1507,6 +1505,9 @@ contains
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
+      integer :: my_node_id !absence of this was not caught by ifort (!!) why -- fixme JJ
+
+      my_node_id = mpirank(comm)
 
       if (timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('wann: main: u_and_m', 1, stdout, seedname)
 
@@ -1791,6 +1792,7 @@ contains
   end subroutine wann_main
 
   !==================================================================!
+
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, &
                          seedname, iprint, comm, m_w)
@@ -1807,41 +1809,31 @@ contains
 
     implicit none
 
+    ! passed variables
+    type(w90commtype), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
 
-    complex(kind=dp), intent(out)   :: csheet(:, :, :)
-    !! Choice of phase
-    real(kind=dp), intent(out)   :: sheet(:, :, :)
-    !! Choice of branch cut
-    real(kind=dp), intent(inout) :: rguide(:, :)
-    !! Guiding centres
-    integer, intent(in)    :: irguide
-    !! Zero if first call to this routine
-
-    ! These were in the parameter module
-    integer, intent(in) :: num_wann
-!   integer, intent(in) :: nntot
-!   integer, intent(in) :: neigh(:, :)
-!   integer, intent(in) :: nnh
-!   real(kind=dp), intent(in) :: bk(:, :, :)
-!   real(kind=dp), intent(in) :: bka(:, :)
-    integer, intent(in) :: num_kpts
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    logical, intent(in) :: gamma_only
-    ! end of vars from parameter module
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    complex(kind=dp), allocatable, intent(in) :: m_matrix_loc(:, :, :, :)
-    real(kind=dp), intent(out) :: rnkb(:, :, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: irguide !! Zero if first call to this routine
     integer, intent(in) :: iprint
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: counts(0:)
 
+    real(kind=dp), intent(out) :: sheet(:, :, :) !! Choice of branch cut
+    real(kind=dp), intent(out) :: rnkb(:, :, :)
+    real(kind=dp), intent(inout) :: rguide(:, :) !! Guiding centres
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
-    character(len=50), intent(in)  :: seedname
-    !! Used in the Gamma point routines as an optimisation
 
-    type(w90commtype), intent(in) :: comm
+    complex(kind=dp), intent(out) :: csheet(:, :, :) !! Choice of phase
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable, intent(in) :: m_matrix_loc(:, :, :, :)
+
+    character(len=50), intent(in)  :: seedname
+
+    logical, intent(in) :: gamma_only
 
     !local
     complex(kind=dp) :: csum(kmesh_info%nnh)
@@ -3421,8 +3413,6 @@ contains
       'O_D=', wann_spread%om_d*param_input%lenconfac**2, ' O_OD=', wann_spread%om_od*param_input%lenconfac**2, &
       ' O_TOT=', wann_spread%om_tot*param_input%lenconfac**2, ' <-- SPRD'
     write (stdout, '(1x,a78)') repeat('-', 78)
-
-!JJ so far so good...
 
     lconverged = .false.
 

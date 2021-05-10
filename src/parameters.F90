@@ -235,7 +235,6 @@ module w90_param_methods
   ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
-! use w90_io, only: stdout, maxlen
   use w90_io, only: maxlen
   use w90_param_types
   use wannier_param_types
@@ -389,7 +388,8 @@ contains
       if (allocated(param_input%exclude_bands)) deallocate (param_input%exclude_bands)
       allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating exclude_bands in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname,  'exclude_bands', found, param_input%num_exclude_bands, .false., param_input%exclude_bands)
+      call param_get_range_vector(stdout, seedname, 'exclude_bands', found, &
+                                  param_input%num_exclude_bands, .false., param_input%exclude_bands)
       if (any(param_input%exclude_bands < 1)) &
         call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
     end if
@@ -648,7 +648,9 @@ contains
   subroutine param_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
                                 disentanglement, eig_found, eigval, library, postproc_setup, &
                                 num_bands, num_kpts, stdout, seedname)
-    use w90_io, only: seedname, io_file_unit, io_error
+
+    use w90_io, only: io_file_unit, io_error
+
     implicit none
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, &
                            pw90_geninterp, w90_plot, disentanglement, &
@@ -954,8 +956,7 @@ contains
   end subroutine param_read_atoms
 
   subroutine param_clean_infile(stdout, seedname)
-!   use w90_io, only: seedname, stdout, io_error
-    use w90_io, only: seedname, io_error
+    use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -1523,8 +1524,7 @@ contains
     !=================================================!
 
     use w90_constants, only: eps6
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
-    use w90_io, only: io_error, io_file_unit, seedname
+    use w90_io, only: io_file_unit, io_error
 
     implicit none
 
@@ -1781,8 +1781,8 @@ contains
     !! to lowercase characters
     !=======================================!
 
-    use w90_io, only: io_file_unit, io_error, seedname
     use w90_utility, only: utility_lowercase
+    use w90_io, only: io_file_unit, io_error
 
     implicit none
 

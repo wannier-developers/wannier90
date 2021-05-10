@@ -181,7 +181,7 @@ contains
 
     else
 
-      if (param_input%iprint) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
+      if (param_input%iprint > 0) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
 
       kweight = 1.0_dp/real(PRODUCT(dos_data%kmesh), kind=dp)
       do loop_tot = my_node_id, PRODUCT(dos_data%kmesh) - 1, num_nodes
@@ -219,7 +219,7 @@ contains
     !
     call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, world)
 
-    if (param_input%iprint) then
+    if (param_input%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
       write (stdout, '(/,3x,a)') trim(seedname)//'-dos.dat'
       dos_unit = io_file_unit()

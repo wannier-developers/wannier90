@@ -669,7 +669,7 @@ contains
 
     my_node_id = mpirank(world)
     num_nodes = mpisize(world)
-    if (my_node_id) on_root = .true.
+    if (my_node_id == 0) on_root = .true.
 
     if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
     if (param_input%iprint > 0) then

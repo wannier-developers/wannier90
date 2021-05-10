@@ -162,8 +162,8 @@ contains
     ! this code could/should be at start of the main program
     ! having it here is only useful in that it limits MPI defs to this file only
     implicit none
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(inout) :: w90comm
 #ifdef MPI
     integer :: ierr
@@ -246,8 +246,8 @@ contains
 
     integer, intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -267,8 +267,8 @@ contains
 
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -289,8 +289,8 @@ contains
 
     logical, intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -311,8 +311,8 @@ contains
 
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -334,8 +334,8 @@ contains
 
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -360,8 +360,8 @@ contains
     logical, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -383,8 +383,8 @@ contains
     integer, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -406,8 +406,8 @@ contains
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -429,8 +429,8 @@ contains
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -452,8 +452,8 @@ contains
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -477,8 +477,8 @@ contains
     logical, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -505,8 +505,8 @@ contains
     integer, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -533,8 +533,8 @@ contains
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -561,8 +561,8 @@ contains
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -590,8 +590,8 @@ contains
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -619,8 +619,8 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
 
 #ifdef MPI
     integer :: error, ierr
@@ -671,8 +671,8 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
 
 #ifdef MPI
     integer :: error, ierr
@@ -734,8 +734,8 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
 
 #ifdef MPI
     integer :: error, ierr
@@ -781,8 +781,8 @@ contains
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -821,8 +821,8 @@ contains
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -853,13 +853,13 @@ contains
     !! Gather real data to root node (for arrays of rank 1)
     implicit none
 
-    real(kind=dp), intent(inout) :: array(:)           !! local array for sending data
-    integer, intent(in) :: localcount                  !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: array(:) !! local array for sending data
+    integer, intent(in) :: localcount !! localcount elements will be sent to the root node
     real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node to which data will be sent
-    integer, intent(in) :: counts(:)                   !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -886,10 +886,10 @@ contains
     real(kind=dp), intent(inout) :: array(:, :)           !! local array for sending data
     integer, intent(in) :: localcount                     !! localcount elements will be sent to the root node
     real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node to which data will be sent
-    integer, intent(in) :: counts(:)                      !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)                     !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -916,10 +916,10 @@ contains
     real(kind=dp), intent(inout) :: array(:, :, :)           !! local array for sending data
     integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
     real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
-    integer, intent(in) :: counts(:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -947,10 +947,10 @@ contains
     real(kind=dp), intent(inout) :: array(:, :)              !! local array for sending data
     integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
     real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
-    integer, intent(in) :: counts(:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -984,10 +984,10 @@ contains
     complex(kind=dp), intent(inout) :: array(:)
     integer, intent(in) :: localcount
     complex(kind=dp), intent(inout) :: rootglobalarray(:)
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1015,10 +1015,10 @@ contains
     complex(kind=dp), intent(inout) :: array(:, :)
     integer, intent(in) :: localcount
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :)
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1046,10 +1046,10 @@ contains
     complex(kind=dp), intent(inout) :: array(:, :, :)
     integer, intent(in) :: localcount
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1077,10 +1077,10 @@ contains
     complex(kind=dp), intent(inout) :: array(:, :, :)
     integer, intent(in) :: localcount
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1108,10 +1108,10 @@ contains
     complex(kind=dp), intent(inout) :: array(:, :, :, :)
     integer, intent(in) :: localcount
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
-    integer, intent(in) :: counts(:)
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1136,13 +1136,13 @@ contains
     !! Gather real data to root node
     implicit none
 
-    logical, intent(inout) :: array           !! local array for sending data
-    integer, intent(in) :: localcount         !! localcount elements will be sent to the root node
+    logical, intent(inout) :: array !! local array for sending data
+    integer, intent(in) :: localcount !! localcount elements will be sent to the root node
     logical, intent(inout) :: rootglobalarray !! array on the root node to which data will be sent
-    integer, intent(in) :: counts(:)          !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1165,13 +1165,13 @@ contains
     !! Scatter real data from root node (array of rank 1)
     implicit none
 
-    real(kind=dp), intent(inout) :: array(:)           !! local array for getting data
-    integer, intent(in) :: localcount                  !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: array(:) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
     real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)                   !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1196,17 +1196,13 @@ contains
     !! Scatter real data from root node (array of rank 2)
     implicit none
 
-    real(kind=dp), intent(inout) :: array(:, :)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    real(kind=dp), intent(inout) :: rootglobalarray(:, :)
-    !! array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(inout) :: array(:, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1231,17 +1227,13 @@ contains
     !! Scatter real data from root node (array of rank 3)
     implicit none
 
-    real(kind=dp), intent(inout) :: array(:, :, :)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
-    !! array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(inout) :: array(:, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1265,17 +1257,13 @@ contains
     !! Scatter complex data from root node (array of rank 4)
     implicit none
 
-    complex(kind=dp), intent(inout) :: array(:, :, :, :)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
-    !! array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    complex(kind=dp), intent(inout) :: array(:, :, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1300,17 +1288,13 @@ contains
     !! Scatter integer data from root node (array of rank 1)
     implicit none
 
-    integer, intent(inout) :: array(:)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    integer, intent(inout) :: rootglobalarray(:)
-    !!  array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(inout) :: array(:) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1336,17 +1320,13 @@ contains
 
     implicit none
 
-    integer, intent(inout) :: array(:, :)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    integer, intent(inout) :: rootglobalarray(:, :)
-    !!  array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(inout) :: array(:, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:, :) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1372,17 +1352,13 @@ contains
 
     implicit none
 
-    integer, intent(inout) :: array(:, :, :)
-    !! local array for getting data
-    integer, intent(in) :: localcount
-    !! localcount elements will be fetched from the root node
-    integer, intent(inout) :: rootglobalarray(:, :, :)
-    !!  array on the root node from which data will be sent
-    integer, intent(in) :: counts(:)
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, intent(in) :: displs(:)
-    integer, intent(in)    :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(inout) :: array(:, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:, :, :) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI

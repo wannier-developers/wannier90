@@ -166,21 +166,22 @@ contains
     !===========================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_file_unit, &
-      io_date, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
+    use w90_comms, only: mpirank, mpisize
 
-    integer       :: k_unit
+    ! passed variables
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    integer       :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes
+    ! local variables
+    integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
     real(kind=dp) :: sum
     logical :: on_root = .false.
 
     my_node_id = mpirank(world)
     num_nodes = mpisize(world)
 
-    if (my_node_id) on_root = .true.
+    if (my_node_id == 0) on_root = .true.
 
     k_unit = io_file_unit()
     if (on_root) then
@@ -251,6 +252,7 @@ contains
 
     integer :: ierr
     integer, intent(in) :: stdout
+    integer :: iprintroot
     character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
 
@@ -266,7 +268,15 @@ contains
     endif
     call comms_bcast(num_wann, 1, stdout, seedname, world)
     call comms_bcast(param_input%timing_level, 1, stdout, seedname, world)
+
+    !______________________________________
+    !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
+    iprintroot = param_input%iprint
+    param_input%iprint = 0
     call comms_bcast(param_input%iprint, 1, stdout, seedname, world)
+    if (on_root) param_input%iprint = iprintroot
+    !______________________________________
+
     call comms_bcast(param_input%ws_distance_tol, 1, stdout, seedname, world)
     call comms_bcast(param_input%ws_search_size(1), 3, stdout, seedname, world)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?

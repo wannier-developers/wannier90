@@ -95,6 +95,8 @@ contains
 
     my_node_id = mpirank(world)
     num_nodes = mpisize(world)
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
     if (my_node_id == 0) on_root = .true.
 
     if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
