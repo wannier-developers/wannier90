@@ -574,7 +574,7 @@ contains
         ! Spin is computed for all bands simultaneously
         !
         if (eval_spn .and. .not. got_spin) then
-          call spin_get_S(kpt, S, stdout, seedname)
+          call spin_get_S(kpt, S, num_wann, stdout, seedname)
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
         ! Orbital quantities are computed for each band separately

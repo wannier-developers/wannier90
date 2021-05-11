@@ -49,7 +49,7 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, spec_points, fermi
-    use pw90_parameters, only: berry, spin_hall, kpath, world
+    use pw90_parameters, only: berry, spin_hall, kpath, world, pw90_spin
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       !     get_FF_R, get_SS_R, get_SHC_R
       get_SS_R, get_SHC_R
@@ -193,7 +193,7 @@ contains
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(kpt, spn_k, stdout, seedname)
+          call spin_get_nk(kpt, spn_k, num_wann, pw90_spin, stdout, seedname)
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing

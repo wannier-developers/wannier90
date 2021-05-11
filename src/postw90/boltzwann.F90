@@ -64,8 +64,8 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, physics, stdout, &
-                            seedname, world, cell_volume)
+  subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, pw90_spin, &
+                            physics, stdout, seedname, world, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -81,13 +81,14 @@ contains
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
     use w90_parameters, only: disentangle_type, parameter_input_type
-    use pw90_parameters, only: boltzwann_type, postw90_common_type
+    use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type
 
     type(disentangle_type), intent(in) :: dis_data
     type(parameter_input_type), intent(in) :: param_input
     integer, intent(in) :: num_wann
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_spin_type), intent(in) :: pw90_spin
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -213,8 +214,8 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_common%spin_decomp, &
-                       stdout, seedname, world, cell_volume)
+    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
+                       pw90_common%spin_decomp, stdout, seedname, world, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -605,8 +606,8 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, spin_decomp, &
-                           stdout, seedname, world, cell_volume)
+  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
+                           spin_decomp, stdout, seedname, world, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -630,7 +631,7 @@ contains
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_parameters, only: parameter_input_type
-    use pw90_parameters, only: boltzwann_type
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -655,6 +656,7 @@ contains
     integer, intent(in) :: num_wann
     type(parameter_input_type), intent(in) :: param_input
     type(boltzwann_type), intent(in) :: boltz
+    type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: spin_decomp
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -821,7 +823,7 @@ contains
       end if
 
       call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, boltz, &
-                   spin_decomp, stdout, seedname)
+                   pw90_spin, spin_decomp, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -991,7 +993,7 @@ contains
   end function MinusFermiDerivative
 
   subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, num_wann, param_input, boltz, &
-                     spin_decomp, stdout, seedname)
+                     pw90_spin, spin_decomp, stdout, seedname)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1017,7 +1019,7 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_parameters, only: parameter_input_type
-    use pw90_parameters, only: boltzwann_type
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_spin, only: spin_get_nk
 
     ! Arguments
@@ -1047,6 +1049,7 @@ contains
     integer, intent(in) :: num_wann
     type(parameter_input_type), intent(in) :: param_input
     type(boltzwann_type), intent(in) :: boltz
+    type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: spin_decomp
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -1066,7 +1069,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
+    if (spin_decomp) call spin_get_nk(kpt, spn_nk, num_wann, pw90_spin, stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 

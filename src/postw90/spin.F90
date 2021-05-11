@@ -29,7 +29,8 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(iprint, stdout, seedname)
+  subroutine spin_get_moment(pw90_spin, wanint_kpoint_file, fermi, num_wann, iprint, stdout, &
+                             seedname, world)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -40,12 +41,17 @@ contains
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
-    use pw90_parameters, only: pw90_spin, berry, world !wanint_kpoint_file
-    use w90_parameters, only: fermi
+    use pw90_parameters, only: postw90_spin_type
+    use w90_parameters, only: fermi_data_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    logical, intent(in) :: wanint_kpoint_file
+    type(fermi_data_type), intent(in) :: fermi
+    integer, intent(in) :: num_wann
     integer, intent(in) :: stdout, iprint
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
@@ -68,7 +74,7 @@ contains
     end if
 
     spn_all = 0.0_dp
-    if (berry%wanint_kpoint_file) then
+    if (wanint_kpoint_file) then
 
       if (iprint > 0) then
         write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
@@ -84,7 +90,7 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         kweight = weight(loop_tot)
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, stdout, seedname)
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -101,7 +107,7 @@ contains
         kpt(1) = (real(loop_x, dp)/real(pw90_spin%spin_kmesh(1), dp))
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%spin_kmesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%spin_kmesh(3), dp))
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, stdout, seedname)
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -137,7 +143,7 @@ contains
 
 ! =========================================================================
 
-  subroutine spin_get_nk(kpt, spn_nk, stdout, seedname)
+  subroutine spin_get_nk(kpt, spn_nk, num_wann, pw90_spin, stdout, seedname)
     !=============================================================!
     !                                                             !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -151,16 +157,17 @@ contains
     use w90_constants, only: dp, pi, cmplx_0, cmplx_i
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
-    use w90_parameters, only: num_wann
-    use pw90_parameters, only: pw90_spin
+    use pw90_parameters, only: postw90_spin_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: spn_nk(num_wann)
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     ! Physics
@@ -205,21 +212,21 @@ contains
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine spin_get_moment_k(kpt, ef, spn_k, stdout, seedname)
+  subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, stdout, seedname)
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
     use w90_constants, only: dp, cmplx_0, cmplx_i
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
-    use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
     use w90_get_oper, only: HH_R, SS_R
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(in)  :: ef
     real(kind=dp), intent(out) :: spn_k(3)
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     ! Physics
@@ -253,7 +260,7 @@ contains
 
   end subroutine spin_get_moment_k
 
-  subroutine spin_get_S(kpt, S, stdout, seedname)
+  subroutine spin_get_S(kpt, S, num_wann, stdout, seedname)
     !===========================================================!
     !                                                           !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
@@ -264,13 +271,12 @@ contains
     use w90_constants, only: dp, pi, cmplx_0, cmplx_i
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
-    use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
+    integer, intent(in) :: stdout, num_wann
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: S(num_wann, 3)
     character(len=50), intent(in)  :: seedname

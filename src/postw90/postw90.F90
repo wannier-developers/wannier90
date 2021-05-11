@@ -245,7 +245,9 @@ program postw90
   ! Spin magnetic moment
   ! --------------------
   !
-  if (pw90_common%spin_moment) call spin_get_moment(param_input%iprint, stdout, seedname)
+  if (pw90_common%spin_moment) call spin_get_moment(pw90_spin, berry%wanint_kpoint_file, fermi, &
+                                                    num_wann, param_input%iprint, stdout, &
+                                                    seedname, world)
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also
@@ -266,8 +268,8 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if (pw90_calcs%berry) call berry_main(param_input, fermi, num_wann, berry, pw90_common, &
-                                        spin_hall, physics, stdout, seedname, world, int_kpts, &
-                                        num_int_kpts_on_node, weight, cell_volume)
+                                        pw90_spin, spin_hall, physics, stdout, seedname, world, &
+                                        int_kpts, num_int_kpts_on_node, weight, cell_volume)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
@@ -279,8 +281,8 @@ program postw90
   if (pw90_calcs%geninterp) call geninterp_main(stdout, seedname)
 
   if (pw90_calcs%boltzwann) call boltzwann_main(dis_data, param_input, num_wann, boltz, &
-                                                pw90_common, physics, stdout, seedname, world, &
-                                                cell_volume)
+                                                pw90_common, pw90_spin, physics, stdout, seedname, &
+                                                world, cell_volume)
 
   if (pw90_calcs%gyrotropic) call gyrotropic_main(physics, stdout, seedname)
 

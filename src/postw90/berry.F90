@@ -71,8 +71,8 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine berry_main(param_input, fermi, num_wann, berry, pw90_common, spin_hall, physics, &
-                        stdout, seedname, world, int_kpts, num_int_kpts_on_node, weight, &
+  subroutine berry_main(param_input, fermi, num_wann, berry, pw90_common, pw90_spin, spin_hall, &
+                        physics, stdout, seedname, world, int_kpts, num_int_kpts_on_node, weight, &
                         cell_volume)
     !============================================================!
     !                                                            !
@@ -91,7 +91,7 @@ contains
     !use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
     !  weight, cell_volume
     use w90_parameters, only: parameter_input_type, fermi_data_type
-    use pw90_parameters, only: berry_type, postw90_common_type, spin_hall_type
+    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -100,6 +100,7 @@ contains
     integer, intent(in) :: num_wann
     type(berry_type), intent(inout) :: berry
     type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_spin_type), intent(in) :: pw90_spin
     type(spin_hall_type), intent(in) :: spin_hall
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
@@ -423,11 +424,11 @@ contains
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, stdout, seedname, kubo_H_k_spn, kubo_AH_k_spn, &
-                                  jdos_k_spn)
+                                  pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
+                                  kubo_AH_k_spn, jdos_k_spn)
           else
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, stdout, seedname)
+                                  pw90_common, pw90_spin, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -560,11 +561,11 @@ contains
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, stdout, seedname, kubo_H_k_spn, kubo_AH_k_spn, &
-                                  jdos_k_spn)
+                                  pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
+                                  kubo_AH_k_spn, jdos_k_spn)
           else
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, stdout, seedname)
+                                  pw90_common, pw90_spin, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -1416,8 +1417,8 @@ contains
   !===========================================================!
 
   subroutine berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                              pw90_common, stdout, seedname, kubo_H_k_spn, kubo_AH_k_spn, &
-                              jdos_k_spn)
+                              pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
+                              kubo_AH_k_spn, jdos_k_spn)
     !====================================================================!
     !                                                                    !
     !! Contribution from point k to the complex interband optical
@@ -1429,7 +1430,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
     use w90_parameters, only: fermi_data_type
-    use pw90_parameters, only: berry_type, postw90_common_type
+    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1449,6 +1450,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(berry_type), intent(inout) :: berry
     type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_spin_type), intent(in) :: pw90_spin
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out) :: kubo_H_k_spn
@@ -1505,7 +1507,7 @@ contains
     kubo_AH_k = cmplx_0
     jdos_k = 0.0_dp
     if (pw90_common%spin_decomp) then
-      call spin_get_nk(kpt, spn_nk, stdout, seedname)
+      call spin_get_nk(kpt, spn_nk, num_wann, pw90_spin, stdout, seedname)
       kubo_H_k_spn = cmplx_0
       kubo_AH_k_spn = cmplx_0
       jdos_k_spn = 0.0_dp

@@ -476,7 +476,7 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_parameters, only: num_wann, param_input
-    use pw90_parameters, only: pw90_common, dos_data !(num_dos_project, dos_project)
+    use pw90_parameters, only: pw90_common, pw90_spin, dos_data !(num_dos_project, dos_project)
     use w90_spin, only: spin_get_nk
 
     ! Arguments
@@ -532,7 +532,8 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, num_wann, pw90_spin, &
+                                                  stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
