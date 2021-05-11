@@ -72,7 +72,8 @@ contains
   !===========================================================!
 
   subroutine berry_main(param_input, fermi, num_wann, berry, pw90_common, spin_hall, physics, &
-                        stdout, seedname, world)
+                        stdout, seedname, world, int_kpts, num_int_kpts_on_node, weight, &
+                        cell_volume)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -87,8 +88,8 @@ contains
     use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
-      weight, cell_volume
+    !use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
+    !  weight, cell_volume
     use w90_parameters, only: parameter_input_type, fermi_data_type
     use pw90_parameters, only: berry_type, postw90_common_type, spin_hall_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
@@ -104,6 +105,10 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
+    real(kind=dp), intent(in) :: int_kpts(:, :)
+    integer, intent(in) :: num_int_kpts_on_node(0:)
+    real(kind=dp), intent(in) :: weight(:)
+    real(kind=dp), intent(in) :: cell_volume
 
     real(kind=dp), allocatable    :: adkpt(:, :)
 

@@ -25,12 +25,13 @@ program postw90
   use w90_comms, only: comms_setup, comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, &
     mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_param_dist, pw90common_wanint_data_dist, cell_volume
+    pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
+    weight, cell_volume
 
   ! These modules deal with the interpolation of specific physical properties
   !
   use w90_dos
-  use w90_berry
+  use w90_berry, only: berry_main
   use w90_gyrotropic
   use w90_spin
   use w90_kpath
@@ -265,7 +266,8 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if (pw90_calcs%berry) call berry_main(param_input, fermi, num_wann, berry, pw90_common, &
-                                        spin_hall, physics, stdout, seedname, world)
+                                        spin_hall, physics, stdout, seedname, world, int_kpts, &
+                                        num_int_kpts_on_node, weight, cell_volume)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
