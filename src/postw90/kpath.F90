@@ -49,7 +49,7 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, spec_points, fermi
-    use pw90_parameters, only: berry, spin_hall, kpath, world, pw90_spin
+    use pw90_parameters, only: berry, spin_hall, kpath, world, pw90_spin, pw90_ham
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       !     get_FF_R, get_SS_R, get_SHC_R
       get_SS_R, get_SHC_R
@@ -208,8 +208,8 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                   shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
+                                   seedname, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
@@ -235,8 +235,8 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                 shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
+                                 seedname, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

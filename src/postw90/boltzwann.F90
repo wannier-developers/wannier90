@@ -65,7 +65,7 @@ module w90_boltzwann
 contains
 
   subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, pw90_spin, &
-                            physics, stdout, seedname, world, cell_volume)
+                            pw90_ham, physics, stdout, seedname, world, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -81,7 +81,8 @@ contains
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
     use w90_parameters, only: disentangle_type, parameter_input_type
-    use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type
+    use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
+      postw90_ham_type
 
     type(disentangle_type), intent(in) :: dis_data
     type(parameter_input_type), intent(in) :: param_input
@@ -89,6 +90,7 @@ contains
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
+    type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -215,7 +217,7 @@ contains
 
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
-                       pw90_common%spin_decomp, stdout, seedname, world, cell_volume)
+                       pw90_common%spin_decomp, pw90_ham, stdout, seedname, world, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -607,7 +609,7 @@ contains
   end subroutine boltzwann_main
 
   subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
-                           spin_decomp, stdout, seedname, world, cell_volume)
+                           spin_decomp, pw90_ham, stdout, seedname, world, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -631,7 +633,7 @@ contains
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_parameters, only: parameter_input_type
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -658,6 +660,7 @@ contains
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: spin_decomp
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
@@ -814,7 +817,8 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                               stdout, seedname)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -850,7 +854,8 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                                           stdout, seedname)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
                                  smr_index=boltz%dos_smr_index, &

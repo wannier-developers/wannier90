@@ -48,7 +48,7 @@ contains
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, param_input
-    use pw90_parameters, only: dos_data, pw90_common, berry, world !wanint_kpoint_file
+    use pw90_parameters, only: dos_data, pw90_common, berry, world, pw90_ham !wanint_kpoint_file
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
@@ -160,7 +160,8 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                                   stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
@@ -194,7 +195,8 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                                   stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
                          smr_index=dos_data%smr_index, &

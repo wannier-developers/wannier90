@@ -24,7 +24,7 @@ module w90_geninterp
 
   use w90_constants
   use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
-  use pw90_parameters, only: geninterp, world
+  use pw90_parameters, only: geninterp, world, pw90_ham
   use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
   use w90_get_oper, only: get_HH_R, HH_R
   use w90_comms
@@ -243,7 +243,8 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, stdout, seedname)
+        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
+                                 num_wann, pw90_ham, stdout, seedname)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)

@@ -72,8 +72,8 @@ contains
   !===========================================================!
 
   subroutine berry_main(param_input, fermi, num_wann, berry, pw90_common, pw90_spin, spin_hall, &
-                        physics, stdout, seedname, world, int_kpts, num_int_kpts_on_node, weight, &
-                        cell_volume)
+                        pw90_ham, physics, stdout, seedname, world, int_kpts, &
+                        num_int_kpts_on_node, weight, cell_volume)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -91,7 +91,8 @@ contains
     !use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
     !  weight, cell_volume
     use w90_parameters, only: parameter_input_type, fermi_data_type
-    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type
+    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type, &
+      postw90_ham_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -102,6 +103,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(spin_hall_type), intent(in) :: spin_hall
+    type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -424,11 +426,11 @@ contains
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
-                                  kubo_AH_k_spn, jdos_k_spn)
+                                  pw90_common, pw90_spin, pw90_ham, stdout, seedname, &
+                                  kubo_H_k_spn, kubo_AH_k_spn, jdos_k_spn)
           else
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, pw90_spin, stdout, seedname)
+                                  pw90_common, pw90_spin, pw90_ham, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -441,7 +443,8 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, stdout, seedname)
+          call berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, pw90_ham, &
+                                  stdout, seedname)
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -456,8 +459,8 @@ contains
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           if (param_input%iprint > 0) call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1, stdout)
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                     shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
+                                     seedname, shc_k_fermi=shc_k_fermi)
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -486,15 +489,16 @@ contains
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
                 call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), num_wann, fermi, berry, &
-                                         spin_hall, stdout, seedname, shc_k_fermi=shc_k_fermi_dummy)
+                                         spin_hall, pw90_ham, stdout, seedname, &
+                                         shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                     shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, &
+                                     stdout, seedname, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -561,11 +565,11 @@ contains
         if (eval_kubo) then
           if (pw90_common%spin_decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
-                                  kubo_AH_k_spn, jdos_k_spn)
+                                  pw90_common, pw90_spin, pw90_ham, stdout, seedname, &
+                                  kubo_H_k_spn, kubo_AH_k_spn, jdos_k_spn)
           else
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                                  pw90_common, pw90_spin, stdout, seedname)
+                                  pw90_common, pw90_spin, pw90_ham, stdout, seedname)
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -578,7 +582,8 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, stdout, seedname)
+          call berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, pw90_ham, &
+                                  stdout, seedname)
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -596,8 +601,8 @@ contains
                                       num_nodes, stdout)
           endif
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                     shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, &
+                                     stdout, seedname, shc_k_fermi=shc_k_fermi)
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -626,15 +631,16 @@ contains
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
                 call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), num_wann, fermi, berry, &
-                                         spin_hall, stdout, seedname, shc_k_fermi=shc_k_fermi_dummy)
+                                         spin_hall, pw90_ham, stdout, seedname, &
+                                         shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                     shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, &
+                                     stdout, seedname, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -1295,11 +1301,13 @@ contains
     !
 
     if (present(occ)) then
-      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname, occ=occ)
-      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, occ=occ)
+      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
+                                     stdout, seedname, occ=occ)
+      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, num_wann, fermi, occ=occ)
     else
-      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname)
-      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, eig=eig)
+      call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
+                                     stdout, seedname)
+      call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, num_wann, fermi, eig=eig)
     endif
 
     call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
@@ -1417,7 +1425,7 @@ contains
   !===========================================================!
 
   subroutine berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, berry, &
-                              pw90_common, pw90_spin, stdout, seedname, kubo_H_k_spn, &
+                              pw90_common, pw90_spin, pw90_ham, stdout, seedname, kubo_H_k_spn, &
                               kubo_AH_k_spn, jdos_k_spn)
     !====================================================================!
     !                                                                    !
@@ -1430,7 +1438,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
     use w90_parameters, only: fermi_data_type
-    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type
+    use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, postw90_ham_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1451,6 +1459,7 @@ contains
     type(berry_type), intent(inout) :: berry
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out) :: kubo_H_k_spn
@@ -1480,7 +1489,8 @@ contains
     allocate (AA(num_wann, num_wann, 3))
 
     if (berry%kubo_adpt_smr) then
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, &
+                               seedname)
       Delta_k = pw90common_kmesh_spacing(berry%kmesh)
     else
       call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, HH_R, OO=HH, &
@@ -1490,7 +1500,7 @@ contains
       call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     endif
     call pw90common_get_occ(eig, occ, fermi%energy_list(1))
-    call wham_get_D_h(delHH, UU, eig, D_h)
+    call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
 
     call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
     do i = 1, 3
@@ -1584,7 +1594,7 @@ contains
 
   end subroutine berry_get_kubo_k
 
-  subroutine berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, stdout, seedname)
+  subroutine berry_get_sc_klist(kpt, sc_k_list, num_wann, fermi, berry, pw90_ham, stdout, seedname)
     !====================================================================!
     !                                                                    !
     !  Contribution from point k to the nonlinear shift current
@@ -1605,7 +1615,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_parameters, only: fermi_data_type
-    use pw90_parameters, only: berry_type
+    use pw90_parameters, only: berry_type, postw90_ham_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
       pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -1621,6 +1631,7 @@ contains
     integer, intent(in) :: num_wann
     type(fermi_data_type), intent(in) :: fermi
     type(berry_type), intent(in) :: berry
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -1666,24 +1677,28 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, &
+                                            stdout, seedname)
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
-      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(stdout, seedname, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(stdout, seedname, kpt, AA_R, OO_da=AA, &
+                                                      OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
-      call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU, stdout, seedname)
+      call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU, num_wann, pw90_ham, stdout, &
+                                       seedname)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
-      call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
+      call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, stdout, seedname)
       call pw90common_fourier_R_to_k_vec_dadb(stdout, seedname, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
-      call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU, stdout, seedname)
+      call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU, num_wann, pw90_ham, stdout, &
+                               seedname)
     end if
 
     ! get electronic occupations
     call pw90common_get_occ(eig, occ, fermi%energy_list(1))
 
     ! get D_h (Eq. (24) WYSV06)
-    call wham_get_D_h_P_value(HH_da, UU, eig, D_h)
+    call wham_get_D_h_P_value(HH_da, UU, eig, D_h, num_wann, berry)
 
     ! calculate k-spacing in case of adaptive smearing
     if (berry%kubo_adpt_smr) Delta_k = pw90common_kmesh_spacing(berry%kmesh)
@@ -1804,8 +1819,8 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  subroutine berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                 shc_k_fermi, shc_k_freq, shc_k_band)
+  subroutine berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
+                                 seedname, shc_k_fermi, shc_k_freq, shc_k_band)
     !====================================================================!
     !                                                                    !
     ! Contribution from a k-point to the spin Hall conductivity on a list
@@ -1831,7 +1846,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate
     use w90_parameters, only: fermi_data_type
-    use pw90_parameters, only: berry_type, spin_hall_type
+    use pw90_parameters, only: berry_type, spin_hall_type, postw90_ham_type
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1843,6 +1858,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(berry_type), intent(in) :: berry
     type(spin_hall_type), intent(in) :: spin_hall
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     real(kind=dp), optional, intent(out) :: shc_k_fermi(fermi%n)
@@ -1893,8 +1909,8 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
-    call wham_get_D_h(delHH, UU, eig, D_h)
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, seedname)
+    call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input
     if (spin_hall%bandshift) then

@@ -482,7 +482,7 @@ contains
     use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
     use w90_parameters, only: num_wann, fermi
-    use pw90_parameters, only: gyrotropic
+    use pw90_parameters, only: gyrotropic, pw90_ham
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
@@ -530,11 +530,11 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, seedname)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
-      call wham_get_D_h(delHH, UU, eig, D_h)
+      call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
       call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)

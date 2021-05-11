@@ -27,7 +27,7 @@ module w90_wan_ham
 
 contains
 
-  subroutine wham_get_D_h_a(delHH_a, UU, eig, ef, D_h_a)
+  subroutine wham_get_D_h_a(delHH_a, UU, eig, ef, D_h_a, num_wann)
     !===============================================!
     !                                               !
     !! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta),
@@ -36,7 +36,6 @@ contains
     !===============================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_wann
     use w90_utility, only: utility_rotate
     use w90_postw90_common, only: pw90common_get_occ
 
@@ -47,6 +46,7 @@ contains
     real(kind=dp), dimension(:), intent(in)  :: eig
     real(kind=dp), intent(in)  :: ef
     complex(kind=dp), dimension(:, :), intent(out) :: D_h_a
+    integer, intent(in) :: num_wann
 
     complex(kind=dp), allocatable :: delHH_a_bar(:, :)
     real(kind=dp)                 :: occ(num_wann)
@@ -69,7 +69,7 @@ contains
 
   end subroutine wham_get_D_h_a
 
-  subroutine wham_get_D_h(delHH, UU, eig, D_h)
+  subroutine wham_get_D_h(delHH, UU, eig, D_h, num_wann)
     !=========================================!
     !                                         !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
@@ -82,7 +82,6 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_wann
     use w90_utility, only: utility_rotate
 
     ! Arguments
@@ -91,6 +90,7 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)    :: UU
     real(kind=dp), dimension(:), intent(in)    :: eig
     complex(kind=dp), dimension(:, :, :), intent(out) :: D_h
+    integer, intent(in) :: num_wann
 
     complex(kind=dp), allocatable :: delHH_bar_i(:, :)
     integer                       :: n, m, i
@@ -109,7 +109,7 @@ contains
 
   end subroutine wham_get_D_h
 
-  subroutine wham_get_D_h_P_value(delHH, UU, eig, D_h)
+  subroutine wham_get_D_h_P_value(delHH, UU, eig, D_h, num_wann, berry)
     !=========================================!
     !                                         !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
@@ -124,8 +124,7 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_wann
-    use pw90_parameters, only: berry !sc_eta
+    use pw90_parameters, only: berry_type !sc_eta
     use w90_utility, only: utility_rotate
 
     ! Arguments
@@ -134,6 +133,8 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)    :: UU
     real(kind=dp), dimension(:), intent(in)    :: eig
     complex(kind=dp), dimension(:, :, :), intent(out) :: D_h
+    integer, intent(in) :: num_wann
+    type(berry_type), intent(in) :: berry
 
     complex(kind=dp), allocatable :: delHH_bar_i(:, :)
     integer                       :: n, m, i
@@ -155,7 +156,7 @@ contains
 
   end subroutine wham_get_D_h_P_value
 
-  subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, occ)
+  subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, num_wann, fermi, occ)
     !===============================================!
     !                                               !
     ! Compute JJ^+_a and JJ^-_a (a=Cartesian index) !
@@ -171,14 +172,16 @@ contains
     !===============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_wann, fermi
     use w90_utility, only: utility_rotate_new
+    use w90_parameters, only: fermi_data_type
 
     complex(kind=dp), dimension(:, :), intent(inout) :: delHH
     complex(kind=dp), dimension(:, :), intent(in)    :: UU
     real(kind=dp), dimension(:), intent(in)    :: eig
     complex(kind=dp), dimension(:, :, :), intent(out) :: JJp_list
     complex(kind=dp), dimension(:, :, :), intent(out) :: JJm_list
+    integer, intent(in) :: num_wann
+    type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), intent(in), optional, dimension(:) :: occ
 
     integer                       :: n, m, ife, nfermi_loc
@@ -220,7 +223,8 @@ contains
 
   end subroutine wham_get_JJp_JJm_list
 
-  subroutine wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, eig, occ)
+  subroutine wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, num_wann, fermi, &
+                                   eig, occ)
 !  subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
     !================================!
     !                                !
@@ -231,7 +235,7 @@ contains
     !================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_parameters, only: num_wann, fermi
+    use w90_parameters, only: fermi_data_type
     use w90_postw90_common, only: pw90common_get_occ
     use w90_io, only: io_error
 
@@ -241,6 +245,8 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
     complex(kind=dp), dimension(:, :, :), intent(out) :: f_list
     complex(kind=dp), dimension(:, :, :), intent(out) :: g_list
+    integer, intent(in) :: num_wann
+    type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), intent(in), optional, dimension(:) :: eig
     real(kind=dp), intent(in), optional, dimension(:) :: occ
     character(len=50), intent(in)  :: seedname
@@ -287,7 +293,7 @@ contains
 
   end subroutine wham_get_occ_mat_list
 
-  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, stdout, seedname)
+  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_ham, stdout, seedname)
     !==========================!
     !                          !
     !! Band derivatives dE/dk_a
@@ -295,17 +301,17 @@ contains
     !==========================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_utility, only: utility_diagonalize, utility_rotate, &
-      utility_rotate_diag
-    use w90_parameters, only: num_wann
-    use pw90_parameters, only: pw90_ham
+    use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag
+    use pw90_parameters, only: postw90_ham_type
 
     ! Arguments
     !
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out) :: deleig_a(num_wann)
     real(kind=dp), intent(in)  :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
+    type(postw90_ham_type) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -387,17 +393,19 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                                 stdout, seedname)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use pw90_parameters, only: postw90_ham_type
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
     !! the three coordinates of the k point vector (in relative coordinates)
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                      :: eig(num_wann)
     !! the calculated eigenvalues at kpt
     real(kind=dp), intent(out)                      :: del_eig(num_wann, 3)
@@ -409,6 +417,7 @@ contains
     !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:, :), intent(out)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -422,61 +431,73 @@ contains
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, stdout, seedname)
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, stdout, seedname)
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
 
   end subroutine wham_get_eig_deleig
 
-  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, stdout, seedname)
+  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, num_wann, pw90_ham, &
+                                         stdout, seedname)
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
 
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    use w90_parameters, only: num_wann
 !   use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use pw90_parameters, only: postw90_ham_type
 !   use w90_utility, only: utility_diagonalize
 
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)         :: kpt
     !! the three coordinates of the k point vector (in relative coordinates)
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                      :: del_eig(num_wann, 3)
     real(kind=dp), intent(in)                      :: eig(num_wann)
     complex(kind=dp), dimension(:, :, :), intent(in) :: delHH
     !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:, :), intent(in)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_ham, &
+                           stdout, seedname)
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
+                                       stdout, seedname, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
     !    Added the optional occ parameter                    !
     !========================================================!
 
-    use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_utility, only: utility_diagonalize
+    use w90_parameters, only: fermi_data_type
 
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJp_list
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJm_list
+    type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     integer                       :: i
@@ -492,15 +513,18 @@ contains
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     do i = 1, 3
       if (present(occ)) then
-        call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), JJm_list(:, :, :, i), occ=occ)
+        call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), &
+                                   JJm_list(:, :, :, i), num_wann, fermi, occ=occ)
       else
-        call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), JJm_list(:, :, :, i))
+        call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), &
+                                   JJm_list(:, :, :, i), num_wann, fermi)
       endif
     enddo
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, stdout, &
+                                              seedname)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -508,19 +532,19 @@ contains
     !                                                        !
     !========================================================!
 
-    use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R, AA_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_utility, only: utility_diagonalize
 
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     !integer                       :: i
@@ -535,25 +559,25 @@ contains
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
+  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, stdout, seedname)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
     !                                                        !
     !========================================================!
 
-    use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
 
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     !integer                       :: i

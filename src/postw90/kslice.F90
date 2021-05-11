@@ -49,7 +49,7 @@ contains
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, fermi, recip_lattice
-    use pw90_parameters, only: kslice, berry, spin_hall, world, pw90_spin !_curv_unit, kubo_adpt_smr
+    use pw90_parameters, only: kslice, berry, spin_hall, world, pw90_spin, pw90_ham !_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -236,7 +236,8 @@ contains
               spn_k(n) = -1.0_dp + eps8
             endif
           enddo
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
+                                   stdout, seedname)
           Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
@@ -277,8 +278,8 @@ contains
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
       else if (plot_shc) then
-        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
-                                 shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
+                                 seedname, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 
