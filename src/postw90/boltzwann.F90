@@ -36,7 +36,7 @@ module w90_boltzwann
   use w90_constants, only: dp, pw90_physical_constants, min_smearing_binwidth_ratio
   use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
-  use w90_postw90_common, only: cell_volume
+  !use w90_postw90_common, only: cell_volume
   use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
     comms_allreduce, w90commtype
   use w90_dos, only: dos_get_k, dos_get_levelspacing
@@ -65,7 +65,7 @@ module w90_boltzwann
 contains
 
   subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, physics, stdout, &
-                            seedname, world)
+                            seedname, world, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -92,6 +92,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
+    real(kind=dp), intent(in) :: cell_volume
 
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
@@ -213,7 +214,7 @@ contains
 
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_common%spin_decomp, &
-                       stdout, seedname, world)
+                       stdout, seedname, world, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -605,7 +606,7 @@ contains
   end subroutine boltzwann_main
 
   subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, spin_decomp, &
-                           stdout, seedname, world)
+                           stdout, seedname, world, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -658,6 +659,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
+    real(kind=dp), intent(in) :: cell_volume
 
     real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr

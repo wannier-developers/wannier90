@@ -279,7 +279,8 @@ program postw90
   if (pw90_calcs%geninterp) call geninterp_main(stdout, seedname)
 
   if (pw90_calcs%boltzwann) call boltzwann_main(dis_data, param_input, num_wann, boltz, &
-                                                pw90_common, physics, stdout, seedname, world)
+                                                pw90_common, physics, stdout, seedname, world, &
+                                                cell_volume)
 
   if (pw90_calcs%gyrotropic) call gyrotropic_main(physics, stdout, seedname)
 
