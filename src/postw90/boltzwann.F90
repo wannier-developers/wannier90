@@ -33,13 +33,12 @@ module w90_boltzwann
   !!    Comp. Phys. Comm. 185, 422 (2014)
   !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)
   !============================================================!
-  use w90_constants
-  use w90_parameters, only: dis_data, param_input
-  use pw90_parameters, only: boltz, pw90_common, world
+  use w90_constants, only: dp, pw90_physical_constants, min_smearing_binwidth_ratio
   use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
-  use w90_postw90_common
-  use w90_comms
+  use w90_postw90_common, only: cell_volume
+  use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
+    comms_allreduce, w90commtype
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   implicit none
 
@@ -65,7 +64,8 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(physics, stdout, seedname)
+  subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, physics, stdout, &
+                            seedname, world)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -80,9 +80,18 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
+    use w90_parameters, only: disentangle_type, parameter_input_type
+    use pw90_parameters, only: boltzwann_type, postw90_common_type
+
+    type(disentangle_type), intent(in) :: dis_data
+    type(parameter_input_type), intent(in) :: param_input
+    integer, intent(in) :: num_wann
+    type(boltzwann_type), intent(in) :: boltz
+    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
@@ -203,7 +212,8 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray, stdout, seedname)
+    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_common%spin_decomp, &
+                       stdout, seedname, world)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -594,7 +604,8 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray, stdout, seedname)
+  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, spin_decomp, &
+                           stdout, seedname, world)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -617,13 +628,12 @@ contains
     !!       and boltz_bandshift_firstband input flags.
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_parameters, only: num_wann
-    use pw90_parameters, only: boltz
+    use w90_parameters, only: parameter_input_type
+    use pw90_parameters, only: boltzwann_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
 
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(:, :, :), intent(out)   :: TDF ! (coordinate,Energy,spin)
     !! The TDF(i,EnIdx,spin) output array, where:
     !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
@@ -641,7 +651,13 @@ contains
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(boltzwann_type), intent(in) :: boltz
+    logical, intent(in) :: spin_decomp
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
@@ -682,7 +698,7 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R(stdout, seedname)
-    if (pw90_common%spin_decomp) then
+    if (spin_decomp) then
       ndim = 3
       call get_SS_R(stdout, seedname)
     else
@@ -802,7 +818,8 @@ contains
         eig(boltz%bandshift_firstband:) = eig(boltz%bandshift_firstband:) + boltz%bandshift_energyshift
       end if
 
-      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, stdout, seedname)
+      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, boltz, &
+                   spin_decomp, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -882,7 +899,7 @@ contains
       if (boltz%dos_adpt_smr) then
         write (boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
         write (boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
-        if (pw90_common%spin_decomp) then
+        if (spin_decomp) then
           write (boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
           write (boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
         end if
@@ -971,7 +988,8 @@ contains
 
   end function MinusFermiDerivative
 
-  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, stdout, seedname)
+  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, num_wann, param_input, boltz, &
+                     spin_decomp, stdout, seedname)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -996,13 +1014,12 @@ contains
     !!
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, param_input
-    use pw90_parameters, only: pw90_common, boltz
+    use w90_parameters, only: parameter_input_type
+    use pw90_parameters, only: boltzwann_type
     use w90_spin, only: spin_get_nk
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)      :: kpt
     !! the three coordinates of the k point vector whose DOS contribution we
     !! want to calculate (in relative coordinates)
@@ -1025,6 +1042,11 @@ contains
     !!   of the EnergyArray array;
     !!  - spinidx=1 contains the total dos; if if spin_decomp==.true., then
     !!  spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(boltzwann_type), intent(in) :: boltz
+    logical, intent(in) :: spin_decomp
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     ! Adaptive smearing
@@ -1042,13 +1064,13 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
+    if (spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
     TDF_k = 0.0_dp
     do BandIdx = 1, num_wann
-      if (pw90_common%spin_decomp) then
+      if (spin_decomp) then
         ! Contribution to spin-up DOS of Bloch spinor with component
         ! (alpha,beta) with respect to the chosen quantization axis
         alpha_sq = (1.0_dp + spn_nk(BandIdx))/2.0_dp ! |alpha|^2
@@ -1105,7 +1127,7 @@ contains
 
         ! I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
         ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
-        if (pw90_common%spin_decomp) then
+        if (spin_decomp) then
           ! Spin-up contribution
           TDF_k(XX, loop_f, 2) = TDF_k(XX, loop_f, 2) + rdum* &
                                  alpha_sq*deleig_k(BandIdx, 1)*deleig_k(BandIdx, 1)
