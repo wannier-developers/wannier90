@@ -583,7 +583,8 @@ contains
             ! Fake occupations: band n occupied, others empty
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(kpt, num_wann, fermi, stdout, seedname, imf_k, img_k, &
+                                       imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -591,7 +592,7 @@ contains
           else if (eval_D) then
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imf_klist(kpt, stdout, seedname, imf_k, occ)
+            call berry_get_imf_klist(kpt, num_wann, fermi, stdout, seedname, imf_k, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo

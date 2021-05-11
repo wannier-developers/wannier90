@@ -208,13 +208,15 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(kpt, stdout, seedname, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
+                                   shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(kpt, stdout, seedname, imf_k_list, img_k_list, imh_k_list)
+        call berry_get_imfgh_klist(kpt, num_wann, fermi, stdout, seedname, imf_k_list, img_k_list, &
+                                   imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -225,7 +227,7 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(kpt, stdout, seedname, imf_k_list)
+          call berry_get_imf_klist(kpt, num_wann, fermi, stdout, seedname, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -233,7 +235,8 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(kpt, stdout, seedname, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, stdout, seedname, &
+                                 shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

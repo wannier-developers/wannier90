@@ -264,7 +264,8 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if (pw90_calcs%berry) call berry_main(physics, stdout, seedname)
+  if (pw90_calcs%berry) call berry_main(param_input, fermi, num_wann, berry, pw90_common, &
+                                        spin_hall, physics, stdout, seedname, world)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
