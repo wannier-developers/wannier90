@@ -20,7 +20,9 @@ module w90_dos
 
   private
 
-  public :: dos_main, dos_get_levelspacing, dos_get_k
+  public :: dos_main
+  public :: dos_get_levelspacing
+  public :: dos_get_k
 
   integer       :: num_freq
   !! Number of sampling points
@@ -33,7 +35,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(stdout, seedname)
+  subroutine dos_main(stdout, seedname, num_wann)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -47,8 +49,8 @@ contains
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, param_input
     use pw90_parameters, only: dos_data, pw90_common, berry, world, pw90_ham !wanint_kpoint_file
+    use w90_parameters, only: param_input
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
@@ -58,6 +60,7 @@ contains
     ! then reduced (i.e. summed) over all nodes)
     !
     integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
     character(len=50), intent(in)  :: seedname
 
     real(kind=dp), allocatable :: dos_k(:, :)
@@ -162,8 +165,8 @@ contains
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                    stdout, seedname)
-          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
+          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -172,7 +175,7 @@ contains
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -197,8 +200,8 @@ contains
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                    stdout, seedname)
-          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
+          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -207,7 +210,7 @@ contains
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -472,18 +475,19 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, seedname, smr_index, &
+  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, seedname, num_wann, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, param_input
     use pw90_parameters, only: pw90_common, pw90_spin, dos_data !(num_dos_project, dos_project)
+    use w90_parameters, only: param_input
     use w90_spin, only: spin_get_nk
 
     ! Arguments
     !
     integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
     real(kind=dp), dimension(3), intent(in)               :: kpt
     real(kind=dp), dimension(:), intent(in)               :: EnergyArray
     real(kind=dp), dimension(:), intent(in)               :: eig_k
@@ -627,12 +631,13 @@ contains
 
   ! =========================================================================
 
-  subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing)
+  subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing, num_wann)
     !! This subroutine calculates the level spacing, i.e. how much the level changes
     !! near a given point of the interpolation mesh
-    use w90_parameters, only: num_wann
+!   use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_kmesh_spacing
 
+    integer, intent(in) :: num_wann
     real(kind=dp), dimension(num_wann, 3), intent(in) :: del_eig
     !! Band velocities, already corrected when degeneracies occur
     integer, dimension(3), intent(in)                :: kmesh

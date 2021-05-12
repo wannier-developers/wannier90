@@ -224,7 +224,7 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout, seedname)
+  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout, seedname, num_wann)
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level

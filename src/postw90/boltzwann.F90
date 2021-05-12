@@ -819,7 +819,7 @@ contains
       ! Here I get the band energies and the velocities
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                stdout, seedname)
-      call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
+      call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
       if (boltz%bandshift) then
@@ -856,8 +856,8 @@ contains
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
                   call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                            stdout, seedname)
-                  call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
-                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
+                  call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann)
+                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
                                  smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -868,7 +868,7 @@ contains
               end do
             end do
           else
-            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
+            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
                            smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -876,7 +876,7 @@ contains
             dos_all = dos_all + dos_k*kweight
           end if
         else
-          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
+          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
                          smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate
