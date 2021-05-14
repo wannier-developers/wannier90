@@ -309,6 +309,7 @@ module w90_param_methods
   public :: param_read_global_kmesh
   public :: param_clean_infile
   public :: param_read_final_alloc
+  public :: get_all_keywords !JJ hack
 
 contains
 
@@ -955,6 +956,274 @@ contains
     endif
   end subroutine param_read_atoms
 
+!JJ
+  subroutine get_all_keywords(stdout, seedname)
+    ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
+    ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
+    ! after removing all valid keys.
+    !
+    ! this routine hoovers up any remaining keys by scanning the ctrl file for (the union of) all
+    ! wannier90.x and postw90.x keywords.  The param_get_keyword* functions only assign to optional
+    ! arguments: here we call without any, which has the side effect of clearing the input stream.
+    !
+    ! these lists have been populated using a grep command on the source; it needs to be updated by
+    ! hand when the code changes.  There are a lot of keywords; it's not an ideal solution.
+    !
+    ! (for _vector: just specify zero length)
+    ! (for _block: small modification to skip checking/failure when rows=0 )
+    use w90_io, only: io_error
+
+    implicit none
+
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
+
+    type(special_kpoints_type) :: spec_points ! for the special case of param_get_keyword_kpath
+    logical :: found
+
+    ! keywords for wannier.x
+    call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, 0, 0, 0.0_dp)
+    call param_get_keyword_block(stdout, seedname, 'kpoints', found, 0, 0, 0.0_dp)
+    call param_get_keyword_block(stdout, seedname, 'nnkpts', found, 0, 0, 0.0_dp)
+    call param_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 0, 0, 0.0_dp)
+    call param_get_keyword_kpath(spec_points, stdout, seedname)
+    call param_get_keyword(stdout, seedname, 'auto_projections', found)
+    call param_get_keyword(stdout, seedname, 'bands_num_points', found)
+    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found)
+    call param_get_keyword(stdout, seedname, 'bands_plot_format', found)
+    call param_get_keyword(stdout, seedname, 'bands_plot', found)
+    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found)
+    call param_get_keyword(stdout, seedname, 'calc_only_A', found)
+    call param_get_keyword(stdout, seedname, 'conv_noise_amp', found)
+    call param_get_keyword(stdout, seedname, 'conv_noise_num', found)
+    call param_get_keyword(stdout, seedname, 'conv_tol', found)
+    call param_get_keyword(stdout, seedname, 'conv_window', found)
+    call param_get_keyword(stdout, seedname, 'cp_pp', found)
+    call param_get_keyword(stdout, seedname, 'devel_flag', found)
+    call param_get_keyword(stdout, seedname, 'dis_conv_tol', found)
+    call param_get_keyword(stdout, seedname, 'dis_conv_window', found)
+    call param_get_keyword(stdout, seedname, 'dis_froz_max', found)
+    call param_get_keyword(stdout, seedname, 'dis_froz_min', found)
+    call param_get_keyword(stdout, seedname, 'dis_mix_ratio', found)
+    call param_get_keyword(stdout, seedname, 'dis_num_iter', found)
+    call param_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found)
+    call param_get_keyword(stdout, seedname, 'dis_spheres_num', found)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff', found)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found)
+    call param_get_keyword(stdout, seedname, 'dis_win_max', found)
+    call param_get_keyword(stdout, seedname, 'dis_win_min', found)
+    call param_get_keyword(stdout, seedname, 'energy_unit', found)
+    call param_get_keyword(stdout, seedname, 'fermi_energy', found)
+    call param_get_keyword(stdout, seedname, 'fermi_energy_max', found)
+    call param_get_keyword(stdout, seedname, 'fermi_energy_min', found)
+    call param_get_keyword(stdout, seedname, 'fermi_energy_step', found)
+    call param_get_keyword(stdout, seedname, 'fermi_surface_num_points', found)
+    call param_get_keyword(stdout, seedname, 'fermi_surface_plot_format', found)
+    call param_get_keyword(stdout, seedname, 'fermi_surface_plot', found)
+    call param_get_keyword(stdout, seedname, 'fixed_step', found)
+    call param_get_keyword(stdout, seedname, 'gamma_only', found)
+    call param_get_keyword(stdout, seedname, 'guiding_centres', found)
+    call param_get_keyword(stdout, seedname, 'hr_cutoff', found)
+    call param_get_keyword(stdout, seedname, 'hr_plot', found)
+    call param_get_keyword(stdout, seedname, 'iprint', found)
+    call param_get_keyword(stdout, seedname, 'kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'kmesh_tol', found)
+    call param_get_keyword(stdout, seedname, 'length_unit', found)
+    call param_get_keyword(stdout, seedname, 'num_bands', found)
+    call param_get_keyword(stdout, seedname, 'num_cg_steps', found)
+    call param_get_keyword(stdout, seedname, 'num_dump_cycles', found)
+    call param_get_keyword(stdout, seedname, 'num_elec_per_state', found)
+    call param_get_keyword(stdout, seedname, 'num_guide_cycles', found)
+    call param_get_keyword(stdout, seedname, 'num_iter', found)
+    call param_get_keyword(stdout, seedname, 'num_no_guide_iter', found)
+    call param_get_keyword(stdout, seedname, 'num_print_cycles', found)
+    call param_get_keyword(stdout, seedname, 'num_shells', found)
+    call param_get_keyword(stdout, seedname, 'num_valence_bands', found)
+    call param_get_keyword(stdout, seedname, 'num_wann', found)
+    call param_get_keyword(stdout, seedname, 'one_dim_axis', found)
+    call param_get_keyword(stdout, seedname, 'optimisation', found)
+    call param_get_keyword(stdout, seedname, 'postproc_setup', found)
+    call param_get_keyword(stdout, seedname, 'precond', found)
+    call param_get_keyword(stdout, seedname, 'restart', found)
+    call param_get_keyword(stdout, seedname, 'search_shells', found)
+    call param_get_keyword(stdout, seedname, 'site_symmetry', found)
+    call param_get_keyword(stdout, seedname, 'skip_b1_tests', found)
+    call param_get_keyword(stdout, seedname, 'slwf_constrain', found)
+    call param_get_keyword(stdout, seedname, 'slwf_lambda', found)
+    call param_get_keyword(stdout, seedname, 'slwf_num', found)
+    call param_get_keyword(stdout, seedname, 'spin', found)
+    call param_get_keyword(stdout, seedname, 'spinors', found)
+    call param_get_keyword(stdout, seedname, 'symmetrize_eps', found)
+    call param_get_keyword(stdout, seedname, 'timing_level', found)
+    call param_get_keyword(stdout, seedname, 'tran_easy_fix', found)
+    call param_get_keyword(stdout, seedname, 'tran_energy_step', found)
+    call param_get_keyword(stdout, seedname, 'tran_group_threshold', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_bandc', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_bb', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_cc', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_cell_ll', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_cell_rr', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_cr', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_lc', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_ll', found)
+    call param_get_keyword(stdout, seedname, 'tran_num_rr', found)
+    call param_get_keyword(stdout, seedname, 'tran_read_ht', found)
+    call param_get_keyword(stdout, seedname, 'translate_home_cell', found)
+    call param_get_keyword(stdout, seedname, 'transport', found)
+    call param_get_keyword(stdout, seedname, 'transport_mode', found)
+    call param_get_keyword(stdout, seedname, 'tran_use_same_lead', found)
+    call param_get_keyword(stdout, seedname, 'tran_win_max', found)
+    call param_get_keyword(stdout, seedname, 'tran_win_min', found)
+    call param_get_keyword(stdout, seedname, 'tran_write_ht', found)
+    call param_get_keyword(stdout, seedname, 'trial_step', found)
+    call param_get_keyword(stdout, seedname, 'use_bloch_phases', found)
+    call param_get_keyword(stdout, seedname, 'use_ws_distance', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_format', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_mode', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_radius', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_scale', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found)
+    call param_get_keyword(stdout, seedname, 'write_bvec', found)
+    call param_get_keyword(stdout, seedname, 'write_hr_diag', found)
+    call param_get_keyword(stdout, seedname, 'write_hr', found)
+    call param_get_keyword(stdout, seedname, 'write_proj', found)
+    call param_get_keyword(stdout, seedname, 'write_r2mn', found)
+    call param_get_keyword(stdout, seedname, 'write_rmn', found)
+    call param_get_keyword(stdout, seedname, 'write_tb', found)
+    call param_get_keyword(stdout, seedname, 'write_u_matrices', found)
+    call param_get_keyword(stdout, seedname, 'write_vdw_data', found)
+    call param_get_keyword(stdout, seedname, 'write_xyz', found)
+    call param_get_keyword(stdout, seedname, 'ws_distance_tol', found)
+    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found)
+    call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 0) ! the absent arrays have zero length ;-)
+    call param_get_keyword_vector(stdout, seedname, 'mp_grid', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 0)
+    ! ends list of wannier.x keywords
+
+    ! keywords for postw90.x
+    call param_get_keyword(stdout, seedname, 'adpt_smr_fac', found)
+    call param_get_keyword(stdout, seedname, 'adpt_smr', found)
+    call param_get_keyword(stdout, seedname, 'adpt_smr_max', found)
+    call param_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found)
+    call param_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh_thresh', found)
+    call param_get_keyword(stdout, seedname, 'berry_curv_unit', found)
+    call param_get_keyword(stdout, seedname, 'berry', found)
+    call param_get_keyword(stdout, seedname, 'berry_kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'berry_task', found)
+    call param_get_keyword(stdout, seedname, 'boltz_2d_dir', found)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift_energyshift', found)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found)
+    call param_get_keyword(stdout, seedname, 'boltz_bandshift', found)
+    call param_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_max', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_min', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_energy_step', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found)
+    call param_get_keyword(stdout, seedname, 'boltz_kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_max', found)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_min', found)
+    call param_get_keyword(stdout, seedname, 'boltz_mu_step', found)
+    call param_get_keyword(stdout, seedname, 'boltz_relax_time', found)
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_energy_step', found)
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_max', found)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_min', found)
+    call param_get_keyword(stdout, seedname, 'boltz_temp_step', found)
+    call param_get_keyword(stdout, seedname, 'boltzwann', found)
+    call param_get_keyword(stdout, seedname, 'degen_thr', found)
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found)
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr', found)
+    call param_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found)
+    call param_get_keyword(stdout, seedname, 'dos_energy_max', found)
+    call param_get_keyword(stdout, seedname, 'dos_energy_min', found)
+    call param_get_keyword(stdout, seedname, 'dos_energy_step', found)
+    call param_get_keyword(stdout, seedname, 'dos', found)
+    call param_get_keyword(stdout, seedname, 'dos_kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'dos_smr_type', found)
+    call param_get_keyword(stdout, seedname, 'dos_task', found)
+    call param_get_keyword(stdout, seedname, 'effective_model', found)
+    call param_get_keyword(stdout, seedname, 'geninterp_alsofirstder', found)
+    call param_get_keyword(stdout, seedname, 'geninterp', found)
+    call param_get_keyword(stdout, seedname, 'geninterp_single_file', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_degen_thresh', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_task', found)
+    call param_get_keyword(stdout, seedname, 'kpath_bands_colour', found)
+    call param_get_keyword(stdout, seedname, 'kpath', found)
+    call param_get_keyword(stdout, seedname, 'kpath_num_points', found)
+    call param_get_keyword(stdout, seedname, 'kpath_task', found)
+    call param_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found)
+    call param_get_keyword(stdout, seedname, 'kslice', found)
+    call param_get_keyword(stdout, seedname, 'kslice_task', found)
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found)
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found)
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found)
+    call param_get_keyword(stdout, seedname, 'kubo_eigval_max', found)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_max', found)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_min', found)
+    call param_get_keyword(stdout, seedname, 'kubo_freq_step', found)
+    call param_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'kubo_smr_type', found)
+    call param_get_keyword(stdout, seedname, 'sc_eta', found)
+    call param_get_keyword(stdout, seedname, 'scissors_shift', found)
+    call param_get_keyword(stdout, seedname, 'sc_phase_conv', found)
+    call param_get_keyword(stdout, seedname, 'sc_w_thr', found)
+    call param_get_keyword(stdout, seedname, 'shc_alpha', found)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift_firstband', found)
+    call param_get_keyword(stdout, seedname, 'shc_bandshift', found)
+    call param_get_keyword(stdout, seedname, 'shc_beta', found)
+    call param_get_keyword(stdout, seedname, 'shc_freq_scan', found)
+    call param_get_keyword(stdout, seedname, 'shc_gamma', found)
+    call param_get_keyword(stdout, seedname, 'smr_fixed_en_width', found)
+    call param_get_keyword(stdout, seedname, 'smr_max_arg', found)
+    call param_get_keyword(stdout, seedname, 'smr_type', found)
+    call param_get_keyword(stdout, seedname, 'spin_axis_azimuth', found)
+    call param_get_keyword(stdout, seedname, 'spin_axis_polar', found)
+    call param_get_keyword(stdout, seedname, 'spin_decomp', found)
+    call param_get_keyword(stdout, seedname, 'spin_kmesh_spacing', found)
+    call param_get_keyword(stdout, seedname, 'spin_moment', found)
+    call param_get_keyword(stdout, seedname, 'spn_formatted', found)
+    call param_get_keyword(stdout, seedname, 'transl_inv', found)
+    call param_get_keyword(stdout, seedname, 'uhu_formatted', found)
+    call param_get_keyword(stdout, seedname, 'use_degen_pert', found)
+    call param_get_keyword(stdout, seedname, 'wanint_kpoint_file', found)
+    call param_get_keyword_vector(stdout, seedname, 'berry_kmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'boltz_kmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'dos_kmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b1', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b2', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b3', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'gyrotropic_kmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'spin_kmesh', found, 0)
+    ! ends list of postw90 keywords
+
+  end subroutine get_all_keywords
+
   subroutine param_clean_infile(stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -962,6 +1231,9 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: loop, ierr
+
+    ! JJ, filter out any remaining accepted keywords
+    call get_all_keywords(stdout, seedname)
 
     if (any(len_trim(in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
@@ -2153,10 +2425,10 @@ contains
     !       endif
     !    endif
 
-    if ((blen .ne. rows) .and. (blen .ne. rows + 1)) &
+    if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) &
       call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
 
-    if ((blen .eq. rows + 1) .and. (index(trim(keyword), 'unit_cell_cart') .eq. 0)) &
+    if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. (index(trim(keyword), 'unit_cell_cart') .eq. 0)) &
       call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
 
     found = .true.
