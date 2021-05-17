@@ -233,7 +233,9 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if (pw90_calcs%kpath) call k_path(physics%bohr, stdout, seedname)
+  if (pw90_calcs%kpath) call k_path(num_wann, spec_points, fermi, berry, spin_hall, kpath, &
+                                    pw90_spin, pw90_ham, recip_lattice, physics%bohr, stdout, &
+                                    seedname, world)
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space

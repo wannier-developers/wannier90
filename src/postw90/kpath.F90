@@ -40,16 +40,19 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(bohr, stdout, seedname)
+  subroutine k_path(num_wann, spec_points, fermi, berry, spin_hall, kpath, pw90_spin, pw90_ham, &
+                    recip_lattice, bohr, stdout, seedname, world)
     !! Main routine
 
-    use w90_comms
+    use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
+      comms_gatherv, comms_bcast
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, spec_points, fermi
-    use pw90_parameters, only: berry, spin_hall, kpath, world, pw90_spin, pw90_ham
+    use w90_param_types, only: special_kpoints_type, fermi_data_type
+    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
+      postw90_ham_type
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       !     get_FF_R, get_SS_R, get_SHC_R
       get_SS_R, get_SHC_R
@@ -58,9 +61,19 @@ contains
       berry_get_shc_klist
     !use w90_constants, only: bohr
 
-    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
+    type(special_kpoints_type), intent(in) :: spec_points
+    type(fermi_data_type), intent(in) :: fermi
+    type(berry_type), intent(in) :: berry
+    type(spin_hall_type), intent(in) :: spin_hall
+    type(kpath_type), intent(in) :: kpath
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
                          total_pts, loop_i, dataunit, gnuunit, pyunit, &
@@ -120,7 +133,8 @@ contains
       end if
     end if
 
-    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout, seedname)
+    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi, kpath, &
+                           berry%curv_unit, stdout, seedname, world)
 
     ! Set up the needed Wannier matrix elements
     call get_HH_R(stdout, seedname)
@@ -142,7 +156,8 @@ contains
       ! Determine the number of k-points (total_pts) as well as
       ! their reciprocal-lattice coordinates long the path (plot_kpoint)
       ! and their associated horizontal coordinate for the plot (xval)
-      call k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint)
+      call k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint, spec_points, &
+                             recip_lattice, kpath)
       ! (paths)
       num_spts = num_paths + 1 ! number of path endpoints (special pts)
     else
@@ -982,16 +997,21 @@ contains
   !===========================================================!
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
-  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout, seedname)
+  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi, kpath, &
+                               berry_curv_unit, stdout, seedname, world)
 
     use w90_comms, only: w90commtype, mpirank
-    use w90_parameters, only: fermi ! berry_curv_unit
-    use pw90_parameters, only: kpath, berry, world
+    use w90_param_types, only: fermi_data_type
+    use pw90_parameters, only: kpath_type
     use w90_io, only: io_error
 
-    integer, intent(in) :: stdout
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
+    type(fermi_data_type), intent(in) :: fermi
+    type(kpath_type), intent(in) :: kpath
+    character(len=*), intent(in) :: berry_curv_unit
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     logical :: on_root = .false.
     if (mpirank(world) == 0) on_root = .true.
@@ -1013,9 +1033,9 @@ contains
         end select
       end if
       if (plot_curv) then
-        if (berry%curv_unit == 'ang2') then
+        if (berry_curv_unit == 'ang2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
-        else if (berry%curv_unit == 'bohr2') then
+        else if (berry_curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
         if (fermi%n /= 1) call io_error( &
@@ -1028,10 +1048,10 @@ contains
           'Must specify one Fermi level when kpath_task=morb', stdout, seedname)
       end if
       if (plot_shc) then
-        if (berry%curv_unit == 'ang2') then
+        if (berry_curv_unit == 'ang2') then
           write (stdout, '(/,3x,a)') '* Berry curvature-like term for' &
             //' spin Hall conductivity in Ang^2'
-        else if (berry%curv_unit == 'bohr2') then
+        else if (berry_curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Berry curvature-like term for' &
             //' spin Hall conductivity in Bohr^2'
         end if
@@ -1043,20 +1063,24 @@ contains
   end subroutine
 
   !===================================================================!
-  subroutine k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint)
+  subroutine k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint, spec_points, &
+                               recip_lattice, kpath)
     !===================================================================!
     ! Determine the number of k-points (total_pts) as well as           !
     ! their reciprocal-lattice coordinates long the path (plot_kpoint)  !
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use w90_parameters, only: spec_points, recip_lattice
-    use pw90_parameters, only: kpath
+    use w90_param_types, only: special_kpoints_type
+    use pw90_parameters, only: kpath_type
     use w90_utility, only: utility_metric
 
     integer, intent(out)    :: num_paths, total_pts
     real(kind=dp), allocatable, dimension(:), intent(out)   :: kpath_len, xval
     real(kind=dp), allocatable, dimension(:, :), intent(out) :: plot_kpoint
+    type(special_kpoints_type), intent(in) :: spec_points
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    type(kpath_type), intent(in) :: kpath
 
     integer :: counter, loop_path, loop_i
 

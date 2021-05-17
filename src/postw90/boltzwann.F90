@@ -80,7 +80,7 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
-    use w90_parameters, only: disentangle_type, parameter_input_type
+    use w90_param_types, only: disentangle_type, parameter_input_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
       postw90_ham_type
 
@@ -632,7 +632,7 @@ contains
     !!       and boltz_bandshift_firstband input flags.
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_parameters, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
@@ -1023,7 +1023,7 @@ contains
     !!
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_spin, only: spin_get_nk
 
