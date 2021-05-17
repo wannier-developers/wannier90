@@ -35,7 +35,8 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(stdout, seedname, num_wann)
+  subroutine dos_main(stdout, seedname, num_wann, param_input, dos_data, pw90_common, berry, &
+                      world, pw90_ham)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -49,8 +50,8 @@ contains
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
-    use pw90_parameters, only: dos_data, pw90_common, berry, world, pw90_ham !wanint_kpoint_file
-    use w90_parameters, only: param_input
+    use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type !wanint_kpoint_file
+    use w90_param_types, only: parameter_input_type
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
@@ -59,26 +60,32 @@ contains
     ! 'dos_all' from all nodes/k-points (first summed on one node and
     ! then reduced (i.e. summed) over all nodes)
     !
+!   passed variables
+    type(parameter_input_type), intent(in)   :: param_input
+    type(dos_plot_type), intent(in)          :: dos_data
+    type(postw90_common_type), intent(in)    :: pw90_common
+    type(berry_type), intent(in)             :: berry
+    type(w90commtype), intent(in)            :: world
+    type(postw90_ham_type), intent(in)       :: pw90_ham
+
+!   local variables
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
-    character(len=50), intent(in)  :: seedname
-
+    integer             :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
+    integer             :: dos_unit, ndim, ierr
+    integer             :: my_node_id, num_nodes
     real(kind=dp), allocatable :: dos_k(:, :)
     real(kind=dp), allocatable :: dos_all(:, :)
-
-    real(kind=dp)    :: kweight, kpt(3), omega
-    integer          :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
-    integer          :: dos_unit, ndim, ierr
-    real(kind=dp), dimension(:), allocatable :: dos_energyarray
-
+    real(kind=dp)              :: kweight, kpt(3), omega
+!   real(kind=dp), dimension(:), allocatable :: dos_energyarray
+    real(kind=dp), allocatable :: dos_energyarray(:)
+    real(kind=dp)              :: del_eig(num_wann, 3)
+    real(kind=dp)              :: eig(num_wann), levelspacing_k(num_wann)
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
-    real(kind=dp) :: del_eig(num_wann, 3)
-    real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
-
+    character(len=50), intent(in) :: seedname
     logical :: on_root = .false.
-    integer :: my_node_id, num_nodes
 
     my_node_id = mpirank(world)
     num_nodes = mpisize(world)
@@ -166,7 +173,7 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                    stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -175,7 +182,7 @@ contains
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -201,7 +208,7 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                    stdout, seedname)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -210,7 +217,7 @@ contains
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -475,17 +482,22 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, seedname, num_wann, smr_index, &
+  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use pw90_parameters, only: pw90_common, pw90_spin, dos_data !(num_dos_project, dos_project)
-    use w90_parameters, only: param_input
+!   use pw90_parameters, only: pw90_common, pw90_spin, dos_data !(num_dos_project, dos_project)
+    use pw90_parameters, only: postw90_common_type, pw90_spin, dos_plot_type !(num_dos_project, dos_project)
+    use w90_param_types, only: parameter_input_type
+!   use w90_parameters, only: param_input
     use w90_spin, only: spin_get_nk
 
     ! Arguments
     !
+    type(parameter_input_type), intent(in) :: param_input
+    type(dos_plot_type), intent(in) :: dos_data
+    type(postw90_common_type), intent(in) :: pw90_common
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     real(kind=dp), dimension(3), intent(in)               :: kpt

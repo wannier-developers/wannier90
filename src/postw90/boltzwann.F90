@@ -65,7 +65,7 @@ module w90_boltzwann
 contains
 
   subroutine boltzwann_main(dis_data, param_input, num_wann, boltz, pw90_common, pw90_spin, &
-                            pw90_ham, physics, stdout, seedname, world, cell_volume)
+                            pw90_ham, physics, stdout, seedname, world, cell_volume, dos_data)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -82,10 +82,11 @@ contains
     !! T is the temperature in Kelvin. The grid is defined in the input.
     use w90_param_types, only: disentangle_type, parameter_input_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
-      postw90_ham_type
+      postw90_ham_type, dos_plot_type
 
     type(disentangle_type), intent(in) :: dis_data
     type(parameter_input_type), intent(in) :: param_input
+    type(dos_plot_type), intent(in) :: dos_data
     integer, intent(in) :: num_wann
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_common_type), intent(in) :: pw90_common
@@ -217,7 +218,7 @@ contains
 
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
-                       pw90_common%spin_decomp, pw90_ham, stdout, seedname, world, cell_volume)
+                       pw90_common%spin_decomp, pw90_ham, stdout, seedname, world, cell_volume, dos_data, pw90_common)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -609,7 +610,7 @@ contains
   end subroutine boltzwann_main
 
   subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, boltz, pw90_spin, &
-                           spin_decomp, pw90_ham, stdout, seedname, world, cell_volume)
+                           spin_decomp, pw90_ham, stdout, seedname, world, cell_volume, dos_data, pw90_common)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -632,8 +633,8 @@ contains
     !!       and boltz_bandshift_firstband input flags.
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_param_types, only: parameter_input_type
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type
+    use w90_parameters, only: parameter_input_type
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, postw90_common_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -656,6 +657,8 @@ contains
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
     integer, intent(in) :: num_wann
+    type(dos_plot_type), intent(in) :: dos_data
+    type(postw90_common_type), intent(in) :: pw90_common
     type(parameter_input_type), intent(in) :: param_input
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_spin_type), intent(in) :: pw90_spin
@@ -857,7 +860,7 @@ contains
                   call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
                                            stdout, seedname)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann)
-                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
+                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                                  smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -868,7 +871,7 @@ contains
               end do
             end do
           else
-            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
+            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                            smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -876,7 +879,7 @@ contains
             dos_all = dos_all + dos_k*kweight
           end if
         else
-          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, &
+          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, num_wann, param_input, dos_data, pw90_common, &
                          smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate

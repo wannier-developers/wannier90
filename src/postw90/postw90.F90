@@ -20,7 +20,6 @@ program postw90
   use w90_param_methods, only: param_read_chkpt, param_write_header
   use pw90_param_methods
   use w90_io
-
   use w90_kmesh
   use w90_comms, only: comms_setup, comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, &
     mpisize
@@ -224,7 +223,8 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout, seedname, num_wann)
+  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout, seedname, &
+                                                               num_wann, param_input, dos_data, pw90_common, berry, world, pw90_ham)
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
@@ -284,7 +284,7 @@ program postw90
 
   if (pw90_calcs%boltzwann) call boltzwann_main(dis_data, param_input, num_wann, boltz, &
                                                 pw90_common, pw90_spin, pw90_ham, physics, stdout, &
-                                                seedname, world, cell_volume)
+                                                seedname, world, cell_volume, dos_data)
 
   if (pw90_calcs%gyrotropic) call gyrotropic_main(physics, stdout, seedname)
 
