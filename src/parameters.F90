@@ -310,6 +310,7 @@ module w90_param_methods
   public :: param_clean_infile
   public :: param_read_final_alloc
   public :: get_all_keywords !JJ hack
+  private :: param_clear_block
 
 contains
 
@@ -986,7 +987,8 @@ contains
     call param_get_keyword_block(stdout, seedname, 'kpoints', found, 0, 0, 0.0_dp)
     call param_get_keyword_block(stdout, seedname, 'nnkpts', found, 0, 0, 0.0_dp)
     call param_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 0, 0, 0.0_dp)
-    call param_get_keyword_kpath(spec_points, stdout, seedname)
+    call param_clear_block(stdout, seedname, 'projections')
+    call param_clear_block(stdout, seedname, 'kpoint_path')
     call param_get_keyword(stdout, seedname, 'auto_projections', found)
     call param_get_keyword(stdout, seedname, 'bands_num_points', found)
     call param_get_keyword(stdout, seedname, 'bands_plot_dim', found)
@@ -3825,5 +3827,70 @@ contains
 240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy), stdout, seedname)
 
   end subroutine param_get_keyword_kpath
+
+  subroutine param_clear_block(stdout, seedname, keyword)
+    ! a dummy read routine to remove unused but legitimate input block from input stream
+    ! needed to preserve input file error checking (i.e. input stream should be empty after all
+    ! legitimate keywords/blocks are read)
+    use w90_io, only: io_error
+
+    implicit none
+
+    ! passed variables
+    integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
+    character(len=*), intent(in) :: keyword
+
+    ! local variables
+    integer :: in, ins, ine, loop, i, line_e, line_s, counter
+    logical :: found_e, found_s
+    character(len=maxlen) :: dummy, end_st, start_st
+
+    found_s = .false.
+    found_e = .false.
+
+    start_st = 'begin '//trim(keyword)
+    end_st = 'end '//trim(keyword)
+
+    do loop = 1, num_lines
+      ins = index(in_data(loop), trim(keyword))
+      if (ins == 0) cycle
+      in = index(in_data(loop), 'begin')
+      if (in == 0 .or. in > 1) cycle
+      line_s = loop
+      if (found_s) then
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+      endif
+      found_s = .true.
+    end do
+
+    do loop = 1, num_lines
+      ine = index(in_data(loop), trim(keyword))
+      if (ine == 0) cycle
+      in = index(in_data(loop), 'end')
+      if (in == 0 .or. in > 1) cycle
+      line_e = loop
+      if (found_e) then
+        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+      endif
+      found_e = .true.
+    end do
+
+    if (found_s .and. (.not. found_e)) then
+      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+    end if
+
+    if (found_e .and. (.not. found_s)) then
+      call io_error('Error: Found '//trim(end_st)//' but no '//trim(start_st)//' in input file', stdout, seedname)
+    end if
+
+    if (found_s .and. found_e) then
+      if (line_e <= line_s) then
+        call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      end if
+
+      in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
+    end if ! found tags
+  end subroutine param_clear_block
 
 end module w90_param_methods
