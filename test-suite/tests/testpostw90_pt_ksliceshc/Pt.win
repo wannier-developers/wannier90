@@ -45,17 +45,17 @@ dis_win_min       =  0.0d0
 dis_win_max       =  60.0d0
 dis_froz_min      =  0.0d0
 dis_froz_max      =  30.00d0
-#dis_num_iter      =  2000
-#dis_conv_tol      = 1.0e-10
-#conv_tol          = 1.0e-10
-#conv_window       = 40
-#num_iter          = 2000
-#guiding_centres = T
+dis_num_iter      =  2000
+dis_conv_tol      = 1.0e-10
+conv_tol          = 1.0e-10
+conv_window       = 40
+num_iter          = 2000
+guiding_centres = T
 
 spinors = true
-#begin projections
-#Pt: d;s;p
-#end projections
+begin projections
+Pt: d;s;p
+end projections
 
 begin unit_cell_cart
 bohr

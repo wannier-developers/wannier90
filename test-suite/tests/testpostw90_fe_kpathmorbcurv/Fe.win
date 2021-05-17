@@ -7,15 +7,15 @@ dis_win_min       = -8.0d0
 dis_win_max       = 70.0d0
 dis_froz_min      = -8.0d0
 dis_froz_max      =  30.0d0
-#dis_num_iter      =  500 
+dis_num_iter      =  500 
 
-#num_iter          = 200 
-#dis_mix_ratio = 1.0
+num_iter          = 200 
+dis_mix_ratio = 1.0
 
 spinors = true
-#begin projections
-#Fe: sp3d2;dxy;dxz;dyz
-#end projections
+begin projections
+Fe: sp3d2;dxy;dxz;dyz
+end projections
 
 fermi_energy = 12.6279 
 
