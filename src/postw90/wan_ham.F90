@@ -173,7 +173,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate_new
-    use w90_parameters, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type
 
     complex(kind=dp), dimension(:, :), intent(inout) :: delHH
     complex(kind=dp), dimension(:, :), intent(in)    :: UU
@@ -235,7 +235,7 @@ contains
     !================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_parameters, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type
     use w90_postw90_common, only: pw90common_get_occ
     use w90_io, only: io_error
 
@@ -486,7 +486,7 @@ contains
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_utility, only: utility_diagonalize
-    use w90_parameters, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
     integer, intent(in) :: num_wann

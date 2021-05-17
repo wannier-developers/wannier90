@@ -42,7 +42,7 @@ contains
     use w90_io, only: io_error
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
     use pw90_parameters, only: postw90_spin_type
-    use w90_parameters, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
     type(postw90_spin_type), intent(in) :: pw90_spin

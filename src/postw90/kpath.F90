@@ -50,7 +50,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: special_kpoints_type, fermi_data_type
+    use w90_param_types, only: special_kpoints_type, fermi_data_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
@@ -1001,7 +1001,7 @@ contains
                                berry_curv_unit, stdout, seedname, world)
 
     use w90_comms, only: w90commtype, mpirank
-    use w90_parameters, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type
     use pw90_parameters, only: kpath_type
     use w90_io, only: io_error
 
@@ -1071,7 +1071,7 @@ contains
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use w90_parameters, only: special_kpoints_type
+    use w90_param_types, only: special_kpoints_type
     use pw90_parameters, only: kpath_type
     use w90_utility, only: utility_metric
 
