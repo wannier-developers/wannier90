@@ -40,8 +40,9 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(num_wann, spec_points, fermi, berry, spin_hall, kpath, pw90_spin, pw90_ham, &
-                    recip_lattice, bohr, stdout, seedname, world)
+  subroutine k_path(num_wann, param_input, wann_data, spec_points, fermi, real_lattice, &
+                    recip_lattice, mp_grid, berry, spin_hall, kpath, pw90_spin, pw90_ham, &
+                    irdist_ws, crdist_ws, wdist_ndeg, bohr, stdout, seedname, world)
     !! Main routine
 
     use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
@@ -50,7 +51,8 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_param_types, only: special_kpoints_type, fermi_data_type
+    use w90_param_types, only: special_kpoints_type, fermi_data_type, parameter_input_type, &
+      wannier_data_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
@@ -62,14 +64,20 @@ contains
     !use w90_constants, only: bohr
 
     integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
     type(special_kpoints_type), intent(in) :: spec_points
     type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
     type(berry_type), intent(in) :: berry
     type(spin_hall_type), intent(in) :: spin_hall
     type(kpath_type), intent(in) :: kpath
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     real(kind=dp), intent(in) :: bohr
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -201,14 +209,18 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
+                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                       wdist_ndeg, stdout, seedname)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(kpt, spn_k, num_wann, pw90_spin, stdout, seedname)
+          call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
+                           recip_lattice, mp_grid, pw90_spin, irdist_ws, crdist_ws, wdist_ndeg, &
+                           stdout, seedname)
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing
@@ -223,15 +235,17 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
-                                   seedname, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, real_lattice, &
+                                   recip_lattice, mp_grid, berry, spin_hall, pw90_ham, irdist_ws, &
+                                   crdist_ws, wdist_ndeg, stdout, seedname, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(kpt, num_wann, fermi, stdout, seedname, imf_k_list, img_k_list, &
-                                   imh_k_list)
+        call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, real_lattice, &
+                                   recip_lattice, mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
+                                   stdout, seedname, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -242,7 +256,9 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(kpt, num_wann, fermi, stdout, seedname, imf_k_list)
+          call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, real_lattice, &
+                                   recip_lattice, mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
+                                   stdout, seedname, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -250,8 +266,9 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
-                                 seedname, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, real_lattice, &
+                                 recip_lattice, mp_grid, berry, spin_hall, pw90_ham, irdist_ws, &
+                                 crdist_ws, wdist_ndeg, stdout, seedname, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

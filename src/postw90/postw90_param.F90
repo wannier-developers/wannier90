@@ -222,7 +222,7 @@ module pw90_param_methods
   use w90_param_types, only: parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_type, &
     fermi_data_type, atom_data_type, special_kpoints_type
-  use w90_param_methods !BGS Todo only:
+  use w90_param_methods
   use pw90_parameters
 
   implicit none

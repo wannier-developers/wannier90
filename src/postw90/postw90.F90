@@ -39,6 +39,8 @@ program postw90
   use w90_boltzwann
   use w90_geninterp
 
+  use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg
+
   implicit none
 
   type(pw90_physical_constants) :: physics
@@ -177,7 +179,12 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   !
-  call pw90common_wanint_param_dist(stdout, seedname)
+  call pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_data, &
+                                    fermi, num_bands, num_wann, eigval, mp_grid, &
+                                    real_lattice, recip_lattice, pw90_calcs, &
+                                    pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                                    dos_data, berry, spin_hall, gyrotropic, geninterp, &
+                                    boltz, eig_found, stdout, seedname, world)
 
   if (.not. pw90_common%effective_model) then
     !
@@ -197,7 +204,9 @@ program postw90
     !      u_matrix separately, only their product v_matrix, and this
     !      is what is distributed now
     !
-    call pw90common_wanint_data_dist(stdout, seedname)
+    call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
+                                     dis_data, param_input, wann_data, pw90_common, &
+                                     stdout, seedname, world)
     !
   end if
 
@@ -205,11 +214,12 @@ program postw90
   !
   ! Should this be done on root node only?
   !
-  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(stdout, seedname)
+  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(stdout, seedname, world)
 
   ! Setup a number of common variables for all interpolation tasks
   !
-  call pw90common_wanint_setup(stdout, seedname)
+  call pw90common_wanint_setup(num_wann, param_input, real_lattice, mp_grid, pw90_common, &
+                               stdout, seedname, world)
 
   if (on_root) then
     time1 = io_time()
@@ -223,8 +233,11 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout, seedname, &
-                                                               num_wann, param_input, dos_data, pw90_common, berry, world, pw90_ham)
+  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) then
+    call dos_main(stdout, seedname, num_wann, param_input, wann_data, real_lattice, &
+                  recip_lattice, mp_grid, dos_data, pw90_common, berry, pw90_ham, pw90_spin, &
+                  irdist_ws, crdist_ws, wdist_ndeg, world)
+  endif
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
@@ -233,9 +246,10 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if (pw90_calcs%kpath) call k_path(num_wann, spec_points, fermi, berry, spin_hall, kpath, &
-                                    pw90_spin, pw90_ham, recip_lattice, physics%bohr, stdout, &
-                                    seedname, world)
+  if (pw90_calcs%kpath) call k_path(num_wann, param_input, wann_data, spec_points, fermi, &
+                                    real_lattice, recip_lattice, mp_grid, berry, spin_hall, kpath, &
+                                    pw90_spin, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, &
+                                    physics%bohr, stdout, seedname, world)
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
@@ -248,7 +262,9 @@ program postw90
   ! --------------------
   !
   if (pw90_common%spin_moment) call spin_get_moment(pw90_spin, berry%wanint_kpoint_file, fermi, &
-                                                    num_wann, param_input%iprint, stdout, &
+                                                    num_wann, param_input, wann_data, &
+                                                    real_lattice, recip_lattice, mp_grid, &
+                                                    irdist_ws, crdist_ws, wdist_ndeg, stdout, &
                                                     seedname, world)
 
   ! -------------------------------------------------------------------
@@ -269,9 +285,11 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if (pw90_calcs%berry) call berry_main(param_input, fermi, num_wann, berry, pw90_common, &
-                                        pw90_spin, spin_hall, pw90_ham, physics, stdout, seedname, &
-                                        world, int_kpts, num_int_kpts_on_node, weight, cell_volume)
+  if (pw90_calcs%berry) call berry_main(param_input, fermi, wann_data, num_wann, real_lattice, &
+                                        recip_lattice, mp_grid, berry, pw90_common, pw90_spin, &
+                                        spin_hall, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, &
+                                        physics, stdout, seedname, world, int_kpts, &
+                                        num_int_kpts_on_node, weight, cell_volume)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
@@ -282,9 +300,11 @@ program postw90
 
   if (pw90_calcs%geninterp) call geninterp_main(stdout, seedname)
 
-  if (pw90_calcs%boltzwann) call boltzwann_main(dis_data, param_input, num_wann, boltz, &
-                                                pw90_common, pw90_spin, pw90_ham, physics, stdout, &
-                                                seedname, world, cell_volume, dos_data)
+  if (pw90_calcs%boltzwann) call boltzwann_main(dis_data, param_input, wann_data, num_wann, &
+                                                real_lattice, recip_lattice, mp_grid, boltz, &
+                                                pw90_common, pw90_spin, pw90_ham, irdist_ws, &
+                                                crdist_ws, wdist_ndeg, physics, stdout, seedname, &
+                                                world, cell_volume, dos_data)
 
   if (pw90_calcs%gyrotropic) call gyrotropic_main(physics, stdout, seedname)
 

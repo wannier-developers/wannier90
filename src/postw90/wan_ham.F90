@@ -52,7 +52,7 @@ contains
     real(kind=dp)                 :: occ(num_wann)
     integer                       :: n, m
 
-    call pw90common_get_occ(eig, occ, ef)
+    call pw90common_get_occ(eig, occ, ef, num_wann)
 
     allocate (delHH_a_bar(num_wann, num_wann))
     delHH_a_bar = utility_rotate(delHH_a, UU, num_wann)
@@ -273,7 +273,7 @@ contains
       occ_list(:, 1) = occ(:)
     else
       do if = 1, nfermi_loc
-        call pw90common_get_occ(eig, occ_list(:, if), fermi%energy_list(if))
+        call pw90common_get_occ(eig, occ_list(:, if), fermi%energy_list(if), num_wann)
       enddo
     endif
 
@@ -393,13 +393,15 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, &
-                                 stdout, seedname)
+  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
+                                 wann_data, real_lattice, recip_lattice, mp_grid, pw90_ham, &
+                                 irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_param_types, only: parameter_input_type, wannier_data_type
     use pw90_parameters, only: postw90_ham_type
     use w90_utility, only: utility_diagonalize
 
@@ -417,7 +419,14 @@ contains
     !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:, :), intent(out)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
     type(postw90_ham_type), intent(in) :: pw90_ham
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -426,11 +435,19 @@ contains
     ! Further calls should return very fast.
     call get_HH_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
+                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                   wdist_ndeg, stdout, seedname)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, stdout, seedname)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, stdout, seedname)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, num_wann, param_input, wann_data, &
+                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                   wdist_ndeg, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, num_wann, param_input, wann_data, &
+                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                   wdist_ndeg, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, num_wann, param_input, wann_data, &
+                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                   wdist_ndeg, stdout, seedname)
     call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
                            stdout, seedname)
     call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_ham, &
@@ -476,6 +493,8 @@ contains
   end subroutine wham_get_eig_deleig_TB_conv
 
   subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
+                                       param_input, wann_data, real_lattice, recip_lattice, &
+                                       mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
                                        stdout, seedname, occ)
     !========================================================!
     !                                                        !
@@ -486,7 +505,7 @@ contains
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_utility, only: utility_diagonalize
-    use w90_param_types, only: fermi_data_type
+    use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
     integer, intent(in) :: num_wann
@@ -496,6 +515,13 @@ contains
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJp_list
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJm_list
     type(fermi_data_type), intent(in) :: fermi
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     real(kind=dp), intent(in), optional, dimension(:) :: occ
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -506,7 +532,9 @@ contains
     call get_HH_R(stdout, seedname)
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new(kpt, HH_R, num_wann, param_input, wann_data, &
+                                       real_lattice, recip_lattice, mp_grid, irdist_ws, &
+                                       crdist_ws, wdist_ndeg, stdout, seedname, OO=HH, &
                                        OO_dx=delHH(:, :, 1), &
                                        OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
@@ -523,7 +551,9 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, stdout, &
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, &
+                                              param_input, wann_data, real_lattice, recip_lattice, &
+                                              mp_grid, irdist_ws, crdist_ws, wdist_ndeg, stdout, &
                                               seedname)
     !========================================================!
     !                                                        !
@@ -535,6 +565,7 @@ contains
     use w90_get_oper, only: HH_R, get_HH_R, AA_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k_new_second_d_TB_conv
+    use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
@@ -544,6 +575,13 @@ contains
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -552,14 +590,19 @@ contains
     call get_HH_R(stdout, seedname)
     call get_AA_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(stdout, seedname, kpt, HH_R, AA_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, param_input, &
+                                                        wann_data, real_lattice, recip_lattice, &
+                                                        mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
+                                                        stdout, seedname, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, stdout, seedname)
+  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, param_input, &
+                                      wann_data, real_lattice, recip_lattice, mp_grid, &
+                                      irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -568,6 +611,7 @@ contains
 
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
+    use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
@@ -577,6 +621,13 @@ contains
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -584,7 +635,9 @@ contains
 
     call get_HH_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k_new_second_d(stdout, seedname, kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, param_input, wann_data, &
+                                                real_lattice, recip_lattice, mp_grid, irdist_ws, &
+                                                crdist_ws, wdist_ndeg, stdout, seedname, OO=HH, &
                                                 OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)

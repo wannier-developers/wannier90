@@ -278,8 +278,8 @@ contains
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
       else if (plot_shc) then
-        call berry_get_shc_klist(kpt, num_wann, fermi, berry, spin_hall, pw90_ham, stdout, &
-                                 seedname, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, num_wann, fermi, recip_lattice, berry, spin_hall, pw90_ham, &
+                                 stdout, seedname, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 

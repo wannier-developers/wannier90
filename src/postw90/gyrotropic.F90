@@ -445,10 +445,12 @@ contains
 
   end subroutine gyrotropic_main
 
-  subroutine gyrotropic_get_k_list(kpt, stdout, seedname, kweight, &
-                                   gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
-                                   gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, &
-                                   eval_K, eval_D, eval_Dw, eval_NOA, eval_spn, eval_C, eval_dos)
+  subroutine gyrotropic_get_k_list(kpt, kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
+                                   gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
+                                   eval_NOA, eval_spn, eval_C, eval_dos, num_wann, param_input, &
+                                   wann_data, fermi, real_lattice, recip_lattice, mp_grid, &
+                                   gyrotropic, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, &
+                                   stdout, seedname)
     !======================================================================!
     !                                                                      !
     ! Contribution from point k to the GME tensor, Eq.(9) of ZMS16,        !
@@ -481,8 +483,8 @@ contains
 
     use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
-    use w90_parameters, only: num_wann, fermi
-    use pw90_parameters, only: gyrotropic, pw90_ham
+    use w90_param_types, only: parameter_input_type, fermi_data_type, wannier_data_type
+    use pw90_parameters, only: gyrotropic_type, postw90_ham_type
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
@@ -493,7 +495,6 @@ contains
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in)                      :: kpt(3), kweight
     real(kind=dp), dimension(:, :, :), intent(inout)   :: gyro_K_spn, &
                                                           gyro_K_orb, &
@@ -504,6 +505,18 @@ contains
 
     logical, intent(in) :: eval_K, eval_D, eval_Dw, &
                            eval_C, eval_NOA, eval_spn, eval_dos
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    type(gyroptropic_type), intent(in) :: gyrotropic
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: UU(:, :)
@@ -530,12 +543,16 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, seedname)
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
+                             wann_data, real_lattice, recip_lattice, mp_grid, pw90_ham, &
+                             irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
-      call pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, AA_R, OO_true=AA)
+      call pw90common_fourier_R_to_k_vec(kpt, AA_R, num_wann, param_input, wann_data, &
+                                         real_lattice, recip_lattice, mp_grid, irdist_ws, &
+                                         crdist_ws, wdist_ndeg, stdout, seedname, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
       enddo

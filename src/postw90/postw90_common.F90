@@ -22,9 +22,9 @@ module w90_postw90_common
   ! Should we remove this 'use w90_comms' and invoke in individual routines
   ! when needed?
   !
-  use w90_comms
+  !use w90_comms
   use w90_constants, only: dp
-  use pw90_parameters, only: world
+  !use pw90_parameters, only: world
 
   implicit none
 
@@ -80,17 +80,25 @@ contains
 
   ! Public procedures have names starting with wanint_
 
-  subroutine pw90common_wanint_setup(stdout, seedname)
+  subroutine pw90common_wanint_setup(num_wann, param_input, real_lattice, mp_grid, pw90_common, &
+                                     stdout, seedname, world)
     !! Setup data ready for interpolation
     use w90_constants, only: dp, cmplx_0
 !   use w90_io, only: io_error, io_file_unit, seedname
     use w90_io, only: io_error, io_file_unit
     use w90_utility, only: utility_cart_to_frac
-    use w90_parameters, only: real_lattice, num_wann
-    use pw90_parameters, only: pw90_common
+    use w90_param_types, only: parameter_input_type
+    use pw90_parameters, only: postw90_common_type
+    use w90_comms, only: mpirank, w90commtype, comms_bcast
 
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    type(postw90_common_type), intent(in) :: pw90_common
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer :: ierr, ir, file_unit, num_wann_loc
     logical :: on_root = .false.
@@ -115,7 +123,7 @@ contains
       endif
       call comms_bcast(nrpts, 1, stdout, seedname, world)
     else
-      call wigner_seitz(stdout, seedname, count_pts=.true.)
+      call wigner_seitz(param_input, real_lattice, mp_grid, stdout, seedname, .true., world)
     endif
 
     ! Now can allocate several arrays
@@ -140,7 +148,7 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
       !
-      call wigner_seitz(stdout, seedname, count_pts=.false.)
+      call wigner_seitz(param_input, real_lattice, mp_grid, stdout, seedname, .false., world)
       !
       ! Convert from reduced to Cartesian coordinates
       !
@@ -158,7 +166,7 @@ contains
   end subroutine pw90common_wanint_setup
 
   !===========================================================!
-  subroutine pw90common_wanint_get_kpoint_file(stdout, seedname)
+  subroutine pw90common_wanint_get_kpoint_file(stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! read kpoints from kpoint.dat and distribute
@@ -167,11 +175,12 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
-    use w90_comms, only: mpirank, mpisize
+    use w90_comms, only: mpirank, mpisize, w90commtype, comms_send, comms_recv, comms_bcast
 
     ! passed variables
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     ! local variables
     integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
@@ -236,7 +245,12 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(stdout, seedname)
+  subroutine pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_data, &
+                                          fermi, num_bands, num_wann, eigval, mp_grid, &
+                                          real_lattice, recip_lattice, pw90_calcs, &
+                                          pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                                          dos_data, berry, spin_hall, gyrotropic, geninterp, &
+                                          boltz, eig_found, stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors
@@ -247,13 +261,44 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
-    use w90_parameters
-    use pw90_parameters
+    use w90_comms, only: mpirank, w90commtype, comms_bcast
+    use w90_param_types
+    use pw90_parameters, only: pw90_calculation_type, postw90_common_type, &
+      postw90_spin_type, postw90_ham_type, kpath_type, kslice_type, dos_plot_type, berry_type, &
+      spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
+
+    type(parameter_input_type), intent(inout) :: param_input
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(k_point_type), intent(inout) :: k_points
+    integer, intent(inout) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    type(fermi_data_type), intent(inout) :: fermi
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    integer, intent(inout) :: mp_grid(3)
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    !type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(postw90_common_type), intent(inout) :: pw90_common
+    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(kpath_type), intent(inout) :: kpath
+    type(kslice_type), intent(inout) :: kslice
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(berry_type), intent(inout) :: berry
+    type(spin_hall_type), intent(inout) :: spin_hall
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(geninterp_type), intent(inout) :: geninterp
+    type(boltzwann_type), intent(inout) :: boltz
+    logical, intent(inout) :: eig_found
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer :: ierr
-    integer, intent(in) :: stdout
     integer :: iprintroot
-    character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
 
     if (mpirank(world) == 0) on_root = .true.
@@ -510,7 +555,9 @@ contains
   end subroutine pw90common_wanint_param_dist
 
   !===========================================================!
-  subroutine pw90common_wanint_data_dist(stdout, seedname)
+  subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
+                                         dis_data, param_input, wann_data, pw90_common, &
+                                         stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! Distribute the um and chk files
@@ -520,13 +567,20 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_parameters, only: num_wann, num_kpts, num_bands, u_matrix_opt, &
-      u_matrix, dis_data, param_input, wann_data
-    use pw90_parameters, only: pw90_common
+    use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type
+    use pw90_parameters, only: postw90_common_type
+    use w90_comms, only: w90commtype, mpirank, comms_bcast
 
     implicit none
+    integer, intent(in) :: num_wann, num_kpts, num_bands
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
+    type(disentangle_type), intent(inout) :: dis_data
+    type(parameter_input_type), intent(inout) :: param_input
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(postw90_common_type), intent(in) :: pw90_common
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: world
 
     integer :: ierr, loop_kpt, m, i, j
     logical :: on_root = .false.
@@ -631,15 +685,16 @@ contains
 
 !=======================================================================
 
-  subroutine pw90common_get_occ(eig, occ, ef)
+  subroutine pw90common_get_occ(eig, occ, ef, num_wann)
     !! Compute the electronic occupancy
 
     use w90_constants, only: dp !,eps7
-    use w90_parameters, only: num_wann !,smear_temp
+    !use w90_parameters, only: num_wann !,smear_temp
 !    use w90_constants, only    : elem_charge_SI,k_B_SI
 
     ! Arguments
     !
+    integer, intent(in) :: num_wann
     real(kind=dp), intent(in)  :: eig(num_wann)
     !! Eigenvalues
     real(kind=dp), intent(in)  :: ef
@@ -678,15 +733,14 @@ contains
 
 !=======================================================================
 
-  function kmesh_spacing_singleinteger(num_points)
+  function kmesh_spacing_singleinteger(num_points, recip_lattice)
 
     !! Set up the value of the interpolation mesh spacing, needed for
     !! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of
     !! the three Delta_k's for each of the primitive translations b1, b2, and b3
 
-    use w90_parameters, only: recip_lattice
-
     integer, intent(in) :: num_points
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp)       :: kmesh_spacing_singleinteger
 
     integer        :: i
@@ -704,12 +758,12 @@ contains
     kmesh_spacing_singleinteger = maxval(Delta_k_i)
 
   end function kmesh_spacing_singleinteger
-  function kmesh_spacing_mesh(mesh)
+  function kmesh_spacing_mesh(mesh, recip_lattice)
     !! Same as kmesh_spacing_singleinteger, but for a kmesh with three
     !! different mesh samplings along the three directions
-    use w90_parameters, only: recip_lattice
 
     integer, dimension(3), intent(in) :: mesh
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp)                     :: kmesh_spacing_mesh
 
     integer        :: i
@@ -724,7 +778,9 @@ contains
   end function kmesh_spacing_mesh
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k(kpt, OO_R, OO, alpha, stdout, seedname)
+  subroutine pw90common_fourier_R_to_k(kpt, OO_R, OO, alpha, num_wann, param_input, wann_data, &
+                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                       wdist_ndeg, stdout, seedname)
     !=========================================================!
     !                                                         !
     !! For alpha=0:
@@ -739,10 +795,8 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, &
-      wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -751,6 +805,15 @@ contains
     real(kind=dp)                                   :: kpt(3)
     complex(kind=dp), dimension(:, :, :), intent(in)  :: OO_R
     complex(kind=dp), dimension(:, :), intent(out)   :: OO
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+
     integer                                         :: alpha
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -810,7 +873,10 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_new(stdout, seedname, kpt, OO_R, OO, OO_dx, OO_dy, OO_dz)
+  subroutine pw90common_fourier_R_to_k_new(kpt, OO_R, num_wann, param_input, wann_data, &
+                                           real_lattice, recip_lattice, mp_grid, irdist_ws, &
+                                           crdist_ws, wdist_ndeg, stdout, seedname, OO, OO_dx, &
+                                           OO_dy, OO_dz)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -822,17 +888,24 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     ! Arguments
     !
     real(kind=dp)                                             :: kpt(3)
     complex(kind=dp), dimension(:, :, :), intent(in)            :: OO_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dx
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dy
@@ -843,8 +916,9 @@ contains
     complex(kind=dp) :: phase_fac
 
     if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+                                                            num_wann, wann_data%centres, &
+                                                            real_lattice, recip_lattice, mp_grid, &
+                                                            nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -888,7 +962,10 @@ contains
   end subroutine pw90common_fourier_R_to_k_new
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_new_second_d(stdout, seedname, kpt, OO_R, OO, OO_da, OO_dadb)
+  subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, param_input, wann_data, &
+                                                    real_lattice, recip_lattice, mp_grid, &
+                                                    irdist_ws, crdist_ws, wdist_ndeg, stdout, &
+                                                    seedname, OO, OO_da, OO_dadb)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -903,28 +980,36 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
-    integer, intent(in) :: stdout
     ! Arguments
     !
     real(kind=dp)                                                 :: kpt(3)
     complex(kind=dp), dimension(:, :, :), intent(in)                :: OO_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
-    character(len=50), intent(in)  :: seedname
 
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
     if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+                                                            num_wann, wann_data%centres, &
+                                                            real_lattice, recip_lattice, mp_grid, &
+                                                            nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -980,7 +1065,11 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new_second_d
 
-  subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(stdout, seedname, kpt, OO_R, oo_a_R, OO, OO_da, OO_dadb)
+  subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
+                                                            param_input, wann_data, real_lattice, &
+                                                            recip_lattice, mp_grid, irdist_ws, &
+                                                            crdist_ws, wdist_ndeg, stdout, &
+                                                            seedname, OO, OO_da, OO_dadb)
     !=======================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -997,9 +1086,8 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -1008,14 +1096,22 @@ contains
     !
     real(kind=dp)                                                 :: kpt(3)
     complex(kind=dp), dimension(:, :, :), intent(in)                :: OO_R
+    complex(kind=dp), dimension(:, :, :, :), intent(in)     :: oo_a_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
-    complex(kind=dp), dimension(:, :, :, :), intent(in)     :: oo_a_R
-    character(len=50), intent(in)  :: seedname
 
     integer          :: ir, i, j, ideg, a, b
-    integer, intent(in) :: stdout
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
     real(kind=dp)    :: local_wannier_centres(3, num_wann), wannier_centres_frac(3, num_wann)
@@ -1116,7 +1212,10 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec(stdout, seedname, kpt, OO_R, OO_true, OO_pseudo)
+  subroutine pw90common_fourier_R_to_k_vec(kpt, OO_R, num_wann, param_input, wann_data, &
+                                           real_lattice, recip_lattice, mp_grid, &
+                                           irdist_ws, crdist_ws, wdist_ndeg, stdout, &
+                                           seedname, OO_true, OO_pseudo)
     !====================================================================!
     !                                                                    !
     !! For OO_true (true vector):
@@ -1125,20 +1224,27 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp)                                     :: kpt(3)
     complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_true
     complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_pseudo
-    character(len=50), intent(in)  :: seedname
 
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
@@ -1203,7 +1309,10 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec_dadb(stdout, seedname, kpt, OO_R, OO_da, OO_dadb)
+  subroutine pw90common_fourier_R_to_k_vec_dadb(kpt, OO_R, num_wann, param_input, wann_data, &
+                                                real_lattice, recip_lattice, mp_grid, &
+                                                irdist_ws, crdist_ws, wdist_ndeg, stdout, &
+                                                seedname, OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1215,20 +1324,27 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp)                                     :: kpt(3)
     complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
-    character(len=50), intent(in)  :: seedname
 
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
@@ -1288,7 +1404,10 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec_dadb
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(stdout, seedname, kpt, OO_R, OO_da, OO_dadb)
+  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, OO_R, num_wann, param_input, &
+                                                        wann_data, real_lattice, recip_lattice, &
+                                                        mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
+                                                        stdout, seedname, OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1304,21 +1423,28 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_wann, param_input, wann_data, real_lattice, &
-      recip_lattice, mp_grid
-    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp)                                     :: kpt(3)
     complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
+    integer, intent(in) :: num_wann
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
-    character(len=50), intent(in)  :: seedname
 
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
@@ -1465,7 +1591,7 @@ contains
   !===========================================================!
 
   !================================!
-  subroutine wigner_seitz(stdout, seedname, count_pts)
+  subroutine wigner_seitz(param_input, real_lattice, mp_grid, stdout, seedname, count_pts, world)
     !================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1476,22 +1602,27 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: stdout, io_error, io_stopwatch
     use w90_io, only: io_error, io_stopwatch
-    use w90_parameters, only: mp_grid, real_lattice, param_input
+    use w90_param_types, only: parameter_input_type
     use w90_utility, only: utility_metric
+    use w90_comms, only: w90commtype, mpirank
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
+    type(parameter_input_type), intent(in) :: param_input
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: count_pts
+    type(w90commtype), intent(in) :: world
 
     integer       :: ndiff(3)
     real(kind=dp) :: dist(125), tot, dist_min
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
     real(kind=dp) :: real_metric(3, 3)
-    character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
     if (mpirank(world) == 0) on_root = .true.
 
