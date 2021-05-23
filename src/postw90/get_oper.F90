@@ -73,7 +73,7 @@ contains
     !======================================================
 
     use pw90_parameters, only: postw90_common_type
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
@@ -87,7 +87,7 @@ contains
     real(kind=dp), intent(inout) :: crvec(:, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type) :: k_points
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(w90commtype), intent(in) :: comm
@@ -702,7 +702,8 @@ contains
   !=============================================================
 
   subroutine get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
-                      kmesh_info, param_input, postw90_oper, pw90_common, stdout, seedname, comm)
+                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
+                      seedname, comm)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -724,7 +725,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type) :: k_points
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_oper_type), intent(in) :: postw90_oper
@@ -902,7 +903,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type) :: k_points
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in) :: seedname
@@ -1044,7 +1045,7 @@ contains
 
   !================================================================
   subroutine get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
-                      k_points, param_input, postw90_oper, pw90_common, stdout, seedname, comm)
+                      k_points, param_input, postw90_oper, stdout, seedname, comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1065,9 +1066,8 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type) :: k_points
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in) :: seedname
@@ -1229,7 +1229,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type) :: k_points
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_oper_type), intent(in) :: postw90_oper

@@ -29,8 +29,11 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(pw90_spin, wanint_kpoint_file, fermi, num_wann, iprint, stdout, &
-                             seedname, world)
+  subroutine spin_get_moment(num_bands, num_kpts, nrpts, irvec, ndegen, rpt_origin, &
+                             eigval, real_lattice, crvec, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                             pw90_common, postw90_oper, &
+                             pw90_spin, wanint_kpoint_file, fermi, num_wann, iprint, stdout, &
+                             seedname, comm)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -45,13 +48,31 @@ contains
     use w90_param_types, only: fermi_data_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
+    use pw90_parameters, only: postw90_common_type, postw90_oper_type
+    use w90_comms, only: w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+
+    implicit none
+
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, iprint
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(w90commtype), intent(in) :: comm
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    character(len=50), intent(in) :: seedname
+
     type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: wanint_kpoint_file
     type(fermi_data_type), intent(in) :: fermi
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout, iprint
-    character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
@@ -59,12 +80,16 @@ contains
 
     integer :: my_node_id, num_nodes
 
-    my_node_id = mpirank(world); 
-    num_nodes = mpisize(world); 
+    my_node_id = mpirank(comm); 
+    num_nodes = mpisize(comm); 
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
-    call get_HH_R(stdout, seedname)
-    call get_SS_R(stdout, seedname)
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
+
+    call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                  k_points, param_input, postw90_oper, stdout, seedname, comm)
 
     if (iprint > 0) then
       write (stdout, '(/,/,1x,a)') '------------'
@@ -115,7 +140,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, world)
+    call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, comm)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)

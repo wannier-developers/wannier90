@@ -56,7 +56,11 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(physics, stdout, seedname)
+  subroutine gyrotropic_main(num_bands, num_kpts, num_wann, nrpts, &
+                             irvec, ndegen, rpt_origin, eigval, real_lattice, crvec, u_matrix, &
+                             v_matrix, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                             postw90_oper, pw90_ham, comm, &
+                             physics, stdout, seedname)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -68,20 +72,40 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, twopi, pw90_physical_constants
+    use pw90_parameters, only: gyrotropic, berry, postw90_oper_type, postw90_ham_type, postw90_common_type
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
-    use w90_utility, only: utility_det3
+    use w90_constants, only: dp, cmplx_0, twopi, pw90_physical_constants
+    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
+    use w90_parameters, only: fermi
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, kmesh_info_type
     use w90_postw90_common, only: cell_volume
-    use w90_parameters, only: param_input, fermi
-    use pw90_parameters, only: gyrotropic, berry, world
-    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_SS_R
+    use w90_utility, only: utility_det3
 
+    implicit none
+
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(postw90_oper_type), intent(in) :: postw90_oper
     type(pw90_physical_constants), intent(in) :: physics
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90commtype), intent(in) :: comm
 
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
     real(kind=dp), allocatable    :: gyro_DOS(:)
     real(kind=dp), allocatable    :: gyro_K_orb(:, :, :)
@@ -101,8 +125,8 @@ contains
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
     integer :: my_node_id, num_nodes
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
 
     if (fermi%n == 0) call io_error( &
       'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
@@ -147,18 +171,28 @@ contains
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(stdout, seedname)
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
-      call get_AA_R(stdout, seedname)
+
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+                    dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
+                    comm)
     endif
 
     if (eval_spn) then
-      call get_SS_R(stdout, seedname)
+
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                    k_points, param_input, postw90_oper, stdout, seedname, comm)
     endif
 
     if (eval_K) then
-      call get_BB_R(stdout, seedname)
-      call get_CC_R(stdout, seedname)
+      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                    kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
+      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                    kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
+                    seedname, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
@@ -262,7 +296,10 @@ contains
       kpt(3) = loop_z*db3
       kpt(:) = gyrotropic%box_corner(:) + matmul(kpt, gyrotropic%box)
 
-      call gyrotropic_get_k_list(kpt, stdout, seedname, kweight, &
+      call gyrotropic_get_k_list(num_bands, num_kpts, num_wann, nrpts, irvec, ndegen, rpt_origin, &
+                                 eigval, real_lattice, crvec, u_matrix, v_matrix, dis_data, &
+                                 k_points, param_input, pw90_common, comm, pw90_ham, &
+                                 kpt, stdout, seedname, kweight, &
                                  gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, &
                                  eval_K, eval_D, eval_Dw, eval_NOA, eval_spn, eval_C, eval_dos)
@@ -272,29 +309,29 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
       if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, &
-                                      seedname, world)
+                                      seedname, comm)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
 
     if (eval_Dw) &
       call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
-                        seedname, world)
+                        seedname, comm)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', stdout, seedname, world)
+      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', stdout, seedname, comm)
 
     if (eval_NOA) then
       call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
-                        seedname, world)
+                        seedname, comm)
       if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, &
-                                      'SUM', stdout, seedname, world)
+                                      'SUM', stdout, seedname, comm)
     endif
 
     if (param_input%iprint > 0) then
@@ -445,7 +482,10 @@ contains
 
   end subroutine gyrotropic_main
 
-  subroutine gyrotropic_get_k_list(kpt, stdout, seedname, kweight, &
+  subroutine gyrotropic_get_k_list(num_bands, num_kpts, num_wann, nrpts, irvec, ndegen, rpt_origin, &
+                                   eigval, real_lattice, crvec, u_matrix, v_matrix, dis_data, &
+                                   k_points, param_input, pw90_common, comm, pw90_ham, &
+                                   kpt, stdout, seedname, kweight, &
                                    gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                    gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, &
                                    eval_K, eval_D, eval_Dw, eval_NOA, eval_spn, eval_C, eval_dos)
@@ -479,21 +519,22 @@ contains
     !                                                                      !
     !======================================================================!
 
-    use w90_constants, only: dp, cmplx_i
-    use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
-    use w90_parameters, only: num_wann, fermi
-    use pw90_parameters, only: gyrotropic, pw90_ham
-    use w90_postw90_common, only: pw90common_get_occ, &
-      pw90common_fourier_R_to_k_vec
+    use pw90_parameters, only: gyrotropic, postw90_common_type, postw90_ham_type
+    use w90_comms, only: w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_get_oper, only: AA_R
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_parameters, only: fermi
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_fourier_R_to_k_vec
+    use w90_spin, only: spin_get_S
+    use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, utility_w0gauss
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
 
-    use w90_get_oper, only: AA_R
-    use w90_spin, only: spin_get_S
-    !use w90_io, only: stdout
+    implicit none
 
     ! Arguments
     !
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in)                      :: kpt(3), kweight
     real(kind=dp), dimension(:, :, :), intent(inout)   :: gyro_K_spn, &
                                                           gyro_K_orb, &
@@ -504,7 +545,19 @@ contains
 
     logical, intent(in) :: eval_K, eval_D, eval_Dw, &
                            eval_C, eval_NOA, eval_spn, eval_dos
-    character(len=50), intent(in)  :: seedname
+
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(w90commtype), intent(in) :: comm
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    character(len=50), intent(in) :: seedname
 
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: HH(:, :)
@@ -530,7 +583,9 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, seedname)
+    call wham_get_eig_deleig(num_bands, num_kpts, nrpts, irvec, ndegen, rpt_origin, eigval, &
+                             real_lattice, crvec, u_matrix, v_matrix, dis_data, k_points, param_input, pw90_common, comm, &
+                             kpt, eig, del_eig, HH, delHH, UU, num_wann, pw90_ham, stdout, seedname)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
@@ -583,8 +638,11 @@ contains
             ! Fake occupations: band n occupied, others empty
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imfgh_klist(kpt, num_wann, fermi, stdout, seedname, imf_k, img_k, &
-                                       imh_k, occ)
+
+            call berry_get_imfgh_klist(num_bands, num_kpts, nrpts, irvec, ndegen, rpt_origin, eigval, &
+                                       real_lattice, u_matrix, v_matrix, dis_data, k_points, &
+                                       comm, crvec, param_input, pw90_common, &
+                                       kpt, num_wann, fermi, stdout, seedname, imf_k, img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -592,7 +650,11 @@ contains
           else if (eval_D) then
             occ = 0.0_dp
             occ(n) = 1.0_dp
-            call berry_get_imf_klist(kpt, num_wann, fermi, stdout, seedname, imf_k, occ)
+
+            call berry_get_imf_klist(num_bands, num_kpts, nrpts, irvec, ndegen, rpt_origin, eigval, &
+                                     real_lattice, u_matrix, v_matrix, dis_data, k_points, &
+                                     comm, crvec, param_input, pw90_common, &
+                                     kpt, num_wann, fermi, stdout, seedname, imf_k, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo
@@ -650,8 +712,11 @@ contains
     !                                        !
     !======================================================================!
 
-    use w90_constants, only: dp
     use pw90_parameters, only: gyrotropic
+    use w90_constants, only: dp
+
+    implicit none
+
     ! Arguments
     !
     real(kind=dp), intent(in)                    :: eig(:)
@@ -701,16 +766,16 @@ contains
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
     !====================================================================!
 
-    use w90_constants, only: dp, cmplx_1
-    use w90_utility, only: utility_rotate
-    use w90_parameters, only: num_wann, fermi, param_input
     use pw90_parameters, only: gyrotropic
-
-    use w90_io, only: io_time, io_error
-
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
+    use w90_constants, only: dp, cmplx_1
     use w90_get_oper, only: SS_R
+    use w90_io, only: io_time, io_error
+    use w90_parameters, only: num_wann, fermi, param_input
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_spin, only: spin_get_S
+    use w90_utility, only: utility_rotate
+
+    implicit none
 
     ! Arguments
     !
@@ -829,8 +894,10 @@ contains
     !   in units eV*Ang^2                                                !
     !====================================================================!
 
-    use w90_constants, only: dp, cmplx_i, cmplx_0
     use pw90_parameters, only: gyrotropic
+    use w90_constants, only: dp, cmplx_i, cmplx_0
+
+    implicit none
 
     ! Arguments
     !
@@ -876,6 +943,8 @@ contains
 
     use w90_constants, only: dp, cmplx_i, cmplx_0
 
+    implicit none
+
     ! Arguments
     !
     integer, intent(in) ::num_occ, num_unocc
@@ -904,8 +973,9 @@ contains
 
   subroutine gyrotropic_outprint_tensor(stdout, seedname, f_out_name, arrEf, arrEF1D, arrEfW, units, comment, symmetrize)
     use pw90_parameters, only: gyrotropic
-!   use w90_io, only: io_file_unit, seedname, stdout
     use w90_io, only: io_file_unit
+
+    implicit none
 
     integer, intent(in) :: stdout
     character(len=30), intent(in) :: f_out_name
@@ -951,6 +1021,8 @@ contains
 
   subroutine gyrotropic_outprint_tensor_w(file_unit, omega, arr33N, arrN, symmetrize)
     use w90_parameters, only: fermi
+
+    implicit none
 
     integer, intent(in) :: file_unit
     real(kind=dp), intent(in) :: omega
