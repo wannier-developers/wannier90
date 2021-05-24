@@ -297,9 +297,9 @@ program postw90
   endif
 
   if (pw90_calcs%geninterp) then
-    call geninterp_main(real_lattice, nrpts, num_bands, num_kpts, num_wann, irvec, ndegen, &
+    call geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, irvec, ndegen, &
                         rpt_origin, eigval, v_matrix, u_matrix, k_points, crvec, comm, &
-                        dis_data, pw90_common, stdout, seedname)
+                        dis_data, pw90_common, stdout, seedname, geninterp, pw90_ham, param_input)
   end if
 
   if (pw90_calcs%boltzwann) then
