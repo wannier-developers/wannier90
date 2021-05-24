@@ -311,7 +311,7 @@ contains
     real(kind=dp), intent(in)  :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
-    type(postw90_ham_type) :: pw90_ham
+    type(postw90_ham_type), intent(in) :: pw90_ham
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -399,18 +399,14 @@ contains
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    use w90_get_oper, only: HH_R, get_HH_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use pw90_parameters, only: postw90_ham_type
-    use w90_utility, only: utility_diagonalize
-    use w90_get_oper, only: HH_R, get_HH_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
-    use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: postw90_common_type
+    use pw90_parameters, only: postw90_common_type, postw90_ham_type
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
+    use w90_get_oper, only: HH_R, get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new_second_d
+    use w90_utility, only: utility_diagonalize
 
     implicit none
 
