@@ -313,7 +313,7 @@ program postw90
     call gyrotropic_main(num_bands, num_kpts, num_wann, nrpts, irvec, ndegen, rpt_origin, eigval, &
                          real_lattice, crvec, u_matrix, v_matrix, dis_data, kmesh_info, k_points, &
                          param_input, pw90_common, postw90_oper, pw90_ham, comm, physics, stdout, &
-                         seedname)
+                         seedname, gyrotropic, berry, fermi, cell_volume)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then
