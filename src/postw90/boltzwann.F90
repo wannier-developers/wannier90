@@ -33,13 +33,13 @@ module w90_boltzwann
   !!    Comp. Phys. Comm. 185, 422 (2014)
   !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)
   !============================================================!
+
+  use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, comms_allreduce, w90commtype
   use w90_constants, only: dp, pw90_physical_constants, min_smearing_binwidth_ratio
+  use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
-  !use w90_postw90_common, only: cell_volume
-  use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
-    comms_allreduce, w90commtype
-  use w90_dos, only: dos_get_k, dos_get_levelspacing
+
   implicit none
 
   private
@@ -64,10 +64,11 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(dis_data, param_input, wann_data, num_wann, real_lattice, &
-                            recip_lattice, mp_grid, boltz, pw90_common, pw90_spin, pw90_ham, &
-                            irdist_ws, crdist_ws, wdist_ndeg, physics, stdout, seedname, world, &
-                            cell_volume, dos_data)
+  subroutine boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
+                            mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                            boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
+                            irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, &
+                            rpt_origin, physics, stdout, seedname, comm, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -82,30 +83,45 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
-    use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type, &
+      k_point_type, disentangle_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
-      postw90_ham_type, dos_plot_type
+      postw90_ham_type, dos_plot_type, postw90_oper_type
 
-    type(disentangle_type), intent(in) :: dis_data
+    implicit none
+
+    ! arguments
+    integer, intent(in) :: num_wann, num_bands, num_kpts
     type(parameter_input_type), intent(in) :: param_input
     type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
     type(dos_plot_type), intent(in) :: dos_data
-    integer, intent(in) :: num_wann
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
+    type(postw90_oper_type), intent(in) :: postw90_oper
     integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: nrpts
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(inout) :: crvec(:, :)
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90commtype), intent(in) :: comm
     real(kind=dp), intent(in) :: cell_volume
 
+    ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
     real(kind=dp), dimension(:), allocatable :: TempArray, MuArray, KTArray
@@ -136,8 +152,8 @@ contains
     integer :: my_node_id, num_nodes
     logical :: on_root = .false.
 
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
@@ -225,10 +241,11 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, real_lattice, &
-                       recip_lattice, mp_grid, dos_data, pw90_common, boltz, pw90_spin, &
-                       pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
-                       world, cell_volume)
+    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
+                       real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
+                       v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
+                       pw90_ham, postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
+                       crvec, ndegen, rpt_origin, stdout, seedname, comm, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -262,7 +279,7 @@ contains
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
-    call comms_array_split(TempNumPoints*MuNumPoints, counts, displs, world)
+    call comms_array_split(TempNumPoints*MuNumPoints, counts, displs, comm)
 
     ! I allocate the arrays for the spectra
     ! Allocate at least 1 entry
@@ -423,7 +440,7 @@ contains
       ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
-    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout, seedname, world)
+    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout, seedname, comm)
     if (on_root) then
       if ((NumberZeroDet .gt. 0)) then
         write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumberZeroDet, " (mu,T) pairs for which the electrical"
@@ -497,13 +514,13 @@ contains
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
     call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, stdout, &
-                       seedname, world)
+                       seedname, comm)
     call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, stdout, &
-                       seedname, world)
+                       seedname, comm)
     call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, stdout, &
-                       seedname, world)
+                       seedname, comm)
     call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout, &
-                       seedname, world)
+                       seedname, comm)
 
     if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
 
@@ -619,10 +636,11 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, real_lattice, &
-                           recip_lattice, mp_grid, dos_data, pw90_common, boltz, pw90_spin, &
-                           pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
-                           world, cell_volume)
+  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
+                           real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
+                           v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
+                           pw90_ham, postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
+                           crvec, ndegen, rpt_origin, stdout, seedname, comm, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -644,13 +662,21 @@ contains
     !!       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
     !!       and boltz_bandshift_firstband input flags.
     !!
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_param_types, only: parameter_input_type, wannier_data_type
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, postw90_common_type
+    use w90_param_types, only: parameter_input_type, wannier_data_type, k_point_type, &
+      disentangle_type
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
+      postw90_common_type, postw90_oper_type
     use w90_param_methods, only: param_get_smearing_type
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
 
+    implicit none
+
+    ! arguments
     real(kind=dp), dimension(:, :, :), intent(out)   :: TDF ! (coordinate,Energy,spin)
     !! The TDF(i,EnIdx,spin) output array, where:
     !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
@@ -668,24 +694,33 @@ contains
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
-    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_wann, num_bands, num_kpts
     type(parameter_input_type), intent(in) :: param_input
     type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
     type(dos_plot_type), intent(in) :: dos_data
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(boltzwann_type), intent(in) :: boltz
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
+    type(postw90_oper_type), intent(in) :: postw90_oper
     integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: nrpts
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(inout) :: crvec(:, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90commtype), intent(in) :: comm
     real(kind=dp), intent(in) :: cell_volume
 
+    ! local variables
     real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
@@ -710,8 +745,8 @@ contains
     integer :: my_node_id, num_nodes
     logical :: on_root = .false.
 
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
     if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
@@ -724,10 +759,15 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(stdout, seedname)
+
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R(stdout, seedname)
+
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                    k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -838,8 +878,10 @@ contains
 
       ! Here I get the band energies and the velocities
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                               wann_data, real_lattice, recip_lattice, mp_grid, pw90_ham, &
-                               irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                               wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                               num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                               pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                               irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -877,9 +919,11 @@ contains
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
                   call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, &
-                                           param_input, wann_data, real_lattice, recip_lattice, &
-                                           mp_grid, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, &
-                                           stdout, seedname)
+                                           param_input, wann_data, eigval, real_lattice, &
+                                           recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
+                                           v_matrix, dis_data, k_points, pw90_common, pw90_ham, &
+                                           irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, &
+                                           ndegen, rpt_origin, stdout, seedname, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
@@ -923,15 +967,15 @@ contains
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (boltz%calc_also_dos) then
-      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout, seedname, world)
-      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout, seedname, world)
-      call comms_reduce(min_spacing, 1, 'MIN', stdout, seedname, world)
-      call comms_reduce(max_spacing, 1, 'MAX', stdout, seedname, world)
+      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout, seedname, comm)
+      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout, seedname, comm)
+      call comms_reduce(min_spacing, 1, 'MIN', stdout, seedname, comm)
+      call comms_reduce(max_spacing, 1, 'MAX', stdout, seedname, comm)
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
-    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout, seedname, world)
+    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout, seedname, comm)
 
     if (boltz%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
@@ -1053,11 +1097,16 @@ contains
     !! The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
     !!       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
     !!
+
+    use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_spin, only: spin_get_nk
+    use w90_utility, only: utility_w0gauss
+
+    implicit none
 
     ! Arguments
     !

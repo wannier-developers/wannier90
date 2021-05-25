@@ -29,37 +29,54 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(pw90_spin, wanint_kpoint_file, fermi, num_wann, param_input, &
-                             wann_data, real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                             crdist_ws, wdist_ndeg, stdout, seedname, world)
+  subroutine spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
+                             recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
+                             dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
+                             wanint_kpoint_file, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
+                             crvec, ndegen, rpt_origin, num_int_kpts_on_node, int_kpts, weight, &
+                             stdout, seedname, comm)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, pi, cmplx_i
+    use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
-    use pw90_parameters, only: postw90_spin_type
-    use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type
+    use pw90_parameters, only: postw90_spin_type, postw90_common_type, postw90_oper_type
+    use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
+      disentangle_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
-    type(postw90_spin_type), intent(in) :: pw90_spin
-    logical, intent(in) :: wanint_kpoint_file
-    type(fermi_data_type), intent(in) :: fermi
-    integer, intent(in) :: num_wann
+    implicit none
+
+    ! passed variables
+    integer, intent(in) :: num_wann, num_bands, num_kpts
     type(parameter_input_type), intent(in) :: param_input
+    type(fermi_data_type), intent(in) :: fermi
     type(wannier_data_type), intent(in) :: wann_data
+    real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    logical, intent(in) :: wanint_kpoint_file
     integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    integer, intent(in) :: nrpts
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    integer, intent(in) :: num_int_kpts_on_node(0:)
+    real(kind=dp), intent(in) :: int_kpts(:, :), weight(:)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90commtype), intent(in) :: comm
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
@@ -67,12 +84,16 @@ contains
 
     integer :: my_node_id, num_nodes
 
-    my_node_id = mpirank(world); 
-    num_nodes = mpisize(world); 
+    my_node_id = mpirank(comm); 
+    num_nodes = mpisize(comm); 
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
-    call get_HH_R(stdout, seedname)
-    call get_SS_R(stdout, seedname)
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
+
+    call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                  k_points, param_input, postw90_oper, stdout, seedname, comm)
 
     if (param_input%iprint > 0) then
       write (stdout, '(/,/,1x,a)') '------------'
@@ -127,7 +148,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, world)
+    call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, comm)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
@@ -168,7 +189,7 @@ contains
     !                                                             !
     !============================================================ !
 
-    use w90_constants, only: dp, pi, cmplx_0, cmplx_i
+    use w90_constants, only: dp, pi
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type

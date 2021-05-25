@@ -22,16 +22,16 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
-  use w90_constants
-  use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
-  use pw90_parameters, only: geninterp, world, pw90_ham
-  use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
-  use w90_get_oper, only: get_HH_R, HH_R
+  use pw90_parameters, only: geninterp, pw90_ham
   use w90_comms
-  use w90_utility, only: utility_diagonalize
-  use w90_postw90_common, only: pw90common_fourier_R_to_k
-  use w90_wan_ham, only: wham_get_eig_deleig
+  use w90_constants
+  use w90_get_oper, only: get_HH_R, HH_R
   use w90_io, only: io_date
+  use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
+  use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
+  use w90_postw90_common, only: pw90common_fourier_R_to_k
+  use w90_utility, only: utility_diagonalize
+  use w90_wan_ham, only: wham_get_eig_deleig
   implicit none
 
   private
@@ -62,7 +62,10 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(stdout, seedname)
+  subroutine geninterp_main(real_lattice, nrpts, num_bands, num_kpts, num_wann, irvec, ndegen, &
+                            rpt_origin, eigval, v_matrix, u_matrix, k_points, crvec, &
+                            dis_data, wann_data, pw90_common, mp_grid, irdist_ws, crdist_ws, &
+                            wdist_ndeg, stdout, seedname, comm)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -70,10 +73,35 @@ contains
     !! But at least if works independently of the number of processors.
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
-    integer, intent(in) :: stdout
+    use pw90_parameters, only: postw90_common_type, spin_hall_type
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
+      wannier_data_type
+
+    ! arguements
+    integer, intent(in) :: nrpts, num_bands, num_kpts, num_wann, stdout
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(wannier_data_type), intent(in) :: wann_data
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(w90commtype), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
 
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+    ! local variables
+    integer            :: kpt_unit, outdat_unit, ierr, i, j, enidx
+    integer :: nkinterp ! number of kpoints for which we perform the interpolation
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -93,11 +121,11 @@ contains
     integer :: my_node_id, num_nodes
     logical :: on_root = .false.
 
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
+    if (my_node_id == 0) on_root = .true.
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
-    if (my_node_id == 0) on_root = .true.
 
     if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
@@ -128,10 +156,10 @@ contains
       end if
 
       ! Third line: number of following kpoints
-      read (kpt_unit, *, err=106, end=106) num_kpts
+      read (kpt_unit, *, err=106, end=106) nkinterp
     end if
 
-    call comms_bcast(num_kpts, 1, stdout, seedname, world)
+    call comms_bcast(nkinterp, 1, stdout, seedname, comm)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
@@ -143,17 +171,19 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(stdout, seedname)
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
 
     if (on_root) then
-      allocate (kpointidx(num_kpts), stat=ierr)
+      allocate (kpointidx(nkinterp), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
-      allocate (kpoints(3, num_kpts), stat=ierr)
+      allocate (kpoints(3, nkinterp), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
       if (geninterp%single_file) then
-        allocate (globaleig(num_wann, num_kpts), stat=ierr)
+        allocate (globaleig(num_wann, nkinterp), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, seedname)
-        allocate (globaldeleig(num_wann, 3, num_kpts), stat=ierr)
+        allocate (globaldeleig(num_wann, 3, nkinterp), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, seedname)
       end if
     else
@@ -172,7 +202,7 @@ contains
     end if
 
     ! I precalculate how to split on different nodes
-    call comms_array_split(num_kpts, counts, displs, world)
+    call comms_array_split(nkinterp, counts, displs, comm)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, seedname)
@@ -186,7 +216,7 @@ contains
     if (on_root) then
       ! Lines with integer identifier and three coordinates
       ! (in crystallographic coordinates relative to the reciprocal lattice vectors)
-      do i = 1, num_kpts
+      do i = 1, nkinterp
         read (kpt_unit, *, err=106, end=106) kpointidx(i), kpt
         ! Internally, I need the relative (fractional) coordinates in units of the reciprocal-lattice vectors
         if (absoluteCoords .eqv. .false.) then
@@ -206,13 +236,13 @@ contains
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
     call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout, &
-                        seedname, world)
+                        seedname, comm)
     if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, seedname)
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout, &
-                          seedname, world)
+                          seedname, comm)
     end if
 
     ! I open the output file(s)
@@ -233,7 +263,7 @@ contains
       outdat_unit = io_file_unit()
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-      call comms_bcast(commentline, len(commentline), stdout, seedname, world)
+      call comms_bcast(commentline, len(commentline), stdout, seedname, comm)
 
       call internal_write_header(outdat_unit, commentline)
     end if
@@ -244,9 +274,15 @@ contains
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
-                                 num_wann, pw90_ham, stdout, seedname)
+                                 num_wann, param_input, wann_data, eigval, real_lattice, &
+                                 recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
+                                 dis_data, k_points, pw90_common, pw90_ham, irdist_ws, crdist_ws, &
+                                 wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                                 stdout, seedname, comm)
       else
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
+                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
+                                       wdist_ndeg, stdout, seedname)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do
@@ -254,16 +290,16 @@ contains
     if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
-                         num_wann*counts, num_wann*displs, stdout, seedname, world)
+                         num_wann*counts, num_wann*displs, stdout, seedname, comm)
 
       if (geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
-                           3*num_wann*counts, 3*num_wann*displs, stdout, seedname, world)
+                           3*num_wann*counts, 3*num_wann*displs, stdout, seedname, comm)
       end if
 
       ! Now the printing, only on root node
       if (on_root) then
-        do i = 1, num_kpts
+        do i = 1, nkinterp
           kpt = kpoints(:, i)
           ! First calculate the absolute coordinates for printing
           frac = 0._dp

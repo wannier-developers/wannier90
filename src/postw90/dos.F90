@@ -35,9 +35,10 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(stdout, seedname, num_wann, param_input, wann_data, real_lattice, &
-                      recip_lattice, mp_grid, dos_data, pw90_common, berry, pw90_ham, pw90_spin, &
-                      irdist_ws, crdist_ws, wdist_ndeg, world)
+  subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
+                      recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
+                      pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, irdist_ws, crdist_ws, &
+                      wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -46,41 +47,49 @@ contains
     !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
-
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
-      pw90common_fourier_R_to_k
+    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, pw90common_fourier_R_to_k
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
-      postw90_spin_type
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+      postw90_spin_type, postw90_oper_type
+    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
+      k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
-    use w90_wan_ham, only: wham_get_eig_deleig
+    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_diagonalize
+    use w90_wan_ham, only: wham_get_eig_deleig
 
-    ! 'dos_k' contains contrib. from one k-point,
-    ! 'dos_all' from all nodes/k-points (first summed on one node and
-    ! then reduced (i.e. summed) over all nodes)
-    !
-!   passed variables
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in)   :: param_input
-    real(kind=dp), intent(in)                :: recip_lattice(3, 3)
+    implicit none
+
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann
+    type(parameter_input_type), intent(in) :: param_input
     type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
     type(dos_plot_type), intent(in)          :: dos_data
-    type(postw90_common_type), intent(in)    :: pw90_common
     type(berry_type), intent(in)             :: berry
     type(postw90_ham_type), intent(in)       :: pw90_ham
     type(postw90_spin_type), intent(in)       :: pw90_spin
     integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
-    type(w90commtype), intent(in)            :: world
-
-!   local variables
+    integer, intent(in) :: nrpts
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(inout) :: crvec(:, :)
     integer, intent(in) :: stdout
+    character(len=50), intent(in) :: seedname
+    type(w90commtype), intent(in) :: comm
+
+    ! 'dos_k' contains contrib. from one k-point,
+    ! 'dos_all' from all nodes/k-points (first summed on one node and
+    ! then reduced (i.e. summed) over all nodes)
+    !
+!   local variables
     integer             :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
     integer             :: dos_unit, ndim, ierr
     integer             :: my_node_id, num_nodes
@@ -94,11 +103,10 @@ contains
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
-    character(len=50), intent(in) :: seedname
     logical :: on_root = .false.
 
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
     num_freq = nint((dos_data%energy_max - dos_data%energy_min)/dos_data%energy_step) + 1
@@ -119,10 +127,14 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R(stdout, seedname)
+    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  pw90_common, stdout, seedname, comm)
+
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R(stdout, seedname)
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                    k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -181,8 +193,10 @@ contains
         kpt(:) = int_kpts(:, loop_tot)
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                                   wann_data, real_lattice, recip_lattice, mp_grid, pw90_ham, &
-                                   irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                                   num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                   pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
@@ -222,8 +236,10 @@ contains
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                                   wann_data, real_lattice, recip_lattice, mp_grid, pw90_ham, &
-                                   irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                                   num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                   pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
@@ -250,7 +266,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, world)
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, comm)
 
     if (param_input%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
@@ -507,6 +523,7 @@ contains
                        real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
                        irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
+
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
@@ -515,6 +532,7 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
 !   use w90_parameters, only: param_input
     use w90_spin, only: spin_get_nk
+    use w90_utility, only: utility_w0gauss
 
     ! Arguments
     !
@@ -678,7 +696,6 @@ contains
   subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing, num_wann, recip_lattice)
     !! This subroutine calculates the level spacing, i.e. how much the level changes
     !! near a given point of the interpolation mesh
-!   use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_kmesh_spacing
 
     integer, intent(in) :: num_wann

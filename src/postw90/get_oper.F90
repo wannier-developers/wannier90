@@ -62,7 +62,9 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(stdout, seedname)
+  subroutine get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
+                      rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                      pw90_common, stdout, seedname, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -70,18 +72,28 @@ contains
     !
     !======================================================
 
+    use pw90_parameters, only: postw90_common_type
+    use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
-!   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_parameters, only: num_wann, dis_data, num_kpts, &
-      eigval, u_matrix, param_input, real_lattice
-    use pw90_parameters, only: pw90_common, world
-    use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, io, idum, ivdum(3), ivdum_old(3)
     integer, allocatable          :: num_states(:)
@@ -93,14 +105,16 @@ contains
     complex(kind=dp), allocatable :: sciss_R(:, :, :)
 
     logical :: on_root = .false.
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, nrpts))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     end if
 
@@ -127,8 +141,7 @@ contains
           if (io < 0) exit ! reached end of file
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
-            call io_error &
-              ('Error in get_HH_R: orbital indices out of bounds', stdout, seedname)
+            call io_error('Error in get_HH_R: orbital indices out of bounds', stdout, seedname)
           endif
           if (n > 1) then
             if (ivdum(1) /= ivdum_old(1) .or. ivdum(2) /= ivdum_old(2) .or. &
@@ -174,11 +187,12 @@ contains
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T', stdout, seedname)
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, stdout, seedname, world)
-      call comms_bcast(ndegen(1), nrpts, stdout, seedname, world)
-      call comms_bcast(irvec(1, 1), 3*nrpts, stdout, seedname, world)
-      call comms_bcast(crvec(1, 1), 3*nrpts, stdout, seedname, world)
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, stdout, seedname, comm)
+      call comms_bcast(ndegen(1), nrpts, stdout, seedname, comm)
+      call comms_bcast(irvec(1, 1), 3*nrpts, stdout, seedname, comm)
+      call comms_bcast(crvec(1, 1), 3*nrpts, stdout, seedname, comm)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     endif
 
@@ -197,7 +211,8 @@ contains
       else
         num_states(ik) = num_wann
       endif
-      call get_win_min(ik, winmin_q)
+
+      call get_win_min(num_bands, dis_data, param_input, ik, winmin_q)
       do m = 1, num_wann
         do n = 1, m
           do i = 1, num_states(ik)
@@ -210,7 +225,8 @@ contains
         enddo
       enddo
     enddo
-    call fourier_q_to_R(HH_q, HH_R)
+
+    call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, HH_q, HH_R)
 
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
@@ -230,7 +246,8 @@ contains
           enddo
         enddo
       enddo
-      call fourier_q_to_R(sciss_q, sciss_R)
+
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, sciss_q, sciss_R)
       do n = 1, num_wann
         sciss_R(n, n, rpt_origin) = sciss_R(n, n, rpt_origin) + 1.0_dp
       end do
@@ -238,7 +255,8 @@ contains
       HH_R = HH_R + sciss_R
     endif
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
     return
 
 101 call io_error('Error in get_HH_R: problem opening file '// &
@@ -247,7 +265,9 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(stdout, seedname)
+  subroutine get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+                      dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
+                      comm)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -256,17 +276,28 @@ contains
     !
     !==================================================
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, kmesh_info, num_wann, param_input, &
-      num_bands, dis_data
-    use pw90_parameters, only: pw90_common, berry, world
-    use w90_postw90_common, only: nrpts
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use pw90_parameters, only: berry_type, postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(berry_type), intent(in) :: berry
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
     complex(kind=dp), allocatable :: S_o(:, :)
@@ -283,14 +314,16 @@ contains
     character(len=60)             :: header
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     end if
 
@@ -338,8 +371,9 @@ contains
           call io_error('Error in get_AA_R: inconsistent nrpts values', stdout, seedname)
         endif
       endif
-      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     endif
 
@@ -434,10 +468,9 @@ contains
 
         ! Wannier-gauge overlap matrix S in the projected subspace
         !
-        call get_gauge_overlap_matrix( &
-          ik, num_states(ik), &
-          kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
-          S_o, S)
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                      param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, S)
 
         ! Berry connection matrix
         ! Assuming all neighbors of a given point are read in sequence!
@@ -482,15 +515,16 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(AA_q(:, :, :, 1), AA_R(:, :, :, 1))
-      call fourier_q_to_R(AA_q(:, :, :, 2), AA_R(:, :, :, 2))
-      call fourier_q_to_R(AA_q(:, :, :, 3), AA_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 1), AA_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 2), AA_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 3), AA_R(:, :, :, 3))
 
     endif !on_root
 
-    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
+    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
     return
 
 101 call io_error &
@@ -503,7 +537,8 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(stdout, seedname)
+  subroutine get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                      kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -511,17 +546,27 @@ contains
     !
     !=====================================================
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, kmesh_info, num_wann, num_bands, &
-      dis_data, param_input
-    use pw90_parameters, only: pw90_common, world
-    use w90_postw90_common, only: nrpts
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
                         winmin_q, winmin_qb, ncount, &
@@ -537,13 +582,15 @@ contains
 
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
       return
     end if
 
@@ -621,12 +668,12 @@ contains
           call io_error('Neighbour not found', stdout, seedname)
         end if
 
-        call get_win_min(ik, winmin_q)
-        call get_win_min(kmesh_info%nnlist(ik, nn), winmin_qb)
-        call get_gauge_overlap_matrix( &
-          ik, num_states(ik), &
-          kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
-          S_o, H=H_q_qb)
+        call get_win_min(num_bands, dis_data, param_input, ik, winmin_q)
+        call get_win_min(num_bands, dis_data, param_input, kmesh_info%nnlist(ik, nn), winmin_qb)
+
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                      param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, H=H_q_qb)
         do idir = 1, 3
           BB_q(:, :, ik, idir) = BB_q(:, :, ik, idir) &
                                  + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*H_q_qb(:, :)
@@ -635,26 +682,28 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(BB_q(:, :, :, 1), BB_R(:, :, :, 1))
-      call fourier_q_to_R(BB_q(:, :, :, 2), BB_R(:, :, :, 2))
-      call fourier_q_to_R(BB_q(:, :, :, 3), BB_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 1), BB_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 2), BB_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 3), BB_R(:, :, :, 3))
 
     endif !on_root
 
-    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
+    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
     return
 
-103 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
-104 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
+103 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
+104 call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
 
   end subroutine get_BB_R
 
   !=============================================================
-  subroutine get_CC_R(stdout, seedname)
+
+  subroutine get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
+                      seedname, comm)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -662,17 +711,28 @@ contains
     !
     !=============================================================
 
-    use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
-      num_bands, dis_data, param_input
-    use pw90_parameters, only: pw90_common, postw90_oper, world
-    use w90_postw90_common, only: nrpts
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use pw90_parameters, only: postw90_common_type, postw90_oper_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
 
@@ -684,14 +744,16 @@ contains
     character(len=60)             :: header
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
       return
     end if
 
@@ -745,10 +807,11 @@ contains
       do ik = 1, num_kpts
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
-          call get_win_min(qb2, winmin_qb2)
+
+          call get_win_min(num_bands, dis_data, param_input, qb2, winmin_qb2)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_data, param_input, qb1, winmin_qb1)
             !
             ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -775,10 +838,10 @@ contains
             !
             ! Transform to projected subspace, Wannier gauge
             !
-            call get_gauge_overlap_matrix( &
-              qb1, num_states(qb1), &
-              qb2, num_states(qb2), &
-              Ho_qb1_q_qb2, H_qb1_q_qb2)
+
+            call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                          param_input, qb1, num_states(qb1), qb2, num_states(qb2), &
+                                          Ho_qb1_q_qb2, H_qb1_q_qb2)
             do b = 1, 3
               do a = 1, b
                 CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
@@ -798,15 +861,17 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
+
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
         enddo
       enddo
 
     endif !on_root
 
-    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
+    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
     return
 
 105 call io_error &
@@ -817,7 +882,8 @@ contains
   end subroutine get_CC_R
 
   !===========================================================
-  subroutine get_FF_R(stdout, seedname)
+  subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, dis_data, kmesh_info, &
+                      k_points, param_input, stdout, seedname, comm)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -825,17 +891,24 @@ contains
     !
     !===========================================================
 
-    use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
-      num_bands, dis_data, param_input
-    use w90_postw90_common, only: nrpts, v_matrix
-    use pw90_parameters, only: world
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variable
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
 
@@ -846,7 +919,7 @@ contains
     character(len=60)             :: header
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
     if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
@@ -894,10 +967,11 @@ contains
       do ik = 1, num_kpts
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
-          call get_win_min(qb2, winmin_qb2)
+
+          call get_win_min(num_bands, dis_data, param_input, qb2, winmin_qb2)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_data, param_input, qb1, winmin_qb1)
             !
             ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -951,13 +1025,13 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(FF_q(:, :, :, a, b), FF_R(:, :, :, a, b))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, FF_q(:, :, :, a, b), FF_R(:, :, :, a, b))
         enddo
       enddo
 
     endif !on_root
 
-    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
+    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
     if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
@@ -970,7 +1044,8 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(stdout, seedname)
+  subroutine get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                      k_points, param_input, postw90_oper, stdout, seedname, comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -978,19 +1053,26 @@ contains
     !
     !================================================================
 
-    use w90_constants, only: dp, pi, cmplx_0
-    use w90_parameters, only: num_wann, dis_data, num_kpts, num_bands, &
-      param_input
-    use pw90_parameters, only: postw90_oper, world
-    use w90_postw90_common, only: nrpts
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use pw90_parameters, only: postw90_common_type, postw90_oper_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, pi, cmplx_0
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    ! passed variables
+    integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
 
+    ! local variables
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
     real(kind=dp)                 :: s_real, s_img
     integer, allocatable          :: num_states(:)
@@ -999,9 +1081,10 @@ contains
     character(len=60)             :: header
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -1094,20 +1177,20 @@ contains
       SS_q(:, :, :, :) = cmplx_0
       do ik = 1, num_kpts
         do is = 1, 3
-          call get_gauge_overlap_matrix( &
-            ik, num_states(ik), &
-            ik, num_states(ik), &
-            spn_o(:, :, ik, is), SS_q(:, :, ik, is))
+
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                        param_input, ik, num_states(ik), ik, num_states(ik), &
+                                        spn_o(:, :, ik, is), SS_q(:, :, ik, is))
         enddo !is
       enddo !ik
 
-      call fourier_q_to_R(SS_q(:, :, :, 1), SS_R(:, :, :, 1))
-      call fourier_q_to_R(SS_q(:, :, :, 2), SS_R(:, :, :, 2))
-      call fourier_q_to_R(SS_q(:, :, :, 3), SS_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 1), SS_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 2), SS_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 3), SS_R(:, :, :, 3))
 
     endif !on_root
 
-    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
+    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
     if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
     return
@@ -1120,7 +1203,9 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(stdout, seedname)
+  subroutine get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+                       kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
+                       stdout, seedname, comm)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1130,17 +1215,29 @@ contains
     !
     !==================================================
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, num_wann, kmesh_info, num_bands, &
-      dis_data, eigval, param_input
-    use pw90_parameters, only: postw90_oper, pw90_common, spin_hall, world
-    use w90_postw90_common, only: nrpts
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use pw90_parameters, only: postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    implicit none
 
+    ! passed variables
+    integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(spin_hall_type), intent(in) :: spin_hall
+    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SH_q(:, :, :, :)
@@ -1169,26 +1266,30 @@ contains
     character(len=60)             :: header
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
 
@@ -1340,10 +1441,10 @@ contains
       do ik = 1, num_kpts
         do is = 1, 3
           SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
-          call get_gauge_overlap_matrix( &
-            ik, num_states(ik), &
-            ik, num_states(ik), &
-            SH_o(:, :, ik, is), SH_q(:, :, ik, is))
+
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                        param_input, ik, num_states(ik), ik, num_states(ik), &
+                                        SH_o(:, :, ik, is), SH_q(:, :, ik, is))
         end do
       end do
 
@@ -1406,20 +1507,19 @@ contains
           ! Transform to projected subspace, Wannier gauge
           !
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix( &
-            ik, num_states(ik), &
-            ik, num_states(ik), &
-            spn_o(:, :, ik, is), SS_q(:, :, is))
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                        param_input, ik, num_states(ik), ik, num_states(ik), &
+                                        spn_o(:, :, ik, is), SS_q(:, :, is))
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix( &
-            ik, num_states(ik), &
-            kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
-            SM_o(:, :, is), SM_q(:, :, is))
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                        param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        num_states(kmesh_info%nnlist(ik, nn)), SM_o(:, :, is), &
+                                        SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
-          call get_gauge_overlap_matrix( &
-            ik, num_states(ik), &
-            kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
-            SHM_o(:, :, is), SHM_q(:, :, is))
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                        param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        num_states(kmesh_info%nnlist(ik, nn)), SHM_o(:, :, is), &
+                                        SHM_q(:, :, is))
 
           ! Assuming all neighbors of a given point are read in sequence!
           !
@@ -1442,12 +1542,12 @@ contains
 
       do is = 1, 3
         ! QZYZ18 Eq.(46)
-        call fourier_q_to_R(SH_q(:, :, :, is), SH_R(:, :, :, is))
+        call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SH_q(:, :, :, is), SH_R(:, :, :, is))
         do idir = 1, 3
           ! QZYZ18 Eq.(44)
-          call fourier_q_to_R(SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
           ! QZYZ18 Eq.(45)
-          call fourier_q_to_R(SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
         end do
       end do
       SR_R = cmplx_i*SR_R
@@ -1455,23 +1555,20 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, world)
-    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
-    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, world)
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
     return
 
-101 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
-102 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
-109 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.spn', stdout, seedname)
-110 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.spn', stdout, seedname)
+101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
+102 call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
+109 call io_error('Error: Problem opening input file '//trim(seedname)//'.spn', stdout, seedname)
+110 call io_error('Error: Problem reading input file '//trim(seedname)//'.spn', stdout, seedname)
 
   end subroutine get_SHC_R
 
@@ -1480,7 +1577,7 @@ contains
   !=========================================================!
 
   !=========================================================!
-  subroutine fourier_q_to_R(op_q, op_R)
+  subroutine fourier_q_to_R(num_kpts, nrpts, irvec, k_points, op_q, op_R)
     !==========================================================
     !
     !! Fourier transforms Wannier-gauge representation
@@ -1491,20 +1588,19 @@ contains
     !==========================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, k_points
-    use w90_postw90_common, only: nrpts, irvec
+    use w90_param_types, only: k_point_type
 
     implicit none
 
     ! Arguments
-    !
-    complex(kind=dp), dimension(:, :, :), intent(in)  :: op_q
-    !! Operator in q-space
-    complex(kind=dp), dimension(:, :, :), intent(out) :: op_R
-    !! Operator in R-space
+    integer, intent(in) :: num_kpts, nrpts, irvec(:, :)
+    complex(kind=dp), intent(in) :: op_q(:, :, :) !! Operator in q-space
+    complex(kind=dp), intent(out) :: op_R(:, :, :) !! Operator in R-space
+    type(k_point_type), intent(in) :: k_points
 
-    integer          :: ir, ik
-    real(kind=dp)    :: rdotq
+    ! local variables
+    integer :: ir, ik
+    real(kind=dp) :: rdotq
     complex(kind=dp) :: phase_fac
 
     op_R = cmplx_0
@@ -1520,7 +1616,7 @@ contains
   end subroutine fourier_q_to_R
 
   !===============================================
-  subroutine get_win_min(ik, win_min)
+  subroutine get_win_min(num_bands, dis_data, param_input, ik, win_min)
     !===============================================
     !
     !! Find the lower bound (band index) of the
@@ -1528,18 +1624,20 @@ contains
     !
     !===============================================
 
+    ! JJ, it seems inefficient to pass param_input and dis_data just for this
+
     use w90_constants, only: dp
-    use w90_parameters, only: num_bands, dis_data, param_input
+    use w90_param_types, only: disentangle_type, parameter_input_type
 
     implicit none
 
     ! Arguments
-    !
-    integer, intent(in)  :: ik
-    !! Index of the required k-point
-    integer, intent(out) :: win_min
-    !! Index of the lower band of the outer energy window
+    integer, intent(in) :: num_bands, ik !! Index of the required k-point
+    integer, intent(out) :: win_min !! Index of the lower band of the outer energy window
+    type(disentangle_type), intent(in) :: dis_data
+    type(parameter_input_type), intent(in) :: param_input
 
+    ! local variables
     integer :: j
 
     if (.not. param_input%have_disentangled) then
@@ -1557,7 +1655,8 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(ik_a, ns_a, ik_b, ns_b, S_o, S, H)
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+                                      param_input, ik_a, ns_a, ik_b, ns_b, S_o, S, H)
     !==========================================================
     !
     ! Wannier-gauge overlap matrix S in the projected subspace
@@ -1569,24 +1668,30 @@ contains
     !==========================================================
 
     use w90_constants, only: dp, cmplx_0
-    use w90_postw90_common, only: v_matrix
-    use w90_parameters, only: num_wann, eigval
+    use w90_param_types, only: disentangle_type, parameter_input_type
     use w90_utility, only: utility_zgemmm
 
-    integer, intent(in) :: ik_a, ns_a, ik_b, ns_b
+    implicit none
 
-    complex(kind=dp), dimension(:, :), intent(in)            :: S_o
-    complex(kind=dp), dimension(:, :), intent(out), optional :: S, H
+    ! passed variables
+    integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
+    complex(kind=dp), intent(out), optional :: S(:, :), H(:, :)
+    type(disentangle_type), intent(in) :: dis_data
+    type(parameter_input_type), intent(in) :: param_input
 
+    ! local variables
     integer :: wm_a, wm_b
 
-    call get_win_min(ik_a, wm_a)
-    call get_win_min(ik_b, wm_b)
+    call get_win_min(num_bands, dis_data, param_input, ik_a, wm_a)
+    call get_win_min(num_bands, dis_data, param_input, ik_b, wm_b)
 
     call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a), 'C', &
                         S_o(wm_a:wm_a + ns_a - 1, wm_b:wm_b + ns_b - 1), 'N', &
                         v_matrix(1:ns_b, 1:num_wann, ik_b), 'N', &
                         S, eigval(wm_a:wm_a + ns_a - 1, ik_a), H)
+
   end subroutine get_gauge_overlap_matrix
 
 end module w90_get_oper
