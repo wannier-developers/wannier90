@@ -22,31 +22,30 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
-  use pw90_parameters, only: geninterp, pw90_ham
-  use w90_comms
-  use w90_constants
-  use w90_get_oper, only: get_HH_R, HH_R
-  use w90_io, only: io_date
-  use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
-  use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
-  use w90_postw90_common, only: pw90common_fourier_R_to_k
-  use w90_utility, only: utility_diagonalize
-  use w90_wan_ham, only: wham_get_eig_deleig
+  !use w90_constants
+
   implicit none
 
   private
+
   public :: geninterp_main
 
 contains
 
-  subroutine internal_write_header(outdat_unit, commentline)
+  subroutine internal_write_header(outdat_unit, commentline, geninterp)
     !! Writes a header for the output file(s).
 
+    use pw90_parameters, only: geninterp_type
+    use w90_io, only: io_date
+
+!   passed variables
+    type(geninterp_type), intent(in) :: geninterp
     integer, intent(in) :: outdat_unit
     !! Integer with the output file unit. The file must be already open.
     character(len=*)    :: commentline !! no intent?
     !! String with the comment taken from the output, to be written on the output
 
+!   local variables
     character(len=9)   :: cdate, ctime
 
     call io_date(cdate, ctime)
@@ -62,10 +61,11 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(real_lattice, nrpts, num_bands, num_kpts, num_wann, irvec, ndegen, &
-                            rpt_origin, eigval, v_matrix, u_matrix, k_points, crvec, &
-                            dis_data, wann_data, pw90_common, mp_grid, irdist_ws, crdist_ws, &
-                            wdist_ndeg, stdout, seedname, comm)
+  subroutine geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
+                            irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
+                            crvec, dis_data, wann_data, pw90_common, mp_grid, irdist_ws, &
+                            crdist_ws, wdist_ndeg, stdout, seedname, geninterp, pw90_ham, &
+                            param_input, comm)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -73,20 +73,19 @@ contains
     !! But at least if works independently of the number of processors.
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
-    use pw90_parameters, only: postw90_common_type, spin_hall_type
+    use w90_constants, only: dp, pi
+    use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, postw90_ham_type
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
       wannier_data_type
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_utility, only: utility_diagonalize
+    use w90_wan_ham, only: wham_get_eig_deleig
+    use w90_get_oper, only: get_HH_R, HH_R
+    use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
+      comms_gatherv, w90commtype
 
-    ! arguements
-    integer, intent(in) :: nrpts, num_bands, num_kpts, num_wann, stdout
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(inout) :: crvec(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-
-    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
-
+    ! arguments
     type(disentangle_type), intent(in) :: dis_data
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -96,29 +95,38 @@ contains
     real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
     integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
     type(w90commtype), intent(in) :: comm
+    type(geninterp_type), intent(in) :: geninterp
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(parameter_input_type), intent(in) :: param_input
 
+    integer, intent(in)    :: nrpts, num_bands, num_kpts, num_wann, stdout
+    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(inout) :: crvec(:, :)
+    real(kind=dp), intent(in)    :: real_lattice(3, 3)
+    real(kind=dp), intent(in)    :: recip_lattice(3, 3)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    integer            :: kpt_unit, outdat_unit, ierr, i, j, enidx
-    integer :: nkinterp ! number of kpoints for which we perform the interpolation
-    character(len=500) :: commentline
-    character(len=50)  :: cdum
+    integer              :: kpt_unit, outdat_unit, ierr, i, j, enidx
+    integer              :: nkinterp ! number of kpoints for which we perform the interpolation
+    integer, allocatable :: counts(:), displs(:)
+    integer              :: my_node_id, num_nodes
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
     real(kind=dp), dimension(:, :), allocatable      :: kpoints, localkpoints
-    complex(kind=dp), dimension(:, :), allocatable   :: HH
-    complex(kind=dp), dimension(:, :), allocatable   :: UU
-    complex(kind=dp), dimension(:, :, :), allocatable :: delHH
     real(kind=dp), dimension(3)                     :: kpt, frac
     real(kind=dp), dimension(:, :, :), allocatable    :: localdeleig
     real(kind=dp), dimension(:, :, :), allocatable    :: globaldeleig
     real(kind=dp), dimension(:, :), allocatable      :: localeig
     real(kind=dp), dimension(:, :), allocatable      :: globaleig
-    logical                                         :: absoluteCoords
+    complex(kind=dp), dimension(:, :), allocatable   :: HH
+    complex(kind=dp), dimension(:, :), allocatable   :: UU
+    complex(kind=dp), dimension(:, :, :), allocatable :: delHH
+    character(len=500) :: commentline
+    character(len=50)  :: cdum
     character(len=200)                              :: outdat_filename
-
-    integer, allocatable :: counts(:), displs(:)
-    integer :: my_node_id, num_nodes
+    logical                                         :: absoluteCoords
     logical :: on_root = .false.
 
     my_node_id = mpirank(comm)
@@ -127,7 +135,8 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
+    if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) &
+      call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
     if (on_root) then
       write (stdout, *)
@@ -136,7 +145,8 @@ contains
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
 
       kpt_unit = io_file_unit()
-      open (unit=kpt_unit, file=trim(seedname)//'_geninterp.kpt', form='formatted', status='old', err=105)
+      open (unit=kpt_unit, file=trim(seedname)//'_geninterp.kpt', form='formatted', status='old', &
+            err=105)
 
       ! First line: comment (e.g. creation date, author, ...)
       read (kpt_unit, '(A500)', err=106, end=106) commentline
@@ -182,9 +192,11 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, nkinterp), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
+                                     seedname)
         allocate (globaldeleig(num_wann, 3, nkinterp), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, &
+                                     seedname)
       end if
     else
       ! On the other nodes, I still allocate them with size 1 to avoid
@@ -195,9 +207,11 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
+                                     seedname)
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, &
+                                     seedname)
       end if
     end if
 
@@ -205,7 +219,8 @@ contains
     call comms_array_split(nkinterp, counts, displs, comm)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, seedname)
+    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, &
+                                 seedname)
 
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.', stdout, seedname)
@@ -240,7 +255,8 @@ contains
     if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, &
+                                   seedname)
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout, &
                           seedname, comm)
     end if
@@ -252,7 +268,7 @@ contains
         outdat_unit = io_file_unit()
         open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-        call internal_write_header(outdat_unit, commentline)
+        call internal_write_header(outdat_unit, commentline, geninterp)
       end if
     else
       if (num_nodes > 99999) then
@@ -265,7 +281,7 @@ contains
 
       call comms_bcast(commentline, len(commentline), stdout, seedname, comm)
 
-      call internal_write_header(outdat_unit, commentline)
+      call internal_write_header(outdat_unit, commentline, geninterp)
     end if
 
     ! And now, each node calculates its own k points
@@ -304,7 +320,8 @@ contains
           ! First calculate the absolute coordinates for printing
           frac = 0._dp
           do j = 1, 3
-            frac(j) = recip_lattice(1, j)*kpt(1) + recip_lattice(2, j)*kpt(2) + recip_lattice(3, j)*kpt(3)
+            frac(j) = recip_lattice(1, j)*kpt(1) + recip_lattice(2, j)*kpt(2) &
+                      + recip_lattice(3, j)*kpt(3)
           end do
 
           ! I print each line
@@ -328,7 +345,8 @@ contains
         ! First calculate the absolute coordinates for printing
         frac = 0._dp
         do j = 1, 3
-          frac(j) = recip_lattice(1, j)*kpt(1) + recip_lattice(2, j)*kpt(2) + recip_lattice(3, j)*kpt(3)
+          frac(j) = recip_lattice(1, j)*kpt(1) + recip_lattice(2, j)*kpt(2) &
+                    + recip_lattice(3, j)*kpt(3)
         end do
 
         ! I print each line
@@ -365,12 +383,15 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, stdout, seedname)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
+                                                                        stdout, seedname)
 
     return
 
-105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', stdout, seedname)
-106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', stdout, seedname)
+105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', &
+                  stdout, seedname)
+106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', &
+                  stdout, seedname)
 107 call io_error('Error: Problem opening output file '//trim(outdat_filename), stdout, seedname)
   end subroutine geninterp_main
 
