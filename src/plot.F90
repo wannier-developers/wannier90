@@ -181,7 +181,7 @@ contains
     !                                            !
     !============================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp, cmplx_0, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
@@ -928,7 +928,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp, cmplx_0, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_param_types, only: parameter_input_type, fermi_data_type
@@ -1380,7 +1380,8 @@ contains
                       case ('down')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
-       call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(param_plot%wannier_plot_spinor_mode), stdout, seedname)
+                       call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(param_plot%wannier_plot_spinor_mode), &
+                                      stdout, seedname)
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                     endif
@@ -1494,7 +1495,7 @@ contains
       real(kind=dp) :: moda(3), modb(3)
       real(kind=dp) :: val_Q
       real(kind=dp) :: comf(3), wcf(3), diff(3), difc(3), dist
-      integer :: ierr, iname, max_elements, iw
+      integer :: ierr, iname, max_elements
       integer :: isp, iat, nzz, nyy, nxx, loop_w, qxx, qyy, qzz, wann_index
       integer :: istart(3), iend(3), ilength(3)
       integer :: ixx, iyy, izz

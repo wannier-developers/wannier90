@@ -264,7 +264,7 @@ contains
                                seedname)
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type
@@ -330,7 +330,7 @@ contains
     !                                                           !
     !========================================================== !
 
-    use w90_constants, only: dp, pi, cmplx_0, cmplx_i
+    use w90_constants, only: dp !, pi, cmplx_0, cmplx_i
 !   use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type

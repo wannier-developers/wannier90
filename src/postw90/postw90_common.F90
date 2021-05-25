@@ -83,7 +83,7 @@ contains
   subroutine pw90common_wanint_setup(num_wann, param_input, real_lattice, mp_grid, pw90_common, &
                                      stdout, seedname, world)
     !! Setup data ready for interpolation
-    use w90_constants, only: dp, cmplx_0
+    use w90_constants, only: dp !, cmplx_0
 !   use w90_io, only: io_error, io_file_unit, seedname
     use w90_io, only: io_error, io_file_unit
     use w90_utility, only: utility_cart_to_frac
@@ -258,7 +258,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_comms, only: mpirank, w90commtype, comms_bcast
@@ -564,7 +564,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type

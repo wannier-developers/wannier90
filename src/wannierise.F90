@@ -59,7 +59,7 @@ contains
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !                                                                  !
     !===================================================================
-    use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, cmplx_i
+    use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: param_wannierise_type, &
       w90_calculation_type, param_hamiltonian_type
@@ -504,7 +504,7 @@ contains
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                       k_to_r, wann_spread, param_input, num_wann, num_kpts, &
                                       k_points%kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                      counts, displs, stdout, comm)
+                                      counts, displs, stdout)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
@@ -1116,7 +1116,7 @@ contains
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                         k_to_r, wann_spread, param_input, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                        counts, displs, stdout, comm)
+                                        counts, displs, stdout)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1127,7 +1127,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: comms_allreduce, w90commtype
+      !use w90_comms, only: comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
 
       implicit none
@@ -1155,7 +1155,7 @@ contains
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
       integer, intent(in) :: stdout
-      type(w90commtype), intent(in) :: comm
+      !type(w90commtype), intent(in) :: comm
 
       ! local
       complex(kind=dp), external :: zdotc
@@ -1250,7 +1250,7 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
-      use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
+      !use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
       use w90_comms, only: comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
@@ -2789,7 +2789,7 @@ contains
 !   use w90_io, only: seedname, io_file_unit, io_date, io_error
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
-    use w90_constants, only: cmplx_0, eps6
+    use w90_constants, only: cmplx_0
     use w90_param_types, only: wannier_data_type, parameter_input_type
 !~    use w90_disentangle, only : ndimfroz
 

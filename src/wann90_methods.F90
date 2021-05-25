@@ -35,7 +35,7 @@ module wannier_methods
   integer, allocatable, save :: select_projections(:)
 
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
-  logical :: hr_plot
+  !logical :: hr_plot
 
   ! was in driver, only used by wannier_lib
   type(projection_type), save, public :: proj
@@ -1930,7 +1930,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time
     use w90_comms, only: comms_bcast, w90commtype, mpirank
 

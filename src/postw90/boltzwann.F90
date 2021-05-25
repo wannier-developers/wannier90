@@ -83,7 +83,7 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type, &
@@ -662,7 +662,7 @@ contains
     !!       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
     !!       and boltz_bandshift_firstband input flags.
     !!
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_get_oper, only: get_HH_R, get_SS_R

@@ -1055,7 +1055,7 @@ contains
 
     use pw90_parameters, only: postw90_common_type, postw90_oper_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
-    use w90_constants, only: dp, pi, cmplx_0
+    use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
 
@@ -1667,7 +1667,7 @@ contains
     !
     !==========================================================
 
-    use w90_constants, only: dp, cmplx_0
+    use w90_constants, only: dp
     use w90_param_types, only: disentangle_type, parameter_input_type
     use w90_utility, only: utility_zgemmm
 

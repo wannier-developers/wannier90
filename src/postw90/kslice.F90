@@ -51,7 +51,7 @@ contains
       postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, &

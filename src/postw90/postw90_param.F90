@@ -648,7 +648,8 @@ contains
       if (allocated(gyrotropic%band_list)) deallocate (gyrotropic%band_list)
       allocate (gyrotropic%band_list(gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in param_read', stdout, seedname)
-   call param_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, gyrotropic%num_bands, .false., gyrotropic%band_list)
+      call param_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, &
+                                  gyrotropic%num_bands, .false., gyrotropic%band_list)
       if (any(gyrotropic%band_list < 1) .or. any(gyrotropic%band_list > num_wann)) &
         call io_error('Error: gyrotropic_band_list asks for a non-valid bands', stdout, seedname)
     else
@@ -1930,8 +1931,8 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    real(kind=dp), parameter :: size_log = 1.0_dp
-    real(kind=dp), parameter :: size_int = 4.0_dp
+    !real(kind=dp), parameter :: size_log = 1.0_dp
+    !real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp
     real(kind=dp), parameter :: size_cmplx = 16.0_dp
     real(kind=dp), intent(in) :: mem_param

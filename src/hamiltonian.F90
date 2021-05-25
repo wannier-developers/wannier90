@@ -594,7 +594,7 @@ contains
     !! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3
     !================================================================================!
 
-    use w90_constants, only: eps7, eps8
+    use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type

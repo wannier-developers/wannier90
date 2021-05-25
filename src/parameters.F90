@@ -265,8 +265,8 @@ module w90_param_methods
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
-  character(len=maxlen)              :: ctmp
-  logical                            :: ltmp
+  !character(len=maxlen)              :: ctmp
+  !logical                            :: ltmp
 
   public :: param_dealloc
   public :: param_write_header
@@ -1969,7 +1969,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank

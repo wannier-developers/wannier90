@@ -73,7 +73,7 @@ contains
     !============================================================!
 
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
-    use w90_constants, only: dp, cmplx_0, twopi, pw90_physical_constants
+    use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: gyrotropic, berry, postw90_oper_type, postw90_ham_type, postw90_common_type
@@ -525,7 +525,7 @@ contains
     !======================================================================!
 
     use w90_comms, only: w90commtype, mpirank
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
     use w90_get_oper, only: AA_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic, postw90_common_type, postw90_ham_type

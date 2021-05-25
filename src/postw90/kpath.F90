@@ -49,7 +49,7 @@ contains
 
     use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_param_types, only: special_kpoints_type, fermi_data_type, parameter_input_type, &
