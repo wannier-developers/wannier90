@@ -542,13 +542,13 @@ contains
     ! Arguments
     !
     real(kind=dp), intent(in)                      :: kpt(3), kweight
-    real(kind=dp), allocatable, dimension(:, :, :), intent(inout)   :: gyro_K_spn
-    real(kind=dp), dimension(:, :, :), intent(inout)   :: gyro_K_orb, &
-                                                          gyro_D, &
-                                                          gyro_C
-    real(kind=dp), dimension(:, :, :, :), intent(inout) :: gyro_Dw, gyro_NOA_orb
-    real(kind=dp), allocatable, dimension(:, :, :, :), intent(inout) :: gyro_NOA_spn
-    real(kind=dp), dimension(:), intent(inout) :: gyro_DOS
+    real(kind=dp), allocatable, dimension(:, :, :), intent(inout)   :: gyro_K_spn, &
+                                                                       gyro_K_orb, &
+                                                                       gyro_D, &
+                                                                       gyro_C
+    real(kind=dp), allocatable, dimension(:, :, :, :), intent(inout) :: gyro_Dw, gyro_NOA_spn, &
+                                                                        gyro_NOA_orb
+    real(kind=dp), allocatable, dimension(:), intent(inout) :: gyro_DOS
 
     logical, intent(in) :: eval_K, eval_D, eval_Dw, &
                            eval_C, eval_NOA, eval_spn, eval_dos
