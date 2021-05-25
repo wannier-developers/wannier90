@@ -426,7 +426,9 @@ contains
 
     param_wannierise%trial_step = 2.0_dp
     call param_get_keyword(stdout, seedname, 'trial_step', found, r_value=param_wannierise%trial_step)
-  if (found .and. param_wannierise%lfixstep) call io_error('Error: cannot specify both fixed_step and trial_step', stdout, seedname)
+    if (found .and. param_wannierise%lfixstep) then
+      call io_error('Error: cannot specify both fixed_step and trial_step', stdout, seedname)
+    endif
 
     param_wannierise%precond = .false.
     call param_get_keyword(stdout, seedname, 'precond', found, l_value=param_wannierise%precond)
@@ -689,7 +691,8 @@ contains
         call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 3, &
                                       i_value=param_plot%wannier_plot_supercell)
       else
-        call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers', stdout, seedname)
+        call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers', &
+                      stdout, seedname)
       end if
       if (any(param_plot%wannier_plot_supercell <= 0)) &
         call io_error('Error: wannier_plot_supercell elements must be greater than zero', stdout, seedname)
@@ -712,7 +715,9 @@ contains
       if (allocated(param_plot%wannier_plot_list)) deallocate (param_plot%wannier_plot_list)
       allocate (param_plot%wannier_plot_list(param_plot%num_wannier_plot), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', stdout, seedname)
- call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, param_plot%num_wannier_plot, .false., param_plot%wannier_plot_list)
+      call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
+                                  param_plot%num_wannier_plot, .false., &
+                                  param_plot%wannier_plot_list)
       if (any(param_plot%wannier_plot_list < 1) .or. any(param_plot%wannier_plot_list > num_wann)) &
         call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted', stdout, seedname)
     else
@@ -771,7 +776,9 @@ contains
       if (allocated(param_plot%bands_plot_project)) deallocate (param_plot%bands_plot_project)
       allocate (param_plot%bands_plot_project(param_plot%num_bands_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, param_plot%num_bands_project, .false., param_plot%bands_plot_project)
+      call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+                                  param_plot%num_bands_project, .false., &
+                                  param_plot%bands_plot_project)
       if (any(param_plot%bands_plot_project < 1) .or. any(param_plot%bands_plot_project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
     endif
@@ -971,7 +978,8 @@ contains
     call param_get_block_length(stdout, seedname, 'projections', found, i_temp, library)
     ! check to see that there are no unrecognised keywords
     if (found) then
-      if (kmesh_data%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', stdout, seedname)
+      if (kmesh_data%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
+                                                     stdout, seedname)
       lhasproj = .true.
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                  num_wann, proj_site, proj, recip_lattice, &
@@ -991,7 +999,8 @@ contains
       if (allocated(select_projections)) deallocate (select_projections)
       allocate (select_projections(num_select_projections), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating select_projections in param_read', stdout, seedname)
-     call param_get_range_vector(stdout, seedname, 'select_projections', found, num_select_projections, .false., select_projections)
+      call param_get_range_vector(stdout, seedname, 'select_projections', found, &
+                                  num_select_projections, .false., select_projections)
       if (any(select_projections < 1)) &
         call io_error('Error: select_projections must contain positive numbers', stdout, seedname)
       if (num_select_projections < num_wann) &

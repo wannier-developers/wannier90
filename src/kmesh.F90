@@ -422,8 +422,10 @@ contains
       enddo
     end if
 
-    if (param_input%iprint > 0) write (stdout, '(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'
-    if (param_input%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
+    if (param_input%iprint > 0) then
+      write (stdout, '(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'
+      write (stdout, '(1x,"+",76("-"),"+")')
+    endif
 
     !
     kmesh_info%wbtot = 0.0_dp
@@ -1052,7 +1054,9 @@ contains
     if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_automatic', stdout, seedname)
     bvector = 0.0_dp; bweight = 0.0_dp
 
-    if (param_input%iprint > 0) write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
+    if (param_input%iprint > 0) then
+      write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
+    endif
 
     b1sat = .false.
     do shell = 1, kmesh_data%search_shells
@@ -1131,7 +1135,10 @@ contains
       call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                   max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
       if (info < 0) then
-        if (param_input%iprint > 0) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument', abs(info), 'of dgesvd is incorrect'
+        if (param_input%iprint > 0) then
+          write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument', abs(info), &
+            'of dgesvd is incorrect'
+        endif
         call io_error('kmesh_shell_automatic: Problem with Singular Value Decomposition', stdout, seedname)
       else if (info > 0) then
         call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge', stdout, seedname)
@@ -1139,9 +1146,12 @@ contains
 
       if (any(abs(singv) < eps5)) then
         if (kmesh_data%num_shells == 1) then
-        call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value', stdout, seedname)
+          call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value', &
+                        stdout, seedname)
         else
-          if (param_input%iprint > 0) write (stdout, '(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
+          if (param_input%iprint > 0) then
+            write (stdout, '(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
+          endif
           b1sat = .false.
           kmesh_data%num_shells = kmesh_data%num_shells - 1
           goto 200
@@ -1299,7 +1309,9 @@ contains
     bvector = 0.0_dp; bweight = 0.0_dp
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
-    if (param_input%iprint > 0) write (stdout, '(1x,a)') '| The b-vectors are set in the win file                                      |'
+    if (param_input%iprint > 0) then
+      write (stdout, '(1x,a)') '| The b-vectors are set in the win file                                      |'
+    endif
 
     do shell = 1, kmesh_data%num_shells
       ! get the b vectors for this shell
@@ -1310,7 +1322,8 @@ contains
 
     if (param_input%iprint >= 3) then
       do shell = 1, kmesh_data%num_shells
-       write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(kmesh_data%shell_list(shell)), '|'
+        write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', &
+          multi(kmesh_data%shell_list(shell)), '|'
         do loop = 1, multi(kmesh_data%shell_list(shell))
           write (stdout, '(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ', loop, ':', &
             bvector(:, loop, shell)/param_input%lenconfac, '('//trim(param_input%length_unit)//'^-1)', '|'
@@ -1333,7 +1346,10 @@ contains
     call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
-  if (param_input%iprint > 0) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), 'of dgesvd is incorrect'
+      if (param_input%iprint > 0) then
+        write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
+          'of dgesvd is incorrect'
+      endif
       call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition', stdout, seedname)
     else if (info > 0) then
       call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge', stdout, seedname)
@@ -1448,7 +1464,9 @@ contains
     if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed', stdout, seedname)
     bvector = 0.0_dp; bweight = 0.0_dp
 
-    if (param_input%iprint > 0) write (stdout, '(1x,a)') '| The b-vectors are defined in the kshell file                               |'
+    if (param_input%iprint > 0) then
+      write (stdout, '(1x,a)') '| The b-vectors are defined in the kshell file                               |'
+    endif
 
     counter = 1
     do shell = 1, kmesh_data%search_shells
@@ -1550,7 +1568,10 @@ contains
     call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
-  if (param_input%iprint > 0) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), 'of dgesvd is incorrect'
+      if (param_input%iprint > 0) then
+        write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
+          'of dgesvd is incorrect'
+      endif
       call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition', stdout, seedname)
     else if (info > 0) then
       call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge', stdout, seedname)

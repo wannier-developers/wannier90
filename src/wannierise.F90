@@ -137,7 +137,8 @@ contains
     integer, allocatable  :: counts(:)
     integer, allocatable  :: displs(:)
 
-    logical :: first_pass !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
+    logical :: first_pass
+    !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
     real(kind=dp) :: lambda_loc
     ! end of wannierise module data
 

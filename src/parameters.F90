@@ -640,7 +640,8 @@ contains
         call param_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
                                       i_value=param_input%ws_search_size)
       else
-       call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', stdout, seedname)
+        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', &
+                      stdout, seedname)
       end if
       if (any(param_input%ws_search_size <= 0)) &
         call io_error('Error: ws_search_size elements must be greater than zero', stdout, seedname)
@@ -979,7 +980,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
-    type(special_kpoints_type) :: spec_points ! for the special case of param_get_keyword_kpath
+    !type(special_kpoints_type) :: spec_points ! for the special case of param_get_keyword_kpath
     logical :: found
 
     ! keywords for wannier.x
@@ -3305,7 +3306,10 @@ contains
               sites = atoms%species_num(loop)
               exit
             end if
-      if (loop == atoms%num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp), stdout, seedname)
+            if (loop == atoms%num_species) then
+              call io_error('param_get_projection: Atom site not recognised '//trim(ctemp), &
+                            stdout, seedname)
+            endif
           end do
         end if
 
@@ -3842,9 +3846,9 @@ contains
     character(len=*), intent(in) :: keyword
 
     ! local variables
-    integer :: in, ins, ine, loop, i, line_e, line_s, counter
+    integer :: in, ins, ine, loop, line_e, line_s
     logical :: found_e, found_s
-    character(len=maxlen) :: dummy, end_st, start_st
+    character(len=maxlen) :: end_st, start_st
 
     found_s = .false.
     found_e = .false.
