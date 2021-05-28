@@ -33,8 +33,8 @@ contains
   subroutine spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
                              recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                              dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
-                             wanint_kpoint_file, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
-                             crvec, ndegen, rpt_origin, num_int_kpts_on_node, int_kpts, weight, &
+                             wanint_kpoint_file, ws_distance, nrpts, irvec, crvec, ndegen, &
+                             rpt_origin, num_int_kpts_on_node, int_kpts, weight, &
                              stdout, seedname, comm)
     !============================================================!
     !                                                            !
@@ -49,6 +49,7 @@ contains
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
       disentangle_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
+    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -67,9 +68,7 @@ contains
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: wanint_kpoint_file
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
@@ -121,8 +120,7 @@ contains
         kpt(:) = int_kpts(:, loop_tot)
         kweight = weight(loop_tot)
         call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, param_input, wann_data, &
-                               real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                               wdist_ndeg, stdout, seedname)
+                               real_lattice, recip_lattice, mp_grid, ws_distance, stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -140,8 +138,7 @@ contains
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%spin_kmesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%spin_kmesh(3), dp))
         call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, param_input, wann_data, &
-                               real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                               wdist_ndeg, stdout, seedname)
+                               real_lattice, recip_lattice, mp_grid, ws_distance, stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -178,8 +175,7 @@ contains
 ! =========================================================================
 
   subroutine spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                         recip_lattice, mp_grid, pw90_spin, irdist_ws, crdist_ws, wdist_ndeg, &
-                         stdout, seedname)
+                         recip_lattice, mp_grid, pw90_spin, ws_distance, stdout, seedname)
     !=============================================================!
     !                                                             !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -196,6 +192,7 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use pw90_parameters, only: postw90_spin_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_ws_distance, only: ws_distance_type
 
     ! Arguments
     !
@@ -207,9 +204,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     type(postw90_spin_type), intent(in) :: pw90_spin
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -230,14 +225,14 @@ contains
     allocate (SS_n(num_wann, num_wann))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                   wdist_ndeg, stdout, seedname)
+                                   real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                   stdout, seedname)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
     do is = 1, 3
       call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0, num_wann, &
                                      param_input, wann_data, real_lattice, recip_lattice, mp_grid, &
-                                     irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                                     ws_distance, stdout, seedname)
     enddo
 
     ! Unit vector along the magnetization direction
@@ -260,8 +255,7 @@ contains
   !===========================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                               recip_lattice, mp_grid, irdist_ws, crdist_ws, wdist_ndeg, stdout, &
-                               seedname)
+                               recip_lattice, mp_grid, ws_distance, stdout, seedname)
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
     use w90_constants, only: dp, cmplx_i
@@ -269,6 +263,7 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
+    use w90_ws_distance, only: ws_distance_type
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -279,9 +274,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -302,8 +295,8 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                   wdist_ndeg, stdout, seedname)
+                                   real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                   stdout, seedname)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     call pw90common_get_occ(eig, occ, ef, num_wann)
 
@@ -311,7 +304,7 @@ contains
     do is = 1, 3
       call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0, num_wann, &
                                      param_input, wann_data, real_lattice, recip_lattice, mp_grid, &
-                                     irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                                     ws_distance, stdout, seedname)
       spn_nk(:, is) = aimag(cmplx_i*utility_rotate_diag(SS(:, :, is), UU, num_wann))
       do i = 1, num_wann
         spn_k(is) = spn_k(is) + occ(i)*spn_nk(i, is)
@@ -321,7 +314,7 @@ contains
   end subroutine spin_get_moment_k
 
   subroutine spin_get_S(kpt, S, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                        mp_grid, irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                        mp_grid, ws_distance, stdout, seedname)
     !===========================================================!
     !                                                           !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
@@ -334,6 +327,7 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_ws_distance, only: ws_distance_type
 
     ! Arguments
     !
@@ -344,9 +338,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     character(len=50), intent(in)  :: seedname
 
     ! Physics
@@ -365,14 +357,14 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                   real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                   wdist_ndeg, stdout, seedname)
+                                   real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                   stdout, seedname)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
     do i = 1, 3
       call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, i), SS(:, :, i), 0, num_wann, param_input, &
-                                     wann_data, real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                                     crdist_ws, wdist_ndeg, stdout, seedname)
+                                     wann_data, real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                     stdout, seedname)
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)
     enddo
 

@@ -44,15 +44,15 @@ contains
   subroutine k_path(num_wann, param_input, wann_data, spec_points, fermi, eigval, real_lattice, &
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, spin_hall, kpath, pw90_common, pw90_spin, &
-                    pw90_ham, postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
-                    irvec, crvec, ndegen, rpt_origin, bohr, stdout, seedname, comm)
+                    pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                    bohr, stdout, seedname, comm)
     !! Main routine
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k
@@ -63,6 +63,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
+    use w90_ws_distance, only: ws_distance_type
     use w90_utility, only: utility_diagonalize
 
     ! arguments
@@ -85,9 +86,7 @@ contains
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
@@ -243,8 +242,8 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                       wdist_ndeg, stdout, seedname)
+                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                       stdout, seedname)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
@@ -252,7 +251,7 @@ contains
         !
         if (kpath%bands_colour == 'spin') then
           call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                           recip_lattice, mp_grid, pw90_spin, irdist_ws, crdist_ws, wdist_ndeg, &
+                           recip_lattice, mp_grid, pw90_spin, ws_distance, &
                            stdout, seedname)
           my_color(:, loop_kpt) = spn_k(:)
           !
@@ -271,7 +270,7 @@ contains
           call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                   pw90_ham, pw90_common, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   pw90_ham, pw90_common, ws_distance, nrpts, &
                                    irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm, &
                                    shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
@@ -281,8 +280,8 @@ contains
       if (plot_morb) then
         call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, irdist_ws, &
-                                   crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, &
+                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
                                    stdout, seedname, comm, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
@@ -296,8 +295,8 @@ contains
         if (.not. plot_morb) then
           call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, irdist_ws, &
-                                   crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, &
+                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
                                    stdout, seedname, comm, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
@@ -309,7 +308,7 @@ contains
         call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                 pw90_ham, pw90_common, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                 pw90_ham, pw90_common, ws_distance, nrpts, &
                                  irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm, &
                                  shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)

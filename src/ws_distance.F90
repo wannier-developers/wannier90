@@ -26,24 +26,28 @@ module w90_ws_distance
   implicit none
 
   private
+
+  type ws_distance_type
+    !
+    integer, allocatable :: irdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    !! The integer number of unit cells to shift Wannier function j to put its centre
+    !! inside the Wigner-Seitz of wannier function i. If several shifts are
+    !! equivalent (i.e. they take the function on the edge of the WS) they are
+    !! all listed. First index: xyz, second index: number of degenerate shifts,
+    !! third and fourth indices: i,j; fifth index: index on the R vector.
+    real(DP), allocatable :: crdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    !! Cartesian version of irdist_ws, in angstrom
+    integer, allocatable :: ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
+    !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
+    !
+    logical :: done = .false.
+    !! Global variable to know if the properties were already calculated, and avoid
+    !! recalculating them when the [[ws_translate_dist]] function is called multiple times
+  end type ws_distance_type
+
   !
-  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
-  !
-  integer, public, save, allocatable :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! The integer number of unit cells to shift Wannier function j to put its centre
-  !! inside the Wigner-Seitz of wannier function i. If several shifts are
-  !! equivalent (i.e. they take the function on the edge of the WS) they are
-  !! all listed. First index: xyz, second index: number of degenerate shifts,
-  !! third and fourth indices: i,j; fifth index: index on the R vector.
-  real(DP), public, save, allocatable :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! Cartesian version of irdist_ws, in angstrom
-  integer, public, save, allocatable :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
-  !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
-  !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
-  !
-  logical, public, save :: done_ws_distance = .false.
-  !! Global variable to know if the properties were already calculated, and avoid
-  !! recalculating them when the [[ws_translate_dist]] function is called multiple times
+  public :: ws_translate_dist, clean_ws_translate, ws_write_vec, ws_distance_type
 
   integer, parameter :: ndegenx = 8
   !! max number of unit cells that can touch
@@ -62,7 +66,7 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(stdout, seedname, param_input, num_wann, &
+  subroutine ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
                                wannier_centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
@@ -80,9 +84,9 @@ contains
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
-
+    type(ws_distance_type), intent(inout) :: ws_distance
 !   from w90_parameters
+    type(parameter_input_type), intent(in) :: param_input
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     !integer, intent(in) :: iprint
@@ -107,27 +111,27 @@ contains
     ! not be the best thing if you invoke it while the WFs are moving
     if (present(force_recompute)) then
       if (force_recompute) then
-        call clean_ws_translate()
+        call clean_ws_translate(ws_distance)
       endif
     endif
-    if (done_ws_distance) return
-    done_ws_distance = .true.
+    if (ws_distance%done) return
+    ws_distance%done = .true.
 
     if (ndegenx*num_wann*nrpts <= 0) then
       call io_error("unexpected dimensions in ws_translate_dist", stdout, seedname)
     end if
 
-    allocate (irdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
+    allocate (ws_distance%irdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist', stdout, seedname)
-    allocate (crdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
+    allocate (ws_distance%crdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating crdist_ws in ws_translate_dist', stdout, seedname)
-    allocate (wdist_ndeg(num_wann, num_wann, nrpts), stat=ierr)
+    allocate (ws_distance%ndeg(num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist', stdout, seedname)
 
     !translation_centre_frac = 0._dp
-    wdist_ndeg = 0
-    irdist_ws = 0
-    crdist_ws = 0
+    ws_distance%ndeg = 0
+    ws_distance%irdist = 0
+    ws_distance%crdist = 0
 
     do ir = 1, nrpts
       do jw = 1, num_wann
@@ -144,13 +148,13 @@ contains
           ! later for interpolation etc.
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
-                       wdist_ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
+                       ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
                        real_lattice, param_input%ws_search_size, param_input%ws_distance_tol, stdout, seedname)
-          do ideg = 1, wdist_ndeg(iw, jw, ir)
-            irdist_ws(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
-            tmp_frac = REAL(irdist_ws(:, ideg, iw, jw, ir), kind=dp)
+          do ideg = 1, ws_distance%ndeg(iw, jw, ir)
+            ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
+            tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)
             CALL utility_frac_to_cart(tmp_frac, tmp, real_lattice)
-            crdist_ws(:, ideg, iw, jw, ir) = tmp
+            ws_distance%crdist(:, ideg, iw, jw, ir) = tmp
           enddo
         enddo
       enddo
@@ -281,7 +285,7 @@ contains
   !====================================================!
 
   !====================================================!
-  subroutine ws_write_vec(nrpts, irvec, num_wann, use_ws_distance, stdout, seedname)
+  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, stdout, seedname)
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
     !! in order to have the second Wannier function inside the WS cell
@@ -292,6 +296,7 @@ contains
 
     implicit none
 
+    type(ws_distance_type), intent(in) :: ws_distance
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     logical, intent(in) :: use_ws_distance
@@ -317,9 +322,9 @@ contains
         do iw = 1, num_wann
           do jw = 1, num_wann
             write (file_unit, '(5I5)') irvec(:, irpt), iw, jw
-            write (file_unit, '(I5)') wdist_ndeg(iw, jw, irpt)
-            do ideg = 1, wdist_ndeg(iw, jw, irpt)
-              write (file_unit, '(5I5,2F12.6,I5)') irdist_ws(:, ideg, iw, jw, irpt) - &
+            write (file_unit, '(I5)') ws_distance%ndeg(iw, jw, irpt)
+            do ideg = 1, ws_distance%ndeg(iw, jw, irpt)
+              write (file_unit, '(5I5,2F12.6,I5)') ws_distance%irdist(:, ideg, iw, jw, irpt) - &
                 irvec(:, irpt)
             end do
           end do
@@ -349,13 +354,14 @@ contains
   end subroutine ws_write_vec
   !====================================================!
   !====================================================!
-  subroutine clean_ws_translate()
+  subroutine clean_ws_translate(ws_distance)
     !====================================================!
     implicit none
-    done_ws_distance = .false.
-    if (allocated(irdist_ws)) deallocate (irdist_ws)
-    if (allocated(wdist_ndeg)) deallocate (wdist_ndeg)
-    if (allocated(crdist_ws)) deallocate (crdist_ws)
+    type(ws_distance_type), intent(inout) :: ws_distance
+    ws_distance%done = .false.
+    if (allocated(ws_distance%irdist)) deallocate (ws_distance%irdist)
+    if (allocated(ws_distance%ndeg)) deallocate (ws_distance%ndeg)
+    if (allocated(ws_distance%crdist)) deallocate (ws_distance%crdist)
     !====================================================!
   end subroutine clean_ws_translate
 

@@ -38,8 +38,8 @@ contains
 
   subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                       recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
-                      pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, irdist_ws, crdist_ws, &
-                      wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                      pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, &
+                      nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -58,6 +58,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
+    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -76,9 +77,7 @@ contains
     type(berry_type), intent(in)             :: berry
     type(postw90_ham_type), intent(in)       :: pw90_ham
     type(postw90_spin_type), intent(in)       :: pw90_spin
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
@@ -196,24 +195,24 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   pw90_common, pw90_ham, ws_distance, nrpts, &
                                    irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
+                         ws_distance, stdout, seedname, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                                         crdist_ws, wdist_ndeg, stdout, seedname)
+                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                         stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
+                         ws_distance, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -239,24 +238,24 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   pw90_common, pw90_ham, ws_distance, nrpts, &
                                    irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
+                         ws_distance, stdout, seedname, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                                         crdist_ws, wdist_ndeg, stdout, seedname)
+                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                         stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, &
+                         ws_distance, stdout, seedname, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, UU=UU)
         end if
@@ -522,8 +521,8 @@ contains
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, num_wann, param_input, wann_data, &
                        real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                       irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname, smr_index, &
-                       smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
+                       ws_distance, stdout, seedname, smr_index, smr_fixed_en_width, adpt_smr_fac, &
+                       adpt_smr_max, levelspacing_k, UU)
 
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
@@ -534,6 +533,7 @@ contains
 !   use w90_parameters, only: param_input
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
+    use w90_ws_distance, only: ws_distance_type
 
     ! Arguments
     !
@@ -549,9 +549,7 @@ contains
     type(dos_plot_type), intent(in) :: dos_data
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     integer, intent(in)                                   :: smr_index
@@ -601,7 +599,7 @@ contains
     !
     if (pw90_common%spin_decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                       mp_grid, pw90_spin, irdist_ws, crdist_ws, wdist_ndeg, stdout, seedname)
+                       mp_grid, pw90_spin, ws_distance, stdout, seedname)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)

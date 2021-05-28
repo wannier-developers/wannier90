@@ -778,8 +778,8 @@ contains
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k(kpt, OO_R, OO, alpha, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                       wdist_ndeg, stdout, seedname)
+                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                       stdout, seedname)
     !=========================================================!
     !                                                         !
     !! For alpha=0:
@@ -795,7 +795,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
@@ -809,9 +809,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
 
     integer                                         :: alpha
     integer, intent(in) :: stdout
@@ -827,7 +825,7 @@ contains
 !                               irvec, force_recompute)
 
     if (param_input%use_ws_distance) then
-      CALL ws_translate_dist(stdout, seedname, param_input, &
+      CALL ws_translate_dist(ws_distance, stdout, seedname, param_input, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
                              mp_grid, nrpts, irvec)
     endif
@@ -838,13 +836,15 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (alpha == 0) then
               OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             elseif (alpha == 1 .or. alpha == 2 .or. alpha == 3) then
-              OO(i, j) = OO(i, j) + cmplx_i*crdist_ws(alpha, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir)
+              OO(i, j) = OO(i, j) + cmplx_i*ws_distance%crdist(alpha, ideg, i, j, ir) &
+                         *phase_fac*OO_R(i, j, ir)
             else
               stop 'wrong value of alpha in pw90common_fourier_R_to_k'
             endif
@@ -873,9 +873,8 @@ contains
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_new(kpt, OO_R, num_wann, param_input, wann_data, &
-                                           real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                                           crdist_ws, wdist_ndeg, stdout, seedname, OO, OO_dx, &
-                                           OO_dy, OO_dz)
+                                           real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                           stdout, seedname, OO, OO_dx, OO_dy, OO_dz)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -888,7 +887,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
     ! Arguments
@@ -900,9 +899,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO
@@ -914,10 +911,10 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, &
-                                                            real_lattice, recip_lattice, mp_grid, &
-                                                            nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -928,18 +925,19 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_dx)) OO_dx(i, j) = OO_dx(i, j) + &
-                                              cmplx_i*crdist_ws(1, ideg, i, j, ir)* &
+                                              cmplx_i*ws_distance%crdist(1, ideg, i, j, ir)* &
                                               phase_fac*OO_R(i, j, ir)
             if (present(OO_dy)) OO_dy(i, j) = OO_dy(i, j) + &
-                                              cmplx_i*crdist_ws(2, ideg, i, j, ir)* &
+                                              cmplx_i*ws_distance%crdist(2, ideg, i, j, ir)* &
                                               phase_fac*OO_R(i, j, ir)
             if (present(OO_dz)) OO_dz(i, j) = OO_dz(i, j) + &
-                                              cmplx_i*crdist_ws(3, ideg, i, j, ir)* &
+                                              cmplx_i*ws_distance%crdist(3, ideg, i, j, ir)* &
                                               phase_fac*OO_R(i, j, ir)
           enddo
         enddo
@@ -963,8 +961,8 @@ contains
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, param_input, wann_data, &
                                                     real_lattice, recip_lattice, mp_grid, &
-                                                    irdist_ws, crdist_ws, wdist_ndeg, stdout, &
-                                                    seedname, OO, OO_da, OO_dadb)
+                                                    ws_distance, stdout, seedname, OO, OO_da, &
+                                                    OO_dadb)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -980,7 +978,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
     ! Arguments
@@ -992,9 +990,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
@@ -1005,10 +1001,10 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, &
-                                                            real_lattice, recip_lattice, mp_grid, &
-                                                            nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -1018,22 +1014,25 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
 
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_da)) then
               do a = 1, 3
-                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i*crdist_ws(a, ideg, i, j, ir)* &
+                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i*ws_distance%crdist(a, ideg, i, j, ir)* &
                                  phase_fac*OO_R(i, j, ir)
               enddo
             endif
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) - crdist_ws(a, ideg, i, j, ir)* &
-                                        crdist_ws(b, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir)
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) &
+                                        - ws_distance%crdist(a, ideg, i, j, ir) &
+                                        *ws_distance%crdist(b, ideg, i, j, ir) &
+                                        *phase_fac*OO_R(i, j, ir)
                 enddo
               enddo
             end if
@@ -1066,9 +1065,8 @@ contains
 
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             param_input, wann_data, real_lattice, &
-                                                            recip_lattice, mp_grid, irdist_ws, &
-                                                            crdist_ws, wdist_ndeg, stdout, &
-                                                            seedname, OO, OO_da, OO_dadb)
+                                                            recip_lattice, mp_grid, ws_distance, &
+                                                            stdout, seedname, OO, OO_da, OO_dadb)
     !=======================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1086,7 +1084,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -1101,9 +1099,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
@@ -1118,9 +1114,10 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1136,7 +1133,8 @@ contains
     ! rotate wannier centres from cartesian to fractional coordinates
     wannier_centres_frac(:, :) = 0.d0
     do ir = 1, num_wann
-      call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), recip_lattice)
+      call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), &
+                                recip_lattice)
     enddo
 
     if (present(OO)) OO = cmplx_0
@@ -1147,27 +1145,31 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
 
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir) + &
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir) + &
                                                    wannier_centres_frac(:, j) - wannier_centres_frac(:, i), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_da)) then
               do a = 1, 3
                 OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i* &
-                                 (crdist_ws(a, ideg, i, j, ir) + local_wannier_centres(a, j) - &
-                                  local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
+                                 (ws_distance%crdist(a, ideg, i, j, ir) &
+                                  + local_wannier_centres(a, j) &
+                                  - local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
               enddo
             endif
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
                   OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) - &
-                                        (crdist_ws(a, ideg, i, j, ir) + local_wannier_centres(a, j) - &
-                                         local_wannier_centres(a, i))* &
-                                        (crdist_ws(b, ideg, i, j, ir) + local_wannier_centres(b, j) - &
-                                         local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir)
+                                        (ws_distance%crdist(a, ideg, i, j, ir) &
+                                         + local_wannier_centres(a, j) &
+                                         - local_wannier_centres(a, i)) &
+                                        *(ws_distance%crdist(b, ideg, i, j, ir) &
+                                          + local_wannier_centres(b, j) - &
+                                          local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir)
                 enddo
               enddo
             end if
@@ -1213,8 +1215,7 @@ contains
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec(kpt, OO_R, num_wann, param_input, wann_data, &
                                            real_lattice, recip_lattice, mp_grid, &
-                                           irdist_ws, crdist_ws, wdist_ndeg, stdout, &
-                                           seedname, OO_true, OO_pseudo)
+                                           ws_distance, stdout, seedname, OO_true, OO_pseudo)
     !====================================================================!
     !                                                                    !
     !! For OO_true (true vector):
@@ -1224,7 +1225,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
@@ -1237,9 +1238,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_true
@@ -1249,9 +1248,10 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
@@ -1260,9 +1260,9 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO_true)) then
               OO_true(i, j, 1) = OO_true(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_true(i, j, 2) = OO_true(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1270,14 +1270,20 @@ contains
             endif
             if (present(OO_pseudo)) then
               OO_pseudo(i, j, 1) = OO_pseudo(i, j, 1) &
-                                   + cmplx_i*crdist_ws(2, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 3) &
-                                   - cmplx_i*crdist_ws(3, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 2)
+                                   + cmplx_i*ws_distance%crdist(2, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 3) &
+                                   - cmplx_i*ws_distance%crdist(3, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 2)
               OO_pseudo(i, j, 2) = OO_pseudo(i, j, 2) &
-                                   + cmplx_i*crdist_ws(3, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 1) &
-                                   - cmplx_i*crdist_ws(1, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 3)
+                                   + cmplx_i*ws_distance%crdist(3, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 1) &
+                                   - cmplx_i*ws_distance%crdist(1, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 3)
               OO_pseudo(i, j, 3) = OO_pseudo(i, j, 3) &
-                                   + cmplx_i*crdist_ws(1, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 2) &
-                                   - cmplx_i*crdist_ws(2, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 1)
+                                   + cmplx_i*ws_distance%crdist(1, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 2) &
+                                   - cmplx_i*ws_distance%crdist(2, ideg, i, j, ir) &
+                                   *phase_fac*OO_R(i, j, ir, 1)
             endif
           enddo
         enddo
@@ -1310,8 +1316,7 @@ contains
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(kpt, OO_R, num_wann, param_input, wann_data, &
                                                 real_lattice, recip_lattice, mp_grid, &
-                                                irdist_ws, crdist_ws, wdist_ndeg, stdout, &
-                                                seedname, OO_da, OO_dadb)
+                                                ws_distance, stdout, seedname, OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1324,7 +1329,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
@@ -1337,9 +1342,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
@@ -1349,9 +1352,10 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1360,10 +1364,11 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
 
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO_da)) then
               OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1372,8 +1377,9 @@ contains
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + &
-                                        cmplx_i*crdist_ws(b, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, a)
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) &
+                                        + cmplx_i*ws_distance%crdist(b, ideg, i, j, ir) &
+                                        *phase_fac*OO_R(i, j, ir, a)
                 enddo
               enddo
             endif
@@ -1405,8 +1411,8 @@ contains
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, OO_R, num_wann, param_input, &
                                                         wann_data, real_lattice, recip_lattice, &
-                                                        mp_grid, irdist_ws, crdist_ws, wdist_ndeg, &
-                                                        stdout, seedname, OO_da, OO_dadb)
+                                                        mp_grid, ws_distance, stdout, seedname, &
+                                                        OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1423,7 +1429,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: parameter_input_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -1437,9 +1443,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
@@ -1453,9 +1457,10 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(stdout, seedname, param_input, &
-                                                            num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                                                            mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                            param_input, num_wann, &
+                                                            wann_data%centres, real_lattice, &
+                                                            recip_lattice, mp_grid, nrpts, irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1474,7 +1479,8 @@ contains
     ! rotate wannier centres from cartesian to fractional coordinates
     wannier_centres_frac(:, :) = 0.d0
     do ir = 1, num_wann
-      call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), recip_lattice)
+      call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), &
+                                recip_lattice)
     enddo
 
 !    print *, 'wannier_centres_frac'
@@ -1499,15 +1505,18 @@ contains
       if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(i, j, ir)
+          do ideg = 1, ws_distance%ndeg(i, j, ir)
 
-            rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir) + &
-                                                   wannier_centres_frac(:, j) - wannier_centres_frac(:, i), dp))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            rdotk = twopi*dot_product(kpt(:), real(ws_distance%irdist(:, ideg, i, j, ir) + &
+                                                   wannier_centres_frac(:, j) &
+                                                   - wannier_centres_frac(:, i), dp))
+            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                        /real(ndegen(ir)*ws_distance%ndeg(i, j, ir), dp)
             if (present(OO_da)) then
               ! if we are at the origin and at the same band, then the
               ! matrix element is zero in this convention
-              if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) .and. (i .eq. j)) then
+              if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) &
+                  .and. (i .eq. j)) then
                 cycle
               else
                 OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
@@ -1517,14 +1526,17 @@ contains
             endif
             if (present(OO_dadb)) then
               ! same skip as before
-              if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) .and. (i .eq. j)) then
+              if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) &
+                  .and. (i .eq. j)) then
                 cycle
               else
                 do a = 1, 3
                   do b = 1, 3
                     OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i* &
-                                          (crdist_ws(b, ideg, i, j, ir) + local_wannier_centres(b, j) - &
-                                           local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir, a)
+                                          (ws_distance%crdist(b, ideg, i, j, ir) &
+                                           + local_wannier_centres(b, j) &
+                                           - local_wannier_centres(b, i)) &
+                                          *phase_fac*OO_R(i, j, ir, a)
                   enddo
                 enddo
               endif
@@ -1543,10 +1555,14 @@ contains
           if (present(OO_da)) then
             ! if we are at the origin and at the same band, then the
             ! matrix element is zero in this convention
-            if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) .and. (i .eq. j)) then
-              OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*(OO_R(i, j, ir, 1) - local_wannier_centres(1, j))
-              OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*(OO_R(i, j, ir, 2) - local_wannier_centres(2, j))
-              OO_da(i, j, 3) = OO_da(i, j, 3) + phase_fac*(OO_R(i, j, ir, 3) - local_wannier_centres(3, j))
+            if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) &
+                .and. (i .eq. j)) then
+              OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*(OO_R(i, j, ir, 1) &
+                                                           - local_wannier_centres(1, j))
+              OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*(OO_R(i, j, ir, 2) &
+                                                           - local_wannier_centres(2, j))
+              OO_da(i, j, 3) = OO_da(i, j, 3) + phase_fac*(OO_R(i, j, ir, 3) &
+                                                           - local_wannier_centres(3, j))
 !            print *, 'OO_R(i,j,ir,1)', OO_R(i,j,ir,1)
 !            print *, 'local_wannier_centres(1,j)', local_wannier_centres(1,j)
 !            print *, 'OO_R(i,j,ir,2)', OO_R(i,j,ir,2)
@@ -1560,11 +1576,13 @@ contains
           endif
           if (present(OO_dadb)) then
             ! same skip as before
-            if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) .and. (i .eq. j)) then
+            if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0) &
+                .and. (i .eq. j)) then
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*(crvec(b, ir) + local_wannier_centres(b, j) - &
-                                                                       local_wannier_centres(b, i))*phase_fac* &
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*(crvec(b, ir) &
+                                                                       + local_wannier_centres(b, j) &
+                                                                       - local_wannier_centres(b, i))*phase_fac* &
                                         (OO_R(i, j, ir, a) - local_wannier_centres(a, j))
                 enddo
               enddo
@@ -1572,8 +1590,9 @@ contains
             else
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*(crvec(b, ir) + local_wannier_centres(b, j) - &
-                                                                       local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir, a)
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*(crvec(b, ir) &
+                                                                       + local_wannier_centres(b, j) &
+                                                                       - local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir, a)
                 enddo
               enddo
             endif

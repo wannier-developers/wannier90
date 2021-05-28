@@ -143,34 +143,34 @@ sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o wann90_param.o
 comms.o: ../comms.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
 
-boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o postw90_param.o
+boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o postw90_param.o ws_distance.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
 
-geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o get_oper.o postw90_common.o comms.o utility.o wan_ham.o postw90_param.o
+geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o get_oper.o postw90_common.o comms.o utility.o wan_ham.o postw90_param.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)geninterp.F90
 
 get_oper.o: $(POSTDIR)get_oper.F90 parameters.o constants.o comms.o postw90_common.o io.o utility.o postw90_param.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)get_oper.F90
 
-spin.o: $(POSTDIR)spin.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o wan_ham.o postw90_param.o
+spin.o: $(POSTDIR)spin.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o wan_ham.o postw90_param.o ws_distance.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)spin.F90
 
-dos.o: $(POSTDIR)dos.F90 comms.o parameters.o postw90_param.o constants.o utility.o io.o wan_ham.o postw90_common.o get_oper.o spin.o
+dos.o: $(POSTDIR)dos.F90 comms.o parameters.o postw90_param.o constants.o utility.o io.o wan_ham.o postw90_common.o get_oper.o spin.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)dos.F90
 
-kpath.o: $(POSTDIR)kpath.F90 comms.o parameters.o constants.o io.o spin.o berry.o postw90_param.o
+kpath.o: $(POSTDIR)kpath.F90 comms.o parameters.o constants.o io.o spin.o berry.o postw90_param.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kpath.F90
 
-kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin.o berry.o postw90_param.o
+kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin.o berry.o postw90_param.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kslice.F90
 
-berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_param.o
+berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_param.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry.F90
 
-gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o berry.o postw90_param.o
+gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o berry.o postw90_param.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)gyrotropic.F90
 
-wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o postw90_param.o constants.o utility.o postw90_common.o get_oper.o
+wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o postw90_param.o constants.o utility.o postw90_common.o get_oper.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90
 
 postw90_common.o: $(POSTDIR)postw90_common.F90 postw90_param.o ws_distance.o comms.o parameters.o utility.o constants.o io.o

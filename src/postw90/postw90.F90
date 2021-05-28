@@ -38,7 +38,7 @@ program postw90
   use w90_boltzwann
   use w90_geninterp
 
-  use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg
+  use w90_ws_distance, only: ws_distance_type
 
   implicit none
 
@@ -58,6 +58,7 @@ program postw90
   integer :: my_node_id, num_nodes
   logical :: on_root = .false.
   type(w90commtype) :: comm
+  type(ws_distance_type) :: ws_distance
 
   ! this can't work -- stdout and seedname aren't defined yet --FIXME JJ
   call comms_setup(stdout, seedname, comm)
@@ -238,8 +239,8 @@ program postw90
   if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) then
     call dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                   recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
-                  pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, irdist_ws, crdist_ws, &
-                  wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                  pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, nrpts, &
+                  irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
   endif
 
 ! find_fermi_level commented for the moment in dos.F90
@@ -252,8 +253,8 @@ program postw90
     call k_path(num_wann, param_input, wann_data, spec_points, fermi, eigval, real_lattice, &
                 recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                 kmesh_info, k_points, berry, spin_hall, kpath, pw90_common, pw90_spin, &
-                pw90_ham, postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
-                irvec, crvec, ndegen, rpt_origin, physics%bohr, stdout, seedname, comm)
+                pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                physics%bohr, stdout, seedname, comm)
   end if
 
   ! ---------------------------------------------------------------------------
@@ -264,8 +265,8 @@ program postw90
     call k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                  mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
                  k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                 irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                 physics%bohr, stdout, seedname, comm)
+                 ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics%bohr, &
+                 stdout, seedname, comm)
   end if
   ! --------------------
   ! Spin magnetic moment
@@ -275,9 +276,8 @@ program postw90
     call spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
-                         berry%wanint_kpoint_file, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
-                         crvec, ndegen, rpt_origin, num_int_kpts_on_node, int_kpts, weight, &
-                         stdout, seedname, comm)
+                         berry%wanint_kpoint_file, ws_distance, nrpts, irvec, crvec, ndegen, &
+                         rpt_origin, num_int_kpts_on_node, int_kpts, weight, stdout, seedname, comm)
   end if
 
   ! -------------------------------------------------------------------
@@ -302,9 +302,8 @@ program postw90
     call berry_main(param_input, fermi, wann_data, num_wann, eigval, real_lattice, &
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
-                    postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, &
-                    ndegen, rpt_origin, physics, stdout, seedname, comm, int_kpts, &
-                    num_int_kpts_on_node, weight, cell_volume)
+                    postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics, &
+                    stdout, seedname, comm, int_kpts, num_int_kpts_on_node, weight, cell_volume)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
@@ -317,25 +316,24 @@ program postw90
   if (pw90_calcs%geninterp) then
     call geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
                         irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
-                        crvec, dis_data, wann_data, pw90_common, mp_grid, irdist_ws, &
-                        crdist_ws, wdist_ndeg, stdout, seedname, geninterp, pw90_ham, &
-                        param_input, comm)
+                        crvec, dis_data, wann_data, pw90_common, mp_grid, ws_distance, stdout, &
+                        seedname, geninterp, pw90_ham, param_input, comm)
   end if
 
   if (pw90_calcs%boltzwann) then
     call boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                         mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                         boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                        irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, &
-                        rpt_origin, physics, stdout, seedname, comm, cell_volume)
+                        ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics, stdout, &
+                        seedname, comm, cell_volume)
   end if
 
   if (pw90_calcs%gyrotropic) then
     call gyrotropic_main(num_wann, param_input, fermi, wann_data, eigval, real_lattice, &
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
-                         postw90_oper, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, &
-                         crvec, ndegen, rpt_origin, physics, stdout, seedname, comm, cell_volume)
+                         postw90_oper, pw90_ham, ws_distance, nrpts, irvec, crvec, ndegen, &
+                         rpt_origin, physics, stdout, seedname, comm, cell_volume)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then

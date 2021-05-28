@@ -37,7 +37,7 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
-    use w90_ws_distance, only: done_ws_distance, ws_translate_dist, ws_write_vec
+    use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, parameter_input_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_type, fermi_data_type, &
       special_kpoints_type
@@ -90,6 +90,7 @@ contains
 
     integer :: nkp
     logical :: have_gamma
+    type(ws_distance_type) :: ws_distance
 
     if (param_input%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
@@ -127,7 +128,8 @@ contains
                                                             spec_points, param_input, &
                                                             recip_lattice, num_wann, wann_data, &
                                                             ham_r, irvec, ndegen, nrpts, &
-                                                            wannier_centres_translated, stdout, seedname)
+                                                            wannier_centres_translated, &
+                                                            ws_distance, stdout, seedname)
       !
       if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, param_input, &
                                                                 fermi_surface_data, num_wann, &
@@ -146,10 +148,12 @@ contains
                                                          ndegen, nrpts, hmlg, stdout, seedname)
       !
       if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(stdout, seedname, param_input, num_wann, &
+        if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
+                                                           param_input, num_wann, &
                                                            wann_data%centres, real_lattice, &
                                                            recip_lattice, mp_grid, nrpts, irvec)
-        call ws_write_vec(nrpts, irvec, num_wann, param_input%use_ws_distance, stdout, seedname)
+        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, param_input%use_ws_distance, &
+                          stdout, seedname)
       end if
     end if
 
@@ -174,7 +178,8 @@ contains
   !============================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, param_plot, spec_points, param_input, &
                                     recip_lattice, num_wann, wann_data, ham_r, irvec, ndegen, &
-                                    nrpts, wannier_centres_translated, stdout, seedname)
+                                    nrpts, wannier_centres_translated, ws_distance, stdout, &
+                                    seedname)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -184,7 +189,7 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
       special_kpoints_type
@@ -207,6 +212,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
+    type(ws_distance_type), intent(inout) :: ws_distance
     character(len=50), intent(in)  :: seedname
 
     integer, allocatable :: irvec_cut(:, :)
@@ -413,11 +419,13 @@ contains
     !
     if (param_input%use_ws_distance) then
       if (index(param_input%bands_plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(stdout, seedname, param_input, num_wann, wann_data%centres, real_lattice, &
-                               recip_lattice, mp_grid, nrpts, irvec, force_recompute=.true.)
+        call ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
+                               wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
+                               irvec, force_recompute=.true.)
       elseif (index(param_input%bands_plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(stdout, seedname, param_input, num_wann, wann_data%centres, real_lattice, &
-                               recip_lattice, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
+        call ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
+                               wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
+                               irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout, seedname)
       endif
@@ -434,10 +442,11 @@ contains
           if (param_input%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
-              do ideg = 1, wdist_ndeg(i, j, irpt)
+              do ideg = 1, ws_distance%ndeg(i, j, irpt)
                 rdotk = twopi*dot_product(plot_kpoint(:, loop_kpt), &
-                                          real(irdist_ws(:, ideg, i, j, irpt), dp))
-                fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(irpt)*wdist_ndeg(i, j, irpt), dp)
+                                          real(ws_distance%irdist(:, ideg, i, j, irpt), dp))
+                fac = cmplx(cos(rdotk), sin(rdotk), dp) &
+                      /real(ndegen(irpt)*ws_distance%ndeg(i, j, irpt), dp)
                 ham_kprm(i, j) = ham_kprm(i, j) + fac*ham_r(i, j, irpt)
               enddo
             enddo
@@ -456,10 +465,10 @@ contains
           if (param_input%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
-              do ideg = 1, wdist_ndeg(i, j, irpt)
+              do ideg = 1, ws_distance%ndeg(i, j, irpt)
                 rdotk = twopi*dot_product(plot_kpoint(:, loop_kpt), &
-                                          real(irdist_ws(:, ideg, i, j, irpt), dp))
-                fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(wdist_ndeg(i, j, irpt), dp)
+                                          real(ws_distance%irdist(:, ideg, i, j, irpt), dp))
+                fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ws_distance%ndeg(i, j, irpt), dp)
                 ham_kprm(i, j) = ham_kprm(i, j) + fac*ham_r_cut(i, j, irpt)
               enddo
             enddo

@@ -44,7 +44,7 @@ contains
   subroutine k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                      mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
                      k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                     irdist_ws, crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                     ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
                      bohr, stdout, seedname, comm)
     !! Main routine
 
@@ -52,7 +52,7 @@ contains
       postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, &
@@ -61,6 +61,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_wan_ham, only: wham_get_eig_deleig
+    use w90_ws_distance, only: ws_distance_type
 
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -80,9 +81,7 @@ contains
     type(spin_hall_type), intent(in) :: spin_hall
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
@@ -273,7 +272,7 @@ contains
       if (plot_fermi_lines) then
         if (fermi_lines_color) then
           call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                           recip_lattice, mp_grid, pw90_spin, irdist_ws, crdist_ws, wdist_ndeg, &
+                           recip_lattice, mp_grid, pw90_spin, ws_distance, &
                            stdout, seedname)
           do n = 1, num_wann
             if (spn_k(n) > 1.0_dp - eps8) then
@@ -286,13 +285,13 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
+                                   pw90_common, pw90_ham, ws_distance, nrpts, &
                                    irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
           Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, irdist_ws, &
-                                         crdist_ws, wdist_ndeg, stdout, seedname)
+                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                         stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
         endif
 
@@ -315,9 +314,9 @@ contains
 
         call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                 u_matrix, v_matrix, dis_data, k_points, pw90_common, irdist_ws, &
-                                 crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                 stdout, seedname, comm, imf_k_list)
+                                 u_matrix, v_matrix, dis_data, k_points, pw90_common, ws_distance, &
+                                 nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, &
+                                 comm, imf_k_list)
         curv(1) = sum(imf_k_list(:, 1, 1))
         curv(2) = sum(imf_k_list(:, 2, 1))
         curv(3) = sum(imf_k_list(:, 3, 1))
@@ -327,8 +326,8 @@ contains
       else if (plot_morb) then
         call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, irdist_ws, &
-                                   crdist_ws, wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                                   u_matrix, v_matrix, dis_data, k_points, pw90_common, &
+                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
                                    stdout, seedname, comm, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
@@ -341,9 +340,8 @@ contains
         call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                 pw90_ham, pw90_common, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
-                                 irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm, &
-                                 shc_k_fermi=shc_k_fermi)
+                                 pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
+                                 rpt_origin, stdout, seedname, comm, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 

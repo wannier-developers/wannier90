@@ -63,9 +63,8 @@ contains
 
   subroutine geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
                             irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
-                            crvec, dis_data, wann_data, pw90_common, mp_grid, irdist_ws, &
-                            crdist_ws, wdist_ndeg, stdout, seedname, geninterp, pw90_ham, &
-                            param_input, comm)
+                            crvec, dis_data, wann_data, pw90_common, mp_grid, ws_distance, &
+                            stdout, seedname, geninterp, pw90_ham, param_input, comm)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -84,6 +83,7 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
       comms_gatherv, w90commtype
+    use w90_ws_distance, only: ws_distance_type
 
     ! arguments
     type(disentangle_type), intent(in) :: dis_data
@@ -91,9 +91,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(wannier_data_type), intent(in) :: wann_data
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    real(kind=dp), intent(in) :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    integer, intent(in) :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    type(ws_distance_type), intent(inout) :: ws_distance
     type(w90commtype), intent(in) :: comm
     type(geninterp_type), intent(in) :: geninterp
     type(postw90_ham_type), intent(in) :: pw90_ham
@@ -292,13 +290,12 @@ contains
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
                                  num_wann, param_input, wann_data, eigval, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                                 dis_data, k_points, pw90_common, pw90_ham, irdist_ws, crdist_ws, &
-                                 wdist_ndeg, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                 stdout, seedname, comm)
+                                 dis_data, k_points, pw90_common, pw90_ham, ws_distance, nrpts, &
+                                 irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, irdist_ws, crdist_ws, &
-                                       wdist_ndeg, stdout, seedname)
+                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                       stdout, seedname)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do
