@@ -24,7 +24,6 @@ module w90_postw90_common
   !
   !use w90_comms
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
