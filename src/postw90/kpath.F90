@@ -27,6 +27,7 @@ module w90_kpath
   !!  - Integrand of orbital magnetization Morb=LCtil+ICtil
 
   use w90_constants, only: dp
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -46,19 +47,20 @@ contains
                     pw90_ham, postw90_oper, irdist_ws, crdist_ws, wdist_ndeg, nrpts, &
                     irvec, crvec, ndegen, rpt_origin, bohr, stdout, seedname, comm)
     !! Main routine
-
+    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
+      postw90_ham_type, postw90_common_type, postw90_oper_type
+    use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
-    use w90_constants, only: dp, eps8
+    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_param_types, only: special_kpoints_type, fermi_data_type, parameter_input_type, &
       wannier_data_type, disentangle_type, k_point_type, kmesh_info_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
-    use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      !     get_FF_R, get_SS_R, get_SHC_R
-      get_SS_R, get_SHC_R
+    use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize
@@ -159,37 +161,38 @@ contains
     ! Set up the needed Wannier matrix elements
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
-    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                                                 dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                                                 comm)
     if (plot_morb) then
 
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
                     kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
 
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
                     seedname, comm)
     endif
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
 
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
-      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, SH_R, dis_data, &
                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
                      stdout, seedname, comm)
     endif
 
+
     if (plot_bands .and. kpath%bands_colour == 'spin') then
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
-    endif
+    end if
 
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as

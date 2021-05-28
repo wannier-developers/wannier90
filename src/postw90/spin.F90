@@ -16,6 +16,7 @@ module w90_spin
   !! Module to compute spin
 
   use w90_constants, only: dp
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -89,10 +90,10 @@ contains
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
-    call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+    call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                   k_points, param_input, postw90_oper, stdout, seedname, comm)
 
     if (param_input%iprint > 0) then
@@ -195,7 +196,6 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use pw90_parameters, only: postw90_spin_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -269,7 +269,6 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
-    use w90_get_oper, only: HH_R, SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -335,7 +334,6 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !

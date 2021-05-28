@@ -27,6 +27,7 @@ module w90_kslice
   !!
   !!    kslice_corner(1:3) is the lower left corner
   !!    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -51,8 +52,8 @@ contains
       postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
-    use w90_constants, only: dp, twopi, eps8
-    use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
+    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
+    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, &
       parameter_input_type, fermi_data_type, wannier_data_type
@@ -155,32 +156,32 @@ contains
     end if
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
-    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                                                 dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                                                 comm)
     if (plot_morb) then
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
                     kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
                     seedname, comm)
     endif
 
     if (plot_shc) then
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
 
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
-      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, SH_R, dis_data, &
                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
                      stdout, seedname, comm)
     end if
 
-    if (fermi_lines_color) call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+    if (fermi_lines_color) call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                                          k_points, param_input, postw90_oper, stdout, seedname, comm)
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
     !

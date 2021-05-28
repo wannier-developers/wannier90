@@ -22,7 +22,7 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
-  !use w90_constants
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -182,7 +182,7 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     if (on_root) then

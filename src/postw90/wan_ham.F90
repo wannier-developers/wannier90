@@ -16,6 +16,7 @@ module w90_wan_ham
   !! This module contain operations on the Hamiltonian in the WF basis
 
   use w90_constants, only: dp
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -404,11 +405,11 @@ contains
     use w90_constants, only: dp
     use pw90_parameters, only: postw90_common_type, postw90_ham_type
     use w90_comms, only: w90commtype, mpirank
-    use w90_get_oper, only: HH_R, get_HH_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
-      k_point_type
-    use pw90_parameters, only: postw90_ham_type
+    use w90_constants, only: dp, cmplx_0
+    use w90_get_oper, only: get_HH_R
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
 
     implicit none
@@ -450,7 +451,7 @@ contains
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
@@ -523,9 +524,9 @@ contains
     !========================================================!
 
     use w90_constants, only: dp
-    use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k_new
+    use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
       disentangle_type, k_point_type
@@ -567,7 +568,7 @@ contains
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     allocate (delHH(num_wann, num_wann, 3))
@@ -605,7 +606,7 @@ contains
     !========================================================!
 
     use w90_constants, only: dp
-    use w90_get_oper, only: HH_R, get_HH_R, AA_R, get_AA_R
+    use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
       k_point_type, kmesh_info_type
@@ -645,10 +646,10 @@ contains
     type(w90commtype), intent(in) :: comm
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
-    call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+    call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                   dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                   comm)
 
@@ -674,7 +675,9 @@ contains
     !========================================================!
 
     use w90_constants, only: dp
-    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_get_oper, only: get_HH_R
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
+    use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
@@ -712,7 +715,7 @@ contains
     type(w90commtype), intent(in) :: comm
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, param_input, wann_data, &

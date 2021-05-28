@@ -31,6 +31,7 @@ module w90_berry
   !                                 reading k-points and weights from file
 
   use w90_constants, only: dp
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -217,9 +218,9 @@ contains
     !
     if (eval_ahc) then
       call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                    rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                    rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                     pw90_common, stdout, seedname, comm)
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
 
@@ -229,15 +230,15 @@ contains
 
     if (eval_morb) then
       call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                    rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                    rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                     pw90_common, stdout, seedname, comm)
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
                     kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
 
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
                     seedname, comm)
 
@@ -255,9 +256,9 @@ contains
 
     if (eval_kubo) then
       call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                    rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                    rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                     pw90_common, stdout, seedname, comm)
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
       allocate (kubo_H_k(3, 3, berry%kubo_nfreq))
@@ -271,7 +272,7 @@ contains
       jdos = 0.0_dp
       if (pw90_common%spin_decomp) then
 
-        call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+        call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                       k_points, param_input, postw90_oper, stdout, seedname, comm)
         allocate (kubo_H_k_spn(3, 3, 3, berry%kubo_nfreq))
         allocate (kubo_H_spn(3, 3, 3, berry%kubo_nfreq))
@@ -287,9 +288,9 @@ contains
 
     if (eval_sc) then
       call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                    rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                    rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                     pw90_common, stdout, seedname, comm)
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
       allocate (sc_k_list(3, 6, berry%kubo_nfreq))
@@ -300,14 +301,14 @@ contains
 
     if (eval_shc) then
       call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                    rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                    rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                     pw90_common, stdout, seedname, comm)
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
-      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, SH_R, dis_data, &
                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
                      stdout, seedname, comm)
 
@@ -1859,7 +1860,6 @@ contains
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list, wham_get_D_h, &
       wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, wham_get_D_h_P_value, &
       wham_get_eig_deleig_TB_conv, wham_get_eig_UU_HH_AA_sc_TB_conv
-    use w90_get_oper, only: AA_R
     use w90_comms, only: w90commtype
     use w90_utility, only: utility_rotate, utility_zdotu
 

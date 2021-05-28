@@ -15,6 +15,7 @@
 module w90_dos
   !! Compute Density of States
   use w90_constants, only: dp
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -53,7 +54,7 @@ contains
       postw90_spin_type, postw90_oper_type
     use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
       k_point_type
-    use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
+    use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -128,12 +129,12 @@ contains
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1

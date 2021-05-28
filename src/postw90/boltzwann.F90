@@ -39,6 +39,7 @@ module w90_boltzwann
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
+  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -761,12 +762,12 @@ contains
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
     if (pw90_common%spin_decomp) then
       ndim = 3
 
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1

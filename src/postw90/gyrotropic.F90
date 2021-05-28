@@ -23,6 +23,8 @@ module w90_gyrotropic
 
   use w90_constants, only: dp
   use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist
+  use w90_get_oper_data !JJ temporary get_oper data store
+
   implicit none
 
   private
@@ -183,25 +185,25 @@ contains
     ! Wannier matrix elements, allocations and initializations
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, dis_data, k_points, param_input, &
+                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, berry, &
+      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
                     dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                     comm)
     endif
 
     if (eval_spn) then
 
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
                     k_points, param_input, postw90_oper, stdout, seedname, comm)
     endif
 
     if (eval_K) then
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
                     kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, dis_data, &
+      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
                     seedname, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
@@ -536,8 +538,7 @@ contains
     !======================================================================!
 
     use w90_comms, only: w90commtype, mpirank
-    use w90_constants, only: dp, cmplx_i
-    use w90_get_oper, only: AA_R
+    use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
@@ -815,7 +816,6 @@ contains
 
     use pw90_parameters, only: gyrotropic_type
     use w90_constants, only: dp, cmplx_1
-    use w90_get_oper, only: SS_R
     use w90_io, only: io_time, io_error
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
