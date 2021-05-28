@@ -1405,7 +1405,6 @@ contains
 
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_i
-    use w90_get_oper, only: AA_R, BB_R, CC_R
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
       disentangle_type, kmesh_info_type, k_point_type
     use pw90_parameters, only: postw90_common_type
@@ -1646,7 +1645,6 @@ contains
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
       disentangle_type, k_point_type
     use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, postw90_ham_type
-    use w90_get_oper, only: HH_R, AA_R
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_spin, only: spin_get_nk
@@ -2131,7 +2129,6 @@ contains
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
       pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-    use w90_get_oper, only: AA_R
 
     implicit none
 
@@ -2324,7 +2321,6 @@ contains
       use w90_utility, only: utility_rotate
       use w90_param_types, only: parameter_input_type, wannier_data_type
       use pw90_parameters, only: spin_hall_type
-      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
 
       implicit none

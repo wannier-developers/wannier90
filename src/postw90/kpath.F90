@@ -60,7 +60,7 @@ contains
       wannier_data_type, disentangle_type, k_point_type, kmesh_info_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
-    use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
+    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize
@@ -187,7 +187,6 @@ contains
                      kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
                      stdout, seedname, comm)
     endif
-
 
     if (plot_bands .and. kpath%bands_colour == 'spin') then
       call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &

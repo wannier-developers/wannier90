@@ -81,7 +81,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
-    use w90_get_oper, only: get_HH_R, HH_R
+    use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
       comms_gatherv, w90commtype
 
