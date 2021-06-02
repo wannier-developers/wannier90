@@ -12,42 +12,6 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_get_oper_data
-  ! temporary store for module data
-  use w90_constants, only: dp
-
-  implicit none
-
-  public
-
-  complex(kind=dp), allocatable, save :: HH_R(:, :, :) !  <0n|r|Rm>
-  !! $$\langle 0n | H | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: AA_R(:, :, :, :) ! <0n|r|Rm>
-  !! $$\langle 0n |  \hat{r} | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
-  !! $$\langle 0n | H(\hat{r}-R) | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
-  !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
-  !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-  !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
-  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
-  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
-
-  complex(kind=dp), allocatable, save :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
-  !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
-end module
-
 module w90_get_oper
 !===========================================================
 !! Finds the Wannier matrix elements of various operators,

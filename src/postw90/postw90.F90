@@ -25,7 +25,7 @@ program postw90
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
     weight, cell_volume, ndegen, irvec, v_matrix, nrpts, rpt_origin, crvec
-  use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
+! use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -41,6 +41,8 @@ program postw90
 
   use w90_ws_distance, only: ws_distance_type
 
+! use w90_get_oper_data
+
   implicit none
 
   type(pw90_physical_constants) :: physics
@@ -55,6 +57,35 @@ program postw90
   character(len=20) :: checkpoint
   ! this is a dummy that is not used in postw90, DO NOT use
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+
+!
+  complex(kind=dp), allocatable :: HH_R(:, :, :) !  <0n|r|Rm>
+  !! $$\langle 0n | H | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: AA_R(:, :, :, :) ! <0n|r|Rm>
+  !! $$\langle 0n |  \hat{r} | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
+  !! $$\langle 0n | H(\hat{r}-R) | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
+  !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
+  !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+
+  complex(kind=dp), allocatable :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
+!
 
   integer :: my_node_id, num_nodes
   logical :: on_root = .false.
@@ -240,7 +271,7 @@ program postw90
   if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) then
     call dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                   recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
-                  pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, nrpts, &
+                  pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, HH_R, SS_R, nrpts, &
                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
   endif
 
@@ -267,8 +298,8 @@ program postw90
     call k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                  mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
                  k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                 ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics%bohr, &
-                 stdout, seedname, comm)
+                 ws_distance, kslice, nrpts, irvec, crvec, ndegen, rpt_origin, physics%bohr, &
+                 stdout, seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R, SR_R, SHR_R, SH_R)
   end if
   ! --------------------
   ! Spin magnetic moment
@@ -321,7 +352,7 @@ program postw90
     call geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
                         irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
                         crvec, dis_data, wann_data, pw90_common, mp_grid, ws_distance, stdout, &
-                        seedname, geninterp, pw90_ham, param_input, comm)
+                        seedname, geninterp, pw90_ham, param_input, comm, HH_R)
   end if
 
   if (pw90_calcs%boltzwann) then
@@ -337,7 +368,8 @@ program postw90
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
                          postw90_oper, pw90_ham, ws_distance, nrpts, irvec, crvec, ndegen, &
-                         rpt_origin, physics, stdout, seedname, comm, cell_volume)
+                         rpt_origin, physics, stdout, seedname, comm, cell_volume, HH_R, &
+                         AA_R, BB_R, CC_R, SS_R)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then

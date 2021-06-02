@@ -931,7 +931,7 @@ contains
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                                  wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
                                  pw90_common, pw90_spin, ws_distance, &
-                                 stdout, seedname, smr_index=boltz%dos_smr_index, &
+                                 stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
                                  levelspacing_k=levelspacing_k)
@@ -944,7 +944,7 @@ contains
             call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                            wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
                            pw90_common, pw90_spin, ws_distance, &
-                           stdout, seedname, smr_index=boltz%dos_smr_index, &
+                           stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
                            levelspacing_k=levelspacing_k)
@@ -954,7 +954,7 @@ contains
           call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                          wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
                          pw90_common, pw90_spin, ws_distance, &
-                         stdout, seedname, smr_index=boltz%dos_smr_index, &
+                         stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k

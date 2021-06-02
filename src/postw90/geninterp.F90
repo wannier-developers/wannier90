@@ -22,8 +22,6 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
-  use w90_get_oper_data !JJ temporary get_oper data store
-
   implicit none
 
   private
@@ -64,7 +62,7 @@ contains
   subroutine geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
                             irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
                             crvec, dis_data, wann_data, pw90_common, mp_grid, ws_distance, &
-                            stdout, seedname, geninterp, pw90_ham, param_input, comm)
+                            stdout, seedname, geninterp, pw90_ham, param_input, comm, HH_R)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -104,6 +102,7 @@ contains
     real(kind=dp), intent(in)    :: real_lattice(3, 3)
     real(kind=dp), intent(in)    :: recip_lattice(3, 3)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     character(len=50), intent(in)  :: seedname
 
     ! local variables

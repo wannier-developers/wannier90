@@ -27,7 +27,6 @@ module w90_kslice
   !!
   !!    kslice_corner(1:3) is the lower left corner
   !!    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -44,11 +43,11 @@ contains
   subroutine k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                      mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
                      k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                     ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                     bohr, stdout, seedname, comm)
+                     ws_distance, kslice, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                     bohr, stdout, seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R, SR_R, SHR_R, SH_R)
     !! Main routine
 
-    use pw90_parameters, only: kslice, berry_type, postw90_spin_type, postw90_ham_type, &
+    use pw90_parameters, only: kslice_type, berry_type, postw90_spin_type, postw90_ham_type, &
       postw90_common_type, postw90_oper_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
@@ -82,6 +81,7 @@ contains
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(kslice_type), intent(in) :: kslice
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
@@ -89,6 +89,14 @@ contains
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :)
 
     ! local variables
     integer           :: iloc, itot, i1, i2, n, n1, n2, n3, i, nkpts, my_nkpts
@@ -151,7 +159,7 @@ contains
 
     if (on_root) then
       call kslice_print_info(plot_fermi_lines, fermi_lines_color, &
-                             plot_curv, plot_morb, plot_shc, stdout, seedname)
+                             plot_curv, plot_morb, plot_shc, stdout, seedname, berry, fermi)
     end if
 
     call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
@@ -534,7 +542,7 @@ contains
         write (stdout, '(/,3x,a)') filename
         open (scriptunit, file=filename, form='formatted')
         call script_common(scriptunit, areab1b2, square, seedname)
-        call script_fermi_lines(scriptunit, seedname)
+        call script_fermi_lines(scriptunit, seedname, fermi)
         write (scriptunit, '(a)') " "
         write (scriptunit, '(a)') "# Remove the axes"
         write (scriptunit, '(a)') "ax = pl.gca()"
@@ -641,7 +649,7 @@ contains
             open (scriptunit, file=filename, form='formatted')
           endif
           call script_common(scriptunit, areab1b2, square, seedname)
-          if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname)
+          if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname, fermi)
 
           if (plot_curv) then
             write (scriptunit, '(a)') " "
@@ -745,7 +753,7 @@ contains
         write (scriptunit, '(a)') "#matplotlib.use('Agg')"
         write (scriptunit, '(a)') "import matplotlib.pyplot as plt"
         call script_common(scriptunit, areab1b2, square, seedname)
-        if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname)
+        if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname, fermi)
 
         write (scriptunit, '(a)') " "
         write (scriptunit, '(a)') "def shiftedColorMap(cmap, start=0, " &
@@ -872,10 +880,13 @@ contains
   !                   PRIVATE PROCEDURES
   !===========================================================!
 
-  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, stdout, seedname)
-    use pw90_parameters, only: berry
+  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, stdout, seedname, berry, fermi)
+    use pw90_parameters, only: berry_type
     use w90_io, only: io_error
-    use w90_parameters, only: fermi
+    use w90_param_types, only: fermi_data_type
+
+    type(berry_type), intent(in) :: berry
+    type(fermi_data_type), intent(in) :: fermi
 
     integer, intent(in) :: stdout
     logical, intent(in) :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
@@ -1044,9 +1055,11 @@ contains
 
   end subroutine script_common
 
-  subroutine script_fermi_lines(scriptunit, seedname)
+  subroutine script_fermi_lines(scriptunit, seedname, fermi)
 
-    use w90_parameters, only: fermi
+    use w90_param_types, only: fermi_data_type
+
+    type(fermi_data_type), intent(in) :: fermi
 
     integer, intent(in) :: scriptunit
     character(len=50), intent(in)  :: seedname

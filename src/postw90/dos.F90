@@ -15,7 +15,6 @@
 module w90_dos
   !! Compute Density of States
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -39,7 +38,7 @@ contains
   subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                       recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
                       pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, &
-                      nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                      HH_R, SS_R, nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -69,6 +68,8 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
     type(disentangle_type), intent(in) :: dis_data
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -201,7 +202,7 @@ contains
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, &
+                         ws_distance, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
@@ -212,7 +213,7 @@ contains
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, &
+                         ws_distance, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -244,7 +245,7 @@ contains
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, &
+                         ws_distance, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
@@ -255,7 +256,7 @@ contains
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, &
+                         ws_distance, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, UU=UU)
         end if
@@ -521,7 +522,7 @@ contains
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, num_wann, param_input, wann_data, &
                        real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                       ws_distance, stdout, seedname, smr_index, smr_fixed_en_width, adpt_smr_fac, &
+                       ws_distance, stdout, seedname, HH_R, SS_R, smr_index, smr_fixed_en_width, adpt_smr_fac, &
                        adpt_smr_max, levelspacing_k, UU)
 
     use w90_io, only: io_error
@@ -559,6 +560,8 @@ contains
 
     real(kind=dp), dimension(:), intent(in), optional      :: levelspacing_k
     complex(kind=dp), dimension(:, :), intent(in), optional :: UU
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
 
     ! Adaptive smearing
     !

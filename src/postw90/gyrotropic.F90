@@ -23,7 +23,7 @@ module w90_gyrotropic
 
   use w90_constants, only: dp
   use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist
-  use w90_get_oper_data !JJ temporary get_oper data store
+! use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -62,7 +62,8 @@ contains
                              recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                              dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
                              postw90_oper, pw90_ham, ws_distance, nrpts, irvec, crvec, ndegen, &
-                             rpt_origin, physics, stdout, seedname, comm, cell_volume)
+                             rpt_origin, physics, stdout, seedname, comm, cell_volume, HH_R, &
+                             AA_R, BB_R, CC_R, SS_R)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -113,6 +114,11 @@ contains
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
     real(kind=dp), intent(in) :: cell_volume
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
 
     ! local variables
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
@@ -313,7 +319,8 @@ contains
                                  fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                  gyrotropic, pw90_common, pw90_ham, ws_distance, nrpts, irvec, &
-                                 crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                 crvec, ndegen, rpt_origin, stdout, seedname, comm, HH_R, AA_R, &
+                                 BB_R, CC_R, SS_R)
 
     end do !loop_xyz
 
@@ -502,7 +509,8 @@ contains
                                    fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                    gyrotropic, pw90_common, pw90_ham, ws_distance, nrpts, irvec, &
-                                   crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                   crvec, ndegen, rpt_origin, stdout, seedname, comm, HH_R, AA_R, &
+                                   BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
     ! Contribution from point k to the GME tensor, Eq.(9) of ZMS16,        !
@@ -581,6 +589,12 @@ contains
     real(kind=dp), intent(inout) :: crvec(:, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+
     type(w90commtype), intent(in) :: comm
 
     complex(kind=dp), allocatable :: UU(:, :)
@@ -728,12 +742,12 @@ contains
         call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
                                   param_input, fermi, wann_data, real_lattice, recip_lattice, &
                                   mp_grid, gyrotropic, ws_distance, stdout, &
-                                  seedname, gyro_NOA_spn)
+                                  seedname, SS_R, gyro_NOA_spn)
       else
         call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
                                   param_input, fermi, wann_data, real_lattice, recip_lattice, &
                                   mp_grid, gyrotropic, ws_distance, stdout, &
-                                  seedname)
+                                  seedname, SS_R)
       endif
     endif
 
@@ -789,7 +803,7 @@ contains
   subroutine gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
                                   param_input, fermi, wann_data, real_lattice, recip_lattice, &
                                   mp_grid, gyrotropic, ws_distance, stdout, &
-                                  seedname, gyro_NOA_spn)
+                                  seedname, SS_R, gyro_NOA_spn)
     !====================================================================!
     !                                                                    !
     ! Contribution from point k to the real (antisymmetric) part         !
@@ -839,6 +853,8 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+!   complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: SS_R(:, :, :, :)
 
     complex(kind=dp), allocatable :: Bnl_orb(:, :, :, :)
     complex(kind=dp), allocatable :: Bnl_spin(:, :, :, :)
