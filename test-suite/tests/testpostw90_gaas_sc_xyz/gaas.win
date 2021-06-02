@@ -12,7 +12,7 @@ kubo_adpt_smr=true
 
 sc_eta=0.040
 sc_phase_conv=1   
-
+sc_use_eta_corr = .false.
 
 num_bands         =   12
 num_wann          =   8 
