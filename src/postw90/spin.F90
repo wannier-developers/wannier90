@@ -322,7 +322,7 @@ contains
   end subroutine spin_get_moment_k
 
   subroutine spin_get_S(kpt, S, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                        mp_grid, ws_distance, stdout, seedname)
+                        mp_grid, ws_distance, HH_R, SS_R, stdout, seedname)
     !===========================================================!
     !                                                           !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
@@ -336,7 +336,6 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -348,6 +347,8 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     type(ws_distance_type), intent(inout) :: ws_distance
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     character(len=50), intent(in)  :: seedname
 
     ! Physics

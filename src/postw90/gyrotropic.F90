@@ -658,7 +658,7 @@ contains
         !
         if (eval_spn .and. .not. got_spin) then
           call spin_get_S(kpt, S, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                          mp_grid, ws_distance, stdout, seedname)
+                          mp_grid, ws_distance, HH_R, SS_R, stdout, seedname)
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
         ! Orbital quantities are computed for each band separately
