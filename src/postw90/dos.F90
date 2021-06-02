@@ -196,7 +196,7 @@ contains
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                    pw90_common, pw90_ham, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                   irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
@@ -239,7 +239,7 @@ contains
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                    pw90_common, pw90_ham, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                   irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &

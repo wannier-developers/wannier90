@@ -1407,7 +1407,7 @@ contains
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod, utility_zgemm_new
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: AA_R, BB_R, CC_R
+    use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R
 
     implicit none
 
@@ -1484,16 +1484,16 @@ contains
                                      param_input, wann_data, eigval, real_lattice, &
                                      recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                                      v_matrix, dis_data, k_points, pw90_common, ws_distance, &
-                                     nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, &
-                                     comm, occ=occ)
+                                     nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, stdout, &
+                                     seedname, comm, occ=occ)
       call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, num_wann, fermi, occ=occ)
     else
       call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
                                      param_input, wann_data, eigval, real_lattice, &
                                      recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                                      v_matrix, dis_data, k_points, pw90_common, ws_distance, &
-                                     nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, &
-                                     comm)
+                                     nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, stdout, &
+                                     seedname, comm)
       call wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, num_wann, fermi, eig=eig)
     endif
 
@@ -1710,7 +1710,7 @@ contains
                                wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                pw90_common, pw90_ham, ws_distance, nrpts, &
-                               irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                               irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
       Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
     else
       call pw90common_fourier_R_to_k_new(kpt, HH_R, num_wann, param_input, wann_data, &
@@ -1856,7 +1856,7 @@ contains
     use w90_comms, only: w90commtype
     use w90_utility, only: utility_rotate, utility_zdotu
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: AA_R
+    use w90_get_oper_data, only: AA_R, HH_R
 
     implicit none
 
@@ -1933,7 +1933,7 @@ contains
                                             recip_lattice, mp_grid, num_bands, num_kpts, &
                                             dis_data, u_matrix, v_matrix, k_points, kmesh_info, &
                                             berry, pw90_common, ws_distance, nrpts, irvec, crvec, &
-                                            ndegen, rpt_origin, stdout, seedname, comm)
+                                            ndegen, rpt_origin, AA_R, HH_R, stdout, seedname, comm)
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
       call pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, AA_R, num_wann, param_input, wann_data, &
@@ -1949,7 +1949,7 @@ contains
                                     wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                     num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                     pw90_common, ws_distance, nrpts, irvec, &
-                                    crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                    crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
       call pw90common_fourier_R_to_k_vec_dadb(kpt, AA_R, num_wann, param_input, wann_data, &
                                               real_lattice, recip_lattice, mp_grid, &
                                               ws_distance, stdout, &
@@ -1958,7 +1958,7 @@ contains
                                wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                pw90_common, pw90_ham, ws_distance, nrpts, &
-                               irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                               irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
     end if
 
     ! get electronic occupations
@@ -2124,7 +2124,7 @@ contains
       pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: AA_R
+    use w90_get_oper_data, only: AA_R, HH_R
 
     implicit none
 
@@ -2203,7 +2203,7 @@ contains
                              wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                              pw90_common, pw90_ham, ws_distance, nrpts, &
-                             irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                             irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
     call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input

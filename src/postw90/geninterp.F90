@@ -291,7 +291,7 @@ contains
                                  num_wann, param_input, wann_data, eigval, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                                  dis_data, k_points, pw90_common, pw90_ham, ws_distance, nrpts, &
-                                 irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                 irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                        real_lattice, recip_lattice, mp_grid, ws_distance, &

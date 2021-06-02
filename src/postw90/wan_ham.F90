@@ -397,7 +397,7 @@ contains
                                  wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                  pw90_common, pw90_ham, ws_distance, nrpts, irvec, crvec, ndegen, &
-                                 rpt_origin, stdout, seedname, comm)
+                                 rpt_origin, HH_R, stdout, seedname, comm)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
@@ -411,7 +411,6 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R
 
     implicit none
 
@@ -442,6 +441,7 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
@@ -512,7 +512,7 @@ contains
                                        param_input, wann_data, eigval, real_lattice, &
                                        recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                                        v_matrix, dis_data, k_points, pw90_common, ws_distance, &
-                                       nrpts, irvec, crvec, ndegen, rpt_origin, stdout, &
+                                       nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, stdout, &
                                        seedname, comm, occ)
     !========================================================!
     !                                                        !
@@ -530,7 +530,6 @@ contains
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R
 
     implicit none
 
@@ -556,6 +555,7 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
@@ -592,7 +592,8 @@ contains
                                               recip_lattice, mp_grid, num_bands, num_kpts, &
                                               dis_data, u_matrix, v_matrix, k_points, kmesh_info, &
                                               berry, pw90_common, ws_distance, nrpts, irvec, &
-                                              crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                                              crvec, ndegen, rpt_origin, AA_R, HH_R, &
+                                              stdout, seedname, comm)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -609,7 +610,6 @@ contains
     use pw90_parameters, only: postw90_common_type, berry_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, AA_R
 
     implicit none
 
@@ -636,6 +636,8 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
@@ -661,7 +663,7 @@ contains
                                       wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                       num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                       pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
-                                      rpt_origin, stdout, seedname, comm)
+                                      rpt_origin, HH_R, stdout, seedname, comm)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -679,7 +681,6 @@ contains
       k_point_type
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R
 
     implicit none
 
@@ -704,6 +705,7 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm

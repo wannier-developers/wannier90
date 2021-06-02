@@ -880,7 +880,7 @@ contains
                                wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                                pw90_common, pw90_ham, ws_distance, nrpts, &
-                               irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                               irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -922,7 +922,7 @@ contains
                                            recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                                            v_matrix, dis_data, k_points, pw90_common, pw90_ham, &
                                            ws_distance, nrpts, irvec, crvec, &
-                                           ndegen, rpt_origin, stdout, seedname, comm)
+                                           ndegen, rpt_origin, HH_R, stdout, seedname, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &

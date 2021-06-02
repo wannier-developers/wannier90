@@ -611,7 +611,7 @@ contains
                              wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                              pw90_common, pw90_ham, ws_distance, nrpts, &
-                             irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                             irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
