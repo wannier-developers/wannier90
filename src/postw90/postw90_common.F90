@@ -32,7 +32,7 @@ module w90_postw90_common
   public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist
   public :: pw90common_wanint_data_dist, pw90common_get_occ
   public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
-  public :: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
+  public :: nrpts, rpt_origin, ndegen, irvec, crvec
   public :: num_int_kpts_on_node, int_kpts, weight
   public :: pw90common_kmesh_spacing
   public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, &
@@ -68,7 +68,7 @@ module w90_postw90_common
   integer                       :: max_int_kpts_on_node, num_int_kpts
   integer, allocatable          :: num_int_kpts_on_node(:)
   real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
-  complex(kind=dp), allocatable :: v_matrix(:, :, :)
+  !complex(kind=dp), allocatable :: v_matrix(:, :, :)
   real(kind=dp), public :: cell_volume
 
 contains
@@ -556,7 +556,7 @@ contains
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                          dis_data, param_input, wann_data, pw90_common, &
-                                         stdout, seedname, world)
+                                         v_matrix, stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! Distribute the um and chk files
@@ -577,6 +577,7 @@ contains
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(postw90_common_type), intent(in) :: pw90_common
+    complex(kind=dp), allocatable :: v_matrix(:, :, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world

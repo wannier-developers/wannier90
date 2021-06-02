@@ -25,6 +25,7 @@ program postw90
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
     weight, cell_volume, ndegen, irvec, v_matrix, nrpts, rpt_origin, crvec
+! use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -169,6 +170,7 @@ program postw90
   type(geninterp_type), save :: geninterp
   type(boltzwann_type), save :: boltz
   ! end pw90_parameters
+  complex(kind=dp), allocatable :: v_matrix(:, :, :)
 
   ! local vars
   integer :: my_node_id, num_nodes, ierr
@@ -326,7 +328,7 @@ program postw90
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_data, param_input, wann_data, pw90_common, &
-                                     stdout, seedname, comm)
+                                     v_matrix, stdout, seedname, comm)
     !
   end if
 
