@@ -141,7 +141,7 @@ program postw90
 
   ! this can't work -- stdout and seedname aren't defined yet --FIXME JJ
   call comms_setup(stdout, seedname, comm)
-  world = comm ! until arguments are used consistently... (copy mpi_comm_world to world)
+  !world = comm ! until arguments are used consistently... (copy mpi_comm_world to world)
 
   my_node_id = mpirank(comm)
   num_nodes = mpisize(comm)
@@ -266,7 +266,7 @@ program postw90
                                     real_lattice, recip_lattice, pw90_calcs, &
                                     pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                                     dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                    boltz, eig_found, stdout, seedname, world)
+                                    boltz, eig_found, stdout, seedname, comm)
 
   if (.not. pw90_common%effective_model) then
     !
@@ -288,7 +288,7 @@ program postw90
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_data, param_input, wann_data, pw90_common, &
-                                     stdout, seedname, world)
+                                     stdout, seedname, comm)
     !
   end if
 
@@ -296,12 +296,12 @@ program postw90
   !
   ! Should this be done on root node only?
   !
-  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(stdout, seedname, world)
+  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(stdout, seedname, comm)
 
   ! Setup a number of common variables for all interpolation tasks
   !
   call pw90common_wanint_setup(num_wann, param_input, real_lattice, mp_grid, pw90_common, &
-                               stdout, seedname, world)
+                               stdout, seedname, comm)
 
   if (on_root) then
     time1 = io_time()

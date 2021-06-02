@@ -209,9 +209,6 @@ module pw90_parameters
   type(geninterp_type), save :: geninterp
   type(boltzwann_type), save :: boltz
 
-  ! JJ putting communicator here until arguments are passed correctly between postw90 subroutines
-  type(w90commtype) :: world ! communicator because we don't have arg lists yet
-
 end module pw90_parameters
 
 module pw90_param_methods
