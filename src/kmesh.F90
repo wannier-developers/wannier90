@@ -22,7 +22,7 @@ module w90_kmesh
   !!  Vanderbilt  PRB 56 12847 (1997)
 
   use w90_constants, only: dp
-  use w90_parameters, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
+  use w90_param_types, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
 
   implicit none
 

@@ -173,64 +173,6 @@ module w90_param_types
 
 end module w90_param_types
 
-module w90_parameters
-
-  !use w90_constants, only: dp
-  !use w90_io, only: maxlen
-  use w90_param_types
-
-  implicit none
-
-  public
-
-  type(parameter_input_type), save :: param_input
-  type(wannier_data_type), save :: wann_data
-  type(param_kmesh_type), save :: kmesh_data
-  type(kmesh_info_type), save :: kmesh_info
-  type(k_point_type), save :: k_points
-  integer, save :: num_kpts !BGS put in k_point_type?
-  type(disentangle_type), save :: dis_data
-  type(fermi_data_type), save :: fermi
-  type(atom_data_type), save :: atoms
-
-  integer, save :: num_bands
-  !! Number of bands
-
-  integer, save :: num_wann
-  !! number of wannier functions
-
-  ! a_matrix and m_matrix_orig can be calculated internally from bloch states
-  ! or read in from an ab-initio grid
-  ! a_matrix      = projection of trial orbitals on bloch states
-  ! m_matrix_orig = overlap of bloch states
-  !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
-  real(kind=dp), allocatable, save :: eigval(:, :)
-
-  !BGS u_matrix_opt in postw90 only for generation of v_matrix
-  ! u_matrix_opt gives the num_wann dimension optimal subspace from the
-  ! original bloch states
-  complex(kind=dp), allocatable, save :: u_matrix_opt(:, :, :)
-
-  ! u_matrix gives the unitary rotations from the optimal subspace to the
-  ! optimally smooth states.
-  ! m_matrix we store here, becuase it is needed for restart of wannierise
-  complex(kind=dp), allocatable, save :: u_matrix(:, :, :)
-
-  integer, save :: mp_grid(3)
-  !! Dimensions of the Monkhorst-Pack grid
-
-  integer, save :: num_proj
-  !BGS used by stuff in driver/kmesh/wannier - keep separate or duplicate?
-
-  real(kind=dp), save :: real_lattice(3, 3)
-
-  !parameters derived from input
-  real(kind=dp), save :: recip_lattice(3, 3)
-
-  type(special_kpoints_type), save :: spec_points
-
-end module w90_parameters
-
 module w90_param_methods
   ! very few of these use save, so may actually be local to subroutines
 

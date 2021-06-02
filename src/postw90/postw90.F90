@@ -15,7 +15,7 @@
 program postw90
   !! The postw90 program
   use w90_constants, only: dp, eps6, pw90_physical_constants
-  use w90_parameters
+  use w90_param_types
   use pw90_parameters
   use w90_param_methods, only: param_read_chkpt, param_write_header
   use pw90_param_methods
@@ -86,7 +86,54 @@ program postw90
   complex(kind=dp), allocatable :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
 !
+  ! w90_parameters stuff
+  type(parameter_input_type) :: param_input
+  type(wannier_data_type) :: wann_data
+  type(param_kmesh_type) :: kmesh_data
+  type(kmesh_info_type) :: kmesh_info
+  type(k_point_type) :: k_points
+  integer :: num_kpts !BGS put in k_point_type?
+  type(disentangle_type) :: dis_data
+  type(fermi_data_type) :: fermi
+  type(atom_data_type) :: atoms
 
+  integer :: num_bands
+  !! Number of bands
+
+  integer :: num_wann
+  !! number of wannier functions
+
+  ! a_matrix and m_matrix_orig can be calculated internally from bloch states
+  ! or read in from an ab-initio grid
+  ! a_matrix      = projection of trial orbitals on bloch states
+  ! m_matrix_orig = overlap of bloch states
+  !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
+  real(kind=dp), allocatable :: eigval(:, :)
+
+  ! u_matrix_opt in postw90 only for generation of v_matrix
+  ! u_matrix_opt gives the num_wann dimension optimal subspace from the
+  ! original bloch states
+  complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+
+  ! u_matrix gives the unitary rotations from the optimal subspace to the
+  ! optimally smooth states.
+  ! m_matrix we store here, becuase it is needed for restart of wannierise
+  complex(kind=dp), allocatable :: u_matrix(:, :, :)
+
+  integer :: mp_grid(3)
+  !! Dimensions of the Monkhorst-Pack grid
+
+  integer :: num_proj
+
+  real(kind=dp) :: real_lattice(3, 3)
+
+  !parameters derived from input
+  real(kind=dp) :: recip_lattice(3, 3)
+
+  type(special_kpoints_type) :: spec_points
+  ! end w90_parameters
+
+  ! local vars
   integer :: my_node_id, num_nodes
   logical :: on_root = .false.
   type(w90commtype) :: comm
