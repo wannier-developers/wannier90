@@ -853,8 +853,8 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-!   complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
-    complex(kind=dp), intent(in) :: SS_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    !complex(kind=dp), intent(in) :: SS_R(:, :, :, :)
 
     complex(kind=dp), allocatable :: Bnl_orb(:, :, :, :)
     complex(kind=dp), allocatable :: Bnl_spin(:, :, :, :)
