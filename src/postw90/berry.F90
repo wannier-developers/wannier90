@@ -31,7 +31,6 @@ module w90_berry
   !                                 reading k-points and weights from file
 
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -100,6 +99,7 @@ contains
     use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type, &
       postw90_ham_type, postw90_oper_type
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
     implicit none
 
@@ -1407,6 +1407,7 @@ contains
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod, utility_zgemm_new
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: AA_R, BB_R, CC_R
 
     implicit none
 
@@ -1644,6 +1645,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, AA_R
 
     implicit none
 
@@ -1854,6 +1856,7 @@ contains
     use w90_comms, only: w90commtype
     use w90_utility, only: utility_rotate, utility_zdotu
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: AA_R
 
     implicit none
 
@@ -2121,6 +2124,7 @@ contains
       pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: AA_R
 
     implicit none
 
@@ -2313,6 +2317,7 @@ contains
       use pw90_parameters, only: spin_hall_type
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
       use w90_ws_distance, only: ws_distance_type
+      use w90_get_oper_data, only: SH_R, SHR_R, SR_R, SS_R
 
       implicit none
 

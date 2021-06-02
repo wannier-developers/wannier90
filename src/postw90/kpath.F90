@@ -27,7 +27,6 @@ module w90_kpath
   !!  - Integrand of orbital magnetization Morb=LCtil+ICtil
 
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -65,6 +64,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_ws_distance, only: ws_distance_type
     use w90_utility, only: utility_diagonalize
+    use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
     ! arguments
     integer, intent(in) :: num_wann, num_bands, num_kpts

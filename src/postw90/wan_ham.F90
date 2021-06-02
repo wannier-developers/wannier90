@@ -16,7 +16,6 @@ module w90_wan_ham
   !! This module contain operations on the Hamiltonian in the WF basis
 
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -412,6 +411,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R
 
     implicit none
 
@@ -483,10 +483,8 @@ contains
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-!   use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use pw90_parameters, only: postw90_ham_type
-!   use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
     !! the three coordinates of the k point vector (in relative coordinates)
@@ -525,13 +523,14 @@ contains
     use w90_constants, only: dp
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k_new
-    use w90_get_oper, only: get_HH_R, get_AA_R
+    use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
       disentangle_type, k_point_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R
 
     implicit none
 
@@ -610,6 +609,7 @@ contains
     use pw90_parameters, only: postw90_common_type, berry_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, AA_R
 
     implicit none
 
@@ -679,6 +679,7 @@ contains
       k_point_type
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R
 
     implicit none
 

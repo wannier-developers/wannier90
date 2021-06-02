@@ -16,7 +16,6 @@ module w90_spin
   !! Module to compute spin
 
   use w90_constants, only: dp
-  use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -50,6 +49,7 @@ contains
       disentangle_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, SS_R
 
     implicit none
 
@@ -193,6 +193,7 @@ contains
     use pw90_parameters, only: postw90_spin_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -264,6 +265,7 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -328,6 +330,7 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, SS_R
 
     ! Arguments
     !
