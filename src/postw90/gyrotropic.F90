@@ -671,9 +671,9 @@ contains
             call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                        u_matrix, v_matrix, dis_data, k_points, pw90_common, &
-                                       ws_distance, nrpts, irvec, crvec, &
-                                       ndegen, rpt_origin, stdout, seedname, comm, imf_k, img_k, &
-                                       imh_k, occ)
+                                       ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                                       AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k, &
+                                       img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -685,8 +685,8 @@ contains
             call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                      real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                      u_matrix, v_matrix, dis_data, k_points, pw90_common, &
-                                     ws_distance, nrpts, irvec, crvec, &
-                                     ndegen, rpt_origin, stdout, seedname, comm, imf_k, occ)
+                                     ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, AA_R, &
+                                     BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo

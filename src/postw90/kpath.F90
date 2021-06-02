@@ -276,9 +276,9 @@ contains
           call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                   pw90_ham, pw90_common, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm, &
-                                   shc_k_band=shc_k_band)
+                                   pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, &
+                                   ndegen, rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
+                                   stdout, seedname, comm, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
@@ -288,7 +288,8 @@ contains
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
                                    ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   stdout, seedname, comm, imf_k_list, img_k_list, imh_k_list)
+                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list, &
+                                   img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -303,7 +304,7 @@ contains
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
                                    ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   stdout, seedname, comm, imf_k_list)
+                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -314,9 +315,9 @@ contains
         call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                 pw90_ham, pw90_common, ws_distance, nrpts, &
-                                 irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm, &
-                                 shc_k_fermi=shc_k_fermi)
+                                 pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
+                                 rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, stdout, &
+                                 seedname, comm, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

@@ -315,8 +315,8 @@ contains
         call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, pw90_common, ws_distance, &
-                                 nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, &
-                                 comm, imf_k_list)
+                                 nrpts, irvec, crvec, ndegen, rpt_origin, AA_R, BB_R, CC_R, HH_R, &
+                                 stdout, seedname, comm, imf_k_list)
         curv(1) = sum(imf_k_list(:, 1, 1))
         curv(2) = sum(imf_k_list(:, 2, 1))
         curv(3) = sum(imf_k_list(:, 3, 1))
@@ -328,7 +328,8 @@ contains
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
                                    ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   stdout, seedname, comm, imf_k_list, img_k_list, imh_k_list)
+                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list, &
+                                   img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -341,7 +342,8 @@ contains
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
                                  pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
-                                 rpt_origin, stdout, seedname, comm, shc_k_fermi=shc_k_fermi)
+                                 rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, stdout, &
+                                 seedname, comm, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 

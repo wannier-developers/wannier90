@@ -305,8 +305,9 @@ program postw90
     call berry_main(param_input, fermi, wann_data, num_wann, eigval, real_lattice, &
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
-                    postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics, &
-                    stdout, seedname, comm, int_kpts, num_int_kpts_on_node, weight, cell_volume)
+                    postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                    AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, physics, stdout, seedname, &
+                    comm, int_kpts, num_int_kpts_on_node, weight, cell_volume)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
