@@ -328,8 +328,8 @@ program postw90
     call boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                         mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                         boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                        ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics, stdout, &
-                        seedname, comm, cell_volume)
+                        ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, SS_R, &
+                        physics, stdout, seedname, comm, cell_volume)
   end if
 
   if (pw90_calcs%gyrotropic) then

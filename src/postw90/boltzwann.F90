@@ -67,8 +67,8 @@ contains
   subroutine boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                             mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                             boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                            ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, physics, &
-                            stdout, seedname, comm, cell_volume)
+                            ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, SS_R, &
+                            physics, stdout, seedname, comm, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -114,6 +114,8 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -244,7 +246,7 @@ contains
                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                        v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
                        pw90_ham, postw90_oper, ws_distance, nrpts, irvec, &
-                       crvec, ndegen, rpt_origin, stdout, seedname, comm, cell_volume)
+                       crvec, ndegen, rpt_origin, HH_R, SS_R, stdout, seedname, comm, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -639,7 +641,7 @@ contains
                            real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                            v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
                            pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, &
-                           rpt_origin, stdout, seedname, comm, cell_volume)
+                           rpt_origin, HH_R, SS_R, stdout, seedname, comm, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -673,7 +675,6 @@ contains
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
 
     implicit none
 
@@ -714,6 +715,8 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
@@ -890,7 +893,7 @@ contains
 
       call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, wann_data, &
                    real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, &
-                   pw90_common%spin_decomp, ws_distance, stdout, seedname)
+                   pw90_common%spin_decomp, ws_distance, HH_R, SS_R, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -1073,7 +1076,7 @@ contains
 
   subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, num_wann, param_input, wann_data, &
                      real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, spin_decomp, &
-                     ws_distance, stdout, seedname)
+                     ws_distance, HH_R, SS_R, stdout, seedname)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1105,7 +1108,6 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
 
     implicit none
 
@@ -1142,6 +1144,8 @@ contains
     type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: spin_decomp
     type(ws_distance_type), intent(inout) :: ws_distance
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
