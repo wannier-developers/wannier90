@@ -187,28 +187,6 @@ module pw90_parameters
   end type boltzwann_type
   ! [gp-end, Apr 12, 2012]
 
-  type(pw90_calculation_type), save :: pw90_calcs
-
-  logical, save :: eig_found ! used to control broadcast of eigval
-
-  type(postw90_oper_type), save :: postw90_oper
-  type(postw90_common_type), save :: pw90_common
-  type(postw90_spin_type), save :: pw90_spin
-  type(postw90_ham_type), save :: pw90_ham
-  type(kpath_type), save :: kpath
-  type(kslice_type), save :: kslice
-
-  ! module  d o s
-  ! No need to save 'dos_plot', only used here (introduced 'dos_task')
-  logical          :: dos_plot
-
-  type(dos_plot_type), save :: dos_data
-  type(berry_type), save :: berry
-  type(spin_hall_type), save :: spin_hall
-  type(gyrotropic_type), save :: gyrotropic
-  type(geninterp_type), save :: geninterp
-  type(boltzwann_type), save :: boltz
-
 end module pw90_parameters
 
 module pw90_param_methods
@@ -334,6 +312,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     !local variables
+    logical :: dos_plot
     logical                                  :: found_fermi_energy
     logical :: disentanglement, library, ok
     character(len=20) :: energy_unit
@@ -359,15 +338,15 @@ contains
     call param_read_smearing(smr_index, adpt_smr_fac, adpt_smr_max, &
                              smr_fixed_en_width, adpt_smr, stdout, seedname)
     call param_read_scissors_shift(pw90_common, stdout, seedname)
-    call param_read_pw90spin(pw90_common, param_input, stdout, seedname)
+    call param_read_pw90spin(pw90_common, pw90_spin, param_input, stdout, seedname)
     call param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
                           smr_fixed_en_width, adpt_smr, stdout, seedname)
-    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, stdout, seedname)
+    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry%task, stdout, seedname)
     call param_read_pw90ham(pw90_ham, stdout, seedname)
     call param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
-    call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, &
-                        adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
+                        adpt_smr_max, smr_fixed_en_width, adpt_smr, dos_plot, stdout, seedname)
     call param_read_ws_data(param_input, stdout, seedname)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, &
@@ -378,8 +357,8 @@ contains
     if (eig_found) dis_data%win_max = maxval(eigval)
     call param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
     call param_read_geninterp(geninterp, stdout, seedname)
-    call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, &
-                              adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
+                              smr_fixed_en_width, adpt_smr, pw90_calcs%boltzwann, stdout, seedname)
     call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, stdout, seedname)
     call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
@@ -514,7 +493,7 @@ contains
     kslice%fermi_lines_colour = 'none'
     call param_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found, &
                            c_value=kslice%fermi_lines_colour)
-    if (pw90_calcs%kslice .and. index(kslice%fermi_lines_colour, 'none') == 0 .and. &
+    if (pw90_kslice .and. index(kslice%fermi_lines_colour, 'none') == 0 .and. &
         index(kslice%fermi_lines_colour, 'spin') == 0) call io_error &
       ('Error: value of kslice_fermi_lines_colour not recognised ' &
        //'in param_read', stdout, seedname)
@@ -580,11 +559,12 @@ contains
 
   end subroutine param_read_scissors_shift
 
-  subroutine param_read_pw90spin(pw90_common, param_input, stdout, seedname)
+  subroutine param_read_pw90spin(pw90_common, pw90_spin, param_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(postw90_common_type), intent(inout) :: pw90_common
+    type(postw90_spin_type), intent(inout) :: pw90_spin
     type(parameter_input_type), intent(in) :: param_input
     character(len=50), intent(in)  :: seedname
 
@@ -783,13 +763,14 @@ contains
 
   end subroutine param_read_berry
 
-  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, stdout, seedname)
+  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry_task, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
     type(spin_hall_type), intent(out) :: spin_hall
+    character(len=*), intent(in) :: berry_task
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -814,7 +795,7 @@ contains
 
     spin_hall%bandshift = .false.
     call param_get_keyword(stdout, seedname, 'shc_bandshift', found, l_value=spin_hall%bandshift)
-    spin_hall%bandshift = spin_hall%bandshift .and. pw90_calcs%berry .and. .not. (index(berry%task, 'shc') == 0)
+    spin_hall%bandshift = spin_hall%bandshift .and. pw90_calcs%berry .and. .not. (index(berry_task, 'shc') == 0)
     if ((abs(pw90_common%scissors_shift) > 1.0e-7_dp) .and. spin_hall%bandshift) &
       call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously', stdout, seedname)
 
@@ -890,7 +871,7 @@ contains
   end subroutine param_read_pw90_kpath
 
   subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
-                            adpt_smr_max, smr_fixed_en_width, adpt_smr, stdout, seedname)
+                            adpt_smr_max, smr_fixed_en_width, adpt_smr, dos_plot, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -900,6 +881,7 @@ contains
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    logical, intent(out) :: dos_plot
     character(len=50), intent(in)  :: seedname
 
     integer :: i, ierr
@@ -1014,7 +996,7 @@ contains
   end subroutine param_read_geninterp
 
   subroutine param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
-                                  smr_fixed_en_width, adpt_smr, stdout, seedname)
+                                  smr_fixed_en_width, adpt_smr, do_boltzwann, stdout, seedname)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
@@ -1027,6 +1009,7 @@ contains
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    logical, intent(in) :: do_boltzwann
     character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
@@ -1040,7 +1023,7 @@ contains
     boltz%calc_also_dos = .false.
     call param_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found, l_value=boltz%calc_also_dos)
 
-    boltz%calc_also_dos = boltz%calc_also_dos .and. pw90_calcs%boltzwann
+    boltz%calc_also_dos = boltz%calc_also_dos .and. do_boltzwann
 
     ! 0 means the normal 3d case for the calculation of the Seebeck coefficient
     ! The other valid possibilities are 1,2,3 for x,y,z respectively
@@ -1104,28 +1087,28 @@ contains
 
     boltz%mu_min = -999._dp
     call param_get_keyword(stdout, seedname, 'boltz_mu_min', found, r_value=boltz%mu_min)
-    if ((.not. found) .and. pw90_calcs%boltzwann) &
+    if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_min provided', stdout, seedname)
     boltz%mu_max = -999._dp
     call param_get_keyword(stdout, seedname, 'boltz_mu_max', found2, r_value=boltz%mu_max)
-    if ((.not. found2) .and. pw90_calcs%boltzwann) &
+    if ((.not. found2) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_max provided', stdout, seedname)
     if (found .and. found2 .and. (boltz%mu_max < boltz%mu_min)) &
       call io_error('Error: boltz_mu_max must be greater than boltz_mu_min', stdout, seedname)
     boltz%mu_step = 0._dp
     call param_get_keyword(stdout, seedname, 'boltz_mu_step', found, r_value=boltz%mu_step)
-    if ((.not. found) .and. pw90_calcs%boltzwann) &
+    if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_step provided', stdout, seedname)
     if (found .and. (boltz%mu_step <= 0._dp)) &
       call io_error('Error: boltz_mu_step must be greater than zero', stdout, seedname)
 
     boltz%temp_min = -999._dp
     call param_get_keyword(stdout, seedname, 'boltz_temp_min', found, r_value=boltz%temp_min)
-    if ((.not. found) .and. pw90_calcs%boltzwann) &
+    if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_min provided', stdout, seedname)
     boltz%temp_max = -999._dp
     call param_get_keyword(stdout, seedname, 'boltz_temp_max', found2, r_value=boltz%temp_max)
-    if ((.not. found2) .and. pw90_calcs%boltzwann) &
+    if ((.not. found2) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_max provided', stdout, seedname)
     if (found .and. found2 .and. (boltz%temp_max < boltz%temp_min)) &
       call io_error('Error: boltz_temp_max must be greater than boltz_temp_min', stdout, seedname)
@@ -1133,7 +1116,7 @@ contains
       call io_error('Error: boltz_temp_min must be greater than zero', stdout, seedname)
     boltz%temp_step = 0._dp
     call param_get_keyword(stdout, seedname, 'boltz_temp_step', found, r_value=boltz%temp_step)
-    if ((.not. found) .and. pw90_calcs%boltzwann) &
+    if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_step provided', stdout, seedname)
     if (found .and. (boltz%temp_step <= 0._dp)) &
       call io_error('Error: boltz_temp_step must be greater than zero', stdout, seedname)
@@ -1169,7 +1152,7 @@ contains
 
     boltz%bandshift = .false.
     call param_get_keyword(stdout, seedname, 'boltz_bandshift', found, l_value=boltz%bandshift)
-    boltz%bandshift = boltz%bandshift .and. pw90_calcs%boltzwann
+    boltz%bandshift = boltz%bandshift .and. do_boltzwann
 
     boltz%bandshift_firstband = 0
     call param_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found, i_value=boltz%bandshift_firstband)
@@ -1921,7 +1904,8 @@ contains
   end subroutine param_pw90_dealloc
 
   ! extra postw90 memory
-  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann, stdout)
+  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, do_boltzwann, boltz, &
+                                     spin_decomp, num_wann, stdout)
 
     ! JJ, should only be called from root node
     implicit none
@@ -1934,11 +1918,13 @@ contains
     real(kind=dp), parameter :: size_cmplx = 16.0_dp
     real(kind=dp), intent(in) :: mem_param
     real(kind=dp), intent(inout) :: mem_bw
+    logical, intent(in) :: do_boltzwann, spin_decomp
+    type(boltzwann_type) :: boltz
     integer :: NumPoints1, NumPoints2, NumPoints3, ndim
     real(kind=dp) :: TDF_exceeding_energy
 
-    if (pw90_calcs%boltzwann) then
-      if (pw90_common%spin_decomp) then
+    if (do_boltzwann) then
+      if (spin_decomp) then
         ndim = 3
       else
         ndim = 1
@@ -1981,7 +1967,7 @@ contains
       mem_bw = mem_bw + ndim*NumPoints1*size_real                    !DOS_all
     end if
 
-    if (pw90_calcs%boltzwann) &
+    if (do_boltzwann) &
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:', (mem_param + mem_bw)/(1024**2), ' Mb'
 
   end subroutine param_pw90_mem_estimate

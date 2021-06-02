@@ -132,6 +132,29 @@ program postw90
 
   type(special_kpoints_type) :: spec_points
   ! end w90_parameters
+  ! data from pw90_parameters
+  type(pw90_calculation_type), save :: pw90_calcs
+
+  logical, save :: eig_found ! used to control broadcast of eigval
+
+  type(postw90_oper_type), save :: postw90_oper
+  type(postw90_common_type), save :: pw90_common
+  type(postw90_spin_type), save :: pw90_spin
+  type(postw90_ham_type), save :: pw90_ham
+  type(kpath_type), save :: kpath
+  type(kslice_type), save :: kslice
+
+  ! module  d o s
+  ! No need to save 'dos_plot', only used here (introduced 'dos_task')
+  logical          :: dos_plot
+
+  type(dos_plot_type), save :: dos_data
+  type(berry_type), save :: berry
+  type(spin_hall_type), save :: spin_hall
+  type(gyrotropic_type), save :: gyrotropic
+  type(geninterp_type), save :: geninterp
+  type(boltzwann_type), save :: boltz
+  ! end pw90_parameters
 
   ! local vars
   integer :: my_node_id, num_nodes
