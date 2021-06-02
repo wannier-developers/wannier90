@@ -44,7 +44,7 @@ contains
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, spin_hall, kpath, pw90_common, pw90_spin, &
                     pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                    bohr, stdout, seedname, comm)
+                    AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, bohr, stdout, seedname, comm)
     !! Main routine
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
@@ -59,12 +59,10 @@ contains
       wannier_data_type, disentangle_type, k_point_type, kmesh_info_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
-    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_ws_distance, only: ws_distance_type
     use w90_utility, only: utility_diagonalize
-    use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
     ! arguments
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -90,6 +88,14 @@ contains
     integer, intent(in) :: nrpts
     integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
     real(kind=dp), intent(inout) :: crvec(:, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
+    complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
     real(kind=dp), intent(in) :: bohr
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
