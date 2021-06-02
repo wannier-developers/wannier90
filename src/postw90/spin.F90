@@ -33,7 +33,7 @@ contains
                              recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                              dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
                              wanint_kpoint_file, ws_distance, nrpts, irvec, crvec, ndegen, &
-                             rpt_origin, num_int_kpts_on_node, int_kpts, weight, &
+                             rpt_origin, num_int_kpts_on_node, int_kpts, weight, HH_R, SS_R, &
                              stdout, seedname, comm)
     !============================================================!
     !                                                            !
@@ -49,7 +49,6 @@ contains
       disentangle_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
 
     implicit none
 
@@ -74,6 +73,8 @@ contains
     real(kind=dp), intent(inout) :: crvec(:, :)
     integer, intent(in) :: num_int_kpts_on_node(0:)
     real(kind=dp), intent(in) :: int_kpts(:, :), weight(:)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
@@ -120,7 +121,8 @@ contains
         kpt(:) = int_kpts(:, loop_tot)
         kweight = weight(loop_tot)
         call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, param_input, wann_data, &
-                               real_lattice, recip_lattice, mp_grid, ws_distance, stdout, seedname)
+                               real_lattice, recip_lattice, mp_grid, ws_distance, HH_R, SS_R, &
+                               stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -138,7 +140,8 @@ contains
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%spin_kmesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%spin_kmesh(3), dp))
         call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, param_input, wann_data, &
-                               real_lattice, recip_lattice, mp_grid, ws_distance, stdout, seedname)
+                               real_lattice, recip_lattice, mp_grid, ws_distance, HH_R, SS_R, &
+                               stdout, seedname)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -175,7 +178,8 @@ contains
 ! =========================================================================
 
   subroutine spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                         recip_lattice, mp_grid, pw90_spin, ws_distance, stdout, seedname)
+                         recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
+                         stdout, seedname)
     !=============================================================!
     !                                                             !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -193,7 +197,6 @@ contains
     use pw90_parameters, only: postw90_spin_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -206,6 +209,8 @@ contains
     integer, intent(in) :: mp_grid(3)
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -256,7 +261,7 @@ contains
   !===========================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                               recip_lattice, mp_grid, ws_distance, stdout, seedname)
+                               recip_lattice, mp_grid, ws_distance, HH_R, SS_R, stdout, seedname)
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
     use w90_constants, only: dp, cmplx_i
@@ -265,7 +270,6 @@ contains
     use w90_param_types, only: parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -277,6 +281,8 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     type(ws_distance_type), intent(inout) :: ws_distance
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 

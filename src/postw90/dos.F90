@@ -599,7 +599,7 @@ contains
     !
     if (pw90_common%spin_decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                       mp_grid, pw90_spin, ws_distance, stdout, seedname)
+                       mp_grid, pw90_spin, ws_distance, HH_R, SS_R, stdout, seedname)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)

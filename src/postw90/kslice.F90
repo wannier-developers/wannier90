@@ -272,7 +272,7 @@ contains
       if (plot_fermi_lines) then
         if (fermi_lines_color) then
           call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                           recip_lattice, mp_grid, pw90_spin, ws_distance, &
+                           recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
                            stdout, seedname)
           do n = 1, num_wann
             if (spn_k(n) > 1.0_dp - eps8) then

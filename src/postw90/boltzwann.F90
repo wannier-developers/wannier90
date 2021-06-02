@@ -1105,6 +1105,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
+    use w90_get_oper_data, only: HH_R, SS_R
 
     implicit none
 
@@ -1160,7 +1161,7 @@ contains
     ! Get spin projections for every band
     !
     if (spin_decomp) call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                                      recip_lattice, mp_grid, pw90_spin, ws_distance, &
+                                      recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
                                       stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)

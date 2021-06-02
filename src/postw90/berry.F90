@@ -1645,7 +1645,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
-    use w90_get_oper_data, only: HH_R, AA_R
+    use w90_get_oper_data, only: HH_R, AA_R, SS_R
 
     implicit none
 
@@ -1742,7 +1742,7 @@ contains
     jdos_k = 0.0_dp
     if (pw90_common%spin_decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                       recip_lattice, mp_grid, pw90_spin, ws_distance, &
+                       recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
                        stdout, seedname)
       kubo_H_k_spn = cmplx_0
       kubo_AH_k_spn = cmplx_0

@@ -25,6 +25,7 @@ program postw90
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
     weight, cell_volume, ndegen, irvec, v_matrix, nrpts, rpt_origin, crvec
+  use w90_get_oper_data, only: HH_R, SS_R
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -277,7 +278,8 @@ program postw90
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
                          berry%wanint_kpoint_file, ws_distance, nrpts, irvec, crvec, ndegen, &
-                         rpt_origin, num_int_kpts_on_node, int_kpts, weight, stdout, seedname, comm)
+                         rpt_origin, num_int_kpts_on_node, int_kpts, weight, HH_R, SS_R, &
+                         stdout, seedname, comm)
   end if
 
   ! -------------------------------------------------------------------
