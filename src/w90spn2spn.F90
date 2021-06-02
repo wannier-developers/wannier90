@@ -12,6 +12,23 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
+module w90spn_parameters
+
+  !use w90_constants, only: dp
+  !use w90_io, only: maxlen
+  use w90_param_types
+
+  implicit none
+
+  public
+
+  integer, save :: num_kpts !BGS put in k_point_type?
+
+  integer, save :: num_bands
+  !! Number of bands
+
+end module w90spn_parameters
+
 module w90_conv_spn
   !! Module to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
@@ -103,7 +120,7 @@ contains
     use w90_constants, only: eps6, dp
 !   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
-    use w90_parameters, only: num_bands, num_kpts
+    use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -179,7 +196,7 @@ contains
     use w90_constants, only: eps6, dp
 !   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
-    use w90_parameters, only: num_bands, num_kpts
+    use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -248,7 +265,7 @@ contains
     !=======================================!
 
     use w90_io, only: io_file_unit, io_date
-    use w90_parameters, only: num_bands, num_kpts
+    use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -294,7 +311,7 @@ contains
     !=======================================!
 
     use w90_io, only: io_file_unit, io_date
-    use w90_parameters, only: num_bands, num_kpts
+    use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -336,7 +353,7 @@ program w90spn2spn
 ! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv_spn
-  use w90_comms, only: comms_setup, comms_end
+  use w90_comms, only: comms_setup, comms_end, mpisize, w90commtype
 
   implicit none
 
@@ -344,17 +361,18 @@ program w90spn2spn
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
 
+  type(w90commtype) :: comm
   logical :: file_found
   integer :: file_unit
   integer :: stdout
   character(len=50) :: seedname
 
-  call comms_setup(stdout, seedname)
+  call comms_setup(stdout, seedname, comm)
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90spn2spn.log')
 
-  if (num_nodes /= 1) then
+  if (mpisize(comm) /= 1) then
     call io_error('w90spn2spn can only be used in serial...', stdout, seedname)
   endif
 
