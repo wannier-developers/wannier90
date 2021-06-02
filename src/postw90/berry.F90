@@ -1553,6 +1553,7 @@ contains
     !  Notation correspondence with IATS18:
     !  AA_da_bar              <-->   \mathbbm{b}
     !  AA_bar                 <-->   \mathbbm{a}
+    !  HH_da_bar              <-->   \mathbbm{v}
     !  HH_dadb_bar            <-->   \mathbbm{w}
     !  D_h(n,m)               <-->   \mathbbm{v}_{nm}/(E_{m}-E_{n})
     !  sum_AD                 <-->   summatory of Eq. 32 IATS18
@@ -1568,7 +1569,7 @@ contains
     use w90_parameters, only: num_wann, nfermi, kubo_nfreq, kubo_freq_list, fermi_energy_list, &
       kubo_smr_index, berry_kmesh, kubo_adpt_smr_fac, &
       kubo_adpt_smr_max, kubo_adpt_smr, kubo_eigval_max, &
-      kubo_smr_fixed_en_width, sc_phase_conv, sc_w_thr
+      kubo_smr_fixed_en_width, sc_phase_conv, sc_w_thr, sc_eta, sc_use_eta_corr
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
       pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -1594,7 +1595,7 @@ contains
     real(kind=dp), allocatable    :: occ(:)
 
     complex(kind=dp)              :: sum_AD(3, 3), sum_HD(3, 3), r_mn(3), gen_r_nm(3)
-    integer                       :: i, if, a, b, c, bc, n, m, r, ifreq, istart, iend
+    integer                       :: i, if, a, b, c, bc, n, m, r, ifreq, istart, iend, p
     real(kind=dp)                 :: I_nm(3, 6), &
                                      omega(kubo_nfreq), delta(kubo_nfreq), joint_level_spacing, &
                                      eta_smr, Delta_k, arg, vdum(3), occ_fac, wstep, wmin, wmax
@@ -1725,6 +1726,21 @@ contains
                                     + (D_h(n, m, :)*(eig_da(n, a) - eig_da(m, a)) + &
                                        D_h(n, m, a)*(eig_da(n, :) - eig_da(m, :)))) &
                          /(eig(m) - eig(n)))
+
+          ! Correction term due to finite sc_eta
+          ! See Eq. (19) of Phys. Rev. B 103, 247101 (2021)
+          if (sc_use_eta_corr) then
+            do p = 1, num_wann
+              if (p == n .or. p == m) cycle
+              gen_r_nm(:) = gen_r_nm(:) &
+                            - sc_eta**2/((eig(p) - eig(m))**2 + sc_eta**2)/(eig(n) - eig(m)) &
+                            *(AA_bar(n, p, :)*HH_da_bar(p, m, a) &
+                              - (HH_da_bar(n, p, :) + cmplx_i*(eig(n) - eig(p))*AA_bar(n, p, :))*AA_bar(p, m, a)) &
+                            + sc_eta**2/((eig(n) - eig(p))**2 + sc_eta**2)/(eig(n) - eig(m)) &
+                            *(HH_da_bar(n, p, a)*AA_bar(p, m, :) &
+                              - AA_bar(n, p, a)*(HH_da_bar(p, m, :) + cmplx_i*(eig(p) - eig(m))*AA_bar(p, m, :)))
+            enddo
+          endif
 
           ! loop over the remaining two indexes of the matrix product.
           ! Note that shift current is symmetric under b <--> c exchange,
