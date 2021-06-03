@@ -82,8 +82,11 @@ libs:     $(LIBRARY)
 
 dynlibs: $(DYNLIBRARY)
 
-$(LIBRARY): $(OBJS) $(OBJSLIB) 
-	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB) $(OBJS)
+$(LIBRARY): $(OBJSLIB) comms-serial.o 
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB)
+
+comms-serial.o:
+	$(COMPILER) $(FCOPTS) -c ../comms.F90 -o comms-serial.o
 
 $(DYNLIBRARY): $(OBJS) $(OBJSLIB)
 	echo $(COMPILER)
