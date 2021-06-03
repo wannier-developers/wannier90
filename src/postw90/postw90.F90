@@ -21,11 +21,10 @@ program postw90
   use pw90_param_methods
   use w90_io
   use w90_kmesh
-  use w90_comms, only: comms_setup, comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
+  use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
     weight, cell_volume, ndegen, irvec, v_matrix, nrpts, rpt_origin, crvec
-! use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -41,9 +40,24 @@ program postw90
 
   use w90_ws_distance, only: ws_distance_type
 
-! use w90_get_oper_data
+#ifdef MPI
+#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#    error "You need to define which MPI interface you are using"
+#  endif
+#endif
+
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90
+  use mpi ! next best, use fortran90 interface
+#endif
 
   implicit none
+
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
 
   type(pw90_physical_constants) :: physics
   integer       :: nkp, len_seedname
@@ -157,18 +171,19 @@ program postw90
   ! end pw90_parameters
 
   ! local vars
-  integer :: my_node_id, num_nodes
+  integer :: my_node_id, num_nodes, ierr
   logical :: on_root = .false.
   type(w90commtype) :: comm
   type(ws_distance_type) :: ws_distance
 
-  ! this can't work -- stdout and seedname aren't defined yet --FIXME JJ
-  call comms_setup(stdout, seedname, comm)
-  !world = comm ! until arguments are used consistently... (copy mpi_comm_world to world)
+#ifdef MPI
+  comm%comm = MPI_COMM_WORLD
+  call mpi_init(ierr)
+  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)  ! JJ, fixme, what are stdout, seedname here?  unassigned!
+#endif
 
   my_node_id = mpirank(comm)
   num_nodes = mpisize(comm)
-
   if (my_node_id == 0) on_root = .true.
 
   if (on_root) then

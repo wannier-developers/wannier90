@@ -70,7 +70,24 @@ program wannier
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
     param_dist, param_memory_estimate, param_write_chkpt
 
+#ifdef MPI
+#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#    error "You need to define which MPI interface you are using"
+#  endif
+#endif
+
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90
+  use mpi ! next best, use fortran90 interface
+#endif
+
   implicit none
+
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
 
   type(w90_physical_constants) :: physics
   ! data from parameters module
@@ -178,13 +195,17 @@ program wannier
   character(len=50) :: prog
   character(len=50) :: seedname
   logical :: on_root = .false.
-  integer :: num_nodes, my_node_id
+  integer :: num_nodes, my_node_id, ierr
 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
   type(w90commtype) :: w90comm
 
-  call comms_setup(stdout, seedname, w90comm) ! initialises communicator with value MPI_COMM_WORLD
+#ifdef MPI
+  w90comm%comm = MPI_COMM_WORLD
+  call mpi_init(ierr)
+  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)  ! JJ, fixme, what are stdout, seedname here?  unassigned!
+#endif
 
   num_nodes = mpisize(w90comm)
   my_node_id = mpirank(w90comm)
@@ -328,11 +349,11 @@ program wannier
 
   if (driver%postproc_setup) then
     if (on_root) call kmesh_write(recip_lattice, param_input, kmesh_info, num_kpts, kmesh_data, &
-                                  num_proj, k_points%kpt_latt, real_lattice, pp_calc%only_A, stdout, seedname)
+                                  num_proj, k_points%kpt_latt, real_lattice, pp_calc%only_A, &
+                                  stdout, seedname)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
-    call param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                           wann_data, kmesh_data, k_points, dis_data, &
-                           atoms, eigval, spec_points, stdout, seedname)
+    call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
+                           k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end

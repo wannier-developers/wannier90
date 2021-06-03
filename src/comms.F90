@@ -60,7 +60,6 @@ module w90_comms
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce); data is lost on all other nodes
   public :: comms_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
   public :: comms_send       ! send data from one node to another
-  public :: comms_setup
   public :: mpirank
   public :: mpisize
 
@@ -156,23 +155,6 @@ contains
     mpisize = 1
 #endif
   end function
-
-  subroutine comms_setup(stdout, seedname, w90comm)
-    ! set communicator to MPI_COMM_WORLD and call mpi_init
-    ! this code could/should be at start of the main program
-    ! having it here is only useful in that it limits MPI defs to this file only
-    implicit none
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(inout) :: w90comm
-#ifdef MPI
-    integer :: ierr
-    w90comm%comm = MPI_COMM_WORLD
-    call mpi_init(ierr)
-    if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-#endif
-
-  end subroutine comms_setup
 
   subroutine comms_array_split(numpoints, counts, displs, comm)
     !! Given an array of size numpoints, we want to split on num_nodes nodes. This function returns

@@ -350,10 +350,9 @@ program w90spn2spn
   !! Program to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv_spn
-  use w90_comms, only: comms_setup, comms_end, mpisize, w90commtype
+  use w90_comms, only: comms_end, mpisize, w90commtype
 
   implicit none
 
@@ -364,10 +363,14 @@ program w90spn2spn
   type(w90commtype) :: comm
   logical :: file_found
   integer :: file_unit
-  integer :: stdout
+  integer :: stdout, ierr
   character(len=50) :: seedname
 
-  call comms_setup(stdout, seedname, comm)
+#ifdef MPI
+  w90comm%comm = MPI_COMM_WORLD
+  call mpi_init(ierr)
+  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
+#endif
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90spn2spn.log')

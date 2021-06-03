@@ -251,7 +251,7 @@ module w90_param_methods
   public :: param_read_global_kmesh
   public :: param_clean_infile
   public :: param_read_final_alloc
-  public :: get_all_keywords !JJ hack
+  public :: get_all_keywords
   private :: param_clear_block
 
 contains
@@ -755,7 +755,7 @@ contains
 !   use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: pw90_effective_model, library
-    type(k_point_type), intent(out) :: k_points
+    type(k_point_type), intent(inout) :: k_points
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -900,7 +900,6 @@ contains
     endif
   end subroutine param_read_atoms
 
-!JJ
   subroutine get_all_keywords(stdout, seedname)
     ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
     ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
@@ -2712,8 +2711,8 @@ contains
   end subroutine param_get_atoms
 
 !=====================================================!
-  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, &
-                                 recip_lattice, stdout, seedname)
+  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, recip_lattice, &
+                                 stdout, seedname)
     !=====================================================!
     !                                                     !
     !!   Fills the atom data block during a library call

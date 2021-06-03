@@ -51,8 +51,10 @@
 
 module w90lib_parameters
 
-  !use w90_constants, only: dp
-  !use w90_io, only: maxlen
+#if (defined(MPI) || defined(MPI08) || defined(MPI90) || defined(MPIH))
+#  error "this library interface must be built in serial, ie undefine MPI."
+#endif
+
   use w90_param_types
 
   implicit none
@@ -159,16 +161,15 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
 
+  use w90_comms, only: w90commtype
   use w90_constants, only: w90_physical_constants, dp
-  use w90lib_parameters
-  use wannlib_param_data
-  use wannier_methods, only: param_read, param_write, proj
-  use w90_sitesym
   use w90_io
   use w90_kmesh
-  !use w90_comms, only:
-
+  use w90lib_parameters
   use w90_param_methods, only: param_write_header, param_lib_set_atoms
+  use w90_sitesym
+  use wannier_methods, only: param_read, param_write, proj, param_w90_dealloc
+  use wannlib_param_data
 
   implicit none
 
@@ -209,8 +210,6 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   logical :: wout_found
 
   time0 = io_time()
-
-  call comms_setup_vars
 
   !library = .true.
 !  seedname="wannier"
@@ -318,9 +317,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   endif
 
   call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                         wann_data, kmesh_data, k_points, dis_data, fermi, &
-                         atoms, eigval, spec_points, stdout)
+
+  call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
+                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
   write (stdout, '(/a/)') ' Finished setting up k-point neighbours.'
@@ -371,7 +370,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: comms_array_split, comms_scatterv
+  use w90_comms, only: comms_array_split, comms_scatterv, w90commtype
 
   use w90_param_methods, only: param_lib_set_atoms
 
@@ -410,12 +409,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   character(len=50) :: seedname
   logical :: wout_found
 
-  !integer :: nkp, nn, n, m
-
-! Needed to split an array on different nodes
-  integer, dimension(0:num_nodes - 1) :: counts
-  integer, dimension(0:num_nodes - 1) :: displs
-
   complex(kind=dp), allocatable :: ham_r(:, :, :)
   integer, allocatable :: irvec(:, :)
   integer, allocatable :: shift_vec(:, :)
@@ -428,6 +421,18 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
 
+! Needed to split an array on different nodes (not done here)
+  integer, allocatable :: counts(:)
+  integer, allocatable :: displs(:)
+  integer :: num_nodes, my_node_id
+  type(w90commtype) :: comm
+
+  ! serial only (until communicator is passed as an argument)
+  ! these library routines are obsolete
+  num_nodes = 1
+  my_node_id = 0
+  allocate (counts(0:num_nodes - 1)); 
+  allocate (displs(0:num_nodes - 1)); 
   time0 = io_time()
 
   !driver%library = .true.
@@ -451,6 +456,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 !  call param_write_header
 
   ! copy local data into module variables
+  ! variously allocated already in wannier_setup... not worth correcting logic in obsolete lib
+  ! adding workaround to maintain functionality for now. JJ
+
   num_bands = num_bands_loc
   mp_grid = mp_grid_loc
   num_kpts = num_kpts_loc
@@ -490,11 +498,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
-  call comms_array_split(num_kpts, counts, displs)
+  call comms_array_split(num_kpts, counts, displs, comm)
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, &
                         m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
                         kmesh_info%nntot, num_kpts, num_wann, num_bands, &
-                        w90_calcs%disentanglement, stdout, seedname)
+                        w90_calcs%disentanglement, stdout, seedname, comm)
 
   if (w90_calcs%disentanglement) then
     m_matrix_orig = m_matrix_loc
@@ -512,11 +520,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     call comms_scatterv(m_matrix_orig_local, &
                         num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), m_matrix_orig, &
                         num_bands*num_bands*kmesh_info%nntot*counts, &
-                        num_bands*num_bands*kmesh_info%nntot*displs, stdout, seedname)
+                        num_bands*num_bands*kmesh_info%nntot*displs, stdout, seedname, comm)
   else
     call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann* &
-                        kmesh_info%nntot*displs, stdout, seedname)
+                        kmesh_info%nntot*displs, stdout, seedname, comm)
   endif
 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -527,13 +535,14 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                  dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                  lsitesymmetry, sym, stdout, seedname)
+                  dis_data, kmesh_info, k_points, param_input, lsitesymmetry, sym, &
+                  stdout, seedname, comm)
 
     param_input%have_disentangled = .true.
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_data, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                            mp_grid, real_lattice, recip_lattice, stdout, seedname)
+
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
   else
@@ -543,7 +552,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     else
       call overlap_project(m_matrix_local, kmesh_info%nnlist, kmesh_info%nntot, m_matrix, &
                            u_matrix, param_input%timing_level, num_kpts, num_wann, num_bands, &
-                           lsitesymmetry, sym, stdout, seedname) !lp note this not called by wannier_prog.F90
+                           lsitesymmetry, sym, stdout, seedname, comm) !lp note this not called by wannier_prog.F90
     endif
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to project overlaps ', time1 - time2, ' (sec)'
@@ -553,16 +562,13 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     call wann_main_gamma(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, m_matrix, &
                          num_kpts, real_lattice, wann_data, num_bands, u_matrix_opt, eigval, &
                          dis_data%lwindow, recip_lattice, atoms, k_points, dis_data, mp_grid, &
-                         stdout, seedname)
+                         stdout, seedname, comm)
   else
-    call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
-                   u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
-                   wann_data, k_points, num_bands, u_matrix_opt, &
-                   eigval, dis_data, recip_lattice, atoms, &
-                   lsitesymmetry, stdout, mp_grid, w90_calcs, &
-                   tran%mode, param_hamil, sym, ham_r, irvec, &
-                   shift_vec, ndegen, nrpts, rpt_origin, &
-                   wannier_centres_translated, hmlg, ham_k, seedname)
+    call wann_main(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, m_matrix, &
+                   num_kpts, real_lattice, num_proj, wann_data, k_points, num_bands, u_matrix_opt, &
+                   eigval, dis_data, recip_lattice, atoms, lsitesymmetry, stdout, mp_grid, &
+                   w90_calcs, tran%mode, param_hamil, sym, ham_r, irvec, shift_vec, ndegen, nrpts, &
+                   rpt_origin, wannier_centres_translated, hmlg, ham_k, seedname, comm)
   endif
 
   call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, k_points, num_kpts, &
@@ -573,25 +579,23 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr) then
-    call plot_main(num_kpts, w90_calcs, k_points, param_input, &
-                   param_plot, real_lattice, num_wann, kmesh_info, m_matrix, &
-                   recip_lattice, wann_data, atoms, param_hamil, dis_data, &
-                   u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                   mp_grid, tran%mode, fermi, fermi_surface_data, spec_points, &
-                   ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
-                   wannier_centres_translated, hmlg, ham_k, physics%bohr, stdout, seedname)
-
+    call plot_main(num_kpts, w90_calcs, k_points, param_input, param_plot, real_lattice, &
+                   num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, param_hamil, &
+                   dis_data, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, mp_grid, &
+                   tran%mode, fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, &
+                   nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k, physics%bohr, &
+                   stdout, seedname)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
   end if
 
   time2 = io_time()
   if (w90_calcs%transport) then
-    call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, wann_data, &
-                   atoms, param_hamil, dis_data, u_matrix_opt, k_points, eigval, u_matrix, &
-                   lsitesymmetry, num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, shift_vec, &
-                   ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-
+    call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, &
+                   wann_data, atoms, param_hamil, dis_data, u_matrix_opt, k_points, eigval, &
+                   u_matrix, lsitesymmetry, num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, &
+                   shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                   ham_k, stdout, seedname)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if
@@ -625,7 +629,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
                            hmlg, ham_k, stdout, seedname)
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                       a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname)
+                       a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
                          k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
