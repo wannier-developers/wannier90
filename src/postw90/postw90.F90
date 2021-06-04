@@ -24,8 +24,7 @@ program postw90
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
-    weight, cell_volume, ndegen, irvec, v_matrix, nrpts, rpt_origin, crvec
-! use w90_get_oper_data, only: AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R
+    weight, cell_volume, ndegen, irvec, nrpts, rpt_origin, crvec
 
   ! These modules deal with the interpolation of specific physical properties
   !
