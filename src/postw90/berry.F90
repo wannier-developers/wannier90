@@ -76,7 +76,7 @@ contains
                         kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
                         postw90_oper, ws_distance, ws_vec, &
                         AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, physics, stdout, &
-                        seedname, comm, int_kpts, num_int_kpts_on_node, weight, cell_volume)
+                        seedname, comm, int_kpts, num_int_kpts_on_node, weight)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -124,7 +124,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
-    real(kind=dp), intent(in) :: cell_volume
     real(kind=dp), intent(in) :: int_kpts(:, :)
     integer, intent(in) :: num_int_kpts_on_node(0:)
     real(kind=dp), intent(in) :: weight(:)
@@ -180,6 +179,7 @@ contains
     ! for fermi energy scan, adaptive kmesh
     real(kind=dp), allocatable    :: shc_k_fermi_dummy(:)
 
+    real(kind=dp)     :: cell_volume
     real(kind=dp)     :: kweight, kweight_adpt, kpt(3), &
                          db1, db2, db3, fac, rdum, vdum(3)
     integer           :: n, i, j, k, jk, ikpt, if, ierr, loop_x, loop_y, loop_z, &
@@ -198,6 +198,10 @@ contains
       'Must specify one or more Fermi levels when berry=true', stdout, seedname)
 
     if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('berry: prelims', 1, stdout, seedname)
+
+    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
+                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
+                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
     ! Mesh spacing in reduced coordinates
     !

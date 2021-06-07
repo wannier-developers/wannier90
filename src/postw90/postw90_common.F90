@@ -70,7 +70,7 @@ module w90_postw90_common
   integer, allocatable          :: num_int_kpts_on_node(:)
   real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
   !complex(kind=dp), allocatable :: v_matrix(:, :, :)
-  real(kind=dp), public :: cell_volume
+  !real(kind=dp), public :: cell_volume
 
 contains
 
@@ -332,7 +332,7 @@ contains
     call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, world)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
-    call comms_bcast(cell_volume, 1, stdout, seedname, world)
+    !call comms_bcast(cell_volume, 1, stdout, seedname, world)
     call comms_bcast(dos_data%energy_step, 1, stdout, seedname, world)
     call comms_bcast(dos_data%adpt_smr, 1, stdout, seedname, world)
     call comms_bcast(dos_data%smr_index, 1, stdout, seedname, world)

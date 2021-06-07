@@ -67,8 +67,7 @@ contains
   subroutine boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                             mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                             boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                            ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, &
-                            comm, cell_volume)
+                            ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, comm)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -119,7 +118,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: comm
-    real(kind=dp), intent(in) :: cell_volume
 
     ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
@@ -146,6 +144,7 @@ contains
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects
     real(kind=dp), parameter :: TDF_exceeding_energy_times_smr = 3._dp
     real(kind=dp) :: TDF_exceeding_energy
+    real(kind=dp) :: cell_volume
     integer :: NumberZeroDet
 
     integer, allocatable :: counts(:), displs(:)
@@ -157,6 +156,10 @@ contains
     if (my_node_id == 0) on_root = .true.
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
+
+    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
+                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
+                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
     if (param_input%iprint > 0 .and. param_input%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
 

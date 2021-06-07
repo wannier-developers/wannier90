@@ -62,7 +62,7 @@ contains
                              recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                              dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
                              postw90_oper, pw90_ham, ws_distance, ws_vec, physics, stdout, &
-                             seedname, comm, cell_volume, HH_R, AA_R, BB_R, CC_R, SS_R)
+                             seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -111,7 +111,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
-    real(kind=dp), intent(in) :: cell_volume
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
@@ -132,6 +131,7 @@ contains
     character(len=30) :: units_tmp
     character(len=120) :: comment_tmp
 
+    real(kind=dp) :: cell_volume
     real(kind=dp)     :: kweight, kpt(3), &
                          db1, db2, db3, fac
     integer           :: loop_x, loop_y, loop_z, loop_xyz
@@ -146,6 +146,10 @@ contains
 
     if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
       call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
+
+    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
+                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
+                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
     ! Mesh spacing in reduced coordinates
     !

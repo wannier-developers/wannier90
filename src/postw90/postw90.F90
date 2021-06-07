@@ -24,7 +24,7 @@ program postw90
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
-    weight, cell_volume, wigner_seitz_type
+    weight, wigner_seitz_type
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -244,9 +244,6 @@ program postw90
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, physics%bohr, stdout, seedname)
-    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
-                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
-                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
     call param_postw90_write(param_input, fermi, atoms, num_wann, &
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
@@ -422,8 +419,7 @@ program postw90
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
                     postw90_oper, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
-                    SS_R, physics, stdout, seedname, comm, int_kpts, num_int_kpts_on_node, &
-                    weight, cell_volume)
+                    SS_R, physics, stdout, seedname, comm, int_kpts, num_int_kpts_on_node, weight)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
@@ -444,8 +440,7 @@ program postw90
     call boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                         mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                         boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                        ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, comm, &
-                        cell_volume)
+                        ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, comm)
   end if
 
   if (pw90_calcs%gyrotropic) then
@@ -453,7 +448,7 @@ program postw90
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
                          postw90_oper, pw90_ham, ws_distance, ws_vec, physics, stdout, seedname, &
-                         comm, cell_volume, HH_R, AA_R, BB_R, CC_R, SS_R)
+                         comm, HH_R, AA_R, BB_R, CC_R, SS_R)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then
