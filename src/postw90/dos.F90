@@ -38,7 +38,7 @@ contains
   subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                       recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
                       pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, &
-                      HH_R, SS_R, nrpts, irvec, crvec, ndegen, rpt_origin, stdout, seedname, comm)
+                      HH_R, SS_R, ws_vec, stdout, seedname, comm)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -48,7 +48,8 @@ contains
     !                                                       !
     !=======================================================!
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, pw90common_fourier_R_to_k
+    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
+      pw90common_fourier_R_to_k, wigner_seitz_type
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
       postw90_spin_type, postw90_oper_type
     use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
@@ -79,9 +80,7 @@ contains
     type(postw90_ham_type), intent(in)       :: pw90_ham
     type(postw90_spin_type), intent(in)       :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
-    integer, intent(in) :: nrpts
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-    real(kind=dp), intent(inout) :: crvec(:, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
@@ -134,14 +133,13 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
-                  pw90_common, stdout, seedname, comm)
+    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
+                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                    k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -202,24 +200,24 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                                   pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, &
+                                   stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, HH_R, SS_R, &
+                         ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                          real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         stdout, seedname)
+                                         ws_vec, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, HH_R, SS_R, &
+                         ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -245,24 +243,24 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                                   pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
+                                   seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, HH_R, SS_R, &
+                         ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                          real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         stdout, seedname)
+                                         ws_vec, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                         ws_distance, stdout, seedname, HH_R, SS_R, &
+                         ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, UU=UU)
         end if
@@ -528,8 +526,8 @@ contains
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, num_wann, param_input, wann_data, &
                        real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
-                       ws_distance, stdout, seedname, HH_R, SS_R, smr_index, smr_fixed_en_width, adpt_smr_fac, &
-                       adpt_smr_max, levelspacing_k, UU)
+                       ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, smr_index, &
+                       smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
 
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
@@ -541,6 +539,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
+    use w90_postw90_common, only: wigner_seitz_type
 
     ! Arguments
     !
@@ -557,6 +556,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(wigner_seitz_type), intent(in) :: ws_vec
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     integer, intent(in)                                   :: smr_index
@@ -608,7 +608,7 @@ contains
     !
     if (pw90_common%spin_decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                       mp_grid, pw90_spin, ws_distance, HH_R, SS_R, stdout, seedname)
+                       mp_grid, pw90_spin, ws_distance, HH_R, SS_R, ws_vec, stdout, seedname)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)

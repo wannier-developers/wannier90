@@ -35,9 +35,9 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                      rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
-                      pw90_common, stdout, seedname, comm)
+  subroutine get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, &
+                      v_matrix, HH_R, dis_data, k_points, param_input, pw90_common, stdout, &
+                      seedname, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -50,15 +50,15 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
     ! passed variables
-    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    integer, intent(in) :: num_bands, num_kpts, num_wann, stdout
+    type(wigner_seitz_type), intent(inout) :: ws_vec
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: crvec(:, :)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -89,7 +89,7 @@ contains
       call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
-      allocate (HH_R(num_wann, num_wann, nrpts))
+      allocate (HH_R(num_wann, num_wann, ws_vec%nrpts))
     else
       if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
@@ -138,20 +138,20 @@ contains
           ! implemented.)
           HH_R(j, i, ir) = HH_R(j, i, ir) + cmplx(rdum_real, rdum_imag, kind=dp)
           if (new_ir) then
-            irvec(:, ir) = ivdum(:)
-            if (ivdum(1) == 0 .and. ivdum(2) == 0 .and. ivdum(3) == 0) rpt_origin = ir
+            ws_vec%irvec(:, ir) = ivdum(:)
+            if (ivdum(1) == 0 .and. ivdum(2) == 0 .and. ivdum(3) == 0) ws_vec%rpt_origin = ir
           endif
           n = n + 1
         enddo
         close (file_unit)
-        if (ir /= nrpts) then
-          write (stdout, *) 'ir=', ir, '  nrpts=', nrpts
+        if (ir /= ws_vec%nrpts) then
+          write (stdout, *) 'ir=', ir, '  nrpts=', ws_vec%nrpts
           call io_error('Error in get_HH_R: inconsistent nrpts values', stdout, seedname)
         endif
-        do ir = 1, nrpts
-          crvec(:, ir) = matmul(transpose(real_lattice), irvec(:, ir))
+        do ir = 1, ws_vec%nrpts
+          ws_vec%crvec(:, ir) = matmul(transpose(real_lattice), ws_vec%irvec(:, ir))
         end do
-        ndegen(:) = 1 ! This is assumed when reading HH_R from file
+        ws_vec%ndegen(:) = 1 ! This is assumed when reading HH_R from file
         !
         ! TODO: Implement scissors in this case? Need to choose a
         ! uniform k-mesh (the scissors correction is applied in
@@ -165,10 +165,10 @@ contains
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T', stdout, seedname)
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, stdout, seedname, comm)
-      call comms_bcast(ndegen(1), nrpts, stdout, seedname, comm)
-      call comms_bcast(irvec(1, 1), 3*nrpts, stdout, seedname, comm)
-      call comms_bcast(crvec(1, 1), 3*nrpts, stdout, seedname, comm)
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*ws_vec%nrpts, stdout, seedname, comm)
+      call comms_bcast(ws_vec%ndegen(1), ws_vec%nrpts, stdout, seedname, comm)
+      call comms_bcast(ws_vec%irvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
+      call comms_bcast(ws_vec%crvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
       if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
@@ -204,13 +204,13 @@ contains
       enddo
     enddo
 
-    call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, HH_q, HH_R)
+    call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, k_points, HH_q, HH_R)
 
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
     !
     if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
-      allocate (sciss_R(num_wann, num_wann, nrpts))
+      allocate (sciss_R(num_wann, num_wann, ws_vec%nrpts))
       allocate (sciss_q(num_wann, num_wann, num_kpts))
       sciss_q = cmplx_0
       do ik = 1, num_kpts
@@ -225,9 +225,9 @@ contains
         enddo
       enddo
 
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, sciss_q, sciss_R)
+      call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, k_points, sciss_q, sciss_R)
       do n = 1, num_wann
-        sciss_R(n, n, rpt_origin) = sciss_R(n, n, rpt_origin) + 1.0_dp
+        sciss_R(n, n, ws_vec%rpt_origin) = sciss_R(n, n, ws_vec%rpt_origin) + 1.0_dp
       end do
       sciss_R = sciss_R*pw90_common%scissors_shift
       HH_R = HH_R + sciss_R

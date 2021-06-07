@@ -43,7 +43,7 @@ contains
   subroutine k_path(num_wann, param_input, wann_data, spec_points, fermi, eigval, real_lattice, &
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, spin_hall, kpath, pw90_common, pw90_spin, &
-                    pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                    pw90_ham, postw90_oper, ws_distance, ws_vec, &
                     AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, bohr, stdout, seedname, comm)
     !! Main routine
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
@@ -54,7 +54,7 @@ contains
     use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_param_types, only: special_kpoints_type, fermi_data_type, parameter_input_type, &
       wannier_data_type, disentangle_type, k_point_type, kmesh_info_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
@@ -85,9 +85,7 @@ contains
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
-    integer, intent(in) :: nrpts
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-    real(kind=dp), intent(inout) :: crvec(:, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
@@ -165,37 +163,40 @@ contains
 
     ! Set up the needed Wannier matrix elements
 
-    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
+    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, &
+                  eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
-    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
-                                                dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
-                                                comm)
+    if (plot_curv .or. plot_morb) then
+      call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                    stdout, seedname, comm)
+    endif
     if (plot_morb) then
 
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
-                    kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
-
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
-                    kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
+      call get_BB_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    BB_R, dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, &
                     seedname, comm)
+
+      call get_CC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    CC_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                    stdout, seedname, comm)
     endif
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
 
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
-                    dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
-                    comm)
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                    k_points, param_input, postw90_oper, stdout, seedname, comm)
-      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, SH_R, dis_data, &
-                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
-                     stdout, seedname, comm)
+      call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                    stdout, seedname, comm)
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SHC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                     SR_R, SHR_R, SH_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, &
+                     pw90_common, spin_hall, stdout, seedname, comm)
     endif
 
     if (plot_bands .and. kpath%bands_colour == 'spin') then
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                    k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
     end if
 
     if (on_root) then
@@ -249,7 +250,7 @@ contains
       if (plot_bands) then
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                        real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                       stdout, seedname)
+                                       ws_vec, stdout, seedname)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
@@ -258,7 +259,7 @@ contains
         if (kpath%bands_colour == 'spin') then
           call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
                            recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
-                           stdout, seedname)
+                           ws_vec, stdout, seedname)
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing
@@ -276,9 +277,8 @@ contains
           call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                   pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, &
-                                   ndegen, rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
-                                   stdout, seedname, comm, shc_k_band=shc_k_band)
+                                   pw90_ham, pw90_common, ws_distance, ws_vec, AA_R, HH_R, SH_R, &
+                                   SHR_R, SR_R, SS_R, stdout, seedname, comm, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
@@ -287,9 +287,8 @@ contains
         call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
-                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list, &
-                                   img_k_list, imh_k_list)
+                                   ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, seedname, &
+                                   comm, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -303,8 +302,8 @@ contains
           call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
-                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list)
+                                   ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, seedname, &
+                                   comm, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -315,9 +314,8 @@ contains
         call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                 pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
-                                 rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, stdout, &
-                                 seedname, comm, shc_k_fermi=shc_k_fermi)
+                                 pw90_ham, pw90_common, ws_distance, ws_vec, AA_R, HH_R, SH_R, &
+                                 SHR_R, SR_R, SS_R, stdout, seedname, comm, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

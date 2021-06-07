@@ -43,7 +43,7 @@ contains
   subroutine k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                      mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
                      k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                     ws_distance, kslice, nrpts, irvec, crvec, ndegen, rpt_origin, &
+                     ws_distance, kslice, ws_vec, &
                      bohr, stdout, seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R, SR_R, SHR_R, SH_R)
     !! Main routine
 
@@ -56,7 +56,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, &
       parameter_input_type, fermi_data_type, wannier_data_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -82,9 +82,7 @@ contains
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(ws_distance_type), intent(inout) :: ws_distance
     type(kslice_type), intent(in) :: kslice
-    integer, intent(in) :: nrpts
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-    real(kind=dp), intent(inout) :: crvec(:, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in) :: seedname
@@ -162,34 +160,38 @@ contains
                              plot_curv, plot_morb, plot_shc, stdout, seedname, berry, fermi)
     end if
 
-    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
-                  pw90_common, stdout, seedname, comm)
-    if (plot_curv .or. plot_morb) call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
-                                                dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
-                                                comm)
+    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
+                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+    if (plot_curv .or. plot_morb) then
+      call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                    stdout, seedname, comm)
+    endif
     if (plot_morb) then
-      call get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, dis_data, &
-                    kmesh_info, k_points, param_input, pw90_common, stdout, seedname, comm)
-      call get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, dis_data, &
-                    kmesh_info, k_points, param_input, postw90_oper, pw90_common, stdout, &
+      call get_BB_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    BB_R, dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, &
                     seedname, comm)
+      call get_CC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    CC_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                    stdout, seedname, comm)
     endif
 
     if (plot_shc) then
-      call get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, berry, &
-                    dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
-                    comm)
+      call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                    stdout, seedname, comm)
 
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                    k_points, param_input, postw90_oper, stdout, seedname, comm)
-      call get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, SH_R, dis_data, &
-                     kmesh_info, k_points, param_input, postw90_oper, pw90_common, spin_hall, &
-                     stdout, seedname, comm)
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SHC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                     SR_R, SHR_R, SH_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, &
+                     pw90_common, spin_hall, stdout, seedname, comm)
     end if
 
-    if (fermi_lines_color) call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                                         k_points, param_input, postw90_oper, stdout, seedname, comm)
+    if (fermi_lines_color) then
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+    endif
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
     !
     bvec(1, :) = matmul(kslice%b1(:), recip_lattice(:, :))
@@ -281,7 +283,7 @@ contains
         if (fermi_lines_color) then
           call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
                            recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
-                           stdout, seedname)
+                           ws_vec, stdout, seedname)
           do n = 1, num_wann
             if (spn_k(n) > 1.0_dp - eps8) then
               spn_k(n) = 1.0_dp - eps8
@@ -293,13 +295,13 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                                   pw90_common, pw90_ham, ws_distance, nrpts, &
-                                   irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                                   pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
+                                   seedname, comm)
           Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                          real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         stdout, seedname)
+                                         ws_vec, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
         endif
 
@@ -323,8 +325,7 @@ contains
         call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, pw90_common, ws_distance, &
-                                 nrpts, irvec, crvec, ndegen, rpt_origin, AA_R, BB_R, CC_R, HH_R, &
-                                 stdout, seedname, comm, imf_k_list)
+                                 ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list)
         curv(1) = sum(imf_k_list(:, 1, 1))
         curv(2) = sum(imf_k_list(:, 2, 1))
         curv(3) = sum(imf_k_list(:, 3, 1))
@@ -335,9 +336,8 @@ contains
         call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    u_matrix, v_matrix, dis_data, k_points, pw90_common, &
-                                   ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, &
-                                   AA_R, BB_R, CC_R, HH_R, stdout, seedname, comm, imf_k_list, &
-                                   img_k_list, imh_k_list)
+                                   ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, seedname, &
+                                   comm, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -349,9 +349,8 @@ contains
         call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                  u_matrix, v_matrix, dis_data, k_points, berry, spin_hall, &
-                                 pw90_ham, pw90_common, ws_distance, nrpts, irvec, crvec, ndegen, &
-                                 rpt_origin, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, stdout, &
-                                 seedname, comm, shc_k_fermi=shc_k_fermi)
+                                 pw90_ham, pw90_common, ws_distance, ws_vec, AA_R, HH_R, SH_R, &
+                                 SHR_R, SR_R, SS_R, stdout, seedname, comm, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 
@@ -880,7 +879,8 @@ contains
   !                   PRIVATE PROCEDURES
   !===========================================================!
 
-  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, stdout, seedname, berry, fermi)
+  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
+                               plot_shc, stdout, seedname, berry, fermi)
     use pw90_parameters, only: berry_type
     use w90_io, only: io_error
     use w90_param_types, only: fermi_data_type

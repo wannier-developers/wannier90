@@ -59,10 +59,10 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(real_lattice, recip_lattice, nrpts, num_bands, num_kpts, num_wann, &
-                            irvec, ndegen, rpt_origin, eigval, v_matrix, u_matrix, k_points, &
-                            crvec, dis_data, wann_data, pw90_common, mp_grid, ws_distance, &
-                            stdout, seedname, geninterp, pw90_ham, param_input, comm, HH_R)
+  subroutine geninterp_main(real_lattice, recip_lattice, num_bands, num_kpts, num_wann, &
+                            ws_vec, eigval, v_matrix, u_matrix, k_points, dis_data, wann_data, &
+                            pw90_common, mp_grid, ws_distance, stdout, seedname, geninterp, &
+                            pw90_ham, param_input, comm, HH_R)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -75,7 +75,7 @@ contains
     use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
       wannier_data_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R
@@ -95,10 +95,9 @@ contains
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(parameter_input_type), intent(in) :: param_input
 
-    integer, intent(in)    :: nrpts, num_bands, num_kpts, num_wann, stdout
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
+    integer, intent(in)    :: num_bands, num_kpts, num_wann, stdout
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(inout) :: crvec(:, :)
     real(kind=dp), intent(in)    :: real_lattice(3, 3)
     real(kind=dp), intent(in)    :: recip_lattice(3, 3)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
@@ -178,8 +177,8 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
+    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, &
+                  eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     if (on_root) then
@@ -289,11 +288,11 @@ contains
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
                                  num_wann, param_input, wann_data, eigval, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                                 dis_data, k_points, pw90_common, pw90_ham, ws_distance, nrpts, &
-                                 irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                                 dis_data, k_points, pw90_common, pw90_ham, ws_distance, ws_vec, &
+                                 HH_R, stdout, seedname, comm)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
+                                       real_lattice, recip_lattice, mp_grid, ws_distance, ws_vec, &
                                        stdout, seedname)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if

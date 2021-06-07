@@ -67,8 +67,8 @@ contains
   subroutine boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
                             mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
                             boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                            ws_distance, nrpts, irvec, crvec, ndegen, rpt_origin, HH_R, SS_R, &
-                            physics, stdout, seedname, comm, cell_volume)
+                            ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, &
+                            comm, cell_volume)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -91,6 +91,7 @@ contains
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
       postw90_ham_type, dos_plot_type, postw90_oper_type
     use w90_ws_distance, only: ws_distance_type
+    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
@@ -111,9 +112,7 @@ contains
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(ws_distance_type), intent(inout) :: ws_distance
-    integer, intent(in) :: nrpts
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-    real(kind=dp), intent(inout) :: crvec(:, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     type(pw90_physical_constants), intent(in) :: physics
@@ -245,8 +244,8 @@ contains
     call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                        v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
-                       pw90_ham, postw90_oper, ws_distance, nrpts, irvec, &
-                       crvec, ndegen, rpt_origin, HH_R, SS_R, stdout, seedname, comm, cell_volume)
+                       pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
+                       seedname, comm, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -640,8 +639,8 @@ contains
   subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
                            real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                            v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
-                           pw90_ham, postw90_oper, ws_distance, nrpts, irvec, crvec, ndegen, &
-                           rpt_origin, HH_R, SS_R, stdout, seedname, comm, cell_volume)
+                           pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
+                           seedname, comm, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -675,6 +674,7 @@ contains
 !   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
+    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
@@ -712,9 +712,7 @@ contains
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(ws_distance_type), intent(inout) :: ws_distance
-    integer, intent(in) :: nrpts
-    integer, intent(inout) :: irvec(:, :), ndegen(:), rpt_origin
-    real(kind=dp), intent(inout) :: crvec(:, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
@@ -762,14 +760,13 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(num_bands, num_kpts, num_wann, nrpts, ndegen, irvec, crvec, real_lattice, &
-                  rpt_origin, eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
-                  pw90_common, stdout, seedname, comm)
+    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
+                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
     if (pw90_common%spin_decomp) then
       ndim = 3
 
-      call get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, dis_data, &
-                    k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
+                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -882,8 +879,8 @@ contains
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                               pw90_common, pw90_ham, ws_distance, nrpts, &
-                               irvec, crvec, ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                               pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
+                               seedname, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -893,7 +890,7 @@ contains
 
       call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, wann_data, &
                    real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, &
-                   pw90_common%spin_decomp, ws_distance, HH_R, SS_R, stdout, seedname)
+                   pw90_common%spin_decomp, ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -924,13 +921,12 @@ contains
                                            param_input, wann_data, eigval, real_lattice, &
                                            recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
                                            v_matrix, dis_data, k_points, pw90_common, pw90_ham, &
-                                           ws_distance, nrpts, irvec, crvec, &
-                                           ndegen, rpt_origin, HH_R, stdout, seedname, comm)
+                                           ws_distance, ws_vec, HH_R, stdout, seedname, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                                  wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
-                                 pw90_common, pw90_spin, ws_distance, &
+                                 pw90_common, pw90_spin, ws_distance, ws_vec, &
                                  stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -943,7 +939,7 @@ contains
           else
             call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                            wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
-                           pw90_common, pw90_spin, ws_distance, &
+                           pw90_common, pw90_spin, ws_distance, ws_vec, &
                            stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -953,7 +949,7 @@ contains
         else
           call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
                          wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
-                         pw90_common, pw90_spin, ws_distance, &
+                         pw90_common, pw90_spin, ws_distance, ws_vec, &
                          stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate
@@ -1076,7 +1072,7 @@ contains
 
   subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, num_wann, param_input, wann_data, &
                      real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, spin_decomp, &
-                     ws_distance, HH_R, SS_R, stdout, seedname)
+                     ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1108,6 +1104,7 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
+    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
@@ -1144,6 +1141,7 @@ contains
     type(postw90_spin_type), intent(in) :: pw90_spin
     logical, intent(in) :: spin_decomp
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(wigner_seitz_type), intent(in) :: ws_vec
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
@@ -1166,7 +1164,7 @@ contains
     !
     if (spin_decomp) call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
                                       recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
-                                      stdout, seedname)
+                                      ws_vec, stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
