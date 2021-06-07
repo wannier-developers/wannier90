@@ -77,17 +77,6 @@ module w90_transport
   integer, parameter :: nterx = 50
   !! nterx  = # of maximum iteration to calculate transfer matrix
 
-  real(kind=dp), allocatable :: hr_one_dim(:, :, :)
-  real(kind=dp), allocatable :: hB0(:, :)
-  real(kind=dp), allocatable :: hB1(:, :)
-  real(kind=dp), allocatable :: hL0(:, :)
-  real(kind=dp), allocatable :: hL1(:, :)
-  real(kind=dp), allocatable :: hR0(:, :)
-  real(kind=dp), allocatable :: hR1(:, :)
-  real(kind=dp), allocatable :: hC(:, :)
-  real(kind=dp), allocatable :: hLC(:, :)
-  real(kind=dp), allocatable :: hCR(:, :)
-
   public :: tran_main
   public :: tran_dealloc
 
@@ -113,6 +102,7 @@ contains
 
     implicit none
 
+    ! arguments
     type(transport_type), intent(inout)         :: tran
     type(parameter_input_type), intent(inout)   :: param_input
     type(w90_calculation_type), intent(in)      :: w90_calcs
@@ -148,6 +138,7 @@ contains
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: lsitesymmetry  !YN:
 
+    ! local variables
     integer              :: one_dim_vec
     !! cartesian axis to which real_lattice(:,one_dim_vec) is parallel
     integer              :: nrpts_one_dim
@@ -160,8 +151,20 @@ contains
     integer, allocatable :: tran_sorted_idx(:)
     !! index of sorted WF centres to unsorted
     integer              :: num_G
+    integer :: irvec_max ! size of hr_one_dim's last dimension (:, :, -irvec_max:irvec_max)
+    integer :: ierr
 
-    real(kind=dp), allocatable, dimension(:, :) :: signatures
+    real(kind=dp), allocatable :: hr_one_dim(:, :, :)
+    real(kind=dp), allocatable :: signatures(:, :)
+    real(kind=dp), allocatable :: hB0(:, :)
+    real(kind=dp), allocatable :: hB1(:, :)
+    real(kind=dp), allocatable :: hC(:, :)
+    real(kind=dp), allocatable :: hCR(:, :)
+    real(kind=dp), allocatable :: hL0(:, :)
+    real(kind=dp), allocatable :: hL1(:, :)
+    real(kind=dp), allocatable :: hLC(:, :)
+    real(kind=dp), allocatable :: hR0(:, :)
+    real(kind=dp), allocatable :: hR1(:, :)
 
     logical :: pl_warning
 
@@ -187,14 +190,16 @@ contains
                                                           ham_r, irvec, ndegen, nrpts, hmlg, &
                                                           stdout, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, nrpts_one_dim, stdout, seedname)
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, stdout, seedname)
-        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl, stdout, seedname)
+                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
+                                 irvec_max, stdout, seedname)
+        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
+                         hB1, stdout, seedname)
         if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx, stdout, seedname)
       end if
-      call tran_bulk(param_input, tran, stdout, seedname)
+      call tran_bulk(param_input, tran, hB0, hB1, stdout, seedname)
     end if
 
     if (index(tran%mode, 'lcr') > 0) then
@@ -212,9 +217,10 @@ contains
                                                           ham_r, irvec, ndegen, nrpts, hmlg, &
                                                           stdout, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, nrpts_one_dim, stdout, seedname)
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, stdout, seedname)
+                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
+                                 irvec_max, stdout, seedname)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
         call tran_find_integral_signatures(signatures, num_G, param_input, real_lattice, &
@@ -223,53 +229,85 @@ contains
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
                                real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
                                wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
-                               coord, tran_sorted_idx, stdout, seedname)
+                               coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
         if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx, stdout, seedname)
-        call tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, stdout, seedname)
+
+        call tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, &
+                                 hr_one_dim, irvec_max, stdout, seedname)
         call tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
                                     real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
-                                    num_pl, coord, tran_sorted_idx, stdout, seedname)
+                                    num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
+                                    hR1, hr_one_dim, irvec_max, stdout, seedname)
       endif
-      call tran_lcr(tran, param_input, stdout, seedname)
+      call tran_lcr(tran, param_input, hC, hCR, hL0, hL1, hLC, hR0, hR1, stdout, seedname)
     end if
 
     if (param_input%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
+
+    if (allocated(hR1)) then
+      deallocate (hR1, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hR1 in tran_dealloc', stdout, seedname)
+    end if
+    if (allocated(hR0)) then
+      deallocate (hR0, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hR0 in tran_dealloc', stdout, seedname)
+    end if
+    if (allocated(hL1)) then
+      deallocate (hL1, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hL1 in tran_dealloc', stdout, seedname)
+    end if
+    if (allocated(hB1)) then
+      deallocate (hB1, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hB1 in tran_dealloc', stdout, seedname)
+    end if
+    if (allocated(hB0)) then
+      deallocate (hB0, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hB0 in tran_dealloc', stdout, seedname)
+    end if
+    if (allocated(hr_one_dim)) then
+      deallocate (hr_one_dim, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating hr_one_dim in tran_dealloc', stdout, seedname)
+    end if
 
   end subroutine tran_main
 
   !==================================================================!
   subroutine tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, nrpts_one_dim, stdout, seedname)
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
     !==================================================================!
     !
     ! reduce ham_r from 3-d to 1-d
     !
     use w90_constants, only: dp, eps8
-!   use w90_io, only: io_error, io_stopwatch, stdout
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: parameter_input_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
-
-    integer, intent(inout) :: one_dim_vec
-    integer, intent(inout) :: nrpts_one_dim
-
-    integer, intent(in) :: nrpts
-    integer, intent(in) :: stdout
+    ! passed vars
     integer, intent(in) :: irvec(:, :)
+    integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: num_wann
+    integer, intent(inout) :: nrpts_one_dim
+    integer, intent(inout) :: one_dim_vec
+    integer, intent(in) :: stdout
+
+    real(kind=dp), allocatable, intent(inout) :: hr_one_dim(:, :, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: mp_grid(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(parameter_input_type), intent(in) :: param_input
+
     character(len=50), intent(in)  :: seedname
 
+    ! local variables
     integer :: ierr
-    integer :: irvec_max, irvec_tmp(3), two_dim_vec(2)
+    integer :: irvec_tmp(3), two_dim_vec(2)
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
@@ -344,7 +382,8 @@ contains
 
   !==================================================================!
   subroutine tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, stdout, seedname)
+                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
+                                 irvec_max, stdout, seedname)
     !==================================================================!
     !
     use w90_constants, only: dp
@@ -354,34 +393,37 @@ contains
     use wannier_param_types, only: transport_type
 
     implicit none
-    type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(inout) :: param_input
 
-    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
-    integer, intent(in) :: one_dim_vec
-    integer, intent(in) :: nrpts_one_dim
-    integer, intent(inout) :: num_pl
-
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
+    ! arguments
     integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: irvec_max
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: one_dim_vec
+    integer, intent(inout) :: num_pl
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+
+    type(parameter_input_type), intent(inout) :: param_input
+    type(transport_type), intent(inout) :: tran
+
     character(len=50), intent(in)  :: seedname
 
-    !
-    integer :: irvec_max
+    ! local variables
     integer :: i, j, n1
     real(kind=dp) :: hr_max
     real(kind=dp) :: dist
     real(kind=dp) :: dist_vec(3)
     real(kind=dp) :: dist_ij_vec(3)
-    real(kind=dp) :: shift_vec(3, -nrpts_one_dim/2:nrpts_one_dim/2)
+    real(kind=dp) :: shift_vec(3, -irvec_max:irvec_max)
     real(kind=dp) :: hr_tmp(num_wann, num_wann)
 
     !
     if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
     !
-    irvec_max = nrpts_one_dim/2
+    !irvec_max = nrpts_one_dim/2 ! now passed as arg
     ! maximum possible param_input%dist_cutoff
     dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(param_input%one_dim_dir, one_dim_vec)) &
            /2.0_dp
@@ -509,33 +551,40 @@ contains
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl, stdout, seedname)
+  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
+                         hB1, stdout, seedname)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
     !
     use w90_constants, only: dp
-!   use w90_io, only: io_error, io_stopwatch, seedname, io_date, io_file_unit
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
     use w90_param_types, only: parameter_input_type, fermi_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
-    type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(in) :: param_input
-    type(fermi_data_type), intent(in) :: fermi
-
+    ! arguments
     integer, intent(in) :: num_pl
-
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: irvec_max
+
+    real(kind=dp), intent(in) :: hr_one_dim(:, :, -irvec_max:)
+    real(kind=dp), allocatable, intent(inout) :: hB0(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hB1(:, :)
+
+    type(fermi_data_type), intent(in) :: fermi
+    type(parameter_input_type), intent(in) :: param_input
+    type(transport_type), intent(inout) :: tran
+
     character(len=50), intent(in)  :: seedname
 
+    ! local variables
     integer :: ierr, file_unit
     integer :: i, j, n1, im, jm
-    character(len=9)   :: cdate, ctime
-    !
+    character(len=9) :: cdate, ctime
+
     if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, seedname)
     !
     if (fermi%n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
@@ -601,7 +650,7 @@ contains
   end subroutine tran_get_ht
 
   !==================================================================!
-  subroutine tran_bulk(param_input, tran, stdout, seedname)
+  subroutine tran_bulk(param_input, tran, hB0, hB1, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -612,11 +661,18 @@ contains
 
     implicit none
 
-    type(transport_type), intent(in) :: tran
-    type(parameter_input_type), intent(in) :: param_input
+    ! arguments
     integer :: stdout
+
+    real(kind=dp), allocatable :: hB0(:, :)
+    real(kind=dp), allocatable :: hB1(:, :)
+
+    type(parameter_input_type), intent(in) :: param_input
+    type(transport_type), intent(in) :: tran
+
     character(len=50), intent(in)  :: seedname
 
+    ! local variables
     integer :: qc_unit, dos_unit
     integer :: ierr
     integer :: n_e, n, i
@@ -775,37 +831,51 @@ contains
   end subroutine tran_bulk
 
   !==================================================================!
-  subroutine tran_lcr(tran, param_input, stdout, seedname)
+  subroutine tran_lcr(tran, param_input, hC, hCR, hL0, hL1, hLC, hR0, hR1, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-!   use w90_io, only: io_error, io_stopwatch, seedname, io_date, stdout, io_file_unit
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
     use w90_param_types, only: parameter_input_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
-    type(transport_type), intent(in) :: tran
-    type(parameter_input_type), intent(in) :: param_input
-    character(len=50), intent(in)  :: seedname
-    integer :: stdout
+    ! arguments
+    integer, intent(in) :: stdout
 
+    real(kind=dp), allocatable, intent(inout) :: hC(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hCR(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hL0(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hL1(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hLC(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hR0(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
+
+    type(parameter_input_type), intent(in) :: param_input
+    type(transport_type), intent(in) :: tran
+
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     integer :: qc_unit, dos_unit
     integer :: ierr
     integer :: KL, KU, KC
     integer :: n_e, n, i, j, k, info
     integer, allocatable :: ipiv(:)
+
     real(kind=dp) ::  qc, dos
     real(kind=dp) ::  e_scan
-    real(kind=dp), allocatable, dimension(:, :) :: hCband
+    real(kind=dp), allocatable :: hCband(:, :)
+
     complex(kind=dp) :: e_scan_cmp
-    complex(kind=dp), allocatable, dimension(:, :) :: hLC_cmp, hCR_cmp, &
-                                                      totL, tottL, totR, tottR, &
-                                                      g_surf_L, g_surf_R, g_C, g_C_inv, &
-                                                      gR, gL, sLr, sRr, s1, s2, c1, c2
+    complex(kind=dp), allocatable :: hLC_cmp(:, :), hCR_cmp(:, :)
+    complex(kind=dp), allocatable :: totL(:, :), tottL(:, :), totR(:, :), tottR(:, :)
+    complex(kind=dp), allocatable :: g_surf_L(:, :), g_surf_R(:, :), g_C(:, :), g_C_inv(:, :)
+    complex(kind=dp), allocatable :: gR(:, :), gL(:, :), sLr(:, :), sRr(:, :), s1(:, :), s2(:, :), c1(:, :), c2(:, :)
+
     character(len=50) :: filename
-    character(len=9)  :: cdate, ctime
+    character(len=9) :: cdate, ctime
 
     if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, seedname)
 
@@ -1876,7 +1946,7 @@ contains
   subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
                                real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
                                wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
-                               coord, tran_sorted_idx, stdout, seedname)
+                               coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -1890,38 +1960,43 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp
-!   use w90_io, only: io_error, stdout, io_stopwatch
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, wannier_data_type, &
-      atom_data_type
+    use w90_param_types, only: parameter_input_type, wannier_data_type, atom_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
-    type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(inout) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    type(atom_data_type), intent(in) :: atoms
 
-    integer, intent(inout) :: one_dim_vec
+    ! arguments
+    integer, intent(in) :: irvec(:, :)
+    integer, intent(inout) :: irvec_max ! maybe modified
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_G
+    integer, intent(in) :: num_wann
+    integer, intent(inout), allocatable :: tran_sorted_idx(:)
+    integer, intent(inout) :: coord(3)
+    integer, intent(inout) :: nrpts
     integer, intent(inout) :: nrpts_one_dim
     integer, intent(inout) :: num_pl
-    integer, intent(inout) :: coord(3)
-    integer, intent(inout), allocatable :: tran_sorted_idx(:)
-
-    integer, intent(inout) :: nrpts
-    integer, intent(in) :: irvec(:, :)
-    real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    integer, intent(in) :: num_wann
+    integer, intent(inout) :: one_dim_vec
     integer, intent(in) :: stdout
-    integer, intent(in) :: mp_grid(3)
+
+    real(dp), intent(in) :: signatures(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hr_one_dim(:, :, :)
+    real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    integer, intent(in)                                :: num_G
-    real(dp), intent(in), dimension(:, :)                :: signatures
-    logical, intent(out)                               :: pl_warning
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
+
+    type(atom_data_type), intent(in) :: atoms
+    type(parameter_input_type), intent(inout) :: param_input
+    type(transport_type), intent(inout) :: tran
+    type(wannier_data_type), intent(in) :: wann_data
+
     character(len=50), intent(in)  :: seedname
 
+    logical, intent(out) :: pl_warning
+
+    ! local variables
     real(dp), dimension(2, num_wann)                    :: centres_non_sorted, &
                                                            centres_initial_sorted
     real(dp), dimension(2, tran%num_ll)                 :: PL1, PL2, PL3, PL4, PL
@@ -2257,9 +2332,10 @@ contains
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
       call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                          one_dim_vec, nrpts_one_dim, stdout, seedname)
+                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
       call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
-                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, stdout, seedname)
+                               wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
+                               irvec_max, stdout, seedname)
       write (stdout, *) ' '
       write (stdout, *) ' Restarting sorting...'
       write (stdout, *) ' '
@@ -2937,13 +3013,21 @@ contains
           ! and an array which need sorting
           !
           allocate (ref_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
-         if (ierr /= 0) call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          end if
           allocate (unsorted_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          end if
           allocate (sorted_idx(wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres', stdout, seedname)
+          end if
           allocate (dot_p(wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating dot_p in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call io_error('Error in allocating dot_p in check_and_sort_similar_centres', stdout, seedname)
+          end if
           !
           do k = 1, wf_verifier(1, j)
             ref_similar_centres(j, k) = wf_similar_centres(1, j, k)
@@ -3088,7 +3172,8 @@ contains
   end subroutine tran_write_xyz
 
   !==============================================================!
-  subroutine tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, stdout, seedname)
+  subroutine tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, &
+                                 hr_one_dim, irvec_max, stdout, seedname)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
     ! signatures) is used to determine its relavite parity         !
@@ -3097,24 +3182,27 @@ contains
     !==============================================================!
 
     use w90_constants, only: dp
-!   use w90_io, only: stdout, io_stopwatch
     use w90_io, only: io_stopwatch
     use w90_param_types, only: parameter_input_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
-    type(transport_type), intent(in) :: tran
-    type(parameter_input_type), intent(in) :: param_input
-
-    integer, intent(in) :: tran_sorted_idx(:)
-
+    ! arguments
+    integer, intent(in) :: irvec_max
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: tran_sorted_idx(:)
+
+    real(dp), intent(inout) :: signatures(:, :)
+    real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
+
+    type(parameter_input_type), intent(in) :: param_input
+    type(transport_type), intent(in) :: tran
+
     character(len=50), intent(in)  :: seedname
 
-    real(dp), intent(inout), dimension(:, :)               :: signatures
-
+    ! local variables
     integer                                             :: i, j, k, wf_idx, num_wann_cell_ll
     real(dp)                                            :: signature_dot_p
 
@@ -3183,7 +3271,8 @@ contains
   subroutine tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
                                     real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
-                                    num_pl, coord, tran_sorted_idx, stdout, seedname)
+                                    num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
+                                    hR1, hr_one_dim, irvec_max, stdout, seedname)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
@@ -3194,43 +3283,52 @@ contains
     !==============================================!
 
     use w90_constants, only: dp, eps5
-!   use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, k_point_type, &
-      fermi_data_type
+    use w90_param_types, only: parameter_input_type, k_point_type, fermi_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
-    type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(inout) :: param_input
-    type(k_point_type), intent(in) :: k_points
-    type(fermi_data_type), intent(in) :: fermi
 
-    integer, intent(inout) :: one_dim_vec
+    ! arguments
+    integer, intent(in) :: coord(3)
+    integer, intent(in) :: irvec(:, :)
+    integer, intent(inout) :: irvec_max
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann
+    integer, intent(inout) :: nrpts
     integer, intent(inout) :: nrpts_one_dim
     integer, intent(inout) :: num_pl
-    integer, intent(in) :: coord(3)
-    integer, intent(in) :: tran_sorted_idx(:)
+    integer, intent(inout) :: one_dim_vec
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in) :: tran_sorted_idx(:)
 
-    integer, intent(inout) :: nrpts
-    integer, intent(in) :: irvec(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hr_one_dim(:, :, :) ! de/realloc'd below
+    real(kind=dp), allocatable, intent(inout) :: hC(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hCR(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hL0(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hL1(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hLC(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hR0(:, :)
+    real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: mp_grid(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(fermi_data_type), intent(in) :: fermi
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(inout) :: param_input
+    type(transport_type), intent(inout) :: tran
 
-    logical, intent(in)                     :: pl_warning
+    character(len=50), intent(in)  :: seedname
 
-    integer                                :: i, j, k, num_wann_cell_ll, file_unit, ierr, band_size
+    logical, intent(in) :: pl_warning
 
-    real(dp), allocatable, dimension(:, :)    :: sub_block
-    real(dp)                               :: PL_length, dist, dist_vec(3)
-
-    character(len=9)                       :: cdate, ctime
+    ! local variables
+    integer                :: i, j, k, num_wann_cell_ll, file_unit, ierr, band_size
+    real(dp), allocatable  :: sub_block(:, :)
+    real(dp)               :: PL_length, dist, dist_vec(3)
+    character(len=9)       :: cdate, ctime
 
     if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
 
@@ -3463,13 +3561,11 @@ contains
       write (stdout, *) 'Applying param_input%dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
-                          irvec, nrpts, one_dim_vec, nrpts_one_dim, stdout, seedname)
-      call tran_cut_hr_one_dim( &
-        tran, &
-        real_lattice, param_input, &
-        mp_grid, num_wann, wannier_centres_translated, one_dim_vec, &
-        nrpts_one_dim, num_pl, stdout, seedname)
+      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
+      call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                               wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
+                               irvec_max, stdout, seedname)
     endif
 
     do i = tran%num_ll + 1, num_wann - tran%num_ll
@@ -3665,32 +3761,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    integer :: ierr
-
-    if (allocated(hR1)) then
-      deallocate (hR1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR1 in tran_dealloc', stdout, seedname)
-    end if
-    if (allocated(hR0)) then
-      deallocate (hR0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR0 in tran_dealloc', stdout, seedname)
-    end if
-    if (allocated(hL1)) then
-      deallocate (hL1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hL1 in tran_dealloc', stdout, seedname)
-    end if
-    if (allocated(hB1)) then
-      deallocate (hB1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB1 in tran_dealloc', stdout, seedname)
-    end if
-    if (allocated(hB0)) then
-      deallocate (hB0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB0 in tran_dealloc', stdout, seedname)
-    end if
-    if (allocated(hr_one_dim)) then
-      deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hr_one_dim in tran_dealloc', stdout, seedname)
-    end if
+!    integer :: ierr
 
     return
 
