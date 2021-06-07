@@ -74,9 +74,8 @@ contains
   subroutine berry_main(param_input, fermi, wann_data, num_wann, eigval, real_lattice, &
                         recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                         kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
-                        postw90_oper, ws_distance, ws_vec, &
-                        AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, physics, stdout, &
-                        seedname, comm, int_kpts, num_int_kpts_on_node, weight)
+                        postw90_oper, ws_distance, ws_vec, kdist, AA_R, BB_R, CC_R, HH_R, SH_R, &
+                        SHR_R, SR_R, SS_R, physics, stdout, seedname, comm)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -92,7 +91,7 @@ contains
     use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use w90_postw90_common, only: wigner_seitz_type
+    use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
     use w90_param_types, only: parameter_input_type, fermi_data_type, wannier_data_type, &
       disentangle_type, kmesh_info_type, k_point_type
     use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type, &
@@ -120,13 +119,11 @@ contains
     type(spin_hall_type), intent(in) :: spin_hall
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(kpoint_dist_type), intent(in) :: kdist
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
-    real(kind=dp), intent(in) :: int_kpts(:, :)
-    integer, intent(in) :: num_int_kpts_on_node(0:)
-    real(kind=dp), intent(in) :: weight(:)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
@@ -431,14 +428,14 @@ contains
 
       if (param_input%iprint > 0) write (stdout, '(/,1x,a,i10,a)') &
         'Reading interpolation grid from file kpoint.dat: ', &
-        sum(num_int_kpts_on_node), ' points'
+        sum(kdist%num_int_kpts_on_node), ' points'
 
       ! Loop over k-points on the irreducible wedge of the Brillouin
       ! zone, read from file 'kpoint.dat'
       !
-      do loop_xyz = 1, num_int_kpts_on_node(my_node_id)
-        kpt(:) = int_kpts(:, loop_xyz)
-        kweight = weight(loop_xyz)
+      do loop_xyz = 1, kdist%num_int_kpts_on_node(my_node_id)
+        kpt(:) = kdist%int_kpts(:, loop_xyz)
+        kweight = kdist%weight(loop_xyz)
         kweight_adpt = kweight/berry%curv_adpt_kmesh**3
         !               .
         ! ***BEGIN COPY OF CODE BLOCK 1***
@@ -538,7 +535,10 @@ contains
           ! than later calls due to the time spent on
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
-          if (param_input%iprint > 0) call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1, stdout)
+          if (param_input%iprint > 0) then
+            call berry_print_progress(loop_xyz, 1, kdist%num_int_kpts_on_node(my_node_id), &
+                                      1, stdout)
+          endif
           if (.not. spin_hall%freq_scan) then
             call berry_get_shc_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                      real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
@@ -835,7 +835,7 @@ contains
               ' Points triggering refinement: ', &
               adpt_counter_list(1), '(', &
               100*real(adpt_counter_list(1), dp) &
-              /sum(num_int_kpts_on_node), '%)'
+              /sum(kdist%num_int_kpts_on_node), '%)'
           else
             write (stdout, '(1x,a30,i5,a,f5.2,a)') &
               ' Points triggering refinement: ', &
@@ -863,7 +863,7 @@ contains
             if (berry%wanint_kpoint_file) then
               write (stdout, '(1x,a30,i8,a,f6.2,a)') &
                 ' Points triggering refinement: ', adpt_counter_list(1), '(', &
-                100*real(adpt_counter_list(1), dp)/sum(num_int_kpts_on_node), '%)'
+                100*real(adpt_counter_list(1), dp)/sum(kdist%num_int_kpts_on_node), '%)'
             else
               write (stdout, '(1x,a30,i8,a,f6.2,a)') &
                 ' Points triggering refinement: ', adpt_counter_list(1), '(', &
@@ -955,7 +955,7 @@ contains
                 ' Points triggering refinement: ', &
                 adpt_counter_list(if), '(', &
                 100*real(adpt_counter_list(if), dp) &
-                /sum(num_int_kpts_on_node), '%)'
+                /sum(kdist%num_int_kpts_on_node), '%)'
             else
               write (stdout, '(1x,a30,i5,a,f5.2,a)') &
                 ' Points triggering refinement: ', &

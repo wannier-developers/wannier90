@@ -23,8 +23,7 @@ program postw90
   use w90_kmesh
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_param_dist, pw90common_wanint_data_dist, int_kpts, num_int_kpts_on_node, &
-    weight, wigner_seitz_type
+    pw90common_wanint_param_dist, pw90common_wanint_data_dist, kpoint_dist_type, wigner_seitz_type
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -169,8 +168,10 @@ program postw90
   type(geninterp_type), save :: geninterp
   type(boltzwann_type), save :: boltz
   ! end pw90_parameters
+  ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
   type(wigner_seitz_type) :: ws_vec
+  type(kpoint_dist_type) :: kpt_dist
 
   ! local vars
   integer :: my_node_id, num_nodes, ierr
@@ -333,7 +334,8 @@ program postw90
   !
   ! Should this be done on root node only?
   !
-  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(stdout, seedname, comm)
+  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(kpt_dist, stdout, &
+                                                                       seedname, comm)
 
   ! Setup a number of common variables for all interpolation tasks
   !
@@ -356,7 +358,7 @@ program postw90
     call dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                   recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
                   pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, HH_R, SS_R, &
-                  ws_vec, stdout, seedname, comm)
+                  ws_vec, kpt_dist, stdout, seedname, comm)
   endif
 
 ! find_fermi_level commented for the moment in dos.F90
@@ -392,8 +394,8 @@ program postw90
     call spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
                          recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                          dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
-                         berry%wanint_kpoint_file, ws_distance, ws_vec, num_int_kpts_on_node, &
-                         int_kpts, weight, HH_R, SS_R, stdout, seedname, comm)
+                         berry%wanint_kpoint_file, ws_distance, ws_vec, kpt_dist, &
+                         HH_R, SS_R, stdout, seedname, comm)
   end if
 
   ! -------------------------------------------------------------------
@@ -418,8 +420,8 @@ program postw90
     call berry_main(param_input, fermi, wann_data, num_wann, eigval, real_lattice, &
                     recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
                     kmesh_info, k_points, berry, pw90_common, pw90_spin, spin_hall, pw90_ham, &
-                    postw90_oper, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
-                    SS_R, physics, stdout, seedname, comm, int_kpts, num_int_kpts_on_node, weight)
+                    postw90_oper, ws_distance, ws_vec, kpt_dist, AA_R, BB_R, CC_R, HH_R, SH_R, &
+                    SHR_R, SR_R, SS_R, physics, stdout, seedname, comm)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)

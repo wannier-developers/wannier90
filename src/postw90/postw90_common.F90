@@ -32,7 +32,7 @@ module w90_postw90_common
   public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist
   public :: pw90common_wanint_data_dist, pw90common_get_occ
   public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
-  public :: num_int_kpts_on_node, int_kpts, weight, wigner_seitz_type
+  public :: kpoint_dist_type, wigner_seitz_type
   public :: pw90common_kmesh_spacing
   public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, &
             pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -66,9 +66,11 @@ module w90_postw90_common
     integer                    :: rpt_origin
   end type wigner_seitz_type
 
-  integer                       :: max_int_kpts_on_node, num_int_kpts
-  integer, allocatable          :: num_int_kpts_on_node(:)
-  real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
+  type kpoint_dist_type ! kpoints from file
+    integer                       :: max_int_kpts_on_node, num_int_kpts
+    integer, allocatable          :: num_int_kpts_on_node(:)
+    real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
+  end type kpoint_dist_type
   !complex(kind=dp), allocatable :: v_matrix(:, :, :)
   !real(kind=dp), public :: cell_volume
 
@@ -168,7 +170,7 @@ contains
   end subroutine pw90common_wanint_setup
 
   !===========================================================!
-  subroutine pw90common_wanint_get_kpoint_file(stdout, seedname, world)
+  subroutine pw90common_wanint_get_kpoint_file(kpoints, stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! read kpoints from kpoint.dat and distribute
@@ -180,6 +182,7 @@ contains
     use w90_comms, only: mpirank, mpisize, w90commtype, comms_send, comms_recv, comms_bcast
 
     ! passed variables
+    type(kpoint_dist_type), intent(inout) :: kpoints
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
@@ -197,47 +200,49 @@ contains
     k_unit = io_file_unit()
     if (on_root) then
       open (unit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
-      read (k_unit, *) num_int_kpts
+      read (k_unit, *) kpoints%num_int_kpts
     end if
-    call comms_bcast(num_int_kpts, 1, stdout, seedname, world)
+    call comms_bcast(kpoints%num_int_kpts, 1, stdout, seedname, world)
 
-    allocate (num_int_kpts_on_node(0:num_nodes - 1))
-    num_int_kpts_on_node(:) = num_int_kpts/num_nodes
-    max_int_kpts_on_node = num_int_kpts - (num_nodes - 1)*(num_int_kpts/num_nodes)
-    num_int_kpts_on_node(0) = max_int_kpts_on_node
+    allocate (kpoints%num_int_kpts_on_node(0:num_nodes - 1))
+    kpoints%num_int_kpts_on_node(:) = kpoints%num_int_kpts/num_nodes
+    kpoints%max_int_kpts_on_node = kpoints%num_int_kpts &
+                                   - (num_nodes - 1)*(kpoints%num_int_kpts/num_nodes)
+    kpoints%num_int_kpts_on_node(0) = kpoints%max_int_kpts_on_node
 !    if(my_node_id < num_int_kpts- num_int_kpts_on_node*num_nodes)  num_int_kpts_on_node= num_int_kpts_on_node+1
 
-    allocate (int_kpts(3, max_int_kpts_on_node), stat=ierr)
+    allocate (kpoints%int_kpts(3, kpoints%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating max_int_kpts_on_node in param_read_um', stdout, seedname)
-    int_kpts = 0.0_dp
-    allocate (weight(max_int_kpts_on_node), stat=ierr)
+    kpoints%int_kpts = 0.0_dp
+    allocate (kpoints%weight(kpoints%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating weight in param_read_um', stdout, seedname)
-    weight = 0.0_dp
+    kpoints%weight = 0.0_dp
 
     sum = 0.0_dp
     if (on_root) then
       do loop_nodes = 1, num_nodes - 1
-        do loop_kpt = 1, num_int_kpts_on_node(loop_nodes)
-          read (k_unit, *) (int_kpts(i, loop_kpt), i=1, 3), weight(loop_kpt)
-          sum = sum + weight(loop_kpt)
+        do loop_kpt = 1, kpoints%num_int_kpts_on_node(loop_nodes)
+          read (k_unit, *) (kpoints%int_kpts(i, loop_kpt), i=1, 3), kpoints%weight(loop_kpt)
+          sum = sum + kpoints%weight(loop_kpt)
         end do
 
-        call comms_send(int_kpts(1, 1), 3*num_int_kpts_on_node(loop_nodes), loop_nodes, stdout, &
-                        seedname, world)
-        call comms_send(weight(1), num_int_kpts_on_node(loop_nodes), loop_nodes, stdout, seedname, &
-                        world)
+        call comms_send(kpoints%int_kpts(1, 1), 3*kpoints%num_int_kpts_on_node(loop_nodes), &
+                        loop_nodes, stdout, seedname, world)
+        call comms_send(kpoints%weight(1), kpoints%num_int_kpts_on_node(loop_nodes), loop_nodes, &
+                        stdout, seedname, world)
       end do
-      do loop_kpt = 1, num_int_kpts_on_node(0)
-        read (k_unit, *) (int_kpts(i, loop_kpt), i=1, 3), weight(loop_kpt)
-        sum = sum + weight(loop_kpt)
+      do loop_kpt = 1, kpoints%num_int_kpts_on_node(0)
+        read (k_unit, *) (kpoints%int_kpts(i, loop_kpt), i=1, 3), kpoints%weight(loop_kpt)
+        sum = sum + kpoints%weight(loop_kpt)
       end do
 !       print*,'rsum',sum
     end if
 
     if (.not. on_root) then
-      call comms_recv(int_kpts(1, 1), 3*num_int_kpts_on_node(my_node_id), 0, stdout, &
-                      seedname, world)
-      call comms_recv(weight(1), num_int_kpts_on_node(my_node_id), 0, stdout, seedname, world)
+      call comms_recv(kpoints%int_kpts(1, 1), 3*kpoints%num_int_kpts_on_node(my_node_id), 0, &
+                      stdout, seedname, world)
+      call comms_recv(kpoints%weight(1), kpoints%num_int_kpts_on_node(my_node_id), 0, &
+                      stdout, seedname, world)
     end if
 
     return

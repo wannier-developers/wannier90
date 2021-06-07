@@ -38,7 +38,7 @@ contains
   subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
                       recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
                       pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, &
-                      HH_R, SS_R, ws_vec, stdout, seedname, comm)
+                      HH_R, SS_R, ws_vec, kdist, stdout, seedname, comm)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -48,8 +48,7 @@ contains
     !                                                       !
     !=======================================================!
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
-      pw90common_fourier_R_to_k, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
       postw90_spin_type, postw90_oper_type
     use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
@@ -81,6 +80,7 @@ contains
     type(postw90_spin_type), intent(in)       :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(kpoint_dist_type), intent(in) :: kdist
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
@@ -194,8 +194,8 @@ contains
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
       ! read from file 'kpoint.dat'
       !
-      do loop_tot = 1, num_int_kpts_on_node(my_node_id)
-        kpt(:) = int_kpts(:, loop_tot)
+      do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
+        kpt(:) = kdist%int_kpts(:, loop_tot)
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
@@ -222,7 +222,7 @@ contains
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
         end if
-        dos_all = dos_all + dos_k*weight(loop_tot)
+        dos_all = dos_all + dos_k*kdist%weight(loop_tot)
       end do
 
     else

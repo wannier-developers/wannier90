@@ -32,8 +32,8 @@ contains
   subroutine spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
                              recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
                              dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
-                             wanint_kpoint_file, ws_distance, ws_vec, num_int_kpts_on_node, &
-                             int_kpts, weight, HH_R, SS_R, stdout, seedname, comm)
+                             wanint_kpoint_file, ws_distance, ws_vec, kdist, HH_R, SS_R, &
+                             stdout, seedname, comm)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -48,7 +48,7 @@ contains
       disentangle_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
-    use w90_postw90_common, only: wigner_seitz_type
+    use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
 
     implicit none
 
@@ -69,8 +69,7 @@ contains
     logical, intent(in) :: wanint_kpoint_file
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(inout) :: ws_vec
-    integer, intent(in) :: num_int_kpts_on_node(0:)
-    real(kind=dp), intent(in) :: int_kpts(:, :), weight(:)
+    type(kpoint_dist_type), intent(in) :: kdist
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
     integer, intent(in) :: stdout
@@ -114,9 +113,9 @@ contains
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
       ! read from file 'kpoint.dat'
       !
-      do loop_tot = 1, num_int_kpts_on_node(my_node_id)
-        kpt(:) = int_kpts(:, loop_tot)
-        kweight = weight(loop_tot)
+      do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
+        kpt(:) = kdist%int_kpts(:, loop_tot)
+        kweight = kdist%weight(loop_tot)
         call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, param_input, wann_data, &
                                real_lattice, recip_lattice, mp_grid, ws_distance, HH_R, SS_R, &
                                ws_vec, stdout, seedname)
