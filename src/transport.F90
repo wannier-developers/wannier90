@@ -90,8 +90,7 @@ contains
     !! Main transport subroutine
     !==================================================================!
 
-!   use w90_io, only: stdout, io_stopwatch
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_error, io_stopwatch
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
