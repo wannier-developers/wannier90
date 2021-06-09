@@ -15,6 +15,7 @@
 module wannier_methods
 
   use w90_constants, only: dp
+  use w90_types
   use w90_param_types
   use w90_param_methods
   use wannier_param_types
@@ -23,23 +24,13 @@ module wannier_methods
 
   private
 
-  character(len=20), save :: energy_unit
-  !! Units for energy
-  !! Constrained centres
-  real(kind=dp), allocatable, save :: ccentres_frac(:, :)
-  character(len=20), save :: one_dim_axis
-  !Projections
-  logical, save :: lhasproj
-  ! projections selection
-  integer, save :: num_select_projections
-  integer, allocatable, save :: select_projections(:)
+  type w90_extra_write_type
+    character(len=20) :: one_dim_axis
+    !! Constrained centres
+    real(kind=dp), allocatable :: ccentres_frac(:, :)
+  end type w90_extra_write_type
 
-  ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
-  !logical :: hr_plot
-
-  ! was in driver, only used by wannier_lib
-  type(projection_type), save, public :: proj
-
+  public :: w90_extra_write_type
   public :: param_read
   public :: param_write
   public :: param_w90_dealloc
@@ -55,7 +46,8 @@ contains
                         kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
                         tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, select_proj, &
                         real_lattice, recip_lattice, spec_points, eig_found, library, &
-                        library_param_read_first_pass, bohr, stdout, seedname)
+                        library_param_read_first_pass, bohr, stdout, seedname, write_data, &
+                        proj, lhasproj)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -104,17 +96,15 @@ contains
     logical, intent(in) :: library_param_read_first_pass
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
+    type(w90_extra_write_type), intent(inout) :: write_data
+    ! was in driver, only used by wannier_lib
+    type(projection_type), intent(inout) :: proj
+    !Projections
+    logical, intent(out) :: lhasproj
 
     !local variables
-    !integer                   :: smr_index
-    ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
-    ! Only internal, always use the local variables defined by each module
-    ! that take this value as default
-    !logical                         :: adpt_smr
-    !real(kind=dp)                   :: adpt_smr_fac
-    !real(kind=dp)                   :: adpt_smr_max
-    !real(kind=dp)                   :: smr_fixed_en_width
-
+    character(len=20) :: energy_unit
+    !! Units for energy
     logical                   :: found_fermi_energy
     real(kind=dp)             :: kmesh_spacing
     integer                   :: kmesh(3)
@@ -136,7 +126,8 @@ contains
                                 library_param_read_first_pass, stdout, seedname)
       w90_calcs%disentanglement = (num_bands > num_wann)
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
-      call param_read_wannierise(param_wannierise, num_wann, stdout, seedname)
+      call param_read_wannierise(param_wannierise, num_wann, write_data%ccentres_frac, &
+                                 stdout, seedname)
       call param_read_devel(param_input%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(param_input%gamma_only, num_kpts, library, stdout, seedname)
@@ -150,7 +141,8 @@ contains
       call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
-    call param_read_one_dim(w90_calcs, param_plot, param_input, one_dim_axis, tran%read_ht, stdout, seedname)
+    call param_read_one_dim(w90_calcs, param_plot, param_input, write_data%one_dim_axis, &
+                            tran%read_ht, stdout, seedname)
     call param_read_ws_data(param_input, stdout, seedname) !ws_search etc
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_eigvals(.false., .false., .false., &
@@ -170,14 +162,14 @@ contains
       call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr, stdout, seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
-      call param_read_projections(w90_calcs%use_bloch_phases, lhasproj, &
+      call param_read_projections(proj, w90_calcs%use_bloch_phases, lhasproj, &
                                   param_wannierise%guiding_centres, param_wannierise%proj_site, &
                                   kmesh_data, select_proj, num_proj, param_input, atoms, &
                                   recip_lattice, num_wann, library, bohr, stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%slwf_constrain) then
-        call param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
-                                            num_wann, library, stdout, seedname)
+        call param_read_constrained_centres(write_data%ccentres_frac, param_wannierise, &
+                                            real_lattice, num_wann, library, stdout, seedname)
       endif
     endif
     call param_clean_infile(stdout, seedname)
@@ -361,7 +353,7 @@ contains
 
   end subroutine param_read_dist_cutoff
 
-  subroutine param_read_wannierise(param_wannierise, num_wann, stdout, seedname)
+  subroutine param_read_wannierise(param_wannierise, num_wann, ccentres_frac, stdout, seedname)
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
@@ -369,6 +361,7 @@ contains
     implicit none
     type(param_wannierise_type), intent(out) :: param_wannierise
     integer, intent(in) :: num_wann
+    real(kind=dp), allocatable, intent(inout) :: ccentres_frac(:, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -949,11 +942,13 @@ contains
 
   end subroutine param_read_explicit_kpts
 
-  subroutine param_read_projections(use_bloch_phases, lhasproj, guiding_centres, &
+  subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, kmesh_data, select_proj, num_proj, &
-                                    param_input, atoms, recip_lattice, num_wann, library, bohr, stdout, seedname)
+                                    param_input, atoms, recip_lattice, num_wann, library, &
+                                    bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
+    type(projection_type), intent(inout) :: proj
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
     logical, intent(out) :: lhasproj
     real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
@@ -970,6 +965,9 @@ contains
     integer, intent(in) :: stdout
     integer :: i, j, i_temp, loop, ierr
     logical :: found
+    ! projections selection
+    integer :: num_select_projections
+    integer, allocatable :: select_projections(:)
 
     ! Projections
     kmesh_data%auto_projections = .false.
@@ -1112,7 +1110,7 @@ contains
                          lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
                          k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, &
                          num_bands, num_wann, mp_grid, num_proj, select_proj, real_lattice, &
-                         recip_lattice, spec_points, stdout)
+                         recip_lattice, spec_points, stdout, write_data, proj)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1150,6 +1148,8 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(w90_extra_write_type), intent(in) :: write_data
+    type(projection_type), intent(in) :: proj
 
     integer :: i, nkp, loop, nat, nsp
     real(kind=dp) :: cell_volume
@@ -1219,7 +1219,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do i = 1, param_wannierise%slwf_num
         write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-  &                    '|', i, ccentres_frac(i, :), '|', wann_data%centres(:, i), '|'
+  &                    '|', i, write_data%ccentres_frac(i, :), '|', wann_data%centres(:, i), '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
@@ -1447,11 +1447,15 @@ contains
           write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
             param_plot%bands_plot_dim, '|'
           if (param_plot%bands_plot_dim .eq. 1) &
-            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', trim(one_dim_axis), '|'
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+            trim(write_data%one_dim_axis), '|'
           if (param_plot%bands_plot_dim .eq. 2) &
-            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', trim(one_dim_axis), '|'
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', param_input%hr_cutoff, '|'
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', param_input%dist_cutoff, '|'
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
+            trim(write_data%one_dim_axis), '|'
+          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
+            param_input%hr_cutoff, '|'
+          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
+            param_input%dist_cutoff, '|'
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian cut-off distance mode        :', &
             trim(param_input%dist_cutoff_mode), '|'
         endif
@@ -1498,7 +1502,8 @@ contains
       else
         !
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :', 'F', '|'
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', trim(one_dim_axis), '|'
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+          trim(write_data%one_dim_axis), '|'
         !
       end if
 
@@ -1525,7 +1530,7 @@ contains
 
   subroutine param_w90_dealloc(param_input, param_plot, param_wannierise, &
                                wann_data, kmesh_data, k_points, dis_data, &
-                               atoms, eigval, spec_points, stdout, seedname)
+                               atoms, eigval, spec_points, stdout, seedname, write_data, proj)
     use w90_io, only: io_error
     implicit none
     !data from parameters module
@@ -1545,6 +1550,8 @@ contains
     character(len=50), intent(in)  :: seedname
     !type(dos_plot_type), intent(inout) :: dos_data
     !type(berry_type), intent(inout) :: berry
+    type(w90_extra_write_type), intent(inout) :: write_data
+    type(projection_type), intent(inout) :: proj
 
     integer :: ierr
 
@@ -1558,8 +1565,8 @@ contains
       deallocate (param_plot%bands_plot_project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating bands_plot_project in param_dealloc', stdout, seedname)
     endif
-    if (allocated(ccentres_frac)) then
-      deallocate (ccentres_frac, stat=ierr)
+    if (allocated(write_data%ccentres_frac)) then
+      deallocate (write_data%ccentres_frac, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating ccentres_frac in param_w90_dealloc', stdout, seedname)
     endif
     if (allocated(param_wannierise%proj_site)) then
@@ -1923,7 +1930,7 @@ contains
                         lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
                         kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
                         tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, real_lattice, &
-                        recip_lattice, eig_found, stdout, seedname, comm)
+                        recip_lattice, eig_found, lhasproj, stdout, seedname, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1978,6 +1985,7 @@ contains
     !type(geninterp_type), intent(inout) :: geninterp
     !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    logical, intent(inout) :: lhasproj
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
@@ -2006,7 +2014,7 @@ contains
     if (on_root) param_input%iprint = iprintroot
     !______________________________________
 
-    call comms_bcast(energy_unit, 1, stdout, seedname, comm)
+    !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
     call comms_bcast(param_input%length_unit, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%wvfn_formatted, 1, stdout, seedname, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
@@ -2113,7 +2121,7 @@ contains
     call comms_bcast(param_input%dist_cutoff_mode, len(param_input%dist_cutoff_mode), stdout, &
                      seedname, comm)
     call comms_bcast(param_input%dist_cutoff_hc, 1, stdout, seedname, comm)
-    call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
+    !call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
     call comms_bcast(param_input%use_ws_distance, 1, stdout, seedname, comm)
     call comms_bcast(param_input%ws_distance_tol, 1, stdout, seedname, comm)
     call comms_bcast(param_input%ws_search_size(1), 3, stdout, seedname, comm)
@@ -2286,12 +2294,12 @@ contains
     call comms_bcast(param_wannierise%selective_loc, 1, stdout, seedname, comm)
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
       if (.not. on_root) then
-        allocate (ccentres_frac(num_wann, 3), stat=ierr)
+        !allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
         allocate (param_wannierise%ccentres_cart(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
       endif
-      call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
+      !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
       call comms_bcast(param_wannierise%ccentres_cart(1, 1), 3*num_wann, stdout, seedname, comm)
     end if
 

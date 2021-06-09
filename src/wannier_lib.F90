@@ -164,11 +164,12 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_comms, only: w90commtype
   use w90_constants, only: w90_physical_constants, dp
   use w90_io
+  use w90_types
   use w90_kmesh
   use w90lib_parameters
   use w90_param_methods, only: param_write_header, param_lib_set_atoms
   use w90_sitesym
-  use wannier_methods, only: param_read, param_write, proj, param_w90_dealloc
+  use wannier_methods, only: param_read, param_write, param_w90_dealloc, w90_extra_write_type
   use wannlib_param_data
 
   implicit none
@@ -201,6 +202,12 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   integer, dimension(num_bands_tot), intent(out) :: exclude_bands_loc
   integer, dimension(num_bands_tot), optional, intent(out) :: proj_s_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
+
+  type(w90_extra_write_type) :: write_data
+  ! was in driver, only used by wannier_lib
+  type(projection_type) :: proj
+  !Projections
+  logical :: lhasproj
 
   real(kind=dp) time0, time1
   character(len=9) :: stat, pos, cdate, ctime
@@ -253,7 +260,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                   k_points, num_kpts, dis_data, fermi_surface_data, &
                   fermi, tran, atoms, num_bands, num_wann, eigval, &
                   mp_grid, num_proj, select_proj, real_lattice, &
-                  recip_lattice, spec_points, eig_found, .true., .true., physics%bohr, stdout, seedname)
+                  recip_lattice, spec_points, eig_found, .true., .true., &
+                  physics%bohr, stdout, seedname, write_data, proj, lhasproj)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
@@ -263,7 +271,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                    wann_data, param_hamil, kmesh_data, k_points, &
                    num_kpts, dis_data, fermi_surface_data, fermi, tran, &
                    atoms, num_bands, num_wann, mp_grid, num_proj, &
-                   select_proj, real_lattice, recip_lattice, spec_points, stdout)
+                   select_proj, real_lattice, recip_lattice, spec_points, stdout, write_data, proj)
 
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -319,7 +327,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   call kmesh_dealloc(kmesh_info, stdout, seedname)
 
   call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
-                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
+                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname, &
+                         write_data, proj)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
   write (stdout, '(/a/)') ' Finished setting up k-point neighbours.'
@@ -358,10 +367,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants, only: w90_physical_constants, dp
+  use w90_types
   use w90lib_parameters
   use wannlib_param_data
   use wannier_methods, only: param_read, param_write, param_write_chkpt, &
-    param_w90_dealloc
+    param_w90_dealloc, w90_extra_write_type
   use w90_io
   use w90_hamiltonian
   use w90_kmesh
@@ -420,6 +430,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
+
+  type(w90_extra_write_type) :: write_data
+  ! was in driver, only used by wannier_lib
+  type(projection_type) :: proj
+  !Projections
+  logical :: lhasproj
 
 ! Needed to split an array on different nodes (not done here)
   integer, allocatable :: counts(:)
@@ -481,14 +497,15 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   k_points, num_kpts, dis_data, fermi_surface_data, &
                   fermi, tran, atoms, num_bands, num_wann, eigval, &
                   mp_grid, num_proj, select_proj, real_lattice, &
-                  recip_lattice, spec_points, eig_found, .true., .false., physics%bohr, stdout, seedname)
+                  recip_lattice, spec_points, eig_found, .true., .false., &
+                  physics%bohr, stdout, seedname, write_data, proj, lhasproj)
 
   call param_write(driver, w90_calcs, param_input, param_plot, &
                    param_wannierise, lsitesymmetry, symmetrize_eps, &
                    wann_data, param_hamil, kmesh_data, k_points, &
                    num_kpts, dis_data, fermi_surface_data, fermi, tran, &
                    atoms, num_bands, num_wann, mp_grid, num_proj, &
-                   select_proj, real_lattice, recip_lattice, spec_points, stdout)
+                   select_proj, real_lattice, recip_lattice, spec_points, stdout, write_data, proj)
 
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -632,7 +649,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                        a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
-                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
+                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname, &
+                         write_data, proj)
 
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 

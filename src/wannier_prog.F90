@@ -53,6 +53,7 @@ program wannier
   !! The main Wannier90 program
 
   use w90_constants, only: w90_physical_constants, dp
+  use w90_types
   use w90_param_types
   use w90_io
   use w90_hamiltonian
@@ -68,7 +69,7 @@ program wannier
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
   use wannier_param_types
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
-    param_dist, param_memory_estimate, param_write_chkpt
+    param_dist, param_memory_estimate, param_write_chkpt, w90_extra_write_type
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -197,6 +198,12 @@ program wannier
   logical :: on_root = .false.
   integer :: num_nodes, my_node_id, ierr
 
+  type(w90_extra_write_type) :: write_data
+  ! was in driver, only used by wannier_lib
+  type(projection_type) :: proj
+  !Projections
+  logical :: lhasproj
+
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
   type(w90commtype) :: w90comm
@@ -233,7 +240,7 @@ program wannier
                     k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, &
                     num_bands, num_wann, eigval, mp_grid, num_proj, select_proj, real_lattice, &
                     recip_lattice, spec_points, eig_found, .false., .false., physics%bohr, stdout, &
-                    seedname)
+                    seedname, write_data, proj, lhasproj)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -266,7 +273,7 @@ program wannier
                      symmetrize_eps, wann_data, param_hamil, kmesh_data, k_points, num_kpts, &
                      dis_data, fermi_surface_data, fermi, tran, atoms, num_bands, num_wann, &
                      mp_grid, num_proj, select_proj, real_lattice, recip_lattice, spec_points, &
-                     stdout)
+                     stdout, write_data, proj)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -297,7 +304,7 @@ program wannier
                   lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, kmesh_info, &
                   k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, num_bands, &
                   num_wann, eigval, mp_grid, num_proj, real_lattice, recip_lattice, eig_found, &
-                  stdout, seedname, w90comm)
+                  lhasproj, stdout, seedname, w90comm)
   if (param_input%gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -353,7 +360,8 @@ program wannier
                                   stdout, seedname)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
     call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
-                           k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
+                           k_points, dis_data, atoms, eigval, spec_points, stdout, seedname, &
+                           write_data, proj)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -466,9 +474,9 @@ program wannier
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, a_matrix, &
                        m_matrix_orig, m_matrix, u_matrix, stdout, seedname, w90comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                         wann_data, kmesh_data, k_points, dis_data, &
-                         atoms, eigval, spec_points, stdout, seedname)
+  call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
+                         k_points, dis_data, atoms, eigval, spec_points, stdout, seedname, &
+                         write_data, proj)
   if (lsitesymmetry) call sitesym_dealloc(sym, stdout, seedname) !YN:
 
 4004 continue
