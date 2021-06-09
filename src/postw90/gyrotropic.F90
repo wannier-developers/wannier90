@@ -23,7 +23,6 @@ module w90_gyrotropic
 
   use w90_constants, only: dp
   use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist
-! use w90_get_oper_data !JJ temporary get_oper data store
 
   implicit none
 
@@ -58,11 +57,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(num_wann, param_input, fermi, wann_data, eigval, real_lattice, &
-                             recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                             dis_data, kmesh_info, k_points, gyrotropic, berry, pw90_common, &
-                             postw90_oper, pw90_ham, ws_distance, ws_vec, physics, stdout, &
-                             seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
+  subroutine gyrotropic_main(berry, dis_data, fermi, gyrotropic, kmesh_info, k_points, param_input, &
+                             pw90_common, pw90_ham, postw90_oper, physics, wann_data, ws_vec, &
+                             ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
+                             eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
+                             num_wann, seedname, stdout, comm)
+
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -89,33 +89,37 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: num_bands, num_kpts, num_wann
-    type(parameter_input_type), intent(in) :: param_input
-    type(fermi_data_type), intent(in) :: fermi
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(berry_type), intent(in) :: berry
     type(disentangle_type), intent(in) :: dis_data
+    type(fermi_data_type), intent(in) :: fermi
+    type(gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(gyrotropic_type), intent(in) :: gyrotropic
-    type(berry_type), intent(in) :: berry
+    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(inout) :: ws_vec
     type(pw90_physical_constants), intent(in) :: physics
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90commtype), intent(in) :: comm
-    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: stdout
+
+    character(len=50), intent(in) :: seedname
 
     ! local variables
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)

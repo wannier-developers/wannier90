@@ -40,11 +40,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_slice(num_wann, fermi, param_input, wann_data, eigval, real_lattice, recip_lattice, &
-                     mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, kmesh_info, &
-                     k_points, berry, spin_hall, pw90_ham, pw90_spin, pw90_common, postw90_oper, &
-                     ws_distance, kslice, ws_vec, &
-                     bohr, stdout, seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R, SR_R, SHR_R, SH_R)
+  subroutine k_slice(berry, dis_data, fermi, kmesh_info, k_points, kslice, param_input, &
+                     pw90_common, pw90_ham, postw90_oper, pw90_spin, spin_hall, wann_data, &
+                     ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
+                     v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, mp_grid, &
+                     num_bands, num_kpts, num_wann, seedname, stdout, comm)
+
     !! Main routine
 
     use pw90_parameters, only: kslice_type, berry_type, postw90_spin_type, postw90_ham_type, &
@@ -62,39 +63,45 @@ contains
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
 
+    implicit none
+
     ! passed variables
-    integer, intent(in) :: num_bands, num_kpts, num_wann
-    type(fermi_data_type), intent(in) :: fermi
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+    type(berry_type), intent(in) :: berry
     type(disentangle_type), intent(in) :: dis_data
+    type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(berry_type), intent(in) :: berry
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(spin_hall_type), intent(in) :: spin_hall
-    type(postw90_spin_type), intent(in) :: pw90_spin
-    type(postw90_ham_type), intent(in) :: pw90_ham
-    type(ws_distance_type), intent(inout) :: ws_distance
     type(kslice_type), intent(in) :: kslice
-    type(wigner_seitz_type), intent(inout) :: ws_vec
-    integer, intent(in) :: stdout
-    real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in) :: seedname
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
-    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: stdout
+
+    character(len=50), intent(in) :: seedname
 
     ! local variables
     integer           :: iloc, itot, i1, i2, n, n1, n2, n3, i, nkpts, my_nkpts

@@ -29,11 +29,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(fermi, num_wann, param_input, wann_data, eigval, real_lattice, &
-                             recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                             dis_data, k_points, pw90_common, postw90_oper, pw90_spin, &
-                             wanint_kpoint_file, ws_distance, ws_vec, kdist, HH_R, SS_R, &
-                             stdout, seedname, comm)
+  subroutine spin_get_moment(dis_data, fermi, kdist, k_points, param_input, pw90_common, &
+                             postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
+                             num_wann, num_bands, num_kpts, wanint_kpoint_file, seedname, stdout, &
+                             comm)
+
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -53,29 +54,35 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: num_wann, num_bands, num_kpts
-    type(parameter_input_type), intent(in) :: param_input
-    type(fermi_data_type), intent(in) :: fermi
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     type(disentangle_type), intent(in) :: dis_data
+    type(fermi_data_type), intent(in) :: fermi
+    type(kpoint_dist_type), intent(in) :: kdist
     type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
-    logical, intent(in) :: wanint_kpoint_file
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
-    type(kpoint_dist_type), intent(in) :: kdist
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: comm
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
 
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann, num_bands, num_kpts
+    integer, intent(in) :: stdout
+
+    logical, intent(in) :: wanint_kpoint_file
+
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv

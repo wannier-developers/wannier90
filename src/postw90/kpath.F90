@@ -40,12 +40,14 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(num_wann, param_input, wann_data, spec_points, fermi, eigval, real_lattice, &
-                    recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, &
-                    kmesh_info, k_points, berry, spin_hall, kpath, pw90_common, pw90_spin, &
-                    pw90_ham, postw90_oper, ws_distance, ws_vec, &
-                    AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, bohr, stdout, seedname, comm)
+  subroutine k_path(berry, dis_data, fermi, kmesh_info, kpath, k_points, param_input, &
+                    postw90_oper, pw90_common, pw90_ham, pw90_spin, spec_points, spin_hall, &
+                    wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
+                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, mp_grid, &
+                    num_wann, num_bands, num_kpts, seedname, stdout, comm)
+
     !! Main routine
+
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
@@ -64,40 +66,46 @@ contains
     use w90_ws_distance, only: ws_distance_type
     use w90_utility, only: utility_diagonalize
 
+    implicit none
+
     ! arguments
-    integer, intent(in) :: num_wann, num_bands, num_kpts
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    type(special_kpoints_type), intent(in) :: spec_points
-    type(fermi_data_type), intent(in) :: fermi
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
     type(berry_type), intent(in) :: berry
-    type(spin_hall_type), intent(in) :: spin_hall
+    type(disentangle_type), intent(in) :: dis_data
+    type(fermi_data_type), intent(in) :: fermi
+    type(kmesh_info_type), intent(in) :: kmesh_info
     type(kpath_type), intent(in) :: kpath
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(special_kpoints_type), intent(in) :: spec_points
+    type(spin_hall_type), intent(in) :: spin_hall
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
-    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
-    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
-    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+
     real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann, num_bands, num_kpts
     integer, intent(in) :: stdout
+
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: comm
 
     ! local variables
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &

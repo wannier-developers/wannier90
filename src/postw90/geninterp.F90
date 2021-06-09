@@ -59,10 +59,11 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(real_lattice, recip_lattice, num_bands, num_kpts, num_wann, &
-                            ws_vec, eigval, v_matrix, u_matrix, k_points, dis_data, wann_data, &
-                            pw90_common, mp_grid, ws_distance, stdout, seedname, geninterp, &
-                            pw90_ham, param_input, comm, HH_R)
+  subroutine geninterp_main(dis_data, geninterp, k_points, param_input, pw90_common, pw90_ham, &
+                            wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
+                            real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                            seedname, stdout, comm)
+
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -85,23 +86,26 @@ contains
 
     ! arguments
     type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(wannier_data_type), intent(in) :: wann_data
-    integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(w90commtype), intent(in) :: comm
     type(geninterp_type), intent(in) :: geninterp
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
-
-    integer, intent(in)    :: num_bands, num_kpts, num_wann, stdout
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in)    :: real_lattice(3, 3)
-    real(kind=dp), intent(in)    :: recip_lattice(3, 3)
-    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann, stdout
+
     character(len=50), intent(in)  :: seedname
 
     ! local variables

@@ -64,10 +64,12 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(num_wann, param_input, wann_data, eigval, real_lattice, recip_lattice, &
-                            mp_grid, num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
-                            boltz, dos_data, pw90_common, pw90_spin, pw90_ham, postw90_oper, &
-                            ws_distance, ws_vec, HH_R, SS_R, physics, stdout, seedname, comm)
+  subroutine boltzwann_main(boltz, dis_data, dos_data, k_points, param_input, pw90_common, &
+                            pw90_ham, postw90_oper, pw90_spin, physics, wann_data, ws_distance, &
+                            ws_vec, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
+                            recip_lattice, mp_grid, num_wann, num_bands, num_kpts, seedname, &
+                            stdout, comm)
+
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -95,29 +97,33 @@ contains
     implicit none
 
     ! arguments
-    integer, intent(in) :: num_wann, num_bands, num_kpts
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type), intent(in) :: k_points
-    type(dos_plot_type), intent(in) :: dos_data
     type(boltzwann_type), intent(in) :: boltz
+    type(disentangle_type), intent(in) :: dis_data
+    type(dos_plot_type), intent(in) :: dos_data
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_spin_type), intent(in) :: pw90_spin
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_physical_constants), intent(in) :: physics
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    type(pw90_physical_constants), intent(in) :: physics
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann, num_bands, num_kpts
     integer, intent(in) :: stdout
+
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: comm
 
     ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints

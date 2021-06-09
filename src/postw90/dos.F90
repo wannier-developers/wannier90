@@ -35,10 +35,11 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(num_bands, num_kpts, num_wann, param_input, wann_data, eigval, real_lattice, &
-                      recip_lattice, mp_grid, u_matrix, v_matrix, dis_data, k_points, dos_data, &
-                      pw90_common, berry, postw90_oper, pw90_ham, pw90_spin, ws_distance, &
-                      HH_R, SS_R, ws_vec, kdist, stdout, seedname, comm)
+  subroutine dos_main(berry, dis_data, dos_data, kdist, k_points, param_input, pw90_common, &
+                      pw90_ham, postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+                      SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
+                      num_bands, num_kpts, num_wann, seedname, stdout, comm)
+
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -62,28 +63,32 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: num_bands, num_kpts, num_wann
+    type(berry_type), intent(in) :: berry
+    type(disentangle_type), intent(in) :: dis_data
+    type(dos_plot_type), intent(in) :: dos_data
+    type(kpoint_dist_type), intent(in) :: kdist
+    type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
-    type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(dos_plot_type), intent(in)          :: dos_data
-    type(berry_type), intent(in)             :: berry
-    type(postw90_ham_type), intent(in)       :: pw90_ham
-    type(postw90_spin_type), intent(in)       :: pw90_spin
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(inout) :: ws_vec
-    type(kpoint_dist_type), intent(in) :: kdist
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: stdout
+
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: comm
 
     ! 'dos_k' contains contrib. from one k-point,
     ! 'dos_all' from all nodes/k-points (first summed on one node and
