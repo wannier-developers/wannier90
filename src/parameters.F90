@@ -209,6 +209,7 @@ module w90_parameters
   integer, public, save :: sc_phase_conv
   real(kind=dp), public, save :: sc_eta
   real(kind=dp), public, save :: sc_w_thr
+  logical, public, save :: sc_use_eta_corr
   logical, public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical, public, save :: transl_inv
@@ -1292,6 +1293,9 @@ contains
     sc_phase_conv = 1
     call param_get_keyword('sc_phase_conv', found, i_value=sc_phase_conv)
     if ((sc_phase_conv .ne. 1) .and. ((sc_phase_conv .ne. 2))) call io_error('Error: sc_phase_conv must be either 1 or 2')
+
+    sc_use_eta_corr = .true.
+    call param_get_keyword('sc_use_eta_corr', found, l_value=sc_use_eta_corr)
 
     scissors_shift = 0.0_dp
     call param_get_keyword('scissors_shift', found, &
@@ -3270,6 +3274,8 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for shift current      :', sc_w_thr, '|'
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(sc_phase_conv)), '|'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for shift current   :', &
+          sc_use_eta_corr, '|'
       end if
       if (index(berry_task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1xf8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
