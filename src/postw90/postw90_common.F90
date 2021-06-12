@@ -313,6 +313,7 @@ contains
     call comms_bcast(sc_eta, 1)
     call comms_bcast(sc_w_thr, 1)
     call comms_bcast(sc_phase_conv, 1)
+    call comms_bcast(sc_use_eta_corr, 1)
 ! ----------------------------------------------
 !
 ! New input variables in development
