@@ -23,8 +23,9 @@ module w90_berry
   !! *  YWVS07 = PRB 75, 195121 (2007)  (Kubo frequency-dependent conductivity)
   !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
-  !! *  IATS18 = arXiv:1804.04030 (2018) (nonlinear shift current)
+  !! *  IATS18 = PRB 97, 245143 (2018)  (nonlinear shift current)
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
+  !! *  IAdJS19 = arXiv:1910.06172 (2019) (quasi-degenerate k.p)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -37,7 +38,7 @@ module w90_berry
   private
 
   public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
-            berry_get_shc_klist!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
+            berry_get_shc_klist, berry_get_kdotp!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -100,7 +101,8 @@ contains
       kubo_adpt_smr, kubo_adpt_smr_fac, &
       kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
       scissors_shift, num_valence_bands, &
-      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
+      kdotp_kpoint, kdotp_num_bands, kdotp_bands
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -120,6 +122,8 @@ contains
     ! shift current
     real(kind=dp), allocatable :: sc_k_list(:, :, :)
     real(kind=dp), allocatable :: sc_list(:, :, :)
+    ! kdotp
+    complex(kind=dp), allocatable :: kdotp(:, :, :, :, :)
     ! Complex optical conductivity, dividided into Hermitean and
     ! anti-Hermitean parts
     !
@@ -153,7 +157,8 @@ contains
                          loop_xyz, loop_adpt, adpt_counter_list(nfermi), ifreq, &
                          file_unit
     character(len=120) :: file_name
-    logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
+    logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc, &
+                         eval_kdotp
     logical           :: ladpt_kmesh
     logical           :: ladpt(nfermi)
 
@@ -173,11 +178,13 @@ contains
     eval_kubo = .false.
     eval_sc = .false.
     eval_shc = .false.
+    eval_kdotp = .false.
     if (index(berry_task, 'ahc') > 0) eval_ahc = .true.
     if (index(berry_task, 'morb') > 0) eval_morb = .true.
     if (index(berry_task, 'kubo') > 0) eval_kubo = .true.
     if (index(berry_task, 'sc') > 0) eval_sc = .true.
     if (index(berry_task, 'shc') > 0) eval_shc = .true.
+    if (index(berry_task, 'kdotp') > 0) eval_kdotp = .true.
 
     ! Wannier matrix elements, allocations and initializations
     !
@@ -263,6 +270,12 @@ contains
       endif
     endif
 
+    if (eval_kdotp) then
+      call get_HH_R
+      allocate (kdotp(kdotp_num_bands, kdotp_num_bands, 3, 3, 3))
+      kdotp = cmplx_0
+    endif
+
     if (on_root) then
 
       write (stdout, '(/,/,1x,a)') &
@@ -299,6 +312,9 @@ contains
         endif
       endif
 
+      if (eval_kdotp) write (stdout, '(/,3x,a)') &
+        '* k.p expansion coefficients'
+
       if (transl_inv) then
         if (eval_morb) &
           call io_error('transl_inv=T disabled for morb')
@@ -314,6 +330,10 @@ contains
       endif
 
     end if !on_root
+
+    if (eval_kdotp) then
+      call berry_get_kdotp(kdotp)
+    end if
 
     ! Set up adaptive refinement mesh
     !
@@ -1151,6 +1171,48 @@ contains
         close (file_unit)
 
       endif
+
+      if (eval_kdotp) then
+        ! -----------------------------!
+        ! k.p expansion coefficients
+        ! -----------------------------!
+
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to k.p:                         '
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+        ! zeroth order in k
+        file_name = trim(seedname)//'-kdotp_0.dat'
+        file_name = trim(file_name)
+        file_unit = io_file_unit()
+        write (stdout, '(/,3x,a)') '* '//file_name
+        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        write (file_unit, '(2E18.8E3)') kdotp(:, :, 1, 1, 1)
+        close (file_unit)
+
+        ! first order in k
+        file_name = trim(seedname)//'-kdotp_1.dat'
+        write (stdout, '(/,3x,a)') '* '//file_name
+        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        do i = 1, 3
+          write (file_unit, '(2E18.8E3)') kdotp(:, :, 2, i, 1)
+        end do
+        close (file_unit)
+
+        ! second order in k
+        file_name = trim(seedname)//'-kdotp_2.dat'
+        write (stdout, '(/,3x,a)') '* '//file_name
+        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        do i = 1, 3
+          do j = 1, 3
+            write (file_unit, '(2E18.8E3)') kdotp(:, :, 3, i, j)
+          end do
+        end do
+        close (file_unit)
+
+      end if
 
     end if !on_root
 
@@ -2109,5 +2171,104 @@ contains
     end if ! on_root
 
   end subroutine berry_print_progress
+
+  subroutine berry_get_kdotp(kdotp)
+    !====================================================================!
+    !  Extracts k.p expansion coefficients using quasi-degenerate
+    !  (Lowdin) perturbation theory, adapted to the Wannier formalism,
+    !  see Appendix in IAdJS19 for details
+    !====================================================================!
+
+    ! Arguments
+    !
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_parameters, only: num_wann, kdotp_kpoint, kdotp_num_bands, kdotp_bands
+    use w90_wan_ham, only: wham_get_D_h, wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, &
+      wham_get_D_h_P_value
+    use w90_utility, only: utility_rotate
+    ! Arguments
+    !
+    complex(kind=dp), intent(out), dimension(:, :, :, :, :)     :: kdotp
+
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: HH_da(:, :, :), HH_da_bar(:, :, :)
+    complex(kind=dp), allocatable :: HH_dadb(:, :, :, :), HH_dadb_bar(:, :, :, :)
+    complex(kind=dp), allocatable :: HH(:, :), HH_bar(:, :)
+    real(kind=dp), allocatable    :: eig(:)
+    real(kind=dp), allocatable    :: eig_da(:, :)
+    complex(kind=dp), allocatable :: D_h(:, :, :)
+
+    real(kind=dp)                 :: DeltaE_n, DeltaE_m
+    integer                       :: i, if, a, b, c, bc, n, m, r, ifreq, istart, iend
+    logical                       :: break_loop
+    allocate (UU(num_wann, num_wann))
+    allocate (HH_da(num_wann, num_wann, 3))
+    allocate (HH_da_bar(num_wann, num_wann, 3))
+    allocate (HH_dadb(num_wann, num_wann, 3, 3))
+    allocate (HH_dadb_bar(num_wann, num_wann, 3, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (HH_bar(num_wann, num_wann))
+    allocate (eig(num_wann))
+    allocate (eig_da(num_wann, 3))
+    allocate (D_h(num_wann, num_wann, 3))
+
+    ! Gather W-gauge matrix objects !
+
+    ! get Hamiltonian and its first and second derivatives
+    call wham_get_eig_UU_HH_AA_sc(kdotp_kpoint, eig, UU, HH, HH_da, HH_dadb)
+    ! get eigenvalues and their k-derivatives
+    call wham_get_eig_deleig(kdotp_kpoint, eig, eig_da, HH, HH_da, UU)
+    ! get D_h (Eq. (24) WYSV06)
+    call wham_get_D_h_P_value(HH_da, UU, eig, D_h)
+
+    ! rotate quantities from W to H gauge
+    HH_bar(:, :) = utility_rotate(HH(:, :), UU, num_wann)
+    do a = 1, 3
+      ! first derivative of Hamiltonian dH_da
+      HH_da_bar(:, :, a) = utility_rotate(HH_da(:, :, a), UU, num_wann)
+      do b = 1, 3
+        ! second derivative of Hamiltonian d^{2}H_dadb
+        HH_dadb_bar(:, :, a, b) = utility_rotate(HH_dadb(:, :, a, b), UU, num_wann)
+      enddo
+    enddo
+
+    ! loop on initial and final bands in k.p set (subset A in IAdJS19)
+    do n = 1, kdotp_num_bands
+      do m = 1, kdotp_num_bands
+
+        ! zeroth order term
+        if (n == m) kdotp(n, m, 1, 1, 1) = eig(kdotp_bands(n))
+        ! first order term
+        do a = 1, 3
+          kdotp(n, m, 2, a, 1) = HH_da_bar(kdotp_bands(n), kdotp_bands(m), a)
+        end do
+        ! second order term
+        do a = 1, 3
+          do b = 1, 3
+            ! add contribution independent of other states
+            kdotp(n, m, 3, a, b) = 0.5*(HH_dadb_bar(kdotp_bands(n), kdotp_bands(m), a, b))
+
+            ! add contribution dependent on other states (subset B in IAdJS19)
+            do r = 1, num_wann
+
+              ! cycle for bands in the k.p set (subset A)
+              break_loop = .false.
+              do i = 1, kdotp_num_bands
+                if (r == kdotp_bands(i)) break_loop = .true.
+              end do
+              if (break_loop) cycle
+
+              kdotp(n, m, 3, a, b) = kdotp(n, m, 3, a, b) + &
+                                     0.5*HH_da_bar(kdotp_bands(n), r, a)*HH_da_bar(r, kdotp_bands(m), b) &
+                                     *((eig(kdotp_bands(n)) - eig(r))**(-1) + (eig(kdotp_bands(m)) - eig(r))**(-1))
+
+            end do
+          end do
+        end do
+
+      enddo ! bands
+    enddo ! bands
+
+  end subroutine berry_get_kdotp
 
 end module w90_berry

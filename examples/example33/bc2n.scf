@@ -1,0 +1,40 @@
+ &control
+        verbosity       =       'high'
+        calculation     =       'scf'
+        wf_collect      =       .true.
+        restart_mode    =       'from_scratch'
+        prefix          =       'bc2n'
+        pseudo_dir      =       '../../pseudo/'
+        outdir          =       './'
+/
+&system
+   ibrav=0,
+   celldm(1) = 1.8897261245650618
+   nat=  4, 
+   ntyp= 3,
+   ecutwfc=70, 
+   degauss=0.05,
+   occupations="smearing", smearing="mp",
+ /
+&electrons
+    mixing_beta = 0.1
+    conv_thr =  1.0d-7
+    electron_maxstep = 1000
+/
+&IONS
+/
+ATOMIC_SPECIES
+B    74.000  B.pbe-n-kjpaw_psl.0.1.UPF
+C    16.000  C.pbe-n-kjpaw_psl.0.1.UPF
+N    18.000  N.pbe-n-kjpaw_psl.0.1.UPF
+CELL_PARAMETERS
+   2.466         0.000000000   0.000000000
+   0.000000000   20.0          0.000000000
+   0.000000000   0.000000000   4.323      
+ATOMIC_POSITIONS alat   
+B        1.2330000   0.0000000   1.1830592 
+C        1.2330000   0.0000000   2.6963492 
+C        0.0000000   0.0000000   3.3885933 
+N        0.0000000   0.0000000   4.7677273 
+K_POINTS automatic
+10 1 10   0 0 0

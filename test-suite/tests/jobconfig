@@ -388,6 +388,12 @@ program = WANNIER90_DISENTANGLEMENT_SAWFS
 inputs_args = ('H3S.win', '')
 output = H3S.wout
 
+# Test of k.p coefficients for GaAs
+[testpostw90_gaas_kdotp/]
+program = POSTW90_KDOTP_OK
+inputs_args = ('gaas.win', '')
+output = gaas-kdotp_0.dat
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
