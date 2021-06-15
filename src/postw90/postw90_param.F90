@@ -204,40 +204,35 @@ module pw90_param_methods
 
   private
 
-  ! [gp-begin, Apr 13, 2012]
-  ! Global interpolation k mesh variables
-  ! These don't need to be public, since their values are copied in the variables of the
-  ! local interpolation meshes. JRY: added save attribute
-  real(kind=dp), save             :: kmesh_spacing
-  integer, save                   :: kmesh(3)
-  logical, save                   :: global_kmesh_set
-  ! [gp-end]
+  ! These could be local to param_read if they weren't also used by param_write
+  type pw90_extra_write_type
+    ! from gyrotropic section
+    real(kind=dp)                               :: gyrotropic_freq_min
+    real(kind=dp)                               :: gyrotropic_freq_max
+    real(kind=dp)                               :: gyrotropic_freq_step
+    real(kind=dp)                               :: kubo_freq_min
+    real(kind=dp)                               :: kubo_freq_max
+    real(kind=dp)                               :: kubo_freq_step
+    ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
+    ! Only internal, always use the local variables defined by each module
+    ! that take this value as default
+    logical                         :: adpt_smr
+    real(kind=dp)                   :: adpt_smr_fac
+    real(kind=dp)                   :: adpt_smr_max
+    real(kind=dp)                   :: smr_fixed_en_width
+    integer :: smr_index
+    ! [gp-begin, Apr 13, 2012]
+    ! Global interpolation k mesh variables
+    ! These don't need to be public, since their values are copied in the variables of the
+    ! local interpolation meshes. JRY: added save attribute
+    real(kind=dp)             :: kmesh_spacing
+    integer                   :: kmesh(3)
+    logical                   :: global_kmesh_set
+    ! [gp-end]
+    character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
+  end type pw90_extra_write_type
 
-  ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
-  ! Only internal, always use the local variables defined by each module
-  ! that take this value as default
-  logical                         :: adpt_smr
-  real(kind=dp)                   :: adpt_smr_fac
-  real(kind=dp)                   :: adpt_smr_max
-  real(kind=dp)                   :: smr_fixed_en_width
-
-  integer :: smr_index
-
-  ! from gyrotropic section
-  real(kind=dp)                               :: gyrotropic_freq_min
-  real(kind=dp)                               :: gyrotropic_freq_max
-  real(kind=dp)                               :: gyrotropic_freq_step
-  real(kind=dp)                   :: gyrotropic_box_tmp(3)
-
-  real(kind=dp)                               :: kubo_freq_min
-  real(kind=dp)                               :: kubo_freq_max
-  real(kind=dp)                               :: kubo_freq_step
-
-  character(len=4), save :: boltz_2d_dir
-
-  ! private data
-  character(len=maxlen)              :: ctmp
-
+  public :: pw90_extra_write_type
   public :: param_postw90_read
   public :: param_postw90_write
 
@@ -249,7 +244,8 @@ contains
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
-                                gyrotropic, geninterp, boltz, eig_found, bohr, stdout, seedname)
+                                gyrotropic, geninterp, boltz, eig_found, write_data, &
+                                bohr, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -308,6 +304,7 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    type(pw90_extra_write_type), intent(inout) :: write_data
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -335,38 +332,48 @@ contains
     call param_read_kpath(library, spec_points, ok, stdout, seedname)
     call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
-    call param_read_smearing(smr_index, adpt_smr_fac, adpt_smr_max, &
-                             smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_smearing(write_data%smr_index, write_data%adpt_smr_fac, &
+                             write_data%adpt_smr_max, write_data%smr_fixed_en_width, &
+                             write_data%adpt_smr, stdout, seedname)
     call param_read_scissors_shift(pw90_common, stdout, seedname)
     call param_read_pw90spin(pw90_common, pw90_spin, param_input, stdout, seedname)
-    call param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, stdout, seedname)
-    call param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
-                          smr_fixed_en_width, adpt_smr, stdout, seedname)
+    call param_read_gyrotropic(gyrotropic, num_wann, write_data%smr_fixed_en_width, &
+                               write_data%smr_index, stdout, seedname)
+    call param_read_berry(pw90_calcs, berry, write_data%adpt_smr_fac, write_data%adpt_smr_max, &
+                          write_data%smr_fixed_en_width, write_data%smr_index, write_data%adpt_smr, &
+                          stdout, seedname)
     call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry%task, stdout, seedname)
     call param_read_pw90ham(pw90_ham, stdout, seedname)
     call param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
-    call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
-                        adpt_smr_max, smr_fixed_en_width, adpt_smr, dos_plot, stdout, seedname)
+    call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, &
+                        write_data%adpt_smr_fac, write_data%adpt_smr_max, &
+                        write_data%smr_fixed_en_width, write_data%adpt_smr, write_data%smr_index, &
+                        dos_plot, stdout, seedname)
     call param_read_ws_data(param_input, stdout, seedname)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
-                            pw90_calcs%geninterp, dos_plot, disentanglement, &
-                            eig_found, eigval, library, .false., num_bands, num_kpts, stdout, seedname)
+                            pw90_calcs%geninterp, dos_plot, disentanglement, eig_found, eigval, &
+                            library, .false., num_bands, num_kpts, stdout, seedname)
     dis_data%win_min = -1.0_dp
     dis_data%win_max = 0.0_dp
     if (eig_found) dis_data%win_min = minval(eigval)
     if (eig_found) dis_data%win_max = maxval(eigval)
     call param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
     call param_read_geninterp(geninterp, stdout, seedname)
-    call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
-                              smr_fixed_en_width, adpt_smr, pw90_calcs%boltzwann, stdout, seedname)
-    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, stdout, seedname)
+    call param_read_boltzwann(boltz, write_data%smr_index, eigval, write_data%adpt_smr_fac, &
+                              write_data%adpt_smr_max, write_data%smr_fixed_en_width, &
+                              write_data%adpt_smr, pw90_calcs%boltzwann, write_data%boltz_2d_dir, &
+                              stdout, seedname)
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, write_data, &
+                                 stdout, seedname)
     call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
     call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, &
                             recip_lattice, bohr, stdout, seedname)
-    call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
-    call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
-                                pw90_spin, gyrotropic, boltz, recip_lattice, stdout, seedname)
+    call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
+                                 write_data%kmesh, recip_lattice, stdout, seedname)
+    call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, pw90_spin, gyrotropic, &
+                                boltz, recip_lattice, write_data%global_kmesh_set, &
+                                write_data%kmesh, write_data%kmesh_spacing, stdout, seedname)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname) !pw90_write
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
@@ -513,7 +520,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     logical :: found
-
+    character(len=maxlen)              :: ctmp
     ! [gp-begin, Apr 20, 2012]
 
     ! By default: Gaussian
@@ -588,18 +595,22 @@ contains
 
   end subroutine param_read_pw90spin
 
-  subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, stdout, seedname)
+  subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width, smr_index, &
+                                   stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(gyrotropic_type), intent(out) :: gyrotropic
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: smr_fixed_en_width
-    real(kind=dp) :: smr_max_arg
+    integer, intent(in) :: smr_index
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp) :: smr_max_arg
+    real(kind=dp)                   :: gyrotropic_box_tmp(3)
     integer :: i, ierr, loop
     logical :: found
+    character(len=maxlen)              :: ctmp
 
     ! Stepan
     gyrotropic%task = 'all'
@@ -665,17 +676,19 @@ contains
   end subroutine param_read_gyrotropic
 
   subroutine param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
-                              smr_fixed_en_width, adpt_smr, stdout, seedname)
+                              smr_fixed_en_width, smr_index, adpt_smr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(berry_type), intent(out) :: berry
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    integer, intent(in) :: smr_index
     logical, intent(in) :: adpt_smr
     character(len=50), intent(in)  :: seedname
 
     logical :: found
+    character(len=maxlen)              :: ctmp
 
 !-------------------------------------------------------
 !    alpha=0
@@ -871,7 +884,8 @@ contains
   end subroutine param_read_pw90_kpath
 
   subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
-                            adpt_smr_max, smr_fixed_en_width, adpt_smr, dos_plot, stdout, seedname)
+                            adpt_smr_max, smr_fixed_en_width, adpt_smr, smr_index, dos_plot, &
+                            stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -881,11 +895,13 @@ contains
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
+    integer, intent(in) :: smr_index
     logical, intent(out) :: dos_plot
     character(len=50), intent(in)  :: seedname
 
     integer :: i, ierr
     logical :: found
+    character(len=maxlen)              :: ctmp
 
     dos_data%task = 'dos_plot'
     if (pw90_calcs%dos) then
@@ -996,7 +1012,8 @@ contains
   end subroutine param_read_geninterp
 
   subroutine param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
-                                  smr_fixed_en_width, adpt_smr, do_boltzwann, stdout, seedname)
+                                  smr_fixed_en_width, adpt_smr, do_boltzwann, boltz_2d_dir, &
+                                  stdout, seedname)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
@@ -1010,9 +1027,11 @@ contains
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
     logical, intent(in) :: do_boltzwann
+    character(len=4), intent(out) :: boltz_2d_dir
     character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
+    character(len=maxlen)              :: ctmp
 
     ! [gp-begin, Apr 12, 2012]
     !%%%%%%%%%%%%%%%%%%%%
@@ -1165,7 +1184,8 @@ contains
     ! [gp-end, Apr 12, 2012]
   end subroutine param_read_boltzwann
 
-  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, stdout, seedname)
+  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, &
+                                     write_data, stdout, seedname)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
     implicit none
@@ -1176,6 +1196,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    type(pw90_extra_write_type), intent(inout) :: write_data
     character(len=50), intent(in)  :: seedname
 
     integer :: i, ierr
@@ -1199,56 +1220,68 @@ contains
     call param_get_keyword(stdout, seedname, 'dos_energy_min', found, &
                            r_value=dos_data%energy_min)
 
-    kubo_freq_min = 0.0_dp
-    gyrotropic_freq_min = kubo_freq_min
-    call param_get_keyword(stdout, seedname, 'kubo_freq_min', found, r_value=kubo_freq_min)
+    write_data%kubo_freq_min = 0.0_dp
+    write_data%gyrotropic_freq_min = write_data%kubo_freq_min
+    call param_get_keyword(stdout, seedname, 'kubo_freq_min', found, &
+                           r_value=write_data%kubo_freq_min)
     !
     if (dis_data%frozen_states) then
-      kubo_freq_max = dis_data%froz_max - fermi%energy_list(1) + 0.6667_dp
+      write_data%kubo_freq_max = dis_data%froz_max - fermi%energy_list(1) + 0.6667_dp
     elseif (allocated(eigval)) then
-      kubo_freq_max = maxval(eigval) - minval(eigval) + 0.6667_dp
+      write_data%kubo_freq_max = maxval(eigval) - minval(eigval) + 0.6667_dp
     else
-      kubo_freq_max = dis_data%win_max - dis_data%win_min + 0.6667_dp
+      write_data%kubo_freq_max = dis_data%win_max - dis_data%win_min + 0.6667_dp
     end if
-    gyrotropic_freq_max = kubo_freq_max
-    call param_get_keyword(stdout, seedname, 'kubo_freq_max', found, r_value=kubo_freq_max)
+    write_data%gyrotropic_freq_max = write_data%kubo_freq_max
+    call param_get_keyword(stdout, seedname, 'kubo_freq_max', found, &
+                           r_value=write_data%kubo_freq_max)
 
     !
-    kubo_freq_step = 0.01_dp
-    call param_get_keyword(stdout, seedname, 'kubo_freq_step', found, r_value=kubo_freq_step)
-    if (found .and. kubo_freq_step < 0.0_dp) call io_error( &
+    write_data%kubo_freq_step = 0.01_dp
+    call param_get_keyword(stdout, seedname, 'kubo_freq_step', found, &
+                           r_value=write_data%kubo_freq_step)
+    if (found .and. write_data%kubo_freq_step < 0.0_dp) call io_error( &
       'Error: kubo_freq_step must be positive', stdout, seedname)
     !
-    berry%kubo_nfreq = nint((kubo_freq_max - kubo_freq_min)/kubo_freq_step) + 1
+    berry%kubo_nfreq = nint((write_data%kubo_freq_max - write_data%kubo_freq_min) &
+                            /write_data%kubo_freq_step) + 1
     if (berry%kubo_nfreq <= 1) berry%kubo_nfreq = 2
-    kubo_freq_step = (kubo_freq_max - kubo_freq_min)/(berry%kubo_nfreq - 1)
+    write_data%kubo_freq_step = (write_data%kubo_freq_max - write_data%kubo_freq_min) &
+                                /(berry%kubo_nfreq - 1)
     !
     if (allocated(berry%kubo_freq_list)) deallocate (berry%kubo_freq_list)
     allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
     if (ierr /= 0) &
       call io_error('Error allocating kubo_freq_list in param_read', stdout, seedname)
     do i = 1, berry%kubo_nfreq
-      berry%kubo_freq_list(i) = kubo_freq_min &
-                                + (i - 1)*(kubo_freq_max - kubo_freq_min)/(berry%kubo_nfreq - 1)
+      berry%kubo_freq_list(i) = write_data%kubo_freq_min &
+                                + (i - 1)*(write_data%kubo_freq_max - write_data%kubo_freq_min) &
+                                /(berry%kubo_nfreq - 1)
     enddo
     !
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
 
-    gyrotropic_freq_step = 0.01_dp
-    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found, r_value=gyrotropic_freq_min)
-    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found, r_value=gyrotropic_freq_max)
-    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found, r_value=gyrotropic_freq_step)
-    gyrotropic%nfreq = nint((gyrotropic_freq_max - gyrotropic_freq_min)/gyrotropic_freq_step) + 1
+    write_data%gyrotropic_freq_step = 0.01_dp
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found, &
+                           r_value=write_data%gyrotropic_freq_min)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found, &
+                           r_value=write_data%gyrotropic_freq_max)
+    call param_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found, &
+                           r_value=write_data%gyrotropic_freq_step)
+    gyrotropic%nfreq = nint((write_data%gyrotropic_freq_max - write_data%gyrotropic_freq_min) &
+                            /write_data%gyrotropic_freq_step) + 1
     if (gyrotropic%nfreq <= 1) gyrotropic%nfreq = 2
-    gyrotropic_freq_step = (gyrotropic_freq_max - gyrotropic_freq_min)/(gyrotropic%nfreq - 1)
+    write_data%gyrotropic_freq_step = (write_data%gyrotropic_freq_max &
+                                       - write_data%gyrotropic_freq_min)/(gyrotropic%nfreq - 1)
     if (allocated(gyrotropic%freq_list)) deallocate (gyrotropic%freq_list)
     allocate (gyrotropic%freq_list(gyrotropic%nfreq), stat=ierr)
     if (ierr /= 0) &
       call io_error('Error allocating gyrotropic_freq_list in param_read', stdout, seedname)
     do i = 1, gyrotropic%nfreq
-      gyrotropic%freq_list(i) = gyrotropic_freq_min &
-                                + (i - 1)*(gyrotropic_freq_max - gyrotropic_freq_min)/(gyrotropic%nfreq - 1) &
+      gyrotropic%freq_list(i) = write_data%gyrotropic_freq_min &
+                                + (i - 1)*(write_data%gyrotropic_freq_max &
+                                           - write_data%gyrotropic_freq_min)/(gyrotropic%nfreq - 1) &
                                 + cmplx_i*gyrotropic%smr_fixed_en_width
     enddo
 
@@ -1265,8 +1298,9 @@ contains
     call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_read_energy_range
 
-  subroutine param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
-                                    pw90_spin, gyrotropic, boltz, recip_lattice, stdout, seedname)
+  subroutine param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, pw90_spin, &
+                                    gyrotropic, boltz, recip_lattice, global_kmesh_set, kmesh, &
+                                    kmesh_spacing, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
@@ -1277,37 +1311,41 @@ contains
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    logical, intent(in) :: global_kmesh_set
+    real(kind=dp), intent(in) :: kmesh_spacing
+    integer, intent(in) :: kmesh(3)
     character(len=50), intent(in)  :: seedname
 
     ! To be called after having read the global flag
-    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='boltz', &
-                          should_be_defined=pw90_calcs%boltzwann, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+                          moduleprefix='boltz', should_be_defined=pw90_calcs%boltzwann, &
                           module_kmesh=boltz%kmesh, &
                           module_kmesh_spacing=boltz%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='berry', &
-                          should_be_defined=pw90_calcs%berry, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+                          moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
                           module_kmesh=berry%kmesh, &
                           module_kmesh_spacing=berry%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='gyrotropic', &
-                          should_be_defined=pw90_calcs%gyrotropic, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+                          moduleprefix='gyrotropic', should_be_defined=pw90_calcs%gyrotropic, &
                           module_kmesh=gyrotropic%kmesh, &
                           module_kmesh_spacing=gyrotropic%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='spin', &
-                          should_be_defined=pw90_common%spin_moment, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+                          moduleprefix='spin', should_be_defined=pw90_common%spin_moment, &
                           module_kmesh=pw90_spin%spin_kmesh, &
                           module_kmesh_spacing=pw90_spin%spin_kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix='dos', &
-                          should_be_defined=pw90_calcs%dos, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+                          moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
                           module_kmesh=dos_data%kmesh, &
                           module_kmesh_spacing=dos_data%kmesh_spacing)
   end subroutine param_read_local_kmesh
 
-  subroutine get_module_kmesh(stdout, seedname, recip_lattice, moduleprefix, should_be_defined, &
-                              module_kmesh, module_kmesh_spacing)
+  subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, &
+                              kmesh_spacing, moduleprefix, should_be_defined, module_kmesh, &
+                              module_kmesh_spacing)
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
     !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
@@ -1331,6 +1369,9 @@ contains
     real(kind=dp), intent(out)         :: module_kmesh_spacing
     !! the real number on which the min mesh spacing is saved. -1 if it the
     !!user specifies in input the mesh and not the mesh_spacing
+    logical, intent(in) :: global_kmesh_set
+    real(kind=dp), intent(in) :: kmesh_spacing
+    integer, intent(in) :: kmesh(3)
     character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
@@ -1384,7 +1425,7 @@ contains
                                  real_lattice, recip_lattice, spec_points, &
                                  pw90_calcs, postw90_oper, pw90_common, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
-                                 gyrotropic, geninterp, boltz, stdout)
+                                 gyrotropic, geninterp, boltz, write_data, stdout)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
@@ -1413,6 +1454,7 @@ contains
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(geninterp_type), intent(in) :: geninterp
     type(boltzwann_type), intent(in) :: boltz
+    type(pw90_extra_write_type), intent(in) :: write_data
 
     integer :: i, loop, nat, nsp
     real(kind=dp) :: cell_volume
@@ -1522,24 +1564,29 @@ contains
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(param_input%length_unit), '|'
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     write (stdout, '(1x,a78)') '*------------------------ Global Smearing Parameters ------------------------*'
-    if (adpt_smr) then
+    if (write_data%adpt_smr) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', adpt_smr_fac, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width (eV)       :', adpt_smr_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
+        write_data%adpt_smr_fac, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width (eV)       :', &
+        write_data%adpt_smr_max, '|'
 
     else
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', smr_fixed_en_width, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
+        write_data%smr_fixed_en_width, '|'
     endif
-    write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(smr_index)), '|'
-    if (global_kmesh_set) then
+    write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
+      trim(param_get_smearing_type(write_data%smr_index)), '|'
+    if (write_data%global_kmesh_set) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       T', '|'
-      if (kmesh_spacing > 0.0_dp) then
+      if (write_data%kmesh_spacing > 0.0_dp) then
         write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-          kmesh(1), 'x', kmesh(2), 'x', kmesh(3), ' Spacing = ', kmesh_spacing, '|'
+          write_data%kmesh(1), 'x', write_data%kmesh(2), 'x', write_data%kmesh(3), ' Spacing = ', &
+          write_data%kmesh_spacing, '|'
       else
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
-          , kmesh(1), 'x', kmesh(2), 'x', kmesh(3), '|'
+          , write_data%kmesh(1), 'x', write_data%kmesh(2), 'x', write_data%kmesh(3), '|'
       endif
     else
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       F', '|'
@@ -1558,11 +1605,11 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', dos_data%energy_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', dos_data%energy_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', dos_data%energy_step, '|'
-      if (dos_data%adpt_smr .eqv. adpt_smr .and. &
-          dos_data%adpt_smr_fac == adpt_smr_fac .and. &
-          dos_data%adpt_smr_max == adpt_smr_max .and. &
-          dos_data%smr_fixed_en_width == smr_fixed_en_width .and. &
-          smr_index == dos_data%smr_index) then
+      if (dos_data%adpt_smr .eqv. write_data%adpt_smr .and. &
+          dos_data%adpt_smr_fac == write_data%adpt_smr_fac .and. &
+          dos_data%adpt_smr_max == write_data%adpt_smr_max .and. &
+          dos_data%smr_fixed_en_width == write_data%smr_fixed_en_width .and. &
+          write_data%smr_index == dos_data%smr_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         if (dos_data%adpt_smr) then
@@ -1579,9 +1626,9 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(dos_data%smr_index)), '|'
       endif
-      if (kmesh(1) == dos_data%kmesh(1) .and. &
-          kmesh(2) == dos_data%kmesh(2) .and. &
-          kmesh(3) == dos_data%kmesh(3)) then
+      if (write_data%kmesh(1) == dos_data%kmesh(1) .and. &
+          write_data%kmesh(2) == dos_data%kmesh(2) .and. &
+          write_data%kmesh(3) == dos_data%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (dos_data%kmesh_spacing > 0.0_dp) then
@@ -1700,9 +1747,12 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       F', '|'
       endif
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', kubo_freq_min, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', kubo_freq_max, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for optical responses           :', kubo_freq_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', &
+        write_data%kubo_freq_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', &
+        write_data%kubo_freq_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for optical responses           :', &
+        write_data%kubo_freq_step, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue for optical responses    :', berry%kubo_eigval_max, '|'
       if (index(berry%task, 'sc') > 0) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing factor for shift current         :', berry%sc_eta, '|'
@@ -1710,11 +1760,11 @@ contains
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(berry%sc_phase_conv)), '|'
       end if
-      if (berry%kubo_adpt_smr .eqv. adpt_smr .and. &
-          berry%kubo_adpt_smr_fac == adpt_smr_fac .and. &
-          berry%kubo_adpt_smr_max == adpt_smr_max &
-          .and. berry%kubo_smr_fixed_en_width == smr_fixed_en_width .and. &
-          smr_index == berry%kubo_smr_index) then
+      if (berry%kubo_adpt_smr .eqv. write_data%adpt_smr .and. &
+          berry%kubo_adpt_smr_fac == write_data%adpt_smr_fac .and. &
+          berry%kubo_adpt_smr_max == write_data%adpt_smr_max &
+          .and. berry%kubo_smr_fixed_en_width == write_data%smr_fixed_en_width .and. &
+          write_data%smr_index == berry%kubo_smr_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         if (berry%kubo_adpt_smr) then
@@ -1728,7 +1778,8 @@ contains
         endif
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(berry%kubo_smr_index)), '|'
       endif
-      if (kmesh(1) == berry%kmesh(1) .and. kmesh(2) == berry%kmesh(2) .and. kmesh(3) == berry%kmesh(3)) then
+      if (write_data%kmesh(1) == berry%kmesh(1) .and. write_data%kmesh(2) == berry%kmesh(2) .and. &
+          write_data%kmesh(3) == berry%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (berry%kmesh_spacing > 0.0_dp) then
@@ -1760,11 +1811,16 @@ contains
       call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity', stdout)
       call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states', stdout)
 
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for tildeD,NOA            :', gyrotropic_freq_min, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency                           :', gyrotropic_freq_max, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for frequency                   :', gyrotropic_freq_step, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', gyrotropic%eigval_max, '|'
-      if (gyrotropic%smr_fixed_en_width == smr_fixed_en_width .and. smr_index == gyrotropic%smr_index) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for tildeD,NOA            :', &
+        write_data%gyrotropic_freq_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency                           :', &
+        write_data%gyrotropic_freq_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for frequency                   :', &
+        write_data%gyrotropic_freq_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', &
+        gyrotropic%eigval_max, '|'
+      if (gyrotropic%smr_fixed_en_width == write_data%smr_fixed_en_width &
+          .and. write_data%smr_index == gyrotropic%smr_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
@@ -1776,7 +1832,9 @@ contains
         trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
 
-      if (kmesh(1) == gyrotropic%kmesh(1) .and. kmesh(2) == gyrotropic%kmesh(2) .and. kmesh(3) == gyrotropic%kmesh(3)) then
+      if (write_data%kmesh(1) == gyrotropic%kmesh(1) .and. &
+          write_data%kmesh(2) == gyrotropic%kmesh(2) .and. &
+          write_data%kmesh(3) == gyrotropic%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       elseif (gyrotropic%kmesh_spacing > 0.0_dp) then
         write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
@@ -1791,9 +1849,11 @@ contains
 
     if (pw90_calcs%boltzwann .or. param_input%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------------- BOLTZWANN ----------------------------------*'
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Boltzmann transport properties    :', pw90_calcs%boltzwann, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Boltzmann transport properties    :', &
+        pw90_calcs%boltzwann, '|'
       if (boltz%dir_num_2d > 0) then
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :', trim(boltz_2d_dir), '|'
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :', &
+          trim(write_data%boltz_2d_dir), '|'
       else
         write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
       endif
@@ -1805,7 +1865,8 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', boltz%temp_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature (K)             :', boltz%temp_step, '|'
 
-      if (kmesh(1) == boltz%kmesh(1) .and. kmesh(2) == boltz%kmesh(2) .and. kmesh(3) == boltz%kmesh(3)) then
+      if (write_data%kmesh(1) == boltz%kmesh(1) .and. write_data%kmesh(2) == boltz%kmesh(2) &
+          .and. write_data%kmesh(3) == boltz%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (boltz%kmesh_spacing > 0.0_dp) then
@@ -1829,9 +1890,11 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', boltz%dos_energy_min, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', boltz%dos_energy_max, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', boltz%dos_energy_step, '|'
-        if (boltz%dos_adpt_smr .eqv. adpt_smr .and. boltz%dos_adpt_smr_fac == adpt_smr_fac &
-            .and. boltz%dos_adpt_smr_max == adpt_smr_max &
-            .and. boltz%dos_smr_fixed_en_width == smr_fixed_en_width .and. smr_index == boltz%dos_smr_index) then
+        if (boltz%dos_adpt_smr .eqv. write_data%adpt_smr .and. &
+            boltz%dos_adpt_smr_fac == write_data%adpt_smr_fac &
+            .and. boltz%dos_adpt_smr_max == write_data%adpt_smr_max &
+            .and. boltz%dos_smr_fixed_en_width == write_data%smr_fixed_en_width .and. &
+            write_data%smr_index == boltz%dos_smr_index) then
           write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
         else
           if (boltz%dos_adpt_smr) then

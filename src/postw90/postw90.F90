@@ -178,6 +178,7 @@ program postw90
   logical :: on_root = .false.
   type(w90commtype) :: comm
   type(ws_distance_type) :: ws_distance
+  type(pw90_extra_write_type) :: write_data
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
@@ -244,12 +245,13 @@ program postw90
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
-                            spin_hall, gyrotropic, geninterp, boltz, eig_found, physics%bohr, stdout, seedname)
+                            spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
+                            physics%bohr, stdout, seedname)
     call param_postw90_write(param_input, fermi, atoms, num_wann, &
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
                              pw90_spin, kpath, kslice, dos_data, berry, &
-                             gyrotropic, geninterp, boltz, stdout)
+                             gyrotropic, geninterp, boltz, write_data, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
