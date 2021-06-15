@@ -185,30 +185,9 @@ module w90_param_methods
 
   private
 
-  ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
-  ! Only internal, always use the local variables defined by each module
-  ! that take this value as default
-  !logical                         :: adpt_smr
-  !real(kind=dp)                   :: adpt_smr_fac
-  !real(kind=dp)                   :: adpt_smr_max
-  !real(kind=dp)                   :: smr_fixed_en_width
-
-  real(kind=dp), save :: fermi_energy
-
-  logical                                  :: fermi_energy_scan
-  real(kind=dp)                            :: fermi_energy_min
-  real(kind=dp)                            :: fermi_energy_max
-  real(kind=dp)                            :: fermi_energy_step
-
-  ! extra vars identified as private
-  !logical, save :: berry_uHu_formatted
-  !! Read the uHu from fortran formatted file
-
-  ! Private data
+  ! Private data for processing input file
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
-  !character(len=maxlen)              :: ctmp
-  !logical                            :: ltmp
 
   public :: param_dealloc
   public :: param_write_header
@@ -491,6 +470,11 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp) :: fermi_energy
+    logical :: fermi_energy_scan
+    real(kind=dp) :: fermi_energy_min
+    real(kind=dp) :: fermi_energy_max
+    real(kind=dp) :: fermi_energy_step
     integer :: i, ierr
     logical :: found
 
