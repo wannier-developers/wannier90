@@ -69,7 +69,7 @@ program wannier
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
   use wannier_param_types
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
-    param_dist, param_memory_estimate, param_write_chkpt, w90_extra_write_type
+    param_dist, param_memory_estimate, param_write_chkpt, w90_extra_io_type
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -198,7 +198,7 @@ program wannier
   logical :: on_root = .false.
   integer :: num_nodes, my_node_id, ierr
 
-  type(w90_extra_write_type) :: write_data
+  type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
   type(projection_type) :: proj
   !Projections

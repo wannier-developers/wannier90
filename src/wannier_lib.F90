@@ -169,7 +169,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90lib_parameters
   use w90_param_methods, only: param_write_header, param_lib_set_atoms
   use w90_sitesym
-  use wannier_methods, only: param_read, param_write, param_w90_dealloc, w90_extra_write_type
+  use wannier_methods, only: param_read, param_write, param_w90_dealloc, w90_extra_io_type
   use wannlib_param_data
 
   implicit none
@@ -203,7 +203,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   integer, dimension(num_bands_tot), optional, intent(out) :: proj_s_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
 
-  type(w90_extra_write_type) :: write_data
+  type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
   type(projection_type) :: proj
   !Projections
@@ -371,7 +371,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90lib_parameters
   use wannlib_param_data
   use wannier_methods, only: param_read, param_write, param_write_chkpt, &
-    param_w90_dealloc, w90_extra_write_type
+    param_w90_dealloc, w90_extra_io_type
   use w90_io
   use w90_hamiltonian
   use w90_kmesh
@@ -431,7 +431,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
 
-  type(w90_extra_write_type) :: write_data
+  type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
   type(projection_type) :: proj
   !Projections

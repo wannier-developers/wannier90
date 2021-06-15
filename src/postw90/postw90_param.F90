@@ -205,7 +205,7 @@ module pw90_param_methods
   private
 
   ! These could be local to param_read if they weren't also used by param_write
-  type pw90_extra_write_type
+  type pw90_extra_io_type
     ! from gyrotropic section
     real(kind=dp)                               :: gyrotropic_freq_min
     real(kind=dp)                               :: gyrotropic_freq_max
@@ -230,9 +230,9 @@ module pw90_param_methods
     logical                   :: global_kmesh_set
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
-  end type pw90_extra_write_type
+  end type pw90_extra_io_type
 
-  public :: pw90_extra_write_type
+  public :: pw90_extra_io_type
   public :: param_postw90_read
   public :: param_postw90_write
 
@@ -304,7 +304,7 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
-    type(pw90_extra_write_type), intent(inout) :: write_data
+    type(pw90_extra_io_type), intent(inout) :: write_data
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -1196,7 +1196,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
-    type(pw90_extra_write_type), intent(inout) :: write_data
+    type(pw90_extra_io_type), intent(inout) :: write_data
     character(len=50), intent(in)  :: seedname
 
     integer :: i, ierr
@@ -1454,7 +1454,7 @@ contains
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(geninterp_type), intent(in) :: geninterp
     type(boltzwann_type), intent(in) :: boltz
-    type(pw90_extra_write_type), intent(in) :: write_data
+    type(pw90_extra_io_type), intent(in) :: write_data
 
     integer :: i, loop, nat, nsp
     real(kind=dp) :: cell_volume

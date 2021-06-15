@@ -24,13 +24,13 @@ module wannier_methods
 
   private
 
-  type w90_extra_write_type
+  type w90_extra_io_type
     character(len=20) :: one_dim_axis
     !! Constrained centres
     real(kind=dp), allocatable :: ccentres_frac(:, :)
-  end type w90_extra_write_type
+  end type w90_extra_io_type
 
-  public :: w90_extra_write_type
+  public :: w90_extra_io_type
   public :: param_read
   public :: param_write
   public :: param_w90_dealloc
@@ -96,7 +96,7 @@ contains
     logical, intent(in) :: library_param_read_first_pass
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
-    type(w90_extra_write_type), intent(inout) :: write_data
+    type(w90_extra_io_type), intent(inout) :: write_data
     ! was in driver, only used by wannier_lib
     type(projection_type), intent(inout) :: proj
     !Projections
@@ -1148,7 +1148,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(w90_extra_write_type), intent(in) :: write_data
+    type(w90_extra_io_type), intent(in) :: write_data
     type(projection_type), intent(in) :: proj
 
     integer :: i, nkp, loop, nat, nsp
@@ -1550,7 +1550,7 @@ contains
     character(len=50), intent(in)  :: seedname
     !type(dos_plot_type), intent(inout) :: dos_data
     !type(berry_type), intent(inout) :: berry
-    type(w90_extra_write_type), intent(inout) :: write_data
+    type(w90_extra_io_type), intent(inout) :: write_data
     type(projection_type), intent(inout) :: proj
 
     integer :: ierr

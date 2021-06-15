@@ -178,7 +178,7 @@ program postw90
   logical :: on_root = .false.
   type(w90commtype) :: comm
   type(ws_distance_type) :: ws_distance
-  type(pw90_extra_write_type) :: write_data
+  type(pw90_extra_io_type) :: write_data
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
