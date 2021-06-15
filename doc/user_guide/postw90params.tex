@@ -91,7 +91,8 @@ The currently available modules in \texttt{postw90.x} are:
   anomalous Hall conductivity, orbital magnetisation, optical
   conductivity, nonlinear shift current and spin Hall conductivity
   (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29 and 30 of the
-  tutorial).
+  tutorial). It also includes an option to compute $k\cdot p$ expansion coefficients
+  (see Sec.~\ref{sec:kdotp} and example 33 of the tutorial).
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
     including natural and current0induced optical rotation, 
 and the current-induced magnetization
@@ -301,6 +302,7 @@ the optical frequency in the specified range\\
   {\sc sc\_eta} & R  & Energy broadening of energy differences in the sum over virtual states when computing shift current\\
   {\sc sc\_phase\_conv} & I  & Convention for phase factor of Bloch states when computing shift current\\
   {\sc sc\_w\_thr} & R  & Frequency threshold for speeding up delta function integration when computing shift current\\
+  {\sc sc\_use\_eta\_corr} & L  & Use finite-eta correction for computing shift current\\
   {\sc shc\_freq\_scan} & L  & Calculate Fermi energy scan or frequency scan of spin Hall conductivity\\
   {\sc shc\_method} & S  & How to obtain the spin current matrix elements for SHC\\
   {\sc shc\_alpha} & I  & The spin current direction of spin Hall conductivity\\
@@ -309,6 +311,9 @@ the optical frequency in the specified range\\
   {\sc shc\_bandshift} & L & Rigid bandshift of the conduction bands\\
   {\sc shc\_bandshift\_firstband} & I & Index of the first band to shift\\
   {\sc shc\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
+  {\sc kdotp\_kpoint} & R & $k$ point for $k\cdot p$ expansion ($2\pi/a$, with $a$ lattice constant in \AA)\\
+  {\sc kdotp\_num\_bands} & I & Number of bands for $k\cdot p$ expansion \\
+  {\sc kdotp\_bands} & I & Band indexes corresponding to the $k\cdot p$ bands \\
   \hline
 %\end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
@@ -652,6 +657,7 @@ Unit in which the Berry curvature is specified at input (in {\tt
 
 The default value is {\tt ang2}.
 
+
 \subsection{\tt real(kind=dp) :: sc\_eta}
 
 The width $\eta$ used to broaden energy differences in denominators of the form 
@@ -690,8 +696,9 @@ $$
 $$ 
 %
 \end{itemize}
-The convention does not affect the full shift-current matrix element, but it does affect
-the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}). 
+If {\tt sc\_use\_eta\_corr=true}, the convention does not affect the full shift-current matrix element, but it does affect
+the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}).
+If {\tt sc\_use\_eta\_corr=false}, the convention can affect the full shift-current matrix element (see Ref. \cite{Lihm_shift_eta_2021}).
 
 The default value is 1. 
 
@@ -707,8 +714,11 @@ beyond which the delta functions are taken as zero.
 The default value is 5.0. 
 
 
+\subsection{\tt logical :: sc\_use\_eta\_corr}
 
+If {\tt sc\_use\_eta\_corr=true}, apply the finite-eta correction of the shift current (Eq. (19) of Ref. \cite{Lihm_shift_eta_2021}). Without the correction, the convention of the Bloch sum (determined by {\tt sc\_phase\_conv}) can affect the computed shift-current spectra. See Ref. \cite{Lihm_shift_eta_2021} for details.
 
+The default value is {\tt true}.
 
 
 \clearpage
@@ -1186,6 +1196,21 @@ Output files:
 
 \end{itemize}
 
+\item[{\bf --}] \verb#sc# Nonlinear shift current. Output files:
+
+\begin{itemize}
+
+\item[$\cdot$] {\tt seedname-sc\_{\{xxx,xxy,xxz,...\}.dat}}
+  (data files).  The shift current is described by a $3\times3\times3$ tensor $\sigma^{abc}$. 
+  The program outputs a set of 18 files, and the 9 remaining components 
+  can be obtained by taking into account that $\sigma^{abc}$ is 
+  symmetric under $b\leftrightarrow c$ index exchange.
+  First column: optical frequency $\hbar\omega$ in
+  eV. Second column: nonlinear shift current $\sigma^{abc}(\hbar\omega)$ in A/V$^{2}$. 
+  
+\end{itemize}
+
+
 \item[{\bf --}] \verb#shc# Spin Hall conductivity (SHC), in $(\hbar/e)$S/cm.  Output files:
 
 	\begin{itemize}
@@ -1205,6 +1230,16 @@ Output files:
 		kubo\_freq\_max}. 
 	
 	\end{itemize}
+
+\item[{\bf --}] \verb#kdotp# $k\cdot p$ expansion coefficients. Output files:
+
+\begin{itemize}
+
+\item[$\cdot$] {\tt seedname-kdotp\_{\{0,1,2\}.dat}}
+  (data files);  respectively, the zeroth, first and second order $k\cdot p$ expansion coefficients,
+  in units of eV, eV$\cdot$\AA, and  eV$\cdot$\AA$^{2}$.
+  
+\end{itemize}
 
 \end{itemize}
 There is no default value.
@@ -1345,6 +1380,88 @@ Energy shift of the conduction bands.
 
 The units are eV.
 No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be provided.
+
+
+\subsection{\tt real(kind=dp) :: sc\_eta}
+
+The width $\eta$ used to broaden energy differences in denominators of the form 
+%
+$$
+\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}}\rightarrow
+\text{Re}\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}+i\eta}.
+$$ 
+%
+The above is needed in shift-current calculations in order to avoid numerical problems
+caused by near-degeneracies in the sum over virtual states. 
+
+The units are eV. The default value is 0.4.
+
+
+\subsection{\tt integer :: sc\_phase\_conv}
+
+Convention for the expansion of the Bloch states in shift-current calculations. It can only take the values one or two.
+We follow the convention of Ref.~\cite{pythtb}:
+\begin{itemize}
+
+\item
+  1: Include Wannier centre ${\bm \tau}_{n}=\langle w_{n{\bf 0}}|{\bf r}| w_{n{\bf 0}} \rangle$ in the phase factor
+  (so-called tight-binding convention):
+%
+$$
+|u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
+$$ 
+%
+
+\item
+  2: Do not include Wannier centre in the phase factor (usual \verb|Wannier90| convention):
+%
+$$
+|u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
+$$ 
+%
+\end{itemize}
+The convention does not affect the full shift-current matrix element, but it does affect
+the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}). 
+
+The default value is 1. 
+
+
+\subsection{\tt real(kind=dp)  :: sc\_w\_thr}
+
+Parameter $\alpha_{t}$ for speeding up the frequency integration in shift-current calculations.
+It settles the frequency threshold $\omega_{t}=\alpha_{t}\eta_{n{\bf k}}$
+(a factor times the broadening)
+beyond which the delta functions are taken as zero. 
+
+
+The default value is 5.0. 
+
+
+
+\subsection{\tt real(kind=dp)  :: kdotp\_kpoint(3)}
+
+Defines the $k$ point around which the $k\cdot p$  
+expansion is performed. 
+
+
+The default value is 0.0 0.0 0.0 ($\Gamma$). 
+
+
+\subsection{\tt integer  :: kdotp\_num\_bands}
+
+Number of bands forming the $k\cdot p$ basis set.
+
+
+No default value.
+
+
+\subsection{\tt integer  :: kdotp\_bands(kdotp\_num\_bands)}
+
+Band indexes of bands belonging to $k\cdot p$ basis. Number of entries must
+be equal to the integer defined in {\tt kdotp\_num\_bands}. 
+The band labelling follows that of ``wannierised'' bands.
+
+No default value.
 
 \clearpage
 \section{Gyrotropic}

@@ -1,18 +1,15 @@
 berry = true
-berry_task=sc   
-berry_kmesh = 25 25 25 
+berry_task=kdotp   
 fermi_energy=7.7414
 use_ws_distance = .false.
 search_shells=12
 
-kubo_freq_min= 0.0
-kubo_freq_max= 10.0
-kubo_freq_step= 0.03
-kubo_adpt_smr=true
-
+kdotp_kpoint  =  0.0000 0.5000 0.0000
+kdotp_num_bands = 2
+kdotp_bands =  4,5
+berry_kmesh = 1 1 1
 sc_eta=0.040
-sc_phase_conv=1   
-sc_use_eta_corr = .false.
+
 
 num_bands         =   12
 num_wann          =   8 

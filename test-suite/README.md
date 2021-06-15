@@ -12,7 +12,7 @@ The code needs the `configparser` module, that can be installed e.g. via
 1. Create a new folder for the test inside `test-suite/tests`, 
    with a short but meaningful name. 
    The name *must* start with the prefix `testw90_` if it is a Wannier90
-   test, or `testpost90_` if it is a postw90.x test. This is needed to properly
+   test, or `testpostw90_` if it is a postw90.x test. This is needed to properly
    group tests in categories.
 
 2. modify the file `test-suite/tests/jobconfig` adding a new section, 
