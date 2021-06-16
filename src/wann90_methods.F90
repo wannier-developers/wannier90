@@ -46,8 +46,8 @@ contains
                         kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
                         tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, select_proj, &
                         real_lattice, recip_lattice, spec_points, eig_found, library, &
-                        library_param_read_first_pass, bohr, stdout, seedname, write_data, &
-                        proj, lhasproj)
+                        library_param_read_first_pass, dis_window, bohr, stdout, seedname, &
+                        write_data, proj, lhasproj)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -77,6 +77,7 @@ contains
     type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
@@ -149,11 +150,11 @@ contains
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
                               w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
                               eigval, library, driver%postproc_setup, num_bands, num_kpts, stdout, seedname)
-      dis_data%win_min = -1.0_dp
-      dis_data%win_max = 0.0_dp
-      if (eig_found) dis_data%win_min = minval(eigval)
-      if (eig_found) dis_data%win_max = maxval(eigval)
-      call param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
+      dis_window%win_min = -1.0_dp
+      dis_window%win_max = 0.0_dp
+      if (eig_found) dis_window%win_min = minval(eigval)
+      if (eig_found) dis_window%win_max = maxval(eigval)
+      call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
       call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
       call param_read_hamil(param_hamil, stdout, seedname)
       call param_read_bloch_phase(w90_calcs%use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
@@ -184,7 +185,7 @@ contains
       param_wannierise%omega_tilde = -999.0_dp
       param_input%omega_invariant = -999.0_dp
       param_input%have_disentangled = .false.
-      call param_read_final_alloc(w90_calcs%disentanglement, dis_data, &
+      call param_read_final_alloc(w90_calcs%disentanglement, dis_window, &
                                   wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
     endif
   end subroutine param_read
@@ -1529,7 +1530,7 @@ contains
   end subroutine param_write
 
   subroutine param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                               wann_data, kmesh_data, k_points, dis_data, &
+                               wann_data, kmesh_data, k_points, dis_data, dis_window, &
                                atoms, eigval, spec_points, stdout, seedname, write_data, proj)
     use w90_io, only: io_error
     implicit none
@@ -1543,6 +1544,7 @@ contains
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -1556,7 +1558,7 @@ contains
     integer :: ierr
 
     call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
-                       dis_data, atoms, eigval, spec_points, stdout, seedname)
+                       dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(param_plot%wannier_plot_list)) then
       deallocate (param_plot%wannier_plot_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in param_dealloc', stdout, seedname)
@@ -1609,11 +1611,15 @@ contains
       deallocate (proj%zona, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating proj_zona in param_dealloc', stdout, seedname)
     end if
+    if (allocated(dis_data%spheres)) then
+      deallocate (dis_data%spheres, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout, seedname)
+    endif
   end subroutine param_w90_dealloc
 
 !=================================================!
   subroutine param_write_chkpt(chkpt, param_input, wann_data, kmesh_info, &
-                               k_points, num_kpts, dis_data, num_bands, &
+                               k_points, num_kpts, dis_window, num_bands, &
                                num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                mp_grid, real_lattice, recip_lattice, stdout, seedname)
     !=================================================!
@@ -1637,7 +1643,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     integer, intent(in) :: num_kpts
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -1679,8 +1685,8 @@ contains
     if (param_input%have_disentangled) then
       write (chk_unit) param_input%omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
-      write (chk_unit) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
-      write (chk_unit) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
+      write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      write (chk_unit) (dis_window%ndimwin(nkp), nkp=1, num_kpts)
       write (chk_unit) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
     endif
     write (chk_unit) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)               ! U_matrix
@@ -1930,7 +1936,7 @@ contains
                         lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
                         kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
                         tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, real_lattice, &
-                        recip_lattice, eig_found, lhasproj, stdout, seedname, comm)
+                        recip_lattice, eig_found, lhasproj, dis_window, stdout, seedname, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1986,6 +1992,7 @@ contains
     !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: lhasproj
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(w90commtype), intent(in) :: comm
     character(len=50), intent(in)  :: seedname
     logical :: on_root = .false.
@@ -2052,10 +2059,10 @@ contains
     end if
 
     call comms_bcast(param_input%gamma_only, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%win_min, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%win_max, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%froz_min, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%froz_max, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%win_min, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%win_max, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%froz_min, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%froz_max, 1, stdout, seedname, comm)
     call comms_bcast(dis_data%num_iter, 1, stdout, seedname, comm)
     call comms_bcast(dis_data%mix_ratio, 1, stdout, seedname, comm)
     call comms_bcast(dis_data%conv_tol, 1, stdout, seedname, comm)
@@ -2284,7 +2291,7 @@ contains
     call comms_bcast(param_input%lenconfac, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%lfixstep, 1, stdout, seedname, comm)
     call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%frozen_states, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%frozen_states, 1, stdout, seedname, comm)
     call comms_bcast(symmetrize_eps, 1, stdout, seedname, comm)
 
     !vv: Constrained centres
@@ -2414,9 +2421,9 @@ contains
       if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_dist', stdout, seedname)
       wann_data%spreads = 0.0_dp
       if (w90_calcs%disentanglement) then
-        allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+        allocate (dis_window%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in param_dist', stdout, seedname)
-        allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+        allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in param_dist', stdout, seedname)
       endif
     endif

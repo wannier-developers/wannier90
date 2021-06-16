@@ -116,8 +116,8 @@ module w90_param_types
     real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
   end type k_point_type
 
-  ! postw90/boltzwann use win_min/max, so maybe should move these?
-  type disentangle_type
+  ! this contains data which described the disentangled manifold, also used in postw90
+  type disentangle_manifold_type
     real(kind=dp) :: win_min
     !! lower bound of the disentanglement outer window
     real(kind=dp) :: win_max
@@ -126,25 +126,12 @@ module w90_param_types
     !! lower bound of the disentanglement inner (frozen) window
     real(kind=dp) :: froz_max
     !! upper bound of the disentanglement inner (frozen) window
-    integer :: num_iter
-    !! number of disentanglement iteration steps
-    real(kind=dp) :: mix_ratio
-    !! Mixing ratio for the disentanglement routine
-    real(kind=dp) :: conv_tol
-    !! Convergence tolerance for the disentanglement
-    integer :: conv_window
-    !! Size of the convergence window for disentanglement
-    ! GS-start
-    integer :: spheres_first_wann
-    integer :: spheres_num
-    real(kind=dp), allocatable :: spheres(:, :)
-    ! GS-end
     logical :: frozen_states
     ! disentangle parameters
-    ! BGS also used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
+    ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
     logical, allocatable :: lwindow(:, :)
-  end type disentangle_type
+  end type disentangle_manifold_type
 
   ! plot, transport, postw90: common, wan_ham, spin, berry, gyrotropic, kpath, kslice
   type fermi_data_type
@@ -219,7 +206,7 @@ module w90_param_methods
   public :: param_read_devel
   public :: param_read_mp_grid
   public :: param_read_kpath
-  public :: param_read_disentangle_all
+  public :: param_read_dis_manifold
   public :: param_read_num_bands
   public :: param_read_system
   public :: param_read_fermi_energy
@@ -644,44 +631,44 @@ contains
 
   end subroutine param_read_eigvals
 
-  subroutine param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
+  subroutine param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     !integer, intent(in) :: num_bands, num_wann
     !integer :: nkp, ierr
     logical :: found, found2
 
-    !dis_data%win_min = -1.0_dp; dis_data%win_max = 0.0_dp
-    !if (eig_found) dis_data%win_min = minval(eigval)
-    call param_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_data%win_min)
+    !dis_window%win_min = -1.0_dp; dis_window%win_max = 0.0_dp
+    !if (eig_found) dis_window%win_min = minval(eigval)
+    call param_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_window%win_min)
 
-    !if (eig_found) dis_data%win_max = maxval(eigval)
-    call param_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_data%win_max)
-    if (eig_found .and. (dis_data%win_max .lt. dis_data%win_min)) &
+    !if (eig_found) dis_window%win_max = maxval(eigval)
+    call param_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_window%win_max)
+    if (eig_found .and. (dis_window%win_max .lt. dis_window%win_min)) &
       call io_error('Error: param_read: check disentanglement windows', stdout, seedname)
 
-    dis_data%froz_min = -1.0_dp; dis_data%froz_max = 0.0_dp
+    dis_window%froz_min = -1.0_dp; dis_window%froz_max = 0.0_dp
     ! no default for dis_froz_max
-    dis_data%frozen_states = .false.
-    call param_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_data%froz_max)
+    dis_window%frozen_states = .false.
+    call param_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_window%froz_max)
     if (found) then
-      dis_data%frozen_states = .true.
-      dis_data%froz_min = dis_data%win_min ! default value for the bottom of frozen window
+      dis_window%frozen_states = .true.
+      dis_window%froz_min = dis_window%win_min ! default value for the bottom of frozen window
     end if
-    call param_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_data%froz_min)
+    call param_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_window%froz_min)
     if (eig_found) then
-      if (dis_data%froz_max .lt. dis_data%froz_min) &
+      if (dis_window%froz_max .lt. dis_window%froz_min) &
         call io_error('Error: param_read: check disentanglement frozen windows', stdout, seedname)
       if (found2 .and. .not. found) &
         call io_error('Error: param_read: found dis_froz_min but not dis_froz_max', stdout, seedname)
     endif
     ! ndimwin/lwindow are not read
-  end subroutine param_read_disentangle_all
+  end subroutine param_read_dis_manifold
 
   subroutine param_read_kmesh_data(kmesh_data, stdout, seedname)
     use w90_io, only: io_error
@@ -1180,7 +1167,7 @@ contains
 
   end subroutine param_clean_infile
 
-  subroutine param_read_final_alloc(disentanglement, dis_data, wann_data, &
+  subroutine param_read_final_alloc(disentanglement, dis_window, wann_data, &
                                     num_wann, num_bands, num_kpts, stdout, seedname)
     ! =============================== !
     ! Some checks and initialisations !
@@ -1190,7 +1177,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
     !type(parameter_input_type), intent(inout) :: param_input
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -1201,11 +1188,11 @@ contains
 !    if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then
-      if (allocated(dis_data%ndimwin)) deallocate (dis_data%ndimwin)
-      allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+      if (allocated(dis_window%ndimwin)) deallocate (dis_window%ndimwin)
+      allocate (dis_window%ndimwin(num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating ndimwin in param_read', stdout, seedname)
-      if (allocated(dis_data%lwindow)) deallocate (dis_data%lwindow)
-      allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+      if (allocated(dis_window%lwindow)) deallocate (dis_window%lwindow)
+      allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating lwindow in param_read', stdout, seedname)
     endif
 
@@ -1495,8 +1482,8 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(param_input, wann_data, kmesh_data, &
-                           k_points, dis_data, atoms, eigval, spec_points, stdout, seedname)
+  subroutine param_dealloc(param_input, wann_data, kmesh_data, k_points, dis_window, &
+                           atoms, eigval, spec_points, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -1511,7 +1498,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(special_kpoints_type), intent(inout) :: spec_points
@@ -1520,12 +1507,12 @@ contains
 
     integer :: ierr
 
-    if (allocated(dis_data%ndimwin)) then
-      deallocate (dis_data%ndimwin, stat=ierr)
+    if (allocated(dis_window%ndimwin)) then
+      deallocate (dis_window%ndimwin, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating ndimwin in param_dealloc', stdout, seedname)
     end if
-    if (allocated(dis_data%lwindow)) then
-      deallocate (dis_data%lwindow, stat=ierr)
+    if (allocated(dis_window%lwindow)) then
+      deallocate (dis_window%lwindow, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating lwindow in param_dealloc', stdout, seedname)
     end if
     if (allocated(eigval)) then
@@ -1619,10 +1606,6 @@ contains
     if (allocated(wann_data%spreads)) then
       deallocate (wann_data%spreads, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in param_dealloc', stdout, seedname)
-    endif
-    if (allocated(dis_data%spheres)) then
-      deallocate (dis_data%spheres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout, seedname)
     endif
     return
 
@@ -1736,7 +1719,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     integer, intent(in) :: num_kpts
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_data
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -1907,7 +1890,7 @@ contains
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     integer, intent(inout) :: num_kpts
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_data
     integer, intent(in) :: stdout
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann

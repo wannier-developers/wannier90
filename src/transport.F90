@@ -82,7 +82,7 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_data, fermi, hmlg, k_points, param_hamil, param_input, tran, &
+  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, tran, &
                        wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                        ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
@@ -95,7 +95,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
-      atom_data_type, disentangle_type, k_point_type, fermi_data_type
+      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, &
       param_hamiltonian_type
 
@@ -108,7 +108,7 @@ contains
     type(wannier_data_type), intent(in)         :: wann_data
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(disentangle_type), intent(in)          :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in)              :: k_points
     type(fermi_data_type), intent(in)           :: fermi
     type(ham_logical), intent(inout)            :: hmlg
@@ -180,7 +180,7 @@ contains
         call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                                 recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
@@ -207,7 +207,7 @@ contains
         call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                                 recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &

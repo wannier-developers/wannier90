@@ -194,7 +194,7 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                                 recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
@@ -207,7 +207,7 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_type
+    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_manifold_type
     use wannier_param_types, only: param_hamiltonian_type
 
     implicit none
@@ -217,7 +217,7 @@ contains
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(parameter_input_type), intent(in)      :: param_input
-    type(disentangle_type), intent(in)          :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout)              :: irvec(:, :)
@@ -280,7 +280,7 @@ contains
       do loop_kpt = 1, num_kpts
         counter = 0
         do j = 1, num_bands
-          if (dis_data%lwindow(j, loop_kpt)) then
+          if (dis_window%lwindow(j, loop_kpt)) then
             counter = counter + 1
             eigval_opt(counter, loop_kpt) = eigval(j, loop_kpt)
           end if
@@ -295,7 +295,7 @@ contains
       if (.not. lsitesymmetry) then                                                                      !YN:
         do loop_kpt = 1, num_kpts
           do j = 1, num_wann
-            do m = 1, dis_data%ndimwin(loop_kpt)
+            do m = 1, dis_window%ndimwin(loop_kpt)
               eigval2(j, loop_kpt) = eigval2(j, loop_kpt) + eigval_opt(m, loop_kpt)* &
                                      real(conjg(u_matrix_opt(m, j, loop_kpt))* &
                                           u_matrix_opt(m, j, loop_kpt), dp)
@@ -306,12 +306,12 @@ contains
         ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                              !RS:
         ! so we have to calculate ham_k in the following way                                             !RS:
         do loop_kpt = 1, num_kpts                                                                        !RS:
-          utmp(1:dis_data%ndimwin(loop_kpt), :) = &                                                      !RS:
-            matmul(u_matrix_opt(1:dis_data%ndimwin(loop_kpt), :, loop_kpt), &
+          utmp(1:dis_window%ndimwin(loop_kpt), :) = &                                                      !RS:
+            matmul(u_matrix_opt(1:dis_window%ndimwin(loop_kpt), :, loop_kpt), &
                    u_matrix(:, :, loop_kpt))                                                             !RS:
           do j = 1, num_wann                                                                             !RS:
             do i = 1, j                                                                                  !RS:
-              do m = 1, dis_data%ndimwin(loop_kpt)                                                       !RS:
+              do m = 1, dis_window%ndimwin(loop_kpt)                                                       !RS:
                 ham_k(i, j, loop_kpt) = ham_k(i, j, loop_kpt) + eigval_opt(m, loop_kpt)* &
                                         conjg(utmp(m, i))*utmp(m, j)                                     !RS:
               enddo                                                                                      !RS:

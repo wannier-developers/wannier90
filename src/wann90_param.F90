@@ -82,6 +82,23 @@ module wannier_param_types
     logical :: write_tb
   end type param_plot_type
 
+  ! parameters used to control the minimisation of the disentanglement process
+  type disentangle_type
+    integer :: num_iter
+    !! number of disentanglement iteration steps
+    real(kind=dp) :: mix_ratio
+    !! Mixing ratio for the disentanglement routine
+    real(kind=dp) :: conv_tol
+    !! Convergence tolerance for the disentanglement
+    integer :: conv_window
+    !! Size of the convergence window for disentanglement
+    ! GS-start
+    integer :: spheres_first_wann
+    integer :: spheres_num
+    real(kind=dp), allocatable :: spheres(:, :)
+    ! GS-end
+  end type disentangle_type
+
   type param_wannierise_type ! only in wannierise.F90
     integer :: num_dump_cycles
     !! Number of steps before writing checkpoint
