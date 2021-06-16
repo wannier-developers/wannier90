@@ -395,7 +395,7 @@ contains
 
   subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                  wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                 num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                 num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                  pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
                                  seedname, comm)
     !! Given a k point, this function returns eigenvalues E and
@@ -407,7 +407,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, wannier_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
@@ -434,7 +434,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
@@ -449,7 +449,7 @@ contains
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
                                    real_lattice, recip_lattice, mp_grid, ws_distance, &
@@ -509,7 +509,7 @@ contains
   subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, num_wann, fermi, &
                                        param_input, wann_data, eigval, real_lattice, &
                                        recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                                       v_matrix, dis_data, k_points, pw90_common, ws_distance, &
+                                       v_matrix, dis_window, k_points, pw90_common, ws_distance, &
                                        ws_vec, HH_R, stdout, seedname, comm, occ)
     !========================================================!
     !                                                        !
@@ -523,7 +523,7 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
-      disentangle_type, k_point_type
+      disentangle_manifold_type, k_point_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
@@ -545,7 +545,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -560,7 +560,7 @@ contains
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     allocate (delHH(num_wann, num_wann, 3))
     call pw90common_fourier_R_to_k_new(kpt, HH_R, num_wann, param_input, wann_data, &
@@ -584,7 +584,7 @@ contains
   subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, &
                                               param_input, wann_data, eigval, real_lattice, &
                                               recip_lattice, mp_grid, num_bands, num_kpts, &
-                                              dis_data, u_matrix, v_matrix, k_points, kmesh_info, &
+                                              dis_window, u_matrix, v_matrix, k_points, kmesh_info, &
                                               berry, pw90_common, ws_distance, ws_vec, AA_R, HH_R, &
                                               stdout, seedname, comm)
     !========================================================!
@@ -597,7 +597,7 @@ contains
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv, wigner_seitz_type
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
+    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_manifold_type, &
       k_point_type, kmesh_info_type
     use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: postw90_common_type, berry_type
@@ -620,7 +620,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -634,10 +634,10 @@ contains
     type(w90commtype), intent(in) :: comm
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                  HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                  HH_R, AA_R, berry, dis_window, kmesh_info, k_points, param_input, pw90_common, &
                   stdout, seedname, comm)
 
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, param_input, &
@@ -651,7 +651,7 @@ contains
 
   subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, param_input, &
                                       wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                      num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                      num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                       pw90_common, ws_distance, ws_vec, HH_R, stdout, &
                                       seedname, comm)
     !========================================================!
@@ -667,7 +667,7 @@ contains
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
+    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_manifold_type, &
       k_point_type
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
@@ -688,7 +688,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -699,7 +699,7 @@ contains
     type(w90commtype), intent(in) :: comm
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, param_input, wann_data, &
                                                 real_lattice, recip_lattice, mp_grid, ws_distance, &

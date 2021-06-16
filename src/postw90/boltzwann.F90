@@ -64,7 +64,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(boltz, dis_data, dos_data, k_points, param_input, pw90_common, &
+  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, param_input, pw90_common, &
                             pw90_ham, postw90_oper, pw90_spin, physics, wann_data, ws_distance, &
                             ws_vec, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
                             recip_lattice, mp_grid, num_wann, num_bands, num_kpts, seedname, &
@@ -87,8 +87,8 @@ contains
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
-    use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type, &
-      k_point_type, disentangle_type
+    use w90_param_types, only: disentangle_manifold_type, parameter_input_type, wannier_data_type, &
+      k_point_type, disentangle_manifold_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
       postw90_ham_type, dos_plot_type, postw90_oper_type
     use w90_ws_distance, only: ws_distance_type
@@ -98,7 +98,7 @@ contains
 
     ! arguments
     type(boltzwann_type), intent(in) :: boltz
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -231,12 +231,12 @@ contains
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
     TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*boltz%TDF_smr_fixed_en_width, 0.2_dp)
-    TDFEnergyNumPoints = int(floor((dis_data%win_max - dis_data%win_min + 2._dp*TDF_exceeding_energy)/boltz%tdf_energy_step)) + 1
+   TDFEnergyNumPoints = int(floor((dis_window%win_max - dis_window%win_min + 2._dp*TDF_exceeding_energy)/boltz%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main', stdout, seedname)
     do i = 1, TDFEnergyNumPoints
-      TDFEnergyArray(i) = dis_data%win_min - TDF_exceeding_energy + real(i - 1, dp)*boltz%tdf_energy_step
+      TDFEnergyArray(i) = dis_window%win_min - TDF_exceeding_energy + real(i - 1, dp)*boltz%tdf_energy_step
     end do
 
     if (pw90_common%spin_decomp) then
@@ -252,7 +252,7 @@ contains
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                       v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
+                       v_matrix, dis_window, k_points, dos_data, pw90_common, boltz, pw90_spin, &
                        pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
                        seedname, comm, cell_volume)
     ! The TDF array contains now the TDF, or more precisely
@@ -647,7 +647,7 @@ contains
 
   subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
                            real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                           v_matrix, dis_data, k_points, dos_data, pw90_common, boltz, pw90_spin, &
+                           v_matrix, dis_window, k_points, dos_data, pw90_common, boltz, pw90_spin, &
                            pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
                            seedname, comm, cell_volume)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
@@ -676,7 +676,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_param_types, only: parameter_input_type, wannier_data_type, k_point_type, &
-      disentangle_type
+      disentangle_manifold_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
       postw90_common_type, postw90_oper_type
     use w90_param_methods, only: param_get_smearing_type
@@ -713,7 +713,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
     type(dos_plot_type), intent(in) :: dos_data
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(boltzwann_type), intent(in) :: boltz
@@ -770,12 +770,12 @@ contains
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
     if (pw90_common%spin_decomp) then
       ndim = 3
 
       call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+                    SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -887,7 +887,7 @@ contains
       ! Here I get the band energies and the velocities
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                               num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                               num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
                                seedname, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
@@ -929,7 +929,7 @@ contains
                   call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, &
                                            param_input, wann_data, eigval, real_lattice, &
                                            recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                                           v_matrix, dis_data, k_points, pw90_common, pw90_ham, &
+                                           v_matrix, dis_window, k_points, pw90_common, pw90_ham, &
                                            ws_distance, ws_vec, HH_R, stdout, seedname, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)

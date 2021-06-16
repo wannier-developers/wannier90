@@ -59,7 +59,7 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_data, geninterp, k_points, param_input, pw90_common, pw90_ham, &
+  subroutine geninterp_main(dis_window, geninterp, k_points, param_input, pw90_common, pw90_ham, &
                             wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
                             real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                             seedname, stdout, comm)
@@ -73,7 +73,7 @@ contains
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
     use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, postw90_ham_type
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
       wannier_data_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
@@ -85,7 +85,7 @@ contains
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(geninterp_type), intent(in) :: geninterp
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -182,7 +182,7 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, &
-                  eigval, u_matrix, v_matrix, HH_R, dis_data, k_points, param_input, &
+                  eigval, u_matrix, v_matrix, HH_R, dis_window, k_points, param_input, &
                   pw90_common, stdout, seedname, comm)
 
     if (on_root) then
@@ -292,7 +292,7 @@ contains
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
                                  num_wann, param_input, wann_data, eigval, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                                 dis_data, k_points, pw90_common, pw90_ham, ws_distance, ws_vec, &
+                                 dis_window, k_points, pw90_common, pw90_ham, ws_distance, ws_vec, &
                                  HH_R, stdout, seedname, comm)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &

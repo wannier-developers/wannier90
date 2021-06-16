@@ -57,7 +57,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(berry, dis_data, fermi, gyrotropic, kmesh_info, k_points, param_input, &
+  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, param_input, &
                              pw90_common, pw90_ham, postw90_oper, physics, wann_data, ws_vec, &
                              ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
                              eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
@@ -80,7 +80,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: gyrotropic_type, berry_type, postw90_oper_type, postw90_ham_type, &
       postw90_common_type
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type
     use w90_utility, only: utility_det3
     use w90_ws_distance, only: ws_distance_type
@@ -90,7 +90,7 @@ contains
 
     ! passed variables
     type(berry_type), intent(in) :: berry
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -195,26 +195,26 @@ contains
     ! Wannier matrix elements, allocations and initializations
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
       call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    HH_R, AA_R, berry, dis_data, kmesh_info, k_points, param_input, pw90_common, &
+                    HH_R, AA_R, berry, dis_window, kmesh_info, k_points, param_input, pw90_common, &
                     stdout, seedname, comm)
     endif
 
     if (eval_spn) then
 
       call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+                    SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
     endif
 
     if (eval_K) then
       call get_BB_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    BB_R, dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, &
+                    BB_R, dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, &
                     seedname, comm)
       call get_CC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    CC_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                    CC_R, dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
                     stdout, seedname, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
@@ -323,7 +323,7 @@ contains
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, param_input, &
                                  fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                 num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                 num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                  gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
                                  seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
 
@@ -512,7 +512,7 @@ contains
                                    gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
                                    eval_NOA, eval_spn, eval_C, eval_dos, num_wann, param_input, &
                                    fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                   num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                    gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
                                    seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
@@ -549,7 +549,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
       wannier_data_type, fermi_data_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_fourier_R_to_k_vec
@@ -582,7 +582,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(postw90_common_type), intent(in) :: pw90_common
@@ -625,7 +625,7 @@ contains
 
     call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                              wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                             num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                              pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
                              seedname, comm)
 
@@ -686,7 +686,7 @@ contains
 
             call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                       u_matrix, v_matrix, dis_data, k_points, pw90_common, &
+                                       u_matrix, v_matrix, dis_window, k_points, pw90_common, &
                                        ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, &
                                        seedname, comm, imf_k, img_k, imh_k, occ)
             do i = 1, 3
@@ -699,7 +699,7 @@ contains
 
             call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
                                      real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                     u_matrix, v_matrix, dis_data, k_points, pw90_common, &
+                                     u_matrix, v_matrix, dis_window, k_points, pw90_common, &
                                      ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, &
                                      seedname, comm, imf_k, occ)
             do i = 1, 3

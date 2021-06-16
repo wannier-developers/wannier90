@@ -29,7 +29,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(dis_data, fermi, kdist, k_points, param_input, pw90_common, &
+  subroutine spin_get_moment(dis_window, fermi, kdist, k_points, param_input, pw90_common, &
                              postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
                              u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_wann, num_bands, num_kpts, wanint_kpoint_file, seedname, stdout, &
@@ -46,7 +46,7 @@ contains
     use w90_io, only: io_error
     use pw90_parameters, only: postw90_spin_type, postw90_common_type, postw90_oper_type
     use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
-      disentangle_type, k_point_type
+      disentangle_manifold_type, k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
@@ -54,7 +54,7 @@ contains
     implicit none
 
     ! passed variables
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_point_type), intent(in) :: k_points
@@ -94,10 +94,10 @@ contains
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                  SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+                  SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
 
     if (param_input%iprint > 0) then
       write (stdout, '(/,/,1x,a)') '------------'

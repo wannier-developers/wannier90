@@ -195,7 +195,7 @@ module pw90_param_methods
 ! use w90_io, only: stdout, maxlen
   use w90_io, only: maxlen
   use w90_param_types, only: parameter_input_type, wannier_data_type, &
-    param_kmesh_type, kmesh_info_type, k_point_type, disentangle_type, &
+    param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type
   use w90_param_methods
   use pw90_parameters
@@ -239,7 +239,7 @@ module pw90_param_methods
 contains
 
   subroutine param_postw90_read(param_input, wann_data, kmesh_data, k_points, &
-                                num_kpts, dis_data, fermi, atoms, num_bands, &
+                                num_kpts, dis_window, fermi, atoms, num_bands, &
                                 num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
@@ -275,7 +275,7 @@ contains
     !type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     !type(transport_type), intent(inout) :: tran
@@ -353,17 +353,17 @@ contains
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, eig_found, eigval, &
                             library, .false., num_bands, num_kpts, stdout, seedname)
-    dis_data%win_min = -1.0_dp
-    dis_data%win_max = 0.0_dp
-    if (eig_found) dis_data%win_min = minval(eigval)
-    if (eig_found) dis_data%win_max = maxval(eigval)
-    call param_read_disentangle_all(eig_found, dis_data, stdout, seedname)
+    dis_window%win_min = -1.0_dp
+    dis_window%win_max = 0.0_dp
+    if (eig_found) dis_window%win_min = minval(eigval)
+    if (eig_found) dis_window%win_max = maxval(eigval)
+    call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
     call param_read_geninterp(geninterp, stdout, seedname)
     call param_read_boltzwann(boltz, write_data%smr_index, eigval, write_data%adpt_smr_fac, &
                               write_data%adpt_smr_max, write_data%smr_fixed_en_width, &
                               write_data%adpt_smr, pw90_calcs%boltzwann, write_data%boltz_2d_dir, &
                               stdout, seedname)
-    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, write_data, &
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi, eigval, write_data, &
                                  stdout, seedname)
     call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
@@ -378,7 +378,7 @@ contains
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(param_input, atoms, spec_points)
-    call param_read_final_alloc(disentanglement, dis_data, wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
+    call param_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
   end subroutine param_postw90_read
 
   subroutine param_read_pw90_calcs(pw90_calcs, stdout, seedname)
@@ -1184,7 +1184,7 @@ contains
     ! [gp-end, Apr 12, 2012]
   end subroutine param_read_boltzwann
 
-  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval, &
+  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi, eigval, &
                                      write_data, stdout, seedname)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
@@ -1193,7 +1193,7 @@ contains
     type(berry_type), intent(inout) :: berry
     type(dos_plot_type), intent(inout) :: dos_data
     type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     type(pw90_extra_io_type), intent(inout) :: write_data
@@ -1202,12 +1202,12 @@ contains
     integer :: i, ierr
     logical :: found
 
-    if (dis_data%frozen_states) then
-      dos_data%energy_max = dis_data%froz_max + 0.6667_dp
+    if (dis_window%frozen_states) then
+      dos_data%energy_max = dis_window%froz_max + 0.6667_dp
     elseif (allocated(eigval)) then
       dos_data%energy_max = maxval(eigval) + 0.6667_dp
     else
-      dos_data%energy_max = dis_data%win_max + 0.6667_dp
+      dos_data%energy_max = dis_window%win_max + 0.6667_dp
     end if
     call param_get_keyword(stdout, seedname, 'dos_energy_max', found, &
                            r_value=dos_data%energy_max)
@@ -1215,7 +1215,7 @@ contains
     if (allocated(eigval)) then
       dos_data%energy_min = minval(eigval) - 0.6667_dp
     else
-      dos_data%energy_min = dis_data%win_min - 0.6667_dp
+      dos_data%energy_min = dis_window%win_min - 0.6667_dp
     end if
     call param_get_keyword(stdout, seedname, 'dos_energy_min', found, &
                            r_value=dos_data%energy_min)
@@ -1225,12 +1225,12 @@ contains
     call param_get_keyword(stdout, seedname, 'kubo_freq_min', found, &
                            r_value=write_data%kubo_freq_min)
     !
-    if (dis_data%frozen_states) then
-      write_data%kubo_freq_max = dis_data%froz_max - fermi%energy_list(1) + 0.6667_dp
+    if (dis_window%frozen_states) then
+      write_data%kubo_freq_max = dis_window%froz_max - fermi%energy_list(1) + 0.6667_dp
     elseif (allocated(eigval)) then
       write_data%kubo_freq_max = maxval(eigval) - minval(eigval) + 0.6667_dp
     else
-      write_data%kubo_freq_max = dis_data%win_max - dis_data%win_min + 0.6667_dp
+      write_data%kubo_freq_max = dis_window%win_max - dis_window%win_min + 0.6667_dp
     end if
     write_data%gyrotropic_freq_max = write_data%kubo_freq_max
     call param_get_keyword(stdout, seedname, 'kubo_freq_max', found, &
@@ -1285,12 +1285,12 @@ contains
                                 + cmplx_i*gyrotropic%smr_fixed_en_width
     enddo
 
-    if (dis_data%frozen_states) then
-      berry%kubo_eigval_max = dis_data%froz_max + 0.6667_dp
+    if (dis_window%frozen_states) then
+      berry%kubo_eigval_max = dis_window%froz_max + 0.6667_dp
     elseif (allocated(eigval)) then
       berry%kubo_eigval_max = maxval(eigval) + 0.6667_dp
     else
-      berry%kubo_eigval_max = dis_data%win_max + 0.6667_dp
+      berry%kubo_eigval_max = dis_window%win_max + 0.6667_dp
     end if
     gyrotropic%eigval_max = berry%kubo_eigval_max
 
@@ -1926,7 +1926,7 @@ contains
 
   end subroutine param_postw90_write
 
-  subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_data, fermi, &
+  subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_window, fermi, &
                                 atoms, eigval, spec_points, dos_data, berry, stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -1939,7 +1939,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -1951,7 +1951,7 @@ contains
     integer :: ierr
 
     call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
-                       dis_data, atoms, eigval, spec_points, stdout, seedname)
+                       dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dos_project in param_pw90_dealloc', stdout, seedname)
@@ -1967,12 +1967,12 @@ contains
   end subroutine param_pw90_dealloc
 
   ! extra postw90 memory
-  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, do_boltzwann, boltz, &
+  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_window, do_boltzwann, boltz, &
                                      spin_decomp, num_wann, stdout)
 
     ! JJ, should only be called from root node
     implicit none
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     !real(kind=dp), parameter :: size_log = 1.0_dp
@@ -1997,7 +1997,7 @@ contains
       TDF_exceeding_energy = 2._dp
       NumPoints1 = int(floor((boltz%temp_max - boltz%temp_min)/boltz%temp_step)) + 1 ! temperature array
       NumPoints2 = int(floor((boltz%mu_max - boltz%mu_min)/boltz%mu_step)) + 1  ! mu array
-      NumPoints3 = int(floor((dis_data%win_max - dis_data%win_min &
+      NumPoints3 = int(floor((dis_window%win_max - dis_window%win_min &
                               + 2._dp*TDF_exceeding_energy)/boltz%tdf_energy_step)) + 1 ! tdfenergyarray
       mem_bw = mem_bw + NumPoints1*size_real                         !TempArray
       mem_bw = mem_bw + NumPoints1*size_real                         !KTArray

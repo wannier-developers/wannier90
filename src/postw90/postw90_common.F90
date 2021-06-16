@@ -252,7 +252,7 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_data, &
+  subroutine pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_window, &
                                           fermi, num_bands, num_wann, eigval, mp_grid, &
                                           real_lattice, recip_lattice, pw90_calcs, &
                                           pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
@@ -278,7 +278,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -396,8 +396,8 @@ contains
     call comms_bcast(pw90_spin%spin_kmesh_spacing, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%spin_kmesh(1), 3, stdout, seedname, world)
     call comms_bcast(berry%wanint_kpoint_file, 1, stdout, seedname, world)
-    call comms_bcast(dis_data%win_min, 1, stdout, seedname, world)
-    call comms_bcast(dis_data%win_max, 1, stdout, seedname, world)
+    call comms_bcast(dis_window%win_min, 1, stdout, seedname, world)
+    call comms_bcast(dis_window%win_max, 1, stdout, seedname, world)
     call comms_bcast(berry%sc_eta, 1, stdout, seedname, world)
     call comms_bcast(berry%sc_w_thr, 1, stdout, seedname, world)
     call comms_bcast(berry%sc_phase_conv, 1, stdout, seedname, world)
@@ -563,7 +563,7 @@ contains
 
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
-                                         dis_data, param_input, wann_data, pw90_common, &
+                                         dis_window, param_input, wann_data, pw90_common, &
                                          v_matrix, stdout, seedname, world)
     !===========================================================!
     !                                                           !
@@ -574,14 +574,14 @@ contains
     use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_param_types, only: disentangle_type, parameter_input_type, wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, parameter_input_type, wannier_data_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank, comms_bcast
 
     implicit none
     integer, intent(in) :: num_wann, num_kpts, num_bands
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
-    type(disentangle_type), intent(inout) :: dis_data
+    type(disentangle_manifold_type), intent(inout) :: dis_window
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(postw90_common_type), intent(in) :: pw90_common
@@ -624,7 +624,7 @@ contains
         v_matrix = cmplx_0
         do loop_kpt = 1, num_kpts
           do j = 1, num_wann
-            do m = 1, dis_data%ndimwin(loop_kpt)
+            do m = 1, dis_window%ndimwin(loop_kpt)
               do i = 1, num_wann
                 v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
                                            + u_matrix_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
@@ -670,14 +670,14 @@ contains
 !              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
 !          endif
 
-        if (.not. allocated(dis_data%lwindow)) then
-          allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+        if (.not. allocated(dis_window%lwindow)) then
+          allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating lwindow in pw90common_wanint_data_dist', stdout, seedname)
         endif
 
-        if (.not. allocated(dis_data%ndimwin)) then
-          allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+        if (.not. allocated(dis_window%ndimwin)) then
+          allocate (dis_window%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating ndimwin in pw90common_wanint_data_dist', stdout, seedname)
         endif
@@ -685,8 +685,8 @@ contains
       end if
 
 !       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
-      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, world)
-      call comms_bcast(dis_data%ndimwin(1), num_kpts, stdout, seedname, world)
+      call comms_bcast(dis_window%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, world)
+      call comms_bcast(dis_window%ndimwin(1), num_kpts, stdout, seedname, world)
     end if
 
   end subroutine pw90common_wanint_data_dist

@@ -35,7 +35,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(berry, dis_data, dos_data, kdist, k_points, param_input, pw90_common, &
+  subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, param_input, pw90_common, &
                       pw90_ham, postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
                       SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
                       num_bands, num_kpts, num_wann, seedname, stdout, comm)
@@ -52,7 +52,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
       postw90_spin_type, postw90_oper_type
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_type, &
+    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_manifold_type, &
       k_point_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
@@ -64,7 +64,7 @@ contains
 
     ! passed variables
     type(berry_type), intent(in) :: berry
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_point_type), intent(in) :: k_points
@@ -139,12 +139,12 @@ contains
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_data, k_points, param_input, pw90_common, stdout, seedname, comm)
+                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
     if (pw90_common%spin_decomp) then
       ndim = 3
       call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    SS_R, dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+                    SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
     else
       ndim = 1
     end if
@@ -204,7 +204,7 @@ contains
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                   num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                    pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, &
                                    stdout, seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
@@ -247,7 +247,7 @@ contains
         if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                   num_bands, num_kpts, u_matrix, v_matrix, dis_data, k_points, &
+                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                    pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
                                    seedname, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &

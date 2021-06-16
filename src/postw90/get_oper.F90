@@ -36,7 +36,7 @@ contains
 
   !======================================================
   subroutine get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, &
-                      v_matrix, HH_R, dis_data, k_points, param_input, pw90_common, stdout, &
+                      v_matrix, HH_R, dis_window, k_points, param_input, pw90_common, stdout, &
                       seedname, comm)
     !======================================================
     !
@@ -49,7 +49,7 @@ contains
     use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
@@ -63,7 +63,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
@@ -185,12 +185,12 @@ contains
     HH_q = cmplx_0
     do ik = 1, num_kpts
       if (param_input%have_disentangled) then
-        num_states(ik) = dis_data%ndimwin(ik)
+        num_states(ik) = dis_window%ndimwin(ik)
       else
         num_states(ik) = num_wann
       endif
 
-      call get_win_min(num_bands, dis_data, param_input, ik, winmin_q)
+      call get_win_min(num_bands, dis_window, param_input, ik, winmin_q)
       do m = 1, num_wann
         do n = 1, m
           do i = 1, num_states(ik)
@@ -244,7 +244,7 @@ contains
 
   !==================================================
   subroutine get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, &
-                      berry, dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, &
+                      berry, dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, &
                       seedname, comm)
     !==================================================
     !
@@ -258,7 +258,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -272,7 +272,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
 
     type(berry_type), intent(in) :: berry
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -377,7 +377,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -452,7 +452,7 @@ contains
 
         ! Wannier-gauge overlap matrix S in the projected subspace
         !
-        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                       param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, S)
 
@@ -522,7 +522,7 @@ contains
 
   !=====================================================
   subroutine get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, &
-                      dis_data, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
+                      dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
                       comm)
     !=====================================================
     !
@@ -535,7 +535,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -547,7 +547,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -596,7 +596,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -658,10 +658,10 @@ contains
           call io_error('Neighbour not found', stdout, seedname)
         end if
 
-        call get_win_min(num_bands, dis_data, param_input, ik, winmin_q)
-        call get_win_min(num_bands, dis_data, param_input, kmesh_info%nnlist(ik, nn), winmin_qb)
+        call get_win_min(num_bands, dis_window, param_input, ik, winmin_q)
+        call get_win_min(num_bands, dis_window, param_input, kmesh_info%nnlist(ik, nn), winmin_qb)
 
-        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                       param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, H=H_q_qb)
         do idir = 1, 3
@@ -692,7 +692,7 @@ contains
   !=============================================================
 
   subroutine get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, &
-                      dis_data, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                      dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
                       stdout, seedname, comm)
     !=============================================================
     !
@@ -705,7 +705,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -717,7 +717,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -764,7 +764,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -803,10 +803,10 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_data, param_input, qb2, winmin_qb2)
+          call get_win_min(num_bands, dis_window, param_input, qb2, winmin_qb2)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_data, param_input, qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_window, param_input, qb1, winmin_qb1)
             !
             ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -834,7 +834,7 @@ contains
             ! Transform to projected subspace, Wannier gauge
             !
 
-            call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+            call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                           param_input, qb1, num_states(qb1), qb2, num_states(qb2), &
                                           Ho_qb1_q_qb2, H_qb1_q_qb2)
             do b = 1, 3
@@ -877,7 +877,7 @@ contains
   end subroutine get_CC_R
 
   !===========================================================
-  subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_data, &
+  subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_window, &
                       kmesh_info, k_points, param_input, stdout, seedname, comm)
     !===========================================================
     !
@@ -889,7 +889,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -899,7 +899,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -938,7 +938,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -967,10 +967,10 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_data, param_input, qb2, winmin_qb2)
+          call get_win_min(num_bands, dis_window, param_input, qb2, winmin_qb2)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_data, param_input, qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_window, param_input, qb1, winmin_qb1)
             !
             ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -1044,7 +1044,7 @@ contains
 
   !================================================================
   subroutine get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, &
-                      dis_data, k_points, param_input, postw90_oper, stdout, seedname, comm)
+                      dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1056,7 +1056,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -1068,7 +1068,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(postw90_oper_type), intent(in) :: postw90_oper
@@ -1104,7 +1104,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1182,7 +1182,7 @@ contains
       do ik = 1, num_kpts
         do is = 1, 3
 
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                         param_input, ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), SS_q(:, :, ik, is))
         enddo !is
@@ -1208,7 +1208,7 @@ contains
 
   !==================================================
   subroutine get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, &
-                       SH_R, dis_data, kmesh_info, k_points, param_input, postw90_oper, &
+                       SH_R, dis_window, kmesh_info, k_points, param_input, postw90_oper, &
                        pw90_common, spin_hall, stdout, seedname, comm)
     !==================================================
     !
@@ -1223,7 +1223,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
 
     implicit none
 
@@ -1237,7 +1237,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
@@ -1313,7 +1313,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (param_input%have_disentangled) then
-          num_states(ik) = dis_data%ndimwin(ik)
+          num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1453,7 +1453,7 @@ contains
         do is = 1, 3
           SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
 
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                         param_input, ik, num_states(ik), ik, num_states(ik), &
                                         SH_o(:, :, ik, is), SH_q(:, :, ik, is))
         end do
@@ -1518,16 +1518,16 @@ contains
           ! Transform to projected subspace, Wannier gauge
           !
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                         param_input, ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), SS_q(:, :, is))
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                         param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SM_o(:, :, is), &
                                         SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                         param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SHM_o(:, :, is), &
                                         SHM_q(:, :, is))
@@ -1627,7 +1627,7 @@ contains
   end subroutine fourier_q_to_R
 
   !===============================================
-  subroutine get_win_min(num_bands, dis_data, param_input, ik, win_min)
+  subroutine get_win_min(num_bands, dis_window, param_input, ik, win_min)
     !===============================================
     !
     !! Find the lower bound (band index) of the
@@ -1635,17 +1635,17 @@ contains
     !
     !===============================================
 
-    ! JJ, it seems inefficient to pass param_input and dis_data just for this
+    ! JJ, it seems inefficient to pass param_input and dis_window just for this
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, parameter_input_type
 
     implicit none
 
     ! Arguments
     integer, intent(in) :: num_bands, ik !! Index of the required k-point
     integer, intent(out) :: win_min !! Index of the lower band of the outer energy window
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(parameter_input_type), intent(in) :: param_input
 
     ! local variables
@@ -1657,7 +1657,7 @@ contains
     endif
 
     do j = 1, num_bands
-      if (dis_data%lwindow(j, ik)) then
+      if (dis_window%lwindow(j, ik)) then
         win_min = j
         exit
       end if
@@ -1666,7 +1666,7 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_data, &
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                       param_input, ik_a, ns_a, ik_b, ns_b, S_o, S, H)
     !==========================================================
     !
@@ -1679,7 +1679,7 @@ contains
     !==========================================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, parameter_input_type
     use w90_utility, only: utility_zgemmm
 
     implicit none
@@ -1689,14 +1689,14 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
     complex(kind=dp), intent(out), optional :: S(:, :), H(:, :)
-    type(disentangle_type), intent(in) :: dis_data
+    type(disentangle_manifold_type), intent(in) :: dis_window
     type(parameter_input_type), intent(in) :: param_input
 
     ! local variables
     integer :: wm_a, wm_b
 
-    call get_win_min(num_bands, dis_data, param_input, ik_a, wm_a)
-    call get_win_min(num_bands, dis_data, param_input, ik_b, wm_b)
+    call get_win_min(num_bands, dis_window, param_input, ik_a, wm_a)
+    call get_win_min(num_bands, dis_window, param_input, ik_b, wm_b)
 
     call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a), 'C', &
                         S_o(wm_a:wm_a + ns_a - 1, wm_b:wm_b + ns_b - 1), 'N', &
