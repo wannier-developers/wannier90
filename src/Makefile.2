@@ -48,8 +48,12 @@ serialobjs: $(OBJS)
 ../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
 	$(COMPILER) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
-../../wannier90.x: $(OBJS) ../wannier_prog.F90
-	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
+../../wannier90.x: ../../$(NEWLIBRARY) ../wannier_prog.F90
+	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(NEWLIBRARY) $(LIBS) -o ../../wannier90.x
+
+../../$(NEWLIBRARY): $(OBJS)
+	$(AR) $(ARFLAGS) $(NEWLIBRARY) $(OBJS)
+        
 
 post: POSTOPTS = $(TEMP1)
 post: COMPILER = $(TEMP2)
