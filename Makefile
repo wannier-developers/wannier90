@@ -50,8 +50,8 @@ w90vdw:
 
 libs: lib
 
-post: objdirp
-	(cd $(ROOTDIR)/src/objp && $(MAKE) -f $(REALMAKEFILE) post)
+post: objdir
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) post)
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
@@ -60,11 +60,6 @@ clean:
 		then cd src/obj && \
 		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf obj ; \
-	fi )
-	@( cd $(ROOTDIR) && if [ -d src/objp ] ; \
-		then cd src/objp && \
-		$(MAKE) -f $(REALMAKEFILE) clean && \
-		cd ../ && rm -rf objp ; \
 	fi )
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
@@ -210,11 +205,6 @@ dist-lite:
 objdir: 
 	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
 		then mkdir src/obj ; \
-	fi ) ;
-
-objdirp: 
-	@( cd $(ROOTDIR) && if [ ! -d src/objp ] ; \
-		then mkdir src/objp ; \
 	fi ) ;
 
 .PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests w90spn2spn install
