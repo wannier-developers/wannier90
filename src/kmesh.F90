@@ -49,8 +49,8 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(recip_lattice, kpt_cart, param_input, kmesh_info, kmesh_data, num_kpts, &
-                       stdout, seedname)
+  subroutine kmesh_get(kmesh_data, kmesh_info, param_input, kpt_cart, recip_lattice, num_kpts, &
+                       seedname, stdout)
     !=====================================================
     !
     !! Main routine to calculate the b-vectors
@@ -616,9 +616,8 @@ contains
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(recip_lattice, param_input, kmesh_info, &
-                         num_kpts, kmesh_data, num_proj, kpt_latt, &
-                         real_lattice, calc_only_A, stdout, seedname)
+  subroutine kmesh_write(kmesh_data, kmesh_info, param_input, kpt_latt, real_lattice, &
+                         recip_lattice, num_kpts, num_proj, calc_only_A, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)

@@ -115,14 +115,15 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
-                             num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
+      call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                             wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                             num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
       !
-      call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, param_hamil, &
-                              param_input, dis_data, u_matrix_opt, k_points%kpt_latt, eigval, &
-                              u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
-                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
+      call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                              seedname, lsitesymmetry)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, param_plot, &
                                                             spec_points, param_input, &
@@ -135,18 +136,18 @@ contains
                                                                 fermi_surface_data, num_wann, &
                                                                 ham_r, irvec, ndegen, nrpts, stdout, seedname)
       !
-      if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, &
-                                                        irvec, ndegen, nrpts, hmlg, stdout, seedname)
+      if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                        num_wann, stdout, &
+                                                        param_input%timing_level, seedname)
       !
-      if (param_plot%write_rmn) call hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, &
-                                                           num_kpts, k_points%kpt_latt, irvec, &
-                                                           nrpts, stdout, seedname)
-      !
-      if (param_plot%write_tb) call hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, &
-                                                         m_matrix, num_kpts, k_points%kpt_latt, &
-                                                         param_input%timing_level, ham_r, irvec, &
-                                                         ndegen, nrpts, hmlg, stdout, seedname)
-      !
+      if (param_plot%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
+                                                           k_points%kpt_latt, irvec, nrpts, &
+                                                           num_kpts, num_wann, stdout, seedname)
+      if (param_plot%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
+                                                         k_points%kpt_latt, real_lattice, irvec, &
+                                                         ndegen, nrpts, num_kpts, num_wann, &
+                                                         stdout, param_input%timing_level, &
+                                                         seedname)
       if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            param_input, num_wann, &

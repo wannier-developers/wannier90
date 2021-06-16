@@ -32,9 +32,10 @@ module w90_overlap
 contains
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, &
-                              m_matrix_orig_local, m_matrix_orig, timing_level, nntot, num_kpts, &
-                              num_wann, num_bands, disentanglement, stdout, seedname, comm)
+  subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                              m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
+                              num_kpts, num_wann, timing_level, disentanglement, seedname, stdout, &
+                              comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -130,10 +131,10 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input, &
-                          w90_calcs, u_matrix_opt, m_matrix_orig, a_matrix, m_matrix, u_matrix, &
-                          select_proj, num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym, &
-                          stdout, seedname, comm)
+  subroutine overlap_read(kmesh_info, param_input, select_proj, sym, w90_calcs, a_matrix, &
+                          m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
+                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, lsitesymmetry, &
+                          seedname, stdout, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -377,12 +378,12 @@ contains
 !~[aam]
     if ((.not. w90_calcs%disentanglement) .and. (.not. w90_calcs%cp_pp) .and. (.not. w90_calcs%use_bloch_phases)) then
       if (.not. param_input%gamma_only) then
-        call overlap_project(m_matrix_local, kmesh_info%nnlist, kmesh_info%nntot, m_matrix, &
-                             u_matrix, param_input%timing_level, num_kpts, num_wann, num_bands, &
-                             lsitesymmetry, sym, stdout, seedname, comm)
+        call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
+                             kmesh_info%nntot, num_bands, num_kpts, num_wann, &
+                             param_input%timing_level, lsitesymmetry, seedname, stdout, comm)
       else
-        call overlap_project_gamma(kmesh_info%nntot, m_matrix, u_matrix, param_input%timing_level, &
-                                   num_wann, stdout, seedname)
+        call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
+                                   param_input%timing_level, seedname, stdout)
       endif
     endif
 !~[aam]
@@ -634,8 +635,8 @@ contains
   end subroutine overlap_rotate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                             a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout, seedname, comm)
+  subroutine overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                             m_matrix_orig_local, u_matrix, u_matrix_opt, seedname, stdout, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
@@ -699,9 +700,9 @@ contains
   end subroutine overlap_dealloc
 
   !==================================================================!
-  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
-                             timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
-                             sym, stdout, seedname, comm)
+  subroutine overlap_project(sym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, num_bands, &
+                             num_kpts, num_wann, timing_level, lsitesymmetry, seedname, stdout, &
+                             comm)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -824,8 +825,8 @@ contains
     enddo
     ! NKP
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                                        num_wann, u_matrix, sym, stdout, seedname) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix, num_bands, num_wann, num_kpts, &
+                                                        num_wann, seedname, stdout) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
@@ -860,7 +861,8 @@ contains
 
 ![ysl-b]
   !==================================================================!
-  subroutine overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann, stdout, seedname)
+  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, seedname, &
+                                   stdout)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008

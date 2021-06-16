@@ -48,12 +48,12 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, m_matrix, &
-                       num_kpts, real_lattice, num_proj, wann_data, k_points, num_bands, &
-                       u_matrix_opt, eigval, dis_data, recip_lattice, atoms, lsitesymmetry, &
-                       stdout, mp_grid, w90_calcs, transport_mode, param_hamil, sym, ham_r, irvec, &
-                       shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                       ham_k, seedname, comm)
+  subroutine wann_main(atoms, dis_data, hmlg, kmesh_info, k_points, param_hamil, param_input, &
+                       param_wannierise, sym, wann_data, w90_calcs, ham_k, ham_r, m_matrix, &
+                       u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, transport_mode, &
+                       lsitesymmetry, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -240,9 +240,9 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
     if (param_wannierise%precond) then
-      call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
-                             num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
+      call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                             wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                             num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main', stdout, seedname)
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
@@ -510,7 +510,7 @@ contains
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      param_wannierise, param_input, num_wann, &
                                      kmesh_info%wbtot, cdq_loc, cdodq_loc, counts, stdout)
-      if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, num_kpts, sym) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_gradient(sym, cdq, 2, num_kpts, num_wann) !RS:
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -797,14 +797,14 @@ contains
     endif
 
     if (param_wannierise%write_hr_diag) then
-      call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
-                             num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-      call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, param_hamil, &
-                              param_input, dis_data, u_matrix_opt, k_points%kpt_latt, eigval, &
-                              u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
-                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-
+      call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                             wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                             num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
+      call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                              seedname, lsitesymmetry)
       if (param_input%iprint > 0) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
@@ -1573,7 +1573,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts, sym, stdout, seedname) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(sym, cdq, num_kpts, num_wann, seedname, stdout) !RS: calculate cdq(Rk) from k
 
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
                                                   + counts(my_node_id))
@@ -2589,7 +2589,7 @@ contains
                          seedname, comm)
       call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
       if (lsitesymmetry) then
-        call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts, sym) !RS:
+        call sitesym_symmetrize_gradient(sym, cdodq, 1, num_kpts, num_wann) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) &
                                                       + 1:displs(my_node_id) + counts(my_node_id))
       endif
@@ -3179,10 +3179,10 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, &
-                             m_matrix, num_kpts, real_lattice, wann_data, num_bands, &
-                             u_matrix_opt, eigval, lwindow, recip_lattice, atoms, k_points, &
-                             dis_data, mp_grid, stdout, seedname, comm)
+  subroutine wann_main_gamma(atoms, dis_data, kmesh_info, k_points, param_input, param_wannierise, &
+                             wann_data, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                             recip_lattice, mp_grid, num_bands, num_kpts, num_wann, lwindow, &
+                             seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3213,6 +3213,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
 
     logical, intent(in) :: lwindow(:, :)
+
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts

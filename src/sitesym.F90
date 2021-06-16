@@ -56,6 +56,7 @@ contains
   !==================================================================!
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow_in)
     !==================================================================!
+!   not called !
 
     implicit none
 
@@ -94,7 +95,7 @@ contains
   end subroutine sitesym_slim_d_matrix_band
 
   !==================================================================!
-  subroutine sitesym_replace_d_matrix_band(num_wann, sym)
+  subroutine sitesym_replace_d_matrix_band(sym, num_wann)
     !==================================================================!
 
     implicit none
@@ -114,8 +115,8 @@ contains
   end subroutine sitesym_replace_d_matrix_band
 
   !==========================================================================!
-  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                         ndim, umat, sym, stdout, seedname, lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(sym, umat, num_bands, ndim, num_kpts, num_wann, &
+                                         seedname, stdout, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -130,20 +131,22 @@ contains
 
     implicit none
 
-!   from w90_parameters
+!   passed variables
+    type(sitesym_data), intent(in) :: sym
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-!   end w90_parameters
-    type(sitesym_data), intent(in) :: sym
-
     integer, intent(in) :: ndim
+
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
+
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
+
     character(len=50), intent(in)  :: seedname
 
-    ! local
+    ! local variables
     integer :: ik, ir, isym, irk, n
     logical :: ldone(num_kpts)
     complex(kind=dp) :: cmat(ndim, num_wann)
@@ -187,15 +190,18 @@ contains
   end subroutine sitesym_symmetrize_u_matrix
 
   !==================================================================!
-  subroutine sitesym_symmetrize_gradient(imode, grad, num_wann, num_kpts, sym)
+  subroutine sitesym_symmetrize_gradient(sym, grad, imode, num_kpts, num_wann)
     !==================================================================!
     use w90_utility, only: utility_zgemm
 
     implicit none
 
+!   passed variables
     type(sitesym_data), intent(in) :: sym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
+
+!   local variables
     integer :: ik, ir, isym, irk, ngk
 
     complex(kind=dp) :: grad_total(num_wann, num_wann)
@@ -259,19 +265,21 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !==================================================================!
-  subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts, sym, stdout, seedname)
+  subroutine sitesym_symmetrize_rotation(sym, urot, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
     use w90_utility, only: utility_zgemm
 
     implicit none
 
+!   passed variables
     type(sitesym_data), intent(in) :: sym
+
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
     character(len=50), intent(in)  :: seedname
-    !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    ! local
+
+!   local variables
     integer :: ik, ir, isym, irk
     complex(kind=dp) :: cmat1(num_wann, num_wann)
     complex(kind=dp) :: cmat2(num_wann, num_wann)
@@ -302,8 +310,7 @@ contains
   end subroutine sitesym_symmetrize_rotation
 
   !==================================================================!
-  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts, &
-                                        sym)
+  subroutine sitesym_symmetrize_zmatrix(sym, czmat, num_bands, num_kpts, lwindow_in)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
@@ -312,14 +319,17 @@ contains
 
     implicit none
 
-!   from w90_parameters
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_kpts
-!   end w90_parameters
+!   passed variables
     type(sitesym_data), intent(in) :: sym
 
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+
     complex(kind=dp), intent(inout) :: czmat(num_bands, num_bands, num_kpts)
+
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
+
+!   local variables
     logical :: lfound(num_kpts)
     integer :: ik, ir, isym, irk, nd
     complex(kind=dp) :: cztmp(num_bands, num_bands)
@@ -498,8 +508,8 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda, &
-                                          umat, num_bands, num_wann, sym, stdout, seedname)
+  subroutine sitesym_dis_extract_symmetry(sym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
+                                          seedname, stdout)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -512,16 +522,21 @@ contains
 
     implicit none
 
+!   passed variables
+    type(sitesym_data), intent(in) :: sym
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
-    type(sitesym_data), intent(in) :: sym
     integer, intent(in) :: ik, n
+
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
     complex(kind=dp), intent(out) :: lambda(num_wann, num_wann)
     complex(kind=dp), intent(inout) :: umat(num_bands, num_wann)
+
     character(len=50), intent(in)  :: seedname
 
+!   local variables
     complex(kind=dp) :: umatnew(num_bands, num_wann)
     complex(kind=dp) :: ZU(num_bands, num_wann)
     complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
@@ -586,22 +601,22 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !==================================================================!
-  subroutine sitesym_read(num_bands, num_wann, num_kpts, sym, stdout, seedname)
+  subroutine sitesym_read(sym, num_bands, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
-!   use w90_io, only: io_file_unit, io_error, seedname
     use w90_io, only: io_file_unit, io_error
 
     implicit none
 
-!   from w90_parameters
+!   passed variables
+    type(sitesym_data), intent(inout) :: sym
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-!   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
 
+!   local variables
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()

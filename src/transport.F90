@@ -82,11 +82,11 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, &
-                       wann_data, atoms, param_hamil, dis_data, u_matrix_opt, k_points, eigval, &
-                       u_matrix, lsitesymmetry, num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, &
-                       shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                       ham_k, stdout, seedname)
+  subroutine tran_main(atoms, dis_data, fermi, hmlg, k_points, param_hamil, param_input, tran, &
+                       wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                       real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
+                       ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
+                       lsitesymmetry, seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
 
@@ -177,17 +177,17 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input, real_lattice, mp_grid, tran%mode, w90_calcs, num_kpts, &
-                               num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
-                                param_hamil, param_input, dis_data, u_matrix_opt, &
-                                k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
-                                wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
-                                                          ham_r, irvec, ndegen, nrpts, hmlg, &
-                                                          stdout, seedname)
+        call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                               wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                               num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
+        call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+                                u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                                recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                                seedname, lsitesymmetry)
+        if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                          num_wann, stdout, &
+                                                          param_input%timing_level, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
@@ -204,17 +204,17 @@ contains
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input, real_lattice, mp_grid, tran%mode, w90_calcs, num_kpts, &
-                               num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
-                                param_hamil, param_input, dis_data, u_matrix_opt, &
-                                k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
-                                wannier_centres_translated, hmlg, ham_k, stdout, seedname)
-        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
-                                                          ham_r, irvec, ndegen, nrpts, hmlg, &
-                                                          stdout, seedname)
+        call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                               wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                               num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
+        call hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+                                u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                                recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                                seedname, lsitesymmetry)
+        if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                          num_wann, stdout, &
+                                                          param_input%timing_level, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &

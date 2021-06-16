@@ -41,9 +41,9 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
-                               num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k, stdout, seedname)
+  subroutine hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+                               wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
+                               num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -60,17 +60,20 @@ contains
     type(ham_logical), intent(inout)       :: hmlg
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
-    integer, intent(inout) :: nrpts
-    integer, intent(inout) :: rpt_origin
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(inout) :: nrpts
+    integer, intent(inout) :: rpt_origin
+    integer, intent(in) :: stdout
+
     real(kind=dp), intent(in)                 :: real_lattice(3, 3)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+
     character(len=50), intent(in)  :: seedname
     character(len=20), intent(in)  :: transport_mode
 
@@ -126,7 +129,7 @@ contains
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, hmlg, ham_k, &
+  subroutine hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                                  stdout, seedname)
     !! Deallocate module data
     !============================================!
@@ -141,9 +144,12 @@ contains
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(in)                 :: stdout
+
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+
     character(len=50), intent(in)  :: seedname
 
     ! local variables
@@ -188,11 +194,11 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, atoms, param_hamil, &
-                                param_input, dis_data, u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                                lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, irvec, &
-                                shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, &
-                                seedname)
+  subroutine hamiltonian_get_hr(atoms, dis_data, hmlg, param_hamil, param_input, ham_k, ham_r, &
+                                u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
+                                recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
+                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                                seedname, lsitesymmetry)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -214,23 +220,27 @@ contains
     type(disentangle_type), intent(in)          :: dis_data
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
-    integer, intent(inout)              :: nrpts
     integer, intent(inout)              :: irvec(:, :)
+    integer, intent(inout)              :: nrpts
     integer, intent(in)                 :: num_bands
     integer, intent(in)                 :: num_kpts
     integer, intent(in)                 :: num_wann
     integer, intent(in)                 :: stdout
+
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in)    :: real_lattice(3, 3)
     real(kind=dp), intent(in)    :: recip_lattice(3, 3)
     real(kind=dp), intent(in)    :: wannier_centres(:, :)
     real(kind=dp), intent(in)    :: kpt_latt(:, :)
     real(kind=dp), intent(in)    :: eigval(:, :)
+
     complex(kind=dp), intent(inout)              :: ham_r(:, :, :)
     complex(kind=dp), intent(in)                 :: u_matrix(:, :, :)
     complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+
     logical, intent(in) :: lsitesymmetry  !YN:
+
     character(len=50), intent(in)  :: seedname
 
     ! local variables
@@ -521,8 +531,8 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg, &
-                                  stdout, seedname)
+  subroutine hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, num_wann, stdout, &
+                                  timing_level, seedname)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -744,8 +754,8 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, num_kpts, kpt_latt, irvec, &
-                                   nrpts, stdout, seedname)
+  subroutine hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
+                                   num_wann, stdout, seedname)
     !! Write out the matrix elements of r
     !============================================!
 
@@ -825,9 +835,9 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, m_matrix, num_kpts, &
-                                  kpt_latt, timing_level, ham_r, irvec, ndegen, nrpts, hmlg, &
-                                  stdout, seedname)
+  subroutine hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, kpt_latt, real_lattice, &
+                                  irvec, ndegen, nrpts, num_kpts, num_wann, stdout, timing_level, &
+                                  seedname)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -853,15 +863,15 @@ contains
     integer, intent(inout) :: nrpts
     integer, intent(in)    :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
-    real(kind=dp)             :: rdotk
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    complex(kind=dp)             :: fac, pos_r(3)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     character(len=50), intent(in)  :: seedname
 
 !   local variables
+    real(kind=dp)      :: rdotk
+    complex(kind=dp)   :: fac, pos_r(3)
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
 

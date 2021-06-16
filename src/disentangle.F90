@@ -33,11 +33,9 @@ contains
 
   !==================================================================!
 
-  subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
-                      m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                      dis_data, kmesh_info, k_points, param_input, lsitesymmetry, sym, stdout, &
-                      seedname, comm)
-
+  subroutine dis_main(dis_data, kmesh_info, k_points, param_input, sym, a_matrix, m_matrix, &
+                      m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
+                      recip_lattice, num_bands, num_kpts, num_wann, lsitesymmetry, stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -151,8 +149,8 @@ contains
     end do
 
     if (lsitesymmetry) then
-      call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, u_matrix_opt, &
-                                       sym, stdout, seedname, dis_data%lwindow)
+      call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, num_wann, &
+                                       seedname, stdout, dis_data%lwindow)
     endif
 
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
@@ -193,7 +191,7 @@ contains
     enddo
 
     ! Find the initial u_matrix
-    if (lsitesymmetry) call sitesym_replace_d_matrix_band(num_wann, sym) !RS: replace d_matrix_band here
+    if (lsitesymmetry) call sitesym_replace_d_matrix_band(sym, num_wann) !RS: replace d_matrix_band here
 ![ysl-b]
     if (.not. param_input%gamma_only) then
       call internal_find_u(on_root, lsitesymmetry, param_input%timing_level, num_kpts, num_wann, &
@@ -587,7 +585,8 @@ contains
     endif
 
     if (lsitesymmetry) then
-      call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_wann, u_matrix, sym, stdout, seedname)
+      call sitesym_symmetrize_u_matrix(sym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
+                                       seedname, stdout)
     endif
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2, stdout, seedname)
@@ -1893,7 +1892,7 @@ contains
                              num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
                              seedname, comm)
           call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
-          call sitesym_symmetrize_zmatrix(czmat_in, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
+          call sitesym_symmetrize_zmatrix(sym, czmat_in, num_bands, num_kpts, dis_data%lwindow) !RS:
           do nkp_loc = 1, counts(my_node_id)
             nkp = nkp_loc + displs(my_node_id)
             czmat_in_loc(:, :, nkp_loc) = czmat_in(:, :, nkp)
@@ -1983,11 +1982,10 @@ contains
         end if                                                                      !RS:
         if (lsitesymmetry) then                                                     !RS:
 
-          call sitesym_dis_extract_symmetry(nkp, dis_data%ndimwin(nkp), &
-                                            czmat_in_loc(:, :, nkp_loc), lambda, &
-                                            u_matrix_opt_loc(:, :, nkp_loc), num_bands, num_wann, &
-                                            sym, stdout, seedname) !RS:
-
+          call sitesym_dis_extract_symmetry(sym, lambda, u_matrix_opt_loc(:, :, nkp_loc), &
+                                            czmat_in_loc(:, :, nkp_loc), nkp, &
+                                            dis_data%ndimwin(nkp), num_bands, num_wann, &
+                                            seedname, stdout) !RS:
           do j = 1, num_wann                                                          !RS:
             wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)               !RS:
           enddo                                                                    !RS:
@@ -2083,9 +2081,9 @@ contains
                          num_bands*num_wann*counts, num_bands*num_wann*displs, stdout, seedname, &
                          comm)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, &
-                                                          u_matrix_opt, sym, stdout, seedname, dis_data%lwindow) !RS:
-
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, &
+                                                          num_wann, seedname, stdout, &
+                                                          dis_data%lwindow) !RS:
       if (index(param_input%devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_data%num_iter) then
           call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
@@ -2192,7 +2190,7 @@ contains
                            num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
                            seedname, comm)
         call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
-        call sitesym_symmetrize_zmatrix(czmat_out, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
+        call sitesym_symmetrize_zmatrix(sym, czmat_out, num_bands, num_kpts, dis_data%lwindow) !RS:
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           czmat_out_loc(:, :, nkp_loc) = czmat_out(:, :, nkp)
