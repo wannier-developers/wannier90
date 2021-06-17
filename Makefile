@@ -24,22 +24,19 @@ all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
-serialobjs: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) serialobjs)
-
-w90chk2chk: objdir serialobjs
+w90chk2chk: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
 
-w90spn2spn: objdir serialobjs
+w90spn2spn: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
 
-wannier: objdir serialobjs
+wannier: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
 
-lib: objdir serialobjs
+lib: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
 
-dynlib: objdir serialobjs
+dynlib: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
 
 w90pov:
@@ -207,4 +204,4 @@ objdir:
 		then mkdir src/obj ; \
 	fi ) ;
 
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests w90spn2spn install
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp tests w90spn2spn install
