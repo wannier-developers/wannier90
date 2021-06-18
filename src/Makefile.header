@@ -3,16 +3,17 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o kmesh.o
         wann90_methods.o types.o
 
 # for the (old) library, same dependencies EXCEPT comms.o -- don't know if the usual one is pllel
-# library depends on a serial version (see Makefile.2, target comms-serial.o)
+# library depends on a serial version
 OBJSLIB  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o kmesh.o disentangle.o \
         ws_distance.o wannierise.o plot.o transport.o sitesym.o wann90_param.o wann90_methods.o \
-        types.o wannier_lib.o
+        types.o wannier_lib.o comms-serial.o 
 
 OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
         postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
         boltzwann.o geninterp.o postw90_param.o types.o
 
 LIBRARY = ../../libwannier.a
+LIBRARYV2 = ../../libwan2.a
 
 ## Dynamic library section
 ## Define some defaults (good for linux) if none is defined in the make.inc
