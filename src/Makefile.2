@@ -109,7 +109,7 @@ disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o comms.
 wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannierise.F90
 
-plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o
+plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o comms.o:w
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../plot.F90
 
 ws_distance.o: ../ws_distance.F90 constants.o io.o parameters.o

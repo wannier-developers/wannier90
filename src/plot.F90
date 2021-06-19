@@ -47,56 +47,60 @@ contains
     integer :: nkp
     logical :: have_gamma
 
-    if (timing_level > 0) call io_stopwatch('plot: main', 1)
+    if (on_root) then
+      if (timing_level > 0) call io_stopwatch('plot: main', 1)
 
-    ! Print the header only if there is something to plot
-    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
-        wannier_plot .or. write_u_matrices .or. write_tb) then
-      write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
-      write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
-      write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
-      write (stdout, *)
-    end if
+      ! Print the header only if there is something to plot
+      if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+          wannier_plot .or. write_u_matrices .or. write_tb) then
+        write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
+        write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
+        write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
+        write (stdout, *)
+      end if
 
-    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
-        write_tb) then
-      ! Check if the kmesh includes the gamma point
-      have_gamma = .false.
-      do nkp = 1, num_kpts
-        if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
-      end do
-      if (.not. have_gamma) &
-           write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
-           & ' Interpolation may be incorrect. !!!!'
-      ! Transform Hamiltonian to WF basis
-      !
-      call hamiltonian_setup()
-      !
-      call hamiltonian_get_hr()
-      !
-      if (bands_plot) call plot_interpolate_bands
-      !
-      if (fermi_surface_plot) call plot_fermi_surface
-      !
-      if (write_hr) call hamiltonian_write_hr()
-      !
-      if (write_rmn) call hamiltonian_write_rmn()
-      !
-      if (write_tb) call hamiltonian_write_tb()
-      !
-      if (write_hr .or. write_rmn .or. write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(nrpts, irvec)
-        call ws_write_vec(nrpts, irvec)
+      if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+          write_tb) then
+        ! Check if the kmesh includes the gamma point
+        have_gamma = .false.
+        do nkp = 1, num_kpts
+          if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
+        end do
+        if (.not. have_gamma) &
+             write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
+             & ' Interpolation may be incorrect. !!!!'
+        ! Transform Hamiltonian to WF basis
+        !
+        call hamiltonian_setup()
+        !
+        call hamiltonian_get_hr()
+        !
+        if (bands_plot) call plot_interpolate_bands
+        !
+        if (fermi_surface_plot) call plot_fermi_surface
+        !
+        if (write_hr) call hamiltonian_write_hr()
+        !
+        if (write_rmn) call hamiltonian_write_rmn()
+        !
+        if (write_tb) call hamiltonian_write_tb()
+        !
+        if (write_hr .or. write_rmn .or. write_tb) then
+          if (.not. done_ws_distance) call ws_translate_dist(nrpts, irvec)
+          call ws_write_vec(nrpts, irvec)
+        end if
       end if
     end if
 
     if (wannier_plot) call plot_wannier
 
-    if (write_bvec) call plot_bvec
+    if (on_root) then
+      if (write_bvec) call plot_bvec
 
-    if (write_u_matrices) call plot_u_matrices
+      if (write_u_matrices) call plot_u_matrices
 
-    if (timing_level > 0) call io_stopwatch('plot: main', 2)
+      if (timing_level > 0) call io_stopwatch('plot: main', 2)
+    end if
 
   end subroutine plot_main
 
@@ -1019,7 +1023,7 @@ contains
 
     call comms_array_split(num_kpts, counts, displs) ! for MPI on kpoints
     call io_date(cdate, ctime)
-    do loop_kpt = displs(my_node_id)+1, displs(my_node_id)+counts(my_node_id)
+    do loop_kpt = displs(my_node_id) + 1, displs(my_node_id) + counts(my_node_id)
 
       inc_band = .true.
       num_inc = num_wann
@@ -1202,11 +1206,11 @@ contains
     end do !loop over kpoints
 
     if (spinors) then
-      call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx,-((ngs(2))/2)*ngy,-((ngs(3))/2)*ngz,1,1), &
-        size(wann_func_nc),'SUM')
+      call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1, 1), &
+                        size(wann_func_nc), 'SUM')
     else
-      call comms_reduce(wann_func(-((ngs(1))/2)*ngx,-((ngs(2))/2)*ngy,-((ngs(3))/2)*ngz,1), &
-        size(wann_func), 'SUM')
+      call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
+                        size(wann_func), 'SUM')
     endif
 
     if (on_root) then
@@ -1216,9 +1220,9 @@ contains
             do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
               do loop_w = 1, num_wannier_plot
                 upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
-                  conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
+                                conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
                 dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
-                  conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
+                                conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
                 if (wannier_plot_spinor_phase) then
                   upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
                   dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
