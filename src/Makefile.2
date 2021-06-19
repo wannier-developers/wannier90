@@ -1,4 +1,4 @@
-# -*- MakeFile -*- 
+# -*- MakeFile -*-
 #  Should be no need to change below this line
 #
 
@@ -26,7 +26,7 @@ endif
 
 wannier libs dynlibs w90chk2chk serialobjs w90spn2spn: POSTOPTS = $(TEMP1)
 wannier libs dynlibs w90chk2chk serialobjs w90spn2spn: COMPILER = $(TEMP2)
-wannier: ../../wannier90.x 
+wannier: ../../wannier90.x
 w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
@@ -60,11 +60,11 @@ ifndef MPIF90
 	$(info *  On many systems MPIF90=mpif90 will work      *) \
 	$(info ********************* STOP **********************) \
 	$(info  ) \
-	$(error MPIF90 is not set) 
+	$(error MPIF90 is not set)
 
 endif
 
-endif 
+endif
 
 
 
@@ -72,7 +72,7 @@ libs:     $(LIBRARY)
 
 dynlibs: $(DYNLIBRARY)
 
-$(LIBRARY): $(OBJS) $(OBJSLIB) 
+$(LIBRARY): $(OBJS) $(OBJSLIB)
 	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB) $(OBJS)
 
 $(DYNLIBRARY): $(OBJS) $(OBJSLIB)
@@ -100,7 +100,7 @@ hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o param
 overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
-kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o 
+kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
 disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o comms.o
@@ -118,7 +118,7 @@ ws_distance.o: ../ws_distance.F90 constants.o io.o parameters.o
 transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../transport.F90
 
-sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
+sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
 comms.o: ../comms.F90 constants.o io.o
@@ -154,7 +154,7 @@ gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o parameters.o constants.o utility.
 wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o get_oper.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90
 
-postw90_common.o: $(POSTDIR)postw90_common.F90 ws_distance.o comms.o parameters.o utility.o constants.o io.o 
+postw90_common.o: $(POSTDIR)postw90_common.F90 ws_distance.o comms.o parameters.o utility.o constants.o io.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_common.F90
 
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
@@ -164,4 +164,3 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 
 
 .PHONY: wannier libs post clean mpi_test serialobjs w90spn2spn
-

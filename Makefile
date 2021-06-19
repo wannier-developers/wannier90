@@ -76,17 +76,17 @@ veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a w90chk2chk.x w90spn2spn.x
 	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
 	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
-	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
+	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
+	$(MAKE) -C $(ROOTDIR)/doc/user_guide
+	$(MAKE) -C $(ROOTDIR)/doc/tutorial
 
 # For now hardcoded to 3.1.0, and using HEAD
 # Better to get the version from the io.F90 file and use
 # the tag (e.g. v3.1.0) instead of HEAD
-dist: 
+dist:
 	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.1.0/ -o wannier90-3.1.0.tar.gz
 
 dist-legacy:
@@ -182,10 +182,10 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
-test-serial: w90chk2chk wannier post  
+test-serial: w90chk2chk wannier post
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
 
-test-parallel: w90chk2chk wannier post 
+test-parallel: w90chk2chk wannier post
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default --numprocs=4 )
 
 # Alias
@@ -207,12 +207,12 @@ dist-lite:
 		./CHANGE.log \
 	)
 
-objdir: 
+objdir:
 	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
 		then mkdir src/obj ; \
 	fi ) ;
 
-objdirp: 
+objdirp:
 	@( cd $(ROOTDIR) && if [ ! -d src/objp ] ; \
 		then mkdir src/objp ; \
 	fi ) ;

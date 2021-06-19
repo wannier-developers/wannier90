@@ -4,12 +4,18 @@ repos:
   hooks:
   - id: check-yaml
   - id: trailing-whitespace
-    files: (?x)^(
+    files: |
+      (?x)^(
+        Makefile|
+        src/Makefile.*|
         config/make[.]inc[.\w]*|
         examples/example\d\d[-]?\w*/.+win
       )$
   - id: end-of-file-fixer
-    files: (?x)^(
+    files: |
+      (?x)^(
+        Makefile|
+        src/Makefile.*|
         config/make[.]inc[.\w]*|
         examples/example\d\d[-]?\w*/.+win
       )$
