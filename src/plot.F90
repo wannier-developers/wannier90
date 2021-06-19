@@ -1020,7 +1020,7 @@ contains
       allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating r_wvfn_nc in plot_wannier')
     endif
-
+!
     call comms_array_split(num_kpts, counts, displs) ! for MPI on kpoints
     call io_date(cdate, ctime)
     do loop_kpt = displs(my_node_id) + 1, displs(my_node_id) + counts(my_node_id)
