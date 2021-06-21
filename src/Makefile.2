@@ -88,6 +88,9 @@ constants.o: ../constants.F90
 io.o: ../io.F90 constants.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../io.F90
 
+w90lib.o: ../w90lib.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../w90lib.F90
+
 utility.o: ../utility.F90  constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../utility.F90
 
@@ -97,7 +100,7 @@ parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../hamiltonian.F90
 
-overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o
+overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o w90lib.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
 kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o

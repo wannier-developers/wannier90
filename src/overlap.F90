@@ -104,6 +104,7 @@ contains
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
+    use w90_lib, only: read_overlaps_matrix
 
     implicit none
 
@@ -145,57 +146,15 @@ contains
       read (mmn_in, '(a)', err=103, end=103) dummy
       if (on_root) write (stdout, '(a)') trim(dummy)
 
-      ! Read the number of bands, k-points and nearest neighbours
-      read (mmn_in, *, err=103, end=103) nb_tmp, nkp_tmp, nntot_tmp
-
-      ! Checks
-      if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has not the right number of bands')
-      if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has not the right number of k-points')
-      if (nntot_tmp .ne. nntot) &
-        call io_error(trim(seedname)//'.mmn has not the right number of nearest neighbours')
-
-      ! Read the overlaps
       num_mmn = num_kpts*nntot
       allocate (mmn_tmp(num_bands, num_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating mmn_tmp in overlap_read')
-      do ncount = 1, num_mmn
-        read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
-        do n = 1, num_bands
-          do m = 1, num_bands
-            read (mmn_in, *, err=103, end=103) m_real, m_imag
-            mmn_tmp(m, n) = cmplx(m_real, m_imag, kind=dp)
-          enddo
-        enddo
-        nn = 0
-        nn_found = .false.
-        do inn = 1, nntot
-          if ((nkp2 .eq. nnlist(nkp, inn)) .and. &
-              (nnl .eq. nncell(1, nkp, inn)) .and. &
-              (nnm .eq. nncell(2, nkp, inn)) .and. &
-              (nnn .eq. nncell(3, nkp, inn))) then
-            if (.not. nn_found) then
-              nn_found = .true.
-              nn = inn
-            else
-              call io_error('Error reading '//trim(seedname)// &
-                            '.mmn. More than one matching nearest neighbour found')
-            endif
-          endif
-        end do
-        if (nn .eq. 0) then
-          if (on_root) write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
-            ' Error reading '//trim(seedname)//'.mmn:', ncount, nkp, nkp2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found')
-        end if
-        if (disentanglement) then
-          m_matrix_orig(:, :, nn, nkp) = mmn_tmp(:, :)
-        else
-          ! disentanglement=.false. means numbands=numwann, so no the dimensions are the same
-          m_matrix(:, :, nn, nkp) = mmn_tmp(:, :)
-        end if
-      end do
+
+      if (disentanglement) then
+        call read_overlaps_matrix(mmn_in, m_matrix_orig, seedname, num_bands, num_kpts, nntot, nnlist, nncell, mmn_tmp, io_error)
+      else
+        call read_overlaps_matrix(mmn_in, m_matrix, seedname, num_bands, num_kpts, nntot, nnlist, nncell, mmn_tmp, io_error)
+      end if
+
       deallocate (mmn_tmp, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating mmn_tmp in overlap_read')
       close (mmn_in)
