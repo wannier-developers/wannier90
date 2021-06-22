@@ -181,7 +181,7 @@ contains
 
       write (stdout, '(/,5x,a,(f6.3,1x))') &
         'Adaptive smearing width prefactor: ', &
-        dos_data%adpt_smr_fac
+        dos_data%smr%fac
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
         dos_data%kmesh(1:3)
@@ -201,7 +201,7 @@ contains
       !
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
-        if (dos_data%adpt_smr) then
+        if (dos_data%smr%adpt) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
@@ -210,10 +210,10 @@ contains
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
-                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
+                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
                          ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
-                         adpt_smr_max=dos_data%adpt_smr_max, &
+                         smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
+                         adpt_smr_max=dos_data%smr%max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
@@ -221,10 +221,10 @@ contains
                                          ws_vec, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
-                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
+                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
                          ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr_index, &
-                         smr_fixed_en_width=dos_data%smr_fixed_en_width, &
+                         smr_index=dos_data%smr%index, &
+                         smr_fixed_en_width=dos_data%smr%fixed_en_width, &
                          UU=UU)
         end if
         dos_all = dos_all + dos_k*kdist%weight(loop_tot)
@@ -244,7 +244,7 @@ contains
         kpt(1) = real(loop_x, dp)/real(dos_data%kmesh(1), dp)
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
-        if (dos_data%adpt_smr) then
+        if (dos_data%smr%adpt) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
@@ -253,10 +253,10 @@ contains
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
-                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
+                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
                          ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr_index, adpt_smr_fac=dos_data%adpt_smr_fac, &
-                         adpt_smr_max=dos_data%adpt_smr_max, &
+                         smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
+                         adpt_smr_max=dos_data%smr%max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
@@ -264,10 +264,10 @@ contains
                                          ws_vec, stdout, seedname)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
-                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
+                         real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
                          ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr_index, &
-                         smr_fixed_en_width=dos_data%smr_fixed_en_width, UU=UU)
+                         smr_index=dos_data%smr%index, &
+                         smr_fixed_en_width=dos_data%smr%fixed_en_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
       end do
@@ -530,7 +530,7 @@ contains
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, num_wann, param_input, wann_data, &
-                       real_lattice, recip_lattice, mp_grid, dos_data, pw90_common, pw90_spin, &
+                       real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
                        ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
 
@@ -538,7 +538,7 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
 !   use pw90_parameters, only: pw90_common, pw90_spin, dos_data !(num_dos_project, dos_project)
-    use pw90_parameters, only: postw90_common_type, postw90_spin_type, dos_plot_type !(num_dos_project, dos_project)
+    use pw90_parameters, only: postw90_spin_type, dos_plot_type !(num_dos_project, dos_project)
     use w90_param_types, only: parameter_input_type, wannier_data_type
 !   use w90_parameters, only: param_input
     use w90_spin, only: spin_get_nk
@@ -558,7 +558,6 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     type(dos_plot_type), intent(in) :: dos_data
-    type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec

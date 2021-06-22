@@ -150,7 +150,7 @@ contains
                     //'curv/morb/shc heatmap plots', stdout, seedname)
     end if
     if (plot_shc) then
-      if (berry%kubo_adpt_smr) then
+      if (berry%kubo_smr%adpt) then
         call io_error('Error: Must use fixed smearing when plotting ' &
                       //'spin Hall conductivity', stdout, seedname)
       end if
