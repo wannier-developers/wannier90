@@ -312,10 +312,10 @@ program postw90
     ! both disentanglement and maximal localization, etc.)
     !
     if (on_root) then
-      call param_read_chkpt(checkpoint, param_input, wann_data, kmesh_info, &
-                            k_points, num_kpts, dis_window, num_bands, &
-                            num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                            mp_grid, real_lattice, recip_lattice, .true., stdout, seedname)
+      call param_read_chkpt(dis_window, kmesh_info, k_points, param_input, wann_data, m_matrix, &
+                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, mp_grid, &
+                            num_bands, num_kpts, num_wann, checkpoint, .true., seedname, &
+                            stdout)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes

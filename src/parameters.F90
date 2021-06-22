@@ -1691,10 +1691,10 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(checkpoint, param_input, wann_data, kmesh_info, &
-                              k_points, num_kpts, dis_data, num_bands, &
-                              num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                              mp_grid, real_lattice, recip_lattice, ispostw90, stdout, seedname)
+  subroutine param_read_chkpt(dis_data, kmesh_info, k_points, param_input, wann_data, m_matrix, &
+                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, mp_grid, &
+                              num_bands, num_kpts, num_wann, checkpoint, ispostw90, seedname, &
+                              stdout)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1712,26 +1712,32 @@ contains
     implicit none
 
     !data from parameters module
-    character(len=*), intent(inout) :: checkpoint
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    integer, intent(in) :: num_kpts
     type(disentangle_manifold_type), intent(inout) :: dis_data
+
+    integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: mp_grid(3)
+
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
-    integer, intent(in) :: mp_grid(3)
+
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    logical, intent(in) :: ispostw90 ! Are we running postw90?
-    character(len=50), intent(in)  :: seedname
 
+    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(inout) :: checkpoint
+
+    logical, intent(in) :: ispostw90 ! Are we running postw90?
+
+!   local variables
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
@@ -1868,9 +1874,8 @@ contains
   end subroutine param_read_chkpt
 
 !===========================================================!
-  subroutine param_chkpt_dist(checkpoint, param_input, wann_data, num_kpts, &
-                              dis_data, num_bands, num_wann, u_matrix, &
-                              u_matrix_opt, stdout, seedname, comm)
+  subroutine param_chkpt_dist(dis_data, param_input, wann_data, u_matrix, u_matrix_opt, num_bands, &
+                              num_kpts, num_wann, checkpoint, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! Distribute the chk files
@@ -1878,26 +1883,30 @@ contains
     !===========================================================!
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_error, io_file_unit, &
-      io_date, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     implicit none
 
     !data from parameters module
-    character(len=*), intent(inout) :: checkpoint
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
-    integer, intent(inout) :: num_kpts
     type(disentangle_manifold_type), intent(inout) :: dis_data
+    type(w90commtype), intent(in) :: comm
+
     integer, intent(in) :: stdout
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
+    integer, intent(inout) :: num_kpts
+
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
-    type(w90commtype), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
+    character(len=*), intent(inout) :: checkpoint
+
+!   local variables
     integer :: ierr
 
     logical :: on_root = .false.

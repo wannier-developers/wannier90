@@ -41,13 +41,13 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(driver, w90_calcs, pp_calc, param_input, param_plot, param_wannierise, &
-                        lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
-                        kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
-                        tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, select_proj, &
-                        real_lattice, recip_lattice, spec_points, eig_found, library, &
-                        library_param_read_first_pass, dis_window, bohr, stdout, seedname, &
-                        write_data, proj, lhasproj)
+  subroutine param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+                        kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
+                        param_wannierise, pp_calc, proj, select_proj, spec_points, tran, &
+                        wann_data, write_data, w90_calcs, eigval, real_lattice, recip_lattice, &
+                        bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
+                        eig_found, lhasproj, library, library_param_read_first_pass, &
+                        lsitesymmetry, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -67,41 +67,45 @@ contains
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
-    ! RS: symmetry-adapted Wannier functions
-    logical, intent(inout) :: lsitesymmetry
-    real(kind=dp), intent(inout) :: symmetrize_eps
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
-    integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
-    integer, intent(inout) :: num_bands
-    integer, intent(inout) :: num_wann
-    integer, intent(in) :: stdout
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    integer, intent(inout) :: mp_grid(3)
-    integer, intent(inout) :: num_proj
-    type(select_projection_type), intent(inout) :: select_proj
-    real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(inout) :: spec_points
-    logical, intent(inout) :: eig_found
-    logical, intent(in) :: library
-    logical, intent(in) :: library_param_read_first_pass
-    real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
+    type(select_projection_type), intent(inout) :: select_proj
     type(w90_extra_io_type), intent(inout) :: write_data
     ! was in driver, only used by wannier_lib
     type(projection_type), intent(inout) :: proj
+
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(inout) :: mp_grid(3)
+    integer, intent(inout) :: num_proj
+    integer, intent(inout) :: num_kpts
+
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), intent(inout) :: symmetrize_eps
+    real(kind=dp), intent(in) :: bohr
+
+    character(len=50), intent(in)  :: seedname
+
+    logical, intent(inout) :: eig_found
+    logical, intent(in) :: library
+    logical, intent(in) :: library_param_read_first_pass
     !Projections
     logical, intent(out) :: lhasproj
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(inout) :: lsitesymmetry
 
     !local variables
     character(len=20) :: energy_unit
@@ -1107,11 +1111,12 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(driver, w90_calcs, param_input, param_plot, param_wannierise, &
-                         lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
-                         k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, &
-                         num_bands, num_wann, mp_grid, num_proj, select_proj, real_lattice, &
-                         recip_lattice, spec_points, stdout, write_data, proj)
+  subroutine param_write(atoms, dis_data, driver, fermi, fermi_surface_data, &
+                         kmesh_data, k_points, param_hamil, param_input, param_plot, &
+                         param_wannierise, proj, select_proj, spec_points, tran, &
+                         wann_data, write_data, w90_calcs, real_lattice, recip_lattice, &
+                         symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
+                         lsitesymmetry, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1120,38 +1125,42 @@ contains
 
     implicit none
 
-    !data from parameters module
+    !passed vaiables
     type(param_driver_type), intent(in) :: driver
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(parameter_input_type), intent(in) :: param_input
     type(param_plot_type), intent(in) :: param_plot
     type(param_wannierise_type), intent(in) :: param_wannierise
-    ! RS: symmetry-adapted Wannier functions
-    logical, intent(in) :: lsitesymmetry
-    real(kind=dp), intent(in) :: symmetrize_eps
     type(wannier_data_type), intent(in) :: wann_data
     type(param_hamiltonian_type), intent(in) :: param_hamil
     type(param_kmesh_type), intent(in) :: kmesh_data
     type(k_point_type), intent(in) :: k_points
-    integer, intent(in) :: num_kpts
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_surface_type), intent(in) :: fermi_surface_data
     type(fermi_data_type), intent(in) :: fermi
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atoms
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
-    integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_proj
     type(select_projection_type), intent(in) :: select_proj
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(w90_extra_io_type), intent(in) :: write_data
     type(projection_type), intent(in) :: proj
 
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_proj
+    integer, intent(in) :: num_kpts
+
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: symmetrize_eps
+
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(in) :: lsitesymmetry
+
+!   local variables
     integer :: i, nkp, loop, nat, nsp
     real(kind=dp) :: cell_volume
 
@@ -1529,14 +1538,14 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                               wann_data, kmesh_data, k_points, dis_data, dis_window, &
-                               atoms, eigval, spec_points, stdout, seedname, write_data, proj)
+  subroutine param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
+                               param_plot, param_wannierise, proj, spec_points, wann_data, &
+                               write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
+!   passed variables
     implicit none
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
-    integer, intent(in) :: stdout
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -1547,14 +1556,19 @@ contains
     type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(special_kpoints_type), intent(inout) :: spec_points
-    character(len=50), intent(in)  :: seedname
-    !type(dos_plot_type), intent(inout) :: dos_data
-    !type(berry_type), intent(inout) :: berry
     type(w90_extra_io_type), intent(inout) :: write_data
     type(projection_type), intent(inout) :: proj
 
+    integer, intent(in) :: stdout
+
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+
+    character(len=50), intent(in)  :: seedname
+    !type(dos_plot_type), intent(inout) :: dos_data
+    !type(berry_type), intent(inout) :: berry
+
+!   passed variables
     integer :: ierr
 
     call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
@@ -1702,9 +1716,8 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(w90_calcs, param_input, param_wannierise, &
-                                   kmesh_data, kmesh_info, num_kpts, &
-                                   atoms, num_bands, num_wann, num_proj, stdout)
+  subroutine param_memory_estimate(atoms, kmesh_data, kmesh_info, param_input, param_wannierise, &
+                                   w90_calcs, num_bands, num_kpts, num_proj, num_wann, stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1721,18 +1734,20 @@ contains
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(param_kmesh_type), intent(in) :: kmesh_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    integer, intent(in) :: num_kpts
     !type(disentangle_type), intent(in) :: dis_data
     type(atom_data_type), intent(in) :: atoms
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     integer, intent(in) :: num_proj
+    integer, intent(in) :: num_kpts
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
     !type(postw90_common_type), intent(in) :: pw90_common
     !type(boltzwann_type), intent(in) :: boltz
     !logical, intent(in) :: ispostw90 ! Are we running postw90?
 
+!   local variables
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp
@@ -1932,11 +1947,12 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(driver, w90_calcs, pp_calc, param_input, param_plot, param_wannierise, &
-                        lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, &
-                        kmesh_info, k_points, num_kpts, dis_data, fermi_surface_data, fermi, &
-                        tran, atoms, num_bands, num_wann, eigval, mp_grid, num_proj, real_lattice, &
-                        recip_lattice, eig_found, lhasproj, dis_window, stdout, seedname, comm)
+  subroutine param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+                        kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
+                        param_wannierise, pp_calc, tran, wann_data, w90_calcs, eigval, &
+                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                        num_proj, num_wann, eig_found, lhasproj, lsitesymmetry, seedname, stdout, &
+                        comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1948,35 +1964,37 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
 
     implicit none
-    !data from parameters module
+    !passed variables
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(postproc_type), intent(inout) :: pp_calc
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
-    ! RS: symmetry-adapted Wannier functions
-    logical, intent(inout) :: lsitesymmetry
-    real(kind=dp), intent(inout) :: symmetrize_eps
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
-    integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
+    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(w90commtype), intent(in) :: comm
+
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     integer, intent(inout) :: stdout
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_proj
+    integer, intent(inout) :: num_kpts
+
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), intent(inout) :: symmetrize_eps
     !type(pw90_calculation_type), intent(inout) :: pw90_calcs
     !type(postw90_oper_type), intent(inout) :: postw90_oper
     !type(postw90_common_type), intent(inout) :: pw90_common
@@ -1990,11 +2008,15 @@ contains
     !type(gyrotropic_type), intent(inout) :: gyrotropic
     !type(geninterp_type), intent(inout) :: geninterp
     !type(boltzwann_type), intent(inout) :: boltz
+
+    character(len=50), intent(in)  :: seedname
+
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: lhasproj
-    type(disentangle_manifold_type), intent(inout) :: dis_window
-    type(w90commtype), intent(in) :: comm
-    character(len=50), intent(in)  :: seedname
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(inout) :: lsitesymmetry
+
+!   local variables
     logical :: on_root = .false.
     integer :: ierr
     integer :: iprintroot !JJ

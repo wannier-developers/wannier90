@@ -22,17 +22,22 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(num_kpts, w90_calcs, k_points, param_input, param_plot, &
-                       real_lattice, num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, &
-                       atoms, param_hamil, dis_window, u_matrix_opt, eigval, u_matrix, &
-                       lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
-                       fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
+! subroutine plot_main(num_kpts, w90_calcs, k_points, param_input, param_plot, &
+!                      real_lattice, num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, &
+!                      atoms, param_hamil, dis_window, u_matrix_opt, eigval, u_matrix, &
+!                      lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
+!                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
+!                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
+  subroutine plot_main(atoms, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, k_points, &
+                       param_hamil, param_input, param_plot, spec_points, wann_data, w90_calcs, &
+                       ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                       recip_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
+                       shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
+                       transport_mode, lsitesymmetry, seedname, stdout)
     !! Main plotting routine
     !============================================!
 
     use w90_constants, only: eps6, dp
-!   use w90_io, only: stdout, io_stopwatch
     use w90_io, only: io_stopwatch
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
@@ -46,6 +51,7 @@ contains
 
     implicit none
 
+!   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(k_point_type), intent(in)               :: k_points
     type(parameter_input_type), intent(inout)    :: param_input
@@ -58,7 +64,6 @@ contains
     type(fermi_data_type), intent(in)            :: fermi
     type(fermi_surface_type), intent(in)         :: fermi_surface_data
     type(special_kpoints_type), intent(in)       :: spec_points
-
     type(ham_logical), intent(inout)             :: hmlg
 
     integer, intent(inout)              :: rpt_origin
@@ -76,6 +81,7 @@ contains
     real(kind=dp), intent(in)                 :: recip_lattice(3, 3)
     real(kind=dp), intent(in)                 :: eigval(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    real(kind=dp), intent(in) :: bohr
 
     complex(kind=dp), intent(in)                 :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
@@ -85,8 +91,9 @@ contains
 
     character(len=20), intent(in) :: transport_mode
     character(len=50), intent(in)  :: seedname
+
     logical, intent(in) :: lsitesymmetry
-    real(kind=dp), intent(in) :: bohr
+!   local variables
 
     integer :: nkp
     logical :: have_gamma
