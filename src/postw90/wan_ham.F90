@@ -473,7 +473,7 @@ contains
 
   end subroutine wham_get_eig_deleig
 
-  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, num_wann, pw90_ham, &
+  subroutine wham_get_eig_deleig_TB_conv(eig, del_eig, delHH, UU, num_wann, pw90_ham, &
                                          stdout, seedname)
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
@@ -484,7 +484,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use pw90_parameters, only: postw90_ham_type
 
-    real(kind=dp), dimension(3), intent(in)         :: kpt
+    !real(kind=dp), dimension(3), intent(in)         :: kpt
     !! the three coordinates of the k point vector (in relative coordinates)
     integer, intent(in) :: num_wann
     real(kind=dp), intent(out)                      :: del_eig(num_wann, 3)

@@ -1949,7 +1949,7 @@ contains
                                                       ws_distance, ws_vec, stdout, seedname, &
                                                       OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
-      call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU, num_wann, pw90_ham, stdout, &
+      call wham_get_eig_deleig_TB_conv(eig, eig_da, HH_da, UU, num_wann, pw90_ham, stdout, &
                                        seedname)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
