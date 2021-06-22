@@ -280,7 +280,7 @@ contains
       kubo_H = cmplx_0
       kubo_AH = cmplx_0
       jdos = 0.0_dp
-      if (pw90_common%spin_decomp) then
+      if (pw90_spin%decomp) then
 
         call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
                       SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
@@ -352,7 +352,7 @@ contains
       if (eval_morb) write (stdout, '(/,3x,a)') '* Orbital magnetization'
 
       if (eval_kubo) then
-        if (pw90_common%spin_decomp) then
+        if (pw90_spin%decomp) then
           write (stdout, '(/,3x,a)') &
             '* Complex optical conductivity and its spin-decomposition'
           write (stdout, '(/,3x,a)') &
@@ -499,7 +499,7 @@ contains
         endif
 
         if (eval_kubo) then
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, param_input, &
                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
@@ -516,7 +516,7 @@ contains
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
           jdos = jdos + jdos_k*kweight
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             kubo_H_spn = kubo_H_spn + kubo_H_k_spn*kweight
             kubo_AH_spn = kubo_AH_spn + kubo_AH_k_spn*kweight
             jdos_spn = jdos_spn + jdos_k_spn*kweight
@@ -673,7 +673,7 @@ contains
         endif
 
         if (eval_kubo) then
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             call berry_get_kubo_k(kpt, kubo_H_k, kubo_AH_k, jdos_k, num_wann, fermi, param_input, &
                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
@@ -690,7 +690,7 @@ contains
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
           jdos = jdos + jdos_k*kweight
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             kubo_H_spn = kubo_H_spn + kubo_H_k_spn*kweight
             kubo_AH_spn = kubo_AH_spn + kubo_AH_k_spn*kweight
             jdos_spn = jdos_spn + jdos_k_spn*kweight
@@ -797,7 +797,7 @@ contains
       call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
       call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
       call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
-      if (pw90_common%spin_decomp) then
+      if (pw90_spin%decomp) then
         call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
         call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
         call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
@@ -1084,7 +1084,7 @@ contains
         fac = 1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
         kubo_H = kubo_H*fac
         kubo_AH = kubo_AH*fac
-        if (pw90_common%spin_decomp) then
+        if (pw90_spin%decomp) then
           kubo_H_spn = kubo_H_spn*fac
           kubo_AH_spn = kubo_AH_spn*fac
         endif
@@ -1108,7 +1108,7 @@ contains
           write (stdout, '(/,3x,a)') '* '//file_name
           open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
           do ifreq = 1, berry%kubo_nfreq
-            if (pw90_common%spin_decomp) then
+            if (pw90_spin%decomp) then
               write (file_unit, '(9E16.8)') real(berry%kubo_freq_list(ifreq), dp), &
                 real(0.5_dp*(kubo_H(i, j, ifreq) + kubo_H(j, i, ifreq)), dp), &
                 aimag(0.5_dp*(kubo_AH(i, j, ifreq) + kubo_AH(j, i, ifreq))), &
@@ -1145,7 +1145,7 @@ contains
           write (stdout, '(/,3x,a)') '* '//file_name
           open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
           do ifreq = 1, berry%kubo_nfreq
-            if (pw90_common%spin_decomp) then
+            if (pw90_spin%decomp) then
               write (file_unit, '(9E16.8)') real(berry%kubo_freq_list(ifreq), dp), &
                 real(0.5_dp*(kubo_AH(i, j, ifreq) - kubo_AH(j, i, ifreq)), dp), &
                 aimag(0.5_dp*(kubo_H(i, j, ifreq) - kubo_H(j, i, ifreq))), &
@@ -1177,7 +1177,7 @@ contains
         file_unit = io_file_unit()
         open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         do ifreq = 1, berry%kubo_nfreq
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             write (file_unit, '(5E16.8)') real(berry%kubo_freq_list(ifreq), dp), &
               jdos(ifreq), jdos_spn(:, ifreq)
           else
@@ -1749,7 +1749,7 @@ contains
     kubo_H_k = cmplx_0
     kubo_AH_k = cmplx_0
     jdos_k = 0.0_dp
-    if (pw90_common%spin_decomp) then
+    if (pw90_spin%decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
                        recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, ws_vec, &
                        stdout, seedname)
@@ -1761,7 +1761,7 @@ contains
       do n = 1, num_wann
         if (n == m) cycle
         if (eig(m) > berry%kubo_eigval_max .or. eig(n) > berry%kubo_eigval_max) cycle
-        if (pw90_common%spin_decomp) then
+        if (pw90_spin%decomp) then
           if (spn_nk(n) >= 0 .and. spn_nk(m) >= 0) then
             ispn = 1 ! up --> up transition
           elseif (spn_nk(n) < 0 .and. spn_nk(m) < 0) then
@@ -1803,7 +1803,7 @@ contains
 !             delta=delta/eta_smr
           !
           jdos_k(ifreq) = jdos_k(ifreq) + occ_prod*delta
-          if (pw90_common%spin_decomp) &
+          if (pw90_spin%decomp) &
             jdos_k_spn(ispn, ifreq) = jdos_k_spn(ispn, ifreq) + occ_prod*delta
           cfac = cmplx_i*rfac1/(eig(m) - eig(n) - omega)
           rfac2 = -pi*rfac1*delta
@@ -1813,7 +1813,7 @@ contains
                                       + rfac2*AA(n, m, i)*AA(m, n, j)
               kubo_AH_k(i, j, ifreq) = kubo_AH_k(i, j, ifreq) &
                                        + cfac*AA(n, m, i)*AA(m, n, j)
-              if (pw90_common%spin_decomp) then
+              if (pw90_spin%decomp) then
                 kubo_H_k_spn(i, j, ispn, ifreq) = &
                   kubo_H_k_spn(i, j, ispn, ifreq) &
                   + rfac2*AA(n, m, i)*AA(m, n, j)

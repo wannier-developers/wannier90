@@ -141,7 +141,7 @@ contains
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
                   HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
 
-    if (pw90_common%spin_decomp) then
+    if (pw90_spin%decomp) then
       ndim = 3
       call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
                     SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
@@ -611,7 +611,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) then
+    if (pw90_spin%decomp) then
       call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
                        mp_grid, pw90_spin, ws_distance, HH_R, SS_R, ws_vec, stdout, seedname)
     endif
@@ -620,7 +620,7 @@ contains
 
     dos_k = 0.0_dp
     do i = 1, num_wann
-      if (pw90_common%spin_decomp) then
+      if (pw90_spin%decomp) then
         ! Contribution to spin-up DOS of Bloch spinor with component
         ! (alpha,beta) with respect to the chosen quantization axis
         alpha_sq = (1.0_dp + spn_nk(i))/2.0_dp ! |alpha|^2
@@ -675,7 +675,7 @@ contains
           ! [GP] I don't put num_elec_per_state here below: if we are
           ! calculating the spin decomposition, we should be doing a
           ! calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if (pw90_common%spin_decomp) then
+          if (pw90_spin%decomp) then
             ! Spin-up contribution
             dos_k(loop_f, 2) = dos_k(loop_f, 2) + rdum*alpha_sq
             ! Spin-down contribution
@@ -689,7 +689,7 @@ contains
           do j = 1, dos_data%num_project
             dos_k(loop_f, 1) = dos_k(loop_f, 1) + rdum*r_num_elec_per_state &
                                *abs(UU(dos_data%project(j), i))**2
-            if (pw90_common%spin_decomp) then
+            if (pw90_spin%decomp) then
               ! Spin-up contribution
               dos_k(loop_f, 2) = dos_k(loop_f, 2) &
                                  + rdum*alpha_sq*abs(UU(dos_data%project(j), i))**2

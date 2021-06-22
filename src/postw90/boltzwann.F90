@@ -239,7 +239,7 @@ contains
       TDFEnergyArray(i) = dis_window%win_min - TDF_exceeding_energy + real(i - 1, dp)*boltz%tdf_energy_step
     end do
 
-    if (pw90_common%spin_decomp) then
+    if (pw90_spin%decomp) then
       ndim = 3
     else
       ndim = 1
@@ -771,7 +771,7 @@ contains
 
     call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
                   HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
-    if (pw90_common%spin_decomp) then
+    if (pw90_spin%decomp) then
       ndim = 3
 
       call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
@@ -899,7 +899,7 @@ contains
 
       call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, wann_data, &
                    real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, &
-                   pw90_common%spin_decomp, ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
+                   pw90_spin%decomp, ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -990,7 +990,7 @@ contains
       if (boltz%dos_adpt_smr) then
         write (boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
         write (boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
-        if (pw90_common%spin_decomp) then
+        if (pw90_spin%decomp) then
           write (boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
           write (boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
         end if
