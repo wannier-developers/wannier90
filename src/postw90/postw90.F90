@@ -392,7 +392,7 @@ program postw90
   ! Spin magnetic moment
   ! --------------------
   !
-  if (pw90_common%spin_moment) then
+  if (pw90_calcs%spin_moment) then
     call spin_get_moment(dis_window, fermi, kpt_dist, k_points, param_input, pw90_common, &
                          postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
                          u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &

@@ -21,6 +21,7 @@ module pw90_parameters
 
   public
 
+  !AAM: pw90_calculation_type contains information about the high-level task that pw90 is being asked to do.
   type pw90_calculation_type !postw90.F90
     logical :: kpath
     logical :: kslice
@@ -29,7 +30,7 @@ module pw90_parameters
     logical :: gyrotropic
     logical :: geninterp
     logical :: boltzwann
-    !BGS spin_moment?
+    logical :: spin_moment !postw90_common and postw90
   end type pw90_calculation_type
 
   type postw90_oper_type ! only in postw90/get_oper.F90
@@ -40,7 +41,6 @@ module pw90_parameters
   end type postw90_oper_type
 
   type postw90_common_type
-    logical :: spin_moment !postw90_common and postw90
     logical :: spin_decomp !postw90_common, berry, dos and boltzwann
     real(kind=dp) :: scissors_shift ! get_oper and berry
     ! IVO
@@ -336,7 +336,8 @@ contains
                              write_data%adpt_smr_max, write_data%smr_fixed_en_width, &
                              write_data%adpt_smr, stdout, seedname)
     call param_read_scissors_shift(pw90_common, stdout, seedname)
-    call param_read_pw90spin(pw90_common, pw90_spin, param_input, stdout, seedname)
+    call param_read_pw90spin(pw90_calcs%spin_moment, pw90_common%spin_decomp, pw90_spin, &
+                             param_input, stdout, seedname)
     call param_read_gyrotropic(gyrotropic, num_wann, write_data%smr_fixed_en_width, &
                                write_data%smr_index, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, write_data%adpt_smr_fac, write_data%adpt_smr_max, &
@@ -371,7 +372,7 @@ contains
                             recip_lattice, bohr, stdout, seedname)
     call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
                                  write_data%kmesh, recip_lattice, stdout, seedname)
-    call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, pw90_spin, gyrotropic, &
+    call param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, &
                                 boltz, recip_lattice, write_data%global_kmesh_set, &
                                 write_data%kmesh, write_data%kmesh_spacing, stdout, seedname)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname) !pw90_write
@@ -566,19 +567,20 @@ contains
 
   end subroutine param_read_scissors_shift
 
-  subroutine param_read_pw90spin(pw90_common, pw90_spin, param_input, stdout, seedname)
+  subroutine param_read_pw90spin(spin_moment, spin_decomp, pw90_spin, param_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(postw90_common_type), intent(inout) :: pw90_common
+    logical, intent(out) :: spin_moment ! from pw90_calcs
+    logical, intent(out) :: spin_decomp ! from pw90_common
     type(postw90_spin_type), intent(inout) :: pw90_spin
     type(parameter_input_type), intent(in) :: param_input
     character(len=50), intent(in)  :: seedname
 
     logical :: found
 
-    pw90_common%spin_moment = .false.
-    call param_get_keyword(stdout, seedname, 'spin_moment', found, l_value=pw90_common%spin_moment)
+    spin_moment = .false.
+    call param_get_keyword(stdout, seedname, 'spin_moment', found, l_value=spin_moment)
 
     pw90_spin%spin_axis_polar = 0.0_dp
     call param_get_keyword(stdout, seedname, 'spin_axis_polar', found, r_value=pw90_spin%spin_axis_polar)
@@ -586,10 +588,10 @@ contains
     pw90_spin%spin_axis_azimuth = 0.0_dp
     call param_get_keyword(stdout, seedname, 'spin_axis_azimuth', found, r_value=pw90_spin%spin_axis_azimuth)
 
-    pw90_common%spin_decomp = .false.
-    call param_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=pw90_common%spin_decomp)
+    spin_decomp = .false.
+    call param_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=spin_decomp)
 
-    if (pw90_common%spin_decomp .and. (param_input%num_elec_per_state .ne. 1)) then
+    if (spin_decomp .and. (param_input%num_elec_per_state .ne. 1)) then
       call io_error('spin_decomp can be true only if num_elec_per_state is 1', stdout, seedname)
     end if
 
@@ -1298,13 +1300,12 @@ contains
     call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_read_energy_range
 
-  subroutine param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, pw90_spin, &
+  subroutine param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, &
                                     gyrotropic, boltz, recip_lattice, global_kmesh_set, kmesh, &
                                     kmesh_spacing, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(postw90_common_type), intent(in) :: pw90_common
     type(berry_type), intent(inout) :: berry
     type(dos_plot_type), intent(inout) :: dos_data
     type(postw90_spin_type), intent(inout) :: pw90_spin
@@ -1333,7 +1334,7 @@ contains
                           module_kmesh_spacing=gyrotropic%kmesh_spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
-                          moduleprefix='spin', should_be_defined=pw90_common%spin_moment, &
+                          moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
                           module_kmesh=pw90_spin%spin_kmesh, &
                           module_kmesh_spacing=pw90_spin%spin_kmesh_spacing)
 
@@ -1533,9 +1534,9 @@ contains
     endif
     if (pw90_common%spin_decomp .or. param_input%iprint > 2) &
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Spin decomposition                        :', pw90_common%spin_decomp, '|'
-    if (pw90_common%spin_moment .or. param_input%iprint > 2) &
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Spin moment                       :', pw90_common%spin_moment, '|'
-    if (pw90_common%spin_decomp .or. pw90_common%spin_moment .or. param_input%iprint > 2) then
+    if (pw90_calcs%spin_moment .or. param_input%iprint > 2) &
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Spin moment                       :', pw90_calcs%spin_moment, '|'
+    if (pw90_common%spin_decomp .or. pw90_calcs%spin_moment .or. param_input%iprint > 2) then
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :', pw90_spin%spin_axis_polar, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :', pw90_spin%spin_axis_azimuth, '|'
       if (postw90_oper%spn_formatted) then
