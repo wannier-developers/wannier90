@@ -50,11 +50,10 @@ module pw90_parameters
 
 ! Module  s p i n
   type postw90_spin_type
-    !Todo - remove spin_ ?
-    real(kind=dp) :: spin_axis_polar
-    real(kind=dp) :: spin_axis_azimuth
-    real(kind=dp) :: spin_kmesh_spacing
-    integer :: spin_kmesh(3)
+    real(kind=dp) :: axis_polar
+    real(kind=dp) :: axis_azimuth
+    real(kind=dp) :: kmesh_spacing
+    integer :: kmesh(3)
   end type postw90_spin_type
 
   type postw90_ham_type
@@ -582,11 +581,11 @@ contains
     spin_moment = .false.
     call param_get_keyword(stdout, seedname, 'spin_moment', found, l_value=spin_moment)
 
-    pw90_spin%spin_axis_polar = 0.0_dp
-    call param_get_keyword(stdout, seedname, 'spin_axis_polar', found, r_value=pw90_spin%spin_axis_polar)
+    pw90_spin%axis_polar = 0.0_dp
+    call param_get_keyword(stdout, seedname, 'spin_axis_polar', found, r_value=pw90_spin%axis_polar)
 
-    pw90_spin%spin_axis_azimuth = 0.0_dp
-    call param_get_keyword(stdout, seedname, 'spin_axis_azimuth', found, r_value=pw90_spin%spin_axis_azimuth)
+    pw90_spin%axis_azimuth = 0.0_dp
+    call param_get_keyword(stdout, seedname, 'spin_axis_azimuth', found, r_value=pw90_spin%axis_azimuth)
 
     spin_decomp = .false.
     call param_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=spin_decomp)
@@ -1335,8 +1334,8 @@ contains
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
                           moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
-                          module_kmesh=pw90_spin%spin_kmesh, &
-                          module_kmesh_spacing=pw90_spin%spin_kmesh_spacing)
+                          module_kmesh=pw90_spin%kmesh, &
+                          module_kmesh_spacing=pw90_spin%kmesh_spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
                           moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
@@ -1537,8 +1536,8 @@ contains
     if (pw90_calcs%spin_moment .or. param_input%iprint > 2) &
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Spin moment                       :', pw90_calcs%spin_moment, '|'
     if (pw90_common%spin_decomp .or. pw90_calcs%spin_moment .or. param_input%iprint > 2) then
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :', pw90_spin%spin_axis_polar, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :', pw90_spin%spin_axis_azimuth, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :', pw90_spin%axis_polar, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :', pw90_spin%axis_azimuth, '|'
       if (postw90_oper%spn_formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Spn file-type                   :', 'formatted', '|'
       else
