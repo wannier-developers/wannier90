@@ -46,15 +46,7 @@ module wannier_param_types
 
     logical :: write_hr !plot, transport and wannier_lib
     !BGS write_tb, write_u_matrices, dos_plot?
-    logical :: cp_pp !BGS overlap only?
-    !! Car-Parinello post-proc flag/transport
-    logical :: use_bloch_phases !overlap only
   end type w90_calculation_type
-
-  ! written in kmesh for use postprocessing code
-  type postproc_type
-    logical :: only_A ! only calc A matrix, not M
-  end type postproc_type
 
   type param_plot_type ! only in plot.F90
     logical :: wvfn_formatted

@@ -96,7 +96,6 @@ program wannier
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
   type(param_driver_type) :: driver
-  type(postproc_type) :: pp_calc
   type(parameter_input_type) :: param_input
   logical :: eig_found
   type(param_plot_type) :: param_plot
@@ -205,6 +204,8 @@ program wannier
   !Projections
   logical :: lhasproj
 
+  logical :: use_bloch_phases, cp_pp, calc_only_A
+
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
   type(w90commtype) :: w90comm
@@ -238,10 +239,10 @@ program wannier
 
     call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                     kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                    pp_calc, proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
+                    proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
                     eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                    num_bands, num_kpts, num_proj, num_wann, eig_found, lhasproj, .false., .false., &
-                    lsitesymmetry, seedname, stdout)
+                    num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                    lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -274,7 +275,7 @@ program wannier
                      param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
                      spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                      recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                     num_wann, lsitesymmetry, stdout)
+                     num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
@@ -302,9 +303,9 @@ program wannier
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  pp_calc, tran, wann_data, w90_calcs, eigval, real_lattice, recip_lattice, &
+                  tran, wann_data, w90_calcs, eigval, real_lattice, recip_lattice, &
                   symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
-                  lhasproj, lsitesymmetry, seedname, stdout, w90comm)
+                  cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
   if (param_input%gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -356,7 +357,7 @@ program wannier
   if (driver%postproc_setup) then
     if (on_root) call kmesh_write(kmesh_data, kmesh_info, param_input, k_points%kpt_latt, &
                                   real_lattice, recip_lattice, num_kpts, num_proj, &
-                                  pp_calc%only_A, seedname, stdout)
+                                  calc_only_A, seedname, stdout)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
     call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
                            param_plot, param_wannierise, proj, spec_points, wann_data, &
@@ -376,8 +377,8 @@ program wannier
                         w90comm)
   call overlap_read(kmesh_info, param_input, select_proj, sym, w90_calcs, a_matrix, m_matrix, &
                     m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                    num_bands, num_kpts, num_proj, num_wann, lsitesymmetry, seedname, stdout, &
-                    w90comm)
+                    num_bands, num_kpts, num_proj, num_wann, cp_pp, lsitesymmetry, &
+                    use_bloch_phases, seedname, stdout, w90comm)
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
     ' (sec)'

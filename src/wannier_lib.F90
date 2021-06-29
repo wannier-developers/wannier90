@@ -71,6 +71,9 @@ module w90lib_parameters
   type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
 
+  logical, save :: cp_pp, calc_only_A
+  logical, save :: use_bloch_phases
+
   integer, save :: num_bands
   !! Number of bands
 
@@ -122,7 +125,6 @@ module wannlib_param_data
 
   type(param_driver_type), save :: driver
   type(w90_calculation_type), save :: w90_calcs
-  type(postproc_type), save :: pp_calc
   type(param_plot_type), save :: param_plot
   type(disentangle_type), save :: dis_data
   type(param_wannierise_type), save :: param_wannierise
@@ -257,10 +259,10 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !library_param_read_first_pass = .true.
   call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  pp_calc, proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
+                  proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
                   eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, lhasproj, .true., .true., &
-                  lsitesymmetry, seedname, stdout)
+                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, seedname, stdout)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
@@ -269,7 +271,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                    param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
                    spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                    recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                   num_wann, lsitesymmetry, stdout)
+                   num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
@@ -316,7 +318,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   if (driver%postproc_setup) then
     call kmesh_write(kmesh_data, kmesh_info, param_input, k_points%kpt_latt, real_lattice, &
-                     recip_lattice, num_kpts, num_proj, pp_calc%only_A, seedname, stdout)
+                     recip_lattice, num_kpts, num_proj, calc_only_A, seedname, stdout)
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
@@ -490,15 +492,15 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  pp_calc, proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
+                  proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
                   eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, lhasproj, .true., .false., &
-                  lsitesymmetry, seedname, stdout)
+                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
   call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, kmesh_data, k_points, &
                    param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
                    spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                    recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                   num_wann, lsitesymmetry, stdout)
+                   num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 

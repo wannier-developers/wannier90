@@ -43,11 +43,12 @@ contains
   !==================================================================!
   subroutine param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, pp_calc, proj, select_proj, spec_points, tran, &
+                        param_wannierise, proj, select_proj, spec_points, tran, &
                         wann_data, write_data, w90_calcs, eigval, real_lattice, recip_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                        eig_found, lhasproj, library, library_param_read_first_pass, &
-                        lsitesymmetry, seedname, stdout)
+                        eig_found, calc_only_A, cp_pp, lhasproj, library, &
+                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
+                        seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -63,7 +64,6 @@ contains
     !data from parameters module
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(postproc_type), intent(inout) :: pp_calc
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -106,6 +106,7 @@ contains
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
+    logical, intent(out) :: use_bloch_phases, cp_pp, calc_only_A
 
     !local variables
     character(len=20) :: energy_unit
@@ -136,7 +137,7 @@ contains
       call param_read_devel(param_input%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(param_input%gamma_only, num_kpts, library, stdout, seedname)
-      call param_read_post_proc(w90_calcs%cp_pp, pp_calc%only_A, driver%postproc_setup, stdout, seedname)
+      call param_read_post_proc(cp_pp, calc_only_A, driver%postproc_setup, stdout, seedname)
       call param_read_restart(driver, stdout, seedname)
       call param_read_system(library, param_input, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
@@ -161,13 +162,13 @@ contains
       call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
       call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
       call param_read_hamil(param_hamil, stdout, seedname)
-      call param_read_bloch_phase(w90_calcs%use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
+      call param_read_bloch_phase(use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
       call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr, stdout, seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
-      call param_read_projections(proj, w90_calcs%use_bloch_phases, lhasproj, &
+      call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%guiding_centres, param_wannierise%proj_site, &
                                   kmesh_data, select_proj, num_proj, param_input, atoms, &
                                   recip_lattice, num_wann, library, bohr, stdout, seedname)
@@ -1116,7 +1117,7 @@ contains
                          param_wannierise, proj, select_proj, spec_points, tran, &
                          wann_data, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                         lsitesymmetry, stdout)
+                         cp_pp, lsitesymmetry, use_bloch_phases, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1159,6 +1160,7 @@ contains
 
     ! RS: symmetry-adapted Wannier functions
     logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: cp_pp, use_bloch_phases
 
 !   local variables
     integer :: i, nkp, loop, nat, nsp
@@ -1317,8 +1319,9 @@ contains
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :', symmetrize_eps, '|'
     endif
 
-    if (w90_calcs%cp_pp .or. param_input%iprint > 2) &
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', w90_calcs%cp_pp, '|'
+    if (cp_pp .or. param_input%iprint > 2) &
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
+      cp_pp, '|'
     if (w90_calcs%wannier_plot .or. param_input%iprint > 2) then
       if (param_plot%wvfn_formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
@@ -1355,7 +1358,8 @@ contains
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', param_input%write_xyz, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', param_wannierise%write_hr_diag, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', param_wannierise%guiding_centres, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', w90_calcs%use_bloch_phases, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
+      use_bloch_phases, '|'
     if (param_wannierise%guiding_centres .or. param_input%iprint > 2) then
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
         param_wannierise%num_no_guide_iter, '|'
@@ -1949,10 +1953,10 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, pp_calc, tran, wann_data, w90_calcs, eigval, &
-                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
-                        num_proj, num_wann, eig_found, lhasproj, lsitesymmetry, seedname, stdout, &
-                        comm)
+                        param_wannierise, tran, wann_data, w90_calcs, eigval, real_lattice, &
+                        recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
+                        num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, &
+                        seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1967,7 +1971,6 @@ contains
     !passed variables
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(postproc_type), intent(inout) :: pp_calc
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -2012,9 +2015,11 @@ contains
     character(len=50), intent(in)  :: seedname
 
     logical, intent(inout) :: eig_found
+    logical, intent(inout) :: cp_pp
     logical, intent(inout) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
+    logical, intent(inout) :: use_bloch_phases
 
 !   local variables
     logical :: on_root = .false.
@@ -2026,7 +2031,7 @@ contains
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, stdout, seedname, comm)
     call comms_bcast(driver%postproc_setup, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%cp_pp, 1, stdout, seedname, comm)
+    call comms_bcast(cp_pp, 1, stdout, seedname, comm)
     !if (.not. pw90_common%effective_model) then
     call comms_bcast(mp_grid(1), 3, stdout, seedname, comm)
     call comms_bcast(num_kpts, 1, stdout, seedname, comm)
@@ -2287,8 +2292,8 @@ contains
     call comms_bcast(kmesh_data%skip_B1_tests, 1, stdout, seedname, comm)
     call comms_bcast(driver%explicit_nnkpts, 1, stdout, seedname, comm)
 
-    call comms_bcast(pp_calc%only_A, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%use_bloch_phases, 1, stdout, seedname, comm)
+    !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
+    call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
     call comms_bcast(driver%restart, len(driver%restart), stdout, seedname, comm)
     call comms_bcast(param_wannierise%write_r2mn, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%num_guide_cycles, 1, stdout, seedname, comm)

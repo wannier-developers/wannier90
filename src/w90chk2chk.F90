@@ -83,7 +83,6 @@ module wannchk_param_data
 
   type(param_driver_type), save :: driver
   type(w90_calculation_type), save :: w90_calcs
-  type(postproc_type), save :: pp_calc
   type(param_plot_type), save :: param_plot
   !type(disentangle_type), save :: dis_data
   type(param_wannierise_type), save :: param_wannierise

@@ -133,8 +133,8 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_read(kmesh_info, param_input, select_proj, sym, w90_calcs, a_matrix, &
                           m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, lsitesymmetry, &
-                          seedname, stdout, comm)
+                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, cp_pp, &
+                          lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -169,6 +169,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: cp_pp, use_bloch_phases
 
     character(len=50), intent(in)  :: seedname
 
@@ -289,7 +290,7 @@ contains
                           num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
     endif
 
-    if (.not. w90_calcs%use_bloch_phases) then
+    if (.not. use_bloch_phases) then
       if (on_root) then
 
         ! Read A_matrix from file wannier.amn
@@ -352,8 +353,8 @@ contains
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
-    if (w90_calcs%cp_pp) call overlap_rotate(kmesh_info%nntot, param_input%timing_level, &
-                                             m_matrix_orig, a_matrix, num_bands, stdout, seedname)
+    if (cp_pp) call overlap_rotate(kmesh_info%nntot, param_input%timing_level, &
+                                   m_matrix_orig, a_matrix, num_bands, stdout, seedname)
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
@@ -376,7 +377,7 @@ contains
 !~       endif
 !
 !~[aam]
-    if ((.not. w90_calcs%disentanglement) .and. (.not. w90_calcs%cp_pp) .and. (.not. w90_calcs%use_bloch_phases)) then
+    if ((.not. w90_calcs%disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. param_input%gamma_only) then
         call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, &
