@@ -70,6 +70,7 @@ module w90lib_parameters
   type(disentangle_manifold_type), save :: dis_window
   type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
+  type(input_proj_type), save :: input_proj
 
   logical, save :: cp_pp, calc_only_A
   logical, save :: use_bloch_phases
@@ -167,7 +168,6 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_comms, only: w90commtype
   use w90_constants, only: w90_physical_constants, dp
   use w90_io
-  use w90_types
   use w90_kmesh
   use w90lib_parameters
   use w90_param_methods, only: param_write_header, param_lib_set_atoms
@@ -259,16 +259,16 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !library_param_read_first_pass = .true.
   call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
-                  eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  proj, input_proj, select_proj, spec_points, tran, wann_data, write_data, &
+                  w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
+                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
                   lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, seedname, stdout)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
 
-  call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, kmesh_data, k_points, &
-                   param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
+  call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, k_points, param_hamil, &
+                   param_input, param_plot, param_wannierise, proj, input_proj, select_proj, &
                    spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                    recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                    num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
@@ -317,7 +317,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   end if
 
   if (driver%postproc_setup) then
-    call kmesh_write(kmesh_data, kmesh_info, param_input, k_points%kpt_latt, real_lattice, &
+    call kmesh_write(kmesh_info, param_input, input_proj, k_points%kpt_latt, real_lattice, &
                      recip_lattice, num_kpts, num_proj, calc_only_A, seedname, stdout)
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
@@ -326,7 +326,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   call kmesh_dealloc(kmesh_info, stdout, seedname)
 
   call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                         param_plot, param_wannierise, proj, spec_points, wann_data, &
+                         param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
                          write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
@@ -366,7 +366,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants, only: w90_physical_constants, dp
-  use w90_types
   use w90lib_parameters
   use wannlib_param_data
   use wannier_methods, only: param_read, param_write, param_write_chkpt, &
@@ -492,12 +491,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
-                  eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  proj, input_proj, select_proj, spec_points, tran, wann_data, write_data, &
+                  w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
+                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
                   lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
-  call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, kmesh_data, k_points, &
-                   param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
+  call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, k_points, param_hamil, &
+                   param_input, param_plot, param_wannierise, proj, input_proj, select_proj, &
                    spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                    recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                    num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
@@ -643,7 +642,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                        u_matrix, u_matrix_opt, seedname, stdout, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                         param_plot, param_wannierise, proj, spec_points, wann_data, &
+                         param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
                          write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 

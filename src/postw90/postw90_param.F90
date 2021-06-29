@@ -191,7 +191,7 @@ module pw90_param_methods
   use w90_io, only: maxlen
   use w90_param_types, only: parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
-    fermi_data_type, atom_data_type, special_kpoints_type
+    fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type
   use w90_param_methods
   use pw90_parameters
 
@@ -1903,7 +1903,8 @@ contains
   end subroutine param_postw90_write
 
   subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_window, fermi, &
-                                atoms, eigval, spec_points, dos_data, berry, stdout, seedname)
+                                atoms, eigval, spec_points, dos_data, berry, proj_input, &
+                                stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -1914,6 +1915,7 @@ contains
     !type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(input_proj_type), intent(inout) :: proj_input
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
@@ -1926,7 +1928,7 @@ contains
 
     integer :: ierr
 
-    call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
+    call param_dealloc(param_input, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)

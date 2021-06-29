@@ -18,7 +18,6 @@ module w90_param_types
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
-  use w90_types, only: projection_type
 
   implicit none
 
@@ -89,13 +88,34 @@ module w90_param_types
     integer, allocatable :: shell_list(:)
     integer :: search_shells
     real(kind=dp) :: tol
-    ! Projections, mainly used in parameters, maybe written by kmesh !BGS move?
-    real(kind=dp), allocatable :: input_proj_site(:, :)
-    type(projection_type) :: input_proj
+  end type param_kmesh_type
+
+  !AAM: There are a number of ways one can handle the initial guess. (i) specify explicit
+  !AAM: projections; (ii) use random (s-orbital) projections; (iii) a combination of (i) and
+  !AAM: (ii); (iv) use the phases from the Bloch functions directly; (v) SCDM method. (i), (ii)
+  !AAM: and (iii) require the arrays defined in the "projection_type" below. (iv) and (v) do not.
+  !AAM: (vi) An external code may also simply supply to w90 an Amn(k) matrix that is has independently
+  !AAM: generated, in which case projection_type is not needed.
+  !AAM: It makes sense to keep the projection sites separate from the projection_type data below.
+  type projection_type
+    integer, allocatable :: l(:)
+    integer, allocatable :: m(:)
+    integer, allocatable :: s(:)
+    real(kind=dp), allocatable :: s_qaxis(:, :)
+    real(kind=dp), allocatable :: z(:, :)
+    real(kind=dp), allocatable :: x(:, :)
+    integer, allocatable :: radial(:)
+    real(kind=dp), allocatable :: zona(:)
+  end type projection_type
+
+  type input_proj_type ! MAYBE
+    ! Projections, mainly used in parameters, maybe written by kmesh
+    real(kind=dp), allocatable :: site(:, :)
+    type(projection_type) :: proj
     ! a u t o m a t i c   p r o j e c t i o n s
     ! vv: Writes a new block in .nnkp
     logical :: auto_projections
-  end type param_kmesh_type
+  end type input_proj_type
 
   ! kmesh parameters (set in kmesh)
   type kmesh_info_type
@@ -1482,7 +1502,7 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(param_input, wann_data, kmesh_data, k_points, dis_window, &
+  subroutine param_dealloc(param_input, wann_data, input_proj, kmesh_data, k_points, dis_window, &
                            atoms, eigval, spec_points, stdout, seedname)
     !==================================================================!
     !                                                                  !
@@ -1496,6 +1516,7 @@ contains
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
+    type(input_proj_type), intent(inout) :: input_proj
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_manifold_type), intent(inout) :: dis_window
@@ -1559,40 +1580,40 @@ contains
       deallocate (atoms%species_num, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj_site)) then
-      deallocate (kmesh_data%input_proj_site, stat=ierr)
+    if (allocated(input_proj%site)) then
+      deallocate (input_proj%site, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_site in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%l)) then
-      deallocate (kmesh_data%input_proj%l, stat=ierr)
+    if (allocated(input_proj%proj%l)) then
+      deallocate (input_proj%proj%l, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_l in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%m)) then
-      deallocate (kmesh_data%input_proj%m, stat=ierr)
+    if (allocated(input_proj%proj%m)) then
+      deallocate (input_proj%proj%m, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_m in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%s)) then
-      deallocate (kmesh_data%input_proj%s, stat=ierr)
+    if (allocated(input_proj%proj%s)) then
+      deallocate (input_proj%proj%s, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_s in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%s_qaxis)) then
-      deallocate (kmesh_data%input_proj%s_qaxis, stat=ierr)
+    if (allocated(input_proj%proj%s_qaxis)) then
+      deallocate (input_proj%proj%s_qaxis, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%z)) then
-      deallocate (kmesh_data%input_proj%z, stat=ierr)
+    if (allocated(input_proj%proj%z)) then
+      deallocate (input_proj%proj%z, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_z in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%x)) then
-      deallocate (kmesh_data%input_proj%x, stat=ierr)
+    if (allocated(input_proj%proj%x)) then
+      deallocate (input_proj%proj%x, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_x in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%radial)) then
-      deallocate (kmesh_data%input_proj%radial, stat=ierr)
+    if (allocated(input_proj%proj%radial)) then
+      deallocate (input_proj%proj%radial, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in param_dealloc', stdout, seedname)
     end if
-    if (allocated(kmesh_data%input_proj%zona)) then
-      deallocate (kmesh_data%input_proj%zona, stat=ierr)
+    if (allocated(input_proj%proj%zona)) then
+      deallocate (input_proj%proj%zona, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc', stdout, seedname)
     end if
     if (allocated(param_input%exclude_bands)) then
@@ -2998,9 +3019,8 @@ contains
   end subroutine param_get_centre_constraint_from_column
 
 !===================================!
-  subroutine param_get_projections(num_proj, atoms, kmesh_data, param_input, &
-                                   num_wann, proj_site, proj, &
-                                   recip_lattice, lcount, bohr, stdout, seedname)
+  subroutine param_get_projections(num_proj, atoms, param_input, num_wann, input_proj, proj_site, &
+                                   proj, recip_lattice, lcount, bohr, stdout, seedname)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -3018,7 +3038,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(atom_data_type), intent(in) :: atoms
-    type(param_kmesh_type), intent(inout) :: kmesh_data
     type(parameter_input_type), intent(in) :: param_input
     ! projection data
     !type(param_driver_type), intent(inout) :: driver
@@ -3027,6 +3046,7 @@ contains
     !type(select_projection_type), intent(inout) :: select_proj
     real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
     type(projection_type), intent(inout) :: proj ! intent(out)?
+    type(input_proj_type), intent(inout) :: input_proj
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in)    :: lcount
     real(kind=dp), intent(in) :: bohr
@@ -3074,24 +3094,24 @@ contains
 !     if(spinors) num_proj=num_wann/2
 
     if (.not. lcount) then
-      allocate (kmesh_data%input_proj_site(3, num_proj), stat=ierr)
+      allocate (input_proj%site(3, num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_site in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%l(num_proj), stat=ierr)
+      allocate (input_proj%proj%l(num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_l in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%m(num_proj), stat=ierr)
+      allocate (input_proj%proj%m(num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_m in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%z(3, num_proj), stat=ierr)
+      allocate (input_proj%proj%z(3, num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_z in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%x(3, num_proj), stat=ierr)
+      allocate (input_proj%proj%x(3, num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_x in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%radial(num_proj), stat=ierr)
+      allocate (input_proj%proj%radial(num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_radial in param_get_projections', stdout, seedname)
-      allocate (kmesh_data%input_proj%zona(num_proj), stat=ierr)
+      allocate (input_proj%proj%zona(num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_zona in param_get_projections', stdout, seedname)
       if (param_input%spinors) then
-        allocate (kmesh_data%input_proj%s(num_proj), stat=ierr)
+        allocate (input_proj%proj%s(num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_s in param_get_projections', stdout, seedname)
-        allocate (kmesh_data%input_proj%s_qaxis(3, num_proj), stat=ierr)
+        allocate (input_proj%proj%s_qaxis(3, num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in param_get_projections', stdout, seedname)
       endif
 
@@ -3500,22 +3520,22 @@ contains
                 do loop_s = 1, spn_counter
                   counter = counter + 1
                   if (lcount) cycle
-                  kmesh_data%input_proj_site(:, counter) = pos_frac
-                  kmesh_data%input_proj%l(counter) = loop_l
-                  kmesh_data%input_proj%m(counter) = loop_m
-                  kmesh_data%input_proj%z(:, counter) = proj_z_tmp
-                  kmesh_data%input_proj%x(:, counter) = proj_x_tmp
-                  kmesh_data%input_proj%radial(counter) = proj_radial_tmp
-                  kmesh_data%input_proj%zona(counter) = proj_zona_tmp
+                  input_proj%site(:, counter) = pos_frac
+                  input_proj%proj%l(counter) = loop_l
+                  input_proj%proj%m(counter) = loop_m
+                  input_proj%proj%z(:, counter) = proj_z_tmp
+                  input_proj%proj%x(:, counter) = proj_x_tmp
+                  input_proj%proj%radial(counter) = proj_radial_tmp
+                  input_proj%proj%zona(counter) = proj_zona_tmp
                   if (param_input%spinors) then
                     if (spn_counter == 1) then
-                      if (proj_u_tmp) kmesh_data%input_proj%s(counter) = 1
-                      if (proj_d_tmp) kmesh_data%input_proj%s(counter) = -1
+                      if (proj_u_tmp) input_proj%proj%s(counter) = 1
+                      if (proj_d_tmp) input_proj%proj%s(counter) = -1
                     else
-                      if (loop_s == 1) kmesh_data%input_proj%s(counter) = 1
-                      if (loop_s == 2) kmesh_data%input_proj%s(counter) = -1
+                      if (loop_s == 1) input_proj%proj%s(counter) = 1
+                      if (loop_s == 2) input_proj%proj%s(counter) = -1
                     endif
-                    kmesh_data%input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                    input_proj%proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
                   endif
                 end do
               endif
@@ -3529,22 +3549,22 @@ contains
                   do loop_s = 1, spn_counter
                     counter = counter + 1
                     if (lcount) cycle
-                    kmesh_data%input_proj_site(:, counter) = atoms%pos_frac(:, loop_sites, species)
-                    kmesh_data%input_proj%l(counter) = loop_l
-                    kmesh_data%input_proj%m(counter) = loop_m
-                    kmesh_data%input_proj%z(:, counter) = proj_z_tmp
-                    kmesh_data%input_proj%x(:, counter) = proj_x_tmp
-                    kmesh_data%input_proj%radial(counter) = proj_radial_tmp
-                    kmesh_data%input_proj%zona(counter) = proj_zona_tmp
+                    input_proj%site(:, counter) = atoms%pos_frac(:, loop_sites, species)
+                    input_proj%proj%l(counter) = loop_l
+                    input_proj%proj%m(counter) = loop_m
+                    input_proj%proj%z(:, counter) = proj_z_tmp
+                    input_proj%proj%x(:, counter) = proj_x_tmp
+                    input_proj%proj%radial(counter) = proj_radial_tmp
+                    input_proj%proj%zona(counter) = proj_zona_tmp
                     if (param_input%spinors) then
                       if (spn_counter == 1) then
-                        if (proj_u_tmp) kmesh_data%input_proj%s(counter) = 1
-                        if (proj_d_tmp) kmesh_data%input_proj%s(counter) = -1
+                        if (proj_u_tmp) input_proj%proj%s(counter) = 1
+                        if (proj_d_tmp) input_proj%proj%s(counter) = -1
                       else
-                        if (loop_s == 1) kmesh_data%input_proj%s(counter) = 1
-                        if (loop_s == 2) kmesh_data%input_proj%s(counter) = -1
+                        if (loop_s == 1) input_proj%proj%s(counter) = 1
+                        if (loop_s == 2) input_proj%proj%s(counter) = -1
                       endif
-                      kmesh_data%input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                      input_proj%proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
                     endif
                   end do
                 end if
@@ -3574,22 +3594,22 @@ contains
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
       do loop = counter + 1, num_wann
-        call random_number(kmesh_data%input_proj_site(:, loop))
-        kmesh_data%input_proj%l(loop) = 0
-        kmesh_data%input_proj%m(loop) = 1
-        kmesh_data%input_proj%z(:, loop) = proj_z_def
-        kmesh_data%input_proj%x(:, loop) = proj_x_def
-        kmesh_data%input_proj%zona(loop) = proj_zona_def
-        kmesh_data%input_proj%radial(loop) = proj_radial_def
+        call random_number(input_proj%site(:, loop))
+        input_proj%proj%l(loop) = 0
+        input_proj%proj%m(loop) = 1
+        input_proj%proj%z(:, loop) = proj_z_def
+        input_proj%proj%x(:, loop) = proj_x_def
+        input_proj%proj%zona(loop) = proj_zona_def
+        input_proj%proj%radial(loop) = proj_radial_def
         if (param_input%spinors) then
           if (modulo(loop, 2) == 1) then
-            kmesh_data%input_proj%s(loop) = 1
+            input_proj%proj%s(loop) = 1
           else
-            kmesh_data%input_proj%s(loop) = -1
+            input_proj%proj%s(loop) = -1
           end if
-          kmesh_data%input_proj%s_qaxis(1, loop) = 0.
-          kmesh_data%input_proj%s_qaxis(2, loop) = 0.
-          kmesh_data%input_proj%s_qaxis(3, loop) = 1.
+          input_proj%proj%s_qaxis(1, loop) = 0.
+          input_proj%proj%s_qaxis(2, loop) = 0.
+          input_proj%proj%s_qaxis(3, loop) = 1.
         end if
       enddo
     endif
@@ -3608,30 +3628,30 @@ contains
     ! Normalise z-axis and x-axis and check/fix orthogonality
     do loop = 1, num_proj
 
-      znorm = sqrt(sum(kmesh_data%input_proj%z(:, loop)*kmesh_data%input_proj%z(:, loop)))
-      xnorm = sqrt(sum(kmesh_data%input_proj%x(:, loop)*kmesh_data%input_proj%x(:, loop)))
-      kmesh_data%input_proj%z(:, loop) = kmesh_data%input_proj%z(:, loop)/znorm             ! normalise z
-      kmesh_data%input_proj%x(:, loop) = kmesh_data%input_proj%x(:, loop)/xnorm             ! normalise x
-      cosphi = sum(kmesh_data%input_proj%z(:, loop)*kmesh_data%input_proj%x(:, loop))
+      znorm = sqrt(sum(input_proj%proj%z(:, loop)*input_proj%proj%z(:, loop)))
+      xnorm = sqrt(sum(input_proj%proj%x(:, loop)*input_proj%proj%x(:, loop)))
+      input_proj%proj%z(:, loop) = input_proj%proj%z(:, loop)/znorm             ! normalise z
+      input_proj%proj%x(:, loop) = input_proj%proj%x(:, loop)/xnorm             ! normalise x
+      cosphi = sum(input_proj%proj%z(:, loop)*input_proj%proj%x(:, loop))
 
       ! Check whether z-axis and z-axis are orthogonal
       if (abs(cosphi) .gt. eps6) then
 
         ! Special case of circularly symmetric projections (pz, dz2, fz3)
         ! just choose an x-axis that is perpendicular to the given z-axis
-        if ((kmesh_data%input_proj%l(loop) .ge. 0) .and. (kmesh_data%input_proj%m(loop) .eq. 1)) then
-          proj_x_tmp(:) = kmesh_data%input_proj%x(:, loop)            ! copy of original x-axis
+        if ((input_proj%proj%l(loop) .ge. 0) .and. (input_proj%proj%m(loop) .eq. 1)) then
+          proj_x_tmp(:) = input_proj%proj%x(:, loop)            ! copy of original x-axis
           call random_seed()
           call random_number(proj_z_tmp(:))         ! random vector
           ! calculate new x-axis as the cross (vector) product of random vector with z-axis
-          kmesh_data%input_proj%x(1, loop) = proj_z_tmp(2)*kmesh_data%input_proj%z(3, loop) &
-                                             - proj_z_tmp(3)*kmesh_data%input_proj%z(2, loop)
-          kmesh_data%input_proj%x(2, loop) = proj_z_tmp(3)*kmesh_data%input_proj%z(1, loop) &
-                                             - proj_z_tmp(1)*kmesh_data%input_proj%z(3, loop)
-          kmesh_data%input_proj%x(3, loop) = proj_z_tmp(1)*kmesh_data%input_proj%z(2, loop) &
-                                             - proj_z_tmp(2)*kmesh_data%input_proj%z(1, loop)
-          xnorm_new = sqrt(sum(kmesh_data%input_proj%x(:, loop)*kmesh_data%input_proj%x(:, loop)))
-          kmesh_data%input_proj%x(:, loop) = kmesh_data%input_proj%x(:, loop)/xnorm_new   ! normalise
+          input_proj%proj%x(1, loop) = proj_z_tmp(2)*input_proj%proj%z(3, loop) &
+                                       - proj_z_tmp(3)*input_proj%proj%z(2, loop)
+          input_proj%proj%x(2, loop) = proj_z_tmp(3)*input_proj%proj%z(1, loop) &
+                                       - proj_z_tmp(1)*input_proj%proj%z(3, loop)
+          input_proj%proj%x(3, loop) = proj_z_tmp(1)*input_proj%proj%z(2, loop) &
+                                       - proj_z_tmp(2)*input_proj%proj%z(1, loop)
+          xnorm_new = sqrt(sum(input_proj%proj%x(:, loop)*input_proj%proj%x(:, loop)))
+          input_proj%proj%x(:, loop) = input_proj%proj%x(:, loop)/xnorm_new   ! normalise
           goto 555
         endif
 
@@ -3645,13 +3665,13 @@ contains
         ! If projection axes are "reasonably orthogonal", project x-axis
         ! onto plane perpendicular to z-axis to make them more so
         sinphi = sqrt(1 - cosphi*cosphi)
-        proj_x_tmp(:) = kmesh_data%input_proj%x(:, loop)               ! copy of original x-axis
+        proj_x_tmp(:) = input_proj%proj%x(:, loop)               ! copy of original x-axis
         ! calculate new x-axis:
         ! x = z \cross (x_tmp \cross z) / sinphi = ( x_tmp - z(z.x_tmp) ) / sinphi
-        kmesh_data%input_proj%x(:, loop) = (proj_x_tmp(:) - cosphi*kmesh_data%input_proj%z(:, loop))/sinphi
+        input_proj%proj%x(:, loop) = (proj_x_tmp(:) - cosphi*input_proj%proj%z(:, loop))/sinphi
 
         ! Final check
-555     cosphi_new = sum(kmesh_data%input_proj%z(:, loop)*kmesh_data%input_proj%x(:, loop))
+555     cosphi_new = sum(input_proj%proj%z(:, loop)*input_proj%proj%x(:, loop))
         if (abs(cosphi_new) .gt. eps6) then
           write (stdout, *) ' Projection:', loop
           call io_error(' Error: z and x axes are still not orthogonal after projection', stdout, seedname)

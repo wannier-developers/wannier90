@@ -108,10 +108,7 @@ io.o: ../io.F90 constants.o
 utility.o: ../utility.F90  constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../utility.F90
 
-types.o: ../types.F90 constants.o
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../types.F90
-
-wann90_param.o: ../wann90_param.F90 constants.o io.o types.o
+wann90_param.o: ../wann90_param.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wann90_param.F90
 
 wann90_methods.o: ../wann90_methods.F90 constants.o io.o parameters.o wann90_param.o

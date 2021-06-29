@@ -15,7 +15,6 @@
 module wannier_methods
 
   use w90_constants, only: dp
-  use w90_types
   use w90_param_types
   use w90_param_methods
   use wannier_param_types
@@ -43,7 +42,7 @@ contains
   !==================================================================!
   subroutine param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj, select_proj, spec_points, tran, &
+                        param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
                         wann_data, write_data, w90_calcs, eigval, real_lattice, recip_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                         eig_found, calc_only_A, cp_pp, lhasproj, library, &
@@ -80,6 +79,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     type(special_kpoints_type), intent(inout) :: spec_points
     type(select_projection_type), intent(inout) :: select_proj
+    type(input_proj_type), intent(inout) :: proj_input
     type(w90_extra_io_type), intent(inout) :: write_data
     ! was in driver, only used by wannier_lib
     type(projection_type), intent(inout) :: proj
@@ -170,7 +170,7 @@ contains
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%guiding_centres, param_wannierise%proj_site, &
-                                  kmesh_data, select_proj, num_proj, param_input, atoms, &
+                                  proj_input, select_proj, num_proj, param_input, atoms, &
                                   recip_lattice, num_wann, library, bohr, stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%slwf_constrain) then
@@ -949,7 +949,7 @@ contains
   end subroutine param_read_explicit_kpts
 
   subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
-                                    proj_site, kmesh_data, select_proj, num_proj, &
+                                    proj_site, proj_input, select_proj, num_proj, &
                                     param_input, atoms, recip_lattice, num_wann, library, &
                                     bohr, stdout, seedname)
     use w90_io, only: io_error
@@ -958,7 +958,7 @@ contains
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
     logical, intent(out) :: lhasproj
     real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(input_proj_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
     integer, intent(inout) :: num_proj
     type(parameter_input_type), intent(in) :: param_input
@@ -976,18 +976,18 @@ contains
     integer, allocatable :: select_projections(:)
 
     ! Projections
-    kmesh_data%auto_projections = .false.
-    call param_get_keyword(stdout, seedname, 'auto_projections', found, l_value=kmesh_data%auto_projections)
+    proj_input%auto_projections = .false.
+    call param_get_keyword(stdout, seedname, 'auto_projections', found, &
+                           l_value=proj_input%auto_projections)
     num_proj = 0
     call param_get_block_length(stdout, seedname, 'projections', found, i_temp, library)
     ! check to see that there are no unrecognised keywords
     if (found) then
-      if (kmesh_data%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
+      if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
                                                      stdout, seedname)
       lhasproj = .true.
-      call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
-                                 num_wann, proj_site, proj, recip_lattice, &
-                                 .true., bohr, stdout, seedname)
+      call param_get_projections(num_proj, atoms, param_input, num_wann, proj_input, proj_site, &
+                                 proj, recip_lattice, .true., bohr, stdout, seedname)
     else
       if (guiding_centres .and. .not. (param_input%gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found', stdout, seedname)
@@ -1036,25 +1036,24 @@ contains
     endif
 
     if (lhasproj) then
-      call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
-                                 num_wann, proj_site, proj, &
-                                 recip_lattice, .false., bohr, stdout, seedname)
+      call param_get_projections(num_proj, atoms, param_input, num_wann, proj_input, proj_site, &
+                                 proj, recip_lattice, .false., bohr, stdout, seedname)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
-        proj_site(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj_site(:, loop)
-        proj%l(select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%l(loop)
-        proj%m(select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%m(loop)
-        proj%z(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%z(:, loop)
-        proj%x(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%x(:, loop)
-        proj%radial(select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%radial(loop)
-        proj%zona(select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%zona(loop)
+        proj_site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
+        proj%l(select_proj%proj2wann_map(loop)) = proj_input%proj%l(loop)
+        proj%m(select_proj%proj2wann_map(loop)) = proj_input%proj%m(loop)
+        proj%z(:, select_proj%proj2wann_map(loop)) = proj_input%proj%z(:, loop)
+        proj%x(:, select_proj%proj2wann_map(loop)) = proj_input%proj%x(:, loop)
+        proj%radial(select_proj%proj2wann_map(loop)) = proj_input%proj%radial(loop)
+        proj%zona(select_proj%proj2wann_map(loop)) = proj_input%proj%zona(loop)
       enddo
 
       if (param_input%spinors) then
         do loop = 1, num_proj
           if (select_proj%proj2wann_map(loop) < 0) cycle
-          proj%s(select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%s(loop)
-          proj%s_qaxis(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj%s_qaxis(:, loop)
+          proj%s(select_proj%proj2wann_map(loop)) = proj_input%proj%s(loop)
+          proj%s_qaxis(:, select_proj%proj2wann_map(loop)) = proj_input%proj%s_qaxis(:, loop)
         enddo
       endif
     endif
@@ -1113,8 +1112,8 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, dis_data, driver, fermi, fermi_surface_data, &
-                         kmesh_data, k_points, param_hamil, param_input, param_plot, &
-                         param_wannierise, proj, select_proj, spec_points, tran, &
+                         k_points, param_hamil, param_input, param_plot, &
+                         param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
                          wann_data, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, lsitesymmetry, use_bloch_phases, stdout)
@@ -1134,7 +1133,6 @@ contains
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(wannier_data_type), intent(in) :: wann_data
     type(param_hamiltonian_type), intent(in) :: param_hamil
-    type(param_kmesh_type), intent(in) :: kmesh_data
     type(k_point_type), intent(in) :: k_points
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_surface_type), intent(in) :: fermi_surface_data
@@ -1142,6 +1140,7 @@ contains
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atoms
     type(select_projection_type), intent(in) :: select_proj
+    type(input_proj_type), intent(in) :: proj_input
     type(special_kpoints_type), intent(in) :: spec_points
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(w90_extra_io_type), intent(in) :: write_data
@@ -1236,7 +1235,7 @@ contains
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
     ! Projections
-    if (param_input%iprint > 1 .and. allocated(kmesh_data%input_proj_site)) then
+    if (param_input%iprint > 1 .and. allocated(proj_input%site)) then
       write (stdout, '(32x,a)') '-----------'
       write (stdout, '(32x,a)') 'PROJECTIONS'
       write (stdout, '(32x,a)') '-----------'
@@ -1246,13 +1245,13 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nsp = 1, num_proj
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)') &
-          '|', kmesh_data%input_proj_site(1, nsp), kmesh_data%input_proj_site(2, nsp), &
-          kmesh_data%input_proj_site(3, nsp), kmesh_data%input_proj%l(nsp), &
-          kmesh_data%input_proj%m(nsp), kmesh_data%input_proj%radial(nsp), &
-          kmesh_data%input_proj%z(1, nsp), kmesh_data%input_proj%z(2, nsp), &
-          kmesh_data%input_proj%z(3, nsp), kmesh_data%input_proj%x(1, nsp), &
-          kmesh_data%input_proj%x(2, nsp), kmesh_data%input_proj%x(3, nsp), &
-          kmesh_data%input_proj%zona(nsp), '|'
+          '|', proj_input%site(1, nsp), proj_input%site(2, nsp), &
+          proj_input%site(3, nsp), proj_input%proj%l(nsp), &
+          proj_input%proj%m(nsp), proj_input%proj%radial(nsp), &
+          proj_input%proj%z(1, nsp), proj_input%proj%z(2, nsp), &
+          proj_input%proj%z(3, nsp), proj_input%proj%x(1, nsp), &
+          proj_input%proj%x(2, nsp), proj_input%proj%x(3, nsp), &
+          proj_input%proj%zona(nsp), '|'
       end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, *) ' '
@@ -1543,8 +1542,8 @@ contains
   end subroutine param_write
 
   subroutine param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                               param_plot, param_wannierise, proj, spec_points, wann_data, &
-                               write_data, eigval, seedname, stdout)
+                               param_plot, param_wannierise, proj, proj_input, spec_points, &
+                               wann_data, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
     implicit none
@@ -1563,6 +1562,7 @@ contains
     type(special_kpoints_type), intent(inout) :: spec_points
     type(w90_extra_io_type), intent(inout) :: write_data
     type(projection_type), intent(inout) :: proj
+    type(input_proj_type), intent(inout) :: proj_input
 
     integer, intent(in) :: stdout
 
@@ -1575,7 +1575,7 @@ contains
 !   passed variables
     integer :: ierr
 
-    call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
+    call param_dealloc(param_input, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(param_plot%wannier_plot_list)) then
       deallocate (param_plot%wannier_plot_list, stat=ierr)
@@ -1720,8 +1720,9 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atoms, kmesh_data, kmesh_info, param_input, param_wannierise, &
-                                   w90_calcs, num_bands, num_kpts, num_proj, num_wann, stdout)
+  subroutine param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, &
+                                   proj_input, w90_calcs, num_bands, num_kpts, num_proj, num_wann, &
+                                   stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1736,9 +1737,9 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(parameter_input_type), intent(in) :: param_input
     type(param_wannierise_type), intent(in) :: param_wannierise
-    type(param_kmesh_type), intent(in) :: kmesh_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     !type(disentangle_type), intent(in) :: dis_data
+    type(input_proj_type), intent(in) :: proj_input
     type(atom_data_type), intent(in) :: atoms
 
     integer, intent(in) :: num_bands
@@ -1786,7 +1787,7 @@ contains
       mem_param = mem_param + (3*maxval(atoms%species_num)*atoms%num_species)*size_real  !atoms_pos_cart
     endif
 
-    if (allocated(kmesh_data%input_proj_site)) then
+    if (allocated(proj_input%site)) then
       mem_param = mem_param + (3*num_proj)*size_real              !input_proj_site
       mem_param = mem_param + (num_proj)*size_int                !input_proj_l
       mem_param = mem_param + (num_proj)*size_int                 !input_proj_m
@@ -1953,10 +1954,10 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, tran, wann_data, w90_calcs, eigval, real_lattice, &
-                        recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                        num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, &
-                        seedname, stdout, comm)
+                        param_wannierise, proj_input, tran, wann_data, w90_calcs, eigval, &
+                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                        num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, &
+                        use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1982,6 +1983,7 @@ contains
     type(disentangle_type), intent(inout) :: dis_data
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
+    type(input_proj_type), intent(inout) :: proj_input
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     type(disentangle_manifold_type), intent(inout) :: dis_window
@@ -2338,18 +2340,18 @@ contains
     end if
 
     ! vv: automatic projections
-    call comms_bcast(kmesh_data%auto_projections, 1, stdout, seedname, comm)
+    call comms_bcast(proj_input%auto_projections, 1, stdout, seedname, comm)
 
     call comms_bcast(num_proj, 1, stdout, seedname, comm)
     call comms_bcast(lhasproj, 1, stdout, seedname, comm)
     if (lhasproj) then
       if (.not. on_root) then
-        allocate (kmesh_data%input_proj_site(3, num_proj), stat=ierr)
+        allocate (proj_input%site(3, num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_site in param_dist', stdout, seedname)
         allocate (param_wannierise%proj_site(3, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_site in param_dist', stdout, seedname)
       endif
-      call comms_bcast(kmesh_data%input_proj_site(1, 1), 3*num_proj, stdout, seedname, comm)
+      call comms_bcast(proj_input%site(1, 1), 3*num_proj, stdout, seedname, comm)
       call comms_bcast(param_wannierise%proj_site(1, 1), 3*num_wann, stdout, seedname, comm)
     endif
 

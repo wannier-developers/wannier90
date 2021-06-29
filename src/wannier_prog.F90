@@ -53,7 +53,6 @@ program wannier
   !! The main Wannier90 program
 
   use w90_constants, only: w90_physical_constants, dp
-  use w90_types
   use w90_param_types
   use w90_io
   use w90_hamiltonian
@@ -105,6 +104,7 @@ program wannier
   type(wannier_data_type) :: wann_data
   type(param_hamiltonian_type) :: param_hamil
   type(param_kmesh_type) :: kmesh_data
+  type(input_proj_type) :: input_proj
   type(kmesh_info_type) :: kmesh_info
   type(k_point_type) :: k_points
   integer :: num_kpts
@@ -239,10 +239,11 @@ program wannier
 
     call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                     kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                    proj, select_proj, spec_points, tran, wann_data, write_data, w90_calcs, &
-                    eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                    num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
-                    lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
+                    proj, input_proj, select_proj, spec_points, tran, wann_data, write_data, &
+                    w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
+                    mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
+                    cp_pp, lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, seedname, &
+                    stdout)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -271,8 +272,8 @@ program wannier
     else
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
-    call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, kmesh_data, k_points, &
-                     param_hamil, param_input, param_plot, param_wannierise, proj, select_proj, &
+    call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, k_points, param_hamil, &
+                     param_input, param_plot, param_wannierise, proj, input_proj, select_proj, &
                      spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
                      recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                      num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
@@ -285,7 +286,7 @@ program wannier
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
-    call param_memory_estimate(atoms, kmesh_data, kmesh_info, param_input, param_wannierise, &
+    call param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, input_proj, &
                                w90_calcs, num_bands, num_kpts, num_proj, num_wann, stdout)
   end if !on_root
 
@@ -303,7 +304,7 @@ program wannier
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
                   kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  tran, wann_data, w90_calcs, eigval, real_lattice, recip_lattice, &
+                  input_proj, tran, wann_data, w90_calcs, eigval, real_lattice, recip_lattice, &
                   symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
                   cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
   if (param_input%gamma_only .and. num_nodes > 1) &
@@ -355,12 +356,12 @@ program wannier
   endif
 
   if (driver%postproc_setup) then
-    if (on_root) call kmesh_write(kmesh_data, kmesh_info, param_input, k_points%kpt_latt, &
+    if (on_root) call kmesh_write(kmesh_info, param_input, input_proj, k_points%kpt_latt, &
                                   real_lattice, recip_lattice, num_kpts, num_proj, &
                                   calc_only_A, seedname, stdout)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
     call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                           param_plot, param_wannierise, proj, spec_points, wann_data, &
+                           param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
                            write_data, eigval, seedname, stdout)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
@@ -474,7 +475,7 @@ program wannier
                        u_matrix, u_matrix_opt, seedname, stdout, w90comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                         param_plot, param_wannierise, proj, spec_points, wann_data, &
+                         param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
                          write_data, eigval, seedname, stdout)
   if (lsitesymmetry) call sitesym_dealloc(sym, stdout, seedname) !YN:
 
