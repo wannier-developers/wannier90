@@ -42,10 +42,18 @@ module wannier_param_types
     logical :: wannier_plot !plot, wannier_lib
     logical :: fermi_surface_plot ! plot, wannier_lib!
     logical :: transport ! also hamiltonian, wannier_prog, wannier_lib
-    !BGS gamma_only? have_disentangled
-
     logical :: write_hr !plot, transport and wannier_lib
-    !BGS write_tb, write_u_matrices, dos_plot?
+    logical :: write_r2mn
+    logical :: write_proj
+    logical :: write_hr_diag
+    logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
+    logical :: write_vdw_data
+    ! aam: for WF-based calculation of vdW C6 coefficients
+    logical :: write_u_matrices
+    logical :: write_bvec
+    logical :: write_rmn
+    logical :: write_tb
+    logical :: write_xyz !wannierise and transport
   end type w90_calculation_type
 
   type param_plot_type ! only in plot.F90
@@ -62,16 +70,12 @@ module wannier_param_types
     character(len=20) :: wannier_plot_mode
     character(len=20) :: wannier_plot_spinor_mode
     logical :: wannier_plot_spinor_phase
-    logical :: write_u_matrices
-    logical :: write_bvec
     integer :: bands_num_points
     character(len=20) :: bands_plot_format
     integer, allocatable :: bands_plot_project(:)
     integer :: num_bands_project
     integer :: bands_plot_dim
     !BGS bands_ in band_plot_type? (with ones in param_input)
-    logical :: write_rmn
-    logical :: write_tb
   end type param_plot_type
 
   ! parameters used to control the minimisation of the disentanglement process
@@ -121,12 +125,7 @@ module wannier_param_types
     logical :: lfixstep ! derived from input
     real(kind=dp) :: conv_noise_amp
     integer :: conv_noise_num
-    logical :: write_r2mn
-    logical :: write_proj
-    logical :: write_hr_diag
     logical :: translate_home_cell
-    logical :: write_vdw_data
-    ! aam: for WF-based calculation of vdW C6 coefficients
     real(kind=dp) :: omega_total
     real(kind=dp) :: omega_tilde
     ! Projections

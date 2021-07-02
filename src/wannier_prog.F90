@@ -420,9 +420,9 @@ program wannier
                    lsitesymmetry, seedname, stdout, w90comm)
   else
     call wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, param_wannierise, &
-                         wann_data, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                         recip_lattice, mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, &
-                         w90comm)
+                         wann_data, w90_calcs, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                         real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                         seedname, stdout, w90comm)
   end if
 
   time1 = io_time()

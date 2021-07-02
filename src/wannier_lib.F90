@@ -568,8 +568,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   if (param_input%gamma_only) then
     call wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, param_wannierise, &
-                         wann_data, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                         recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                         wann_data, w90_calcs, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                         real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                          seedname, stdout, comm)
   else
     call wann_main(atoms, dis_window, hmlg, kmesh_info, k_points, param_hamil, param_input, &

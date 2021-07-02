@@ -103,7 +103,7 @@ contains
 
     ! Print the header only if there is something to plot
     if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
-        w90_calcs%wannier_plot .or. param_plot%write_u_matrices .or. param_plot%write_tb) then
+        w90_calcs%wannier_plot .or. w90_calcs%write_u_matrices .or. w90_calcs%write_tb) then
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
@@ -111,7 +111,7 @@ contains
     end if
 
     if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
-        param_plot%write_tb) then
+        w90_calcs%write_tb) then
       ! Check if the kmesh includes the gamma point
       have_gamma = .false.
       do nkp = 1, num_kpts
@@ -147,15 +147,14 @@ contains
                                                         num_wann, stdout, &
                                                         param_input%timing_level, seedname)
       !
-      if (param_plot%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
-                                                           k_points%kpt_latt, irvec, nrpts, &
-                                                           num_kpts, num_wann, stdout, seedname)
-      if (param_plot%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
-                                                         k_points%kpt_latt, real_lattice, irvec, &
-                                                         ndegen, nrpts, num_kpts, num_wann, &
-                                                         stdout, param_input%timing_level, &
-                                                         seedname)
-      if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
+      if (w90_calcs%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
+                                                          k_points%kpt_latt, irvec, nrpts, &
+                                                          num_kpts, num_wann, stdout, seedname)
+      if (w90_calcs%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
+                                                        k_points%kpt_latt, real_lattice, irvec, &
+                                                        ndegen, nrpts, num_kpts, num_wann, &
+                                                        stdout, param_input%timing_level, seedname)
+      if (w90_calcs%write_hr .or. w90_calcs%write_rmn .or. w90_calcs%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            param_input, num_wann, &
                                                            wann_data%centres, real_lattice, &
@@ -170,10 +169,10 @@ contains
                                                   real_lattice, atoms, k_points, u_matrix, &
                                                   num_kpts, num_bands, num_wann, bohr, stdout, seedname)
 
-    if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
+    if (w90_calcs%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
-    if (param_plot%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
-                                                          param_input, num_wann, num_kpts, num_bands, seedname)
+    if (w90_calcs%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
+                                                         param_input, num_wann, num_kpts, num_bands, seedname)
 
     if (param_input%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
 
@@ -1397,10 +1396,11 @@ contains
                       case ('down')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
-                       call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(param_plot%wannier_plot_spinor_mode), &
-                                      stdout, seedname)
+                        call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '&
+                            &//trim(param_plot%wannier_plot_spinor_mode), stdout, seedname)
                       end select
-                      wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
+                      wann_func(nxx, nyy, nzz, loop_w) = &
+                        wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                     endif
                   endif
                 end do

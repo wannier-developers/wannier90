@@ -195,8 +195,8 @@ contains
                                  irvec_max, stdout, seedname)
         call tran_get_ht(fermi, param_input, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
                          hB1, stdout, seedname)
-        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                     wannier_centres_translated, tran_sorted_idx, stdout, seedname)
       end if
       call tran_bulk(param_input, tran, hB0, hB1, stdout, seedname)
     end if
@@ -226,11 +226,12 @@ contains
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            wannier_centres_translated, stdout, seedname)
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
-                               real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
+                               w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
                                wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
                                coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
-        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                     wannier_centres_translated, tran_sorted_idx, &
+                                                     stdout, seedname)
 
         call tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
@@ -1943,7 +1944,7 @@ contains
 
   !========================================!
   subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
-                               real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
+                               w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
                                wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
                                coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
     !=======================================================!
@@ -1961,7 +1962,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: parameter_input_type, wannier_data_type, atom_data_type
-    use wannier_param_types, only: transport_type
+    use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
 
@@ -1990,6 +1991,7 @@ contains
     type(parameter_input_type), intent(inout) :: param_input
     type(transport_type), intent(inout) :: tran
     type(wannier_data_type), intent(in) :: wann_data
+    type(w90_calculation_type), intent(in) :: w90_calcs
 
     character(len=50), intent(in)  :: seedname
 
@@ -2245,9 +2247,9 @@ contains
         (size(PL2_groups) .ne. size(PL3_groups)) .or. &
         (size(PL3_groups) .ne. size(PL4_groups))) then
       if (sort_iterator .ge. 2) then
-        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                       num_wann, &
-                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                     wannier_centres_translated, tran_sorted_idx, &
+                                                     stdout, seedname)
         call io_error('Sorting techniques exhausted:&
           & Inconsistent number of groups among principal layers', stdout, seedname)
       endif
@@ -2276,9 +2278,8 @@ contains
           (PL2_groups(i) .ne. PL3_groups(i)) .or. &
           (PL3_groups(i) .ne. PL4_groups(i))) then
         if (sort_iterator .ge. 2) then
-          if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                         num_wann, &
-                                                         wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+          if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
           call io_error &
            ('Sorting techniques exhausted: Inconsitent number of wannier function among &
              & similar groups within principal layers', stdout, seedname)
@@ -2376,9 +2377,9 @@ contains
         do k = 1, size(temp_subgroup, 2)
           if (temp_subgroup(j, k) .ne. 0) then
             if (sort_iterator .ge. 2) then
-              if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                             wannier_centres_translated, &
-                                                             tran_sorted_idx, stdout, seedname)
+              if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                           wannier_centres_translated, &
+                                                           tran_sorted_idx, stdout, seedname)
               call io_error &
                 ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', stdout, seedname)
             endif
@@ -2410,10 +2411,9 @@ contains
     ! At this point, every check has been cleared, and we need to use
     ! the parity signatures of the WFs for the possibility of equal centres
     !
-    call check_and_sort_similar_centres(signatures, num_G, &
-                                        atoms, tran, &
-                                        param_input, &
-                                        num_wann, wannier_centres_translated, coord, tran_sorted_idx, stdout, seedname)
+    call check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, w90_calcs, &
+                                        num_wann, wannier_centres_translated, coord, &
+                                        tran_sorted_idx, stdout, seedname)
 
     write (stdout, *) ' '
     write (stdout, *) '------------------------- Sorted Wannier Centres -----------------------------'
@@ -2794,8 +2794,9 @@ contains
   end subroutine group
 
   !=========================================================
-  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, num_wann, &
-                                            wannier_centres_translated, coord, tran_sorted_idx, stdout, seedname)
+  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, &
+                                            w90_calcs, num_wann, wannier_centres_translated, &
+                                            coord, tran_sorted_idx, stdout, seedname)
     !=======================================================!
     ! Here, we consider the possiblity of wannier functions !
     ! with similar centres, such as a set of d-orbitals     !
@@ -2813,12 +2814,13 @@ contains
 !   use w90_io, only: stdout, io_stopwatch, io_error
     use w90_io, only: io_stopwatch, io_error
     use w90_param_types, only: parameter_input_type, atom_data_type
-    use wannier_param_types, only: transport_type
+    use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
     type(transport_type), intent(inout) :: tran
     type(parameter_input_type), intent(in) :: param_input
     type(atom_data_type), intent(in) :: atoms
+    type(w90_calculation_type), intent(in) :: w90_calcs
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2963,9 +2965,8 @@ contains
       if (param_input%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
       if (i .ne. 1) then
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
-          if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                         num_wann, &
-                                                         wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+          if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
           call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells', stdout, seedname)
         elseif (i .eq. 4*tran%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
@@ -3063,9 +3064,11 @@ contains
           deallocate (sorted_idx, stat=ierr)
           if (ierr /= 0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres', stdout, seedname)
           deallocate (unsorted_similar_centres, stat=ierr)
-  if (ierr /= 0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres', &
+                                       stdout, seedname)
           deallocate (ref_similar_centres, stat=ierr)
-       if (ierr /= 0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres', &
+                                       stdout, seedname)
         enddo
       enddo
       !

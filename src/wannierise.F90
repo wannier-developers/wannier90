@@ -791,12 +791,12 @@ contains
       end if
     endif
 
-    if (param_input%write_xyz .and. on_root) then
+    if (w90_calcs%write_xyz .and. on_root) then
       call wann_write_xyz(param_wannierise%translate_home_cell, num_wann, wann_data%centres, &
                           real_lattice, recip_lattice, atoms, param_input, stdout, seedname)
     endif
 
-    if (param_wannierise%write_hr_diag) then
+    if (w90_calcs%write_hr_diag) then
       call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
@@ -838,17 +838,17 @@ contains
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
 !    if (write_r2mn) call wann_write_r2mn()
-    if (param_wannierise%write_r2mn .and. on_root) call wann_write_r2mn(num_kpts, num_wann, &
-                                                                        kmesh_info, m_matrix, stdout, seedname)
+    if (w90_calcs%write_r2mn .and. on_root) call wann_write_r2mn(num_kpts, num_wann, kmesh_info, &
+                                                                 m_matrix, stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (param_input%have_disentangled .and. param_wannierise%write_proj) &
+    if (param_input%have_disentangled .and. w90_calcs%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_window%lwindow, param_input%timing_level, param_input%iprint, &
                                 stdout, seedname)
 
     ! aam: write data required for vdW utility
-    if (param_wannierise%write_vdw_data .and. on_root) then
+    if (w90_calcs%write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
                                u_matrix_opt, param_input, stdout, seedname)
     endif
@@ -3180,9 +3180,9 @@ contains
 
   !==================================================================!
   subroutine wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, &
-                             param_wannierise, wann_data, m_matrix, u_matrix, u_matrix_opt, &
-                             eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                             num_wann, seedname, stdout, comm)
+                             param_wannierise, wann_data, w90_calcs, m_matrix, u_matrix, &
+                             u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
+                             num_bands, num_kpts, num_wann, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3191,7 +3191,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use wannier_param_types, only: param_wannierise_type
+    use wannier_param_types, only: param_wannierise_type, w90_calculation_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type
     use wannier_methods, only: param_write_chkpt
@@ -3209,6 +3209,7 @@ contains
     type(parameter_input_type), intent(inout) :: param_input
     type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(w90_calculation_type), intent(in) :: w90_calcs
     type(disentangle_manifold_type), intent(in) :: dis_window ! needed for write_chkpt
     type(atom_data_type), intent(in) :: atoms
 
@@ -3548,11 +3549,9 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*param_input%lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (param_input%write_xyz) then
+    if (w90_calcs%write_xyz) then
       call wann_write_xyz(param_wannierise%translate_home_cell, num_wann, wann_data%centres, &
-                          real_lattice, recip_lattice, atoms, &
-                          param_input, &
-                          stdout, seedname)
+                          real_lattice, recip_lattice, atoms, param_input, stdout, seedname)
     endif
 
     if (param_wannierise%guiding_centres) then
@@ -3574,17 +3573,17 @@ contains
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
-    if (param_wannierise%write_r2mn) call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, &
-                                                          stdout, seedname)
+    if (w90_calcs%write_r2mn) call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, &
+                                                   stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (param_input%have_disentangled .and. param_wannierise%write_proj) &
+    if (param_input%have_disentangled .and. w90_calcs%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_window%lwindow, param_input%timing_level, param_input%iprint, &
                                 stdout, seedname)
 
     ! aam: write data required for vdW utility
-    if (param_wannierise%write_vdw_data) then
+    if (w90_calcs%write_vdw_data) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, &
                                recip_lattice, u_matrix, u_matrix_opt, &
                                param_input, stdout, seedname)

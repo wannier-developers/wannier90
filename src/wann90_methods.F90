@@ -144,7 +144,7 @@ contains
       call param_read_plot(w90_calcs, param_plot, param_input%bands_plot_mode, num_wann, has_kpath, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
-      call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts, stdout, seedname)
+      call param_read_outfiles(w90_calcs, param_input, num_kpts, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, param_plot, param_input, write_data%one_dim_axis, &
@@ -590,30 +590,29 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_read_restart
 
-  subroutine param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts, stdout, seedname)
+  subroutine param_read_outfiles(w90_calcs, param_input, num_kpts, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input ! write_xyz
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    type(param_plot_type), intent(inout) :: param_plot
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
     character(len=50), intent(in)  :: seedname
 
     logical :: found, hr_plot
 
-    param_input%write_xyz = .false.
-    call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=param_input%write_xyz)
+    w90_calcs%write_xyz = .false.
+    call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=w90_calcs%write_xyz)
 
-    param_wannierise%write_r2mn = .false.
-    call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=param_wannierise%write_r2mn)
+    w90_calcs%write_r2mn = .false.
+    call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=w90_calcs%write_r2mn)
 
-    param_wannierise%write_proj = .false.
-    call param_get_keyword(stdout, seedname, 'write_proj', found, l_value=param_wannierise%write_proj)
+    w90_calcs%write_proj = .false.
+    call param_get_keyword(stdout, seedname, 'write_proj', found, l_value=w90_calcs%write_proj)
 
-    param_wannierise%write_hr_diag = .false.
-    call param_get_keyword(stdout, seedname, 'write_hr_diag', found, l_value=param_wannierise%write_hr_diag)
+    w90_calcs%write_hr_diag = .false.
+    call param_get_keyword(stdout, seedname, 'write_hr_diag', found, &
+                           l_value=w90_calcs%write_hr_diag)
 
     hr_plot = .false.
     call param_get_keyword(stdout, seedname, 'hr_plot', found, l_value=hr_plot)
@@ -621,24 +620,26 @@ contains
     w90_calcs%write_hr = .false.
     call param_get_keyword(stdout, seedname, 'write_hr', found, l_value=w90_calcs%write_hr)
 
-    param_plot%write_rmn = .false.
-    call param_get_keyword(stdout, seedname, 'write_rmn', found, l_value=param_plot%write_rmn)
+    w90_calcs%write_rmn = .false.
+    call param_get_keyword(stdout, seedname, 'write_rmn', found, l_value=w90_calcs%write_rmn)
 
-    param_plot%write_tb = .false.
-    call param_get_keyword(stdout, seedname, 'write_tb', found, l_value=param_plot%write_tb)
+    w90_calcs%write_tb = .false.
+    call param_get_keyword(stdout, seedname, 'write_tb', found, l_value=w90_calcs%write_tb)
 
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
 
     ! aam: vdW
-    param_wannierise%write_vdw_data = .false.
-    call param_get_keyword(stdout, seedname, 'write_vdw_data', found, l_value=param_wannierise%write_vdw_data)
-    if (param_wannierise%write_vdw_data) then
+    w90_calcs%write_vdw_data = .false.
+    call param_get_keyword(stdout, seedname, 'write_vdw_data', found, &
+                           l_value=w90_calcs%write_vdw_data)
+    if (w90_calcs%write_vdw_data) then
       if ((.not. param_input%gamma_only) .or. (num_kpts .ne. 1)) &
-        call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', stdout, seedname)
+        call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', &
+                      stdout, seedname)
     endif
-    if (param_wannierise%write_vdw_data .and. w90_calcs%disentanglement .and. &
+    if (w90_calcs%write_vdw_data .and. w90_calcs%disentanglement .and. &
         param_input%num_valence_bands <= 0) &
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined', stdout, seedname)
 
@@ -650,7 +651,7 @@ contains
     !%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(w90_calculation_type), intent(inout) :: w90_calcs
     type(param_plot_type), intent(out) :: param_plot
     character(len=*), intent(out) :: bands_plot_mode
     integer, intent(in) :: stdout
@@ -750,11 +751,12 @@ contains
       if (param_plot%wannier_plot_scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
     endif
 
-    param_plot%write_u_matrices = .false.
-    call param_get_keyword(stdout, seedname, 'write_u_matrices', found, l_value=param_plot%write_u_matrices)
+    w90_calcs%write_u_matrices = .false.
+    call param_get_keyword(stdout, seedname, 'write_u_matrices', found, &
+                           l_value=w90_calcs%write_u_matrices)
 
-    param_plot%write_bvec = .false.
-    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=param_plot%write_bvec)
+    w90_calcs%write_bvec = .false.
+    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=w90_calcs%write_bvec)
 
     param_plot%bands_num_points = 100
     call param_get_keyword(stdout, seedname, 'bands_num_points', found, i_value=param_plot%bands_num_points)
@@ -1353,10 +1355,14 @@ contains
       param_wannierise%num_print_cycles, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between backing up to disk     :', &
       param_wannierise%num_dump_cycles, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', param_wannierise%write_r2mn, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', param_input%write_xyz, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', param_wannierise%write_hr_diag, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', param_wannierise%guiding_centres, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', &
+      w90_calcs%write_r2mn, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', &
+      w90_calcs%write_xyz, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
+      w90_calcs%write_hr_diag, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
+      param_wannierise%guiding_centres, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
       use_bloch_phases, '|'
     if (param_wannierise%guiding_centres .or. param_input%iprint > 2) then
@@ -1490,9 +1496,9 @@ contains
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', w90_calcs%write_hr, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       endif
-      if (param_wannierise%write_vdw_data .or. param_input%iprint > 2) then
+      if (w90_calcs%write_vdw_data .or. param_input%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
-          param_wannierise%write_vdw_data, '|'
+          w90_calcs%write_vdw_data, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       endif
       !
@@ -2129,9 +2135,9 @@ contains
                      seedname, comm)
     call comms_bcast(param_plot%wannier_plot_spinor_mode, len(param_plot%wannier_plot_spinor_mode), &
                      stdout, seedname, comm)
-    call comms_bcast(param_plot%write_u_matrices, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_u_matrices, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%bands_plot, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%write_bvec, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_bvec, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%bands_num_points, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%bands_plot_format, len(param_plot%bands_plot_format), stdout, &
                      seedname, comm)
@@ -2150,8 +2156,8 @@ contains
     end if
     call comms_bcast(param_plot%bands_plot_dim, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_hr, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%write_rmn, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%write_tb, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_rmn, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_tb, 1, stdout, seedname, comm)
     call comms_bcast(param_input%hr_cutoff, 1, stdout, seedname, comm)
     call comms_bcast(param_input%dist_cutoff, 1, stdout, seedname, comm)
     call comms_bcast(param_input%dist_cutoff_mode, len(param_input%dist_cutoff_mode), stdout, &
@@ -2297,26 +2303,26 @@ contains
     !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
     call comms_bcast(driver%restart, len(driver%restart), stdout, seedname, comm)
-    call comms_bcast(param_wannierise%write_r2mn, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_r2mn, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%num_guide_cycles, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%num_no_guide_iter, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%fixed_step, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%trial_step, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%precond, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%write_proj, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_proj, 1, stdout, seedname, comm)
     call comms_bcast(param_input%timing_level, 1, stdout, seedname, comm)
     call comms_bcast(param_input%spinors, 1, stdout, seedname, comm)
     call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%translate_home_cell, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%write_xyz, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%write_hr_diag, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_xyz, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_hr_diag, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%conv_noise_amp, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%conv_noise_num, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%wannier_plot_radius, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%wannier_plot_scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
     call comms_bcast(param_input%optimisation, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%write_vdw_data, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%write_vdw_data, 1, stdout, seedname, comm)
     call comms_bcast(param_input%lenconfac, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%lfixstep, 1, stdout, seedname, comm)
     call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)

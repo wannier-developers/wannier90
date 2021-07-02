@@ -63,7 +63,6 @@ module w90_param_types
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
-    logical :: write_xyz !wannierise and transport
     real(kind=dp) :: omega_invariant !wannierise, disentangle and chk2chk
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
