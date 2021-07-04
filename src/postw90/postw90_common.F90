@@ -1232,9 +1232,9 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec(kpt, OO_R, num_wann, param_input, wann_data, &
-                                           real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                           ws_vec, stdout, seedname, OO_true, OO_pseudo)
+  subroutine pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, OO_R, kpt, &
+                                           real_lattice, recip_lattice, mp_grid, num_wann, &
+                                           seedname, stdout, OO_true, OO_pseudo)
     !====================================================================!
     !                                                                    !
     !! For OO_true (true vector):
@@ -1250,20 +1250,25 @@ contains
 
     ! Arguments
     !
-    real(kind=dp)                                     :: kpt(3)
-    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
-    integer, intent(in) :: num_wann
     type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    type(wannier_data_type), intent(in)    :: wann_data
+    type(ws_distance_type), intent(inout)  :: ws_distance
+    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+
+    real(kind=dp)                                     :: kpt(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
     complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_true
     complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_pseudo
 
+    character(len=50), intent(in)  :: seedname
+
+!   local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac

@@ -138,13 +138,15 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
+    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
+                  stdout, comm)
 
     if (pw90_spin%decomp) then
       ndim = 3
-      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
+                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, stdout, &
+                    comm)
     else
       ndim = 1
     end if

@@ -194,28 +194,31 @@ contains
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, v_matrix, &
-                  HH_R, dis_window, k_points, param_input, pw90_common, stdout, seedname, comm)
+    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
+                  stdout, comm)
+
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
-      call get_AA_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    HH_R, AA_R, berry, dis_window, kmesh_info, k_points, param_input, pw90_common, &
-                    stdout, seedname, comm)
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
+                    HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
+                    num_wann, seedname, stdout, comm)
     endif
 
     if (eval_spn) then
 
-      call get_SS_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    SS_R, dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
+      call get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
+                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, stdout, &
+                    comm)
     endif
 
     if (eval_K) then
-      call get_BB_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    BB_R, dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, &
-                    seedname, comm)
-      call get_CC_R(num_bands, num_kpts, num_wann, ws_vec%nrpts, ws_vec%irvec, eigval, v_matrix, &
-                    CC_R, dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
-                    stdout, seedname, comm)
+      call get_BB_R(dis_window, kmesh_info, k_points, param_input, pw90_common, BB_R, v_matrix, &
+                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, &
+                    stdout, comm)
+      call get_CC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                    CC_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
+                    num_wann, seedname, stdout, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
@@ -632,9 +635,9 @@ contains
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
-      call pw90common_fourier_R_to_k_vec(kpt, AA_R, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         ws_vec, stdout, seedname, OO_true=AA)
+      call pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, AA_R, kpt, &
+                                         real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
+                                         stdout, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
       enddo
@@ -684,11 +687,11 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imfgh_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
-                                       real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                       u_matrix, v_matrix, dis_window, k_points, pw90_common, &
-                                       ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, &
-                                       seedname, comm, imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(dis_window, fermi, k_points, param_input, pw90_common, &
+                                       wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
+                                       u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                       mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm, &
+                                       imf_k, img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -697,11 +700,11 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(kpt, num_wann, fermi, param_input, wann_data, eigval, &
-                                     real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                     u_matrix, v_matrix, dis_window, k_points, pw90_common, &
-                                     ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, stdout, &
-                                     seedname, comm, imf_k, occ)
+            call berry_get_imf_klist(dis_window, fermi, k_points, param_input, pw90_common, &
+                                     wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
+                                     u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                     imf_k, mp_grid, num_bands, num_kpts, num_wann, seedname, &
+                                     stdout, comm, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo

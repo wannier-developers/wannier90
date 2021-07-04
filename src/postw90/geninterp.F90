@@ -181,9 +181,9 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, &
-                  eigval, u_matrix, v_matrix, HH_R, dis_window, k_points, param_input, &
-                  pw90_common, stdout, seedname, comm)
+    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
+                  stdout, comm)
 
     if (on_root) then
       allocate (kpointidx(nkinterp), stat=ierr)

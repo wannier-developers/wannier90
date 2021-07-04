@@ -35,9 +35,9 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(num_bands, num_kpts, num_wann, ws_vec, real_lattice, eigval, u_matrix, &
-                      v_matrix, HH_R, dis_window, k_points, param_input, pw90_common, stdout, &
-                      seedname, comm)
+  subroutine get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
+                      v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
+                      stdout, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -55,19 +55,19 @@ contains
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(k_point_type), intent(in)              :: k_points
+    type(parameter_input_type), intent(in)      :: param_input
+    type(postw90_common_type), intent(in)       :: pw90_common
+    type(wigner_seitz_type), intent(inout)      :: ws_vec
+    type(w90commtype), intent(in)               :: comm
+
     integer, intent(in) :: num_bands, num_kpts, num_wann, stdout
-    type(wigner_seitz_type), intent(inout) :: ws_vec
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
-
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
@@ -243,9 +243,9 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, HH_R, AA_R, &
-                      berry, dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, &
-                      seedname, comm)
+  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
+                      HH_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                      seedname, stdout, comm)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -258,11 +258,20 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
+      parameter_input_type
 
     implicit none
 
     ! passed variables
+    type(berry_type), intent(in)                :: berry
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(kmesh_info_type), intent(in)           :: kmesh_info
+    type(k_point_type), intent(in)              :: k_points
+    type(parameter_input_type), intent(in)      :: param_input
+    type(postw90_common_type), intent(in)       :: pw90_common
+    type(w90commtype), intent(in)               :: comm
+
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
@@ -270,14 +279,6 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
-
-    type(berry_type), intent(in) :: berry
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
@@ -521,9 +522,8 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, BB_R, &
-                      dis_window, kmesh_info, k_points, param_input, pw90_common, stdout, seedname, &
-                      comm)
+  subroutine get_BB_R(dis_window, kmesh_info, k_points, param_input, pw90_common, BB_R, v_matrix, &
+                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, seedname, stdout, comm)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -535,24 +535,25 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
+      parameter_input_type
 
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(kmesh_info_type), intent(in)           :: kmesh_info
+    type(k_point_type), intent(in)              :: k_points
+    type(parameter_input_type), intent(in)      :: param_input
+    type(postw90_common_type), intent(in)       :: pw90_common
+    type(w90commtype), intent(in)               :: comm
+
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
-
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
@@ -691,9 +692,9 @@ contains
 
   !=============================================================
 
-  subroutine get_CC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, CC_R, &
-                      dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
-                      stdout, seedname, comm)
+  subroutine get_CC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                      CC_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                      seedname, stdout, comm)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -705,25 +706,26 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
+      parameter_input_type
 
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(kmesh_info_type), intent(in)           :: kmesh_info
+    type(k_point_type), intent(in)              :: k_points
+    type(parameter_input_type), intent(in)      :: param_input
+    type(postw90_oper_type), intent(in)         :: postw90_oper
+    type(postw90_common_type), intent(in)       :: pw90_common
+    type(w90commtype), intent(in)               :: comm
+
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
-
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
@@ -1043,8 +1045,8 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SS_R, &
-                      dis_window, k_points, param_input, postw90_oper, stdout, seedname, comm)
+  subroutine get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
+                      irvec, nrpts, num_bands, num_kpts, num_wann, seedname, stdout, comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1061,18 +1063,18 @@ contains
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(w90commtype), intent(in) :: comm
+
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
@@ -1207,9 +1209,9 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(num_bands, num_kpts, num_wann, nrpts, irvec, eigval, v_matrix, SR_R, SHR_R, &
-                       SH_R, dis_window, kmesh_info, k_points, param_input, postw90_oper, &
-                       pw90_common, spin_hall, stdout, seedname, comm)
+  subroutine get_SHC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+                       spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, irvec, nrpts, num_bands, &
+                       num_kpts, num_wann, seedname, stdout, comm)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1228,6 +1230,15 @@ contains
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(spin_hall_type), intent(in) :: spin_hall
+    type(w90commtype), intent(in) :: comm
+
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
@@ -1236,15 +1247,6 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
-
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(spin_hall_type), intent(in) :: spin_hall
-    type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in) :: seedname
 
