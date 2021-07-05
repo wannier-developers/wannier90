@@ -55,8 +55,6 @@ module w90_param_types
 
     integer :: one_dim_dir ! transport and plot - BGS w90 only
 
-    character(len=20) :: bands_plot_mode !hamiltonian (setup only), plot
-    !BGS - maybe a band_plot_type with band_num_points etc from plot_type?
     logical :: use_ws_distance !ws_distance, plot and postw90_common
     real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions

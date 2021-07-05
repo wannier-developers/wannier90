@@ -56,26 +56,34 @@ module wannier_param_types
     logical :: write_xyz !wannierise and transport
   end type w90_calculation_type
 
+  type band_plot_type
+    character(len=20) :: plot_mode !hamiltonian (setup only), plot
+    integer :: num_points
+    character(len=20) :: plot_format
+    integer, allocatable :: plot_project(:)
+    integer :: num_project
+    integer :: plot_dim
+    ! others from param_input? MAYBE
+  end type band_plot_type
+
+  type wannier_plot_type
+    integer :: num_plot
+    integer, allocatable :: plot_list(:)
+    integer :: plot_supercell(3)
+    real(kind=dp) :: plot_radius
+    real(kind=dp) :: plot_scale
+    character(len=20) :: plot_format
+    character(len=20) :: plot_mode
+    character(len=20) :: plot_spinor_mode
+    logical :: plot_spinor_phase
+  end type wannier_plot_type
+
+  ! MAYBE - seems almost redundant
   type param_plot_type ! only in plot.F90
     logical :: wvfn_formatted
     !! Read the wvfn from fortran formatted file
     integer :: spin
     !! Spin up=1 down=2
-    integer :: num_wannier_plot
-    integer, allocatable :: wannier_plot_list(:)
-    integer :: wannier_plot_supercell(3)
-    real(kind=dp) :: wannier_plot_radius
-    real(kind=dp) :: wannier_plot_scale
-    character(len=20) :: wannier_plot_format
-    character(len=20) :: wannier_plot_mode
-    character(len=20) :: wannier_plot_spinor_mode
-    logical :: wannier_plot_spinor_phase
-    integer :: bands_num_points
-    character(len=20) :: bands_plot_format
-    integer, allocatable :: bands_plot_project(:)
-    integer :: num_bands_project
-    integer :: bands_plot_dim
-    !BGS bands_ in band_plot_type? (with ones in param_input)
   end type param_plot_type
 
   ! parameters used to control the minimisation of the disentanglement process

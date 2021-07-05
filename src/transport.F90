@@ -86,7 +86,7 @@ contains
                        wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                        ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                       lsitesymmetry, seedname, stdout)
+                       bands_plot_mode, lsitesymmetry, seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
 
@@ -134,6 +134,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
+    character(len=*), intent(in) :: bands_plot_mode
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: lsitesymmetry  !YN:
 
@@ -179,11 +180,12 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                               num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
+                               num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
+                               tran%mode)
         call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                                recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
-                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
+                                recip_lattice, wann_data%centres, wannier_centres_translated, &
+                                irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
                                 seedname, lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
@@ -206,7 +208,8 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                               num_wann, nrpts, rpt_origin, stdout, seedname, tran%mode)
+                               num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
+                               tran%mode)
         call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                                 recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &

@@ -98,6 +98,8 @@ program wannier
   type(parameter_input_type) :: param_input
   logical :: eig_found
   type(param_plot_type) :: param_plot
+  type(band_plot_type) :: band_plot
+  type(wannier_plot_type) :: wann_plot
   type(param_wannierise_type) :: param_wannierise
   logical :: lsitesymmetry = .false. ! RS: symmetry-adapted Wannier functions
   real(kind=dp) :: symmetrize_eps = 1.d-3
@@ -237,13 +239,13 @@ program wannier
     call io_date(cdate, ctime)
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
-    call param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
-                    kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                    proj, input_proj, select_proj, spec_points, tran, wann_data, write_data, &
-                    w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
-                    mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
-                    cp_pp, lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, seedname, &
-                    stdout)
+    call param_read(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+                    kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
+                    param_wannierise, proj, input_proj, select_proj, spec_points, tran, wann_data, &
+                    wann_plot, write_data, w90_calcs, eigval, real_lattice, recip_lattice, &
+                    physics%bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
+                    num_wann, eig_found, calc_only_A, cp_pp, lhasproj, .false., .false., &
+                    lsitesymmetry, use_bloch_phases, seedname, stdout)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -272,11 +274,11 @@ program wannier
     else
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
-    call param_write(atoms, dis_data, driver, fermi, fermi_surface_data, k_points, param_hamil, &
-                     param_input, param_plot, param_wannierise, proj, input_proj, select_proj, &
-                     spec_points, tran, wann_data, write_data, w90_calcs, real_lattice, &
-                     recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                     num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
+    call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
+                     param_hamil, param_input, param_plot, param_wannierise, proj, input_proj, &
+                     select_proj, spec_points, tran, wann_data, wann_plot, write_data, w90_calcs, &
+                     real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                     num_proj, num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
@@ -302,11 +304,12 @@ program wannier
   endif
 
   ! We now distribute the parameters to the other nodes
-  call param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, kmesh_data, &
-                  kmesh_info, k_points, param_hamil, param_input, param_plot, param_wannierise, &
-                  input_proj, tran, wann_data, w90_calcs, eigval, real_lattice, recip_lattice, &
-                  symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
-                  cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
+  call param_dist(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+                  kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
+                  param_wannierise, input_proj, tran, wann_data, wann_plot, w90_calcs, eigval, &
+                  real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                  num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, use_bloch_phases, &
+                  seedname, stdout, w90comm)
   if (param_input%gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -360,9 +363,9 @@ program wannier
                                   real_lattice, recip_lattice, num_kpts, num_proj, &
                                   calc_only_A, seedname, stdout)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
-    call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                           param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
-                           write_data, eigval, seedname, stdout)
+    call param_w90_dealloc(atoms, band_plot, dis_data, dis_window, kmesh_data, k_points, &
+                           param_input, param_wannierise, proj, input_proj, spec_points, &
+                           wann_data, wann_plot, write_data, eigval, seedname, stdout)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -416,8 +419,8 @@ program wannier
                    param_wannierise, sym, wann_data, w90_calcs, ham_k, ham_r, m_matrix, &
                    u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                    wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                   num_bands, num_kpts, num_proj, num_wann, rpt_origin, tran%mode, &
-                   lsitesymmetry, seedname, stdout, w90comm)
+                   num_bands, num_kpts, num_proj, num_wann, rpt_origin, band_plot%plot_mode, &
+                   tran%mode, lsitesymmetry, seedname, stdout, w90comm)
   else
     call wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, param_wannierise, &
                          wann_data, w90_calcs, m_matrix, u_matrix, u_matrix_opt, eigval, &
@@ -440,11 +443,11 @@ program wannier
     ! I call the routine always; the if statements to decide if/what to plot are inside the function
     time2 = io_time()
 
-    call plot_main(atoms, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, k_points, &
-                   param_hamil, param_input, param_plot, spec_points, wann_data, w90_calcs, &
-                   ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                   recip_lattice, wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, &
-                   shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
+    call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
+                   k_points, param_hamil, param_input, param_plot, spec_points, wann_data, &
+                   wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   real_lattice, recip_lattice, wannier_centres_translated, physics%bohr, irvec, &
+                   mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                    tran%mode, lsitesymmetry, seedname, stdout)
     time1 = io_time()
 
@@ -460,7 +463,7 @@ program wannier
                      wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                      real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                      ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                     lsitesymmetry, seedname, stdout)
+                     band_plot%plot_mode, lsitesymmetry, seedname, stdout)
       time1 = io_time()
 
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
@@ -474,9 +477,9 @@ program wannier
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, seedname, stdout, w90comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                         param_plot, param_wannierise, proj, input_proj, spec_points, wann_data, &
-                         write_data, eigval, seedname, stdout)
+  call param_w90_dealloc(atoms, band_plot, dis_data, dis_window, kmesh_data, k_points, &
+                         param_input, param_wannierise, proj, input_proj, spec_points, &
+                         wann_data, wann_plot, write_data, eigval, seedname, stdout)
   if (lsitesymmetry) call sitesym_dealloc(sym, stdout, seedname) !YN:
 
 4004 continue

@@ -52,8 +52,8 @@ contains
                        param_wannierise, sym, wann_data, w90_calcs, ham_k, ham_r, m_matrix, &
                        u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, transport_mode, &
-                       lsitesymmetry, seedname, stdout, comm)
+                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, bands_plot_mode, &
+                       transport_mode, lsitesymmetry, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -115,6 +115,7 @@ contains
 
     logical, intent(in) :: lsitesymmetry
 
+    character(len=*), intent(in) :: bands_plot_mode
     character(len=*), intent(in) :: transport_mode
     character(len=50), intent(in) :: seedname
 
@@ -242,7 +243,8 @@ contains
     if (param_wannierise%precond) then
       call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                             num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
+                             num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
+                             transport_mode)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main', stdout, seedname)
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
@@ -799,7 +801,8 @@ contains
     if (w90_calcs%write_hr_diag) then
       call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                             num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
+                             num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
+                             transport_mode)
       call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                               recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &

@@ -43,7 +43,8 @@ contains
   !============================================!
   subroutine hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                               num_wann, nrpts, rpt_origin, stdout, seedname, transport_mode)
+                               num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
+                               transport_mode)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -74,6 +75,7 @@ contains
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
+    character(len=*), intent(in) :: bands_plot_mode
     character(len=50), intent(in)  :: seedname
     character(len=20), intent(in)  :: transport_mode
 
@@ -84,7 +86,7 @@ contains
     !
     ! Determine whether to use translation
     !
-    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) &
+    if (w90_calcs%bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) &
       hmlg%use_translation = .true.
     if (w90_calcs%transport .and. (index(transport_mode, 'bulk') .ne. 0)) &
       hmlg%use_translation = .true.

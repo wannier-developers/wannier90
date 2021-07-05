@@ -40,12 +40,12 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+  subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
                         param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
-                        wann_data, write_data, w90_calcs, eigval, real_lattice, recip_lattice, &
-                        bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                        eig_found, calc_only_A, cp_pp, lhasproj, library, &
+                        wann_data, wann_plot, write_data, w90_calcs, eigval, real_lattice, &
+                        recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                        num_proj, num_wann, eig_found, calc_only_A, cp_pp, lhasproj, library, &
                         library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
                         seedname, stdout)
     !==================================================================!
@@ -65,6 +65,8 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
+    type(band_plot_type), intent(inout) :: band_plot
+    type(wannier_plot_type), intent(inout) :: wann_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
@@ -141,13 +143,14 @@ contains
       call param_read_restart(driver, stdout, seedname)
       call param_read_system(library, param_input, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
-      call param_read_plot(w90_calcs, param_plot, param_input%bands_plot_mode, num_wann, has_kpath, stdout, seedname)
+      call param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
+                           stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
       call param_read_outfiles(w90_calcs, param_input, num_kpts, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
-    call param_read_one_dim(w90_calcs, param_plot, param_input, write_data%one_dim_axis, &
+    call param_read_one_dim(w90_calcs, band_plot, param_input, write_data%one_dim_axis, &
                             tran%read_ht, stdout, seedname)
     call param_read_ws_data(param_input, stdout, seedname) !ws_search etc
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
@@ -645,7 +648,8 @@ contains
 
   end subroutine param_read_outfiles
 
-  subroutine param_read_plot(w90_calcs, param_plot, bands_plot_mode, num_wann, has_kpath, stdout, seedname)
+  subroutine param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
+                             stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
@@ -653,7 +657,8 @@ contains
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(param_plot_type), intent(out) :: param_plot
-    character(len=*), intent(out) :: bands_plot_mode
+    type(band_plot_type), intent(out) :: band_plot
+    type(wannier_plot_type), intent(out) :: wann_plot
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     logical, intent(in) :: has_kpath
@@ -678,77 +683,80 @@ contains
       end if
     end if
 
-    param_plot%wannier_plot_supercell = 2
+    wann_plot%plot_supercell = 2
 
     call param_get_vector_length(stdout, seedname, 'wannier_plot_supercell', found, length=i)
     if (found) then
       if (i .eq. 1) then
         call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 1, &
-                                      i_value=param_plot%wannier_plot_supercell)
-        param_plot%wannier_plot_supercell(2) = param_plot%wannier_plot_supercell(1)
-        param_plot%wannier_plot_supercell(3) = param_plot%wannier_plot_supercell(1)
+                                      i_value=wann_plot%plot_supercell)
+        wann_plot%plot_supercell(2) = wann_plot%plot_supercell(1)
+        wann_plot%plot_supercell(3) = wann_plot%plot_supercell(1)
       elseif (i .eq. 3) then
         call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 3, &
-                                      i_value=param_plot%wannier_plot_supercell)
+                                      i_value=wann_plot%plot_supercell)
       else
         call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
       end if
-      if (any(param_plot%wannier_plot_supercell <= 0)) &
+      if (any(wann_plot%plot_supercell <= 0)) &
         call io_error('Error: wannier_plot_supercell elements must be greater than zero', stdout, seedname)
     end if
 
-    param_plot%wannier_plot_format = 'xcrysden'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_format', found, c_value=param_plot%wannier_plot_format)
+    wann_plot%plot_format = 'xcrysden'
+    call param_get_keyword(stdout, seedname, 'wannier_plot_format', found, c_value=wann_plot%plot_format)
 
-    param_plot%wannier_plot_mode = 'crystal'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_mode', found, c_value=param_plot%wannier_plot_mode)
+    wann_plot%plot_mode = 'crystal'
+    call param_get_keyword(stdout, seedname, 'wannier_plot_mode', found, c_value=wann_plot%plot_mode)
 
-    param_plot%wannier_plot_spinor_mode = 'total'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, c_value=param_plot%wannier_plot_spinor_mode)
-    param_plot%wannier_plot_spinor_phase = .true.
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, l_value=param_plot%wannier_plot_spinor_phase)
+    wann_plot%plot_spinor_mode = 'total'
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, c_value=wann_plot%plot_spinor_mode)
+    wann_plot%plot_spinor_phase = .true.
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, l_value=wann_plot%plot_spinor_phase)
 
-    call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, param_plot%num_wannier_plot, lcount=.true.)
+    call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
+                                wann_plot%num_plot, lcount=.true.)
     if (found) then
-      if (param_plot%num_wannier_plot < 1) call io_error('Error: problem reading wannier_plot_list', stdout, seedname)
-      if (allocated(param_plot%wannier_plot_list)) deallocate (param_plot%wannier_plot_list)
-      allocate (param_plot%wannier_plot_list(param_plot%num_wannier_plot), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', stdout, seedname)
+      if (wann_plot%num_plot < 1) call io_error('Error: problem reading wannier_plot_list', &
+                                                stdout, seedname)
+      if (allocated(wann_plot%plot_list)) deallocate (wann_plot%plot_list)
+      allocate (wann_plot%plot_list(wann_plot%num_plot), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', &
+                                   stdout, seedname)
       call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
-                                  param_plot%num_wannier_plot, .false., &
-                                  param_plot%wannier_plot_list)
-      if (any(param_plot%wannier_plot_list < 1) .or. any(param_plot%wannier_plot_list > num_wann)) &
+                                  wann_plot%num_plot, .false., wann_plot%plot_list)
+      if (any(wann_plot%plot_list < 1) .or. any(wann_plot%plot_list > num_wann)) &
         call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted', stdout, seedname)
     else
       ! we plot all wannier functions
-      param_plot%num_wannier_plot = num_wann
-      if (allocated(param_plot%wannier_plot_list)) deallocate (param_plot%wannier_plot_list)
-      allocate (param_plot%wannier_plot_list(param_plot%num_wannier_plot), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', stdout, seedname)
+      wann_plot%num_plot = num_wann
+      if (allocated(wann_plot%plot_list)) deallocate (wann_plot%plot_list)
+      allocate (wann_plot%plot_list(wann_plot%num_plot), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', &
+                                   stdout, seedname)
       do loop = 1, num_wann
-        param_plot%wannier_plot_list(loop) = loop
+        wann_plot%plot_list(loop) = loop
       end do
     end if
 
-    param_plot%wannier_plot_radius = 3.5_dp
-    call param_get_keyword(stdout, seedname, 'wannier_plot_radius', found, r_value=param_plot%wannier_plot_radius)
+    wann_plot%plot_radius = 3.5_dp
+    call param_get_keyword(stdout, seedname, 'wannier_plot_radius', found, r_value=wann_plot%plot_radius)
 
-    param_plot%wannier_plot_scale = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'wannier_plot_scale', found, r_value=param_plot%wannier_plot_scale)
+    wann_plot%plot_scale = 1.0_dp
+    call param_get_keyword(stdout, seedname, 'wannier_plot_scale', found, r_value=wann_plot%plot_scale)
 
     ! checks
     if (w90_calcs%wannier_plot) then
-      if ((index(param_plot%wannier_plot_format, 'xcrys') .eq. 0) .and. (index(param_plot%wannier_plot_format, 'cub') .eq. 0)) &
+      if ((index(wann_plot%plot_format, 'xcrys') .eq. 0) .and. (index(wann_plot%plot_format, 'cub') .eq. 0)) &
         call io_error('Error: wannier_plot_format not recognised', stdout, seedname)
-      if ((index(param_plot%wannier_plot_mode, 'crys') .eq. 0) .and. (index(param_plot%wannier_plot_mode, 'mol') .eq. 0)) &
+      if ((index(wann_plot%plot_mode, 'crys') .eq. 0) .and. (index(wann_plot%plot_mode, 'mol') .eq. 0)) &
         call io_error('Error: wannier_plot_mode not recognised', stdout, seedname)
-      if ((index(param_plot%wannier_plot_spinor_mode, 'total') .eq. 0) &
-          .and. (index(param_plot%wannier_plot_spinor_mode, 'up') .eq. 0) &
-          .and. (index(param_plot%wannier_plot_spinor_mode, 'down') .eq. 0)) &
+      if ((index(wann_plot%plot_spinor_mode, 'total') .eq. 0) &
+          .and. (index(wann_plot%plot_spinor_mode, 'up') .eq. 0) &
+          .and. (index(wann_plot%plot_spinor_mode, 'down') .eq. 0)) &
         call io_error('Error: wannier_plot_spinor_mode not recognised', stdout, seedname)
-      if (param_plot%wannier_plot_radius < 0.0_dp) call io_error('Error: wannier_plot_radius must be positive', stdout, seedname)
-      if (param_plot%wannier_plot_scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
+      if (wann_plot%plot_radius < 0.0_dp) call io_error('Error: wannier_plot_radius must be positive', stdout, seedname)
+      if (wann_plot%plot_scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
     endif
 
     w90_calcs%write_u_matrices = .false.
@@ -758,29 +766,29 @@ contains
     w90_calcs%write_bvec = .false.
     call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=w90_calcs%write_bvec)
 
-    param_plot%bands_num_points = 100
-    call param_get_keyword(stdout, seedname, 'bands_num_points', found, i_value=param_plot%bands_num_points)
+    band_plot%num_points = 100
+    call param_get_keyword(stdout, seedname, 'bands_num_points', found, i_value=band_plot%num_points)
 
-    param_plot%bands_plot_format = 'gnuplot'
-    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=param_plot%bands_plot_format)
+    band_plot%plot_format = 'gnuplot'
+    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%plot_format)
 
-    bands_plot_mode = 's-k'
-    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=bands_plot_mode)
+    band_plot%plot_mode = 's-k'
+    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%plot_mode)
 
-    param_plot%bands_plot_dim = 3
-    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=param_plot%bands_plot_dim)
+    band_plot%plot_dim = 3
+    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=band_plot%plot_dim)
 
-    param_plot%num_bands_project = 0
-    call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, param_plot%num_bands_project, lcount=.true.)
+    band_plot%num_project = 0
+    call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+                                band_plot%num_project, lcount=.true.)
     if (found) then
-      if (param_plot%num_bands_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
-      if (allocated(param_plot%bands_plot_project)) deallocate (param_plot%bands_plot_project)
-      allocate (param_plot%bands_plot_project(param_plot%num_bands_project), stat=ierr)
+      if (band_plot%num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
+      if (allocated(band_plot%plot_project)) deallocate (band_plot%plot_project)
+      allocate (band_plot%plot_project(band_plot%num_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
       call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                  param_plot%num_bands_project, .false., &
-                                  param_plot%bands_plot_project)
-      if (any(param_plot%bands_plot_project < 1) .or. any(param_plot%bands_plot_project > num_wann)) &
+                                  band_plot%num_project, .false., band_plot%plot_project)
+      if (any(band_plot%plot_project < 1) .or. any(band_plot%plot_project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
     endif
 
@@ -789,12 +797,12 @@ contains
 
     ! checks
     if (w90_calcs%bands_plot) then
-      if ((index(param_plot%bands_plot_format, 'gnu') .eq. 0) .and. &
-          (index(param_plot%bands_plot_format, 'xmgr') .eq. 0)) &
+      if ((index(band_plot%plot_format, 'gnu') .eq. 0) .and. &
+          (index(band_plot%plot_format, 'xmgr') .eq. 0)) &
         call io_error('Error: bands_plot_format not recognised', stdout, seedname)
-      if ((index(bands_plot_mode, 's-k') .eq. 0) .and. (index(bands_plot_mode, 'cut') .eq. 0)) &
+      if ((index(band_plot%plot_mode, 's-k') .eq. 0) .and. (index(band_plot%plot_mode, 'cut') .eq. 0)) &
         call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
-      if (param_plot%bands_num_points < 0) call io_error('Error: bands_num_points must be positive', stdout, seedname)
+      if (band_plot%num_points < 0) call io_error('Error: bands_num_points must be positive', stdout, seedname)
     endif
 
   end subroutine param_read_plot
@@ -824,12 +832,12 @@ contains
     endif
   end subroutine param_read_fermi_surface
 
-  subroutine param_read_one_dim(w90_calcs, param_plot, param_input, one_dim_axis, tran_read_ht, stdout, seedname)
+  subroutine param_read_one_dim(w90_calcs, band_plot, param_input, one_dim_axis, tran_read_ht, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(w90_calculation_type), intent(in) :: w90_calcs
-    type(param_plot_type), intent(in) :: param_plot
+    type(band_plot_type), intent(in) :: band_plot
     type(parameter_input_type), intent(inout) :: param_input
     character(len=*), intent(out) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
@@ -845,8 +853,8 @@ contains
     if (index(one_dim_axis, 'z') > 0) param_input%one_dim_dir = 3
     if (w90_calcs%transport .and. .not. tran_read_ht .and. &
         (param_input%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised', stdout, seedname)
-    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0) .and. &
-        ((param_plot%bands_plot_dim .ne. 3) .or. &
+    if (w90_calcs%bands_plot .and. (index(band_plot%plot_mode, 'cut') .ne. 0) .and. &
+        ((band_plot%plot_dim .ne. 3) .or. &
          (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
         (param_input%one_dim_dir .eq. 0)) &
       call io_error('Error: one_dim_axis not recognised', stdout, seedname)
@@ -1113,10 +1121,10 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atoms, dis_data, driver, fermi, fermi_surface_data, &
+  subroutine param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, &
                          k_points, param_hamil, param_input, param_plot, &
                          param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
-                         wann_data, write_data, w90_calcs, real_lattice, recip_lattice, &
+                         wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, lsitesymmetry, use_bloch_phases, stdout)
     !==================================================================!
@@ -1132,6 +1140,7 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(parameter_input_type), intent(in) :: param_input
     type(param_plot_type), intent(in) :: param_plot
+    type(band_plot_type), intent(in) :: band_plot
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(wannier_data_type), intent(in) :: wann_data
     type(param_hamiltonian_type), intent(in) :: param_hamil
@@ -1144,8 +1153,8 @@ contains
     type(select_projection_type), intent(in) :: select_proj
     type(input_proj_type), intent(in) :: proj_input
     type(special_kpoints_type), intent(in) :: spec_points
-    !type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(w90_extra_io_type), intent(in) :: write_data
+    type(wannier_plot_type), intent(in) :: wann_plot
     type(projection_type), intent(in) :: proj
 
     integer, intent(in) :: num_bands
@@ -1416,8 +1425,8 @@ contains
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :', w90_calcs%wannier_plot, '|'
         write (stdout, '(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
           '|   Size of supercell for plotting           :', &
-          param_plot%wannier_plot_supercell(1), 'x', param_plot%wannier_plot_supercell(2), 'x', &
-          param_plot%wannier_plot_supercell(3), '|'
+          wann_plot%plot_supercell(1), 'x', wann_plot%plot_supercell(2), 'x', &
+          wann_plot%plot_supercell(3), '|'
 
         if (param_wannierise%translate_home_cell) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') &
@@ -1425,20 +1434,20 @@ contains
         end if
 
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
-          trim(param_plot%wannier_plot_mode), '|'
+          trim(wann_plot%plot_mode), '|'
         if (param_input%spinors) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :', &
-            trim(param_plot%wannier_plot_spinor_mode), '|'
+            trim(wann_plot%plot_spinor_mode), '|'
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :', &
-            param_plot%wannier_plot_spinor_phase, '|'
+            wann_plot%plot_spinor_phase, '|'
         end if
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
-          trim(param_plot%wannier_plot_format), '|'
-        if (index(param_plot%wannier_plot_format, 'cub') > 0 .or. param_input%iprint > 2) then
+          trim(wann_plot%plot_format), '|'
+        if (index(wann_plot%plot_format, 'cub') > 0 .or. param_input%iprint > 2) then
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :', &
-            param_plot%wannier_plot_radius, '|'
+            wann_plot%plot_radius, '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
-            param_plot%wannier_plot_scale, '|'
+            wann_plot%plot_scale, '|'
         endif
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
@@ -1457,18 +1466,18 @@ contains
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
           spec_points%bands_num_spec_points/2, '|'
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
-          param_plot%bands_num_points, '|'
+          band_plot%num_points, '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
-          trim(param_plot%bands_plot_format), '|'
+          trim(band_plot%plot_format), '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :', &
-          trim(param_input%bands_plot_mode), '|'
-        if (index(param_input%bands_plot_mode, 'cut') .ne. 0) then
+          trim(band_plot%plot_mode), '|'
+        if (index(band_plot%plot_mode, 'cut') .ne. 0) then
           write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
-            param_plot%bands_plot_dim, '|'
-          if (param_plot%bands_plot_dim .eq. 1) &
+            band_plot%plot_dim, '|'
+          if (band_plot%plot_dim .eq. 1) &
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
             trim(write_data%one_dim_axis), '|'
-          if (param_plot%bands_plot_dim .eq. 2) &
+          if (band_plot%plot_dim .eq. 2) &
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
             trim(write_data%one_dim_axis), '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
@@ -1547,16 +1556,16 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(atoms, dis_data, dis_window, kmesh_data, k_points, param_input, &
-                               param_plot, param_wannierise, proj, proj_input, spec_points, &
-                               wann_data, write_data, eigval, seedname, stdout)
+  subroutine param_w90_dealloc(atoms, band_plot, dis_data, dis_window, kmesh_data, k_points, &
+                               param_input, param_wannierise, proj, proj_input, spec_points, &
+                               wann_data, wann_plot, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
     implicit none
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
-    type(param_plot_type), intent(inout) :: param_plot
+    type(band_plot_type), intent(inout) :: band_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
@@ -1567,6 +1576,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     type(special_kpoints_type), intent(inout) :: spec_points
     type(w90_extra_io_type), intent(inout) :: write_data
+    type(wannier_plot_type), intent(inout) :: wann_plot
     type(projection_type), intent(inout) :: proj
     type(input_proj_type), intent(inout) :: proj_input
 
@@ -1583,12 +1593,12 @@ contains
 
     call param_dealloc(param_input, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
-    if (allocated(param_plot%wannier_plot_list)) then
-      deallocate (param_plot%wannier_plot_list, stat=ierr)
+    if (allocated(wann_plot%plot_list)) then
+      deallocate (wann_plot%plot_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in param_dealloc', stdout, seedname)
     end if
-    if (allocated(param_plot%bands_plot_project)) then
-      deallocate (param_plot%bands_plot_project, stat=ierr)
+    if (allocated(band_plot%plot_project)) then
+      deallocate (band_plot%plot_project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating bands_plot_project in param_dealloc', stdout, seedname)
     endif
     if (allocated(write_data%ccentres_frac)) then
@@ -1958,11 +1968,11 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atoms, dis_data, dis_window, driver, fermi, fermi_surface_data, &
+  subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj_input, tran, wann_data, w90_calcs, eigval, &
-                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
-                        num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, &
+                        param_wannierise, proj_input, tran, wann_data, wann_plot, w90_calcs, &
+                        eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
+                        num_kpts, num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, &
                         use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
@@ -1980,6 +1990,8 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
+    type(band_plot_type), intent(inout) :: band_plot
+    type(wannier_plot_type), intent(inout) :: wann_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
@@ -2118,43 +2130,43 @@ contains
     call comms_bcast(param_wannierise%conv_window, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%guiding_centres, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%wannier_plot, 1, stdout, seedname, comm) !!BGS!!
-    call comms_bcast(param_plot%num_wannier_plot, 1, stdout, seedname, comm)
-    if (param_plot%num_wannier_plot > 0) then
+    call comms_bcast(wann_plot%num_plot, 1, stdout, seedname, comm)
+    if (wann_plot%num_plot > 0) then
       if (.not. on_root) then
-        allocate (param_plot%wannier_plot_list(param_plot%num_wannier_plot), stat=ierr)
+        allocate (wann_plot%plot_list(wann_plot%num_plot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating wannier_plot_list in param_dist', stdout, seedname)
       endif
-      call comms_bcast(param_plot%wannier_plot_list(1), param_plot%num_wannier_plot, stdout, &
+      call comms_bcast(wann_plot%plot_list(1), wann_plot%num_plot, stdout, &
                        seedname, comm)
     end if
-    call comms_bcast(param_plot%wannier_plot_supercell(1), 3, stdout, seedname, comm)
-    call comms_bcast(param_plot%wannier_plot_format, len(param_plot%wannier_plot_format), stdout, &
+    call comms_bcast(wann_plot%plot_supercell(1), 3, stdout, seedname, comm)
+    call comms_bcast(wann_plot%plot_format, len(wann_plot%plot_format), stdout, &
                      seedname, comm)
-    call comms_bcast(param_plot%wannier_plot_mode, len(param_plot%wannier_plot_mode), stdout, &
+    call comms_bcast(wann_plot%plot_mode, len(wann_plot%plot_mode), stdout, &
                      seedname, comm)
-    call comms_bcast(param_plot%wannier_plot_spinor_mode, len(param_plot%wannier_plot_spinor_mode), &
+    call comms_bcast(wann_plot%plot_spinor_mode, len(wann_plot%plot_spinor_mode), &
                      stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_u_matrices, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%bands_plot, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_bvec, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%bands_num_points, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%bands_plot_format, len(param_plot%bands_plot_format), stdout, &
+    call comms_bcast(band_plot%num_points, 1, stdout, seedname, comm)
+    call comms_bcast(band_plot%plot_format, len(band_plot%plot_format), stdout, &
                      seedname, comm)
-    call comms_bcast(param_input%bands_plot_mode, len(param_input%bands_plot_mode), stdout, &
+    call comms_bcast(band_plot%plot_mode, len(band_plot%plot_mode), stdout, &
                      seedname, comm)
-    call comms_bcast(param_plot%num_bands_project, 1, stdout, seedname, comm)
+    call comms_bcast(band_plot%num_project, 1, stdout, seedname, comm)
 
-    if (param_plot%num_bands_project > 0) then
+    if (band_plot%num_project > 0) then
       if (.not. on_root) then
-        allocate (param_plot%bands_plot_project(param_plot%num_bands_project), stat=ierr)
+        allocate (band_plot%plot_project(band_plot%num_project), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating bands_plot_project in param_dist', stdout, seedname)
       endif
-      call comms_bcast(param_plot%bands_plot_project(1), param_plot%num_bands_project, stdout, &
+      call comms_bcast(band_plot%plot_project(1), band_plot%num_project, stdout, &
                        seedname, comm)
     end if
-    call comms_bcast(param_plot%bands_plot_dim, 1, stdout, seedname, comm)
+    call comms_bcast(band_plot%plot_dim, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_hr, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_rmn, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_tb, 1, stdout, seedname, comm)
@@ -2318,8 +2330,8 @@ contains
     call comms_bcast(w90_calcs%write_hr_diag, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%conv_noise_amp, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%conv_noise_num, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%wannier_plot_radius, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%wannier_plot_scale, 1, stdout, seedname, comm)
+    call comms_bcast(wann_plot%plot_radius, 1, stdout, seedname, comm)
+    call comms_bcast(wann_plot%plot_scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
     call comms_bcast(param_input%optimisation, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_vdw_data, 1, stdout, seedname, comm)
