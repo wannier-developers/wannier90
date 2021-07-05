@@ -693,7 +693,7 @@ contains
 
 !=======================================================================
 
-  subroutine pw90common_get_occ(eig, occ, ef, num_wann)
+  subroutine pw90common_get_occ(ef, eig, occ, num_wann)
     !! Compute the electronic occupancy
 
     use w90_constants, only: dp !,eps7
@@ -703,6 +703,7 @@ contains
     ! Arguments
     !
     integer, intent(in) :: num_wann
+
     real(kind=dp), intent(in)  :: eig(num_wann)
     !! Eigenvalues
     real(kind=dp), intent(in)  :: ef
@@ -786,9 +787,9 @@ contains
   end function kmesh_spacing_mesh
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k(kpt, OO_R, OO, alpha, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                       ws_vec, stdout, seedname)
+  subroutine pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, OO, OO_R, kpt, &
+                                       real_lattice, recip_lattice, mp_grid, alpha, num_wann, &
+                                       seedname, stdout)
     !=========================================================!
     !                                                         !
     !! For alpha=0:
@@ -810,20 +811,25 @@ contains
 
     ! Arguments
     !
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in)    :: wann_data
+    type(ws_distance_type), intent(inout)  :: ws_distance
+    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+    integer, intent(in) :: alpha
+
     real(kind=dp)                                   :: kpt(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
     complex(kind=dp), dimension(:, :, :), intent(in)  :: OO_R
     complex(kind=dp), dimension(:, :), intent(out)   :: OO
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
 
-    integer                                         :: alpha
-    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+
+!   local variables
 
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
@@ -882,9 +888,9 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_new(kpt, OO_R, num_wann, param_input, wann_data, &
-                                           real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                           ws_vec, stdout, seedname, OO, OO_dx, OO_dy, OO_dz)
+  subroutine pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, OO_R, kpt, &
+                                           real_lattice, recip_lattice, mp_grid, num_wann, &
+                                           seedname, stdout, OO, OO_dx, OO_dy, OO_dz)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -902,22 +908,27 @@ contains
     implicit none
     ! Arguments
     !
-    real(kind=dp)                                             :: kpt(3)
-    complex(kind=dp), dimension(:, :, :), intent(in)            :: OO_R
-    integer, intent(in) :: num_wann
     type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    type(wannier_data_type), intent(in)    :: wann_data
+    type(ws_distance_type), intent(inout)  :: ws_distance
+    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+
+    real(kind=dp)                                             :: kpt(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    complex(kind=dp), dimension(:, :, :), intent(in)           :: OO_R
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dx
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dy
     complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dz
 
+    character(len=50), intent(in)  :: seedname
+
+!   local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
@@ -1440,10 +1451,10 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec_dadb
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, OO_R, num_wann, param_input, &
-                                                        wann_data, real_lattice, recip_lattice, &
-                                                        mp_grid, ws_distance, ws_vec, stdout, &
-                                                        seedname, OO_da, OO_dadb)
+  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(param_input, wann_data, ws_distance, &
+                                                        ws_vec, OO_R, kpt, real_lattice, &
+                                                        recip_lattice, mp_grid, num_wann, &
+                                                        seedname, stdout, OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1467,20 +1478,25 @@ contains
 
     ! Arguments
     !
-    real(kind=dp)                                     :: kpt(3)
-    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
-    integer, intent(in) :: num_wann
     type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    type(wannier_data_type), intent(in)    :: wann_data
+    type(ws_distance_type), intent(inout)  :: ws_distance
+    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    type(wigner_seitz_type), intent(in) :: ws_vec
-    type(ws_distance_type), intent(inout) :: ws_distance
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
+
+    real(kind=dp)             :: kpt(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
+    complex(kind=dp), dimension(:, :, :, :), intent(in)              :: OO_R
+    complex(kind=dp), optional, dimension(:, :, :), intent(out)      :: OO_da
     complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
 
+    character(len=50), intent(in)  :: seedname
+
+!   local variables
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac

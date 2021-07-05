@@ -1573,9 +1573,10 @@ contains
                                          stdout, OO_true=BB)
       do j = 1, 3
         do i = 1, j
-          call pw90common_fourier_R_to_k(kpt, CC_R(:, :, :, i, j), CC(:, :, i, j), 0, num_wann, &
-                                         param_input, wann_data, real_lattice, recip_lattice, &
-                                         mp_grid, ws_distance, ws_vec, stdout, seedname)
+          call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, &
+                                         ws_vec, CC(:, :, i, j), CC_R(:, :, :, i, j), kpt, &
+                                         real_lattice, recip_lattice, mp_grid, 0, num_wann, &
+                                         seedname, stdout)
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
         end do
       end do
@@ -1735,23 +1736,23 @@ contains
     allocate (AA(num_wann, num_wann, 3))
 
     if (berry%kubo_smr%adpt) then
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                               wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                               num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                               pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
-                               seedname, comm)
+      call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                               wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
+                               v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                               mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm)
+
       Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
     else
-      call pw90common_fourier_R_to_k_new(kpt, HH_R, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         ws_vec, stdout, seedname, OO=HH, &
-                                         OO_dx=delHH(:, :, 1), &
-                                         OO_dy=delHH(:, :, 2), &
-                                         OO_dz=delHH(:, :, 3))
+      call pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, HH_R, kpt, &
+                                         real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
+                                         stdout, OO=HH, OO_dx=delHH(:, :, 1), &
+                                         OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
+
       call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     endif
-    call pw90common_get_occ(eig, occ, fermi%energy_list(1), num_wann)
-    call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
+    call pw90common_get_occ(fermi%energy_list(1), eig, occ, num_wann)
+
+    call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
 
     call pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, AA_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
@@ -1770,9 +1771,8 @@ contains
     kubo_AH_k = cmplx_0
     jdos_k = 0.0_dp
     if (pw90_spin%decomp) then
-      call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                       recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, ws_vec, &
-                       stdout, seedname)
+      call spin_get_nk(param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
+                       real_lattice, recip_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
       kubo_H_k_spn = cmplx_0
       kubo_AH_k_spn = cmplx_0
       jdos_k_spn = 0.0_dp
@@ -1962,17 +1962,16 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, &
-                                            param_input, wann_data, eigval, real_lattice, &
-                                            recip_lattice, mp_grid, num_bands, num_kpts, &
-                                            dis_window, u_matrix, v_matrix, k_points, kmesh_info, &
-                                            berry, pw90_common, ws_distance, ws_vec, &
-                                            AA_R, HH_R, stdout, seedname, comm)
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, param_input, &
+                                            pw90_common, wann_data, ws_distance, ws_vec, AA_R, HH, &
+                                            HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, &
+                                            eigval, kpt, real_lattice, recip_lattice, mp_grid, &
+                                            num_bands, num_kpts, num_wann, seedname, stdout, comm)
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
-      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, AA_R, num_wann, param_input, wann_data, &
-                                                      real_lattice, recip_lattice, mp_grid, &
-                                                      ws_distance, ws_vec, stdout, seedname, &
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(param_input, wann_data, ws_distance, ws_vec, &
+                                                      AA_R, kpt, real_lattice, recip_lattice, &
+                                                      mp_grid, num_wann, seedname, stdout, &
                                                       OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
       call wham_get_eig_deleig_TB_conv(eig, eig_da, HH_da, UU, num_wann, pw90_ham, stdout, &
@@ -1987,15 +1986,14 @@ contains
                                               real_lattice, recip_lattice, mp_grid, &
                                               ws_distance, ws_vec, stdout, &
                                               seedname, OO_da=AA, OO_dadb=AA_da)
-      call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU, num_wann, param_input, &
-                               wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                               num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                               pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
-                               seedname, comm)
+      call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                               wann_data, ws_distance, ws_vec, HH_da, HH, HH_R, u_matrix, UU, &
+                               v_matrix, eig_da, eig, eigval, kpt, real_lattice, recip_lattice, &
+                               mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm)
     end if
 
     ! get electronic occupations
-    call pw90common_get_occ(eig, occ, fermi%energy_list(1), num_wann)
+    call pw90common_get_occ(fermi%energy_list(1), eig, occ, num_wann)
 
     ! get D_h (Eq. (24) WYSV06)
     call wham_get_D_h_P_value(HH_da, UU, eig, D_h, num_wann, berry)
@@ -2238,12 +2236,11 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                             wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                             pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, seedname, &
-                             comm)
-    call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
+    call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, wann_data, &
+                             ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                             del_eig, eig, eigval, kpt, real_lattice, recip_lattice, mp_grid, &
+                             num_bands, num_kpts, num_wann, seedname, stdout, comm)
+    call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input
     if (spin_hall%bandshift) then
@@ -2269,11 +2266,11 @@ contains
       Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
     endif
     if (lfreq) then
-      call pw90common_get_occ(eig, occ_freq, fermi%energy_list(1), num_wann)
+      call pw90common_get_occ(fermi%energy_list(1), eig, occ_freq, num_wann)
     elseif (lfermi) then
       ! get occ for different fermi_energy
       do i = 1, fermi%n
-        call pw90common_get_occ(eig, occ_fermi(:, i), fermi%energy_list(i), num_wann)
+        call pw90common_get_occ(fermi%energy_list(i), eig, occ_fermi(:, i), num_wann)
       end do
     end if
 
@@ -2407,10 +2404,9 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
-      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, spin_hall%gamma), num_wann, &
-                                         param_input, wann_data, real_lattice, recip_lattice, &
-                                         mp_grid, ws_distance, ws_vec, stdout, &
-                                         seedname, OO=S_w)
+      call pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, &
+                                         SS_R(:, :, :, spin_hall%gamma), kpt, real_lattice, &
+                                         recip_lattice, mp_grid, num_wann, seedname, stdout, OO=S_w)
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 

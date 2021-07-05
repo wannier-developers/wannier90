@@ -554,8 +554,10 @@ contains
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
     use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
       wannier_data_type, fermi_data_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, &
-      pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_fourier_R_to_k_vec
+!   use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, &
+    use w90_postw90_common, only: wigner_seitz_type, &
+      !     pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_fourier_R_to_k_vec
+      pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, utility_w0gauss
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
@@ -626,15 +628,14 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                             wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                             pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
-                             seedname, comm)
+    call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, wann_data, &
+                             ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                             del_eig, eig, eigval, kpt, real_lattice, recip_lattice, mp_grid, &
+                             num_bands, num_kpts, num_wann, seedname, stdout, comm)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
-      call wham_get_D_h(delHH, UU, eig, D_h, num_wann)
+      call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
       call pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, AA_R, kpt, &
                                          real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
                                          stdout, OO_true=AA)
@@ -880,9 +881,9 @@ contains
       allocate (SS(num_wann, num_wann, 3))
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
-        call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, j), num_wann, param_input, &
-                                           wann_data, real_lattice, recip_lattice, mp_grid, &
-                                           ws_distance, ws_vec, stdout, seedname, OO=SS(:, :, j))
+        call pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, &
+                                           SS_R(:, :, :, j), kpt, real_lattice, recip_lattice, &
+                                           mp_grid, num_wann, seedname, stdout, OO=SS(:, :, j))
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
       enddo
     endif

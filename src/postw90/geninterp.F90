@@ -289,15 +289,15 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, &
-                                 num_wann, param_input, wann_data, eigval, real_lattice, &
-                                 recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, v_matrix, &
-                                 dis_window, k_points, pw90_common, pw90_ham, ws_distance, ws_vec, &
-                                 HH_R, stdout, seedname, comm)
+        call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                                 wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
+                                 UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
+                                 recip_lattice, mp_grid, num_bands, num_kpts, num_wann, seedname, &
+                                 stdout, comm)
       else
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, ws_distance, ws_vec, &
-                                       stdout, seedname)
+        call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+                                       real_lattice, recip_lattice, mp_grid, 0, num_wann, &
+                                       seedname, stdout)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do

@@ -257,18 +257,19 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                       real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                       ws_vec, stdout, seedname)
+        call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+                                       real_lattice, recip_lattice, mp_grid, 0, num_wann, &
+                                       seedname, stdout)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(kpt, spn_k, num_wann, param_input, wann_data, real_lattice, &
-                           recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
-                           ws_vec, stdout, seedname)
+          call spin_get_nk(param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+                           kpt, real_lattice, recip_lattice, spn_k, mp_grid, num_wann, seedname, &
+                           stdout)
+
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing

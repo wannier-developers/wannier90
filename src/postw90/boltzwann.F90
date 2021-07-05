@@ -890,11 +890,10 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                               wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                               num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                               pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
-                               seedname, comm)
+      call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                               wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
+                               v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                               mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -931,11 +930,11 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, &
-                                           param_input, wann_data, eigval, real_lattice, &
-                                           recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                                           v_matrix, dis_window, k_points, pw90_common, pw90_ham, &
-                                           ws_distance, ws_vec, HH_R, stdout, seedname, comm)
+                  call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, &
+                                           pw90_ham, wann_data, ws_distance, ws_vec, delHH, HH, &
+                                           HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, &
+                                           kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
+                                           num_kpts, num_wann, seedname, stdout, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, num_wann, param_input, &
@@ -1176,9 +1175,9 @@ contains
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, &
-                                      recip_lattice, mp_grid, pw90_spin, ws_distance, HH_R, SS_R, &
-                                      ws_vec, stdout, seedname)
+    if (spin_decomp) call spin_get_nk(param_input, pw90_spin, wann_data, ws_distance, ws_vec, &
+                                      HH_R, SS_R, kpt, real_lattice, recip_lattice, spn_nk, &
+                                      mp_grid, num_wann, seedname, stdout)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 

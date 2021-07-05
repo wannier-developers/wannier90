@@ -204,11 +204,11 @@ contains
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
         if (dos_data%smr%adpt) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                   pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, &
-                                   stdout, seedname, comm)
+          call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                                   wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
+                                   v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
+                                   recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                                   seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
@@ -218,9 +218,9 @@ contains
                          adpt_smr_max=dos_data%smr%max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         ws_vec, stdout, seedname)
+          call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, &
+                                         kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
+                                         seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
@@ -247,11 +247,11 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%smr%adpt) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, num_wann, param_input, &
-                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                   num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                   pw90_common, pw90_ham, ws_distance, ws_vec, HH_R, stdout, &
-                                   seedname, comm)
+          call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+                                   wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
+                                   v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
+                                   recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                                   seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
@@ -261,9 +261,9 @@ contains
                          adpt_smr_max=dos_data%smr%max, &
                          levelspacing_k=levelspacing_k, UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, num_wann, param_input, wann_data, &
-                                         real_lattice, recip_lattice, mp_grid, ws_distance, &
-                                         ws_vec, stdout, seedname)
+          call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, &
+                                         kpt, real_lattice, recip_lattice, mp_grid, 0, &
+                                         num_wann, seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, num_wann, param_input, wann_data, &
                          real_lattice, recip_lattice, mp_grid, dos_data, pw90_spin, &
@@ -613,8 +613,8 @@ contains
     ! Get spin projections for every band
     !
     if (pw90_spin%decomp) then
-      call spin_get_nk(kpt, spn_nk, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
-                       mp_grid, pw90_spin, ws_distance, HH_R, SS_R, ws_vec, stdout, seedname)
+      call spin_get_nk(param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
+                       real_lattice, recip_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)
