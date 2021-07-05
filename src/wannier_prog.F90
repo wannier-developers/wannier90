@@ -321,12 +321,13 @@ program wannier
   else                      ! restart a previous calculation
     if (on_root) then
       call param_read_chkpt(dis_window, kmesh_info, k_points, param_input, wann_data, m_matrix, &
-                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, mp_grid, &
-                            num_bands, num_kpts, num_wann, driver%checkpoint, .false., seedname, &
-                            stdout)
+                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
+                            param_wannierise%omega%invariant, mp_grid, num_bands, num_kpts, &
+                            num_wann, driver%checkpoint, .false., seedname, stdout)
     endif
-    call param_chkpt_dist(dis_window, param_input, wann_data, u_matrix, u_matrix_opt, num_bands, &
-                          num_kpts, num_wann, driver%checkpoint, seedname, stdout, w90comm)
+    call param_chkpt_dist(dis_window, param_input, wann_data, u_matrix, u_matrix_opt, &
+                          param_wannierise%omega%invariant, num_bands, num_kpts, num_wann, &
+                          driver%checkpoint, seedname, stdout, w90comm)
     if (lsitesymmetry) call sitesym_read(sym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
@@ -393,8 +394,8 @@ program wannier
 
     call dis_main(dis_data, dis_window, kmesh_info, k_points, param_input, sym, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
-                  recip_lattice, num_bands, num_kpts, num_wann, lsitesymmetry, stdout, seedname, &
-                  w90comm)
+                  recip_lattice, param_wannierise%omega%invariant, num_bands, num_kpts, num_wann, &
+                  lsitesymmetry, stdout, seedname, w90comm)
     param_input%have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &
@@ -404,7 +405,8 @@ program wannier
   if (on_root) then
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                           mp_grid, real_lattice, recip_lattice, stdout, seedname)
+                           mp_grid, real_lattice, recip_lattice, param_wannierise%omega%invariant, &
+                           stdout, seedname)
   endif
 !~  call param_write_um
 
@@ -435,7 +437,8 @@ program wannier
   if (on_root) then
     call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                           mp_grid, real_lattice, recip_lattice, stdout, seedname)
+                           mp_grid, real_lattice, recip_lattice, param_wannierise%omega%invariant, &
+                           stdout, seedname)
   endif
 
 2002 continue

@@ -172,11 +172,12 @@ contains
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
-                                  param_wannierise%guiding_centres, param_wannierise%proj_site, &
-                                  proj_input, select_proj, num_proj, param_input, atoms, &
-                                  recip_lattice, num_wann, library, bohr, stdout, seedname)
+                                  param_wannierise%control%guiding_centres, &
+                                  param_wannierise%proj_site, proj_input, select_proj, num_proj, &
+                                  param_input, atoms, recip_lattice, num_wann, library, bohr, &
+                                  stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
-      if (param_wannierise%slwf_constrain) then
+      if (param_wannierise%constrain%slwf_constrain) then
         call param_read_constrained_centres(write_data%ccentres_frac, param_wannierise, &
                                             real_lattice, num_wann, library, stdout, seedname)
       endif
@@ -185,13 +186,10 @@ contains
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
       call param_uppercase(param_input, atoms, spec_points)
-
-      param_wannierise%omega_total = -999.0_dp
-      param_wannierise%omega_tilde = -999.0_dp
       ! Initialise
-      param_wannierise%omega_total = -999.0_dp
-      param_wannierise%omega_tilde = -999.0_dp
-      param_input%omega_invariant = -999.0_dp
+      param_wannierise%omega%total = -999.0_dp
+      param_wannierise%omega%tilde = -999.0_dp
+      param_wannierise%omega%invariant = -999.0_dp
       param_input%have_disentangled = .false.
       call param_read_final_alloc(w90_calcs%disentanglement, dis_window, &
                                   wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
@@ -377,96 +375,123 @@ contains
     integer :: ierr
     logical :: found
 
-    param_wannierise%num_dump_cycles = 100     ! frequency to write backups at
-    call param_get_keyword(stdout, seedname, 'num_dump_cycles', found, i_value=param_wannierise%num_dump_cycles)
-    if (param_wannierise%num_dump_cycles < 0) call io_error('Error: num_dump_cycles must be positive', stdout, seedname)
+    param_wannierise%control%num_dump_cycles = 100     ! frequency to write backups at
+    call param_get_keyword(stdout, seedname, 'num_dump_cycles', found, &
+                           i_value=param_wannierise%control%num_dump_cycles)
+    if (param_wannierise%control%num_dump_cycles < 0) &
+      call io_error('Error: num_dump_cycles must be positive', stdout, seedname)
 
-    param_wannierise%num_print_cycles = 1          ! frequency to write at
-    call param_get_keyword(stdout, seedname, 'num_print_cycles', found, i_value=param_wannierise%num_print_cycles)
-    if (param_wannierise%num_print_cycles < 0) call io_error('Error: num_print_cycles must be positive', stdout, seedname)
+    param_wannierise%control%num_print_cycles = 1          ! frequency to write at
+    call param_get_keyword(stdout, seedname, 'num_print_cycles', found, &
+                           i_value=param_wannierise%control%num_print_cycles)
+    if (param_wannierise%control%num_print_cycles < 0) &
+      call io_error('Error: num_print_cycles must be positive', stdout, seedname)
 
-    param_wannierise%num_iter = 100
-    call param_get_keyword(stdout, seedname, 'num_iter', found, i_value=param_wannierise%num_iter)
-    if (param_wannierise%num_iter < 0) call io_error('Error: num_iter must be positive', stdout, seedname)
+    param_wannierise%control%num_iter = 100
+    call param_get_keyword(stdout, seedname, 'num_iter', found, &
+                           i_value=param_wannierise%control%num_iter)
+    if (param_wannierise%control%num_iter < 0) &
+      call io_error('Error: num_iter must be positive', stdout, seedname)
 
-    param_wannierise%num_cg_steps = 5
-    call param_get_keyword(stdout, seedname, 'num_cg_steps', found, i_value=param_wannierise%num_cg_steps)
-    if (param_wannierise%num_cg_steps < 0) call io_error('Error: num_cg_steps must be positive', stdout, seedname)
+    param_wannierise%control%num_cg_steps = 5
+    call param_get_keyword(stdout, seedname, 'num_cg_steps', found, &
+                           i_value=param_wannierise%control%num_cg_steps)
+    if (param_wannierise%control%num_cg_steps < 0) &
+      call io_error('Error: num_cg_steps must be positive', stdout, seedname)
 
-    param_wannierise%conv_tol = 1.0e-10_dp
-    call param_get_keyword(stdout, seedname, 'conv_tol', found, r_value=param_wannierise%conv_tol)
-    if (param_wannierise%conv_tol < 0.0_dp) call io_error('Error: conv_tol must be positive', stdout, seedname)
+    param_wannierise%control%conv_tol = 1.0e-10_dp
+    call param_get_keyword(stdout, seedname, 'conv_tol', found, &
+                           r_value=param_wannierise%control%conv_tol)
+    if (param_wannierise%control%conv_tol < 0.0_dp) &
+      call io_error('Error: conv_tol must be positive', stdout, seedname)
 
-    param_wannierise%conv_noise_amp = -1.0_dp
-    call param_get_keyword(stdout, seedname, 'conv_noise_amp', found, r_value=param_wannierise%conv_noise_amp)
+    param_wannierise%control%conv_noise_amp = -1.0_dp
+    call param_get_keyword(stdout, seedname, 'conv_noise_amp', found, &
+                           r_value=param_wannierise%control%conv_noise_amp)
 
     ! JJ why is this -1 by default?  it implies that no checking is made for convergence
-    param_wannierise%conv_window = -1
-    if (param_wannierise%conv_noise_amp > 0.0_dp) param_wannierise%conv_window = 5
-    call param_get_keyword(stdout, seedname, 'conv_window', found, i_value=param_wannierise%conv_window)
+    param_wannierise%control%conv_window = -1
+    if (param_wannierise%control%conv_noise_amp > 0.0_dp) param_wannierise%control%conv_window = 5
+    call param_get_keyword(stdout, seedname, 'conv_window', found, &
+                           i_value=param_wannierise%control%conv_window)
 
-    param_wannierise%conv_noise_num = 3
-    call param_get_keyword(stdout, seedname, 'conv_noise_num', found, i_value=param_wannierise%conv_noise_num)
-    if (param_wannierise%conv_noise_num < 0) call io_error('Error: conv_noise_num must be positive', stdout, seedname)
+    param_wannierise%control%conv_noise_num = 3
+    call param_get_keyword(stdout, seedname, 'conv_noise_num', found, &
+                           i_value=param_wannierise%control%conv_noise_num)
+    if (param_wannierise%control%conv_noise_num < 0) &
+      call io_error('Error: conv_noise_num must be positive', stdout, seedname)
 
-    param_wannierise%guiding_centres = .false.
-    call param_get_keyword(stdout, seedname, 'guiding_centres', found, l_value=param_wannierise%guiding_centres)
+    param_wannierise%control%guiding_centres = .false.
+    call param_get_keyword(stdout, seedname, 'guiding_centres', found, &
+                           l_value=param_wannierise%control%guiding_centres)
 
-    param_wannierise%num_guide_cycles = 1
-    call param_get_keyword(stdout, seedname, 'num_guide_cycles', found, i_value=param_wannierise%num_guide_cycles)
-    if (param_wannierise%num_guide_cycles < 0) call io_error('Error: num_guide_cycles must be >= 0', stdout, seedname)
+    param_wannierise%control%num_guide_cycles = 1
+    call param_get_keyword(stdout, seedname, 'num_guide_cycles', found, &
+                           i_value=param_wannierise%control%num_guide_cycles)
+    if (param_wannierise%control%num_guide_cycles < 0) &
+      call io_error('Error: num_guide_cycles must be >= 0', stdout, seedname)
 
-    param_wannierise%num_no_guide_iter = 0
-    call param_get_keyword(stdout, seedname, 'num_no_guide_iter', found, i_value=param_wannierise%num_no_guide_iter)
-    if (param_wannierise%num_no_guide_iter < 0) call io_error('Error: num_no_guide_iter must be >= 0', stdout, seedname)
+    param_wannierise%control%num_no_guide_iter = 0
+    call param_get_keyword(stdout, seedname, 'num_no_guide_iter', found, &
+                           i_value=param_wannierise%control%num_no_guide_iter)
+    if (param_wannierise%control%num_no_guide_iter < 0) &
+      call io_error('Error: num_no_guide_iter must be >= 0', stdout, seedname)
 
-    param_wannierise%fixed_step = -999.0_dp; 
-    param_wannierise%lfixstep = .false.
-    call param_get_keyword(stdout, seedname, 'fixed_step', found, r_value=param_wannierise%fixed_step)
-    if (found .and. (param_wannierise%fixed_step < 0.0_dp)) call io_error('Error: fixed_step must be > 0', stdout, seedname)
-    if (param_wannierise%fixed_step > 0.0_dp) param_wannierise%lfixstep = .true.
+    param_wannierise%control%fixed_step = -999.0_dp; 
+    param_wannierise%control%lfixstep = .false.
+    call param_get_keyword(stdout, seedname, 'fixed_step', found, &
+                           r_value=param_wannierise%control%fixed_step)
+    if (found .and. (param_wannierise%control%fixed_step < 0.0_dp)) &
+      call io_error('Error: fixed_step must be > 0', stdout, seedname)
+    if (param_wannierise%control%fixed_step > 0.0_dp) param_wannierise%control%lfixstep = .true.
 
-    param_wannierise%trial_step = 2.0_dp
-    call param_get_keyword(stdout, seedname, 'trial_step', found, r_value=param_wannierise%trial_step)
-    if (found .and. param_wannierise%lfixstep) then
+    param_wannierise%control%trial_step = 2.0_dp
+    call param_get_keyword(stdout, seedname, 'trial_step', found, &
+                           r_value=param_wannierise%control%trial_step)
+    if (found .and. param_wannierise%control%lfixstep) then
       call io_error('Error: cannot specify both fixed_step and trial_step', stdout, seedname)
     endif
 
-    param_wannierise%precond = .false.
-    call param_get_keyword(stdout, seedname, 'precond', found, l_value=param_wannierise%precond)
+    param_wannierise%control%precond = .false.
+    call param_get_keyword(stdout, seedname, 'precond', found, &
+                           l_value=param_wannierise%control%precond)
 
-    param_wannierise%slwf_num = num_wann
-    param_wannierise%selective_loc = .false.
-    call param_get_keyword(stdout, seedname, 'slwf_num', found, i_value=param_wannierise%slwf_num)
+    param_wannierise%constrain%slwf_num = num_wann
+    param_wannierise%constrain%selective_loc = .false.
+    call param_get_keyword(stdout, seedname, 'slwf_num', found, &
+                           i_value=param_wannierise%constrain%slwf_num)
     if (found) then
-      if (param_wannierise%slwf_num .gt. num_wann .or. param_wannierise%slwf_num .lt. 1) then
+      if (param_wannierise%constrain%slwf_num .gt. num_wann .or. &
+          param_wannierise%constrain%slwf_num .lt. 1) then
         call io_error('Error: slwf_num must be an integer between 1 and num_wann', stdout, seedname)
       end if
-      if (param_wannierise%slwf_num .lt. num_wann) param_wannierise%selective_loc = .true.
+      if (param_wannierise%constrain%slwf_num .lt. num_wann) &
+        param_wannierise%constrain%selective_loc = .true.
     end if
 
-    param_wannierise%slwf_constrain = .false.
-    call param_get_keyword(stdout, seedname, 'slwf_constrain', found, l_value=param_wannierise%slwf_constrain)
-    if (found .and. param_wannierise%slwf_constrain) then
-      if (param_wannierise%selective_loc) then
+    param_wannierise%constrain%slwf_constrain = .false.
+    call param_get_keyword(stdout, seedname, 'slwf_constrain', found, &
+                           l_value=param_wannierise%constrain%slwf_constrain)
+    if (found .and. param_wannierise%constrain%slwf_constrain) then
+      if (param_wannierise%constrain%selective_loc) then
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
-        allocate (param_wannierise%ccentres_cart(num_wann, 3), stat=ierr)
+        if (ierr /= 0) &
+          call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
+        allocate (param_wannierise%constrain%ccentres_cart(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
       else
         write (stdout, *) ' No selective localisation requested. Ignoring constraints on centres'
-        param_wannierise%slwf_constrain = .false.
+        param_wannierise%constrain%slwf_constrain = .false.
       end if
     end if
 
-    param_wannierise%slwf_lambda = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'slwf_lambda', found, r_value=param_wannierise%slwf_lambda)
+    param_wannierise%constrain%slwf_lambda = 1.0_dp
+    call param_get_keyword(stdout, seedname, 'slwf_lambda', found, &
+                           r_value=param_wannierise%constrain%slwf_lambda)
     if (found) then
-      if (param_wannierise%slwf_lambda < 0.0_dp) call io_error('Error: slwf_lambda  must be positive.', stdout, seedname)
+      if (param_wannierise%constrain%slwf_lambda < 0.0_dp) &
+        call io_error('Error: slwf_lambda  must be positive.', stdout, seedname)
     endif
-
-    param_wannierise%translate_home_cell = .false.
-    call param_get_keyword(stdout, seedname, 'translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
   end subroutine param_read_wannierise
 
   subroutine param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
@@ -606,6 +631,10 @@ contains
 
     w90_calcs%write_xyz = .false.
     call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=w90_calcs%write_xyz)
+
+    w90_calcs%translate_home_cell = .false.
+    call param_get_keyword(stdout, seedname, 'translate_home_cell', found, &
+                           l_value=w90_calcs%translate_home_cell)
 
     w90_calcs%write_r2mn = .false.
     call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=w90_calcs%write_r2mn)
@@ -1089,10 +1118,10 @@ contains
     ! Constrained centres
     call param_get_block_length(stdout, seedname, 'slwf_centres', found, i_temp, library)
     if (found) then
-      if (param_wannierise%slwf_constrain) then
+      if (param_wannierise%constrain%slwf_constrain) then
         ! Allocate array for constrained centres
         call param_get_centre_constraints(ccentres_frac, &
-                                          param_wannierise%ccentres_cart, &
+                                          param_wannierise%constrain%ccentres_cart, &
                                           param_wannierise%proj_site, &
                                           num_wann, real_lattice, stdout, seedname)
       else
@@ -1100,7 +1129,7 @@ contains
       end if
       ! Check that either projections or constrained centres are specified if slwf_constrain=.true.
     elseif (.not. found) then
-      if (param_wannierise%slwf_constrain) then
+      if (param_wannierise%constrain%slwf_constrain) then
         if (.not. allocated(param_wannierise%proj_site)) then
           call io_error('Error: slwf_constrain = true, but neither &
                & <slwf_centre> block  nor &
@@ -1108,14 +1137,15 @@ contains
         else
           ! Allocate array for constrained centres
           call param_get_centre_constraints(ccentres_frac, &
-                                            param_wannierise%ccentres_cart, &
+                                            param_wannierise%constrain%ccentres_cart, &
                                             param_wannierise%proj_site, &
                                             num_wann, real_lattice, stdout, seedname)
         end if
       end if
     end if
     ! Warning
-    if (param_wannierise%slwf_constrain .and. allocated(param_wannierise%proj_site) .and. .not. found) &
+    if (param_wannierise%constrain%slwf_constrain .and. allocated(param_wannierise%proj_site) &
+        .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
   end subroutine param_read_constrained_centres
@@ -1234,12 +1264,13 @@ contains
       write (stdout, '(25x,a)') 'No atom positions specified'
     end if
     ! Constrained centres
-    if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
+    if (param_wannierise%constrain%selective_loc .and. &
+        param_wannierise%constrain%slwf_constrain) then
       write (stdout, *) ' '
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      do i = 1, param_wannierise%slwf_num
+      do i = 1, param_wannierise%constrain%slwf_num
         write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
   &                    '|', i, write_data%ccentres_frac(i, :), '|', wann_data%centres(:, i), '|'
       end do
@@ -1315,7 +1346,8 @@ contains
     write (stdout, *) ' '
     write (stdout, '(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :', param_wannierise%slwf_num, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :', &
+      param_wannierise%constrain%slwf_num, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :', num_bands, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', param_input%iprint, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', param_input%timing_level, '|'
@@ -1349,21 +1381,25 @@ contains
 
     ! Wannierise
     write (stdout, '(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', param_wannierise%num_iter, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of CG steps before reset           :', param_wannierise%num_cg_steps, '|'
-    if (param_wannierise%lfixstep) then
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', &
+      param_wannierise%control%num_iter, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of CG steps before reset           :', &
+      param_wannierise%control%num_cg_steps, '|'
+    if (param_wannierise%control%lfixstep) then
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fixed step length for minimisation        :', &
-        param_wannierise%fixed_step, '|'
+        param_wannierise%control%fixed_step, '|'
     else
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Trial step length for line search         :', &
-        param_wannierise%trial_step, '|'
+        param_wannierise%control%trial_step, '|'
     endif
-    write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :', param_wannierise%conv_tol, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', param_wannierise%conv_window, '|'
+    write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :', &
+      param_wannierise%control%conv_tol, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', &
+      param_wannierise%control%conv_window, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between writing output         :', &
-      param_wannierise%num_print_cycles, '|'
+      param_wannierise%control%num_print_cycles, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between backing up to disk     :', &
-      param_wannierise%num_dump_cycles, '|'
+      param_wannierise%control%num_dump_cycles, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', &
       w90_calcs%write_r2mn, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', &
@@ -1371,23 +1407,24 @@ contains
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
       w90_calcs%write_hr_diag, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
-      param_wannierise%guiding_centres, '|'
+      param_wannierise%control%guiding_centres, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
       use_bloch_phases, '|'
-    if (param_wannierise%guiding_centres .or. param_input%iprint > 2) then
+    if (param_wannierise%control%guiding_centres .or. param_input%iprint > 2) then
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
-        param_wannierise%num_no_guide_iter, '|'
+        param_wannierise%control%num_no_guide_iter, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between using guiding centres  :', &
-        param_wannierise%num_guide_cycles, '|'
+        param_wannierise%control%num_guide_cycles, '|'
     end if
-    if (param_wannierise%selective_loc .or. param_input%iprint > 2) then
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', param_wannierise%selective_loc, '|'
+    if (param_wannierise%constrain%selective_loc .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
+        param_wannierise%constrain%selective_loc, '|'
     end if
-    if (param_wannierise%slwf_constrain .or. param_input%iprint > 2) then
+    if (param_wannierise%constrain%slwf_constrain .or. param_input%iprint > 2) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use constrains in selective localization  :', &
-        param_wannierise%slwf_constrain, '|'
+        param_wannierise%constrain%slwf_constrain, '|'
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
-           &param_wannierise%slwf_lambda, '|'
+           &param_wannierise%constrain%slwf_lambda, '|'
     end if
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     !
@@ -1428,9 +1465,9 @@ contains
           wann_plot%plot_supercell(1), 'x', wann_plot%plot_supercell(2), 'x', &
           wann_plot%plot_supercell(3), '|'
 
-        if (param_wannierise%translate_home_cell) then
+        if (w90_calcs%translate_home_cell) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') &
-            '|  Translating WFs to home cell              :', param_wannierise%translate_home_cell, '|'
+            '|  Translating WFs to home cell              :', w90_calcs%translate_home_cell, '|'
         end if
 
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
@@ -1609,8 +1646,8 @@ contains
       deallocate (param_wannierise%proj_site, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating proj_site in param_dealloc', stdout, seedname)
     end if
-    if (allocated(param_wannierise%ccentres_cart)) then
-      deallocate (param_wannierise%ccentres_cart, stat=ierr)
+    if (allocated(param_wannierise%constrain%ccentres_cart)) then
+      deallocate (param_wannierise%constrain%ccentres_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating ccentres_cart in param_dealloc', stdout, seedname)
     end if
     if (allocated(proj%l)) then
@@ -1654,8 +1691,8 @@ contains
 !=================================================!
   subroutine param_write_chkpt(chkpt, param_input, wann_data, kmesh_info, &
                                k_points, num_kpts, dis_window, num_bands, &
-                               num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice, stdout, seedname)
+                               num_wann, u_matrix, u_matrix_opt, m_matrix, mp_grid, real_lattice, &
+                               recip_lattice, omega_invariant, stdout, seedname)
     !=================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1687,6 +1724,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: omega_invariant
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
@@ -1717,7 +1755,7 @@ contains
     write (chk_unit) chkpt1                 ! Position of checkpoint
     write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
     if (param_input%have_disentangled) then
-      write (chk_unit) param_input%omega_invariant     ! Omega invariant
+      write (chk_unit) omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (chk_unit) (dis_window%ndimwin(nkp), nkp=1, num_kpts)
@@ -2075,8 +2113,8 @@ contains
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
     !call comms_bcast(berry_uHu_formatted, 1)
     call comms_bcast(param_plot%spin, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%num_dump_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%num_print_cycles, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_dump_cycles, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_print_cycles, 1, stdout, seedname, comm)
     call comms_bcast(atoms%num_atoms, 1, stdout, seedname, comm)   ! Ivo: not used in postw90, right?
     call comms_bcast(atoms%num_species, 1, stdout, seedname, comm) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, comm)
@@ -2124,11 +2162,11 @@ contains
       endif
       call comms_bcast(dis_data%spheres(1, 1), 4*dis_data%spheres_num, stdout, seedname, comm)
     end if
-    call comms_bcast(param_wannierise%num_iter, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%num_cg_steps, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%conv_tol, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%conv_window, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%guiding_centres, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_iter, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_cg_steps, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%conv_tol, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%conv_window, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%guiding_centres, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%wannier_plot, 1, stdout, seedname, comm) !!BGS!!
     call comms_bcast(wann_plot%num_plot, 1, stdout, seedname, comm)
     if (wann_plot%num_plot > 0) then
@@ -2316,45 +2354,45 @@ contains
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
     call comms_bcast(driver%restart, len(driver%restart), stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_r2mn, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%num_guide_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%num_no_guide_iter, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%fixed_step, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%trial_step, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%precond, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_guide_cycles, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%num_no_guide_iter, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%fixed_step, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%trial_step, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%precond, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_proj, 1, stdout, seedname, comm)
     call comms_bcast(param_input%timing_level, 1, stdout, seedname, comm)
     call comms_bcast(param_input%spinors, 1, stdout, seedname, comm)
     call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%translate_home_cell, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%translate_home_cell, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_xyz, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_hr_diag, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%conv_noise_amp, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%conv_noise_num, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%conv_noise_amp, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%conv_noise_num, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%plot_radius, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%plot_scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
     call comms_bcast(param_input%optimisation, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_vdw_data, 1, stdout, seedname, comm)
     call comms_bcast(param_input%lenconfac, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%lfixstep, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%control%lfixstep, 1, stdout, seedname, comm)
     call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)
     call comms_bcast(dis_window%frozen_states, 1, stdout, seedname, comm)
     call comms_bcast(symmetrize_eps, 1, stdout, seedname, comm)
 
     !vv: Constrained centres
-    call comms_bcast(param_wannierise%slwf_num, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%slwf_constrain, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%slwf_lambda, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%selective_loc, 1, stdout, seedname, comm)
-    if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
+    call comms_bcast(param_wannierise%constrain%slwf_num, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%constrain%slwf_constrain, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%constrain%slwf_lambda, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%constrain%selective_loc, 1, stdout, seedname, comm)
+    if (param_wannierise%constrain%selective_loc .and. param_wannierise%constrain%slwf_constrain) then
       if (.not. on_root) then
         !allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
-        allocate (param_wannierise%ccentres_cart(num_wann, 3), stat=ierr)
+        allocate (param_wannierise%constrain%ccentres_cart(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
       endif
       !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
-      call comms_bcast(param_wannierise%ccentres_cart(1, 1), 3*num_wann, stdout, seedname, comm)
+      call comms_bcast(param_wannierise%constrain%ccentres_cart(1, 1), 3*num_wann, stdout, seedname, comm)
     end if
 
     ! vv: automatic projections
@@ -2455,9 +2493,9 @@ contains
 
     endif
 
-    call comms_bcast(param_wannierise%omega_total, 1, stdout, seedname, comm)
-    call comms_bcast(param_wannierise%omega_tilde, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%omega_invariant, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%omega%total, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%omega%tilde, 1, stdout, seedname, comm)
+    call comms_bcast(param_wannierise%omega%invariant, 1, stdout, seedname, comm)
     call comms_bcast(param_input%have_disentangled, 1, stdout, seedname, comm)
 
     if (.not. on_root) then

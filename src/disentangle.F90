@@ -37,8 +37,8 @@ contains
 
   subroutine dis_main(dis_data, dis_window, kmesh_info, k_points, param_input, sym, a_matrix, &
                       m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                      u_matrix_opt, eigval, recip_lattice, num_bands, num_kpts, num_wann, &
-                      lsitesymmetry, stdout, seedname, comm)
+                      u_matrix_opt, eigval, recip_lattice, omega_invariant, num_bands, num_kpts, &
+                      num_wann, lsitesymmetry, stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -54,6 +54,7 @@ contains
 
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(inout) :: omega_invariant
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
@@ -164,13 +165,14 @@ contains
     if (.not. param_input%gamma_only) then
       call dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                        num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                       kmesh_info, dis_data, dis_window, lsitesymmetry, sym, stdout, seedname, comm)
+                       kmesh_info, dis_data, dis_window, omega_invariant, lsitesymmetry, sym, &
+                       stdout, seedname, comm)
 
     else
       call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                              num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                             param_input, kmesh_info, dis_data, dis_window, lsitesymmetry, sym, &
-                             stdout, seedname)
+                             param_input, kmesh_info, dis_data, dis_window, omega_invariant, &
+                             lsitesymmetry, sym, stdout, seedname)
 
     end if
 
@@ -1652,7 +1654,8 @@ contains
 
   subroutine dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                          num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                         kmesh_info, dis_data, window, lsitesymmetry, sym, stdout, seedname, comm)
+                         kmesh_info, dis_data, window, omega_invariant, lsitesymmetry, sym, &
+                         stdout, seedname, comm)
 
     !==================================================================!
     !                                                                  !
@@ -1677,6 +1680,7 @@ contains
 
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
+    real(kind=dp), intent(out) :: omega_invariant
 
     logical, intent(in) :: on_root, lsitesymmetry
     character(len=50), intent(in)  :: seedname
@@ -2275,7 +2279,7 @@ contains
       womegai*param_input%lenconfac**2, ' ('//trim(param_input%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
-    param_input%omega_invariant = womegai
+    omega_invariant = womegai
 
     ! Currently, this part is not parallelized; thus, we perform the task only on root and then broadcast the result.
     if (on_root) then
@@ -2587,8 +2591,8 @@ contains
 
   subroutine dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                                num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                               param_input, kmesh_info, dis_data, window, lsitesymmetry, sym, &
-                               stdout, seedname)
+                               param_input, kmesh_info, dis_data, window, omega_invariant, &
+                               lsitesymmetry, sym, stdout, seedname)
 
     !==================================================================!
     !                                                                  !
@@ -2612,6 +2616,7 @@ contains
 
     complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :) ! non-gamma uses _local variant ?
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
+    real(kind=dp), intent(out) :: omega_invariant
 
     logical, intent(in) :: on_root, lsitesymmetry ! lsitesym not yet used
 
@@ -3058,7 +3063,7 @@ contains
       womegai*param_input%lenconfac**2, ' ('//trim(param_input%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
-    param_input%omega_invariant = womegai
+    omega_invariant = womegai
 
     ! DIAGONALIZE THE HAMILTONIAN WITHIN THE OPTIMIZED SUBSPACES
     do nkp = 1, num_kpts

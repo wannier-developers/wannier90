@@ -61,7 +61,6 @@ module w90_param_types
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
-    real(kind=dp) :: omega_invariant !wannierise, disentangle and chk2chk
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
   end type parameter_input_type
@@ -1710,9 +1709,9 @@ contains
 
 !=================================================!
   subroutine param_read_chkpt(dis_data, kmesh_info, k_points, param_input, wann_data, m_matrix, &
-                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, mp_grid, &
-                              num_bands, num_kpts, num_wann, checkpoint, ispostw90, seedname, &
-                              stdout)
+                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
+                              omega_invariant, mp_grid, num_bands, num_kpts, num_wann, checkpoint, &
+                              ispostw90, seedname, stdout)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1749,6 +1748,7 @@ contains
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(inout) :: omega_invariant
 
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
@@ -1825,7 +1825,7 @@ contains
 
     if (param_input%have_disentangled) then
 
-      read (chk_unit) param_input%omega_invariant     ! omega invariant
+      read (chk_unit) omega_invariant     ! omega invariant
 
       ! lwindow
       if (.not. allocated(dis_data%lwindow)) then
@@ -1892,8 +1892,9 @@ contains
   end subroutine param_read_chkpt
 
 !===========================================================!
-  subroutine param_chkpt_dist(dis_data, param_input, wann_data, u_matrix, u_matrix_opt, num_bands, &
-                              num_kpts, num_wann, checkpoint, seedname, stdout, comm)
+  subroutine param_chkpt_dist(dis_data, param_input, wann_data, u_matrix, u_matrix_opt, &
+                              omega_invariant, num_bands, num_kpts, num_wann, checkpoint, &
+                              seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! Distribute the chk files
@@ -1920,6 +1921,7 @@ contains
 
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    real(kind=dp), intent(inout) :: omega_invariant
 
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
@@ -1975,7 +1977,7 @@ contains
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
       call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
       call comms_bcast(dis_data%ndimwin(1), num_kpts, stdout, seedname, comm)
-      call comms_bcast(param_input%omega_invariant, 1, stdout, seedname, comm)
+      call comms_bcast(omega_invariant, 1, stdout, seedname, comm)
     end if
     call comms_bcast(wann_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
     call comms_bcast(wann_data%spreads(1), num_wann, stdout, seedname, comm)

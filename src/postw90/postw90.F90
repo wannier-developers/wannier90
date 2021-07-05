@@ -179,6 +179,7 @@ program postw90
   type(w90commtype) :: comm
   type(ws_distance_type) :: ws_distance
   type(pw90_extra_io_type) :: write_data
+  real(kind=dp) :: omega_invariant
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
@@ -313,8 +314,8 @@ program postw90
     !
     if (on_root) then
       call param_read_chkpt(dis_window, kmesh_info, k_points, param_input, wann_data, m_matrix, &
-                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, mp_grid, &
-                            num_bands, num_kpts, num_wann, checkpoint, .true., seedname, &
+                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, omega_invariant, &
+                            mp_grid, num_bands, num_kpts, num_wann, checkpoint, .true., seedname, &
                             stdout)
     endif
     !

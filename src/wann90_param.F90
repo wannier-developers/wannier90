@@ -23,17 +23,12 @@ module wannier_param_types
 
   public
 
-  !BGS probably can be w90 only
   type param_driver_type
     logical :: explicit_nnkpts
     !! nnkpts block is in the input file (allowed only for post-proc setup)
     logical :: postproc_setup
     character(len=20) :: restart
     character(len=20) :: checkpoint
-    ! Are we running as a library
-    !logical :: library = .false.
-    ! Projection data in wannier_lib
-    !type(projection_type) :: proj
   end type param_driver_type
 
   type w90_calculation_type
@@ -46,7 +41,6 @@ module wannier_param_types
     logical :: write_r2mn
     logical :: write_proj
     logical :: write_hr_diag
-    logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
     logical :: write_vdw_data
     ! aam: for WF-based calculation of vdW C6 coefficients
     logical :: write_u_matrices
@@ -54,6 +48,7 @@ module wannier_param_types
     logical :: write_rmn
     logical :: write_tb
     logical :: write_xyz !wannierise and transport
+    logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
   end type w90_calculation_type
 
   type band_plot_type
@@ -103,21 +98,11 @@ module wannier_param_types
     ! GS-end
   end type disentangle_type
 
-  type param_wannierise_type ! only in wannierise.F90
+  type wann_control_type ! only in wannierise.F90
     integer :: num_dump_cycles
     !! Number of steps before writing checkpoint
     integer :: num_print_cycles
     !! Number of steps between writing output
-    integer :: slwf_num
-    !! Number of objective Wannier functions (others excluded from spread functional)
-    logical :: selective_loc
-    !! Selective localization
-    logical :: slwf_constrain
-    !! Constrained centres
-    real(kind=dp), allocatable :: ccentres_cart(:, :)
-    real(kind=dp) :: slwf_lambda
-    !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
-    !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
     integer :: num_iter
     !! Number of wannierisation iterations
     integer :: num_cg_steps
@@ -133,13 +118,36 @@ module wannier_param_types
     logical :: lfixstep ! derived from input
     real(kind=dp) :: conv_noise_amp
     integer :: conv_noise_num
-    logical :: translate_home_cell
-    real(kind=dp) :: omega_total
-    real(kind=dp) :: omega_tilde
-    ! Projections
-    real(kind=dp), allocatable :: proj_site(:, :)
+  end type wann_control_type
+
+  type wann_omega_type
+    real(kind=dp) :: invariant !wannierise, disentangle and chk2chk
+    real(kind=dp) :: total
+    real(kind=dp) :: tilde
+  end type wann_omega_type
+
+  type wann_localise_type
+    integer :: slwf_num
+    !! Number of objective Wannier functions (others excluded from spread functional)
+    logical :: selective_loc
+    !! Selective localization
+    logical :: slwf_constrain ! MAYBE or in main wannier_type
+    !! Constrained centres
+    real(kind=dp), allocatable :: ccentres_cart(:, :)
+    real(kind=dp) :: slwf_lambda
+    !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
+    !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
+  end type wann_localise_type
+
+  type param_wannierise_type
+    type(wann_control_type) :: control
+    type(wann_localise_type) :: constrain
+    type(wann_omega_type) :: omega
+    ! Projections, used when guiding_centres=.true. or for constrained if slwf_constrain=.true.
+    real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
   end type param_wannierise_type
 
+  ! MAYBE which vars did Arash mean from parameter_input?
   type param_hamiltonian_type
     real(kind=dp) :: translation_centre_frac(3)
     ! For Hamiltonian matrix in WF representation

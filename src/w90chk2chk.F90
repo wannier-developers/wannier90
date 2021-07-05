@@ -105,6 +105,8 @@ module wannchk_param_data
   ! in disentangle and overlap
   complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
+  real(kind=dp), save :: omega_invariant
+
 end module wannchk_param_data
 
 module w90_conv
@@ -258,7 +260,7 @@ contains
     if (param_input%have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
-      read (chk_unit) param_input%omega_invariant     ! omega invariant
+      read (chk_unit) omega_invariant     ! omega invariant
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
@@ -427,7 +429,7 @@ contains
     if (param_input%have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
-      read (chk_unit, *) param_input%omega_invariant     ! omega invariant
+      read (chk_unit, *) omega_invariant     ! omega invariant
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
@@ -587,7 +589,7 @@ contains
     write (chk_unit) checkpoint                               ! Position of checkpoint
     write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
     if (param_input%have_disentangled) then
-      write (chk_unit) param_input%omega_invariant     ! Omega invariant
+      write (chk_unit) omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (chk_unit) (dis_window%ndimwin(nkp), nkp=1, num_kpts)
@@ -648,7 +650,7 @@ contains
       write (chk_unit, '(I1)') 0      ! Whether a disentanglement has been performed
     end if
     if (param_input%have_disentangled) then
-      write (chk_unit, '(G25.17)') param_input%omega_invariant     ! Omega invariant
+      write (chk_unit, '(G25.17)') omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       do nkp = 1, num_kpts
         do i = 1, num_bands

@@ -548,12 +548,13 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
     call dis_main(dis_data, dis_window, kmesh_info, k_points, param_input, sym, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
-                  recip_lattice, num_bands, num_kpts, num_wann, lsitesymmetry, stdout, seedname, &
-                  comm)
+                  recip_lattice, param_wannierise%omega%invariant, num_bands, num_kpts, num_wann, &
+                  lsitesymmetry, stdout, seedname, comm)
     param_input%have_disentangled = .true.
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                           mp_grid, real_lattice, recip_lattice, stdout, seedname)
+                           mp_grid, real_lattice, recip_lattice, param_wannierise%omega%invariant, &
+                           stdout, seedname)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
@@ -586,7 +587,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                          dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                         mp_grid, real_lattice, recip_lattice, stdout, seedname)
+                         mp_grid, real_lattice, recip_lattice, param_wannierise%omega%invariant, &
+                         stdout, seedname)
 
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
@@ -635,9 +637,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (present(wann_centres_loc)) wann_centres_loc = wann_data%centres
   if (present(wann_spreads_loc)) wann_spreads_loc = wann_data%spreads
   if (present(spread_loc)) then
-    spread_loc(1) = param_wannierise%omega_total
-    spread_loc(2) = param_input%omega_invariant   !JJ maybe mv omg_inv to param_wann?
-    spread_loc(3) = param_wannierise%omega_tilde
+    spread_loc(1) = param_wannierise%omega%total
+    spread_loc(2) = param_wannierise%omega%invariant
+    spread_loc(3) = param_wannierise%omega%tilde
   endif
   call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)
