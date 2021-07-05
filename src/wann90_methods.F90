@@ -43,10 +43,10 @@ contains
   subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
                         param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
-                        wann_data, wann_plot, write_data, w90_calcs, eigval, real_lattice, &
-                        recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, &
-                        num_proj, num_wann, eig_found, calc_only_A, cp_pp, lhasproj, library, &
-                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
+                        verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
+                        real_lattice, recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
+                        num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, lhasproj, &
+                        library, library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
                         seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -63,6 +63,7 @@ contains
     !data from parameters module
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(print_output_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
@@ -122,12 +123,12 @@ contains
     w90_calcs%disentanglement = .false.
     call param_in_file(stdout, seedname)
     call param_read_sym(lsitesymmetry, symmetrize_eps, stdout, seedname)
-    call param_read_verbosity(param_input, stdout, seedname)
+    call param_read_verbosity(verbose, stdout, seedname)
     call param_read_w90_calcs(w90_calcs, stdout, seedname)
     call param_read_transport(w90_calcs%transport, tran, driver%restart, stdout, seedname)
     call param_read_dist_cutoff(param_input, stdout, seedname)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_read_units(param_input, energy_unit, bohr, stdout, seedname)
+      call param_read_units(param_input, verbose%length_unit, energy_unit, bohr, stdout, seedname)
       call param_read_num_wann(num_wann, stdout, seedname)
       call param_read_exclude_bands(param_input, stdout, seedname)
       call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
@@ -136,7 +137,7 @@ contains
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_wannierise(param_wannierise, num_wann, write_data%ccentres_frac, &
                                  stdout, seedname)
-      call param_read_devel(param_input%devel_flag, stdout, seedname)
+      call param_read_devel(verbose%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(param_input%gamma_only, num_kpts, library, stdout, seedname)
       call param_read_post_proc(cp_pp, calc_only_A, driver%postproc_setup, stdout, seedname)
@@ -185,7 +186,7 @@ contains
     call param_clean_infile(stdout, seedname)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
-      call param_uppercase(param_input, atoms, spec_points)
+      call param_uppercase(atoms, spec_points, verbose%length_unit)
       ! Initialise
       param_wannierise%omega%total = -999.0_dp
       param_wannierise%omega%tilde = -999.0_dp
@@ -1152,9 +1153,9 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, &
-                         k_points, param_hamil, param_input, param_plot, &
-                         param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
-                         wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
+                         k_points, param_hamil, param_input, param_plot, param_wannierise, proj, &
+                         proj_input, select_proj, spec_points, tran, verbose, wann_data, &
+                         wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, lsitesymmetry, use_bloch_phases, stdout)
     !==================================================================!
@@ -1170,6 +1171,7 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(parameter_input_type), intent(in) :: param_input
     type(param_plot_type), intent(in) :: param_plot
+    type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in) :: band_plot
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(wannier_data_type), intent(in) :: wann_data
@@ -1277,7 +1279,7 @@ contains
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
     ! Projections
-    if (param_input%iprint > 1 .and. allocated(proj_input%site)) then
+    if (verbose%iprint > 1 .and. allocated(proj_input%site)) then
       write (stdout, '(32x,a)') '-----------'
       write (stdout, '(32x,a)') 'PROJECTIONS'
       write (stdout, '(32x,a)') '-----------'
@@ -1299,7 +1301,7 @@ contains
       write (stdout, *) ' '
     end if
 
-    if (param_input%iprint > 1 .and. select_proj%lselproj .and. allocated(param_wannierise%proj_site)) then
+    if (verbose%iprint > 1 .and. select_proj%lselproj .and. allocated(param_wannierise%proj_site)) then
       write (stdout, '(30x,a)') '--------------------'
       write (stdout, '(30x,a)') 'SELECTED PROJECTIONS'
       write (stdout, '(30x,a)') '--------------------'
@@ -1327,9 +1329,9 @@ contains
     write (stdout, '(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =', mp_grid(1), 'x', mp_grid(2), 'x', mp_grid(3), &
       'Total points =', num_kpts
     write (stdout, *) ' '
-    if (param_input%iprint > 1) then
+    if (verbose%iprint > 1) then
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-      if (param_input%lenconfac .eq. 1.0_dp) then
+      if (verbose%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
       else
         write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
@@ -1337,7 +1339,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nkp = 1, num_kpts
         write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, k_points%kpt_latt(:, nkp), '|', &
-          k_points%kpt_cart(:, nkp)/param_input%lenconfac, '|'
+          k_points%kpt_cart(:, nkp)/verbose%lenconfac, '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, *) ' '
@@ -1349,10 +1351,10 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :', &
       param_wannierise%constrain%slwf_num, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :', num_bands, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', param_input%iprint, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', param_input%timing_level, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', param_input%optimisation, '|'
-    write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(param_input%length_unit), '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', verbose%iprint, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', verbose%timing_level, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', verbose%optimisation, '|'
+    write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(verbose%length_unit), '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', driver%postproc_setup, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', param_input%gamma_only, '|'
     !YN: RS:
@@ -1361,10 +1363,10 @@ contains
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :', symmetrize_eps, '|'
     endif
 
-    if (cp_pp .or. param_input%iprint > 2) &
+    if (cp_pp .or. verbose%iprint > 2) &
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
       cp_pp, '|'
-    if (w90_calcs%wannier_plot .or. param_input%iprint > 2) then
+    if (w90_calcs%wannier_plot .or. verbose%iprint > 2) then
       if (param_plot%wvfn_formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
       else
@@ -1410,17 +1412,17 @@ contains
       param_wannierise%control%guiding_centres, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
       use_bloch_phases, '|'
-    if (param_wannierise%control%guiding_centres .or. param_input%iprint > 2) then
+    if (param_wannierise%control%guiding_centres .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
         param_wannierise%control%num_no_guide_iter, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between using guiding centres  :', &
         param_wannierise%control%num_guide_cycles, '|'
     end if
-    if (param_wannierise%constrain%selective_loc .or. param_input%iprint > 2) then
+    if (param_wannierise%constrain%selective_loc .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
         param_wannierise%constrain%selective_loc, '|'
     end if
-    if (param_wannierise%constrain%slwf_constrain .or. param_input%iprint > 2) then
+    if (param_wannierise%constrain%slwf_constrain .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use constrains in selective localization  :', &
         param_wannierise%constrain%slwf_constrain, '|'
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
@@ -1430,7 +1432,7 @@ contains
     !
     ! Disentanglement
     !
-    if (w90_calcs%disentanglement .or. param_input%iprint > 2) then
+    if (w90_calcs%disentanglement .or. verbose%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------------- DISENTANGLE --------------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using band disentanglement                :', w90_calcs%disentanglement, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', dis_data%num_iter, '|'
@@ -1454,11 +1456,11 @@ contains
     ! Plotting
     !
     if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
-        .or. w90_calcs%write_hr .or. param_input%iprint > 2) then
+        .or. w90_calcs%write_hr .or. verbose%iprint > 2) then
       !
       write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
       !
-      if (w90_calcs%wannier_plot .or. param_input%iprint > 2) then
+      if (w90_calcs%wannier_plot .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :', w90_calcs%wannier_plot, '|'
         write (stdout, '(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
           '|   Size of supercell for plotting           :', &
@@ -1480,7 +1482,7 @@ contains
         end if
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
           trim(wann_plot%plot_format), '|'
-        if (index(wann_plot%plot_format, 'cub') > 0 .or. param_input%iprint > 2) then
+        if (index(wann_plot%plot_format, 'cub') > 0 .or. verbose%iprint > 2) then
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :', &
             wann_plot%plot_radius, '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
@@ -1489,7 +1491,7 @@ contains
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
       !
-      if (w90_calcs%fermi_surface_plot .or. param_input%iprint > 2) then
+      if (w90_calcs%fermi_surface_plot .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Fermi surface                    :', w90_calcs%fermi_surface_plot, '|'
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of plotting points (along b_1)    :', &
           fermi_surface_data%num_points, '|'
@@ -1498,7 +1500,7 @@ contains
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
       !
-      if (w90_calcs%bands_plot .or. param_input%iprint > 2) then
+      if (w90_calcs%bands_plot .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting interpolated bandstructure       :', w90_calcs%bands_plot, '|'
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
           spec_points%bands_num_spec_points/2, '|'
@@ -1538,11 +1540,11 @@ contains
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
       !
-      if (w90_calcs%write_hr .or. param_input%iprint > 2) then
+      if (w90_calcs%write_hr .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', w90_calcs%write_hr, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       endif
-      if (w90_calcs%write_vdw_data .or. param_input%iprint > 2) then
+      if (w90_calcs%write_vdw_data .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
           w90_calcs%write_vdw_data, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1554,7 +1556,7 @@ contains
     !
     ! Transport
     !
-    if (w90_calcs%transport .or. param_input%iprint > 2) then
+    if (w90_calcs%transport .or. verbose%iprint > 2) then
       !
       write (stdout, '(1x,a78)') '*------------------------------- TRANSPORT ----------------------------------*'
       !
@@ -1774,8 +1776,8 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, &
-                                   proj_input, w90_calcs, num_bands, num_kpts, num_proj, num_wann, &
+  subroutine param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, proj_input, &
+                                   verbose, w90_calcs, num_bands, num_kpts, num_proj, num_wann, &
                                    stdout)
     !===========================================!
     !                                           !
@@ -1790,6 +1792,7 @@ contains
     !data from parameters module
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(kmesh_info_type), intent(in) :: kmesh_info
     !type(disentangle_type), intent(in) :: dis_data
@@ -1910,7 +1913,7 @@ contains
       mem_dis1 = mem_dis1 + num_bands*num_bands*num_kpts*size_cmplx    !cham
       mem_dis2 = mem_dis2 + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx!m_matrix
 
-      if (param_input%optimisation <= 0) then
+      if (verbose%optimisation <= 0) then
         mem_dis = mem_dis + mem_dis1
       else
         mem_dis = mem_dis + max(mem_dis1, mem_dis2)
@@ -1924,7 +1927,7 @@ contains
     !Wannierise
 
     mem_wan1 = mem_wan1 + (num_wann*num_wann*kmesh_info%nntot*num_kpts)*size_cmplx     !  'm0'
-    if (param_input%optimisation > 0) then
+    if (verbose%optimisation > 0) then
       mem_wan = mem_wan + mem_wan1
     endif
     mem_wan = mem_wan + (num_wann*num_wann*num_kpts)*size_cmplx           !  'u0'
@@ -1968,7 +1971,7 @@ contains
     if (w90_calcs%disentanglement) &
       mem_wan = mem_wan + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx       !m_matrix
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '*============================================================================*'
       write (stdout, '(1x,a)') '|                              MEMORY ESTIMATE                               |'
       write (stdout, '(1x,a)') '|         Maximum RAM allocated during each phase of the calculation         |'
@@ -1976,7 +1979,7 @@ contains
       if (w90_calcs%disentanglement) &
         write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', (mem_param + mem_dis)/(1024**2), ' Mb'
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan)/(1024**2), ' Mb'
-      if (param_input%optimisation > 0 .and. param_input%iprint > 1) then
+      if (verbose%optimisation > 0 .and. verbose%iprint > 1) then
         write (stdout, '(1x,a)') '|                                                                            |'
         write (stdout, '(1x,a)') '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
         if (w90_calcs%disentanglement) &
@@ -2008,10 +2011,10 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj_input, tran, wann_data, wann_plot, w90_calcs, &
-                        eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
-                        num_kpts, num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, &
-                        use_bloch_phases, seedname, stdout, comm)
+                        param_wannierise, proj_input, tran, verbose, wann_data, wann_plot, &
+                        w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
+                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, lhasproj, &
+                        lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2027,6 +2030,7 @@ contains
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(inout) :: verbose
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
@@ -2096,18 +2100,18 @@ contains
     call comms_bcast(num_bands, 1, stdout, seedname, comm)
     !endif
     call comms_bcast(num_wann, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%timing_level, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
 
     !______________________________________
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
-    iprintroot = param_input%iprint
-    param_input%iprint = 0
-    call comms_bcast(param_input%iprint, 1, stdout, seedname, comm)
-    if (on_root) param_input%iprint = iprintroot
+    iprintroot = verbose%iprint
+    verbose%iprint = 0
+    call comms_bcast(verbose%iprint, 1, stdout, seedname, comm)
+    if (on_root) verbose%iprint = iprintroot
     !______________________________________
 
     !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%length_unit, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%length_unit, 1, stdout, seedname, comm)
     call comms_bcast(param_plot%wvfn_formatted, 1, stdout, seedname, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
@@ -2269,7 +2273,7 @@ contains
     !call comms_bcast(spin_hall%bandshift_firstband, 1)
     !call comms_bcast(spin_hall%bandshift_energyshift, 1)
 
-    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag), stdout, seedname, comm)
+    call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, comm)
     !call comms_bcast(pw90_common%spin_moment, 1)
     !call comms_bcast(pw90_spin%spin_axis_polar, 1)
     !call comms_bcast(pw90_spin%spin_axis_azimuth, 1)
@@ -2360,7 +2364,7 @@ contains
     call comms_bcast(param_wannierise%control%trial_step, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%precond, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_proj, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%timing_level, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
     call comms_bcast(param_input%spinors, 1, stdout, seedname, comm)
     call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%translate_home_cell, 1, stdout, seedname, comm)
@@ -2371,9 +2375,9 @@ contains
     call comms_bcast(wann_plot%plot_radius, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%plot_scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%optimisation, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%optimisation, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_vdw_data, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%lenconfac, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%lenconfac, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%lfixstep, 1, stdout, seedname, comm)
     call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)
     call comms_bcast(dis_window%frozen_states, 1, stdout, seedname, comm)

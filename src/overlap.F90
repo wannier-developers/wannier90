@@ -131,24 +131,24 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(kmesh_info, param_input, select_proj, sym, w90_calcs, a_matrix, &
-                          m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, cp_pp, &
-                          lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+  subroutine overlap_read(kmesh_info, select_proj, sym, w90_calcs, a_matrix, m_matrix, &
+                          m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
+                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
+                          cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                          comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_sitesym, only: sitesym_data
-    use w90_param_types, only: parameter_input_type, kmesh_info_type
+    use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: w90_calculation_type, select_projection_type
 
     implicit none
 
     ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(parameter_input_type), intent(in) :: param_input
     type(select_projection_type), intent(in) :: select_proj
     type(sitesym_data), intent(in) :: sym
     type(w90_calculation_type), intent(in) :: w90_calcs
@@ -158,6 +158,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
@@ -168,6 +169,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
+    logical, intent(in) :: gamma_only
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: cp_pp, use_bloch_phases
 
@@ -195,7 +197,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, seedname)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -353,7 +355,7 @@ contains
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
-    if (cp_pp) call overlap_rotate(kmesh_info%nntot, param_input%timing_level, &
+    if (cp_pp) call overlap_rotate(kmesh_info%nntot, timing_level, &
                                    m_matrix_orig, a_matrix, num_bands, stdout, seedname)
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -378,13 +380,13 @@ contains
 !
 !~[aam]
     if ((.not. w90_calcs%disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
-      if (.not. param_input%gamma_only) then
+      if (.not. gamma_only) then
         call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                             param_input%timing_level, lsitesymmetry, seedname, stdout, comm)
+                             timing_level, lsitesymmetry, seedname, stdout, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                   param_input%timing_level, seedname, stdout)
+                                   timing_level, seedname, stdout)
       endif
     endif
 !~[aam]
@@ -397,7 +399,7 @@ contains
     !~      end if
 ![ysl-e]
 
-    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 2, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 2, stdout, seedname)
 
     return
 101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)

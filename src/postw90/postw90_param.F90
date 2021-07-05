@@ -229,7 +229,7 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, wann_data, kmesh_data, k_points, &
+  subroutine param_postw90_read(param_input, verbose, wann_data, kmesh_data, k_points, &
                                 num_kpts, dis_window, fermi, atoms, num_bands, &
                                 num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
@@ -251,25 +251,14 @@ contains
     implicit none
 
     !data from parameters module
-    !type(param_driver_type), intent(inout) :: driver
-    !type(w90_calculation_type), intent(inout) :: w90_calcs
-    !type(postproc_type), intent(inout) :: pp_calc
+    type(print_control_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
-    !type(param_plot_type), intent(inout) :: param_plot
-    !type(param_wannierise_type), intent(inout) :: param_wannierise
-    ! RS: symmetry-adapted Wannier functions
-    !logical, intent(inout) :: lsitesymmetry
-    !real(kind=dp), intent(inout) :: symmetrize_eps
     type(wannier_data_type), intent(inout) :: wann_data
-    !type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
-    !type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(disentangle_manifold_type), intent(inout) :: dis_window
-    !type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
-    !type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -307,17 +296,17 @@ contains
 
     library = .false.
     call param_in_file(stdout, seedname)
-    call param_read_verbosity(param_input, stdout, seedname)
+    call param_read_verbosity(verbose, stdout, seedname)
     call param_read_pw90_calcs(pw90_calcs, stdout, seedname)
     call param_read_effective_model(pw90_common%effective_model, stdout, seedname)
-    call param_read_units(param_input, energy_unit, bohr, stdout, seedname)
+    call param_read_units(param_input, verbose%length_unit, energy_unit, bohr, stdout, seedname)
     call param_read_oper(postw90_oper, stdout, seedname)
     call param_read_num_wann(num_wann, stdout, seedname)
     call param_read_exclude_bands(param_input, stdout, seedname) !for read_chkpt
     call param_read_num_bands(pw90_common%effective_model, library, &
                               param_input, num_bands, num_wann, .false., stdout, seedname)
     disentanglement = (num_bands > num_wann)
-    call param_read_devel(param_input%devel_flag, stdout, seedname)
+    call param_read_devel(verbose%devel_flag, stdout, seedname)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout, seedname)
     call param_read_system(library, param_input, stdout, seedname)
     call param_read_kpath(library, spec_points, ok, stdout, seedname)
@@ -361,7 +350,7 @@ contains
     call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname) !pw90_write
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
-    call param_uppercase(param_input, atoms, spec_points)
+    call param_uppercase(atoms, spec_points, verbose%length_unit)
     call param_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
   end subroutine param_postw90_read
 

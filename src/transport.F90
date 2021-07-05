@@ -83,10 +83,10 @@ module w90_transport
 contains
   !==================================================================!
   subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, tran, &
-                       wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
-                       real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
-                       ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                       bands_plot_mode, lsitesymmetry, seedname, stdout)
+                       verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, &
+                       eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
+                       mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                       rpt_origin, bands_plot_mode, lsitesymmetry, seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
 
@@ -94,7 +94,7 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
-    use w90_param_types, only: parameter_input_type, wannier_data_type, &
+    use w90_param_types, only: parameter_input_type, wannier_data_type, print_output_type, &
       atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, &
       param_hamiltonian_type
@@ -104,6 +104,7 @@ contains
     ! arguments
     type(transport_type), intent(inout)         :: tran
     type(parameter_input_type), intent(inout)   :: param_input
+    type(print_output_type), intent(in)         :: verbose
     type(w90_calculation_type), intent(in)      :: w90_calcs
     type(wannier_data_type), intent(in)         :: wann_data
     type(atom_data_type), intent(in)            :: atoms
@@ -168,7 +169,7 @@ contains
 
     logical :: pl_warning
 
-    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, seedname)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, '(1x,a)') '|                              TRANSPORT                                    |'
@@ -178,76 +179,79 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+        call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
-                                u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                                recip_lattice, wann_data%centres, wannier_centres_translated, &
-                                irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
-                                seedname, lsitesymmetry)
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+                                ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
+                                real_lattice, recip_lattice, wann_data%centres, &
+                                wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
+                                num_kpts, num_wann, stdout, seedname, lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
-                                                          param_input%timing_level, seedname)
+                                                          verbose%timing_level, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
+                            verbose%timing_level, stdout, seedname)
+        call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
-        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
-                         hB1, stdout, seedname)
+        call tran_get_ht(fermi, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
+                         hB1, verbose%timing_level, stdout, seedname)
         if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                      wannier_centres_translated, tran_sorted_idx, stdout, seedname)
       end if
-      call tran_bulk(param_input, tran, hB0, hB1, stdout, seedname)
+      call tran_bulk(tran, hB0, hB1, verbose%timing_level, stdout, seedname)
     end if
 
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+        call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
-                                u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                                recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
-                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
-                                seedname, lsitesymmetry)
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+                                ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
+                                real_lattice, recip_lattice, wann_data%centres, &
+                                wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
+                                num_kpts, num_wann, stdout, seedname, lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
-                                                          param_input%timing_level, seedname)
+                                                          verbose%timing_level, seedname)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
+                            verbose%timing_level, stdout, seedname)
+        call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
-        call tran_find_integral_signatures(signatures, num_G, param_input, real_lattice, &
+        call tran_find_integral_signatures(signatures, num_G, param_input, verbose, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            wannier_centres_translated, stdout, seedname)
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
-                               w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
-                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
-                               coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
+                               verbose, w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, &
+                               nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
+                               num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, &
+                               seedname)
         if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                      wannier_centres_translated, tran_sorted_idx, &
                                                      stdout, seedname)
 
-        call tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, &
+        call tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
         call tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
-                                    real_lattice, mp_grid, ham_r, irvec, nrpts, &
+                                    verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
                                     hR1, hr_one_dim, irvec_max, stdout, seedname)
       endif
-      call tran_lcr(tran, param_input, hC, hCR, hL0, hL1, hLC, hR0, hR1, stdout, seedname)
+      call tran_lcr(tran, hC, hCR, hL0, hL1, hLC, hR0, hR1, verbose%timing_level, stdout, seedname)
     end if
 
-    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
 
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
@@ -278,7 +282,8 @@ contains
 
   !==================================================================!
   subroutine tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
+                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, timing_level, &
+                            stdout, seedname)
     !==================================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -297,6 +302,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(inout) :: nrpts_one_dim
     integer, intent(inout) :: one_dim_vec
+    integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
 
     real(kind=dp), allocatable, intent(inout) :: hr_one_dim(:, :, :)
@@ -314,7 +320,7 @@ contains
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, seedname)
 
     ! Find one_dim_vec which is parallel to param_input%one_dim_dir
     ! two_dim_vec - the other two lattice vectors
@@ -377,14 +383,14 @@ contains
       call io_error('Error: cannot extract 1d hamiltonian in tran_reduce_hr', stdout, seedname)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout, seedname)
 
     return
 
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+  subroutine tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
     !==================================================================!
@@ -392,7 +398,7 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: io_stopwatch, stdout
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type, print_output_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -410,6 +416,7 @@ contains
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
     type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -424,7 +431,7 @@ contains
     real(kind=dp) :: hr_tmp(num_wann, num_wann)
 
     !
-    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
     !
     !irvec_max = nrpts_one_dim/2 ! now passed as arg
     ! maximum possible param_input%dist_cutoff
@@ -432,12 +439,12 @@ contains
            /2.0_dp
     if (param_input%dist_cutoff .gt. dist) then
       write (stdout, '(1x,a,1x,F10.5,1x,a)') 'param_input%dist_cutoff', param_input%dist_cutoff, &
-        trim(param_input%length_unit), 'is too large'
+        trim(verbose%length_unit), 'is too large'
       param_input%dist_cutoff = dist
       ! aam_2012-04-13
       param_input%dist_cutoff_hc = dist
       write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', param_input%dist_cutoff, &
-        trim(param_input%length_unit)
+        trim(verbose%length_unit)
     end if
 
     do n1 = -irvec_max, irvec_max
@@ -547,22 +554,22 @@ contains
       end do
     end do
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout, seedname)
 
     return
 
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
-                         hB1, stdout, seedname)
+  subroutine tran_get_ht(fermi, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
+                         hB1, timing_level, stdout, seedname)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
     !
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use w90_param_types, only: parameter_input_type, fermi_data_type
+    use w90_param_types, only: fermi_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -572,13 +579,13 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     integer, intent(in) :: irvec_max
+    integer, intent(in) :: timing_level
 
     real(kind=dp), intent(in) :: hr_one_dim(:, :, -irvec_max:)
     real(kind=dp), allocatable, intent(inout) :: hB0(:, :)
     real(kind=dp), allocatable, intent(inout) :: hB1(:, :)
 
     type(fermi_data_type), intent(in) :: fermi
-    type(parameter_input_type), intent(in) :: param_input
     type(transport_type), intent(inout) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -588,7 +595,7 @@ contains
     integer :: i, j, n1, im, jm
     character(len=9) :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, seedname)
     !
     if (fermi%n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
@@ -646,31 +653,30 @@ contains
 
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout, seedname)
 
     return
 
   end subroutine tran_get_ht
 
   !==================================================================!
-  subroutine tran_bulk(param_input, tran, hB0, hB1, stdout, seedname)
+  subroutine tran_bulk(tran, hB0, hB1, timing_level, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
 !   use w90_io, only: io_error, io_stopwatch, seedname, io_date, io_file_unit, stdout
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use w90_param_types, only: parameter_input_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
     ! arguments
-    integer :: stdout
+    integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
     real(kind=dp), allocatable :: hB0(:, :)
     real(kind=dp), allocatable :: hB1(:, :)
 
-    type(parameter_input_type), intent(in) :: param_input
     type(transport_type), intent(in) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -689,7 +695,7 @@ contains
     character(len=50) :: filename
     character(len=9)  :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, seedname)
 
     allocate (tot(tran%num_bb, tran%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tot in tran_bulk', stdout, seedname)
@@ -827,25 +833,25 @@ contains
     deallocate (tot, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating tot in tran_bulk', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout, seedname)
 
     return
 
   end subroutine tran_bulk
 
   !==================================================================!
-  subroutine tran_lcr(tran, param_input, hC, hCR, hL0, hL1, hLC, hR0, hR1, stdout, seedname)
+  subroutine tran_lcr(tran, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use w90_param_types, only: parameter_input_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
     ! arguments
     integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
     real(kind=dp), allocatable, intent(inout) :: hC(:, :)
     real(kind=dp), allocatable, intent(inout) :: hCR(:, :)
@@ -855,7 +861,6 @@ contains
     real(kind=dp), allocatable, intent(inout) :: hR0(:, :)
     real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
 
-    type(parameter_input_type), intent(in) :: param_input
     type(transport_type), intent(in) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -880,7 +885,7 @@ contains
     character(len=50) :: filename
     character(len=9) :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, seedname)
 
     call io_date(cdate, ctime)
 
@@ -1168,7 +1173,7 @@ contains
     deallocate (hCband, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating hCband in tran_lcr', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout, seedname)
 
     return
 
@@ -1677,7 +1682,7 @@ contains
   end subroutine tran_read_htXY
 
 !========================================
-  subroutine tran_find_integral_signatures(signatures, num_G, param_input, real_lattice, &
+  subroutine tran_find_integral_signatures(signatures, num_G, param_input, verbose, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            wannier_centres_translated, stdout, seedname)
     !=========================================================================!
@@ -1690,11 +1695,12 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
 !   use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type, print_output_type
 
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
@@ -1723,7 +1729,7 @@ contains
     integer                                                :: i, ibnd, file_unit, ierr, p, p_max, &
                                                               n, m, ig, a, b, c, ig_idx(32)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, seedname)
     !
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
@@ -1808,7 +1814,7 @@ contains
       endif
     enddo
 
-    if (param_input%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each &
+    if (verbose%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each &
       &wannier function:'
     !
     ! Loop over all wannier functions
@@ -1909,7 +1915,7 @@ contains
       signatures(19, n) = aimag(2*signature_basis(3) - signature_basis(31) - signature_basis(30))/4                    ! yz^2
       signatures(20, n) = aimag(3*signature_basis(4) - signature_basis(32))/4                                        ! z^3
 
-      if (param_input%iprint .ge. 5) then
+      if (verbose%iprint .ge. 5) then
         write (stdout, *) ' '
         write (stdout, *) ' Wannier function: ', n
         do ig = 1, 20
@@ -1939,7 +1945,7 @@ contains
     deallocate (unkg, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating unkg in tran_find_signatures', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, seedname)
 
     return
 
@@ -1947,9 +1953,10 @@ contains
 
   !========================================!
   subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
-                               w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
-                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
-                               coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, seedname)
+                               verbose, w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, &
+                               nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
+                               num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, &
+                               seedname)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -1964,7 +1971,8 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, wannier_data_type, atom_data_type
+    use w90_param_types, only: parameter_input_type, wannier_data_type, atom_data_type, &
+      print_output_type
     use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
@@ -1992,6 +2000,7 @@ contains
 
     type(atom_data_type), intent(in) :: atoms
     type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
     type(wannier_data_type), intent(in) :: wann_data
     type(w90_calculation_type), intent(in) :: w90_calcs
@@ -2027,7 +2036,7 @@ contains
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, seedname)
 
     sort_iterator = 0
     !
@@ -2100,7 +2109,7 @@ contains
       coord(3) = temp_coord_2
     endif
     !
-    if (param_input%iprint .ge. 4) then
+    if (verbose%iprint .ge. 4) then
       write (stdout, *) ' Group Breakdown of each principal layer'
     endif
     !
@@ -2126,7 +2135,7 @@ contains
       !
       call group(PL, PL_groups, tran%group_threshold, stdout, seedname)
 
-      if (param_input%iprint .ge. 4) then
+      if (verbose%iprint .ge. 4) then
         !
         !Print group breakdown
         !
@@ -2142,7 +2151,7 @@ contains
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
       call master_sort_and_group(PL, PL_groups, tran%num_ll, PL_subgroup_info, &
-                                 tran%group_threshold, param_input, wannier_centres_translated, &
+                                 tran%group_threshold, verbose, wannier_centres_translated, &
                                  coord, stdout, seedname)
 
       select case (PL_selector)
@@ -2213,7 +2222,7 @@ contains
     !
     !Print central region group breakdown
     !
-    if (param_input%iprint .ge. 4) then
+    if (verbose%iprint .ge. 4) then
       write (stdout, *) ' Group Breakdown of central region'
       write (fmt_1, '(i5)') size(central_region_groups)
       fmt_1 = adjustl(fmt_1)
@@ -2227,7 +2236,7 @@ contains
     allocate (central_subgroup_info(size(central_region_groups), maxval(central_region_groups)), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
     call master_sort_and_group(central_region, central_region_groups, num_wann - (4*tran%num_ll), &
-                               central_subgroup_info, tran%group_threshold, param_input, &
+                               central_subgroup_info, tran%group_threshold, verbose, &
                                wannier_centres_translated, coord, stdout, seedname)
     deallocate (central_subgroup_info, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
@@ -2335,8 +2344,9 @@ contains
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
       call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
+                          stdout, seedname)
+      call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
                                wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                irvec_max, stdout, seedname)
       write (stdout, *) ' '
@@ -2414,7 +2424,7 @@ contains
     ! At this point, every check has been cleared, and we need to use
     ! the parity signatures of the WFs for the possibility of equal centres
     !
-    call check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, w90_calcs, &
+    call check_and_sort_similar_centres(signatures, num_G, atoms, tran, verbose, w90_calcs, &
                                         num_wann, wannier_centres_translated, coord, &
                                         tran_sorted_idx, stdout, seedname)
 
@@ -2433,7 +2443,7 @@ contains
             wannier_centres_translated(1, tran_sorted_idx(n)), &
             wannier_centres_translated(2, tran_sorted_idx(n)), &
             wannier_centres_translated(3, tran_sorted_idx(n)), &
-            wann_data%spreads(tran_sorted_idx(n))*param_input%lenconfac**2
+            wann_data%spreads(tran_sorted_idx(n))*verbose%lenconfac**2
         enddo
         write (stdout, *) '==================================PL3========================================='
       endif
@@ -2445,7 +2455,7 @@ contains
             wannier_centres_translated(1, tran_sorted_idx(n)), &
             wannier_centres_translated(2, tran_sorted_idx(n)), &
             wannier_centres_translated(3, tran_sorted_idx(n)), &
-            wann_data%spreads(tran_sorted_idx(n))*param_input%lenconfac**2
+            wann_data%spreads(tran_sorted_idx(n))*verbose%lenconfac**2
         enddo
         if (i .ne. tran%num_cell_ll) write (stdout, *) '---------------------&
           &---------------------------------------------------------'
@@ -2482,7 +2492,7 @@ contains
     !
     ! End MS.
     !
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, seedname)
 
     return
 
@@ -2490,7 +2500,7 @@ contains
 
   !========================================!
   subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
-                                   tran_group_threshold, param_input, wannier_centres_translated, &
+                                   tran_group_threshold, verbose, wannier_centres_translated, &
                                    coord, stdout, seedname)
     !=============================================================!
     ! General sorting and grouping subroutine which takes Array,  !
@@ -2503,11 +2513,11 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: io_error, stdout, io_stopwatch
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2531,7 +2541,7 @@ contains
                                                           subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
+    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating subgroup_info in master_sort_and_group', stdout, seedname)
@@ -2569,7 +2579,7 @@ contains
 
       group_num_subgroups = size(group_subgroups)
 
-      if (param_input%iprint .ge. 4) then
+      if (verbose%iprint .ge. 4) then
         !
         !Printing subgroup breakdown
         !
@@ -2637,7 +2647,7 @@ contains
       if (ierr /= 0) call io_error('Error deallocating group_subgroups in master_sort_and_group', stdout, seedname)
     enddo
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, seedname)
+    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, seedname)
 
     return
 
@@ -2797,7 +2807,7 @@ contains
   end subroutine group
 
   !=========================================================
-  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, &
+  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, verbose, &
                                             w90_calcs, num_wann, wannier_centres_translated, &
                                             coord, tran_sorted_idx, stdout, seedname)
     !=======================================================!
@@ -2816,12 +2826,12 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: stdout, io_stopwatch, io_error
     use w90_io, only: io_stopwatch, io_error
-    use w90_param_types, only: parameter_input_type, atom_data_type
+    use w90_param_types, only: atom_data_type, print_output_type
     use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
     type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(atom_data_type), intent(in) :: atoms
     type(w90_calculation_type), intent(in) :: w90_calcs
 
@@ -2847,7 +2857,7 @@ contains
 
     logical, allocatable, dimension(:)                  :: has_similar_centres
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
+    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
 
@@ -2965,7 +2975,7 @@ contains
       !Save number of group of WFs in each unit cell and compare to previous unit cell
       !
       group_verifier(i) = group_iterator
-      if (param_input%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
+      if (verbose%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
       if (i .ne. 1) then
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
           if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
@@ -2988,12 +2998,12 @@ contains
       if (ierr /= 0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres', stdout, seedname)
       !
       !
-      if (param_input%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
+      if (verbose%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
       wf_verifier = 0
       wf_verifier = tmp_wf_verifier(:, 1:group_verifier(1))
       do i = 1, 4*tran%num_cell_ll
         do j = 1, group_verifier(1)
-          if (param_input%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
+          if (verbose%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
             j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
@@ -3111,7 +3121,7 @@ contains
     deallocate (wf_similar_centres, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres', stdout, seedname)
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, seedname)
+    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, seedname)
 
     return
 
@@ -3177,7 +3187,7 @@ contains
   end subroutine tran_write_xyz
 
   !==============================================================!
-  subroutine tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx, &
+  subroutine tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
@@ -3188,7 +3198,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: print_output_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -3202,7 +3212,7 @@ contains
     real(dp), intent(inout) :: signatures(:, :)
     real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(in) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -3211,7 +3221,7 @@ contains
     integer                                             :: i, j, k, wf_idx, num_wann_cell_ll
     real(dp)                                            :: signature_dot_p
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
 
     !
     ! NP: special "easy" fix of the parities by switching the sign
@@ -3232,7 +3242,7 @@ contains
     endif
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
-    if (param_input%iprint .eq. 5) write (stdout, '(a101)') 'Unit cell    Sorted WF index    Unsort WF index  &
+    if (verbose%iprint .eq. 5) write (stdout, '(a101)') 'Unit cell    Sorted WF index    Unsort WF index  &
          &Unsorted WF Equiv       Signature Dot Product'
     !
     ! Loop over unit cell in principal layers
@@ -3248,14 +3258,14 @@ contains
           wf_idx = num_wann - 2*tran%num_ll + j + (i - 1 - 2*tran%num_cell_ll)*num_wann_cell_ll
         endif
         signature_dot_p = dot_product(signatures(:, tran_sorted_idx(j)), signatures(:, tran_sorted_idx(wf_idx)))
-        if (param_input%iprint .eq. 5) then
+        if (verbose%iprint .eq. 5) then
           write (stdout, '(2x,i4,3(13x,i5),12x,f20.17)') &
             i, wf_idx, tran_sorted_idx(wf_idx), tran_sorted_idx(j), signature_dot_p
         endif
         if (abs(signature_dot_p) .le. 0.8_dp) then
           write (stdout, '(a28,i4,a64,i4,a20)') ' WARNING: Wannier function (', tran_sorted_idx(wf_idx), &
             ') seems to has poor resemblance to equivalent wannier function (', tran_sorted_idx(j), ') in first unit cell'
-          if (param_input%iprint .lt. 5) write (stdout, *) 'Dot product of signatures: ', signature_dot_p
+          if (verbose%iprint .lt. 5) write (stdout, *) 'Dot product of signatures: ', signature_dot_p
         endif
         if (signature_dot_p .lt. 0.0_dp) then
           do k = 1, num_wann
@@ -3266,7 +3276,7 @@ contains
       enddo
     enddo
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, seedname)
 
     return
 
@@ -3274,7 +3284,7 @@ contains
 
   !========================================!
   subroutine tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
-                                    real_lattice, mp_grid, ham_r, irvec, nrpts, &
+                                    verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
                                     hR1, hr_one_dim, irvec_max, stdout, seedname)
@@ -3289,7 +3299,8 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, k_point_type, fermi_data_type
+    use w90_param_types, only: parameter_input_type, k_point_type, fermi_data_type, &
+      print_output_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -3323,6 +3334,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 
     character(len=50), intent(in)  :: seedname
@@ -3335,7 +3347,7 @@ contains
     real(dp)               :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
 
     if (fermi%n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
@@ -3567,8 +3579,9 @@ contains
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
       call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
+                          stdout, seedname)
+      call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
                                wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                irvec_max, stdout, seedname)
     endif
@@ -3748,7 +3761,7 @@ contains
     deallocate (sub_block, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, seedname)
 
     return
 

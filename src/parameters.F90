@@ -23,22 +23,23 @@ module w90_param_types
 
   public
 
-  !Input
-  type parameter_input_type
+  type print_output_type
     ! verbosity flags - param_read_verbosity
     integer :: iprint
     !! Controls the verbosity of the output
     integer :: timing_level
     integer :: optimisation !wannierise and disentangle
+    character(len=20) :: length_unit ! MAYBE, just have a separate variable?
+    !! Units for length
+    real(kind=dp) :: lenconfac !lots of write statements in wannier90
 
+    character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common MAYBE
+  end type print_output_type
+
+  type parameter_input_type
     integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
-
-    character(len=20) :: length_unit
-    !! Units for length
-
-    character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common
 
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
     integer :: num_exclude_bands
@@ -238,33 +239,34 @@ module w90_param_methods
 
 contains
 
-  subroutine param_read_verbosity(param_input, stdout, seedname)
+  subroutine param_read_verbosity(verbose, stdout, seedname)
     !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
     implicit none
-    type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(inout) :: verbose
     logical :: found
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    param_input%timing_level = 1             ! Verbosity of timing output info
-    call param_get_keyword(stdout, seedname, 'timing_level', found, i_value=param_input%timing_level)
+    verbose%timing_level = 1             ! Verbosity of timing output info
+    call param_get_keyword(stdout, seedname, 'timing_level', found, i_value=verbose%timing_level)
 
-    param_input%iprint = 1             ! Verbosity
-    call param_get_keyword(stdout, seedname, 'iprint', found, i_value=param_input%iprint)
+    verbose%iprint = 1             ! Verbosity
+    call param_get_keyword(stdout, seedname, 'iprint', found, i_value=verbose%iprint)
 
-    param_input%optimisation = 3             ! Verbosity
-    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=param_input%optimisation)
+    verbose%optimisation = 3             ! Verbosity
+    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=verbose%optimisation)
 
   end subroutine param_read_verbosity
 
-  subroutine param_read_units(param_input, energy_unit, bohr, stdout, seedname)
+  subroutine param_read_units(param_input, length_unit, energy_unit, bohr, stdout, seedname)
     !use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
     integer, intent(in) :: stdout
+    character(len=*), intent(out) :: length_unit
     character(len=*), intent(out) :: energy_unit
     character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: bohr
@@ -273,12 +275,12 @@ contains
     energy_unit = 'ev'          !
     call param_get_keyword(stdout, seedname, 'energy_unit', found, c_value=energy_unit)
 
-    param_input%length_unit = 'ang'         !
+    length_unit = 'ang'         !
     param_input%lenconfac = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'length_unit', found, c_value=param_input%length_unit)
-    if (param_input%length_unit .ne. 'ang' .and. param_input%length_unit .ne. 'bohr') &
+    call param_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
+    if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') &
       call io_error('Error: value of length_unit not recognised in param_read', stdout, seedname)
-    if (param_input%length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
+    if (length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
   end subroutine param_read_units
 
   subroutine param_read_num_wann(num_wann, stdout, seedname)
@@ -1356,7 +1358,7 @@ contains
   end function get_smearing_index
 
 !===================================================================
-  subroutine param_uppercase(param_input, atoms, spec_points)
+  subroutine param_uppercase(atoms, spec_points, length_unit)
     !===================================================================
     !                                                                  !
     !! Convert a few things to uppercase to look nice in the output
@@ -1365,9 +1367,9 @@ contains
 
     implicit none
 
-    type(parameter_input_type), intent(inout) :: param_input
     type(atom_data_type), intent(inout) :: atoms
     type(special_kpoints_type), intent(inout) :: spec_points
+    character(len=*), intent(inout) :: length_unit
     integer :: nsp, ic, loop, inner_loop
 
     ! Atom labels (eg, si --> Si)
@@ -1393,9 +1395,9 @@ contains
     enddo
 
     ! Length unit (ang --> Ang, bohr --> Bohr)
-    ic = ichar(param_input%length_unit(1:1))
+    ic = ichar(length_unit(1:1))
     if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-      param_input%length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
+      length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
 
     return
 

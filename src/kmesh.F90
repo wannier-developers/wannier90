@@ -49,8 +49,8 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(kmesh_data, kmesh_info, param_input, kpt_cart, recip_lattice, num_kpts, &
-                       seedname, stdout)
+  subroutine kmesh_get(kmesh_data, kmesh_info, param_input, verbose, kpt_cart, recip_lattice, &
+                       num_kpts, seedname, stdout)
     !=====================================================
     !
     !! Main routine to calculate the b-vectors
@@ -58,12 +58,14 @@ contains
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar
-    use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type
+    use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type, &
+      print_output_type
 
     implicit none
 
     ! passed variables
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(param_kmesh_type), intent(inout) :: kmesh_data
 
@@ -91,13 +93,13 @@ contains
     real(kind=dp), allocatable :: bvec_tmp(:, :)
     real(kind=dp) :: bvec_inp(3, num_nnmax, max_shells) ! The input b-vectors (only used in the rare case they are read from file)
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
 
-    if (param_input%iprint > 0) write (stdout, '(/1x,a)') &
+    if (verbose%iprint > 0) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(recip_lattice, param_input, stdout, seedname, lmn)
+    call kmesh_supercell_sort(recip_lattice, verbose, stdout, seedname, lmn)
 
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
@@ -132,7 +134,7 @@ contains
       dnn1 = eta
     enddo
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
       write (stdout, '(1x,a)') '|                    ------------------------------------                    |'
@@ -149,9 +151,9 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
     endif
 
-    if (param_input%iprint >= 4) then
+    if (verbose%iprint >= 4) then
       ! Write out all the bvectors
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, '(1x,"|",76(" "),"|")')
         write (stdout, '(1x,a)') '|         Complete list of b-vectors and their lengths                       |'
         write (stdout, '(1x,"|",76(" "),"|")')
@@ -164,33 +166,33 @@ contains
       counter = 0
       do shell = 1, kmesh_data%search_shells
         call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvec_tmp(:, 1:multi(shell)), recip_lattice, &
-                                kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                                kpt_cart, verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
         do loop = 1, multi(shell)
           counter = counter + 1
-          if (param_input%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
+          if (verbose%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
             bvec_tmp(:, loop)/param_input%lenconfac, ')', dnn(shell)/param_input%lenconfac, '  |'
         end do
       end do
       deallocate (bvec_tmp)
       if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get', stdout, seedname)
-      if (param_input%iprint > 0) write (stdout, '(1x,"|",76(" "),"|")')
-      if (param_input%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
+      if (verbose%iprint > 0) write (stdout, '(1x,"|",76(" "),"|")')
+      if (verbose%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
     end if
 
     ! Get the shell weights to satisfy the B1 condition
-    if (index(param_input%devel_flag, 'kmesh_degen') > 0) then
-      call kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                                 kmesh_data, num_kpts, stdout, seedname, lmn, bvec_inp)
+    if (index(verbose%devel_flag, 'kmesh_degen') > 0) then
+      call kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                                 verbose, kmesh_data, num_kpts, stdout, seedname, lmn, bvec_inp)
     else
       if (kmesh_data%num_shells == 0) then
-        call kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                                   kmesh_data, num_kpts, stdout, seedname, lmn)
+        call kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                                   verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
       elseif (kmesh_data%num_shells > 0) then
-        call kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                               kmesh_data, num_kpts, stdout, seedname, lmn)
+        call kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                               verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
       end if
 
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
         do ndnn = 1, kmesh_data%num_shells
           if (ndnn .eq. kmesh_data%num_shells) then
@@ -212,7 +214,7 @@ contains
     end do
 
     if (kmesh_info%nntot > num_nnmax) then
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(a,i2,a)') ' **WARNING: kmesh has found >', num_nnmax, ' nearest neighbours**'
       write (stdout, '(a)') ' '
       write (stdout, '(a)') ' This is probably caused by an error in your unit cell specification'
@@ -241,14 +243,14 @@ contains
     counter = 0
     do shell = 1, kmesh_data%search_shells
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvec_tmp(:, 1:multi(shell)), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                              kpt_cart, verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
       do loop = 1, multi(shell)
         counter = counter + 1
-        if (param_input%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
+        if (verbose%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
           bvec_tmp(:, loop)/param_input%lenconfac, ')', dnn(shell)/param_input%lenconfac, '  |'
       end do
     end do
-    if (param_input%iprint > 0) write (stdout, '(a)') ' '
+    if (verbose%iprint > 0) write (stdout, '(a)') ' '
     deallocate (bvec_tmp)
     if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get', stdout, seedname)
 
@@ -284,12 +286,12 @@ contains
     ! go from k-point nkp to each neighbour bk(1:3,nkp,1...nnx).
     ! Comment: Now we have bk(3,nntot,num_kps) 09/04/2006
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
       write (stdout, '(1x,a)') '|                        -----   --------------------                        |'
     endif
-    if (index(param_input%devel_flag, 'kmesh_degen') == 0) then
+    if (index(verbose%devel_flag, 'kmesh_degen') == 0) then
       !
       ! Standard routine
       !
@@ -363,9 +365,9 @@ contains
 
     do ndnnx = 1, kmesh_data%num_shells
       ndnn = kmesh_data%shell_list(ndnnx)
-      if (param_input%iprint > 0) write (stdout, '(1x,a,24x,i3,13x,i3,33x,a)') '|', ndnn, nnshell(1, ndnn), '|'
+      if (verbose%iprint > 0) write (stdout, '(1x,a,24x,i3,13x,i3,33x,a)') '|', ndnn, nnshell(1, ndnn), '|'
     end do
-    if (param_input%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
+    if (verbose%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
 
     do nkp = 1, num_kpts
       nnx = 0
@@ -380,7 +382,7 @@ contains
             bbn = bbn + bk_local(i, nnx, nkp)*bk_local(i, nnx, nkp)
           enddo
           if (abs(sqrt(bb1) - sqrt(bbn)) .gt. kmesh_data%tol) then
-            if (param_input%iprint > 0) write (stdout, '(1x,2f10.6)') bb1, bbn
+            if (verbose%iprint > 0) write (stdout, '(1x,2f10.6)') bb1, bbn
             call io_error('Non-symmetric k-point neighbours!', stdout, seedname)
           endif
         enddo
@@ -405,11 +407,11 @@ contains
               enddo
             enddo
             if ((i .eq. j) .and. (abs(ddelta - 1.0_dp) .gt. kmesh_data%tol)) then
-              if (param_input%iprint > 0) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
+              if (verbose%iprint > 0) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
               call io_error('Eq. (B1) not satisfied in kmesh_get (1)', stdout, seedname)
             endif
             if ((i .ne. j) .and. (abs(ddelta) .gt. kmesh_data%tol)) then
-              if (param_input%iprint > 0) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
+              if (verbose%iprint > 0) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
               call io_error('Eq. (B1) not satisfied in kmesh_get (2)', stdout, seedname)
             endif
           enddo
@@ -417,7 +419,7 @@ contains
       enddo
     end if
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'
       write (stdout, '(1x,"+",76("-"),"+")')
     endif
@@ -455,7 +457,7 @@ contains
     enddo
     if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of bk directions', stdout, seedname)
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       if (param_input%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
         write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
@@ -498,7 +500,7 @@ contains
         enddo
         ! check found
         if (kmesh_info%neigh(nkp, na) .eq. 0) then
-          if (param_input%iprint > 0) write (stdout, *) ' nkp,na=', nkp, na
+          if (verbose%iprint > 0) write (stdout, *) ' nkp,na=', nkp, na
           call io_error('kmesh_get: failed to find neighbours for this kpoint', stdout, seedname)
         endif
       enddo
@@ -580,7 +582,7 @@ contains
 
       if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of b-vectors in gamma_only option', stdout, seedname)
 
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, '(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
         write (stdout, '(1x,"+",76("-"),"+")')
@@ -609,14 +611,14 @@ contains
     endif
 ![ysl-e]
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 2, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('kmesh: get', 2, stdout, seedname)
 
     return
 
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(kmesh_info, param_input, proj_input, kpt_latt, real_lattice, &
+  subroutine kmesh_write(kmesh_info, param_input, proj_input, verbose, kpt_latt, real_lattice, &
                          recip_lattice, num_kpts, num_proj, calc_only_A, seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -649,11 +651,12 @@ contains
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type, &
-      input_proj_type
+      input_proj_type, print_output_type
 
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(input_proj_type), intent(in) :: proj_input
 
@@ -669,7 +672,7 @@ contains
     integer           :: i, nkp, nn, nnkpout
     character(len=9) :: cdate, ctime
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 1, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('kmesh: write', 1, stdout, seedname)
 
     nnkpout = io_file_unit()
     open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
@@ -779,7 +782,7 @@ contains
 
     close (nnkpout)
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 2, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('kmesh: write', 2, stdout, seedname)
 
     return
 
@@ -840,7 +843,7 @@ contains
   end subroutine kmesh_dealloc
 
   !==================================================================
-  subroutine kmesh_supercell_sort(recip_lattice, param_input, stdout, seedname, lmn)
+  subroutine kmesh_supercell_sort(recip_lattice, verbose, stdout, seedname, lmn)
     !==================================================================
     !
     !! We look for kpoint neighbours in a large supercell of reciprocal
@@ -850,11 +853,11 @@ contains
     !
     !==================================================================
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type, print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
 
     integer, intent(in) :: stdout
     integer, intent(inout) :: lmn(:, :)
@@ -870,7 +873,7 @@ contains
     real(kind=dp) :: dist((2*nsupcell + 1)**3)
     real(kind=dp) :: dist_cp((2*nsupcell + 1)**3)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, stdout, seedname)
 
     counter = 1
     lmn(:, counter) = 0
@@ -897,25 +900,25 @@ contains
     lmn = lmn_cp
     dist = dist_cp
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, stdout, seedname)
 
   end subroutine kmesh_supercell_sort
 
   !=============================================================
-  subroutine kmesh_get_bvectors(multi, kpt, shell_dist, bvector, recip_lattice, &
-                                kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+  subroutine kmesh_get_bvectors(multi, kpt, shell_dist, bvector, recip_lattice, kpt_cart, &
+                                verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
     !=============================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
     !
     !=============================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type
+    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
 
     implicit none
 
 !   passed variables
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(param_kmesh_type), intent(in) :: kmesh_data
 
     integer, intent(in) :: num_kpts
@@ -933,7 +936,7 @@ contains
     integer :: loop, nkp2, num_bvec
     real(kind=dp) :: dist, vkpp2(3), vkpp(3)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, stdout, seedname)
 
     bvector = 0.0_dp
 
@@ -955,7 +958,7 @@ contains
 
     if (num_bvec < multi) call io_error('kmesh_get_bvector: Not enough bvectors found', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, stdout, seedname)
 
     return
 
@@ -963,7 +966,7 @@ contains
 
   !==========================================================================
   subroutine kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                                   param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                                   verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
     !==========================================================================
     !
     !! Find the correct set of shells to satisfy B1
@@ -976,11 +979,11 @@ contains
 
     use w90_constants, only: eps5, eps6
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type
+    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(param_kmesh_type), intent(inout) :: kmesh_data
 
     integer, intent(in) :: num_kpts
@@ -1006,13 +1009,13 @@ contains
 
     integer :: loop, shell
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, stdout, seedname)
 
     allocate (bvector(3, maxval(multi), max_shells), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_automatic', stdout, seedname)
     bvector = 0.0_dp; bweight = 0.0_dp
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
     endif
 
@@ -1022,13 +1025,14 @@ contains
 
       ! get the b vectors for the new shell
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvector(:, 1:multi(shell), cur_shell), &
-                              recip_lattice, kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                              recip_lattice, kpt_cart, verbose, kmesh_data, num_kpts, &
+                              stdout, seedname, lmn)
 
-      if (param_input%iprint >= 3) then
+      if (verbose%iprint >= 3) then
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(shell), '|'
         do loop = 1, multi(shell)
           write (stdout, '(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ', loop, ':', &
-            bvector(:, loop, cur_shell)/param_input%lenconfac, '('//trim(param_input%length_unit)//'^-1)', '|'
+            bvector(:, loop, cur_shell)/verbose%lenconfac, '('//trim(verbose%length_unit)//'^-1)', '|'
         end do
       end if
 
@@ -1048,7 +1052,7 @@ contains
       end if
 
       if (lpar) then
-        if (param_input%iprint >= 3) then
+        if (verbose%iprint >= 3) then
           write (stdout, '(1x,a)') '| This shell is linearly dependent on existing shells: Trying next shell     |'
         end if
         cycle
@@ -1093,7 +1097,7 @@ contains
       call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                   max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
       if (info < 0) then
-        if (param_input%iprint > 0) then
+        if (verbose%iprint > 0) then
           write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument', abs(info), &
             'of dgesvd is incorrect'
         endif
@@ -1107,7 +1111,7 @@ contains
           call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value', &
                         stdout, seedname)
         else
-          if (param_input%iprint > 0) then
+          if (verbose%iprint > 0) then
             write (stdout, '(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
           endif
           b1sat = .false.
@@ -1129,10 +1133,10 @@ contains
       tmp3 = matmul(transpose(vmat), tmp2)
       bweight(1:kmesh_data%num_shells) = tmp3
 
-      if (param_input%iprint >= 2) then
+      if (verbose%iprint >= 2) then
         do loop_s = 1, kmesh_data%num_shells
           write (stdout, '(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ', loop_s, &
-            ' w_b ', bweight(loop_s)*param_input%lenconfac**2, '('//trim(param_input%length_unit)//'^2)', '|'
+            ' w_b ', bweight(loop_s)*verbose%lenconfac**2, '('//trim(verbose%length_unit)//'^2)', '|'
         end do
       end if
 
@@ -1156,12 +1160,12 @@ contains
       end do
 
       if (.not. b1sat) then
-        if (shell < kmesh_data%search_shells .and. param_input%iprint >= 3) then
-          if (param_input%iprint > 0) write (stdout, '(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell', '|'
+        if (shell < kmesh_data%search_shells .and. verbose%iprint >= 3) then
+          if (verbose%iprint > 0) write (stdout, '(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell', '|'
 
         elseif (shell == kmesh_data%search_shells) then
 
-          if (param_input%iprint > 0) then
+          if (verbose%iprint > 0) then
             write (stdout, *) ' '
             write (stdout, '(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ', kmesh_data%search_shells, ' shells'
             write (stdout, '(1x,a)') 'Check that you have specified your unit cell to a high precision'
@@ -1201,7 +1205,7 @@ contains
     end do
 
     if (.not. b1sat) then
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, *) ' '
         write (stdout, '(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ', kmesh_data%search_shells, ' shells'
         write (stdout, '(1x,a)') 'Your cell might be very long, or you may have an irregular MP grid'
@@ -1211,7 +1215,7 @@ contains
       call io_error('kmesh_get_automatic', stdout, seedname)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, stdout, seedname)
 
     return
 
@@ -1219,7 +1223,7 @@ contains
 
   !================================================================
   subroutine kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                               param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                               verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
     !================================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
@@ -1228,11 +1232,11 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type
+    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(param_kmesh_type), intent(in) :: kmesh_data
 
     integer, intent(in) :: num_kpts
@@ -1262,14 +1266,14 @@ contains
 
     integer :: loop, shell
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
 
     allocate (bvector(3, maxval(multi), kmesh_data%num_shells), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed', stdout, seedname)
     bvector = 0.0_dp; bweight = 0.0_dp
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are set in the win file                                      |'
     endif
 
@@ -1277,16 +1281,16 @@ contains
       ! get the b vectors for this shell
       call kmesh_get_bvectors(multi(kmesh_data%shell_list(shell)), 1, dnn(kmesh_data%shell_list(shell)), &
                               bvector(:, 1:multi(kmesh_data%shell_list(shell)), shell), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                              kpt_cart, verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
     end do
 
-    if (param_input%iprint >= 3) then
+    if (verbose%iprint >= 3) then
       do shell = 1, kmesh_data%num_shells
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', &
           multi(kmesh_data%shell_list(shell)), '|'
         do loop = 1, multi(kmesh_data%shell_list(shell))
           write (stdout, '(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ', loop, ':', &
-            bvector(:, loop, shell)/param_input%lenconfac, '('//trim(param_input%length_unit)//'^-1)', '|'
+            bvector(:, loop, shell)/verbose%lenconfac, '('//trim(verbose%length_unit)//'^-1)', '|'
         end do
       end do
     end if
@@ -1306,7 +1310,7 @@ contains
     call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
           'of dgesvd is incorrect'
       endif
@@ -1324,10 +1328,10 @@ contains
     end do
 
     bweight(1:kmesh_data%num_shells) = matmul(transpose(vmat), matmul(smat, matmul(transpose(umat), target)))
-    if (param_input%iprint >= 2) then
+    if (verbose%iprint >= 2) then
       do loop_s = 1, kmesh_data%num_shells
         write (stdout, '(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ', loop_s, &
-          ' w_b ', bweight(loop_s)*param_input%lenconfac**2, '('//trim(param_input%length_unit)//'^2)', '|'
+          ' w_b ', bweight(loop_s)*verbose%lenconfac**2, '('//trim(verbose%length_unit)//'^2)', '|'
       end do
     end if
 
@@ -1355,7 +1359,7 @@ contains
 
     if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
 
     return
 
@@ -1363,7 +1367,7 @@ contains
 
   !=================================================================
   subroutine kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                                   param_input, kmesh_data, num_kpts, stdout, seedname, lmn, bvec_inp)
+                                   verbose, kmesh_data, num_kpts, stdout, seedname, lmn, bvec_inp)
     !=================================================================
     !
     !!  Find the B1 weights for a set of b-vectors given in a file.
@@ -1375,11 +1379,11 @@ contains
     use w90_constants, only: eps7
 !   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, maxlen
     use w90_io, only: io_error, io_stopwatch, io_file_unit, maxlen
-    use w90_param_types, only: parameter_input_type, param_kmesh_type
+    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(param_kmesh_type), intent(inout) :: kmesh_data
 
     integer, intent(in) :: num_kpts
@@ -1409,13 +1413,13 @@ contains
     integer :: loop, shell, pos, kshell_in, counter, length, i, loop2, num_lines, tot_num_lines
     character(len=maxlen) :: dummy, dummy2
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
 
     allocate (bvector(3, sum(multi)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed', stdout, seedname)
     bvector = 0.0_dp; bweight = 0.0_dp
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are defined in the kshell file                               |'
     endif
 
@@ -1424,7 +1428,7 @@ contains
       ! get the b vectors
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), &
                               bvector(:, counter:counter + multi(shell) - 1), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts, stdout, seedname, lmn)
+                              kpt_cart, verbose, kmesh_data, num_kpts, stdout, seedname, lmn)
       counter = counter + multi(shell)
     end do
 
@@ -1482,12 +1486,12 @@ contains
       end do
     end do
 
-    if (param_input%iprint >= 3) then
+    if (verbose%iprint >= 3) then
       do shell = 1, kmesh_data%num_shells
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(shell), '|'
         do loop = 1, multi(shell)
           write (stdout, '(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ', loop, ':', &
-            bvec_inp(:, loop, shell)/param_input%lenconfac, '('//trim(param_input%length_unit)//'^-1)', '|'
+            bvec_inp(:, loop, shell)/verbose%lenconfac, '('//trim(verbose%length_unit)//'^-1)', '|'
         end do
       end do
     end if
@@ -1519,7 +1523,7 @@ contains
     call dgesvd('A', 'A', max_shells, kmesh_data%num_shells, amat, max_shells, singv, umat, &
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
-      if (param_input%iprint > 0) then
+      if (verbose%iprint > 0) then
         write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
           'of dgesvd is incorrect'
       endif
@@ -1537,10 +1541,10 @@ contains
     end do
 
     bweight(1:kmesh_data%num_shells) = matmul(transpose(vmat), matmul(smat, matmul(transpose(umat), target)))
-    if (param_input%iprint >= 2) then
+    if (verbose%iprint >= 2) then
       do loop_s = 1, kmesh_data%num_shells
         write (stdout, '(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ', loop_s, &
-          ' w_b ', bweight(loop_s)*param_input%lenconfac**2, '('//trim(param_input%length_unit)//'^2)', '|'
+          ' w_b ', bweight(loop_s)*verbose%lenconfac**2, '('//trim(verbose%length_unit)//'^2)', '|'
       end do
     end if
 
@@ -1567,7 +1571,7 @@ contains
 
     if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied', stdout, seedname)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
 
     return
 

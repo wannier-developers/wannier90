@@ -29,11 +29,12 @@ contains
 !                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
 !                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, param_hamil, param_input, param_plot, spec_points, wann_data, &
-                       wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
-                       eigval, real_lattice, recip_lattice, wannier_centres_translated, bohr, &
-                       irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                       rpt_origin, transport_mode, lsitesymmetry, seedname, stdout)
+                       k_points, param_hamil, param_input, param_plot, spec_points, verbose, &
+                       wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                       u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                       num_bands, num_kpts, num_wann, rpt_origin, transport_mode, lsitesymmetry, &
+                       seedname, stdout)
     !! Main plotting routine
     !============================================!
 
@@ -45,7 +46,7 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, parameter_input_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      special_kpoints_type
+      special_kpoints_type, print_output_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
@@ -54,7 +55,8 @@ contains
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(k_point_type), intent(in)               :: k_points
-    type(parameter_input_type), intent(inout)    :: param_input
+    type(parameter_input_type), intent(in)       :: param_input
+    type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
     type(wannier_plot_type), intent(in)          :: wann_plot
@@ -101,7 +103,7 @@ contains
     logical :: have_gamma
     type(ws_distance_type) :: ws_distance
 
-    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
     ! Print the header only if there is something to plot
     if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
@@ -124,31 +126,33 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+      call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, seedname, &
                              transport_mode)
       !
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
-                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
-                              shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
-                              seedname, lsitesymmetry)
+      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+                              ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
+                              real_lattice, recip_lattice, wann_data%centres, &
+                              wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
+                              num_kpts, num_wann, stdout, seedname, lsitesymmetry)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
-                                                            spec_points, param_input, &
+                                                            spec_points, param_input, verbose, &
                                                             recip_lattice, num_wann, wann_data, &
                                                             ham_r, irvec, ndegen, nrpts, &
                                                             wannier_centres_translated, &
                                                             ws_distance, stdout, seedname)
       !
-      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, param_input, &
+      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, &
                                                                 fermi_surface_data, num_wann, &
-                                                                ham_r, irvec, ndegen, nrpts, stdout, seedname)
+                                                                ham_r, irvec, ndegen, nrpts, &
+                                                                verbose%timing_level, stdout, &
+                                                                seedname)
       !
       if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                         num_wann, stdout, &
-                                                        param_input%timing_level, seedname)
+                                                        verbose%timing_level, seedname)
       !
       if (w90_calcs%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
                                                           k_points%kpt_latt, irvec, nrpts, &
@@ -156,7 +160,7 @@ contains
       if (w90_calcs%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
                                                         k_points%kpt_latt, real_lattice, irvec, &
                                                         ndegen, nrpts, num_kpts, num_wann, &
-                                                        stdout, param_input%timing_level, seedname)
+                                                        stdout, verbose%timing_level, seedname)
       if (w90_calcs%write_hr .or. w90_calcs%write_rmn .or. w90_calcs%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            param_input, num_wann, &
@@ -168,7 +172,7 @@ contains
     end if
 
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, &
-                                                  param_input, u_matrix_opt, dis_window, &
+                                                  param_input, verbose, u_matrix_opt, dis_window, &
                                                   real_lattice, atoms, k_points, u_matrix, &
                                                   num_kpts, num_bands, num_wann, bohr, stdout, seedname)
 
@@ -177,7 +181,7 @@ contains
     if (w90_calcs%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
                                                          param_input, num_wann, num_kpts, num_bands, seedname)
 
-    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
 
   end subroutine plot_main
 
@@ -187,9 +191,9 @@ contains
 
   !============================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, param_input, &
-                                    recip_lattice, num_wann, wann_data, ham_r, irvec, ndegen, &
-                                    nrpts, wannier_centres_translated, ws_distance, stdout, &
-                                    seedname)
+                                    verbose, recip_lattice, num_wann, wann_data, ham_r, irvec, &
+                                    ndegen, nrpts, wannier_centres_translated, ws_distance, &
+                                    stdout, seedname)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -202,12 +206,13 @@ contains
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
-      special_kpoints_type
+      special_kpoints_type, print_output_type
     use wannier_param_types, only: band_plot_type
 
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in)      :: band_plot
     type(wannier_data_type), intent(in)    :: wann_data
     type(special_kpoints_type), intent(in) :: spec_points
@@ -260,7 +265,7 @@ contains
     character(len=10), allocatable  :: ctemp(:)
 
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
     !
     time0 = io_time()
     call utility_metric(recip_lattice, recip_metric)
@@ -545,7 +550,7 @@ contains
     if (allocated(irvec_cut)) deallocate (irvec_cut, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands', stdout, seedname)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
     !
     if (allocated(idx_special_points)) deallocate (idx_special_points, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating idx_special_points in &
@@ -940,8 +945,8 @@ contains
   end subroutine plot_interpolate_bands
 
   !===========================================================!
-  subroutine plot_fermi_surface(fermi, recip_lattice, param_input, fermi_surface_data, num_wann, &
-                                ham_r, irvec, ndegen, nrpts, stdout, seedname)
+  subroutine plot_fermi_surface(fermi, recip_lattice, fermi_surface_data, num_wann, &
+                                ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -951,12 +956,11 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
-    use w90_param_types, only: parameter_input_type, fermi_data_type
+    use w90_param_types, only: fermi_data_type
     use wannier_param_types, only: fermi_surface_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
     type(fermi_data_type), intent(in)      :: fermi
     type(fermi_surface_type), intent(in)   :: fermi_surface_data
 
@@ -966,6 +970,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
@@ -983,7 +988,7 @@ contains
     integer              :: irpt, nfound, npts_plot, loop_kpt, bxsf_unit
     character(len=9)     :: cdate, ctime
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, seedname)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
@@ -1085,14 +1090,14 @@ contains
       io_time() - time0, ' (sec)'
     write (stdout, *)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, seedname)
     !
     return
 
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, param_input, &
+  subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, param_input, verbose, &
                           u_matrix_opt, dis_window, real_lattice, atoms, k_points, u_matrix, &
                           num_kpts, num_bands, num_wann, bohr, stdout, seedname)
     !============================================!
@@ -1106,7 +1111,7 @@ contains
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_point_type, parameter_input_type, wannier_data_type, &
-      atom_data_type, disentangle_manifold_type
+      atom_data_type, disentangle_manifold_type, print_output_type
     use wannier_param_types, only: param_plot_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
@@ -1114,6 +1119,7 @@ contains
 
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     type(wannier_plot_type), intent(in) :: wann_plot
     type(param_plot_type), intent(in) :: param_plot
     type(wannier_data_type), intent(in) :: wann_data
@@ -1179,7 +1185,7 @@ contains
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
     !
     associate (ngs=>wann_plot%plot_supercell)
       !
@@ -1470,7 +1476,7 @@ contains
         call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
       endif
 
-      if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
+      if (verbose%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
 
     end associate
 
@@ -1618,7 +1624,7 @@ contains
           enddo
 
           ! Debugging
-          if (param_input%iprint > 3) then
+          if (verbose%iprint > 3) then
             write (stdout, '(a,i12)') 'loop_w  =', loop_w
             write (stdout, '(a,3f12.6)') 'comf    =', (comf(i), i=1, 3)
             write (stdout, '(a,3i12)') 'ngi     =', ngx, ngy, ngz
@@ -1692,7 +1698,7 @@ contains
           ! Corresponding nearest cell vector
           irdiff(:) = nint(diff(:))
 
-          if (param_input%iprint > 3) then
+          if (verbose%iprint > 3) then
             write (stdout, '(a,3f12.6)') 'wcf     =', (wcf(i), i=1, 3)
             write (stdout, '(a,3f12.6)') 'diff    =', (diff(i), i=1, 3)
             write (stdout, '(a,3i12)') 'irdiff  =', (irdiff(i), i=1, 3)
@@ -1702,7 +1708,7 @@ contains
             orig(:) = orig(:) + real(irdiff(1), kind=dp)*real_lattice(1, :) &
                       + real(irdiff(2), kind=dp)*real_lattice(2, :) &
                       + real(irdiff(3), kind=dp)*real_lattice(3, :)
-            if (param_input%iprint > 3) write (stdout, '(a,3f12.6,/)') 'orig-new=', (orig(i), i=1, 3)
+            if (verbose%iprint > 3) write (stdout, '(a,3f12.6,/)') 'orig-new=', (orig(i), i=1, 3)
           else ! In "crystal mode" count number of atoms within a given radius of wannier centre
             icount = 0
             do isp = 1, atoms%num_species
@@ -1722,7 +1728,7 @@ contains
                 enddo
               enddo ! iat
             enddo ! isp
-            if (param_input%iprint > 3) write (stdout, '(a,i12)') 'icount  =', icount
+            if (verbose%iprint > 3) write (stdout, '(a,i12)') 'icount  =', icount
           endif
 
           ! Write cube file (everything in Bohr)

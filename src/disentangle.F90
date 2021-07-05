@@ -21,7 +21,7 @@ module w90_disentangle
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
-    parameter_input_type
+    parameter_input_type, print_output_type
   use wannier_param_types, only: disentangle_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
@@ -35,10 +35,10 @@ contains
 
   !==================================================================!
 
-  subroutine dis_main(dis_data, dis_window, kmesh_info, k_points, param_input, sym, a_matrix, &
-                      m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                      u_matrix_opt, eigval, recip_lattice, omega_invariant, num_bands, num_kpts, &
-                      num_wann, lsitesymmetry, stdout, seedname, comm)
+  subroutine dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, &
+                      a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
+                      u_matrix, u_matrix_opt, eigval, recip_lattice, omega_invariant, num_bands, &
+                      num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -51,6 +51,7 @@ contains
     integer, intent(in) :: stdout
 
     logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: gamma_only
 
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -68,7 +69,7 @@ contains
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(inout) :: param_input ! omega_invariant alone is modified
+    type(print_output_type), intent(in) :: verbose
     type(sitesym_data), intent(inout) :: sym
     type(w90commtype), intent(in) :: comm
 
@@ -101,7 +102,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1, stdout, seedname)
+    if (verbose%timing_level > 0) call io_stopwatch('dis: main', 1, stdout, seedname)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -114,13 +115,13 @@ contains
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(param_input%iprint, param_input%timing_level, on_root, indxfroz, indxnfroz, &
+    call dis_windows(verbose%iprint, verbose%timing_level, on_root, indxfroz, indxnfroz, &
                      lfrozen, linner, ndimfroz, nfirstwin, num_bands, num_kpts, num_wann, &
                      eigval_opt, k_points%kpt_latt, recip_lattice, dis_data, dis_window, &
                      stdout, seedname)
 
     ! Construct the unitarized projection
-    call dis_project(param_input%timing_level, num_kpts, num_wann, num_bands, on_root, &
+    call dis_project(verbose%timing_level, num_kpts, num_wann, num_bands, on_root, &
                      dis_window%ndimwin, nfirstwin, a_matrix, u_matrix_opt, stdout, seedname)
 
     ! If there is an inner window, need to modify projection procedure
@@ -131,19 +132,19 @@ contains
                       seedname) !YN: RS:
       endif
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
-      call dis_proj_froz(param_input%timing_level, on_root, num_kpts, dis_window%ndimwin, &
-                         u_matrix_opt, param_input%iprint, param_input%devel_flag, num_bands, &
+      call dis_proj_froz(verbose%timing_level, on_root, num_kpts, dis_window%ndimwin, &
+                         u_matrix_opt, verbose%iprint, verbose%devel_flag, num_bands, &
                          num_wann, lfrozen, ndimfroz, indxfroz, stdout, seedname)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
 
     ! Debug
-    call internal_check_orthonorm(param_input%timing_level, num_wann, num_kpts, dis_window%ndimwin, &
+    call internal_check_orthonorm(verbose%timing_level, num_wann, num_kpts, dis_window%ndimwin, &
                                   on_root, u_matrix_opt, stdout, seedname)
 
     ! Slim down the original Mmn(k,b)
-    call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_window%ndimwin, &
+    call internal_slim_m(verbose%timing_level, num_kpts, num_bands, dis_window%ndimwin, &
                          kmesh_info%nntot, kmesh_info%nnlist, nfirstwin, m_matrix_orig_local, &
                          stdout, seedname, comm)
 
@@ -162,18 +163,16 @@ contains
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     ! Extract the optimally-connected num_wann-dimensional subspaces
 
-    if (.not. param_input%gamma_only) then
-      call dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
-                       num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                       kmesh_info, dis_data, dis_window, omega_invariant, lsitesymmetry, sym, &
-                       stdout, seedname, comm)
-
-    else
+    if (gamma_only) then
       call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                              num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                             param_input, kmesh_info, dis_data, dis_window, omega_invariant, &
+                             verbose, kmesh_info, dis_data, dis_window, omega_invariant, &
                              lsitesymmetry, sym, stdout, seedname)
-
+    else
+      call dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
+                       num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, verbose, &
+                       kmesh_info, dis_data, dis_window, omega_invariant, lsitesymmetry, sym, &
+                       stdout, seedname, comm)
     end if
 
     ! Allocate workspace
@@ -200,17 +199,17 @@ contains
     ! Find the initial u_matrix
     if (lsitesymmetry) call sitesym_replace_d_matrix_band(sym, num_wann) !RS: replace d_matrix_band here
 ![ysl-b]
-    if (.not. param_input%gamma_only) then
-      call internal_find_u(on_root, lsitesymmetry, param_input%timing_level, num_kpts, num_wann, &
+    if (gamma_only) then
+      call internal_find_u_gamma(verbose%timing_level, num_wann, dis_window%ndimwin, u_matrix, &
+                                 u_matrix_opt, a_matrix, stdout, seedname)
+    else
+      call internal_find_u(on_root, lsitesymmetry, verbose%timing_level, num_kpts, num_wann, &
                            num_bands, dis_window%ndimwin, u_matrix, u_matrix_opt, a_matrix, sym, &
                            stdout, seedname, comm)
-    else
-      call internal_find_u_gamma(param_input%timing_level, num_wann, dis_window%ndimwin, u_matrix, &
-                                 u_matrix_opt, a_matrix, stdout, seedname)
     end if
 ![ysl-e]
 
-    if (param_input%optimisation <= 0) then
+    if (verbose%optimisation <= 0) then
       page_unit = io_file_unit()
       open (unit=page_unit, form='unformatted', status='scratch')
       ! Update the m_matrix accordingly
@@ -313,8 +312,8 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, stdout, &
-                                                                      seedname)
+    if (verbose%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, stdout, &
+                                                                  seedname)
 
     return
     !================================================================!
@@ -1653,7 +1652,7 @@ contains
   end subroutine dis_proj_froz
 
   subroutine dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
-                         num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
+                         num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, verbose, &
                          kmesh_info, dis_data, window, omega_invariant, lsitesymmetry, sym, &
                          stdout, seedname, comm)
 
@@ -1688,7 +1687,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     type(disentangle_manifold_type), intent(in) :: window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(parameter_input_type), intent(inout) :: param_input !only omega_inv is modified
+    type(print_output_type), intent(in) :: verbose
     type(sitesym_data), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
@@ -1765,7 +1764,7 @@ contains
     integer, dimension(0:num_nodes - 1) :: displs
     integer :: nkp_loc
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 1, stdout, seedname)
+    if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 1, stdout, seedname)
 
     if (on_root) write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
@@ -1856,7 +1855,7 @@ contains
     ! nitere            total number of iterations
 
     ! DEBUG
-    if (param_input%iprint > 2) then
+    if (verbose%iprint > 2) then
       if (on_root) then
         write (stdout, '(a,/)') '  Original eigenvalues inside outer window:'
         do nkp = 1, num_kpts
@@ -1884,14 +1883,14 @@ contains
     ! ------------------
     do iter = 1, dis_data%num_iter
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 1, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 1, stdout, seedname)
 
       if (iter .eq. 1) then
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           if (num_wann .gt. ndimfroz(nkp)) then
-            call internal_zmatrix(on_root, num_bands, param_input%timing_level, kmesh_info%nntot, &
+            call internal_zmatrix(on_root, num_bands, verbose%timing_level, kmesh_info%nntot, &
                                   num_wann, window%ndimwin, kmesh_info%nnlist, indxnfroz, &
                                   ndimfroz, nkp, nkp_loc, kmesh_info%wb, u_matrix_opt, &
                                   m_matrix_orig_local, cbw, czmat_in_loc(:, :, nkp_loc), stdout, seedname)
@@ -1933,9 +1932,9 @@ contains
         enddo
       endif
       ! [if iter=1]
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2, stdout, seedname)
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 1, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 1, stdout, seedname)
 
       womegai1 = 0.0_dp
       ! wkomegai1 is defined by Eq. (18) of SMV.
@@ -1976,9 +1975,9 @@ contains
           enddo
         endif
       enddo
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2, stdout, seedname)
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1, stdout, seedname)
 
       !! ! send chunks of wkomegai1 to root node
       !! call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
@@ -2046,7 +2045,7 @@ contains
         ! wkomegai1(nkp), add it to womegai1
         womegai1 = womegai1 + wkomegai1_loc(nkp_loc)
 
-        if (index(param_input%devel_flag, 'compspace') > 0) then
+        if (index(verbose%devel_flag, 'compspace') > 0) then
 
           ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
           ! COMPLEMENT SPACE
@@ -2076,7 +2075,7 @@ contains
             endif
           endif
 
-        end if ! index(param_input%devel_flag,'compspace')>0
+        end if ! index(verbose%devel_flag,'compspace')>0
 
       enddo
       ! [Loop over k points (nkp)]
@@ -2095,7 +2094,7 @@ contains
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, &
                                                           num_wann, seedname, stdout, &
                                                           window%lwindow) !RS:
-      if (index(param_input%devel_flag, 'compspace') > 0) then
+      if (index(verbose%devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_data%num_iter) then
           call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
                              num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
@@ -2105,7 +2104,7 @@ contains
         endif
       endif
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2, stdout, seedname)
 
       womegai1 = womegai1/real(num_kpts, dp)
 
@@ -2145,7 +2144,7 @@ contains
 
       ! Compute womegai  using the updated subspaces at all k, i.e.,
       ! replacing (i-1) by (i) in Eq. (12) SMV
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 1, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 1, stdout, seedname)
 
       womegai = 0.0_dp
       do nkp_loc = 1, counts(my_node_id)
@@ -2174,13 +2173,13 @@ contains
 
       womegai = womegai/real(num_kpts, dp)
       ! [Loop over k (nkp)]
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 2, stdout, seedname)
+      if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 2, stdout, seedname)
 
       delta_womegai = womegai1/womegai - 1.0_dp
 
       if (on_root) then
-        write (stdout, 124) iter, womegai1*param_input%lenconfac**2, &
-          womegai*param_input%lenconfac**2, delta_womegai, io_wallclocktime()
+        write (stdout, 124) iter, womegai1*verbose%lenconfac**2, &
+          womegai*verbose%lenconfac**2, delta_womegai, io_wallclocktime()
       endif
 
 124   format(2x, i6, 3x, f14.8, 3x, f14.8, 6x, es10.3, 2x, f8.2, 4x, '<-- DIS')
@@ -2189,7 +2188,7 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (num_wann .gt. ndimfroz(nkp)) then
-          call internal_zmatrix(on_root, num_bands, param_input%timing_level, kmesh_info%nntot, &
+          call internal_zmatrix(on_root, num_bands, verbose%timing_level, kmesh_info%nntot, &
                                 num_wann, window%ndimwin, kmesh_info%nnlist, indxnfroz, ndimfroz, &
                                 nkp, nkp_loc, kmesh_info%wb, u_matrix_opt, m_matrix_orig_local, &
                                 cbw, czmat_out_loc(:, :, nkp_loc), stdout, seedname)
@@ -2247,10 +2246,10 @@ contains
       endif
     endif
 
-    if (index(param_input%devel_flag, 'compspace') > 0) then
+    if (index(verbose%devel_flag, 'compspace') > 0) then
 
       if (icompflag .eq. 1) then
-        if (param_input%iprint > 2) then
+        if (verbose%iprint > 2) then
           if (on_root) write (stdout, ('(/4x,a)')) &
             'WARNING: Complement subspace has zero dimensions at the following k-points:'
           i = 0
@@ -2276,7 +2275,7 @@ contains
     ! subsequent minimization of Omega_tilde in wannierise.f90
     ! We store it in the checkpoint file as a sanity check
     if (on_root) write (stdout, '(/8x,a,f14.8,a/)') 'Final Omega_I ', &
-      womegai*param_input%lenconfac**2, ' ('//trim(param_input%length_unit)//'^2)'
+      womegai*verbose%lenconfac**2, ' ('//trim(verbose%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
     omega_invariant = womegai
@@ -2333,7 +2332,7 @@ contains
       enddo
 
       ! DEBUG
-      if (param_input%iprint > 2) then
+      if (verbose%iprint > 2) then
         if (on_root) write (stdout, '(/,a,/)') '  Eigenvalues inside optimal subspace:'
         do nkp = 1, num_kpts
           if (on_root) write (stdout, '(a,i3,2x,20(f9.5,1x))') '  K-point ', &
@@ -2360,10 +2359,10 @@ contains
     call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, stdout, seedname, comm)
     call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
 
-    if (index(param_input%devel_flag, 'compspace') > 0) then
+    if (index(verbose%devel_flag, 'compspace') > 0) then
 
       if (icompflag .eq. 1) then
-        if (param_input%iprint > 2) then
+        if (verbose%iprint > 2) then
           if (on_root) then
             write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
             write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
@@ -2474,7 +2473,7 @@ contains
     if (on_root) write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 2, stdout, seedname)
+    if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 2, stdout, seedname)
 
     return
     !==================================================================!
@@ -2591,7 +2590,7 @@ contains
 
   subroutine dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                                num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                               param_input, kmesh_info, dis_data, window, omega_invariant, &
+                               verbose, kmesh_info, dis_data, window, omega_invariant, &
                                lsitesymmetry, sym, stdout, seedname)
 
     !==================================================================!
@@ -2623,7 +2622,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     type(disentangle_manifold_type), intent(in) :: window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(parameter_input_type), intent(inout) :: param_input !only omega_inv is modified
+    type(print_output_type), intent(in) :: verbose
     type(sitesym_data), intent(in) :: sym
     character(len=50), intent(in)  :: seedname
 
@@ -2688,7 +2687,7 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical                       :: dis_converged
 
-    if (param_input%timing_level > 1) call io_stopwatch('dis: extract', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('dis: extract', 1, stdout, seedname)
 
     write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
@@ -2766,7 +2765,7 @@ contains
     ! nitere            total number of iterations
 
     ! DEBUG
-    if (param_input%iprint > 2) then
+    if (verbose%iprint > 2) then
       write (stdout, '(a,/)') '  Original eigenvalues inside outer window:'
       do nkp = 1, num_kpts
         write (stdout, '(a,i3,3x,20(f9.5,1x))') '  K-point ', nkp, &
@@ -2796,7 +2795,7 @@ contains
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp = 1, num_kpts
           if (num_wann .gt. ndimfroz(nkp)) then
-            call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, &
+            call internal_zmatrix_gamma(verbose%timing_level, kmesh_info%nntot, num_wann, &
                                         num_bands, window%ndimwin, kmesh_info%nnlist, nkp, &
                                         rzmat_in(:, :, nkp), m_matrix_orig, u_matrix_opt, ndimfroz, &
                                         indxnfroz, kmesh_info%wb, cbw, stdout, seedname)
@@ -2896,7 +2895,7 @@ contains
 
         ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
         ! COMPLEMENT SPACE
-        if (index(param_input%devel_flag, 'compspace') > 0) then
+        if (index(verbose%devel_flag, 'compspace') > 0) then
 
           if (iter .eq. dis_data%num_iter) then
             allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
@@ -2990,15 +2989,15 @@ contains
 
       delta_womegai = womegai1/womegai - 1.0_dp
 
-      write (stdout, 124) iter, womegai1*param_input%lenconfac**2, &
-        womegai*param_input%lenconfac**2, delta_womegai, io_time()
+      write (stdout, 124) iter, womegai1*verbose%lenconfac**2, &
+        womegai*verbose%lenconfac**2, delta_womegai, io_time()
 
 124   format(2x, i6, 3x, f14.8, 3x, f14.8, 6x, es10.3, 2x, f8.2, 4x, '<-- DIS')
 
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
       do nkp = 1, num_kpts
         if (num_wann .gt. ndimfroz(nkp)) then
-          call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, &
+          call internal_zmatrix_gamma(verbose%timing_level, kmesh_info%nntot, num_wann, &
                                       num_bands, window%ndimwin, kmesh_info%nnlist, nkp, &
                                       rzmat_out(:, :, nkp), m_matrix_orig, u_matrix_opt, ndimfroz, &
                                       indxnfroz, kmesh_info%wb, cbw, stdout, seedname)
@@ -3036,7 +3035,7 @@ contains
     endif
 
     if (icompflag .eq. 1) then
-      if (param_input%iprint > 2) then
+      if (verbose%iprint > 2) then
         write (stdout, ('(/4x,a)')) &
           'WARNING: Complement subspace has zero dimensions at the following k-points:'
         i = 0
@@ -3060,7 +3059,7 @@ contains
     ! subsequent minimization of Omega_tilde in wannierise.f90
     ! We store it in the checkpoint file as a sanity check
     write (stdout, '(/8x,a,f14.8,a/)') 'Final Omega_I ', &
-      womegai*param_input%lenconfac**2, ' ('//trim(param_input%length_unit)//'^2)'
+      womegai*verbose%lenconfac**2, ' ('//trim(verbose%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
     omega_invariant = womegai
@@ -3118,7 +3117,7 @@ contains
       ! NKP
     enddo
     ! DEBUG
-    if (param_input%iprint > 2) then
+    if (verbose%iprint > 2) then
       write (stdout, '(/,a,/)') '  Eigenvalues inside optimal subspace:'
       do nkp = 1, num_kpts
         write (stdout, '(a,i3,2x,20(f9.5,1x))') '  K-point ', &
@@ -3138,11 +3137,11 @@ contains
 
     ! aam: 01/05/2009: added devel_flag if statement as the complementary
     !      subspace code was causing catastrophic seg-faults
-    if (index(param_input%devel_flag, 'compspace') > 0) then
+    if (index(verbose%devel_flag, 'compspace') > 0) then
 
       ! The compliment subspace code needs work: jry
       if (icompflag .eq. 1) then
-        if (param_input%iprint > 2) then
+        if (verbose%iprint > 2) then
           write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
           write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
         endif
@@ -3252,7 +3251,7 @@ contains
     write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
-    if (param_input%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2, stdout, seedname)
 
     return
     !==================================================================!

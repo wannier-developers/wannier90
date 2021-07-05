@@ -41,7 +41,7 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(hmlg, param_input, w90_calcs, ham_k, ham_r, real_lattice, &
+  subroutine hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                transport_mode)
@@ -50,13 +50,14 @@ contains
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type, print_output_type
     use wannier_param_types, only: w90_calculation_type
 
     implicit none
 
     ! passed variables
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in)   :: verbose
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(ham_logical), intent(inout)       :: hmlg
 
@@ -96,7 +97,7 @@ contains
     ! Set up Wigner-Seitz vectors
     !
     call hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                  real_lattice, param_input, count_pts=.true.)
+                                  real_lattice, param_input, verbose, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup', stdout, seedname)
@@ -118,7 +119,7 @@ contains
     ! Set up the wigner_seitz vectors
     !
     call hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                  real_lattice, param_input, count_pts=.false.)
+                                  real_lattice, param_input, verbose, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error &
@@ -196,8 +197,8 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, ham_k, ham_r, &
-                                u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
+  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                                 recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
                                 seedname, lsitesymmetry)
@@ -209,7 +210,8 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_manifold_type
+    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_manifold_type, &
+      print_output_type
     use wannier_param_types, only: param_hamiltonian_type
 
     implicit none
@@ -219,6 +221,7 @@ contains
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(parameter_input_type), intent(in)      :: param_input
+    type(print_output_type), intent(in)      :: verbose
     type(disentangle_manifold_type), intent(in) :: dis_window
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -254,7 +257,7 @@ contains
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
     complex(kind=dp)     :: fac
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, stdout, seedname)
 
     if (hmlg%have_ham_r) then
       if (hmlg%have_translated .eqv. hmlg%use_translation) then
@@ -377,8 +380,8 @@ contains
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout, &
                                    seedname)
-      call internal_translate_centres(num_wann, param_input, atoms, param_hamil, wannier_centres, &
-                                      recip_lattice, real_lattice, shift_vec, &
+      call internal_translate_centres(num_wann, param_input, verbose%iprint, atoms, param_hamil, &
+                                      wannier_centres, recip_lattice, real_lattice, shift_vec, &
                                       wannier_centres_translated, stdout, seedname)
 
       do irpt = 1, nrpts
@@ -420,7 +423,7 @@ contains
                                    stdout, seedname)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, stdout, seedname)
+    if (verbose%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, stdout, seedname)
 
     return
 
@@ -429,7 +432,7 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(num_wann, param_input, atoms, param_hamil, &
+    subroutine internal_translate_centres(num_wann, param_input, iprint, atoms, param_hamil, &
                                           wannier_centres, recip_lattice, real_lattice, &
                                           shift_vec, wannier_centres_translated, stdout, seedname)
       !! Translate the centres of the WF into the home cell
@@ -448,6 +451,7 @@ contains
       type(param_hamiltonian_type), intent(inout) :: param_hamil
 
       integer, intent(inout) :: shift_vec(:, :)
+      integer, intent(in) :: iprint
       integer, intent(in)    :: num_wann
       integer, intent(in)    :: stdout
       real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
@@ -505,7 +509,7 @@ contains
       ! NEVER overwrite wannier_centres
       !wannier_centres = r_home
 
-      if (param_input%iprint > 0) then
+      if (iprint > 0) then
         write (stdout, '(1x,a)') 'Translated centres'
         write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', &
           param_hamil%translation_centre_frac(:)
@@ -599,7 +603,7 @@ contains
 
   !================================================================================!
   subroutine hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                      real_lattice, param_input, count_pts)
+                                      real_lattice, param_input, verbose, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -609,7 +613,7 @@ contains
     use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: parameter_input_type, print_output_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -620,6 +624,7 @@ contains
 
     ! passed variables
     type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
 
     integer, intent(inout)              :: nrpts
     integer, intent(inout), allocatable :: ndegen(:)
@@ -638,7 +643,7 @@ contains
     real(kind=dp), allocatable :: dist(:)
     real(kind=dp)              :: real_metric(3, 3)
 
-    if (param_input%timing_level > 1) &
+    if (verbose%timing_level > 1) &
       call io_stopwatch('hamiltonian: wigner_seitz', 1, stdout, seedname)
 
     call utility_metric(real_lattice, real_metric)
@@ -723,7 +728,7 @@ contains
     if (ierr /= 0) call io_error('Error in deallocating dist hamiltonian_wigner_seitz', stdout, &
                                  seedname)
     if (count_pts) then
-      if (param_input%timing_level > 1) &
+      if (verbose%timing_level > 1) &
         call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout, seedname)
       return
     end if
@@ -734,7 +739,7 @@ contains
       tot = tot + 1.0_dp/real(ndegen(i), dp)
     enddo
 
-    if (param_input%iprint >= 3) then
+    if (verbose%iprint >= 3) then
       write (stdout, '(1x,i4,a,/)') nrpts, ' lattice points in Wigner-Seitz supercell:'
       do i = 1, nrpts
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, i), irvec(2, i), &
@@ -748,7 +753,7 @@ contains
                     stdout, seedname)
     endif
 
-    if (param_input%timing_level > 1) &
+    if (verbose%timing_level > 1) &
       call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout, seedname)
 
     return
