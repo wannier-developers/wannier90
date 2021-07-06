@@ -299,7 +299,8 @@ contains
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_pw90_calcs(pw90_calcs, stdout, seedname)
     call param_read_effective_model(pw90_common%effective_model, stdout, seedname)
-    call param_read_units(param_input, verbose%length_unit, energy_unit, bohr, stdout, seedname)
+    call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
+                          stdout, seedname)
     call param_read_oper(postw90_oper, stdout, seedname)
     call param_read_num_wann(num_wann, stdout, seedname)
     call param_read_exclude_bands(param_input, stdout, seedname) !for read_chkpt

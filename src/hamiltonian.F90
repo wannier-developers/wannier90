@@ -514,7 +514,7 @@ contains
         write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', &
           param_hamil%translation_centre_frac(:)
         do iw = 1, num_wann
-          write (stdout, 888) iw, (r_home(ind, iw)*param_input%lenconfac, ind=1, 3)
+          write (stdout, 888) iw, (r_home(ind, iw)*verbose%lenconfac, ind=1, 3)
         end do
         write (stdout, '(1x,a78)') repeat('-', 78)
         write (stdout, *)

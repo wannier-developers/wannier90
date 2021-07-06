@@ -129,7 +129,8 @@ contains
     call param_read_transport(w90_calcs%transport, tran, driver%restart, stdout, seedname)
     call param_read_dist_cutoff(param_input, stdout, seedname)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_read_units(param_input, verbose%length_unit, energy_unit, bohr, stdout, seedname)
+      call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
+                            stdout, seedname)
       call param_read_num_wann(num_wann, stdout, seedname)
       call param_read_exclude_bands(param_input, stdout, seedname)
       call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
@@ -1220,39 +1221,39 @@ contains
     write (stdout, '(36x,a6)') 'SYSTEM'
     write (stdout, '(36x,a6)') '------'
     write (stdout, *)
-    if (param_input%lenconfac .eq. 1.0_dp) then
+    if (verbose%lenconfac .eq. 1.0_dp) then
       write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
     else
       write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
     endif
-    write (stdout, 101) 'a_1', (real_lattice(1, I)*param_input%lenconfac, i=1, 3)
-    write (stdout, 101) 'a_2', (real_lattice(2, I)*param_input%lenconfac, i=1, 3)
-    write (stdout, 101) 'a_3', (real_lattice(3, I)*param_input%lenconfac, i=1, 3)
+    write (stdout, 101) 'a_1', (real_lattice(1, I)*verbose%lenconfac, i=1, 3)
+    write (stdout, 101) 'a_2', (real_lattice(2, I)*verbose%lenconfac, i=1, 3)
+    write (stdout, 101) 'a_3', (real_lattice(3, I)*verbose%lenconfac, i=1, 3)
     write (stdout, *)
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
     write (stdout, '(19x,a17,3x,f11.5)', advance='no') &
-      'Unit Cell Volume:', cell_volume*param_input%lenconfac**3
-    if (param_input%lenconfac .eq. 1.0_dp) then
+      'Unit Cell Volume:', cell_volume*verbose%lenconfac**3
+    if (verbose%lenconfac .eq. 1.0_dp) then
       write (stdout, '(2x,a7)') '(Ang^3)'
     else
       write (stdout, '(2x,a8)') '(Bohr^3)'
     endif
     write (stdout, *)
-    if (param_input%lenconfac .eq. 1.0_dp) then
+    if (verbose%lenconfac .eq. 1.0_dp) then
       write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
     else
       write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
     endif
-    write (stdout, 101) 'b_1', (recip_lattice(1, I)/param_input%lenconfac, i=1, 3)
-    write (stdout, 101) 'b_2', (recip_lattice(2, I)/param_input%lenconfac, i=1, 3)
-    write (stdout, 101) 'b_3', (recip_lattice(3, I)/param_input%lenconfac, i=1, 3)
+    write (stdout, 101) 'b_1', (recip_lattice(1, I)/verbose%lenconfac, i=1, 3)
+    write (stdout, 101) 'b_2', (recip_lattice(2, I)/verbose%lenconfac, i=1, 3)
+    write (stdout, 101) 'b_3', (recip_lattice(3, I)/verbose%lenconfac, i=1, 3)
     write (stdout, *) ' '
     ! Atoms
     if (atoms%num_atoms > 0) then
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-      if (param_input%lenconfac .eq. 1.0_dp) then
+      if (verbose%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
       else
         write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
@@ -1262,7 +1263,7 @@ contains
         do nat = 1, atoms%species_num(nsp)
           write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
   &                 '|', atoms%symbol(nsp), nat, atoms%pos_frac(:, nat, nsp),&
-  &                 '|', atoms%pos_cart(:, nat, nsp)*param_input%lenconfac, '|'
+  &                 '|', atoms%pos_cart(:, nat, nsp)*verbose%lenconfac, '|'
         end do
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'

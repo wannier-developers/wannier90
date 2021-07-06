@@ -49,7 +49,7 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(kmesh_data, kmesh_info, param_input, verbose, kpt_cart, recip_lattice, &
+  subroutine kmesh_get(kmesh_data, kmesh_info, verbose, kpt_cart, recip_lattice, &
                        num_kpts, gamma_only, seedname, stdout)
     !=====================================================
     !
@@ -58,13 +58,11 @@ contains
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar
-    use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type, &
-      print_output_type
+    use w90_param_types, only: kmesh_info_type, param_kmesh_type, print_output_type
 
     implicit none
 
     ! passed variables
-    type(parameter_input_type), intent(in) :: param_input
     type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(param_kmesh_type), intent(inout) :: kmesh_data
@@ -139,7 +137,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
       write (stdout, '(1x,a)') '|                    ------------------------------------                    |'
-      if (param_input%lenconfac .eq. 1.0_dp) then
+      if (verbose%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
         write (stdout, '(1x,a)') '|          -----             -----------------          ------------         |'
       else
@@ -147,7 +145,8 @@ contains
         write (stdout, '(1x,a)') '|          -----             ------------------         ------------         |'
       endif
       do ndnn = 1, ndnntot
-        write (stdout, '(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|', ndnn, dnn(ndnn)/param_input%lenconfac, multi(ndnn), '|'
+        write (stdout, '(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|', ndnn, &
+          dnn(ndnn)/verbose%lenconfac, multi(ndnn), '|'
       enddo
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
     endif
@@ -171,7 +170,7 @@ contains
         do loop = 1, multi(shell)
           counter = counter + 1
           if (verbose%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
-            bvec_tmp(:, loop)/param_input%lenconfac, ')', dnn(shell)/param_input%lenconfac, '  |'
+            bvec_tmp(:, loop)/verbose%lenconfac, ')', dnn(shell)/verbose%lenconfac, '  |'
         end do
       end do
       deallocate (bvec_tmp)
@@ -248,7 +247,7 @@ contains
       do loop = 1, multi(shell)
         counter = counter + 1
         if (verbose%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
-          bvec_tmp(:, loop)/param_input%lenconfac, ')', dnn(shell)/param_input%lenconfac, '  |'
+          bvec_tmp(:, loop)/verbose%lenconfac, ')', dnn(shell)/verbose%lenconfac, '  |'
       end do
     end do
     if (verbose%iprint > 0) write (stdout, '(a)') ' '
@@ -459,7 +458,7 @@ contains
     if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of bk directions', stdout, seedname)
 
     if (verbose%iprint > 0) then
-      if (param_input%lenconfac .eq. 1.0_dp) then
+      if (verbose%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
         write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
       else
@@ -470,10 +469,10 @@ contains
       write (stdout, '(1x,a)') '|            ---        --------------------------------     --------        |'
       do i = 1, kmesh_info%nntot
         write (stdout, '(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
-          i, (bk_local(j, i, 1)/param_input%lenconfac, j=1, 3), wb_local(i)*param_input%lenconfac**2
+          i, (bk_local(j, i, 1)/verbose%lenconfac, j=1, 3), wb_local(i)*verbose%lenconfac**2
       enddo
       write (stdout, '(1x,"+",76("-"),"+")')
-      if (param_input%lenconfac .eq. 1.0_dp) then
+      if (verbose%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|                           b_k Directions (Ang^-1)                          |'
         write (stdout, '(1x,a)') '|                           -----------------------                          |'
       else
@@ -483,7 +482,7 @@ contains
       write (stdout, '(1x,a)') '|            No.           x           y           z                         |'
       write (stdout, '(1x,a)') '|            ---        --------------------------------                     |'
       do i = 1, kmesh_info%nnh
-        write (stdout, '(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i, (kmesh_info%bka(j, i)/param_input%lenconfac, j=1, 3)
+        write (stdout, '(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i, (kmesh_info%bka(j, i)/verbose%lenconfac, j=1, 3)
       enddo
       write (stdout, '(1x,"+",76("-"),"+")')
       write (stdout, *) ' '
@@ -587,7 +586,7 @@ contains
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, '(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
         write (stdout, '(1x,"+",76("-"),"+")')
-        if (param_input%lenconfac .eq. 1.0_dp) then
+        if (verbose%lenconfac .eq. 1.0_dp) then
           write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
           write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
         else
@@ -598,7 +597,7 @@ contains
         write (stdout, '(1x,a)') '|            ---        --------------------------------     --------        |'
         do i = 1, kmesh_info%nntot
           write (stdout, '(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
-            i, (kmesh_info%bk(j, i, 1)/param_input%lenconfac, j=1, 3), kmesh_info%wb(i)*param_input%lenconfac**2
+            i, (kmesh_info%bk(j, i, 1)/verbose%lenconfac, j=1, 3), kmesh_info%wb(i)*verbose%lenconfac**2
         enddo
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, *) ' '

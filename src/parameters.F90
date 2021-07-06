@@ -60,9 +60,24 @@ module w90_param_types
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
-    real(kind=dp) :: lenconfac !lots of write statements in wannier90
+    !real(kind=dp) :: lenconfac !lots of write statements in wannier90
   end type parameter_input_type
 
+  type rspace_hamiltonian_type
+    real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
+    ! dist_cutoff - only plot and transport - BGS w90 only
+    real(kind=dp) :: dist_cutoff !plot and transport
+    character(len=20) :: dist_cutoff_mode !plot and transport
+    real(kind=dp) :: dist_cutoff_hc !plot and transport
+    integer :: one_dim_dir ! transport and plot - BGS w90 only
+
+    logical :: use_ws_distance !ws_distance, plot and postw90_common
+    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
+    !! absolute tolerance for the distance to equivalent positions
+    integer :: ws_search_size(3) ! ws_distance, hamiltonian
+    !! maximum extension in each direction of the supercell of the BvK cell
+    !! to search for points inside the Wigner-Seitz cell
+  end type rspace_hamiltonian_type
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
     ! Wannier centres and spreads
@@ -257,11 +272,11 @@ contains
 
   end subroutine param_read_verbosity
 
-  subroutine param_read_units(param_input, length_unit, energy_unit, bohr, stdout, seedname)
+  subroutine param_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname)
     !use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
-    type(parameter_input_type), intent(inout) :: param_input
+    real(kind=dp), intent(out) :: lenconfac
     integer, intent(in) :: stdout
     character(len=*), intent(out) :: length_unit
     character(len=*), intent(out) :: energy_unit
@@ -273,11 +288,11 @@ contains
     call param_get_keyword(stdout, seedname, 'energy_unit', found, c_value=energy_unit)
 
     length_unit = 'ang'         !
-    param_input%lenconfac = 1.0_dp
+    lenconfac = 1.0_dp
     call param_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') &
       call io_error('Error: value of length_unit not recognised in param_read', stdout, seedname)
-    if (length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
+    if (length_unit .eq. 'bohr') lenconfac = 1.0_dp/bohr
   end subroutine param_read_units
 
   subroutine param_read_num_wann(num_wann, stdout, seedname)

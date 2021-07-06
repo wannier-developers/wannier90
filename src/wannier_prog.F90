@@ -285,7 +285,7 @@ program wannier
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. driver%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, param_input, verbose, &
+    if (.not. driver%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
                                                      k_points%kpt_cart, recip_lattice, num_kpts, &
                                                      gamma_only, seedname, stdout)
     time2 = io_time()
