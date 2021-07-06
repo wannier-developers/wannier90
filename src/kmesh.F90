@@ -50,7 +50,7 @@ module w90_kmesh
 contains
   !=======================================================
   subroutine kmesh_get(kmesh_data, kmesh_info, param_input, verbose, kpt_cart, recip_lattice, &
-                       num_kpts, seedname, stdout)
+                       num_kpts, gamma_only, seedname, stdout)
     !=====================================================
     !
     !! Main routine to calculate the b-vectors
@@ -73,6 +73,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: gamma_only
 
     ! local variables
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
@@ -520,7 +521,7 @@ contains
 
 ![ysl-b]
 
-    if (param_input%gamma_only) then
+    if (gamma_only) then
       ! use half of the b-vectors
       if (num_kpts .ne. 1) call io_error('Error in kmesh_get: wrong choice of gamma_only option', stdout, seedname)
 

@@ -45,9 +45,9 @@ contains
                         param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
                         verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
                         real_lattice, recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
-                        num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, lhasproj, &
-                        library, library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
-                        seedname, stdout)
+                        num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
+                        lhasproj, library, library_param_read_first_pass, lsitesymmetry, &
+                        use_bloch_phases, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -110,6 +110,7 @@ contains
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
     logical, intent(out) :: use_bloch_phases, cp_pp, calc_only_A
+    logical, intent(inout) :: gamma_only
 
     !local variables
     character(len=20) :: energy_unit
@@ -139,7 +140,7 @@ contains
                                  stdout, seedname)
       call param_read_devel(verbose%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
-      call param_read_gamma_only(param_input%gamma_only, num_kpts, library, stdout, seedname)
+      call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
       call param_read_post_proc(cp_pp, calc_only_A, driver%postproc_setup, stdout, seedname)
       call param_read_restart(driver, stdout, seedname)
       call param_read_system(library, param_input, stdout, seedname)
@@ -148,7 +149,7 @@ contains
                            stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
-      call param_read_outfiles(w90_calcs, param_input, num_kpts, stdout, seedname)
+      call param_read_outfiles(w90_calcs, param_input, num_kpts, gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, band_plot, param_input, write_data%one_dim_axis, &
@@ -175,8 +176,8 @@ contains
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%control%guiding_centres, &
                                   param_wannierise%proj_site, proj_input, select_proj, num_proj, &
-                                  param_input, atoms, recip_lattice, num_wann, library, bohr, &
-                                  stdout, seedname)
+                                  param_input, atoms, recip_lattice, num_wann, gamma_only, &
+                                  library, bohr, stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%constrain%slwf_constrain) then
         call param_read_constrained_centres(write_data%ccentres_frac, param_wannierise, &
@@ -619,13 +620,14 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_read_restart
 
-  subroutine param_read_outfiles(w90_calcs, param_input, num_kpts, stdout, seedname)
+  subroutine param_read_outfiles(w90_calcs, param_input, num_kpts, gamma_only, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input ! write_xyz
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
+    logical, intent(in) :: gamma_only
     character(len=50), intent(in)  :: seedname
 
     logical :: found, hr_plot
@@ -668,7 +670,7 @@ contains
     call param_get_keyword(stdout, seedname, 'write_vdw_data', found, &
                            l_value=w90_calcs%write_vdw_data)
     if (w90_calcs%write_vdw_data) then
-      if ((.not. param_input%gamma_only) .or. (num_kpts .ne. 1)) &
+      if ((.not. gamma_only) .or. (num_kpts .ne. 1)) &
         call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', &
                       stdout, seedname)
     endif
@@ -990,8 +992,8 @@ contains
 
   subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, proj_input, select_proj, num_proj, &
-                                    param_input, atoms, recip_lattice, num_wann, library, &
-                                    bohr, stdout, seedname)
+                                    param_input, atoms, recip_lattice, num_wann, gamma_only, &
+                                    library, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     type(projection_type), intent(inout) :: proj
@@ -1005,6 +1007,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
+    logical, intent(in) :: gamma_only
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -1029,7 +1032,7 @@ contains
       call param_get_projections(num_proj, atoms, param_input, num_wann, proj_input, proj_site, &
                                  proj, recip_lattice, .true., bohr, stdout, seedname)
     else
-      if (guiding_centres .and. .not. (param_input%gamma_only .and. use_bloch_phases)) &
+      if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found', stdout, seedname)
       lhasproj = .false.
       num_proj = num_wann
@@ -1157,7 +1160,7 @@ contains
                          proj_input, select_proj, spec_points, tran, verbose, wann_data, &
                          wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                         cp_pp, lsitesymmetry, use_bloch_phases, stdout)
+                         cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1203,6 +1206,7 @@ contains
     ! RS: symmetry-adapted Wannier functions
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: cp_pp, use_bloch_phases
+    logical, intent(in) :: gamma_only
 
 !   local variables
     integer :: i, nkp, loop, nat, nsp
@@ -1356,7 +1360,7 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', verbose%optimisation, '|'
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(verbose%length_unit), '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', driver%postproc_setup, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', param_input%gamma_only, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', gamma_only, '|'
     !YN: RS:
     if (lsitesymmetry) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using symmetry-adapted WF mode            :', lsitesymmetry, '|'
@@ -1776,9 +1780,9 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, proj_input, &
+  subroutine param_memory_estimate(atoms, kmesh_info, param_wannierise, proj_input, &
                                    verbose, w90_calcs, num_bands, num_kpts, num_proj, num_wann, &
-                                   stdout)
+                                   gamma_only, stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1791,7 +1795,6 @@ contains
 
     !data from parameters module
     type(w90_calculation_type), intent(in) :: w90_calcs
-    type(parameter_input_type), intent(in) :: param_input
     type(print_output_type), intent(in) :: verbose
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -1808,6 +1811,7 @@ contains
     !type(postw90_common_type), intent(in) :: pw90_common
     !type(boltzwann_type), intent(in) :: boltz
     !logical, intent(in) :: ispostw90 ! Are we running postw90?
+    logical, intent(in) :: gamma_only
 
 !   local variables
     real(kind=dp), parameter :: size_log = 1.0_dp
@@ -1898,7 +1902,7 @@ contains
       mem_dis1 = mem_dis1 + 5*num_bands*size_int                       !iwork
       mem_dis1 = mem_dis1 + num_bands*size_int                         !ifail
       mem_dis1 = mem_dis1 + num_bands*size_real                        !w
-      if (param_input%gamma_only) then
+      if (gamma_only) then
         mem_dis1 = mem_dis1 + (num_bands*(num_bands + 1))/2*size_real    !cap_r
         mem_dis1 = mem_dis1 + 8*num_bands*size_real                    !work
         mem_dis1 = mem_dis1 + num_bands*num_bands*size_real            !rz
@@ -1940,7 +1944,7 @@ contains
     mem_wan = mem_wan + (num_wann)*size_real                               !  'rave2'
     mem_wan = mem_wan + (3*num_wann)*size_real                            !  'rguide'
     mem_wan = mem_wan + (num_wann*num_wann)*size_cmplx                  !  'cz'
-    if (param_input%gamma_only) then
+    if (gamma_only) then
       mem_wan = mem_wan + num_wann*num_wann*kmesh_info%nntot*2*size_cmplx    ! m_w
       mem_wan = mem_wan + num_wann*num_wann*size_cmplx            ! uc_rot
       mem_wan = mem_wan + num_wann*num_wann*size_real             ! ur_rot
@@ -1985,7 +1989,7 @@ contains
         if (w90_calcs%disentanglement) &
           write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', &
           (mem_param + mem_dis - max(mem_dis1, mem_dis2) + mem_dis1)/(1024**2), ' Mb'
-        if (param_input%gamma_only) then
+        if (gamma_only) then
           write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan)/(1024**2), ' Mb'
         else
           write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', &
@@ -2013,8 +2017,8 @@ contains
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
                         param_wannierise, proj_input, tran, verbose, wann_data, wann_plot, &
                         w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
-                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, lhasproj, &
-                        lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
+                        lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2078,6 +2082,7 @@ contains
 
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: cp_pp
+    logical, intent(inout) :: gamma_only
     logical, intent(inout) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
@@ -2147,7 +2152,7 @@ contains
                        seedname, comm)
     end if
 
-    call comms_bcast(param_input%gamma_only, 1, stdout, seedname, comm)
+    call comms_bcast(gamma_only, 1, stdout, seedname, comm)
     call comms_bcast(dis_window%win_min, 1, stdout, seedname, comm)
     call comms_bcast(dis_window%win_max, 1, stdout, seedname, comm)
     call comms_bcast(dis_window%froz_min, 1, stdout, seedname, comm)

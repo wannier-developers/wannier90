@@ -44,9 +44,6 @@ module w90_param_types
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
     integer :: num_exclude_bands
 
-    logical :: gamma_only !overlap, kmesh, disentangle, wannierise, wannier_prog
-    !! Use the special Gamma-point routines
-
     real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
 
     ! dist_cutoff - only plot and transport - BGS w90 only

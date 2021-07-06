@@ -208,6 +208,7 @@ program wannier
   logical :: lhasproj
 
   logical :: use_bloch_phases, cp_pp, calc_only_A
+  logical :: gamma_only
 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
@@ -245,8 +246,8 @@ program wannier
                     param_wannierise, proj, input_proj, select_proj, spec_points, tran, verbose, &
                     wann_data, wann_plot, write_data, w90_calcs, eigval, real_lattice, &
                     recip_lattice, physics%bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, &
-                    num_proj, num_wann, eig_found, calc_only_A, cp_pp, lhasproj, .false., .false., &
-                    lsitesymmetry, use_bloch_phases, seedname, stdout)
+                    num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                    .false., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -279,18 +280,20 @@ program wannier
                      param_hamil, param_input, param_plot, param_wannierise, proj, input_proj, &
                      select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                      w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
-                     num_kpts, num_proj, num_wann, cp_pp, lsitesymmetry, use_bloch_phases, stdout)
+                     num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
+                     use_bloch_phases, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
     if (.not. driver%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, param_input, verbose, &
                                                      k_points%kpt_cart, recip_lattice, num_kpts, &
-                                                     seedname, stdout)
+                                                     gamma_only, seedname, stdout)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
-    call param_memory_estimate(atoms, kmesh_info, param_input, param_wannierise, input_proj, &
-                               verbose, w90_calcs, num_bands, num_kpts, num_proj, num_wann, stdout)
+    call param_memory_estimate(atoms, kmesh_info, param_wannierise, input_proj, verbose, &
+                               w90_calcs, num_bands, num_kpts, num_proj, num_wann, gamma_only, &
+                               stdout)
   end if !on_root
 
   if (dryrun) then
@@ -309,9 +312,9 @@ program wannier
                   kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
                   param_wannierise, input_proj, tran, verbose, wann_data, wann_plot, w90_calcs, &
                   eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
-                  num_kpts, num_proj, num_wann, eig_found, cp_pp, lhasproj, lsitesymmetry, &
-                  use_bloch_phases, seedname, stdout, w90comm)
-  if (param_input%gamma_only .and. num_nodes > 1) &
+                  num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, lhasproj, &
+                  lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
+  if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
   if (w90_calcs%transport .and. tran%read_ht) goto 3003
@@ -384,8 +387,7 @@ program wannier
   call overlap_read(kmesh_info, select_proj, sym, w90_calcs, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, verbose%timing_level, cp_pp, &
-                    param_input%gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                    w90comm)
+                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
     ' (sec)'
@@ -397,7 +399,7 @@ program wannier
     call dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                   eigval, recip_lattice, param_wannierise%omega%invariant, num_bands, num_kpts, &
-                  num_wann, param_input%gamma_only, lsitesymmetry, stdout, seedname, w90comm)
+                  num_wann, gamma_only, lsitesymmetry, stdout, seedname, w90comm)
     param_input%have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &
@@ -418,7 +420,7 @@ program wannier
   ! m_matrix* usually alloc'd in overlaps.F90, but not always
   if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
-  if (.not. param_input%gamma_only) then
+  if (.not. gamma_only) then
     call wann_main(atoms, dis_window, hmlg, kmesh_info, k_points, param_hamil, param_input, &
                    param_wannierise, sym, verbose, wann_data, w90_calcs, ham_k, ham_r, m_matrix, &
                    u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
