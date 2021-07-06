@@ -48,12 +48,12 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main(atoms, dis_window, hmlg, kmesh_info, k_points, param_hamil, param_input, &
-                       param_wannierise, sym, system, verbose, wann_data, w90_calcs, ham_k, ham_r, &
-                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
-                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, bands_plot_mode, &
-                       transport_mode, lsitesymmetry, seedname, stdout, comm)
+  subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
+                       param_input, param_wannierise, sym, system, verbose, wann_data, w90_calcs, &
+                       ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                       recip_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                       shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
+                       bands_plot_mode, transport_mode, lsitesymmetry, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -64,7 +64,8 @@ contains
     use wannier_param_types, only: param_wannierise_type, &
       w90_calculation_type, param_hamiltonian_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type
+      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
+      exclude_bands_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -84,6 +85,7 @@ contains
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
+    type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -702,9 +704,9 @@ contains
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
-        if (on_root) call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
-                                            k_points, num_kpts, dis_window, num_bands, num_wann, &
-                                            u_matrix, u_matrix_opt, m_matrix, mp_grid, &
+        if (on_root) call param_write_chkpt('postdis', excluded_bands, param_input, wann_data, &
+                                            kmesh_info, k_points, num_kpts, dis_window, num_bands, &
+                                            num_wann, u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, recip_lattice, &
                                             param_wannierise%omega%invariant, stdout, seedname)
       endif
@@ -3190,7 +3192,7 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, &
+  subroutine wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, param_input, &
                              param_wannierise, system, verbose, wann_data, w90_calcs, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, seedname, stdout, comm)
@@ -3204,7 +3206,8 @@ contains
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: param_wannierise_type, w90_calculation_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type
+      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
+      exclude_bands_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90commtype
@@ -3218,6 +3221,7 @@ contains
     type(w90commtype), intent(in) :: comm
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(parameter_input_type), intent(in) :: param_input
+    type(exclude_bands_type), intent(in) :: excluded_bands
     type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
     type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
@@ -3514,9 +3518,9 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
-                               dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice, &
+        call param_write_chkpt('postdis', excluded_bands, param_input, wann_data, kmesh_info, &
+                               k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
+                               u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
                                param_wannierise%omega%invariant, stdout, seedname)
       endif
 

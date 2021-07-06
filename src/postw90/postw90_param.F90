@@ -191,7 +191,8 @@ module pw90_param_methods
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
-    fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type
+    fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type, &
+    exclude_bands_type
   use w90_param_methods
   use pw90_parameters
 
@@ -229,9 +230,9 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, system, verbose, wann_data, kmesh_data, k_points, &
-                                num_kpts, dis_window, fermi, atoms, num_bands, &
-                                num_wann, eigval, mp_grid, real_lattice, &
+  subroutine param_postw90_read(param_input, system, excluded_bands, verbose, wann_data, &
+                                kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
+                                num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
@@ -254,6 +255,7 @@ contains
     type(print_output_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
     type(w90_system_type), intent(inout) :: system
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
@@ -304,9 +306,10 @@ contains
                           stdout, seedname)
     call param_read_oper(postw90_oper, stdout, seedname)
     call param_read_num_wann(num_wann, stdout, seedname)
-    call param_read_exclude_bands(param_input, stdout, seedname) !for read_chkpt
+    call param_read_exclude_bands(excluded_bands, stdout, seedname) !for read_chkpt
     call param_read_num_bands(pw90_common%effective_model, library, &
-                              param_input, num_bands, num_wann, .false., stdout, seedname)
+                              excluded_bands%num_exclude_bands, num_bands, num_wann, .false., &
+                              stdout, seedname)
     disentanglement = (num_bands > num_wann)
     call param_read_devel(verbose%devel_flag, stdout, seedname)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout, seedname)
@@ -1895,17 +1898,14 @@ contains
 
   end subroutine param_postw90_write
 
-  subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_window, fermi, &
-                                atoms, eigval, spec_points, dos_data, berry, proj_input, &
+  subroutine param_pw90_dealloc(excluded_bands, wann_data, kmesh_data, k_points, dis_window, &
+                                fermi, atoms, eigval, spec_points, dos_data, berry, proj_input, &
                                 stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     !data from parameters module
-    !type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
-    !type(param_plot_type), intent(inout) :: param_plot
-    !type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(input_proj_type), intent(inout) :: proj_input
@@ -1921,7 +1921,7 @@ contains
 
     integer :: ierr
 
-    call param_dealloc(param_input, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(excluded_bands, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)

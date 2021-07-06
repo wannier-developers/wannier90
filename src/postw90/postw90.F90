@@ -103,6 +103,7 @@ program postw90
   type(parameter_input_type) :: param_input
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
+  type(exclude_bands_type) :: excluded_bands
   type(wannier_data_type) :: wann_data
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
@@ -243,9 +244,9 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(param_input, system, verbose, wann_data, kmesh_data, k_points, &
-                            num_kpts, dis_window, fermi, atoms, num_bands, num_wann, eigval, &
-                            mp_grid, real_lattice, recip_lattice, spec_points, &
+    call param_postw90_read(param_input, system, excluded_bands, verbose, wann_data, kmesh_data, &
+                            k_points, num_kpts, dis_window, fermi, atoms, num_bands, num_wann, &
+                            eigval, mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
@@ -315,10 +316,10 @@ program postw90
     ! both disentanglement and maximal localization, etc.)
     !
     if (on_root) then
-      call param_read_chkpt(dis_window, kmesh_info, k_points, param_input, wann_data, m_matrix, &
-                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, omega_invariant, &
-                            mp_grid, num_bands, num_kpts, num_wann, checkpoint, .true., seedname, &
-                            stdout)
+      call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, param_input, &
+                            wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                            recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
+                            num_wann, checkpoint, .true., seedname, stdout)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes

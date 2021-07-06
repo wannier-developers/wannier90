@@ -40,14 +40,14 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
-                        kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj, proj_input, select_proj, spec_points, system, &
-                        tran, verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
-                        real_lattice, recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
-                        num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
-                        lhasproj, library, library_param_read_first_pass, lsitesymmetry, &
-                        use_bloch_phases, seedname, stdout)
+  subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+                        fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
+                        param_input, param_plot, param_wannierise, proj, proj_input, select_proj, &
+                        spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
+                        w90_calcs, eigval, real_lattice, recip_lattice, bohr, symmetrize_eps, &
+                        mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
+                        cp_pp, gamma_only, lhasproj, library, library_param_read_first_pass, &
+                        lsitesymmetry, use_bloch_phases, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -65,6 +65,7 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(print_output_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
@@ -133,9 +134,9 @@ contains
       call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
                             stdout, seedname)
       call param_read_num_wann(num_wann, stdout, seedname)
-      call param_read_exclude_bands(param_input, stdout, seedname)
-      call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
-                                library_param_read_first_pass, stdout, seedname)
+      call param_read_exclude_bands(excluded_bands, stdout, seedname)
+      call param_read_num_bands(.false., library, excluded_bands%num_exclude_bands, num_bands, &
+                                num_wann, library_param_read_first_pass, stdout, seedname)
       w90_calcs%disentanglement = (num_bands > num_wann)
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_wannierise(param_wannierise, num_wann, write_data%ccentres_frac, &
@@ -179,7 +180,7 @@ contains
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%control%guiding_centres, &
                                   param_wannierise%proj_site, proj_input, select_proj, num_proj, &
-                                  param_input, atoms, recip_lattice, num_wann, gamma_only, &
+                                  atoms, recip_lattice, num_wann, gamma_only, &
                                   system%spinors, library, bohr, stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%constrain%slwf_constrain) then
@@ -995,7 +996,7 @@ contains
 
   subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, proj_input, select_proj, num_proj, &
-                                    param_input, atoms, recip_lattice, num_wann, gamma_only, &
+                                    atoms, recip_lattice, num_wann, gamma_only, &
                                     spinors, library, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -1006,7 +1007,6 @@ contains
     type(input_proj_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
     integer, intent(inout) :: num_proj
-    type(parameter_input_type), intent(in) :: param_input
     type(atom_data_type), intent(in) :: atoms
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
@@ -1604,15 +1604,15 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(atoms, band_plot, dis_data, dis_window, kmesh_data, k_points, &
-                               param_input, param_wannierise, proj, proj_input, spec_points, &
+  subroutine param_w90_dealloc(atoms, band_plot, dis_data, dis_window, excluded_bands, kmesh_data, &
+                               k_points, param_wannierise, proj, proj_input, spec_points, &
                                wann_data, wann_plot, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
     implicit none
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(band_plot_type), intent(inout) :: band_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
@@ -1639,7 +1639,7 @@ contains
 !   passed variables
     integer :: ierr
 
-    call param_dealloc(param_input, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(excluded_bands, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(wann_plot%plot_list)) then
       deallocate (wann_plot%plot_list, stat=ierr)
@@ -1700,7 +1700,7 @@ contains
   end subroutine param_w90_dealloc
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt, param_input, wann_data, kmesh_info, &
+  subroutine param_write_chkpt(chkpt, excluded_bands, param_input, wann_data, kmesh_info, &
                                k_points, num_kpts, dis_window, num_bands, &
                                num_wann, u_matrix, u_matrix_opt, m_matrix, mp_grid, real_lattice, &
                                recip_lattice, omega_invariant, stdout, seedname)
@@ -1721,6 +1721,7 @@ contains
     character(len=*), intent(in) :: chkpt
     !data from parameters module
     type(parameter_input_type), intent(in) :: param_input
+    type(exclude_bands_type), intent(in) :: excluded_bands
     type(wannier_data_type), intent(in) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -1753,8 +1754,8 @@ contains
 
     write (chk_unit) header                                   ! Date and time
     write (chk_unit) num_bands                                ! Number of bands
-    write (chk_unit) param_input%num_exclude_bands            ! Number of excluded bands
-    write (chk_unit) (param_input%exclude_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
+    write (chk_unit) excluded_bands%num_exclude_bands         ! Number of excluded bands
+    write (chk_unit) (excluded_bands%exclude_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
@@ -2018,12 +2019,13 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
-                        kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj_input, system, tran, verbose, wann_data, wann_plot, &
-                        w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
-                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
-                        lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+  subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+                        fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
+                        param_input, param_plot, param_wannierise, proj_input, system, tran, &
+                        verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
+                        recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
+                        num_wann, eig_found, cp_pp, gamma_only, lhasproj, lsitesymmetry, &
+                        use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2039,6 +2041,7 @@ contains
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(print_output_type), intent(inout) :: verbose
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
@@ -2146,15 +2149,15 @@ contains
     !call comms_bcast(dos_data%smr_fixed_en_width, 1)
     !call comms_bcast(dos_data%adpt_smr_fac, 1)
     !call comms_bcast(dos_data%num_project, 1)
-    call comms_bcast(param_input%num_exclude_bands, 1, stdout, seedname, comm)
-    if (param_input%num_exclude_bands > 0) then
+    call comms_bcast(excluded_bands%num_exclude_bands, 1, stdout, seedname, comm)
+    if (excluded_bands%num_exclude_bands > 0) then
       if (.not. on_root) then
-        allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
+        allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating exclude_bands in param_dist', stdout, seedname)
       endif
 
-      call comms_bcast(param_input%exclude_bands(1), param_input%num_exclude_bands, stdout, &
+      call comms_bcast(excluded_bands%exclude_bands(1), excluded_bands%num_exclude_bands, stdout, &
                        seedname, comm)
     end if
 

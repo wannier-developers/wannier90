@@ -618,7 +618,7 @@ contains
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(kmesh_info, param_input, proj_input, verbose, kpt_latt, real_lattice, &
+  subroutine kmesh_write(excluded_bands, kmesh_info, proj_input, verbose, kpt_latt, real_lattice, &
                          recip_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -650,12 +650,12 @@ contains
     !===================================================================
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type, &
-      input_proj_type, print_output_type
+    use w90_param_types, only: kmesh_info_type, param_kmesh_type, &
+      input_proj_type, print_output_type, exclude_bands_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(input_proj_type), intent(in) :: proj_input
@@ -773,10 +773,10 @@ contains
 
     !states to exclude
     write (nnkpout, '(a)') 'begin exclude_bands'
-    write (nnkpout, '(i4)') param_input%num_exclude_bands
-    if (param_input%num_exclude_bands > 0) then
-      do i = 1, param_input%num_exclude_bands
-        write (nnkpout, '(i4)') param_input%exclude_bands(i)
+    write (nnkpout, '(i4)') excluded_bands%num_exclude_bands
+    if (excluded_bands%num_exclude_bands > 0) then
+      do i = 1, excluded_bands%num_exclude_bands
+        write (nnkpout, '(i4)') excluded_bands%exclude_bands(i)
       end do
     endif
     write (nnkpout, '(a)') 'end exclude_bands'

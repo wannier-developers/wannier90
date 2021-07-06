@@ -70,18 +70,14 @@ module w90_param_types
     !! Controls the verbosity of the output
     integer :: timing_level
     integer :: optimisation !wannierise and disentangle
+    character(len=20) :: length_unit
+    !! Units for length
 
     integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
 
-    character(len=20) :: length_unit
-    !! Units for length
-
     character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common
-
-    integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
-    integer :: num_exclude_bands
 
     logical :: gamma_only !overlap, kmesh, disentangle, wannierise, wannier_prog
     !! Use the special Gamma-point routines
@@ -341,37 +337,39 @@ contains
     if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero', stdout, seedname)
   end subroutine param_read_num_wann
 
-  subroutine param_read_exclude_bands(param_input, stdout, seedname)
+  subroutine param_read_exclude_bands(excluded_bands, stdout, seedname)
     use w90_io, only: io_error
     implicit none
 
-    type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     integer :: ierr
     logical :: found
 
-    param_input%num_exclude_bands = 0
-    call param_get_range_vector(stdout, seedname, 'exclude_bands', found, param_input%num_exclude_bands, lcount=.true.)
+    excluded_bands%num_exclude_bands = 0
+    call param_get_range_vector(stdout, seedname, 'exclude_bands', found, &
+                                excluded_bands%num_exclude_bands, lcount=.true.)
     if (found) then
-      if (param_input%num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
-      if (allocated(param_input%exclude_bands)) deallocate (param_input%exclude_bands)
-      allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
+      if (excluded_bands%num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
+      if (allocated(excluded_bands%exclude_bands)) deallocate (excluded_bands%exclude_bands)
+      allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating exclude_bands in param_read', stdout, seedname)
       call param_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                  param_input%num_exclude_bands, .false., param_input%exclude_bands)
-      if (any(param_input%exclude_bands < 1)) &
+                                  excluded_bands%num_exclude_bands, .false., &
+                                  excluded_bands%exclude_bands)
+      if (any(excluded_bands%exclude_bands < 1)) &
         call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
     end if
   end subroutine param_read_exclude_bands
 
-  subroutine param_read_num_bands(pw90_effective_model, library, param_input, &
-                                  num_bands, num_wann, library_param_read_first_pass, stdout, seedname)
+  subroutine param_read_num_bands(pw90_effective_model, library, num_exclude_bands, num_bands, &
+                                  num_wann, library_param_read_first_pass, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, library
-    type(parameter_input_type), intent(in) :: param_input
+    integer, intent(in) :: num_exclude_bands
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -391,7 +389,7 @@ contains
     end if
     ! GP: I subtract it here, but only the first time when I pass the total number of bands
     ! In later calls, I need to pass instead num_bands already subtracted.
-    if (library .and. library_param_read_first_pass) num_bands = num_bands - param_input%num_exclude_bands
+    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
     if (.not. pw90_effective_model) then
       if (found .and. num_bands < num_wann) then
         write (stdout, *) 'num_bands', num_bands
@@ -1544,8 +1542,8 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(param_input, wann_data, input_proj, kmesh_data, k_points, dis_window, &
-                           atoms, eigval, spec_points, stdout, seedname)
+  subroutine param_dealloc(excluded_bands, wann_data, input_proj, kmesh_data, k_points, &
+                           dis_window, atoms, eigval, spec_points, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -1556,7 +1554,7 @@ contains
     implicit none
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(input_proj_type), intent(inout) :: input_proj
     type(param_kmesh_type), intent(inout) :: kmesh_data
@@ -1658,8 +1656,8 @@ contains
       deallocate (input_proj%proj%zona, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc', stdout, seedname)
     end if
-    if (allocated(param_input%exclude_bands)) then
-      deallocate (param_input%exclude_bands, stat=ierr)
+    if (allocated(excluded_bands%exclude_bands)) then
+      deallocate (excluded_bands%exclude_bands, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating exclude_bands in param_dealloc', stdout, seedname)
     end if
     if (allocated(wann_data%centres)) then
@@ -1754,10 +1752,10 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(dis_data, kmesh_info, k_points, param_input, wann_data, m_matrix, &
-                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
-                              omega_invariant, mp_grid, num_bands, num_kpts, num_wann, checkpoint, &
-                              ispostw90, seedname, stdout)
+  subroutine param_read_chkpt(dis_data, excluded_bands, kmesh_info, k_points, param_input, &
+                              wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                              recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
+                              num_wann, checkpoint, ispostw90, seedname, stdout)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1777,6 +1775,7 @@ contains
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
+    type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -1805,7 +1804,7 @@ contains
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
-    integer :: tmp_excl_bands(1:param_input%num_exclude_bands), tmp_mp_grid(1:3)
+    integer :: tmp_excl_bands(1:excluded_bands%num_exclude_bands), tmp_mp_grid(1:3)
 
     write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
@@ -1820,11 +1819,11 @@ contains
     read (chk_unit) ntmp                           ! Number of bands
     if (ntmp .ne. num_bands) call io_error('param_read_chk: Mismatch in num_bands', stdout, seedname)
     read (chk_unit) ntmp                           ! Number of excluded bands
-    if (ntmp .ne. param_input%num_exclude_bands) &
+    if (ntmp .ne. excluded_bands%num_exclude_bands) &
       call io_error('param_read_chk: Mismatch in num_exclude_bands', stdout, seedname)
-    read (chk_unit) (tmp_excl_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
-    do i = 1, param_input%num_exclude_bands
-      if (tmp_excl_bands(i) .ne. param_input%exclude_bands(i)) &
+    read (chk_unit) (tmp_excl_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
+    do i = 1, excluded_bands%num_exclude_bands
+      if (tmp_excl_bands(i) .ne. excluded_bands%exclude_bands(i)) &
         call io_error('param_read_chk: Mismatch in exclude_bands', stdout, seedname)
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice
