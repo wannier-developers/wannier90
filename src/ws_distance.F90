@@ -66,7 +66,7 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
+  subroutine ws_translate_dist(ws_distance, stdout, seedname, cutoff, num_wann, &
                                wannier_centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
@@ -80,13 +80,13 @@ contains
 
     use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: real_space_type
 
     implicit none
 
     type(ws_distance_type), intent(inout) :: ws_distance
 !   from w90_parameters
-    type(parameter_input_type), intent(in) :: param_input
+    type(real_space_type), intent(in) :: cutoff
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     !integer, intent(in) :: iprint
@@ -149,7 +149,8 @@ contains
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
                        ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
-                       real_lattice, param_input%ws_search_size, param_input%ws_distance_tol, stdout, seedname)
+                       real_lattice, cutoff%ws_search_size, cutoff%ws_distance_tol, &
+                       stdout, seedname)
           do ideg = 1, ws_distance%ndeg(iw, jw, ir)
             ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
             tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)

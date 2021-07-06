@@ -192,7 +192,7 @@ module pw90_param_methods
   use w90_param_types, only: print_output_type, parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type, &
-    exclude_bands_type
+    exclude_bands_type, real_space_type
   use w90_param_methods
   use pw90_parameters
 
@@ -230,7 +230,7 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, system, excluded_bands, verbose, wann_data, &
+  subroutine param_postw90_read(rs_region, system, excluded_bands, verbose, wann_data, &
                                 kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
                                 num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
@@ -253,7 +253,7 @@ contains
 
     !data from parameters module
     type(print_output_type), intent(inout) :: verbose
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
@@ -332,7 +332,7 @@ contains
     call param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
     call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, write_data%smear, &
                         dos_plot, stdout, seedname)
-    call param_read_ws_data(param_input, stdout, seedname)
+    call param_read_ws_data(rs_region, stdout, seedname)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, eig_found, eigval, &
                             library, .false., num_bands, num_kpts, stdout, seedname)

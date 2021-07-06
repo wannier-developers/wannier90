@@ -82,11 +82,12 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, tran, &
-                       verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, &
-                       eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
-                       mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                       rpt_origin, bands_plot_mode, lsitesymmetry, seedname, stdout)
+  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, &
+                       rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
+                       u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                       num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, lsitesymmetry, &
+                       seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
 
@@ -95,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: parameter_input_type, wannier_data_type, print_output_type, &
-      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
+      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_type
     use wannier_param_types, only: w90_calculation_type, transport_type, &
       param_hamiltonian_type
 
@@ -103,7 +104,8 @@ contains
 
     ! arguments
     type(transport_type), intent(inout)         :: tran
-    type(parameter_input_type), intent(inout)   :: param_input
+    type(parameter_input_type), intent(in)      :: param_input
+    type(real_space_type), intent(inout)        :: rs_region
     type(print_output_type), intent(in)         :: verbose
     type(w90_calculation_type), intent(in)      :: w90_calcs
     type(wannier_data_type), intent(in)         :: wann_data
@@ -179,7 +181,7 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
+        call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
@@ -191,10 +193,10 @@ contains
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
                                                           verbose%timing_level, seedname)
-        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+        call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
                             verbose%timing_level, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
+        call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
         call tran_get_ht(fermi, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
@@ -208,7 +210,7 @@ contains
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
+        call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
@@ -220,10 +222,10 @@ contains
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
                                                           verbose%timing_level, seedname)
-        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+        call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
                             verbose%timing_level, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
+        call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
@@ -231,7 +233,7 @@ contains
         call tran_find_integral_signatures(signatures, num_G, param_input, verbose, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            wannier_centres_translated, stdout, seedname)
-        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
+        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, rs_region, &
                                verbose, w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, &
                                nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, &
@@ -242,7 +244,7 @@ contains
 
         call tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
-        call tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
+        call tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi, k_points, num_wann, tran, &
                                     verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
@@ -281,7 +283,7 @@ contains
   end subroutine tran_main
 
   !==================================================================!
-  subroutine tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+  subroutine tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, timing_level, &
                             stdout, seedname)
     !==================================================================!
@@ -290,7 +292,7 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: real_space_type
 
     implicit none
 
@@ -310,7 +312,7 @@ contains
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(real_space_type), intent(in) :: rs_region
 
     character(len=50), intent(in)  :: seedname
 
@@ -326,7 +328,7 @@ contains
     ! two_dim_vec - the other two lattice vectors
     j = 0
     do i = 1, 3
-      if (abs(abs(real_lattice(param_input%one_dim_dir, i)) &
+      if (abs(abs(real_lattice(rs_region%one_dim_dir, i)) &
               - sqrt(dot_product(real_lattice(:, i), real_lattice(:, i)))) .lt. eps8) then
         one_dim_vec = i
         j = j + 1
@@ -390,7 +392,7 @@ contains
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
+  subroutine tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                  irvec_max, stdout, seedname)
     !==================================================================!
@@ -398,7 +400,7 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: io_stopwatch, stdout
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: parameter_input_type, print_output_type
+    use w90_param_types, only: print_output_type, real_space_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -415,7 +417,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 
@@ -435,15 +437,15 @@ contains
     !
     !irvec_max = nrpts_one_dim/2 ! now passed as arg
     ! maximum possible param_input%dist_cutoff
-    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(param_input%one_dim_dir, one_dim_vec)) &
+    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(rs_region%one_dim_dir, one_dim_vec)) &
            /2.0_dp
-    if (param_input%dist_cutoff .gt. dist) then
-      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'param_input%dist_cutoff', param_input%dist_cutoff, &
+    if (rs_region%dist_cutoff .gt. dist) then
+      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'dist_cutoff', rs_region%dist_cutoff, &
         trim(verbose%length_unit), 'is too large'
-      param_input%dist_cutoff = dist
+      rs_region%dist_cutoff = dist
       ! aam_2012-04-13
-      param_input%dist_cutoff_hc = dist
-      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', param_input%dist_cutoff, &
+      rs_region%dist_cutoff_hc = dist
+      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', rs_region%dist_cutoff, &
         trim(verbose%length_unit)
     end if
 
@@ -453,14 +455,14 @@ contains
     end do
 
     ! apply param_input%dist_cutoff first
-    if (index(param_input%dist_cutoff_mode, 'one_dim') > 0) then
+    if (index(rs_region%dist_cutoff_mode, 'one_dim') > 0) then
       do i = 1, num_wann
         do j = 1, num_wann
-          dist_ij_vec(param_input%one_dim_dir) = wannier_centres_translated(param_input%one_dim_dir, i) &
-                                                 - wannier_centres_translated(param_input%one_dim_dir, j)
+          dist_ij_vec(rs_region%one_dim_dir) = wannier_centres_translated(rs_region%one_dim_dir, i) &
+                                               - wannier_centres_translated(rs_region%one_dim_dir, j)
           do n1 = -irvec_max, irvec_max
-            dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) &
-                                                + shift_vec(param_input%one_dim_dir, n1)
+            dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
+                                              + shift_vec(rs_region%one_dim_dir, n1)
             !
             !MS: Add special case for lcr: We must not cut the elements that are within
             !    param_input%dist_cutoff under PBC's (single kpt assumed) in order to build
@@ -468,20 +470,20 @@ contains
             !
             if ((index(tran%mode, 'lcr') > 0) .and. &
                 !~                    (tran%num_cell_ll .eq. 1)        .and. &
-                (abs(dist_vec(param_input%one_dim_dir)) .gt. param_input%dist_cutoff)) then
+                (abs(dist_vec(rs_region%one_dim_dir)) .gt. rs_region%dist_cutoff)) then
               ! Move to right
-              dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) &
-                                                  + real_lattice(param_input%one_dim_dir, one_dim_vec)
+              dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
+                                                + real_lattice(rs_region%one_dim_dir, one_dim_vec)
               ! Move to left
-              if (abs(dist_vec(param_input%one_dim_dir)) .gt. param_input%dist_cutoff) &
-                dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) &
-                                                    - real_lattice(param_input%one_dim_dir, one_dim_vec)
+              if (abs(dist_vec(rs_region%one_dim_dir)) .gt. rs_region%dist_cutoff) &
+                dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
+                                                  - real_lattice(rs_region%one_dim_dir, one_dim_vec)
             endif
             !
             !end MS
             !
-            dist = abs(dist_vec(param_input%one_dim_dir))
-            if (dist .gt. param_input%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+            dist = abs(dist_vec(rs_region%one_dim_dir))
+            if (dist .gt. rs_region%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
           end do
         end do
       end do
@@ -497,12 +499,12 @@ contains
             !
             if ((index(tran%mode, 'lcr') > 0) .and. &
                 !~                   (tran%num_cell_ll .eq. 1)         .and. &
-                (dist .gt. param_input%dist_cutoff)) then
+                (dist .gt. rs_region%dist_cutoff)) then
               ! Move to right
               dist_vec(:) = dist_ij_vec(:) + real_lattice(:, one_dim_vec)
               dist = sqrt(dot_product(dist_vec, dist_vec))
               ! Move to left
-              if (dist .gt. param_input%dist_cutoff) then
+              if (dist .gt. rs_region%dist_cutoff) then
                 dist_vec(:) = dist_ij_vec(:) - real_lattice(:, one_dim_vec)
                 dist = sqrt(dot_product(dist_vec, dist_vec))
               endif
@@ -510,7 +512,7 @@ contains
             !
             ! End MS
             !
-            if (dist .gt. param_input%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+            if (dist .gt. rs_region%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
           end do
         end do
       end do
@@ -527,7 +529,7 @@ contains
     do n1 = -irvec_max, irvec_max
       hr_tmp(:, :) = abs(hr_one_dim(:, :, n1))
       hr_max = maxval(hr_tmp)
-      if (hr_max .gt. param_input%hr_cutoff) then
+      if (hr_max .gt. rs_region%hr_cutoff) then
         if (abs(n1) .gt. num_pl) num_pl = abs(n1)
       else
         hr_one_dim(:, :, n1) = 0.0_dp
@@ -549,7 +551,7 @@ contains
     do n1 = -num_pl, num_pl
       do i = 1, num_wann
         do j = 1, num_wann
-          if (abs(hr_one_dim(j, i, n1)) .lt. param_input%hr_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+          if (abs(hr_one_dim(j, i, n1)) .lt. rs_region%hr_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
         end do
       end do
     end do
@@ -1952,7 +1954,7 @@ contains
   end subroutine tran_find_integral_signatures
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
+  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, rs_region, &
                                verbose, w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, &
                                nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, &
@@ -1971,8 +1973,8 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, wannier_data_type, atom_data_type, &
-      print_output_type
+    use w90_param_types, only: wannier_data_type, atom_data_type, &
+      print_output_type, real_space_type
     use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
@@ -1999,7 +2001,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     type(atom_data_type), intent(in) :: atoms
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
     type(wannier_data_type), intent(in) :: wann_data
@@ -2051,15 +2053,15 @@ contains
     !conduction direction (coord(1)) and the two perpendicular directions
     !(coord(2),coord(3)), such that a right-handed set is formed
     !
-    if (param_input%one_dim_dir .eq. 1) then
+    if (rs_region%one_dim_dir .eq. 1) then
       coord(1) = 1
       coord(2) = 2
       coord(3) = 3
-    elseif (param_input%one_dim_dir .eq. 2) then
+    elseif (rs_region%one_dim_dir .eq. 2) then
       coord(1) = 2
       coord(2) = 3
       coord(3) = 1
-    elseif (param_input%one_dim_dir .eq. 3) then
+    elseif (rs_region%one_dim_dir .eq. 3) then
       coord(1) = 3
       coord(2) = 1
       coord(3) = 2
@@ -2343,10 +2345,10 @@ contains
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+      call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                           one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
                           stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
+      call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
                                wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                irvec_max, stdout, seedname)
       write (stdout, *) ' '
@@ -2484,8 +2486,8 @@ contains
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
     PL_max_val = minval(wannier_centres_translated(coord(1), tran_sorted_idx(tran%num_ll + 1:tran%num_ll + num_wf_group1))) &
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
-    if ((param_input%dist_cutoff .lt. PL_min_val) .or. (param_input%dist_cutoff .gt. PL_max_val)) then
-      write (stdout, '(a)') ' WARNING: Expected param_input%dist_cutoff to be a PL length, I think this'
+    if ((rs_region%dist_cutoff .lt. PL_min_val) .or. (rs_region%dist_cutoff .gt. PL_max_val)) then
+      write (stdout, '(a)') ' WARNING: Expected dist_cutoff to be a PL length, I think this'
       write (stdout, '(2(a,f10.6),a)') ' WARNING: is somewhere between ', PL_min_val, ' and ', PL_max_val, ' Ang'
       pl_warning = .true.
     endif
@@ -3283,7 +3285,7 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
+  subroutine tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi, k_points, num_wann, tran, &
                                     verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
@@ -3299,8 +3301,8 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, k_point_type, fermi_data_type, &
-      print_output_type
+    use w90_param_types, only: k_point_type, fermi_data_type, &
+      print_output_type, real_space_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -3333,7 +3335,7 @@ contains
 
     type(fermi_data_type), intent(in) :: fermi
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 
@@ -3573,15 +3575,15 @@ contains
     hC = 0.0_dp
     !
     band_size = 0
-    if (param_input%dist_cutoff_hc .ne. param_input%dist_cutoff) then
-      param_input%dist_cutoff = param_input%dist_cutoff_hc
-      write (stdout, *) 'Applying param_input%dist_cutoff_hc to Hamiltonian for construction of hC'
+    if (rs_region%dist_cutoff_hc .ne. rs_region%dist_cutoff) then
+      rs_region%dist_cutoff = rs_region%dist_cutoff_hc
+      write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+      call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                           one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
                           stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, param_input, verbose, mp_grid, num_wann, &
+      call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
                                wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
                                irvec_max, stdout, seedname)
     endif
@@ -3656,7 +3658,7 @@ contains
       do i = 1, tran%num_ll
         do j = 1, tran%num_ll
           if (abs(hL1(i, j)) .gt. 0.0_dp) then
-            if (index(param_input%dist_cutoff_mode, 'one_dim') .gt. 0) then
+            if (index(rs_region%dist_cutoff_mode, 'one_dim') .gt. 0) then
               dist = abs(wannier_centres_translated(coord(1), tran_sorted_idx(i)) &
                          - wannier_centres_translated(coord(1), tran_sorted_idx(j + tran%num_ll)))
             else
@@ -3667,7 +3669,7 @@ contains
             PL_length = max(PL_length, dist)
           endif
           if (abs(hR1(i, j)) .gt. 0.0_dp) then
-            if (index(param_input%dist_cutoff_mode, 'one_dim') .gt. 0) then
+            if (index(rs_region%dist_cutoff_mode, 'one_dim') .gt. 0) then
               dist = abs(wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - 2*tran%num_ll + i)) &
                          - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - tran%num_ll + j)))
             else

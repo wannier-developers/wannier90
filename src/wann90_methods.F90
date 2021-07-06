@@ -42,7 +42,7 @@ contains
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                        param_input, param_plot, param_wannierise, proj, proj_input, select_proj, &
+                        param_plot, param_wannierise, proj, proj_input, rs_region, select_proj, &
                         spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
                         w90_calcs, eigval, real_lattice, recip_lattice, bohr, symmetrize_eps, &
                         mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
@@ -64,8 +64,8 @@ contains
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(print_output_type), intent(inout) :: verbose
-    type(parameter_input_type), intent(inout) :: param_input
     type(exclude_bands_type), intent(inout) :: excluded_bands
+    type(real_space_type), intent(inout) :: rs_region
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
@@ -129,7 +129,7 @@ contains
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_w90_calcs(w90_calcs, stdout, seedname)
     call param_read_transport(w90_calcs%transport, tran, driver%restart, stdout, seedname)
-    call param_read_dist_cutoff(param_input, stdout, seedname)
+    call param_read_dist_cutoff(rs_region, stdout, seedname)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
                             stdout, seedname)
@@ -156,9 +156,9 @@ contains
                                gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
-    call param_read_one_dim(w90_calcs, band_plot, param_input, write_data%one_dim_axis, &
+    call param_read_one_dim(w90_calcs, band_plot, rs_region, write_data%one_dim_axis, &
                             tran%read_ht, stdout, seedname)
-    call param_read_ws_data(param_input, stdout, seedname) !ws_search etc
+    call param_read_ws_data(rs_region, stdout, seedname) !ws_search etc
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
@@ -196,7 +196,7 @@ contains
       param_wannierise%omega%total = -999.0_dp
       param_wannierise%omega%tilde = -999.0_dp
       param_wannierise%omega%invariant = -999.0_dp
-      param_input%have_disentangled = .false.
+      !param_input%have_disentangled = .false.
       call param_read_final_alloc(w90_calcs%disentanglement, dis_window, &
                                   wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
     endif
@@ -339,30 +339,30 @@ contains
 
   end subroutine param_read_transport
 
-  subroutine param_read_dist_cutoff(param_input, stdout, seedname)
+  subroutine param_read_dist_cutoff(region, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: region
     character(len=50), intent(in)  :: seedname
 
     logical :: found
 
-    param_input%dist_cutoff_mode = 'three_dim'
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, c_value=param_input%dist_cutoff_mode)
-    if ((index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0) &
-        .and. (index(param_input%dist_cutoff_mode, 'two_dim') .eq. 0) &
-        .and. (index(param_input%dist_cutoff_mode, 'one_dim') .eq. 0)) &
+    region%dist_cutoff_mode = 'three_dim'
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, c_value=region%dist_cutoff_mode)
+    if ((index(region%dist_cutoff_mode, 'three_dim') .eq. 0) &
+        .and. (index(region%dist_cutoff_mode, 'two_dim') .eq. 0) &
+        .and. (index(region%dist_cutoff_mode, 'one_dim') .eq. 0)) &
       call io_error('Error: dist_cutoff_mode not recognised', stdout, seedname)
 
-    param_input%dist_cutoff = 1000.0_dp
-    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, r_value=param_input%dist_cutoff)
+    region%dist_cutoff = 1000.0_dp
+    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, r_value=region%dist_cutoff)
 
-    param_input%dist_cutoff_hc = param_input%dist_cutoff
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
+    region%dist_cutoff_hc = region%dist_cutoff
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, r_value=region%dist_cutoff_hc)
 
-    param_input%hr_cutoff = 0.0_dp
-    call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=param_input%hr_cutoff)
+    region%hr_cutoff = 0.0_dp
+    call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=region%hr_cutoff)
 
   end subroutine param_read_dist_cutoff
 
@@ -846,13 +846,14 @@ contains
     endif
   end subroutine param_read_fermi_surface
 
-  subroutine param_read_one_dim(w90_calcs, band_plot, param_input, one_dim_axis, tran_read_ht, stdout, seedname)
+  subroutine param_read_one_dim(w90_calcs, band_plot, region, one_dim_axis, tran_read_ht, &
+                                stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(band_plot_type), intent(in) :: band_plot
-    type(parameter_input_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: region
     character(len=*), intent(out) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
     character(len=50), intent(in)  :: seedname
@@ -861,16 +862,16 @@ contains
 
     one_dim_axis = 'none'
     call param_get_keyword(stdout, seedname, 'one_dim_axis', found, c_value=one_dim_axis)
-    param_input%one_dim_dir = 0
-    if (index(one_dim_axis, 'x') > 0) param_input%one_dim_dir = 1
-    if (index(one_dim_axis, 'y') > 0) param_input%one_dim_dir = 2
-    if (index(one_dim_axis, 'z') > 0) param_input%one_dim_dir = 3
+    region%one_dim_dir = 0
+    if (index(one_dim_axis, 'x') > 0) region%one_dim_dir = 1
+    if (index(one_dim_axis, 'y') > 0) region%one_dim_dir = 2
+    if (index(one_dim_axis, 'z') > 0) region%one_dim_dir = 3
     if (w90_calcs%transport .and. .not. tran_read_ht .and. &
-        (param_input%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised', stdout, seedname)
+        (region%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised', stdout, seedname)
     if (w90_calcs%bands_plot .and. (index(band_plot%plot_mode, 'cut') .ne. 0) .and. &
         ((band_plot%plot_dim .ne. 3) .or. &
-         (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
-        (param_input%one_dim_dir .eq. 0)) &
+         (index(region%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
+        (region%one_dim_dir .eq. 0)) &
       call io_error('Error: one_dim_axis not recognised', stdout, seedname)
 
   end subroutine param_read_one_dim
@@ -1138,8 +1139,8 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, &
-                         k_points, param_hamil, param_input, param_plot, param_wannierise, proj, &
-                         proj_input, select_proj, spec_points, tran, verbose, wann_data, &
+                         k_points, param_hamil, param_plot, param_wannierise, proj, proj_input, &
+                         rs_region, select_proj, spec_points, tran, verbose, wann_data, &
                          wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, gamma_only, lsitesymmetry, spinors, use_bloch_phases, stdout)
@@ -1154,7 +1155,7 @@ contains
     !passed vaiables
     type(param_driver_type), intent(in) :: driver
     type(w90_calculation_type), intent(in) :: w90_calcs
-    type(parameter_input_type), intent(in) :: param_input
+    type(real_space_type), intent(in) :: rs_region
     type(param_plot_type), intent(in) :: param_plot
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in) :: band_plot
@@ -1507,11 +1508,11 @@ contains
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
             trim(write_data%one_dim_axis), '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
-            param_input%hr_cutoff, '|'
+            rs_region%hr_cutoff, '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
-            param_input%dist_cutoff, '|'
+            rs_region%dist_cutoff, '|'
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian cut-off distance mode        :', &
-            trim(param_input%dist_cutoff_mode), '|'
+            trim(rs_region%dist_cutoff_mode), '|'
         endif
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
@@ -1999,8 +2000,8 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                        param_input, param_plot, param_wannierise, proj_input, system, tran, &
-                        verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
+                        param_input, param_plot, param_wannierise, proj_input, rs_region, system, &
+                        tran, verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
                         recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                         num_wann, eig_found, cp_pp, gamma_only, lhasproj, lsitesymmetry, &
                         use_bloch_phases, seedname, stdout, comm)
@@ -2020,6 +2021,7 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(parameter_input_type), intent(inout) :: param_input
     type(exclude_bands_type), intent(inout) :: excluded_bands
+    type(real_space_type), intent(inout) :: rs_region
     type(print_output_type), intent(inout) :: verbose
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
@@ -2204,15 +2206,15 @@ contains
     call comms_bcast(w90_calcs%write_hr, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_rmn, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_tb, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%hr_cutoff, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%dist_cutoff, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%dist_cutoff_mode, len(param_input%dist_cutoff_mode), stdout, &
+    call comms_bcast(rs_region%hr_cutoff, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%dist_cutoff, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%dist_cutoff_mode, len(rs_region%dist_cutoff_mode), stdout, &
                      seedname, comm)
-    call comms_bcast(param_input%dist_cutoff_hc, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%dist_cutoff_hc, 1, stdout, seedname, comm)
     !call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
-    call comms_bcast(param_input%use_ws_distance, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%ws_distance_tol, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%ws_search_size(1), 3, stdout, seedname, comm)
+    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%ws_search_size(1), 3, stdout, seedname, comm)
     call comms_bcast(w90_calcs%fermi_surface_plot, 1, stdout, seedname, comm)
     call comms_bcast(fermi_surface_data%num_points, 1, stdout, seedname, comm)
     call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), stdout, &
@@ -2319,7 +2321,7 @@ contains
     !call comms_bcast(boltz%bandshift_energyshift, 1)
     ! [gp-end]
 
-    call comms_bcast(param_input%use_ws_distance, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%disentanglement, 1, stdout, seedname, comm)
 
     call comms_bcast(w90_calcs%transport, 1, stdout, seedname, comm)

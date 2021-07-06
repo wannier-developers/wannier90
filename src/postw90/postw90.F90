@@ -104,6 +104,7 @@ program postw90
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
   type(exclude_bands_type) :: excluded_bands
+  type(real_space_type) :: rs_region
   type(wannier_data_type) :: wann_data
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
@@ -245,7 +246,7 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(param_input, system, excluded_bands, verbose, wann_data, kmesh_data, &
+    call param_postw90_read(rs_region, system, excluded_bands, verbose, wann_data, kmesh_data, &
                             k_points, num_kpts, dis_window, fermi, atoms, num_bands, num_wann, &
                             eigval, mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
@@ -304,9 +305,9 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   !
-  call pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_window, &
-                                    system, fermi, num_bands, num_wann, eigval, mp_grid, &
-                                    real_lattice, recip_lattice, pw90_calcs, &
+  call pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
+                                    dis_window, system, fermi, num_bands, num_wann, eigval, &
+                                    mp_grid, real_lattice, recip_lattice, pw90_calcs, &
                                     pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                                     dos_data, berry, spin_hall, gyrotropic, geninterp, &
                                     boltz, eig_found, stdout, seedname, comm)
@@ -345,6 +346,9 @@ program postw90
   param_input%num_valence_bands = system%num_valence_bands
   param_input%num_elec_per_state = system%num_elec_per_state
   param_input%spinors = system%spinors
+  param_input%rs_region%use_ws_distance = rs_region%use_ws_distance
+  param_input%rs_region%ws_search_size = rs_region%ws_search_size
+  param_input%rs_region%ws_distance_tol = rs_region%ws_distance_tol
   ! end hack
 
   ! Read list of k-points in irreducible BZ and their weights

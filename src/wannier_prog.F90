@@ -98,6 +98,7 @@ program wannier
   type(parameter_input_type) :: param_input
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
+  type(real_space_type) :: rs_region
   type(exclude_bands_type) :: excluded_bands
   logical :: eig_found
   type(param_plot_type) :: param_plot
@@ -246,12 +247,13 @@ program wannier
 
     call param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                    param_input, param_plot, param_wannierise, proj, input_proj, select_proj, &
+                    param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
                     w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
                     mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
                     cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
                     use_bloch_phases, seedname, stdout)
+    param_input%have_disentangled = .false.
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -281,10 +283,10 @@ program wannier
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
     call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
-                     param_hamil, param_input, param_plot, param_wannierise, proj, input_proj, &
-                     select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
-                     w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
-                     num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
+                     param_hamil, param_plot, param_wannierise, proj, input_proj, &
+                     rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
+                     write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
+                     num_bands, num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
                      system%spinors, use_bloch_phases, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -314,10 +316,11 @@ program wannier
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, param_input, &
-                  param_plot, param_wannierise, input_proj, system, tran, verbose, wann_data, &
-                  wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, &
-                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
-                  lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
+                  param_plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
+                  wann_data, wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, &
+                  symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
+                  cp_pp, gamma_only, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
+                  stdout, w90comm)
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -426,10 +429,10 @@ program wannier
 
   if (.not. gamma_only) then
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
-                   param_input, param_wannierise, sym, system, verbose, wann_data, w90_calcs, &
-                   ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                   recip_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
-                   nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
+                   param_input, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                   w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
+                   ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
                    band_plot%plot_mode, tran%mode, lsitesymmetry, seedname, stdout, w90comm)
   else
     call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, param_input, &
@@ -455,8 +458,8 @@ program wannier
     time2 = io_time()
 
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, param_hamil, param_input, param_plot, spec_points, verbose, &
-                   wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                   k_points, param_hamil, param_input, param_plot, rs_region, spec_points, &
+                   verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
                    num_wann, rpt_origin, tran%mode, lsitesymmetry, system%spinors, seedname, stdout)
@@ -470,11 +473,12 @@ program wannier
     if (w90_calcs%transport) then
       time2 = io_time()
 
-      call tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, tran, &
-                     verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
-                     real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
-                     ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                     band_plot%plot_mode, lsitesymmetry, seedname, stdout)
+      call tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, &
+                     rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
+                     u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                     wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                     num_bands, num_kpts, num_wann, rpt_origin, band_plot%plot_mode, &
+                     lsitesymmetry, seedname, stdout)
       time1 = io_time()
 
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'

@@ -49,11 +49,12 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
-                       param_input, param_wannierise, sym, system, verbose, wann_data, w90_calcs, &
-                       ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                       recip_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                       shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
-                       bands_plot_mode, transport_mode, lsitesymmetry, seedname, stdout, comm)
+                       param_input, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                       w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                       real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
+                       ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
+                       rpt_origin, bands_plot_mode, transport_mode, lsitesymmetry, seedname, &
+                       stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -65,7 +66,7 @@ contains
       w90_calculation_type, param_hamiltonian_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
-      exclude_bands_type
+      exclude_bands_type, real_space_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -85,6 +86,7 @@ contains
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
+    type(real_space_type), intent(in) :: rs_region
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(param_hamiltonian_type), intent(inout) :: param_hamil
@@ -245,7 +247,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
     if (param_wannierise%control%precond) then
-      call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
+      call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                              transport_mode)
@@ -807,7 +809,7 @@ contains
     endif
 
     if (w90_calcs%write_hr_diag) then
-      call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
+      call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                              transport_mode)

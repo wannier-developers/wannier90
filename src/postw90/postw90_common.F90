@@ -252,9 +252,9 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_window, &
-                                          system, fermi, num_bands, num_wann, eigval, mp_grid, &
-                                          real_lattice, recip_lattice, pw90_calcs, &
+  subroutine pw90common_wanint_param_dist(param_input, rs_region, kmesh_info, k_points, num_kpts, &
+                                          dis_window, system, fermi, num_bands, num_wann, eigval, &
+                                          mp_grid, real_lattice, recip_lattice, pw90_calcs, &
                                           pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                                           dos_data, berry, spin_hall, gyrotropic, geninterp, &
                                           boltz, eig_found, stdout, seedname, world)
@@ -274,7 +274,8 @@ contains
       postw90_spin_type, postw90_ham_type, kpath_type, kslice_type, dos_plot_type, berry_type, &
       spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
-    type(parameter_input_type), intent(inout) :: param_input
+    type(print_output_type), intent(inout) :: param_input
+    type(real_space_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
@@ -330,8 +331,8 @@ contains
     if (on_root) param_input%iprint = iprintroot
     !______________________________________
 
-    call comms_bcast(param_input%ws_distance_tol, 1, stdout, seedname, world)
-    call comms_bcast(param_input%ws_search_size(1), 3, stdout, seedname, world)
+    call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, world)
+    call comms_bcast(rs_region%ws_search_size(1), 3, stdout, seedname, world)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, world)
@@ -472,7 +473,7 @@ contains
     call comms_bcast(boltz%bandshift_firstband, 1, stdout, seedname, world)
     call comms_bcast(boltz%bandshift_energyshift, 1, stdout, seedname, world)
     ! [gp-end]
-    call comms_bcast(param_input%use_ws_distance, 1, stdout, seedname, world)
+    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, world)
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in param_read they were allocated on the root node only
@@ -842,8 +843,8 @@ contains
 !                               wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts, &
 !                               irvec, force_recompute)
 
-    if (param_input%use_ws_distance) then
-      CALL ws_translate_dist(ws_distance, stdout, seedname, param_input, &
+    if (param_input%rs_region%use_ws_distance) then
+      CALL ws_translate_dist(ws_distance, stdout, seedname, param_input%rs_region, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
                              mp_grid, ws_vec%nrpts, ws_vec%irvec)
     endif
@@ -851,7 +852,7 @@ contains
     OO(:, :) = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -935,11 +936,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -947,7 +948,7 @@ contains
     if (present(OO_dz)) OO_dz = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1027,18 +1028,18 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1143,11 +1144,11 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1173,7 +1174,7 @@ contains
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1286,17 +1287,17 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1398,17 +1399,17 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1511,11 +1512,11 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                            param_input, num_wann, &
-                                                            wann_data%centres, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                            ws_vec%irvec)
+    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                                      param_input%rs_region, num_wann, &
+                                                                      wann_data%centres, real_lattice, &
+                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                                      ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1558,7 +1559,7 @@ contains
 
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%use_ws_distance) then
+      if (param_input%rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)

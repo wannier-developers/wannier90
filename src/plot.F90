@@ -29,8 +29,8 @@ contains
 !                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
 !                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, param_hamil, param_input, param_plot, spec_points, verbose, &
-                       wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                       k_points, param_hamil, param_input, param_plot, rs_region, spec_points, &
+                       verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                        u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, lsitesymmetry, &
@@ -46,7 +46,7 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, parameter_input_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      special_kpoints_type, print_output_type
+      special_kpoints_type, print_output_type, real_space_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
@@ -56,6 +56,7 @@ contains
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(k_point_type), intent(in)               :: k_points
     type(parameter_input_type), intent(in)       :: param_input
+    type(real_space_type), intent(in)       :: rs_region
     type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
@@ -127,7 +128,7 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, param_input, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
+      call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, seedname, &
                              transport_mode)
@@ -139,7 +140,7 @@ contains
                               num_kpts, num_wann, stdout, seedname, lsitesymmetry)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
-                                                            spec_points, param_input, verbose, &
+                                                            spec_points, rs_region, verbose, &
                                                             recip_lattice, num_wann, wann_data, &
                                                             ham_r, irvec, ndegen, nrpts, &
                                                             wannier_centres_translated, &
@@ -164,10 +165,10 @@ contains
                                                         stdout, verbose%timing_level, seedname)
       if (w90_calcs%write_hr .or. w90_calcs%write_rmn .or. w90_calcs%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                           param_input, num_wann, &
+                                                           rs_region, num_wann, &
                                                            wann_data%centres, real_lattice, &
                                                            recip_lattice, mp_grid, nrpts, irvec)
-        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, param_input%use_ws_distance, &
+        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, rs_region%use_ws_distance, &
                           stdout, seedname)
       end if
     end if
@@ -192,10 +193,10 @@ contains
   !-----------------------------------!
 
   !============================================!
-  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, param_input, &
-                                    verbose, recip_lattice, num_wann, wann_data, ham_r, irvec, &
-                                    ndegen, nrpts, wannier_centres_translated, ws_distance, &
-                                    stdout, seedname)
+  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, &
+                                    rs_region, verbose, recip_lattice, num_wann, wann_data, &
+                                    ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
+                                    ws_distance, stdout, seedname)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -207,13 +208,13 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
-    use w90_param_types, only: parameter_input_type, wannier_data_type, &
-      special_kpoints_type, print_output_type
+    use w90_param_types, only: wannier_data_type, special_kpoints_type, print_output_type, &
+      real_space_type
     use wannier_param_types, only: band_plot_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
+    type(real_space_type), intent(in) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in)      :: band_plot
     type(wannier_data_type), intent(in)    :: wann_data
@@ -429,19 +430,19 @@ contains
     ! Cut H matrix in real-space
     !
     if (index(band_plot%plot_mode, 'cut') .ne. 0) then
-      call plot_cut_hr(band_plot, param_input, &
-                       real_lattice, mp_grid, num_wann, wannier_centres_translated, stdout)
+      call plot_cut_hr(band_plot, rs_region, real_lattice, mp_grid, num_wann, &
+                       wannier_centres_translated, stdout)
     endif
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
-    if (param_input%use_ws_distance) then
+    if (rs_region%use_ws_distance) then
       if (index(band_plot%plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
+        call ws_translate_dist(ws_distance, stdout, seedname, rs_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute=.true.)
       elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, param_input, num_wann, &
+        call ws_translate_dist(ws_distance, stdout, seedname, rs_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
       else
@@ -457,7 +458,7 @@ contains
       if (index(band_plot%plot_mode, 's-k') .ne. 0) then
         do irpt = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-          if (param_input%use_ws_distance) then
+          if (rs_region%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
               do ideg = 1, ws_distance%ndeg(i, j, irpt)
@@ -480,7 +481,7 @@ contains
       elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
         do irpt = 1, nrpts_cut
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-          if (param_input%use_ws_distance) then
+          if (rs_region%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
               do ideg = 1, ws_distance%ndeg(i, j, irpt)
@@ -564,7 +565,7 @@ contains
   contains
 
     !============================================!
-    subroutine plot_cut_hr(band_plot, param_input, real_lattice, mp_grid, num_wann, &
+    subroutine plot_cut_hr(band_plot, rs_region, real_lattice, mp_grid, num_wann, &
                            wannier_centres_translated, stdout)
       !============================================!
       !
@@ -587,14 +588,14 @@ contains
       use w90_constants, only: dp, cmplx_0, eps8
 !     use w90_io, only: io_error, stdout
       use w90_io, only: io_error
-      use w90_param_types, only: parameter_input_type
+      use w90_param_types, only: real_space_type
       use wannier_param_types, only: band_plot_type
 
 !     use w90_hamiltonian, only: wannier_centres_translated
 
       implicit none
 
-      type(parameter_input_type), intent(in) :: param_input
+      type(real_space_type), intent(in) :: rs_region
       type(band_plot_type), intent(in) :: band_plot
 
       real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
@@ -624,7 +625,7 @@ contains
         ! Along the confined directions, take only irvec=0
         j = 0
         do i = 1, 3
-          if (abs(abs(real_lattice(param_input%one_dim_dir, i)) &
+          if (abs(abs(real_lattice(rs_region%one_dim_dir, i)) &
                   - sqrt(dot_product(real_lattice(:, i), real_lattice(:, i)))) .lt. eps8) then
             one_dim_vec = i
             j = j + 1
@@ -690,30 +691,30 @@ contains
 
       ! note: dist_cutoff_mode does not necessarily follow bands_plot_dim
       ! e.g. for 1-d system (bands_plot_dim=1) we can still apply 3-d dist_cutoff (dist_cutoff_mode=three_dim)
-      if (index(param_input%dist_cutoff_mode, 'one_dim') > 0) then
+      if (index(rs_region%dist_cutoff_mode, 'one_dim') > 0) then
         do i = 1, num_wann
           do j = 1, num_wann
-            dist_ij_vec(param_input%one_dim_dir) = &
-              wannier_centres_translated(param_input%one_dim_dir, i) - &
-              wannier_centres_translated(param_input%one_dim_dir, j)
+            dist_ij_vec(rs_region%one_dim_dir) = &
+              wannier_centres_translated(rs_region%one_dim_dir, i) - &
+              wannier_centres_translated(rs_region%one_dim_dir, j)
             do irpt = 1, nrpts_cut
-              dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) + &
-                                                  shift_vec(param_input%one_dim_dir, irpt)
-              dist = abs(dist_vec(param_input%one_dim_dir))
-              if (dist .gt. param_input%dist_cutoff) &
+              dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) + &
+                                                shift_vec(rs_region%one_dim_dir, irpt)
+              dist = abs(dist_vec(rs_region%one_dim_dir))
+              if (dist .gt. rs_region%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
         end do
-      else if (index(param_input%dist_cutoff_mode, 'two_dim') > 0) then
+      else if (index(rs_region%dist_cutoff_mode, 'two_dim') > 0) then
         do i = 1, num_wann
           do j = 1, num_wann
             dist_ij_vec(:) = wannier_centres_translated(:, i) - wannier_centres_translated(:, j)
             do irpt = 1, nrpts_cut
               dist_vec(:) = dist_ij_vec(:) + shift_vec(:, irpt)
-              dist_vec(param_input%one_dim_dir) = 0.0_dp
+              dist_vec(rs_region%one_dim_dir) = 0.0_dp
               dist = sqrt(dot_product(dist_vec, dist_vec))
-              if (dist .gt. param_input%dist_cutoff) &
+              if (dist .gt. rs_region%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
@@ -725,7 +726,7 @@ contains
             do irpt = 1, nrpts_cut
               dist_vec(:) = dist_ij_vec(:) + shift_vec(:, irpt)
               dist = sqrt(dot_product(dist_vec, dist_vec))
-              if (dist .gt. param_input%dist_cutoff) &
+              if (dist .gt. rs_region%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
@@ -735,7 +736,7 @@ contains
       do irpt = 1, nrpts_cut
         do i = 1, num_wann
           do j = 1, num_wann
-            if (abs(ham_r_cut(j, i, irpt)) .lt. param_input%hr_cutoff) &
+            if (abs(ham_r_cut(j, i, irpt)) .lt. rs_region%hr_cutoff) &
               ham_r_cut(j, i, irpt) = cmplx_0
           end do
         end do
