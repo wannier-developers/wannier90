@@ -101,6 +101,7 @@ program postw90
 !
   ! w90_parameters stuff
   type(parameter_input_type) :: param_input
+  type(print_output_type) :: verbose
   type(wannier_data_type) :: wann_data
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
@@ -241,13 +242,20 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(param_input, wann_data, kmesh_data, k_points, num_kpts, &
+    call param_postw90_read(param_input, verbose, wann_data, kmesh_data, k_points, num_kpts, &
                             dis_window, fermi, atoms, num_bands, num_wann, eigval, &
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
                             physics%bohr, stdout, seedname)
+    ! tempoaray hack
+    param_input%iprint = verbose%iprint
+    param_input%timing_level = verbose%timing_level
+    param_input%optimisation = verbose%optimisation
+    param_input%length_unit = verbose%length_unit
+    param_input%lenconfac = verbose%lenconfac
+    param_input%devel_flag = verbose%devel_flag
     call param_postw90_write(param_input, fermi, atoms, num_wann, &
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
@@ -272,8 +280,8 @@ program postw90
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
       !
-      call kmesh_get(kmesh_data, kmesh_info, param_input, k_points%kpt_cart, recip_lattice, &
-                     num_kpts, seedname, stdout)
+      call kmesh_get(kmesh_data, kmesh_info, verbose, k_points%kpt_cart, recip_lattice, &
+                     num_kpts, param_input%gamma_only, seedname, stdout)
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
         'Time to get kmesh        ', time2 - time1, ' (sec)'

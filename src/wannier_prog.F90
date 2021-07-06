@@ -209,6 +209,7 @@ program wannier
 
   logical :: use_bloch_phases, cp_pp, calc_only_A
   logical :: gamma_only
+  logical :: have_disentangled
 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg

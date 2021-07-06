@@ -189,7 +189,7 @@ module pw90_param_methods
   use w90_constants, only: dp
 ! use w90_io, only: stdout, maxlen
   use w90_io, only: maxlen
-  use w90_param_types, only: parameter_input_type, wannier_data_type, &
+  use w90_param_types, only: print_output_type, parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type
   use w90_param_methods
@@ -251,7 +251,7 @@ contains
     implicit none
 
     !data from parameters module
-    type(print_control_type), intent(inout) :: verbose
+    type(print_output_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data

@@ -36,14 +36,56 @@ module w90_param_types
     character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common MAYBE
   end type print_output_type
 
+  type w90_system_type
+    integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
+    integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
+    logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
+  end type w90_system_type
+
+  type bands_type
+    integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
+    integer :: num_exclude_bands
+  end type bands_type
+
+  type real_space_type
+    real(kind=dp) :: hr_cutoff !plot and transport
+    ! dist_cutoff - only plot and transport
+    real(kind=dp) :: dist_cutoff !plot and transport
+    character(len=20) :: dist_cutoff_mode !plot and transport
+    real(kind=dp) :: dist_cutoff_hc !plot and transport
+    integer :: one_dim_dir ! transport and plot
+
+    logical :: use_ws_distance !ws_distance, plot and postw90_common
+    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
+    !! absolute tolerance for the distance to equivalent positions
+    integer :: ws_search_size(3) ! ws_distance, hamiltonian
+    !! maximum extension in each direction of the supercell of the BvK cell
+    !! to search for points inside the Wigner-Seitz cell
+  end type real_space_type
+
+  !Input - temporary fix for postw90 not using print_output_type
   type parameter_input_type
+    ! verbosity flags - param_read_verbosity
+    integer :: iprint
+    !! Controls the verbosity of the output
+    integer :: timing_level
+    integer :: optimisation !wannierise and disentangle
+
     integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
 
+    character(len=20) :: length_unit
+    !! Units for length
+
+    character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common
+
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
     integer :: num_exclude_bands
 
+    logical :: gamma_only !overlap, kmesh, disentangle, wannierise, wannier_prog
+    !! Use the special Gamma-point routines
+
     real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
 
     ! dist_cutoff - only plot and transport - BGS w90 only
@@ -53,31 +95,20 @@ module w90_param_types
 
     integer :: one_dim_dir ! transport and plot - BGS w90 only
 
+    character(len=20) :: bands_plot_mode !hamiltonian (setup only), plot
+    !BGS - maybe a band_plot_type with band_num_points etc from plot_type?
     logical :: use_ws_distance !ws_distance, plot and postw90_common
     real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
+    logical :: write_xyz !wannierise and transport
+    real(kind=dp) :: omega_invariant !wannierise, disentangle and chk2chk
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
-    !real(kind=dp) :: lenconfac !lots of write statements in wannier90
+    real(kind=dp) :: lenconfac !lots of write statements in wannier90
   end type parameter_input_type
 
-  type rspace_hamiltonian_type
-    real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
-    ! dist_cutoff - only plot and transport - BGS w90 only
-    real(kind=dp) :: dist_cutoff !plot and transport
-    character(len=20) :: dist_cutoff_mode !plot and transport
-    real(kind=dp) :: dist_cutoff_hc !plot and transport
-    integer :: one_dim_dir ! transport and plot - BGS w90 only
-
-    logical :: use_ws_distance !ws_distance, plot and postw90_common
-    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
-    !! absolute tolerance for the distance to equivalent positions
-    integer :: ws_search_size(3) ! ws_distance, hamiltonian
-    !! maximum extension in each direction of the supercell of the BvK cell
-    !! to search for points inside the Wigner-Seitz cell
-  end type rspace_hamiltonian_type
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
     ! Wannier centres and spreads
