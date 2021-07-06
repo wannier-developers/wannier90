@@ -1974,18 +1974,17 @@ contains
                                                       mp_grid, num_wann, seedname, stdout, &
                                                       OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
-      call wham_get_eig_deleig_TB_conv(eig, eig_da, HH_da, UU, num_wann, pw90_ham, stdout, &
-                                       seedname)
+      call wham_get_eig_deleig_TB_conv(pw90_ham, HH_da, UU, eig, eig_da, num_wann, seedname, &
+                                       stdout)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
-      call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, num_wann, param_input, &
-                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
-                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                    pw90_common, ws_distance, ws_vec, HH_R, stdout, seedname, comm)
-      call pw90common_fourier_R_to_k_vec_dadb(kpt, AA_R, num_wann, param_input, wann_data, &
-                                              real_lattice, recip_lattice, mp_grid, &
-                                              ws_distance, ws_vec, stdout, &
-                                              seedname, OO_da=AA, OO_dadb=AA_da)
+      call wham_get_eig_UU_HH_AA_sc(dis_window, k_points, param_input, pw90_common, wann_data, &
+                                    ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
+                                    v_matrix, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                    mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm)
+      call pw90common_fourier_R_to_k_vec_dadb(param_input, wann_data, ws_distance, ws_vec, AA_R, &
+                                              kpt, real_lattice, recip_lattice, mp_grid, num_wann, &
+                                              seedname, stdout, OO_da=AA, OO_dadb=AA_da)
       call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
                                wann_data, ws_distance, ws_vec, HH_da, HH, HH_R, u_matrix, UU, &
                                v_matrix, eig_da, eig, eigval, kpt, real_lattice, recip_lattice, &
@@ -1996,7 +1995,7 @@ contains
     call pw90common_get_occ(fermi%energy_list(1), eig, occ, num_wann)
 
     ! get D_h (Eq. (24) WYSV06)
-    call wham_get_D_h_P_value(HH_da, UU, eig, D_h, num_wann, berry)
+    call wham_get_D_h_P_value(berry, HH_da, D_h, UU, eig, num_wann)
 
     ! calculate k-spacing in case of adaptive smearing
     if (berry%kubo_smr%adpt) Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)

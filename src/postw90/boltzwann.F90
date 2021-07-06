@@ -34,7 +34,8 @@ module w90_boltzwann
   !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)
   !============================================================!
 
-  use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, comms_allreduce, w90commtype
+  use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
+    comms_allreduce, w90commtype
   use w90_constants, only: dp, pw90_physical_constants, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -253,11 +254,11 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
-                       real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                       v_matrix, dis_window, k_points, dos_data, pw90_common, boltz, pw90_spin, &
-                       pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
-                       seedname, comm, cell_volume)
+    call calcTDFandDOS(boltz, dis_window, dos_data, k_points, param_input, postw90_oper, &
+                       pw90_common, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+                       SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
+                       TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
+                       seedname, stdout, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -648,11 +649,11 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray, num_wann, param_input, wann_data, eigval, &
-                           real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, u_matrix, &
-                           v_matrix, dis_window, k_points, dos_data, pw90_common, boltz, pw90_spin, &
-                           pw90_ham, postw90_oper, ws_distance, ws_vec, HH_R, SS_R, stdout, &
-                           seedname, comm, cell_volume)
+  subroutine calcTDFandDOS(boltz, dis_window, dos_data, k_points, param_input, postw90_oper, &
+                           pw90_common, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+                           SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
+                           TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
+                           seedname, stdout, comm)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -691,6 +692,24 @@ contains
     implicit none
 
     ! arguments
+    type(boltzwann_type), intent(in)            :: boltz
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dos_plot_type), intent(in)             :: dos_data
+    type(k_point_type), intent(in)              :: k_points
+    type(parameter_input_type), intent(in)      :: param_input
+    type(postw90_oper_type), intent(in)         :: postw90_oper
+    type(postw90_common_type), intent(in)       :: pw90_common
+    type(postw90_ham_type), intent(in)          :: pw90_ham
+    type(postw90_spin_type), intent(in)         :: pw90_spin
+    type(wannier_data_type), intent(in)         :: wann_data
+    type(ws_distance_type), intent(inout)       :: ws_distance
+    type(wigner_seitz_type), intent(inout)      :: ws_vec
+    type(w90commtype), intent(in)               :: comm
+
+    integer, intent(in) :: num_wann, num_bands, num_kpts
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+
     real(kind=dp), dimension(:, :, :), intent(out)   :: TDF ! (coordinate,Energy,spin)
     !! The TDF(i,EnIdx,spin) output array, where:
     !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
@@ -708,29 +727,15 @@ contains
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
-    integer, intent(in) :: num_wann, num_bands, num_kpts
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
+    real(kind=dp), intent(in) :: cell_volume
+
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
-    type(dos_plot_type), intent(in) :: dos_data
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(boltzwann_type), intent(in) :: boltz
-    type(postw90_spin_type), intent(in) :: pw90_spin
-    type(postw90_ham_type), intent(in) :: pw90_ham
-    type(postw90_oper_type), intent(in) :: postw90_oper
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(inout) :: ws_vec
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    integer, intent(in) :: stdout
+
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: comm
-    real(kind=dp), intent(in) :: cell_volume
 
     ! local variables
     real(kind=dp), dimension(3) :: kpt, orig_kpt
@@ -901,9 +906,9 @@ contains
         eig(boltz%bandshift_firstband:) = eig(boltz%bandshift_firstband:) + boltz%bandshift_energyshift
       end if
 
-      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, num_wann, param_input, wann_data, &
-                   real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, &
-                   pw90_spin%decomp, ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
+      call TDF_kpt(boltz, param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+                   del_eig, eig, TDFEnergyArray, kpt, real_lattice, recip_lattice, TDF_k, mp_grid, &
+                   num_wann, pw90_spin%decomp, seedname, stdout)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -1083,9 +1088,9 @@ contains
 
   end function MinusFermiDerivative
 
-  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, num_wann, param_input, wann_data, &
-                     real_lattice, recip_lattice, mp_grid, boltz, pw90_spin, spin_decomp, &
-                     ws_distance, ws_vec, HH_R, SS_R, stdout, seedname)
+  subroutine TDF_kpt(boltz, param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+                     deleig_k, eig_k, EnergyArray, kpt, real_lattice, recip_lattice, TDF_k, &
+                     mp_grid, num_wann, spin_decomp, seedname, stdout)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1123,6 +1128,17 @@ contains
 
     ! Arguments
     !
+    type(boltzwann_type), intent(in)       :: boltz
+    type(parameter_input_type), intent(in) :: param_input
+    type(postw90_spin_type), intent(in)    :: pw90_spin
+    type(wannier_data_type), intent(in)    :: wann_data
+    type(ws_distance_type), intent(inout)  :: ws_distance
+    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+
     real(kind=dp), dimension(3), intent(in)      :: kpt
     !! the three coordinates of the k point vector whose DOS contribution we
     !! want to calculate (in relative coordinates)
@@ -1145,21 +1161,16 @@ contains
     !!   of the EnergyArray array;
     !!  - spinidx=1 contains the total dos; if if spin_decomp==.true., then
     !!  spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    type(boltzwann_type), intent(in) :: boltz
-    type(postw90_spin_type), intent(in) :: pw90_spin
-    logical, intent(in) :: spin_decomp
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
+
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    integer, intent(in) :: stdout
+
     character(len=50), intent(in)  :: seedname
 
+    logical, intent(in) :: spin_decomp
+
+!   local variables
     ! Adaptive smearing
     !
     real(kind=dp) :: smear, arg
