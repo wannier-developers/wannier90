@@ -237,7 +237,7 @@ contains
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
                                 gyrotropic, geninterp, boltz, eig_found, write_data, &
-                                bohr, stdout, seedname)
+                                gamma_only, bohr, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -288,6 +288,7 @@ contains
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
     type(pw90_extra_io_type), intent(inout) :: write_data
+    logical, intent(inout) :: gamma_only
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -312,7 +313,9 @@ contains
                               stdout, seedname)
     disentanglement = (num_bands > num_wann)
     call param_read_devel(verbose%devel_flag, stdout, seedname)
-    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout, seedname)
+    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, &
+                            stdout, seedname)
+    call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
     call param_read_system(library, system, stdout, seedname)
     call param_read_kpath(library, spec_points, ok, stdout, seedname)
     call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)

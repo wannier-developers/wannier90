@@ -79,9 +79,6 @@ module w90_param_types
 
     character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common
 
-    logical :: gamma_only !overlap, kmesh, disentangle, wannierise, wannier_prog
-    !! Use the special Gamma-point routines
-
     real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
 
     ! dist_cutoff - only plot and transport - BGS w90 only
@@ -253,6 +250,7 @@ module w90_param_methods
   public :: internal_set_kmesh
   public :: param_uppercase
   ! common read routines
+  public :: param_read_gamma_only
   public :: param_read_verbosity
   public :: param_read_num_wann
   public :: param_read_exclude_bands
@@ -411,6 +409,28 @@ contains
     devel_flag = ' '          !
     call param_get_keyword(stdout, seedname, 'devel_flag', found, c_value=devel_flag)
   end subroutine param_read_devel
+
+  subroutine param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
+    use w90_io, only: io_error
+    implicit none
+    integer, intent(in) :: stdout
+    logical, intent(inout) :: gamma_only
+    integer, intent(in) :: num_kpts
+    logical, intent(in) :: library
+    character(len=50), intent(in)  :: seedname
+
+    logical :: found, ltmp
+
+    ltmp = .false.
+    call param_get_keyword(stdout, seedname, 'gamma_only', found, l_value=ltmp)
+    if (.not. library) then
+      gamma_only = ltmp
+      if (gamma_only .and. (num_kpts .ne. 1)) &
+        call io_error('Error: gamma_only is true, but num_kpts > 1', stdout, seedname)
+    else
+      if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
+    endif
+  end subroutine param_read_gamma_only
 
   subroutine param_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, seedname)
     use w90_io, only: io_error

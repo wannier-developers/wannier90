@@ -175,6 +175,7 @@ program postw90
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
   type(wigner_seitz_type) :: ws_vec
   type(kpoint_dist_type) :: kpt_dist
+  logical :: gamma_only
 
   ! local vars
   integer :: my_node_id, num_nodes, ierr
@@ -250,7 +251,7 @@ program postw90
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
-                            physics%bohr, stdout, seedname)
+                            gamma_only, physics%bohr, stdout, seedname)
     call param_postw90_write(param_input, system, fermi, atoms, num_wann, &
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
@@ -276,7 +277,7 @@ program postw90
       ! the orbital magnetization
       !
       call kmesh_get(kmesh_data, kmesh_info, verbose, k_points%kpt_cart, recip_lattice, &
-                     num_kpts, param_input%gamma_only, seedname, stdout)
+                     num_kpts, gamma_only, seedname, stdout)
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
         'Time to get kmesh        ', time2 - time1, ' (sec)'
