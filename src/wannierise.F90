@@ -49,12 +49,12 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
-                       param_input, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                       param_wannierise, rs_region, sym, system, verbose, wann_data, &
                        w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                        ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
-                       rpt_origin, bands_plot_mode, transport_mode, lsitesymmetry, seedname, &
-                       stdout, comm)
+                       rpt_origin, bands_plot_mode, transport_mode, have_disentangled, &
+                       lsitesymmetry, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -64,7 +64,7 @@ contains
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: param_wannierise_type, &
       w90_calculation_type, param_hamiltonian_type
-    use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
+    use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
       exclude_bands_type, real_space_type
     use wannier_methods, only: param_write_chkpt
@@ -84,7 +84,6 @@ contains
     type(ham_logical), intent(inout) :: hmlg
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
     type(real_space_type), intent(in) :: rs_region
     type(exclude_bands_type), intent(in) :: excluded_bands
@@ -120,6 +119,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: have_disentangled
 
     character(len=*), intent(in) :: bands_plot_mode
     character(len=*), intent(in) :: transport_mode
@@ -511,13 +511,13 @@ contains
       ! calculate search direction (cdq)
       if (param_wannierise%control%precond) then
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
-                                      k_to_r, wann_spread, param_input, num_wann, num_kpts, &
+                                      k_to_r, wann_spread, num_wann, num_kpts, &
                                       k_points%kpt_latt, real_lattice, nrpts, irvec, ndegen, &
                                       counts, displs, stdout)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
-                                     param_wannierise%control, param_input, num_wann, &
+                                     param_wannierise%control, num_wann, &
                                      kmesh_info%wbtot, cdq_loc, cdodq_loc, counts, stdout)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(sym, cdq, 2, num_kpts, num_wann) !RS:
 
@@ -560,7 +560,7 @@ contains
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
-                                   lprint, param_wannierise%control%trial_step, param_input, stdout)
+                                   lprint, param_wannierise%control%trial_step, stdout)
       endif
 
       ! print line search information
@@ -706,11 +706,12 @@ contains
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
-        if (on_root) call param_write_chkpt('postdis', excluded_bands, param_input, wann_data, &
-                                            kmesh_info, k_points, num_kpts, dis_window, num_bands, &
-                                            num_wann, u_matrix, u_matrix_opt, m_matrix, mp_grid, &
+        if (on_root) call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, &
+                                            k_points, num_kpts, dis_window, num_bands, num_wann, &
+                                            u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, recip_lattice, &
-                                            param_wannierise%omega%invariant, stdout, seedname)
+                                            param_wannierise%omega%invariant, have_disentangled, &
+                                            stdout, seedname)
       endif
 
       if (param_wannierise%control%conv_window .gt. 1) then
@@ -813,11 +814,11 @@ contains
                              wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                              num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                              transport_mode)
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
-                              ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                              real_lattice, recip_lattice, wann_data%centres, &
-                              wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                              num_kpts, num_wann, stdout, seedname, lsitesymmetry)
+      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                              stdout, seedname, lsitesymmetry)
       if (verbose%iprint > 0) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
@@ -855,7 +856,7 @@ contains
                                                                  m_matrix, stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (param_input%have_disentangled .and. w90_calcs%write_proj) &
+    if (have_disentangled .and. w90_calcs%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_window%lwindow, verbose%timing_level, verbose%iprint, &
                                 stdout, seedname)
@@ -863,7 +864,7 @@ contains
     ! aam: write data required for vdW utility
     if (w90_calcs%write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                               u_matrix_opt, param_input, system, stdout, seedname)
+                               u_matrix_opt, have_disentangled, system, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs
@@ -1127,7 +1128,7 @@ contains
 
     !===============================================!
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
-                                        k_to_r, wann_spread, param_input, num_wann, num_kpts, &
+                                        k_to_r, wann_spread, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
                                         counts, displs, stdout)
       !===============================================!
@@ -1141,12 +1142,8 @@ contains
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
       !use w90_comms, only: comms_allreduce, w90commtype
-      use w90_param_types, only: parameter_input_type
 
       implicit none
-
-      !type(param_wannierise_type), intent(in) :: param_wannierise
-      type(parameter_input_type), intent(in) :: param_input
 
       complex(kind=dp), intent(in) :: cdodq(:, :, :)
       complex(kind=dp), intent(inout) :: cdodq_r(:, :, :)
@@ -1253,7 +1250,7 @@ contains
     !===============================================!
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, &
-                                         doda0, wann_control, param_input, num_wann, &
+                                         doda0, wann_control, num_wann, &
                                          wbtot, cdq_loc, cdodq_loc, counts, stdout)
       !===============================================!
       !                                               !
@@ -1266,13 +1263,11 @@ contains
       !use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
       use w90_comms, only: comms_allreduce, w90commtype
-      use w90_param_types, only: parameter_input_type
       use wannier_param_types, only: wann_control_type
 
       implicit none
 
       type(wann_control_type), intent(in) :: wann_control
-      type(parameter_input_type), intent(in) :: param_input
 
       complex(kind=dp), allocatable, intent(inout) :: cdodq_precond_loc(:, :, :)
       complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
@@ -1407,7 +1402,7 @@ contains
 
     !===============================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
-                                     lprint, trial_step, param_input, stdout)
+                                     lprint, trial_step, stdout)
       !===============================================!
       !                                               !
       !! Calculate the optimal step length based on a
@@ -1416,11 +1411,8 @@ contains
       !===============================================!
       use w90_io, only: io_stopwatch
       use w90_comms, only: w90commtype
-      use w90_param_types, only: parameter_input_type
 
       implicit none
-
-      type(parameter_input_type), intent(in) :: param_input
 
       type(localisation_vars), intent(in) :: wann_spread
       type(localisation_vars), intent(in) :: trial_spread
@@ -2791,7 +2783,7 @@ contains
 
   !=================================================================!
   subroutine wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                                 u_matrix_opt, param_input, system, stdout, seedname)
+                                 u_matrix_opt, have_disentangled, system, stdout, seedname)
     !=================================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
@@ -2804,13 +2796,12 @@ contains
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0
-    use w90_param_types, only: wannier_data_type, parameter_input_type, w90_system_type
+    use w90_param_types, only: wannier_data_type, w90_system_type
 !~    use w90_disentangle, only : ndimfroz
 
     implicit none
 
     type(wannier_data_type), intent(in) :: wann_data
-    type(parameter_input_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
 
     ! from w90_parameters
@@ -2832,6 +2823,7 @@ contains
 !   integer, intent(in) :: num_elec_per_state
     ! end parameters
     integer, intent(in) :: stdout
+    logical, intent(in) :: have_disentangled
     character(len=50), intent(in)  :: seedname
 
     integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
@@ -2854,7 +2846,7 @@ contains
 !~    allocate(f_w2(num_wann, num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating f_w2 in wann_write_vdw_data')
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
 
       ! dimension of occupied subspace
       if (system%num_valence_bands .le. 0) &
@@ -2926,7 +2918,7 @@ contains
     ! aam: write the seedname.vdw file directly here
     vdw_unit = io_file_unit()
     open (unit=vdw_unit, file=trim(seedname)//'.vdw', action='write')
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       write (vdw_unit, '(a)') 'disentangle T'
     else
       write (vdw_unit, '(a)') 'disentangle F'
@@ -2950,7 +2942,7 @@ contains
 
     write (stdout, '(/a/)') ' vdW data written to file '//trim(seedname)//'.vdw'
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       deallocate (v_matrix, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating v_matrix in wann_write_vdw_data', stdout, seedname)
     endif
@@ -3194,10 +3186,11 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, param_input, &
+  subroutine wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, &
                              param_wannierise, system, verbose, wann_data, w90_calcs, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, num_wann, seedname, stdout, comm)
+                             num_bands, num_kpts, num_wann, have_disentangled, seedname, &
+                             stdout, comm)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3207,7 +3200,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: param_wannierise_type, w90_calculation_type
-    use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
+    use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
       exclude_bands_type
     use wannier_methods, only: param_write_chkpt
@@ -3222,7 +3215,6 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(w90commtype), intent(in) :: comm
     type(param_wannierise_type), intent(inout) :: param_wannierise
-    type(parameter_input_type), intent(in) :: param_input
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
@@ -3246,6 +3238,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
+    logical, intent(in) :: have_disentangled
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -3520,10 +3513,11 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', excluded_bands, param_input, wann_data, kmesh_info, &
-                               k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
-                               u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
-                               param_wannierise%omega%invariant, stdout, seedname)
+        call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, k_points, &
+                               num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
+                               m_matrix, mp_grid, real_lattice, recip_lattice, &
+                               param_wannierise%omega%invariant, have_disentangled, &
+                               stdout, seedname)
       endif
 
       if (param_wannierise%control%conv_window .gt. 1) then
@@ -3598,7 +3592,7 @@ contains
                                                    stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (param_input%have_disentangled .and. w90_calcs%write_proj) &
+    if (have_disentangled .and. w90_calcs%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_window%lwindow, verbose%timing_level, verbose%iprint, &
                                 stdout, seedname)
@@ -3606,7 +3600,7 @@ contains
     ! aam: write data required for vdW utility
     if (w90_calcs%write_vdw_data) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                               u_matrix_opt, param_input, system, stdout, seedname)
+                               u_matrix_opt, have_disentangled, system, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs

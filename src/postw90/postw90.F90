@@ -177,6 +177,7 @@ program postw90
   type(wigner_seitz_type) :: ws_vec
   type(kpoint_dist_type) :: kpt_dist
   logical :: gamma_only
+  logical :: have_disentangled
 
   ! local vars
   integer :: my_node_id, num_nodes, ierr
@@ -318,10 +319,10 @@ program postw90
     ! both disentanglement and maximal localization, etc.)
     !
     if (on_root) then
-      call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, param_input, &
+      call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, &
                             wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
                             recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
-                            num_wann, checkpoint, .true., seedname, stdout)
+                            num_wann, checkpoint, have_disentangled, .true., seedname, stdout)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes
@@ -331,8 +332,9 @@ program postw90
     !      is what is distributed now
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
-                                     dis_window, param_input, wann_data, pw90_common, &
-                                     v_matrix, system%num_valence_bands, stdout, seedname, comm)
+                                     dis_window, wann_data, pw90_common, v_matrix, &
+                                     system%num_valence_bands, have_disentangled, stdout, &
+                                     seedname, comm)
     !
   end if
 
@@ -349,6 +351,7 @@ program postw90
   param_input%rs_region%use_ws_distance = rs_region%use_ws_distance
   param_input%rs_region%ws_search_size = rs_region%ws_search_size
   param_input%rs_region%ws_distance_tol = rs_region%ws_distance_tol
+  param_input%have_disentangled = have_disentangled
   ! end hack
 
   ! Read list of k-points in irreducible BZ and their weights

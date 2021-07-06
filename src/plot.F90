@@ -29,12 +29,12 @@ contains
 !                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
 !                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, param_hamil, param_input, param_plot, rs_region, spec_points, &
-                       verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                       k_points, param_hamil, param_plot, rs_region, spec_points, verbose, &
+                       wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                        u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_wann, rpt_origin, transport_mode, lsitesymmetry, &
-                       spinors, seedname, stdout)
+                       num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
+                       have_disentangled, lsitesymmetry, spinors, seedname, stdout)
     !! Main plotting routine
     !============================================!
 
@@ -44,7 +44,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
-    use w90_param_types, only: k_point_type, parameter_input_type, kmesh_info_type, &
+    use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
       special_kpoints_type, print_output_type, real_space_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, &
@@ -55,8 +55,7 @@ contains
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(k_point_type), intent(in)               :: k_points
-    type(parameter_input_type), intent(in)       :: param_input
-    type(real_space_type), intent(in)       :: rs_region
+    type(real_space_type), intent(in)            :: rs_region
     type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
@@ -97,6 +96,7 @@ contains
     character(len=20), intent(in) :: transport_mode
     character(len=50), intent(in)  :: seedname
 
+    logical, intent(in) :: have_disentangled
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: spinors
 !   local variables
@@ -133,11 +133,11 @@ contains
                              num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, seedname, &
                              transport_mode)
       !
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
-                              ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                              real_lattice, recip_lattice, wann_data%centres, &
-                              wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                              num_kpts, num_wann, stdout, seedname, lsitesymmetry)
+      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                              stdout, seedname, lsitesymmetry)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
                                                             spec_points, rs_region, verbose, &
@@ -174,15 +174,16 @@ contains
     end if
 
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, &
-                                                  param_input, verbose, u_matrix_opt, dis_window, &
-                                                  real_lattice, atoms, k_points, u_matrix, &
-                                                  num_kpts, num_bands, num_wann, spinors, bohr, &
+                                                  verbose, u_matrix_opt, dis_window, real_lattice, &
+                                                  atoms, k_points, u_matrix, num_kpts, num_bands, &
+                                                  num_wann, have_disentangled, spinors, bohr, &
                                                   stdout, seedname)
 
     if (w90_calcs%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
     if (w90_calcs%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
-                                                         param_input, num_wann, num_kpts, num_bands, seedname)
+                                                         have_disentangled, num_wann, num_kpts, &
+                                                         num_bands, seedname)
 
     if (verbose%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
 
@@ -1100,9 +1101,10 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, param_input, verbose, &
+  subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, verbose, &
                           u_matrix_opt, dis_window, real_lattice, atoms, k_points, u_matrix, &
-                          num_kpts, num_bands, num_wann, spinors, bohr, stdout, seedname)
+                          num_kpts, num_bands, num_wann, have_disentangled, spinors, bohr, &
+                          stdout, seedname)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1113,7 +1115,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_point_type, parameter_input_type, wannier_data_type, &
+    use w90_param_types, only: k_point_type, wannier_data_type, &
       atom_data_type, disentangle_manifold_type, print_output_type
     use wannier_param_types, only: param_plot_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
@@ -1121,7 +1123,6 @@ contains
     implicit none
 
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(print_output_type), intent(in) :: verbose
     type(wannier_plot_type), intent(in) :: wann_plot
     type(param_plot_type), intent(in) :: param_plot
@@ -1129,6 +1130,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     type(disentangle_manifold_type), intent(in) :: dis_window
     logical, intent(in) :: spinors
+    logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: bohr
 
 !   from w90_parameters
@@ -1227,14 +1229,14 @@ contains
         wann_func_nc = cmplx_0
       endif
       if (.not. spinors) then
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_window%ndimwin)), stat=ierr)
           if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout, seedname)
         end if
         allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating r_wvfn in plot_wannier', stdout, seedname)
       else
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_window%ndimwin), 2), stat=ierr)
           if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier', stdout, seedname)
         end if
@@ -1247,7 +1249,7 @@ contains
 
         inc_band = .true.
         num_inc = num_wann
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           inc_band(:) = dis_window%lwindow(:, loop_kpt)
           num_inc = dis_window%ndimwin(loop_kpt)
         end if
@@ -1273,7 +1275,7 @@ contains
           call io_error('plot_wannier', stdout, seedname)
         end if
 
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           counter = 1
           do loop_b = 1, num_bands
             if (counter > num_inc) exit
@@ -1332,7 +1334,7 @@ contains
 
         close (file_unit)
 
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           if (.not. spinors) then
             r_wvfn = cmplx_0
             do loop_w = 1, num_wann
@@ -1474,8 +1476,8 @@ contains
       if (wann_plot%plot_format .eq. 'xcrysden') then
         call internal_xsf_format()
       elseif (wann_plot%plot_format .eq. 'cube') then
-        call internal_cube_format(atoms, wann_data, param_plot, &
-                                  param_input, recip_lattice, bohr)
+        call internal_cube_format(atoms, wann_data, param_plot, have_disentangled, &
+                                  recip_lattice, bohr)
       else
         call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
       endif
@@ -1489,7 +1491,8 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format(atoms, wann_data, param_plot, param_input, recip_lattice, bohr)
+    subroutine internal_cube_format(atoms, wann_data, param_plot, have_disentangled, &
+                                    recip_lattice, bohr)
       !============================================!
       !                                            !
       !! Write WFs in Gaussian cube format.
@@ -1499,13 +1502,11 @@ contains
       !use w90_constants, only: bohr
       use w90_utility, only: utility_translate_home, &
         utility_cart_to_frac, utility_frac_to_cart
-      use w90_param_types, only: parameter_input_type, wannier_data_type, &
-        atom_data_type
+      use w90_param_types, only: wannier_data_type, atom_data_type
       use wannier_param_types, only: param_plot_type
 
       implicit none
 
-      type(parameter_input_type), intent(in) :: param_input
       type(param_plot_type), intent(in) :: param_plot
       type(wannier_data_type), intent(in) :: wann_data
       type(atom_data_type), intent(in) :: atoms
@@ -1521,6 +1522,7 @@ contains
       real(kind=dp), intent(in) :: recip_lattice(3, 3)
 !     character(len=2), intent(in) :: atoms_symbol(:)
 !     end w90_parameters
+      logical, intent(in) :: have_disentangled
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
       real(kind=dp) :: rstart(3), rend(3), rlength(3), orig(3), dgrid(3)
@@ -1893,7 +1895,7 @@ contains
   end subroutine plot_wannier
 
   !============================================!
-  subroutine plot_u_matrices(u_matrix_opt, u_matrix, k_points, param_input, &
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, k_points, have_disentangled, &
                              num_wann, num_kpts, num_bands, seedname)
     !============================================!
     !                                            !
@@ -1905,12 +1907,11 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_time, io_stopwatch, io_date
     use w90_constants, only: dp  !lp
-    use w90_param_types, only: k_point_type, parameter_input_type
+    use w90_param_types, only: k_point_type
 
     implicit none
 
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
 
     integer             :: matunit
     integer             :: i, j, nkp
@@ -1924,7 +1925,7 @@ contains
 !   real(kind=dp), intent(in) :: kpt_latt(:, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-!   logical, intent(in) :: have_disentangled
+    logical, intent(in) :: have_disentangled
 !   end w90_parameters
     character(len=50), intent(in)  :: seedname
 
@@ -1944,7 +1945,7 @@ contains
     end do
     close (matunit)
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       matunit = io_file_unit()
       open (matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
       write (matunit, *) header

@@ -61,7 +61,6 @@ module w90lib_parameters
 
   public
 
-  type(parameter_input_type), save :: param_input
   type(print_output_type), save :: verbose
   type(w90_system_type), save :: system
   type(exclude_bands_type), save :: excluded_bands
@@ -79,6 +78,7 @@ module w90lib_parameters
   logical, save :: cp_pp, calc_only_A
   logical, save :: use_bloch_phases
   logical, save :: gamma_only
+  logical, save :: have_disentangled
 
   integer, save :: num_bands
   !! Number of bands
@@ -271,7 +271,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                   real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, num_bands, &
                   num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
                   lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, seedname, stdout)
-  param_input%have_disentangled = .false.
+  have_disentangled = .false.
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
@@ -507,7 +507,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, num_bands, &
                   num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
                   lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
-  param_input%have_disentangled = .false.
+  have_disentangled = .false.
   call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
                    param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
@@ -554,18 +554,18 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 !~  if (gamma_only) call overlap_check_m_symmetry()
 
   if (w90_calcs%disentanglement) then
-    param_input%have_disentangled = .false.
+    have_disentangled = .false.
 
     call dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, &
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, recip_lattice, param_wannierise%omega%invariant, &
                   num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
                   stdout, seedname, comm)
-    param_input%have_disentangled = .true.
-    call param_write_chkpt('postdis', excluded_bands, param_input, wann_data, kmesh_info, &
+    have_disentangled = .true.
+    call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, &
                            k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
                            u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
-                           param_wannierise%omega%invariant, stdout, seedname)
+                           param_wannierise%omega%invariant, have_disentangled, stdout, seedname)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
@@ -583,45 +583,46 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   end if
 
   if (gamma_only) then
-    call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, param_input, &
+    call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, &
                          param_wannierise, system, verbose, wann_data, w90_calcs, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
-                         num_bands, num_kpts, num_wann, seedname, stdout, comm)
+                         num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
   else
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
-                   param_input, param_wannierise, rs_region, sym, system, verbose, wann_data, &
-                   w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                   recip_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
-                   nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
-                   band_plot%plot_mode, tran%mode, lsitesymmetry, seedname, stdout, comm)
+                   param_wannierise, rs_region, sym, system, verbose, wann_data, w90_calcs, ham_k, &
+                   ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                   wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                   num_bands, num_kpts, num_proj, num_wann, rpt_origin, band_plot%plot_mode, &
+                   tran%mode, have_disentangled, lsitesymmetry, seedname, stdout, comm)
   endif
 
-  call param_write_chkpt('postwann', excluded_bands, param_input, wann_data, kmesh_info, k_points, &
+  call param_write_chkpt('postwann', excluded_bands, wann_data, kmesh_info, k_points, &
                          num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
                          m_matrix, mp_grid, real_lattice, recip_lattice, &
-                         param_wannierise%omega%invariant, stdout, seedname)
+                         param_wannierise%omega%invariant, have_disentangled, stdout, seedname)
 
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr) then
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, param_hamil, param_input, param_plot, rs_region, spec_points, &
+                   k_points, param_hamil, param_plot, rs_region, spec_points, &
                    verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
-                   num_wann, rpt_origin, tran%mode, lsitesymmetry, system%spinors, seedname, stdout)
+                   num_wann, rpt_origin, tran%mode, have_disentangled, lsitesymmetry, &
+                   system%spinors, seedname, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
   end if
 
   time2 = io_time()
   if (w90_calcs%transport) then
-    call tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, rs_region, &
+    call tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, rs_region, &
                    tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, &
                    eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
                    mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                   band_plot%plot_mode, lsitesymmetry, seedname, stdout)
+                   band_plot%plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if

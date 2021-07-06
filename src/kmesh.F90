@@ -854,7 +854,7 @@ contains
     !
     !==================================================================
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: parameter_input_type, print_output_type
+    use w90_param_types, only: print_output_type
 
     implicit none
 
@@ -914,7 +914,7 @@ contains
     !
     !=============================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
+    use w90_param_types, only: param_kmesh_type, print_output_type
 
     implicit none
 
@@ -980,7 +980,7 @@ contains
 
     use w90_constants, only: eps5, eps6
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
+    use w90_param_types, only: param_kmesh_type, print_output_type
 
     implicit none
 
@@ -1233,7 +1233,7 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
+    use w90_param_types, only: param_kmesh_type, print_output_type
 
     implicit none
 
@@ -1380,7 +1380,7 @@ contains
     use w90_constants, only: eps7
 !   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, maxlen
     use w90_io, only: io_error, io_stopwatch, io_file_unit, maxlen
-    use w90_param_types, only: parameter_input_type, param_kmesh_type, print_output_type
+    use w90_param_types, only: param_kmesh_type, print_output_type
 
     implicit none
 

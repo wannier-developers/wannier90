@@ -63,7 +63,7 @@ module w90_param_types
     !! to search for points inside the Wigner-Seitz cell
   end type real_space_type
 
-  !Input - temporary fix for postw90 not using print_output_type
+  !Input - temporary fix for postw90 not using print_output_type, or w90_system_type
   type parameter_input_type
     ! verbosity flags - param_read_verbosity
     integer :: iprint
@@ -1769,10 +1769,10 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(dis_data, excluded_bands, kmesh_info, k_points, param_input, &
+  subroutine param_read_chkpt(dis_data, excluded_bands, kmesh_info, k_points, &
                               wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
                               recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
-                              num_wann, checkpoint, ispostw90, seedname, stdout)
+                              num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1790,8 +1790,6 @@ contains
     implicit none
 
     !data from parameters module
-    !type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -1816,6 +1814,7 @@ contains
     character(len=*), intent(inout) :: checkpoint
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
+    logical, intent(out) :: have_disentangled
 
 !   local variables
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
@@ -1883,9 +1882,9 @@ contains
     read (chk_unit) checkpoint             ! checkpoint
     checkpoint = adjustl(trim(checkpoint))
 
-    read (chk_unit) param_input%have_disentangled      ! whether a disentanglement has been performed
+    read (chk_unit) have_disentangled      ! whether a disentanglement has been performed
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
 
       read (chk_unit) omega_invariant     ! omega invariant
 
@@ -1954,8 +1953,8 @@ contains
   end subroutine param_read_chkpt
 
 !===========================================================!
-  subroutine param_chkpt_dist(dis_data, param_input, wann_data, u_matrix, u_matrix_opt, &
-                              omega_invariant, num_bands, num_kpts, num_wann, checkpoint, &
+  subroutine param_chkpt_dist(dis_data, wann_data, u_matrix, u_matrix_opt, omega_invariant, &
+                              num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
                               seedname, stdout, comm)
     !===========================================================!
     !                                                           !
@@ -1970,8 +1969,6 @@ contains
     implicit none
 
     !data from parameters module
-    !type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(disentangle_manifold_type), intent(inout) :: dis_data
     type(w90commtype), intent(in) :: comm
@@ -1987,6 +1984,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
+    logical, intent(inout) :: have_disentangled
 
 !   local variables
     integer :: ierr
@@ -2011,9 +2009,9 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(param_input%have_disentangled, 1, stdout, seedname, comm)
+    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       if (.not. on_root) then
 
         if (.not. allocated(u_matrix_opt)) then

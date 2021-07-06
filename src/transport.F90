@@ -82,11 +82,11 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, param_input, &
-                       rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
-                       u_matrix_opt, eigval, real_lattice, recip_lattice, &
-                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, lsitesymmetry, &
+  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, rs_region, tran, &
+                       verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, &
+                       eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
+                       mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                       rpt_origin, bands_plot_mode, have_disentangled, lsitesymmetry, &
                        seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
@@ -95,7 +95,7 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
-    use w90_param_types, only: parameter_input_type, wannier_data_type, print_output_type, &
+    use w90_param_types, only: wannier_data_type, print_output_type, &
       atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_type
     use wannier_param_types, only: w90_calculation_type, transport_type, &
       param_hamiltonian_type
@@ -104,7 +104,6 @@ contains
 
     ! arguments
     type(transport_type), intent(inout)         :: tran
-    type(parameter_input_type), intent(in)      :: param_input
     type(real_space_type), intent(inout)        :: rs_region
     type(print_output_type), intent(in)         :: verbose
     type(w90_calculation_type), intent(in)      :: w90_calcs
@@ -139,6 +138,7 @@ contains
 
     character(len=*), intent(in) :: bands_plot_mode
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
     logical, intent(in) :: lsitesymmetry  !YN:
 
     ! local variables
@@ -185,11 +185,12 @@ contains
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, stdout, seedname, lsitesymmetry)
+                                num_kpts, num_wann, have_disentangled, stdout, seedname, &
+                                lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
                                                           verbose%timing_level, seedname)
@@ -214,11 +215,12 @@ contains
                                wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
                                num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
                                tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, stdout, seedname, lsitesymmetry)
+                                num_kpts, num_wann, have_disentangled, stdout, seedname, &
+                                lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                           num_wann, stdout, &
                                                           verbose%timing_level, seedname)
@@ -230,8 +232,8 @@ contains
                                  irvec_max, stdout, seedname)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
-        call tran_find_integral_signatures(signatures, num_G, param_input, verbose, real_lattice, &
-                                           u_matrix_opt, u_matrix, num_bands, num_wann, &
+        call tran_find_integral_signatures(signatures, num_G, verbose, real_lattice, u_matrix_opt, &
+                                           u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, rs_region, &
                                verbose, w90_calcs, real_lattice, num_wann, mp_grid, ham_r, irvec, &
@@ -324,7 +326,7 @@ contains
 
     if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, seedname)
 
-    ! Find one_dim_vec which is parallel to param_input%one_dim_dir
+    ! Find one_dim_vec which is parallel to one_dim_dir
     ! two_dim_vec - the other two lattice vectors
     j = 0
     do i = 1, 3
@@ -436,7 +438,7 @@ contains
     if (verbose%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
     !
     !irvec_max = nrpts_one_dim/2 ! now passed as arg
-    ! maximum possible param_input%dist_cutoff
+    ! maximum possible dist_cutoff
     dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(rs_region%one_dim_dir, one_dim_vec)) &
            /2.0_dp
     if (rs_region%dist_cutoff .gt. dist) then
@@ -454,7 +456,7 @@ contains
 !           write(stdout,'(a,3f10.6)') 'shift_vec', shift_vec(:,n1)
     end do
 
-    ! apply param_input%dist_cutoff first
+    ! apply dist_cutoff first
     if (index(rs_region%dist_cutoff_mode, 'one_dim') > 0) then
       do i = 1, num_wann
         do j = 1, num_wann
@@ -465,7 +467,7 @@ contains
                                               + shift_vec(rs_region%one_dim_dir, n1)
             !
             !MS: Add special case for lcr: We must not cut the elements that are within
-            !    param_input%dist_cutoff under PBC's (single kpt assumed) in order to build
+            !    dist_cutoff under PBC's (single kpt assumed) in order to build
             !    hamiltonians correctly in tran_2c2_build_hams
             !
             if ((index(tran%mode, 'lcr') > 0) .and. &
@@ -547,7 +549,7 @@ contains
       write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', &
         num_pl*num_wann
     endif
-    ! apply param_input%hr_cutoff to each element inside the principal layer
+    ! apply hr_cutoff to each element inside the principal layer
     do n1 = -num_pl, num_pl
       do i = 1, num_wann
         do j = 1, num_wann
@@ -1684,8 +1686,8 @@ contains
   end subroutine tran_read_htXY
 
 !========================================
-  subroutine tran_find_integral_signatures(signatures, num_G, param_input, verbose, real_lattice, &
-                                           u_matrix_opt, u_matrix, num_bands, num_wann, &
+  subroutine tran_find_integral_signatures(signatures, num_G, verbose, real_lattice, u_matrix_opt, &
+                                           u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
     !=========================================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !
@@ -1697,11 +1699,10 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
 !   use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, print_output_type
+    use w90_param_types, only: print_output_type
 
     implicit none
 
-    type(parameter_input_type), intent(in) :: param_input
     type(print_output_type), intent(in) :: verbose
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
@@ -1712,6 +1713,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    logical, intent(in) :: have_disentangled
 
     integer, intent(out)                                    :: num_G
     real(kind=dp), allocatable, dimension(:, :), intent(out)   :: signatures
@@ -1750,7 +1752,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating unkg in tran_find_sigs_unkg_int', stdout, seedname)
     allocate (g_abc(num_G, 3), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_abc in tran_find_sigs_unkg_int', stdout, seedname)
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       allocate (tran_u_matrix(num_bands, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', stdout, seedname)
     else
@@ -1803,7 +1805,7 @@ contains
       !
       !Disentanglement step
       !
-      if (param_input%have_disentangled) then
+      if (have_disentangled) then
         do p = 1, num_bands
           do m = 1, num_wann
             tran_u_matrix(p, n) = tran_u_matrix(p, n) + u_matrix(m, n, 1)*u_matrix_opt(p, m, 1)
@@ -2049,7 +2051,7 @@ contains
                     &try restart=plot', stdout, seedname)
     endif
 
-    !read param_input%one_dim_dir and creates an array (coord) that correspond to the
+    !read one_dim_dir and creates an array (coord) that correspond to the
     !conduction direction (coord(1)) and the two perpendicular directions
     !(coord(2),coord(3)), such that a right-handed set is formed
     !
@@ -2469,7 +2471,7 @@ contains
     write (stdout, *) ' '
 
     !
-    ! MS: Use sorting to assess whether param_input%dist_cutoff is suitable for correct PL cut
+    ! MS: Use sorting to assess whether dist_cutoff is suitable for correct PL cut
     !     by using limits of coord(1) values in 1st and last groups of PL1, & 1st group of PL2
     !
     pl_warning = .false.
@@ -3554,7 +3556,7 @@ contains
       enddo
     enddo
 !----!
-! MS ! Rely on param_input%dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
+! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
 !----!
 !    if (tran%num_cell_ll .gt. 1) then
 !        do j=1,tran%num_cell_ll
@@ -3610,7 +3612,7 @@ contains
       enddo
     enddo
 !----!
-! MS ! Rely on param_input%dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
+! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
 !----!
 !    if (tran%num_cell_ll .gt. 1) then
 !        do j=1,tran%num_cell_ll

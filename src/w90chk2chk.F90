@@ -22,7 +22,7 @@ module w90chk_parameters
 
   public
 
-  type(parameter_input_type), save :: param_input
+  !type(parameter_input_type), save :: param_input
   type(exclude_bands_type), save :: excluded_bands
   type(wannier_data_type), save :: wann_data
   type(param_kmesh_type), save :: kmesh_data
@@ -32,6 +32,7 @@ module w90chk_parameters
   type(disentangle_manifold_type), save :: dis_window
   type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
+  logical, save :: have_disentangled
 
   integer, save :: num_bands
   !! Number of bands
@@ -256,9 +257,9 @@ contains
     checkpoint = adjustl(trim(checkpoint))
     write (stdout, '(a,I0)') "checkpoint: "//trim(checkpoint)
 
-    read (chk_unit) param_input%have_disentangled      ! whether a disentanglement has been performed
+    read (chk_unit) have_disentangled      ! whether a disentanglement has been performed
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
       read (chk_unit) omega_invariant     ! omega invariant
@@ -419,15 +420,15 @@ contains
 
     read (chk_unit, *) idum
     if (idum == 1) then
-      param_input%have_disentangled = .true.
+      have_disentangled = .true.
     elseif (idum == 0) then
-      param_input%have_disentangled = .false.
+      have_disentangled = .false.
     else
       write (cdum, '(I0)') idum
       call io_error('Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum, stdout, seedname)
     end if
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
       read (chk_unit, *) omega_invariant     ! omega invariant
@@ -588,8 +589,8 @@ contains
     write (chk_unit) num_wann                                 ! Number of wannier functions
     ! Next is correct: it always print out 20 characters
     write (chk_unit) checkpoint                               ! Position of checkpoint
-    write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
-    if (param_input%have_disentangled) then
+    write (chk_unit) have_disentangled      ! Whether a disentanglement has been performed
+    if (have_disentangled) then
       write (chk_unit) omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
@@ -645,12 +646,12 @@ contains
     write (chk_unit, '(I0)') kmesh_info%nntot                                    ! Number of nearest k-point neighbours
     write (chk_unit, '(I0)') num_wann                                 ! Number of wannier functions
     write (chk_unit, '(A20)') checkpoint                               ! Position of checkpoint
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       write (chk_unit, '(I1)') 1      ! Whether a disentanglement has been performed
     else
       write (chk_unit, '(I1)') 0      ! Whether a disentanglement has been performed
     end if
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       write (chk_unit, '(G25.17)') omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       do nkp = 1, num_kpts

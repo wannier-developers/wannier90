@@ -197,11 +197,11 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, param_input, verbose, ham_k, &
-                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
+  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+                                u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                                 recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
-                                shift_vec, nrpts, num_bands, num_kpts, num_wann, stdout, &
-                                seedname, lsitesymmetry)
+                                shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                                have_disentangled, stdout, seedname, lsitesymmetry)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -220,7 +220,6 @@ contains
     type(ham_logical), intent(inout)            :: hmlg
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(parameter_input_type), intent(in)      :: param_input
     type(print_output_type), intent(in)      :: verbose
     type(disentangle_manifold_type), intent(in) :: dis_window
 
@@ -245,6 +244,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
 
     logical, intent(in) :: lsitesymmetry  !YN:
+    logical, intent(in) :: have_disentangled
 
     character(len=50), intent(in)  :: seedname
 
@@ -278,7 +278,7 @@ contains
     eigval_opt = 0.0_dp
     eigval2 = 0.0_dp
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
 
       ! slim down eigval to contain states within the outer window
 
@@ -336,7 +336,7 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    if (.not. lsitesymmetry .or. .not. param_input%have_disentangled) then                               !YN:
+    if (.not. lsitesymmetry .or. .not. have_disentangled) then                               !YN:
       do loop_kpt = 1, num_kpts
         do j = 1, num_wann
           do i = 1, j
@@ -380,7 +380,7 @@ contains
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout, &
                                    seedname)
-      call internal_translate_centres(num_wann, param_input, verbose%iprint, atoms, param_hamil, &
+      call internal_translate_centres(num_wann, verbose%iprint, atoms, param_hamil, &
                                       wannier_centres, recip_lattice, real_lattice, shift_vec, &
                                       wannier_centres_translated, stdout, seedname)
 
@@ -432,7 +432,7 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(num_wann, param_input, iprint, atoms, param_hamil, &
+    subroutine internal_translate_centres(num_wann, iprint, atoms, param_hamil, &
                                           wannier_centres, recip_lattice, real_lattice, &
                                           shift_vec, wannier_centres_translated, stdout, seedname)
       !! Translate the centres of the WF into the home cell
@@ -446,7 +446,6 @@ contains
       implicit none
 
       ! passed variables
-      type(parameter_input_type), intent(in)      :: param_input
       type(atom_data_type), intent(in)            :: atoms
       type(param_hamiltonian_type), intent(inout) :: param_hamil
 

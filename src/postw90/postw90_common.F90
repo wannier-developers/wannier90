@@ -565,8 +565,9 @@ contains
 
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
-                                         dis_window, param_input, wann_data, pw90_common, &
-                                         v_matrix, num_valence_bands, stdout, seedname, world)
+                                         dis_window, wann_data, pw90_common, v_matrix, &
+                                         num_valence_bands, have_disentangled, stdout, seedname, &
+                                         world)
     !===========================================================!
     !                                                           !
     !! Distribute the um and chk files
@@ -576,7 +577,7 @@ contains
     use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, parameter_input_type, wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, wannier_data_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank, comms_bcast
 
@@ -584,11 +585,11 @@ contains
     integer, intent(in) :: num_wann, num_kpts, num_bands
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
     type(disentangle_manifold_type), intent(inout) :: dis_window
-    type(parameter_input_type), intent(inout) :: param_input
     type(wannier_data_type), intent(inout) :: wann_data
     type(postw90_common_type), intent(in) :: pw90_common
     complex(kind=dp), allocatable :: v_matrix(:, :, :)
     integer, intent(in) :: num_valence_bands
+    logical, intent(inout) :: have_disentangled
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
@@ -621,7 +622,7 @@ contains
       call io_error('Error allocating v_matrix in pw90common_wanint_data_dist', stdout, seedname)
     ! u_matrix and u_matrix_opt are stored on root only
     if (on_root) then
-      if (.not. param_input%have_disentangled) then
+      if (.not. have_disentangled) then
         v_matrix(1:num_wann, :, :) = u_matrix(1:num_wann, :, :)
       else
         v_matrix = cmplx_0
@@ -659,9 +660,9 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(param_input%have_disentangled, 1, stdout, seedname, world)
+    call comms_bcast(have_disentangled, 1, stdout, seedname, world)
 
-    if (param_input%have_disentangled) then
+    if (have_disentangled) then
       if (.not. on_root) then
 
         ! Do we really need these 'if not allocated'? Didn't use them for

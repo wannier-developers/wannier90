@@ -1679,10 +1679,10 @@ contains
   end subroutine param_w90_dealloc
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt, excluded_bands, param_input, wann_data, kmesh_info, &
-                               k_points, num_kpts, dis_window, num_bands, &
-                               num_wann, u_matrix, u_matrix_opt, m_matrix, mp_grid, real_lattice, &
-                               recip_lattice, omega_invariant, stdout, seedname)
+  subroutine param_write_chkpt(chkpt, excluded_bands, wann_data, kmesh_info, k_points, num_kpts, &
+                               dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                               mp_grid, real_lattice, recip_lattice, omega_invariant, &
+                               have_disentangled, stdout, seedname)
     !=================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1699,7 +1699,6 @@ contains
 
     character(len=*), intent(in) :: chkpt
     !data from parameters module
-    type(parameter_input_type), intent(in) :: param_input
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(wannier_data_type), intent(in) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -1717,6 +1716,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: omega_invariant
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
 
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
@@ -1744,8 +1744,8 @@ contains
     write (chk_unit) num_wann               ! Number of wannier functions
     chkpt1 = adjustl(trim(chkpt))
     write (chk_unit) chkpt1                 ! Position of checkpoint
-    write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
-    if (param_input%have_disentangled) then
+    write (chk_unit) have_disentangled      ! Whether a disentanglement has been performed
+    if (have_disentangled) then
       write (chk_unit) omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
@@ -2000,11 +2000,11 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                        param_input, param_plot, param_wannierise, proj_input, rs_region, system, &
-                        tran, verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
+                        param_plot, param_wannierise, proj_input, rs_region, system, tran, &
+                        verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
                         recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                        num_wann, eig_found, cp_pp, gamma_only, lhasproj, lsitesymmetry, &
-                        use_bloch_phases, seedname, stdout, comm)
+                        num_wann, eig_found, cp_pp, gamma_only, have_disentangled, lhasproj, &
+                        lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2019,7 +2019,6 @@ contains
     !passed variables
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(parameter_input_type), intent(inout) :: param_input
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_type), intent(inout) :: rs_region
     type(print_output_type), intent(inout) :: verbose
@@ -2072,6 +2071,7 @@ contains
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: cp_pp
     logical, intent(inout) :: gamma_only
+    logical, intent(inout) :: have_disentangled
     logical, intent(inout) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
@@ -2494,7 +2494,7 @@ contains
     call comms_bcast(param_wannierise%omega%total, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%omega%tilde, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%omega%invariant, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%have_disentangled, 1, stdout, seedname, comm)
+    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
 
     if (.not. on_root) then
       allocate (wann_data%centres(3, num_wann), stat=ierr)
