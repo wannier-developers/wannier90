@@ -42,8 +42,8 @@ contains
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj, proj_input, select_proj, spec_points, tran, &
-                        verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
+                        param_wannierise, proj, proj_input, select_proj, spec_points, system, &
+                        tran, verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
                         real_lattice, recip_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
                         num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
                         lhasproj, library, library_param_read_first_pass, lsitesymmetry, &
@@ -80,6 +80,7 @@ contains
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
+    type(w90_system_type), intent(inout) :: system
     type(special_kpoints_type), intent(inout) :: spec_points
     type(select_projection_type), intent(inout) :: select_proj
     type(input_proj_type), intent(inout) :: proj_input
@@ -144,13 +145,14 @@ contains
       call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
       call param_read_post_proc(cp_pp, calc_only_A, driver%postproc_setup, stdout, seedname)
       call param_read_restart(driver, stdout, seedname)
-      call param_read_system(library, param_input, stdout, seedname)
+      call param_read_system(library, system, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
       call param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
                            stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
-      call param_read_outfiles(w90_calcs, param_input, num_kpts, gamma_only, stdout, seedname)
+      call param_read_outfiles(w90_calcs, num_kpts, system%num_valence_bands, &
+                               gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, band_plot, param_input, write_data%one_dim_axis, &
@@ -178,7 +180,7 @@ contains
                                   param_wannierise%control%guiding_centres, &
                                   param_wannierise%proj_site, proj_input, select_proj, num_proj, &
                                   param_input, atoms, recip_lattice, num_wann, gamma_only, &
-                                  library, bohr, stdout, seedname)
+                                  system%spinors, library, bohr, stdout, seedname)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%constrain%slwf_constrain) then
         call param_read_constrained_centres(write_data%ccentres_frac, param_wannierise, &
@@ -621,13 +623,14 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_read_restart
 
-  subroutine param_read_outfiles(w90_calcs, param_input, num_kpts, gamma_only, stdout, seedname)
+  subroutine param_read_outfiles(w90_calcs, num_kpts, num_valence_bands, gamma_only, stdout, &
+                                 seedname)
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(parameter_input_type), intent(inout) :: param_input ! write_xyz
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_valence_bands
     logical, intent(in) :: gamma_only
     character(len=50), intent(in)  :: seedname
 
@@ -675,8 +678,7 @@ contains
         call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', &
                       stdout, seedname)
     endif
-    if (w90_calcs%write_vdw_data .and. w90_calcs%disentanglement .and. &
-        param_input%num_valence_bands <= 0) &
+    if (w90_calcs%write_vdw_data .and. w90_calcs%disentanglement .and. num_valence_bands <= 0) &
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined', stdout, seedname)
 
   end subroutine param_read_outfiles
@@ -994,7 +996,7 @@ contains
   subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, proj_input, select_proj, num_proj, &
                                     param_input, atoms, recip_lattice, num_wann, gamma_only, &
-                                    library, bohr, stdout, seedname)
+                                    spinors, library, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     type(projection_type), intent(inout) :: proj
@@ -1009,6 +1011,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
     logical, intent(in) :: gamma_only
+    logical, intent(in) :: spinors
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -1030,8 +1033,8 @@ contains
       if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
                                                      stdout, seedname)
       lhasproj = .true.
-      call param_get_projections(num_proj, atoms, param_input, num_wann, proj_input, proj_site, &
-                                 proj, recip_lattice, .true., bohr, stdout, seedname)
+      call param_get_projections(num_proj, atoms, num_wann, proj_input, proj_site, &
+                                 proj, recip_lattice, .true., spinors, bohr, stdout, seedname)
     else
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found', stdout, seedname)
@@ -1080,8 +1083,8 @@ contains
     endif
 
     if (lhasproj) then
-      call param_get_projections(num_proj, atoms, param_input, num_wann, proj_input, proj_site, &
-                                 proj, recip_lattice, .false., bohr, stdout, seedname)
+      call param_get_projections(num_proj, atoms, num_wann, proj_input, proj_site, &
+                                 proj, recip_lattice, .false., spinors, bohr, stdout, seedname)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj_site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
@@ -1093,7 +1096,7 @@ contains
         proj%zona(select_proj%proj2wann_map(loop)) = proj_input%proj%zona(loop)
       enddo
 
-      if (param_input%spinors) then
+      if (spinors) then
         do loop = 1, num_proj
           if (select_proj%proj2wann_map(loop) < 0) cycle
           proj%s(select_proj%proj2wann_map(loop)) = proj_input%proj%s(loop)
@@ -1161,7 +1164,7 @@ contains
                          proj_input, select_proj, spec_points, tran, verbose, wann_data, &
                          wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                         cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, stdout)
+                         cp_pp, gamma_only, lsitesymmetry, spinors, use_bloch_phases, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1208,6 +1211,7 @@ contains
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: cp_pp, use_bloch_phases
     logical, intent(in) :: gamma_only
+    logical, intent(in) :: spinors
 
 !   local variables
     integer :: i, nkp, loop, nat, nsp
@@ -1479,7 +1483,7 @@ contains
 
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
           trim(wann_plot%plot_mode), '|'
-        if (param_input%spinors) then
+        if (spinors) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :', &
             trim(wann_plot%plot_spinor_mode), '|'
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :', &
@@ -2016,7 +2020,7 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, fermi, fermi_surface_data, &
                         kmesh_data, kmesh_info, k_points, param_hamil, param_input, param_plot, &
-                        param_wannierise, proj_input, tran, verbose, wann_data, wann_plot, &
+                        param_wannierise, proj_input, system, tran, verbose, wann_data, wann_plot, &
                         w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
                         num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
                         lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
@@ -2040,6 +2044,7 @@ contains
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
@@ -2286,7 +2291,7 @@ contains
     !call comms_bcast(pw90_common%spin_decomp, 1)
     !call comms_bcast(pw90_ham%use_degen_pert, 1)
     !call comms_bcast(pw90_ham%degen_thr, 1)
-    call comms_bcast(param_input%num_valence_bands, 1, stdout, seedname, comm)
+    call comms_bcast(system%num_valence_bands, 1, stdout, seedname, comm)
     !call comms_bcast(pw90_calcs%dos, 1)
     !call comms_bcast(dos_data%task, len(dos_data%task))
     !call comms_bcast(pw90_calcs%kpath, 1)
@@ -2295,7 +2300,7 @@ contains
     !call comms_bcast(pw90_calcs%kslice, 1)
     !call comms_bcast(kslice%task, len(kslice%task))
     !call comms_bcast(berry%transl_inv, 1)
-    call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, comm)
+    call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, comm)
     !call comms_bcast(pw90_common%scissors_shift, 1)
     !
 
@@ -2371,8 +2376,8 @@ contains
     call comms_bcast(param_wannierise%control%precond, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_proj, 1, stdout, seedname, comm)
     call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%spinors, 1, stdout, seedname, comm)
-    call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, comm)
+    call comms_bcast(system%spinors, 1, stdout, seedname, comm)
+    call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%translate_home_cell, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_xyz, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_hr_diag, 1, stdout, seedname, comm)

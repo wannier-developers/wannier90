@@ -102,6 +102,7 @@ program postw90
   ! w90_parameters stuff
   type(parameter_input_type) :: param_input
   type(print_output_type) :: verbose
+  type(w90_system_type) :: system
   type(wannier_data_type) :: wann_data
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
@@ -242,21 +243,14 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(param_input, verbose, wann_data, kmesh_data, k_points, num_kpts, &
-                            dis_window, fermi, atoms, num_bands, num_wann, eigval, &
+    call param_postw90_read(param_input, system, verbose, wann_data, kmesh_data, k_points, &
+                            num_kpts, dis_window, fermi, atoms, num_bands, num_wann, eigval, &
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
                             physics%bohr, stdout, seedname)
-    ! tempoaray hack
-    param_input%iprint = verbose%iprint
-    param_input%timing_level = verbose%timing_level
-    param_input%optimisation = verbose%optimisation
-    param_input%length_unit = verbose%length_unit
-    param_input%lenconfac = verbose%lenconfac
-    param_input%devel_flag = verbose%devel_flag
-    call param_postw90_write(param_input, fermi, atoms, num_wann, &
+    call param_postw90_write(param_input, system, fermi, atoms, num_wann, &
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
                              pw90_spin, kpath, kslice, dos_data, berry, &
@@ -309,7 +303,7 @@ program postw90
   ! We now distribute a subset of the parameters to the other nodes
   !
   call pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_window, &
-                                    fermi, num_bands, num_wann, eigval, mp_grid, &
+                                    system, fermi, num_bands, num_wann, eigval, mp_grid, &
                                     real_lattice, recip_lattice, pw90_calcs, &
                                     pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                                     dos_data, berry, spin_hall, gyrotropic, geninterp, &
@@ -335,9 +329,21 @@ program postw90
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_window, param_input, wann_data, pw90_common, &
-                                     v_matrix, stdout, seedname, comm)
+                                     v_matrix, system%num_valence_bands, stdout, seedname, comm)
     !
   end if
+
+  ! tempoaray hack
+  param_input%iprint = verbose%iprint
+  param_input%timing_level = verbose%timing_level
+  param_input%optimisation = verbose%optimisation
+  param_input%length_unit = verbose%length_unit
+  param_input%lenconfac = verbose%lenconfac
+  param_input%devel_flag = verbose%devel_flag
+  param_input%num_valence_bands = system%num_valence_bands
+  param_input%num_elec_per_state = system%num_elec_per_state
+  param_input%spinors = system%spinors
+  ! end hack
 
   ! Read list of k-points in irreducible BZ and their weights
   !

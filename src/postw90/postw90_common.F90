@@ -253,7 +253,7 @@ contains
 
   !===========================================================!
   subroutine pw90common_wanint_param_dist(param_input, kmesh_info, k_points, num_kpts, dis_window, &
-                                          fermi, num_bands, num_wann, eigval, mp_grid, &
+                                          system, fermi, num_bands, num_wann, eigval, mp_grid, &
                                           real_lattice, recip_lattice, pw90_calcs, &
                                           pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                                           dos_data, berry, spin_hall, gyrotropic, geninterp, &
@@ -275,6 +275,7 @@ contains
       spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
     type(parameter_input_type), intent(inout) :: param_input
+    type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
@@ -373,7 +374,7 @@ contains
     call comms_bcast(gyrotropic%smr_fixed_en_width, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%smr_index, 1, stdout, seedname, world)
 
-    call comms_bcast(param_input%spinors, 1, stdout, seedname, world)
+    call comms_bcast(system%spinors, 1, stdout, seedname, world)
 
     call comms_bcast(spin_hall%freq_scan, 1, stdout, seedname, world)
     call comms_bcast(spin_hall%alpha, 1, stdout, seedname, world)
@@ -412,7 +413,7 @@ contains
     call comms_bcast(pw90_spin%decomp, 1, stdout, seedname, world)
     call comms_bcast(pw90_ham%use_degen_pert, 1, stdout, seedname, world)
     call comms_bcast(pw90_ham%degen_thr, 1, stdout, seedname, world)
-    call comms_bcast(param_input%num_valence_bands, 1, stdout, seedname, world)
+    call comms_bcast(system%num_valence_bands, 1, stdout, seedname, world)
     call comms_bcast(pw90_calcs%dos, 1, stdout, seedname, world)
     call comms_bcast(dos_data%task, len(dos_data%task), stdout, seedname, world)
     call comms_bcast(pw90_calcs%kpath, 1, stdout, seedname, world)
@@ -427,7 +428,7 @@ contains
     call comms_bcast(kslice%fermi_lines_colour, len(kslice%fermi_lines_colour), stdout, seedname, &
                      world)
     call comms_bcast(berry%transl_inv, 1, stdout, seedname, world)
-    call comms_bcast(param_input%num_elec_per_state, 1, stdout, seedname, world)
+    call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, world)
     call comms_bcast(pw90_common%scissors_shift, 1, stdout, seedname, world)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
@@ -564,7 +565,7 @@ contains
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                          dis_window, param_input, wann_data, pw90_common, &
-                                         v_matrix, stdout, seedname, world)
+                                         v_matrix, num_valence_bands, stdout, seedname, world)
     !===========================================================!
     !                                                           !
     !! Distribute the um and chk files
@@ -586,6 +587,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(postw90_common_type), intent(in) :: pw90_common
     complex(kind=dp), allocatable :: v_matrix(:, :, :)
+    integer, intent(in) :: num_valence_bands
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
@@ -634,13 +636,13 @@ contains
         enddo
       endif
       if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
-      if (.not. (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp)) then
+      if (.not. (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp)) then
         if (allocated(u_matrix)) deallocate (u_matrix)
       endif
     endif
     call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, world)
 
-    if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+    if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) &

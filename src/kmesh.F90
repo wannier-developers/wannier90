@@ -619,7 +619,7 @@ contains
 
   !==================================================================!
   subroutine kmesh_write(kmesh_info, param_input, proj_input, verbose, kpt_latt, real_lattice, &
-                         recip_lattice, num_kpts, num_proj, calc_only_A, seedname, stdout)
+                         recip_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -667,6 +667,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     logical, intent(in) :: calc_only_A
+    logical, intent(in) :: spinors
     character(len=50), intent(in)  :: seedname
 
     integer           :: i, nkp, nn, nnkpout
@@ -706,7 +707,7 @@ contains
     enddo
     write (nnkpout, '(a/)') 'end kpoints'
 
-    if (param_input%spinors) then
+    if (spinors) then
       ! Projections
       write (nnkpout, '(a)') 'begin spinor_projections'
       if (allocated(proj_input%site)) then

@@ -34,7 +34,7 @@ contains
                        u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, lsitesymmetry, &
-                       seedname, stdout)
+                       spinors, seedname, stdout)
     !! Main plotting routine
     !============================================!
 
@@ -97,6 +97,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: spinors
 !   local variables
 
     integer :: nkp
@@ -174,7 +175,8 @@ contains
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, &
                                                   param_input, verbose, u_matrix_opt, dis_window, &
                                                   real_lattice, atoms, k_points, u_matrix, &
-                                                  num_kpts, num_bands, num_wann, bohr, stdout, seedname)
+                                                  num_kpts, num_bands, num_wann, spinors, bohr, &
+                                                  stdout, seedname)
 
     if (w90_calcs%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
@@ -1099,7 +1101,7 @@ contains
   !============================================!
   subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, param_input, verbose, &
                           u_matrix_opt, dis_window, real_lattice, atoms, k_points, u_matrix, &
-                          num_kpts, num_bands, num_wann, bohr, stdout, seedname)
+                          num_kpts, num_bands, num_wann, spinors, bohr, stdout, seedname)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1125,6 +1127,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     type(atom_data_type), intent(in) :: atoms
     type(disentangle_manifold_type), intent(in) :: dis_window
+    logical, intent(in) :: spinors
     real(kind=dp), intent(in) :: bohr
 
 !   from w90_parameters
@@ -1189,7 +1192,7 @@ contains
     !
     associate (ngs=>wann_plot%plot_supercell)
       !
-      if (.not. param_input%spinors) then
+      if (.not. spinors) then
         write (wfnname, 200) 1, param_plot%spin
       else
         write (wfnname, 199) 1
@@ -1215,14 +1218,14 @@ contains
                           -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot%num_plot), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating wann_func in plot_wannier', stdout, seedname)
       wann_func = cmplx_0
-      if (param_input%spinors) then
+      if (spinors) then
         allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                                -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                                -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot%num_plot), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating wann_func_nc in plot_wannier', stdout, seedname)
         wann_func_nc = cmplx_0
       endif
-      if (.not. param_input%spinors) then
+      if (.not. spinors) then
         if (param_input%have_disentangled) then
           allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_window%ndimwin)), stat=ierr)
           if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout, seedname)
@@ -1248,7 +1251,7 @@ contains
           num_inc = dis_window%ndimwin(loop_kpt)
         end if
 
-        if (.not. param_input%spinors) then
+        if (.not. spinors) then
           write (wfnname, 200) loop_kpt, param_plot%spin
         else
           write (wfnname, 199) loop_kpt
@@ -1276,20 +1279,20 @@ contains
             if (param_plot%wvfn_formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
-                if (.not. param_input%spinors) then
+                if (.not. spinors) then
                   r_wvfn_tmp(nx, counter) = cmplx(w_real, w_imag, kind=dp)
                 else
                   r_wvfn_tmp_nc(nx, counter, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
                 endif
               end do
-              if (param_input%spinors) then
+              if (spinors) then
                 do nx = 1, ngx*ngy*ngz
                   read (file_unit, *) w_real, w_imag
                   r_wvfn_tmp_nc(nx, counter, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
                 end do
               endif
             else
-              if (.not. param_input%spinors) then
+              if (.not. spinors) then
                 read (file_unit) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
               else
                 read (file_unit) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
@@ -1303,20 +1306,20 @@ contains
             if (param_plot%wvfn_formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
-                if (.not. param_input%spinors) then
+                if (.not. spinors) then
                   r_wvfn(nx, loop_b) = cmplx(w_real, w_imag, kind=dp)
                 else
                   r_wvfn_nc(nx, loop_b, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
                 endif
               end do
-              if (param_input%spinors) then
+              if (spinors) then
                 do nx = 1, ngx*ngy*ngz
                   read (file_unit, *) w_real, w_imag
                   r_wvfn_nc(nx, loop_b, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
                 end do
               endif
             else
-              if (.not. param_input%spinors) then
+              if (.not. spinors) then
                 read (file_unit) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
               else
                 read (file_unit) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
@@ -1329,7 +1332,7 @@ contains
         close (file_unit)
 
         if (param_input%have_disentangled) then
-          if (.not. param_input%spinors) then
+          if (.not. spinors) then
             r_wvfn = cmplx_0
             do loop_w = 1, num_wann
               do loop_b = 1, num_inc
@@ -1377,7 +1380,7 @@ contains
               catmp = exp(twopi*cmplx_i*scalfac)
               do loop_b = 1, num_wann
                 do loop_w = 1, wann_plot%num_plot
-                  if (.not. param_input%spinors) then
+                  if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = &
                       wann_func(nxx, nyy, nzz, loop_w) + &
                       u_matrix(loop_b, wann_plot%plot_list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
@@ -1423,7 +1426,7 @@ contains
 
       end do !loop over kpoints
 
-      if (.not. param_input%spinors) then !!!!! For spinor Wannier functions, the steps below are not necessary.
+      if (.not. spinors) then !!!!! For spinor Wannier functions, the steps below are not necessary.
         ! fix the global phase by setting the wannier to
         ! be real at the point where it has max. modulus
 

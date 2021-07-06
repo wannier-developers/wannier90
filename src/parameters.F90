@@ -42,10 +42,10 @@ module w90_param_types
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
-  type bands_type
+  type exclude_bands_type
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
     integer :: num_exclude_bands
-  end type bands_type
+  end type exclude_bands_type
 
   type real_space_type
     real(kind=dp) :: hr_cutoff !plot and transport
@@ -439,12 +439,12 @@ contains
     end if
   end subroutine param_read_mp_grid
 
-  subroutine param_read_system(library, param_input, stdout, seedname)
+  subroutine param_read_system(library, system, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
-    type(parameter_input_type), intent(inout) :: param_input
+    type(w90_system_type), intent(inout) :: system
     character(len=50), intent(in)  :: seedname
 
     logical :: found, ltmp
@@ -452,7 +452,7 @@ contains
     ltmp = .false.  ! by default our WF are not spinors
     call param_get_keyword(stdout, seedname, 'spinors', found, l_value=ltmp)
     if (.not. library) then
-      param_input%spinors = ltmp
+      system%spinors = ltmp
     else
       if (found) write (stdout, '(a)') ' Ignoring <spinors> in input file'
     endif
@@ -461,21 +461,22 @@ contains
 
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
-    if (param_input%spinors) then
-      param_input%num_elec_per_state = 1
+    if (system%spinors) then
+      system%num_elec_per_state = 1
     else
-      param_input%num_elec_per_state = 2
+      system%num_elec_per_state = 2
     endif
-    call param_get_keyword(stdout, seedname, 'num_elec_per_state', found, i_value=param_input%num_elec_per_state)
-    if ((param_input%num_elec_per_state /= 1) .and. (param_input%num_elec_per_state /= 2)) &
+    call param_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
+                           i_value=system%num_elec_per_state)
+    if ((system%num_elec_per_state /= 1) .and. (system%num_elec_per_state /= 2)) &
       call io_error('Error: num_elec_per_state can be only 1 or 2', stdout, seedname)
-    if (param_input%spinors .and. param_input%num_elec_per_state /= 1) &
+    if (system%spinors .and. system%num_elec_per_state /= 1) &
       call io_error('Error: when spinors = T num_elec_per_state must be 1', stdout, seedname)
 
     ! set to a negative default value
-    param_input%num_valence_bands = -99
-    call param_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=param_input%num_valence_bands)
-    if (found .and. (param_input%num_valence_bands .le. 0)) &
+    system%num_valence_bands = -99
+    call param_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=system%num_valence_bands)
+    if (found .and. (system%num_valence_bands .le. 0)) &
       call io_error('Error: num_valence_bands should be greater than zero', stdout, seedname)
     ! there is a check on this parameter later
 
@@ -3063,8 +3064,8 @@ contains
   end subroutine param_get_centre_constraint_from_column
 
 !===================================!
-  subroutine param_get_projections(num_proj, atoms, param_input, num_wann, input_proj, proj_site, &
-                                   proj, recip_lattice, lcount, bohr, stdout, seedname)
+  subroutine param_get_projections(num_proj, atoms, num_wann, input_proj, proj_site, proj, &
+                                   recip_lattice, lcount, spinors, bohr, stdout, seedname)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -3082,7 +3083,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(atom_data_type), intent(in) :: atoms
-    type(parameter_input_type), intent(in) :: param_input
     ! projection data
     !type(param_driver_type), intent(inout) :: driver
     !type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -3093,6 +3093,7 @@ contains
     type(input_proj_type), intent(inout) :: input_proj
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in)    :: lcount
+    logical, intent(in) :: spinors
     real(kind=dp), intent(in) :: bohr
 
     real(kind=dp)     :: pos_frac(3)
@@ -3152,7 +3153,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating input_proj_radial in param_get_projections', stdout, seedname)
       allocate (input_proj%proj%zona(num_proj), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating input_proj_zona in param_get_projections', stdout, seedname)
-      if (param_input%spinors) then
+      if (spinors) then
         allocate (input_proj%proj%s(num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_s in param_get_projections', stdout, seedname)
         allocate (input_proj%proj%s_qaxis(3, num_proj), stat=ierr)
@@ -3173,7 +3174,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating proj_radial in param_get_projections', stdout, seedname)
       allocate (proj%zona(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating proj_zona in param_get_projections', stdout, seedname)
-      if (param_input%spinors) then
+      if (spinors) then
         allocate (proj%s(num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_s in param_get_projections', stdout, seedname)
         allocate (proj%s_qaxis(3, num_wann), stat=ierr)
@@ -3251,7 +3252,7 @@ contains
         proj_x_tmp = proj_x_def
         proj_zona_tmp = proj_zona_def
         proj_radial_tmp = proj_radial_def
-        if (param_input%spinors) then
+        if (spinors) then
           proj_s_qaxis_tmp = proj_s_qaxis_def
           spn_counter = 2
           proj_u_tmp = .true.
@@ -3298,7 +3299,7 @@ contains
 
         ! scan for quantisation direction
         pos1 = index(dummy, '[')
-        if (param_input%spinors) then
+        if (spinors) then
           if (pos1 > 0) then
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ']')
@@ -3314,7 +3315,7 @@ contains
 
         ! scan for up or down
         pos1 = index(dummy, '(')
-        if (param_input%spinors) then
+        if (spinors) then
           if (pos1 > 0) then
             proj_u_tmp = .false.; proj_d_tmp = .false.
             ctemp = (dummy(pos1 + 1:))
@@ -3571,7 +3572,7 @@ contains
                   input_proj%proj%x(:, counter) = proj_x_tmp
                   input_proj%proj%radial(counter) = proj_radial_tmp
                   input_proj%proj%zona(counter) = proj_zona_tmp
-                  if (param_input%spinors) then
+                  if (spinors) then
                     if (spn_counter == 1) then
                       if (proj_u_tmp) input_proj%proj%s(counter) = 1
                       if (proj_d_tmp) input_proj%proj%s(counter) = -1
@@ -3600,7 +3601,7 @@ contains
                     input_proj%proj%x(:, counter) = proj_x_tmp
                     input_proj%proj%radial(counter) = proj_radial_tmp
                     input_proj%proj%zona(counter) = proj_zona_tmp
-                    if (param_input%spinors) then
+                    if (spinors) then
                       if (spn_counter == 1) then
                         if (proj_u_tmp) input_proj%proj%s(counter) = 1
                         if (proj_d_tmp) input_proj%proj%s(counter) = -1
@@ -3645,7 +3646,7 @@ contains
         input_proj%proj%x(:, loop) = proj_x_def
         input_proj%proj%zona(loop) = proj_zona_def
         input_proj%proj%radial(loop) = proj_radial_def
-        if (param_input%spinors) then
+        if (spinors) then
           if (modulo(loop, 2) == 1) then
             input_proj%proj%s(loop) = 1
           else

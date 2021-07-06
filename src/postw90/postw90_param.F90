@@ -191,7 +191,7 @@ module pw90_param_methods
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
-    fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type
+    fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type
   use w90_param_methods
   use pw90_parameters
 
@@ -229,7 +229,7 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, verbose, wann_data, kmesh_data, k_points, &
+  subroutine param_postw90_read(param_input, system, verbose, wann_data, kmesh_data, k_points, &
                                 num_kpts, dis_window, fermi, atoms, num_bands, &
                                 num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
@@ -253,6 +253,7 @@ contains
     !data from parameters module
     type(print_output_type), intent(inout) :: verbose
     type(parameter_input_type), intent(inout) :: param_input
+    type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
@@ -309,14 +310,14 @@ contains
     disentanglement = (num_bands > num_wann)
     call param_read_devel(verbose%devel_flag, stdout, seedname)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout, seedname)
-    call param_read_system(library, param_input, stdout, seedname)
+    call param_read_system(library, system, stdout, seedname)
     call param_read_kpath(library, spec_points, ok, stdout, seedname)
     call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(write_data%smear, stdout, seedname)
     call param_read_scissors_shift(pw90_common, stdout, seedname)
     call param_read_pw90spin(pw90_calcs%spin_moment, pw90_spin%decomp, pw90_spin, &
-                             param_input, stdout, seedname)
+                             system%num_elec_per_state, stdout, seedname)
     call param_read_gyrotropic(gyrotropic, num_wann, write_data%smear%fixed_en_width, &
                                write_data%smear%index, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, write_data%smear, stdout, seedname)
@@ -539,14 +540,15 @@ contains
 
   end subroutine param_read_scissors_shift
 
-  subroutine param_read_pw90spin(spin_moment, spin_decomp, pw90_spin, param_input, stdout, seedname)
+  subroutine param_read_pw90spin(spin_moment, spin_decomp, pw90_spin, num_elec_per_state, &
+                                 stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     logical, intent(out) :: spin_moment ! from pw90_calcs
     logical, intent(out) :: spin_decomp ! from pw90_common
     type(postw90_spin_type), intent(inout) :: pw90_spin
-    type(parameter_input_type), intent(in) :: param_input
+    integer, intent(in) :: num_elec_per_state
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -563,7 +565,7 @@ contains
     spin_decomp = .false.
     call param_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=spin_decomp)
 
-    if (spin_decomp .and. (param_input%num_elec_per_state .ne. 1)) then
+    if (spin_decomp .and. (num_elec_per_state .ne. 1)) then
       call io_error('spin_decomp can be true only if num_elec_per_state is 1', stdout, seedname)
     end if
 
@@ -1387,7 +1389,7 @@ contains
   end subroutine get_module_kmesh
 
 !===================================================================
-  subroutine param_postw90_write(param_input, fermi, atoms, num_wann, &
+  subroutine param_postw90_write(param_input, system, fermi, atoms, num_wann, &
                                  real_lattice, recip_lattice, spec_points, &
                                  pw90_calcs, postw90_oper, pw90_common, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
@@ -1402,6 +1404,7 @@ contains
 
     !data from parameters module
     type(parameter_input_type), intent(in) :: param_input
+    type(w90_system_type), intent(in) :: system
     type(fermi_data_type), intent(in) :: fermi
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_wann
@@ -1487,12 +1490,12 @@ contains
     write (stdout, '(1x,a78)') '*-------------------------------- POSTW90 -----------------------------------*'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of electrons per state             :', &
-      param_input%num_elec_per_state, '|'
+      system%num_elec_per_state, '|'
     if (abs(pw90_common%scissors_shift) > 1.0e-7_dp .or. param_input%iprint > 0) then
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :', pw90_common%scissors_shift, '|'
-      if (param_input%num_valence_bands > 0) then
+      if (system%num_valence_bands > 0) then
         write (stdout, '(1x,a46,10x,i8,13x,a1)') '|  Number of valence bands                   :', &
-          param_input%num_valence_bands, '|'
+          system%num_valence_bands, '|'
       else
         write (stdout, '(1x,a78)') '|  Number of valence bands                   :       not defined             |'
       endif

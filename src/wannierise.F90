@@ -49,7 +49,7 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, hmlg, kmesh_info, k_points, param_hamil, param_input, &
-                       param_wannierise, sym, verbose, wann_data, w90_calcs, ham_k, ham_r, &
+                       param_wannierise, sym, system, verbose, wann_data, w90_calcs, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_proj, num_wann, rpt_origin, bands_plot_mode, &
@@ -64,7 +64,7 @@ contains
     use wannier_param_types, only: param_wannierise_type, &
       w90_calculation_type, param_hamiltonian_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type
+      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -83,6 +83,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(parameter_input_type), intent(in) :: param_input
+    type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -858,7 +859,7 @@ contains
     ! aam: write data required for vdW utility
     if (w90_calcs%write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                               u_matrix_opt, param_input, stdout, seedname)
+                               u_matrix_opt, param_input, system, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs
@@ -2786,7 +2787,7 @@ contains
 
   !=================================================================!
   subroutine wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                                 u_matrix_opt, param_input, stdout, seedname)
+                                 u_matrix_opt, param_input, system, stdout, seedname)
     !=================================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
@@ -2799,13 +2800,14 @@ contains
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0
-    use w90_param_types, only: wannier_data_type, parameter_input_type
+    use w90_param_types, only: wannier_data_type, parameter_input_type, w90_system_type
 !~    use w90_disentangle, only : ndimfroz
 
     implicit none
 
     type(wannier_data_type), intent(in) :: wann_data
     type(parameter_input_type), intent(in) :: param_input
+    type(w90_system_type), intent(in) :: system
 
     ! from w90_parameters
     !logical, intent(in) :: translate_home_cell
@@ -2851,9 +2853,9 @@ contains
     if (param_input%have_disentangled) then
 
       ! dimension of occupied subspace
-      if (param_input%num_valence_bands .le. 0) &
+      if (system%num_valence_bands .le. 0) &
         call io_error('Please set num_valence_bands in seedname.win', stdout, seedname)
-      ndim = param_input%num_valence_bands
+      ndim = system%num_valence_bands
 
       allocate (v_matrix(ndim, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating V_matrix in wann_write_vdw_data', stdout, seedname)
@@ -2926,7 +2928,7 @@ contains
       write (vdw_unit, '(a)') 'disentangle F'
     endif
     write (vdw_unit, '(a)') 'amalgamate F'
-    write (vdw_unit, '(a,i3)') 'degeneracy', param_input%num_elec_per_state
+    write (vdw_unit, '(a,i3)') 'degeneracy', system%num_elec_per_state
     write (vdw_unit, '(a)') 'num_frag 2'
     write (vdw_unit, '(a)') 'num_wann'
     write (vdw_unit, '(i3,1x,i3)') num_wann/2, num_wann/2
@@ -3189,8 +3191,8 @@ contains
 
   !==================================================================!
   subroutine wann_main_gamma(atoms, dis_window, kmesh_info, k_points, param_input, &
-                             param_wannierise, verbose, wann_data, w90_calcs, m_matrix, u_matrix, &
-                             u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
+                             param_wannierise, system, verbose, wann_data, w90_calcs, m_matrix, &
+                             u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
@@ -3202,7 +3204,7 @@ contains
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: param_wannierise_type, w90_calculation_type
     use w90_param_types, only: kmesh_info_type, parameter_input_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type
+      wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90commtype
@@ -3216,6 +3218,7 @@ contains
     type(w90commtype), intent(in) :: comm
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(parameter_input_type), intent(in) :: param_input
+    type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
     type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -3596,9 +3599,8 @@ contains
 
     ! aam: write data required for vdW utility
     if (w90_calcs%write_vdw_data) then
-      call wann_write_vdw_data(num_wann, wann_data, real_lattice, &
-                               recip_lattice, u_matrix, u_matrix_opt, &
-                               param_input, stdout, seedname)
+      call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
+                               u_matrix_opt, param_input, system, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs
