@@ -593,10 +593,10 @@ contains
 !    deallocate ( u_matrix, stat=ierr )
 !    if (ierr/=0) call io_error('Error deallocating u_matrix in overlap_dealloc')
 !    if (on_root) then
-      if (allocated(m_matrix)) then
-        deallocate (m_matrix, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating m_matrix in overlap_dealloc')
-      endif
+    if (allocated(m_matrix)) then
+      deallocate (m_matrix, stat=ierr)
+      if (ierr /= 0) call io_error('Error deallocating m_matrix in overlap_dealloc')
+    endif
 !    endif
     if (allocated(m_matrix_local)) then
       deallocate (m_matrix_local, stat=ierr)
