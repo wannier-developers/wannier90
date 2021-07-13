@@ -340,6 +340,12 @@ program = POSTW90_SC_OK
 inputs_args = ('gaas.win', '')
 output = gaas-sc_xyz.dat
 
+# Test of shift current finite-eta correction for GaAs
+[testpostw90_gaas_sc_eta_corr/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
 # Test of selective localization and constrained centres
 [testw90_example26]
 program = WANNIER90_SLWFC_WOUT_OK
@@ -357,6 +363,12 @@ output = Pt-shc-fermiscan.dat
 program = POSTW90_SHCFREQDAT_OK
 inputs_args = ('GaAs.win', '')
 output = GaAs-shc-freqscan.dat
+
+# Test of Ryoo's methods of SHC for fcc platinum
+[testpostw90_pt_shc_ryoo/]
+program = POSTW90_SHCFREQDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-freqscan.dat
 
 # Test of kpath with SHC as color for fcc platinum
 [testpostw90_pt_kpathbandsshc/]
@@ -381,6 +393,12 @@ output = Pt-kslice-shc.dat
 program = WANNIER90_DISENTANGLEMENT_SAWFS
 inputs_args = ('H3S.win', '')
 output = H3S.wout
+
+# Test of k.p coefficients for GaAs
+[testpostw90_gaas_kdotp/]
+program = POSTW90_KDOTP_OK
+inputs_args = ('gaas.win', '')
+output = gaas-kdotp_0.dat
 
 [categories]
 wannier_only = testw90_*

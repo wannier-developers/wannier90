@@ -1,0 +1,7 @@
+&inputpp 
+   outdir = './'
+   prefix = 'bc2n'
+   seedname = 'bc2n'
+   write_mmn = .true.
+   write_amn = .true.
+/
