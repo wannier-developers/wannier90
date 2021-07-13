@@ -294,6 +294,7 @@ contains
     call comms_bcast(shc_bandshift, 1)
     call comms_bcast(shc_bandshift_firstband, 1)
     call comms_bcast(shc_bandshift_energyshift, 1)
+    call comms_bcast(shc_method, len(shc_method))
 
     call comms_bcast(kubo_adpt_smr, 1)
     call comms_bcast(kubo_adpt_smr_fac, 1)
@@ -313,6 +314,7 @@ contains
     call comms_bcast(sc_eta, 1)
     call comms_bcast(sc_w_thr, 1)
     call comms_bcast(sc_phase_conv, 1)
+    call comms_bcast(sc_use_eta_corr, 1)
 ! ----------------------------------------------
 !
 ! New input variables in development
