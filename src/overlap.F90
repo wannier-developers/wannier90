@@ -355,8 +355,8 @@ contains
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
-    if (cp_pp) call overlap_rotate(kmesh_info%nntot, timing_level, &
-                                   m_matrix_orig, a_matrix, num_bands, stdout, seedname)
+    if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
+                                   timing_level, seedname, stdout)
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
@@ -557,7 +557,7 @@ contains
 !~![ysl-e]
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_rotate(nntot, timing_level, m_matrix_orig, a_matrix, num_bands, stdout, seedname)
+  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, seedname, stdout)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
@@ -570,8 +570,10 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
     integer, intent(in) :: timing_level
+
     complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+
     character(len=50), intent(in)  :: seedname
 
     integer       :: lam_unit, info, inn, i, j

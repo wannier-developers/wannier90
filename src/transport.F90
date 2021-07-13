@@ -192,18 +192,18 @@ contains
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                          num_wann, stdout, &
-                                                          verbose%timing_level, seedname)
-        call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
-                            verbose%timing_level, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
-                                 irvec_max, stdout, seedname)
-        call tran_get_ht(fermi, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
-                         hB1, verbose%timing_level, stdout, seedname)
-        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                     wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+                                                          num_wann, verbose%timing_level, &
+                                                          seedname, stdout)
+        call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+                            seedname, stdout)
+        call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+                                 wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
+                                 one_dim_vec, seedname, stdout)
+        call tran_get_ht(fermi, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
+                         verbose%timing_level, seedname, stdout)
+        if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+                                                     tran_sorted_idx, num_wann, seedname, stdout)
       end if
       call tran_bulk(tran, hB0, hB1, verbose%timing_level, stdout, seedname)
     end if
@@ -222,14 +222,14 @@ contains
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                          num_wann, stdout, &
-                                                          verbose%timing_level, seedname)
-        call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, &
-                            verbose%timing_level, stdout, seedname)
-        call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
-                                 irvec_max, stdout, seedname)
+                                                          num_wann, verbose%timing_level, &
+                                                          seedname, stdout)
+        call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+                            seedname, stdout)
+        call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+                                 wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
+                                 one_dim_vec, seedname, stdout)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
         call tran_find_integral_signatures(signatures, num_G, verbose, real_lattice, u_matrix_opt, &
@@ -240,9 +240,8 @@ contains
                                nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, stdout, &
                                seedname)
-        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                     wannier_centres_translated, tran_sorted_idx, &
-                                                     stdout, seedname)
+        if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+                                                     tran_sorted_idx, num_wann, seedname, stdout)
 
         call tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
@@ -285,9 +284,9 @@ contains
   end subroutine tran_main
 
   !==================================================================!
-  subroutine tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                            one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, timing_level, &
-                            stdout, seedname)
+  subroutine tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, timing_level, seedname, &
+                            stdout)
     !==================================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -299,6 +298,8 @@ contains
     implicit none
 
     ! passed vars
+    type(real_space_type), intent(in) :: rs_region
+
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
     integer, intent(in) :: mp_grid(3)
@@ -313,8 +314,6 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-
-    type(real_space_type), intent(in) :: rs_region
 
     character(len=50), intent(in)  :: seedname
 
@@ -394,9 +393,9 @@ contains
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
-                                 wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
-                                 irvec_max, stdout, seedname)
+  subroutine tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+                                 wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
+                                 one_dim_vec, seedname, stdout)
     !==================================================================!
     !
     use w90_constants, only: dp
@@ -408,6 +407,10 @@ contains
     implicit none
 
     ! arguments
+    type(real_space_type), intent(inout) :: rs_region
+    type(print_output_type), intent(in) :: verbose
+    type(transport_type), intent(inout) :: tran
+
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: irvec_max
     integer, intent(in) :: num_wann
@@ -418,10 +421,6 @@ contains
     real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
-
-    type(real_space_type), intent(inout) :: rs_region
-    type(print_output_type), intent(in) :: verbose
-    type(transport_type), intent(inout) :: tran
 
     character(len=50), intent(in)  :: seedname
 
@@ -565,8 +564,8 @@ contains
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, num_wann, tran, num_pl, hr_one_dim, irvec_max, hB0, &
-                         hB1, timing_level, stdout, seedname)
+  subroutine tran_get_ht(fermi, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
+                         timing_level, seedname, stdout)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
@@ -579,6 +578,9 @@ contains
     implicit none
 
     ! arguments
+    type(fermi_data_type), intent(in) :: fermi
+    type(transport_type), intent(inout) :: tran
+
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -588,9 +590,6 @@ contains
     real(kind=dp), intent(in) :: hr_one_dim(:, :, -irvec_max:)
     real(kind=dp), allocatable, intent(inout) :: hB0(:, :)
     real(kind=dp), allocatable, intent(inout) :: hB1(:, :)
-
-    type(fermi_data_type), intent(in) :: fermi
-    type(transport_type), intent(inout) :: tran
 
     character(len=50), intent(in)  :: seedname
 
@@ -2263,9 +2262,8 @@ contains
         (size(PL2_groups) .ne. size(PL3_groups)) .or. &
         (size(PL3_groups) .ne. size(PL4_groups))) then
       if (sort_iterator .ge. 2) then
-        if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                     wannier_centres_translated, tran_sorted_idx, &
-                                                     stdout, seedname)
+        if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+                                                     tran_sorted_idx, num_wann, seedname, stdout)
         call io_error('Sorting techniques exhausted:&
           & Inconsistent number of groups among principal layers', stdout, seedname)
       endif
@@ -2294,8 +2292,8 @@ contains
           (PL2_groups(i) .ne. PL3_groups(i)) .or. &
           (PL3_groups(i) .ne. PL4_groups(i))) then
         if (sort_iterator .ge. 2) then
-          if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+          if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+                                                       tran_sorted_idx, num_wann, seedname, stdout)
           call io_error &
            ('Sorting techniques exhausted: Inconsitent number of wannier function among &
              & similar groups within principal layers', stdout, seedname)
@@ -2347,12 +2345,12 @@ contains
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
-                          stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
-                               wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
-                               irvec_max, stdout, seedname)
+      call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+                          seedname, stdout)
+      call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+                               wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
+                               one_dim_vec, seedname, stdout)
       write (stdout, *) ' '
       write (stdout, *) ' Restarting sorting...'
       write (stdout, *) ' '
@@ -2394,9 +2392,10 @@ contains
         do k = 1, size(temp_subgroup, 2)
           if (temp_subgroup(j, k) .ne. 0) then
             if (sort_iterator .ge. 2) then
-              if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+              if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, &
                                                            wannier_centres_translated, &
-                                                           tran_sorted_idx, stdout, seedname)
+                                                           tran_sorted_idx, num_wann, seedname, &
+                                                           stdout)
               call io_error &
                 ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', stdout, seedname)
             endif
@@ -2982,8 +2981,8 @@ contains
       if (verbose%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
       if (i .ne. 1) then
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
-          if (w90_calcs%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
-                                                       wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+          if (w90_calcs%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+                                                       tran_sorted_idx, num_wann, seedname, stdout)
           call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells', stdout, seedname)
         elseif (i .eq. 4*tran%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
@@ -3132,7 +3131,8 @@ contains
   end subroutine check_and_sort_similar_centres
 
   !=====================================!
-  subroutine tran_write_xyz(tran, atoms, num_wann, wannier_centres_translated, tran_sorted_idx, stdout, seedname)
+  subroutine tran_write_xyz(atoms, tran, wannier_centres_translated, tran_sorted_idx, num_wann, &
+                            seedname, stdout)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -3140,22 +3140,24 @@ contains
     !                                     !
     !=====================================!
 
-!   use w90_io, only: seedname, io_file_unit, io_date, stdout
     use w90_io, only: io_file_unit, io_date
     use w90_param_types, only: atom_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
+!   passed variables
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(in) :: atoms
 
-    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: tran_sorted_idx(:)
-
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+
     character(len=50), intent(in)  :: seedname
 
+!   local variables
     integer          :: iw, ind, xyz_unit, nat, nsp
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3, num_wann)
@@ -3582,12 +3584,12 @@ contains
       write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(rs_region, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
-                          one_dim_vec, hr_one_dim, irvec_max, nrpts_one_dim, verbose%timing_level, &
-                          stdout, seedname)
-      call tran_cut_hr_one_dim(tran, real_lattice, rs_region, verbose, mp_grid, num_wann, &
-                               wannier_centres_translated, one_dim_vec, num_pl, hr_one_dim, &
-                               irvec_max, stdout, seedname)
+      call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+                          seedname, stdout)
+      call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+                               wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
+                               one_dim_vec, seedname, stdout)
     endif
 
     do i = tran%num_ll + 1, num_wann - tran%num_ll

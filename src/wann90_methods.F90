@@ -124,8 +124,9 @@ contains
     logical :: has_kpath
 
     w90_calcs%disentanglement = .false.
-    call param_in_file(stdout, seedname)
-    call param_read_sym(lsitesymmetry, symmetrize_eps, stdout, seedname)
+    call param_in_file(seedname, stdout)
+    call param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
+
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_w90_calcs(w90_calcs, stdout, seedname)
     call param_read_transport(w90_calcs%transport, tran, driver%restart, stdout, seedname)
@@ -203,7 +204,7 @@ contains
   end subroutine param_read
 
   !==================================================================!
-  subroutine param_read_sym(lsitesymmetry, symmetrize_eps, stdout, seedname)
+  subroutine param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%

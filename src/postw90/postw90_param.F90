@@ -299,7 +299,7 @@ contains
     character(len=20) :: energy_unit
 
     library = .false.
-    call param_in_file(stdout, seedname)
+    call param_in_file(seedname, stdout)
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_pw90_calcs(pw90_calcs, stdout, seedname)
     call param_read_effective_model(pw90_common%effective_model, stdout, seedname)

@@ -153,8 +153,8 @@ contains
                                                                 seedname)
       !
       if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                        num_wann, stdout, &
-                                                        verbose%timing_level, seedname)
+                                                        num_wann, verbose%timing_level, seedname, &
+                                                        stdout)
       !
       if (w90_calcs%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
                                                           k_points%kpt_latt, irvec, nrpts, &

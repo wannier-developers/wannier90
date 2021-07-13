@@ -96,8 +96,8 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                  real_lattice, rs_region, verbose, count_pts=.true.)
+    call hamiltonian_wigner_seitz(rs_region, verbose, real_lattice, irvec, mp_grid, ndegen, &
+                                  nrpts, rpt_origin, seedname, stdout, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup', stdout, seedname)
@@ -118,8 +118,8 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                  real_lattice, rs_region, verbose, count_pts=.false.)
+    call hamiltonian_wigner_seitz(rs_region, verbose, real_lattice, irvec, mp_grid, ndegen, &
+                                  nrpts, rpt_origin, seedname, stdout, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error &
@@ -220,7 +220,7 @@ contains
     type(ham_logical), intent(inout)            :: hmlg
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(print_output_type), intent(in)      :: verbose
+    type(print_output_type), intent(in)         :: verbose
     type(disentangle_manifold_type), intent(in) :: dis_window
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -380,10 +380,9 @@ contains
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout, &
                                    seedname)
-      call internal_translate_centres(num_wann, verbose%iprint, atoms, param_hamil, &
-                                      wannier_centres, recip_lattice, real_lattice, shift_vec, &
-                                      wannier_centres_translated, stdout, seedname)
-
+      call internal_translate_centres(atoms, param_hamil, real_lattice, recip_lattice, &
+                                      wannier_centres, wannier_centres_translated, shift_vec, &
+                                      verbose%iprint, num_wann, seedname, stdout)
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
           do i = 1, num_wann
@@ -432,9 +431,9 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(num_wann, iprint, atoms, param_hamil, &
-                                          wannier_centres, recip_lattice, real_lattice, &
-                                          shift_vec, wannier_centres_translated, stdout, seedname)
+    subroutine internal_translate_centres(atoms, param_hamil, real_lattice, recip_lattice, &
+                                          wannier_centres, wannier_centres_translated, shift_vec, &
+                                          iprint, num_wann, seedname, stdout)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
@@ -450,13 +449,15 @@ contains
       type(param_hamiltonian_type), intent(inout) :: param_hamil
 
       integer, intent(inout) :: shift_vec(:, :)
-      integer, intent(in) :: iprint
+      integer, intent(in)    :: iprint
       integer, intent(in)    :: num_wann
       integer, intent(in)    :: stdout
+
       real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
       real(kind=dp), intent(in)    :: real_lattice(3, 3)
       real(kind=dp), intent(in)    :: wannier_centres(:, :)
       real(kind=dp), intent(in)    :: recip_lattice(3, 3)
+
       character(len=50), intent(in)  :: seedname
 
       ! local variables
@@ -536,8 +537,8 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, num_wann, stdout, &
-                                  timing_level, seedname)
+  subroutine hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, num_wann, timing_level, &
+                                  seedname, stdout)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -601,8 +602,8 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(stdout, seedname, rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                      real_lattice, cutoff, verbose, count_pts)
+  subroutine hamiltonian_wigner_seitz(cutoff, verbose, real_lattice, irvec, mp_grid, ndegen, &
+                                      nrpts, rpt_origin, seedname, stdout, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -622,7 +623,7 @@ contains
     implicit none
 
     ! passed variables
-    type(real_space_type), intent(in) :: cutoff
+    type(real_space_type), intent(in)   :: cutoff
     type(print_output_type), intent(in) :: verbose
 
     integer, intent(inout)              :: nrpts
@@ -631,8 +632,11 @@ contains
     integer, intent(inout)              :: rpt_origin
     integer, intent(in)                 :: mp_grid(3)
     integer, intent(in)                 :: stdout
+
     real(kind=dp), intent(in)           :: real_lattice(3, 3)
+
     character(len=50), intent(in)       :: seedname
+
     logical, intent(in)                 :: count_pts
 
     ! local variables

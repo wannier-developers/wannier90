@@ -2045,7 +2045,7 @@ contains
   end subroutine param_chkpt_dist
 
 !=======================================!
-  subroutine param_in_file(stdout, seedname)
+  subroutine param_in_file(seedname, stdout)
     !=======================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
