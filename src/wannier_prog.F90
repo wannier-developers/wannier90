@@ -236,7 +236,9 @@ program wannier
     ! I call the routine always; the if statements to decide if/what
     ! to plot are inside the function
     time2 = io_time()
-    call plot_main()
+  endif
+  call plot_main()
+  if (on_root) then
     time1 = io_time()
     ! Now time is always printed, even if no plotting is done/required, but
     ! it shouldn't be a problem.
