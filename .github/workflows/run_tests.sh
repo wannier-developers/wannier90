@@ -37,5 +37,5 @@ then
     echo "**************************"
     # I hardcode the numprocs to four, in case change it or set it as an ENV
     # var in the .travis.yml
-    ./run_tests --category=default --numprocs=4
+    ./run_tests --category=default --numprocs=2
 fi

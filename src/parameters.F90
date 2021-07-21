@@ -209,9 +209,13 @@ module w90_parameters
   integer, public, save :: sc_phase_conv
   real(kind=dp), public, save :: sc_eta
   real(kind=dp), public, save :: sc_w_thr
+  logical, public, save :: sc_use_eta_corr
   logical, public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical, public, save :: transl_inv
+  real(kind=dp), public, save :: kdotp_kpoint(3)
+  integer, public, save :: kdotp_num_bands
+  integer, allocatable, public, save :: kdotp_bands(:)
 
   ! spin Hall conductivity
   logical, public, save :: shc_freq_scan
@@ -221,6 +225,7 @@ module w90_parameters
   logical, public, save :: shc_bandshift
   integer, public, save :: shc_bandshift_firstband
   real(kind=dp), public, save :: shc_bandshift_energyshift
+  character(len=120), public, save :: shc_method
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -255,7 +260,6 @@ module w90_parameters
   integer, public, save :: kubo_nfreq
   complex(kind=dp), allocatable, public, save :: kubo_freq_list(:)
   real(kind=dp), public, save :: kubo_eigval_max
-
 ! Module  s p i n
   real(kind=dp), public, save :: spin_kmesh_spacing
   integer, public, save :: spin_kmesh(3)
@@ -1170,7 +1174,7 @@ contains
       ('Error: berry=T and berry_task is not set')
     if (berry .and. index(berry_task, 'ahc') == 0 .and. index(berry_task, 'morb') == 0 &
         .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0 &
-        .and. index(berry_task, 'shc') == 0) call io_error &
+        .and. index(berry_task, 'shc') == 0 .and. index(berry_task, 'kdotp') == 0) call io_error &
       ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -1290,6 +1294,9 @@ contains
     call param_get_keyword('sc_phase_conv', found, i_value=sc_phase_conv)
     if ((sc_phase_conv .ne. 1) .and. ((sc_phase_conv .ne. 2))) call io_error('Error: sc_phase_conv must be either 1 or 2')
 
+    sc_use_eta_corr = .true.
+    call param_get_keyword('sc_use_eta_corr', found, l_value=sc_use_eta_corr)
+
     scissors_shift = 0.0_dp
     call param_get_keyword('scissors_shift', found, &
                            r_value=scissors_shift)
@@ -1329,6 +1336,14 @@ contains
     call param_get_keyword('shc_bandshift_energyshift', found, r_value=shc_bandshift_energyshift)
     if (shc_bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+
+    shc_method = ' '
+    call param_get_keyword('shc_method', found, c_value=shc_method)
+    if (index(berry_task, 'shc') > 0 .and. .not. found) call io_error &
+      ('Error: berry_task=shc and shc_method is not set')
+    if (index(berry_task, 'shc') > 0 .and. index(shc_method, 'qiao') == 0 &
+        .and. index(shc_method, 'ryoo') == 0) call io_error &
+      ('Error: value of shc_method not recognised in param_read')
 
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
@@ -2013,6 +2028,20 @@ contains
 
     sc_w_thr = 5.0d0
     call param_get_keyword('sc_w_thr', found, r_value=sc_w_thr)
+
+    kdotp_kpoint(:) = 0.0_dp
+    call param_get_keyword_vector('kdotp_kpoint', found, 3, r_value=kdotp_kpoint)
+
+    kdotp_num_bands = 0
+    call param_get_keyword('kdotp_num_bands', found, i_value=kdotp_num_bands)
+    if (found) then
+      if (kdotp_num_bands < 1) call io_error('Error: problem reading kdotp_num_bands')
+      allocate (kdotp_bands(kdotp_num_bands), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating kdotp_num_bands in param_read')
+      call param_get_range_vector('kdotp_bands', found, kdotp_num_bands, .false., kdotp_bands)
+      if (any(kdotp_bands < 1)) &
+        call io_error('Error: kdotp_bands must contain positive numbers')
+    end if
 
     use_bloch_phases = .false.
     call param_get_keyword('use_bloch_phases', found, l_value=use_bloch_phases)
@@ -3229,6 +3258,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
+      if (index(berry_task, 'kdotp') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       F', '|'
+      endif
       if (index(berry_task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
@@ -3248,6 +3282,15 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for shift current      :', sc_w_thr, '|'
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(sc_phase_conv)), '|'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for shift current   :', &
+          sc_use_eta_corr, '|'
+      end if
+      if (index(berry_task, 'kdotp') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1xf8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
+          kdotp_kpoint(1), kdotp_kpoint(2), kdotp_kpoint(3), '|'
+        write (stdout, '(1x,a46,10x,i4,13x,a1)') '|  kdotp_num_bands                             :', kdotp_num_bands, '|'
+        write (stdout, '(1x,a46,10x,*(i4))') '|  kdotp_bands                                 :', &
+          (kdotp_bands(i), i=1, kdotp_num_bands)
       end if
       if (kubo_adpt_smr .eqv. adpt_smr .and. kubo_adpt_smr_fac == adpt_smr_fac .and. kubo_adpt_smr_max == adpt_smr_max &
           .and. kubo_smr_fixed_en_width == smr_fixed_en_width .and. smr_index == kubo_smr_index) then
@@ -6206,6 +6249,7 @@ contains
     call comms_bcast(shc_bandshift, 1)
     call comms_bcast(shc_bandshift_firstband, 1)
     call comms_bcast(shc_bandshift_energyshift, 1)
+    call comms_bcast(shc_method, len(shc_method))
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
