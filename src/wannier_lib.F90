@@ -245,6 +245,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_transport
   use w90_comms, only: my_node_id, num_nodes, &
     comms_array_split, comms_scatterv
+  use w90_sitesym, only: sitesym_read
 
   implicit none
 
@@ -359,6 +360,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~  if (gamma_only) call overlap_check_m_symmetry()
 
+  ! We need to read the .dmn file for later use in overlap_project
+  if (lsitesymmetry) call sitesym_read()
   if (disentanglement) then
     have_disentangled = .false.
     call dis_main()
