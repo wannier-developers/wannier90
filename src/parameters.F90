@@ -24,37 +24,57 @@ module w90_param_types
   public
 
   type print_output_type
+     !! ==============================
+     !! Contains variables to control output file formatting and verbosity.
+     !! ==============================
     ! verbosity flags - param_read_verbosity
     integer :: iprint
-    !! Controls the verbosity of the output
+    ! Controls the verbosity of the output
     integer :: timing_level
+    ! REVIEW_2021-07-22: optimisation doesn't fit in this type (TO FINISH)
     integer :: optimisation !wannierise and disentangle
+    ! REVIEW_2021-07-22: we agree that we don't need both length_unit and lenconfac;
+    ! REVIEW_2021-07-22: instead could have a utility function.
     character(len=20) :: length_unit ! MAYBE, just have a separate variable?
-    !! Units for length
+    ! Units for length
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
-
+    ! REVIEW_2021-07-22: devel_flag doesn't fit here; but we agree that this can be deprecated/removed.
     character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common MAYBE
   end type print_output_type
 
   type w90_system_type
+     !! ==============================
+     !! Contains physical information about the material being calculated.
+     !! ==============================
     integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
   type exclude_bands_type
+     !! ==============================
+     !! (TO FINISH)
+     !! ==============================
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
+    ! REVIEW_2021-07-22: num_exclude_bands could be removed as it is equal to the length of the
+    ! REVIEW_2021-07-22: array exclude_bands(:), but make sure the array is allocated in the code.
     integer :: num_exclude_bands
+    ! REVIEW_2021-07-22: CHECK WHERE IS NUM_BANDS (TO FINISH)
   end type exclude_bands_type
 
-  type real_space_type
+  type real_space_type ! REVIEW_2021-07-22: rename real_space_ham_type ?
+     !! ===============================
+     !! Contains information to control the structure of the real-space Hamiltonian
+     !! and how it is calculated.
+     !! ===============================
     real(kind=dp) :: hr_cutoff !plot and transport
     ! dist_cutoff - only plot and transport
     real(kind=dp) :: dist_cutoff !plot and transport
     character(len=20) :: dist_cutoff_mode !plot and transport
     real(kind=dp) :: dist_cutoff_hc !plot and transport
     integer :: one_dim_dir ! transport and plot
-
+    ! REVIEW_2021-07-22: The ones above are logically somewhat distinct
+    ! REVIEW_2021-07-22: to those below -- separate? (TO FINISH)
     logical :: use_ws_distance !ws_distance, plot and postw90_common
     real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions
@@ -64,6 +84,7 @@ module w90_param_types
   end type real_space_type
 
   !Input - temporary fix for postw90 not using print_output_type, or w90_system_type
+  ! REVIEW_2021-07-22: Will this be removed?
   type parameter_input_type
     ! verbosity flags - param_read_verbosity
     integer :: iprint
@@ -101,16 +122,27 @@ module w90_param_types
 
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
-    ! Wannier centres and spreads
+     !! =========================================
+     !! Contains the centres and spreads of the MLWFs
+     !! =========================================
+     ! Wannier centres and spreads
     real(kind=dp), allocatable :: centres(:, :)
     real(kind=dp), allocatable :: spreads(:)
+    ! REVIEW_2021-07-22: Do we want to expose other related variables such as the decomposition
+    ! REVIEW_2021-07-22: of the spread, matrix elements of r and r^2, etc. (TO FINISH)
   end type wannier_data_type
 
   ! used in kmesh, and to allocate in parameters
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter :: max_shells = 6
   integer, parameter :: num_nnmax = 12
-  type param_kmesh_type
+
+  ! REVIEW_2021-07-22: maybe rename kmesh_input_type? Also rename all other
+  ! REVIEW_2021-07-22: "param_" types (to keep names more meaninful and shorter)
+  type param_kmesh_type 
+     !! ================================
+     !! Contains information that can be provided by the user about determining the kmesh
+     !! ================================
     integer :: num_shells
     !! no longer an input keyword
     logical :: skip_B1_tests
@@ -128,6 +160,7 @@ module w90_param_types
   !AAM: generated, in which case projection_type is not needed.
   !AAM: It makes sense to keep the projection sites separate from the projection_type data below.
   type projection_type
+     ! REVIEW_2021-07-22: move all of these explicitly into input_proj_type (below)
     integer, allocatable :: l(:)
     integer, allocatable :: m(:)
     integer, allocatable :: s(:)
@@ -138,9 +171,19 @@ module w90_param_types
     real(kind=dp), allocatable :: zona(:)
   end type projection_type
 
+  ! REVIEW_2021-07-22: rename proj_input_type.
   type input_proj_type ! MAYBE
+     !! ========================
+     !! Contains information that can be provided by the user about the projections
+     !! ========================
     ! Projections, mainly used in parameters, maybe written by kmesh
-    real(kind=dp), allocatable :: site(:, :)
+     ! REVIEW_2021-07-22: site(:,:) has dual usage: for projections and for guiding centres.
+     ! REVIEW_2021-07-22: Make a new type for guiding centres that only contains sites.
+     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
+     ! REVIEW_2021-07-22: For now, when defining proj_input_type, also define sites inside the
+     ! REVIEW_2021-07-22: new guiding centres type (call it guiding_centres_input_type).
+     real(kind=dp), allocatable :: site(:, :) 
+    ! REVIEW_2021-07-22: see comment above. 
     type(projection_type) :: proj
     ! a u t o m a t i c   p r o j e c t i o n s
     ! vv: Writes a new block in .nnkp
@@ -149,6 +192,9 @@ module w90_param_types
 
   ! kmesh parameters (set in kmesh)
   type kmesh_info_type
+     !! =======================
+     !! Contains derived information about the kmesh
+     !! =======================
     integer              :: nnh           ! the number of b-directions (bka)
     integer              :: nntot         ! total number of neighbours for each k-point
     integer, allocatable :: nnlist(:, :)   ! list of neighbours for each k-point
@@ -162,12 +208,19 @@ module w90_param_types
 
   ! used in wannierise, hamiltonian, plot and others (postw90 also)
   type k_point_type
-    real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
+     real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
+     ! REVIEW_2021-07-22: we can generate kpt_cart from kpt_latt as and when
+     ! REVIEW_2021-07-22: we need it (usage is very localised in the code).
+     ! REVIEW_2021-07-22: We have a utility that does the conversion already.
+     ! REVIEW_2021-07-22: Then it doesn't make sense to have a type for just kpt_latt.
     real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
   end type k_point_type
 
   ! this contains data which described the disentangled manifold, also used in postw90
   type disentangle_manifold_type
+     !! ===========================
+     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
+     !! ===========================
     real(kind=dp) :: win_min
     !! lower bound of the disentanglement outer window
     real(kind=dp) :: win_max
@@ -185,6 +238,8 @@ module w90_param_types
 
   ! plot, transport, postw90: common, wan_ham, spin, berry, gyrotropic, kpath, kslice
   type fermi_data_type
+     ! REVIEW_2021-07-22: can remove n for the same reason as num_exclude_bands (see above).
+     ! REVIEW_2021-07-22: Then fermi_energy_list can be a standalone variable.
     integer :: n
     real(kind=dp), allocatable :: energy_list(:)
   end type fermi_data_type
@@ -192,6 +247,16 @@ module w90_param_types
   ! Atom sites - often used in the write_* routines
   ! hamiltonian, wannierise, plot, transport, wannier_lib
   type atom_data_type
+     !! =======================
+     !! Contains information about the atoms (and maybe the cell...) of the system being calculated.
+     !! =======================
+     ! REVIEW_2021-07-22: Keep only one of pos_frac and pos_cart to avoid possible inconsistency
+     ! REVIEW_2021-07-22: on passing these variables in from the external code. We can generate
+     ! REVIEW_2021-07-22: the other internally using a utility function.
+     ! REVIEW_2021-07-22: Shall we include unit cell data here too? Good arguments for and
+     ! REVIEW_2021-07-22: against -- if most subroutines only need cell and not atomic data,
+     ! REVIEW_2021-07-22: then keep separate. In any case, also only pass one of
+     ! REVIEW_2021-07-22: real_cell / recip_cell and generate the other internally. 
     real(kind=dp), allocatable :: pos_frac(:, :, :)
     real(kind=dp), allocatable :: pos_cart(:, :, :)
     integer, allocatable :: species_num(:)
@@ -202,10 +267,20 @@ module w90_param_types
   end type atom_data_type
 
   ! plot.F90 and postw90/kpath
-  type special_kpoints_type
-    integer :: bands_num_spec_points
-    character(len=20), allocatable ::bands_label(:)
-    real(kind=dp), allocatable ::bands_spec_points(:, :)
+  ! REVIEW_2021-07-22: rename to kpoint_path_type.
+  type special_kpoints_type 
+     !! ============================
+     !! Contains information that specifies the k-point path for plotting and other purposes.
+     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
+     !! number of segments specified by the user. Each pair of special points defines a segment.
+     !! ============================
+     ! REVIEW_2021-07-22: Remove bands_num_spec_points (same reason as for num_exclude_bands - see above)
+     integer :: bands_num_spec_points
+     ! REVIEW_2021-07-22: Include bands_num_points here (removing it from
+     ! REVIEW_2021-07-22: band_plot_type%num_points in wann90_param.F90) and
+     ! REVIEW_2021-07-22: rename num_points_first_segment. 
+    character(len=20), allocatable ::bands_label(:) ! REVIEW_2021-07-22: rename spec_points_label
+    real(kind=dp), allocatable ::bands_spec_points(:, :) ! REVIEW_2021-07-22: rename spec_points
   end type special_kpoints_type
 
 end module w90_param_types
