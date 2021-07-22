@@ -231,6 +231,12 @@ program = POSTW90_MORBDAT_OK
 inputs_args = ('Fe.win', '')
 output = Fe-morb.dat
 
+# Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron with use_ws_distance = true
+[testpostw90_fe_kpathmorbcurv_ws/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-morb.dat
+
 # Test of KPATH Berry Curvature  for bcc iron
 [testpostw90_fe_kpathcurv/]
 program = POSTW90_CURVDAT_OK
@@ -273,6 +279,12 @@ output = Fe-kubo_S_zz.dat
 program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout
+
+# Test of spin density of states for bcc iron
+[testpostw90_fe_dos_spin/]
+program = POSTW90_DOS_OK
+inputs_args = ('Fe.win', '')
+output = Fe-dos.dat
 
 # testpostw90_te_gyrotropic
 [testpostw90_te_gyrotropic/]
@@ -336,6 +348,24 @@ output = copper-dos.dat
 
 # Test of shift current for GaAs
 [testpostw90_gaas_sc_xyz/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
+# Test of shift current for GaAs with use_ws_distance = true
+[testpostw90_gaas_sc_xyz_ws/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
+# Test of shift current for GaAs with sc_phase_conv = 2 and use_ws_distance = false
+[testpostw90_gaas_sc_xyz_scphase2/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
+# Test of shift current for GaAs with sc_phase_conv = 2 and use_ws_distance = true
+[testpostw90_gaas_sc_xyz_scphase2_ws/]
 program = POSTW90_SC_OK
 inputs_args = ('gaas.win', '')
 output = gaas-sc_xyz.dat
