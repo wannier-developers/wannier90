@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v2.0.0
+
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        w90-binary-parallel: [ 'false', 'true' ]
+    name: Build and test `parallel=${{ matrix.w90-binary-parallel }}`
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install  \
+            gfortran            \
+            libblas-dev         \
+            liblapack-dev       \
+            openmpi-bin         \
+            libopenmpi-dev
+          pip install --upgrade pip
+          pip install   \
+            numpy       \
+            matplotlib  \
+      - name: build
+        env:
+          W90BINARYPARALLEL: ${{ matrix.w90-binary-parallel }}
+        run: |
+          if [ "$W90BINARYPARALLEL" == "true" ] ; then
+            cp ./.github/workflows/config/make.inc.gfort+openmpi ./make.inc
+          else
+            cp ./.github/workflows/config/make.inc.gfort ./make.inc
+          fi
+          make -j default w90chk2chk libs
+      - name: run tests
+        env:
+          W90BINARYPARALLEL: ${{ matrix.w90-binary-parallel }}
+        run: |
+          ./.github/workflows/run_tests.sh
+      - name: compute coverage
+        uses: codecov/codecov-action@v1
+      - name: archive test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results_parallel=${{ matrix.w90-binary-parallel }}
+          path: |
+            test-suite/tests/test*/test.err*
+            test-suite/tests/test*/test.out*

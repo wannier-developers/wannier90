@@ -2,6 +2,7 @@ shc_freq_scan = false
 shc_alpha = 1
 shc_beta = 2
 shc_gamma = 3
+shc_method = qiao
 
 #kpath = true
 kpath_task = bands+shc
