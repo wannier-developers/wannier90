@@ -306,11 +306,12 @@ contains
             endif
           enddo
 
-          call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
-                                   wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
-                                   v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
-                                   recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                   num_valence_bands, have_disentangled, seedname, stdout, comm)
+          call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                                   verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+                                   u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                   real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
+                                   num_wann, num_valence_bands, have_disentangled, seedname, &
+                                   stdout, comm)
           Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &

@@ -291,7 +291,7 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+        call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                                  wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
                                  UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &

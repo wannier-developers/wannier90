@@ -1536,16 +1536,16 @@ contains
     !
 
     if (present(occ)) then
-      call wham_get_eig_UU_HH_JJlist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
+      call wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                      recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                     num_valence_bands, have_disentangled, seedname, stdout, comm, &
-                                     occ=occ)
+                                     num_valence_bands, have_disentangled, seedname, stdout, &
+                                     comm, occ=occ)
       call wham_get_occ_mat_list(fermi, f_list, g_list, UU, num_wann, seedname, stdout, occ=occ)
 
     else
-      call wham_get_eig_UU_HH_JJlist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
+      call wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                      recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
@@ -1763,7 +1763,7 @@ contains
     allocate (AA(num_wann, num_wann, 3))
 
     if (berry%kubo_smr%adpt) then
-      call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+      call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                                wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                                v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                                mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -1990,8 +1990,8 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(rs_region, berry, dis_window, kmesh_info, k_points, &
-                                            verbose, pw90_common, wann_data, ws_distance, ws_vec, &
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, pw90_common, &
+                                            rs_region, verbose, wann_data, ws_distance, ws_vec, &
                                             AA_R, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
                                             v_matrix, eig, eigval, kpt, real_lattice, &
                                             recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
@@ -2008,7 +2008,7 @@ contains
                                        stdout)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
-      call wham_get_eig_UU_HH_AA_sc(rs_region, dis_window, k_points, verbose, pw90_common, &
+      call wham_get_eig_UU_HH_AA_sc(dis_window, k_points, pw90_common, rs_region, verbose, &
                                     wann_data, ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, &
                                     u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                     recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
@@ -2016,7 +2016,7 @@ contains
       call pw90common_fourier_R_to_k_vec_dadb(rs_region, wann_data, ws_distance, ws_vec, AA_R, &
                                               kpt, real_lattice, recip_lattice, mp_grid, num_wann, &
                                               seedname, stdout, OO_da=AA, OO_dadb=AA_da)
-      call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+      call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                                wann_data, ws_distance, ws_vec, HH_da, HH, HH_R, u_matrix, UU, &
                                v_matrix, eig_da, eig, eigval, kpt, real_lattice, recip_lattice, &
                                mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -2269,7 +2269,7 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+    call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                              wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                              v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                              mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &

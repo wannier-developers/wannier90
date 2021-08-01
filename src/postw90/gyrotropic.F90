@@ -636,7 +636,7 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+    call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                              wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                              v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                              mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &

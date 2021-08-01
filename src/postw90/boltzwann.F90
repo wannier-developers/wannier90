@@ -901,7 +901,7 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+      call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                                wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                                v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                                mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -942,8 +942,8 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, &
-                                           pw90_ham, wann_data, ws_distance, ws_vec, delHH, HH, &
+                  call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                                           verbose, wann_data, ws_distance, ws_vec, delHH, HH, &
                                            HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, &
                                            kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
                                            num_kpts, num_wann, num_valence_bands, &

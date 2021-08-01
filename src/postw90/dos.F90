@@ -208,12 +208,12 @@ contains
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
         if (dos_data%smr%adpt) then
-          call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
-                                   wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
-                                   v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
-                                   recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                   system%num_valence_bands, have_disentangled, seedname, stdout, &
-                                   comm)
+          call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                                   verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+                                   u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                   real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
+                                   num_wann, system%num_valence_bands, have_disentangled, &
+                                   seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
@@ -250,8 +250,8 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%smr%adpt) then
-          call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, &
-                                   pw90_ham, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+          call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                                   verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                                    num_wann, system%num_valence_bands, have_disentangled, &

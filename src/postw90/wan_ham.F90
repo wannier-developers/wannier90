@@ -402,9 +402,9 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
-                                 wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
-                                 UU, v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
+  subroutine wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                                 verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+                                 u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, have_disentangled, seedname, stdout, comm)
     !! Given a k point, this function returns eigenvalues E and
@@ -525,12 +525,12 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
-                                       wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, &
-                                       JJp_list, u_matrix, UU, v_matrix, eig, eigval, kpt, &
-                                       real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                       num_wann, num_valence_bands, have_disentangled, seedname, &
-                                       stdout, comm, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, rs_region, &
+                                       verbose, wann_data, ws_distance, ws_vec, HH, HH_R, &
+                                       JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, eigval, &
+                                       kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
+                                       num_kpts, num_wann, num_valence_bands, have_disentangled, &
+                                       seedname, stdout, comm, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -608,13 +608,13 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(rs_region, berry, dis_window, kmesh_info, k_points, &
-                                              verbose, pw90_common, wann_data, ws_distance, &
-                                              ws_vec, AA_R, HH, HH_da, HH_dadb, HH_R, u_matrix, &
-                                              UU, v_matrix, eig, eigval, kpt, real_lattice, &
-                                              recip_lattice, mp_grid, num_bands, num_kpts, &
-                                              num_wann, num_valence_bands, have_disentangled, &
-                                              seedname, stdout, comm)
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, &
+                                              pw90_common, rs_region, verbose, wann_data, &
+                                              ws_distance, ws_vec, AA_R, HH, HH_da, HH_dadb, HH_R, &
+                                              u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                              real_lattice, recip_lattice, mp_grid, num_bands, &
+                                              num_kpts, num_wann, num_valence_bands, &
+                                              have_disentangled, seedname, stdout, comm)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -683,7 +683,7 @@ contains
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(rs_region, dis_window, k_points, verbose, pw90_common, &
+  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, pw90_common, rs_region, verbose, &
                                       wann_data, ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, &
                                       u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                       recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
