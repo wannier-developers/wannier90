@@ -89,7 +89,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi

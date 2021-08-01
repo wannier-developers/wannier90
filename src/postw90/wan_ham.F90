@@ -634,7 +634,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -708,7 +708,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common

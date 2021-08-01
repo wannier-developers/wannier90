@@ -54,7 +54,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -264,7 +264,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -544,7 +544,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -718,7 +718,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -903,7 +903,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -1072,7 +1072,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
     type(postw90_oper_type), intent(in) :: postw90_oper
@@ -1241,7 +1241,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
@@ -1700,7 +1700,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(print_output_type), intent(in) :: verbose
     integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b

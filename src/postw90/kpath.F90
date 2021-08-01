@@ -118,7 +118,7 @@ contains
                          imh_k_list(3, 3, fermi%n), Morb_k(3, 3), &
                          range, zmin, zmax
     real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(fermi%n)
-    real(kind=dp), allocatable, dimension(:) :: kpath_len
+    real(kind=dp), allocatable :: kpath_len(:)
     logical           :: plot_bands, plot_curv, plot_morb, plot_shc
     character(len=120) :: file_name
 
@@ -1167,7 +1167,7 @@ contains
 
     ! local variables
     integer :: counter, loop_path, loop_i
-    integer, allocatable, dimension(:) :: kpath_pts
+    integer, allocatable :: kpath_pts(:)
     real(kind=dp) :: vec(3)
     real(kind=dp) :: recip_metric(3, 3)
 

@@ -181,7 +181,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_comms, only: mpirank, mpisize, w90commtype, comms_send, comms_recv, comms_bcast
 
-    ! passed variables
+    ! arguments
     type(kpoint_dist_type), intent(inout) :: kpoints
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname

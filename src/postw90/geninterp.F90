@@ -36,14 +36,14 @@ contains
     use pw90_parameters, only: geninterp_type
     use w90_io, only: io_date
 
-!   passed variables
+    ! arguments
     type(geninterp_type), intent(in) :: geninterp
     integer, intent(in) :: outdat_unit
     !! Integer with the output file unit. The file must be already open.
     character(len=*) :: commentline !! no intent?
     !! String with the comment taken from the output, to be written on the output
 
-!   local variables
+    ! local variables
     character(len=9) :: cdate, ctime
 
     call io_date(cdate, ctime)
@@ -115,16 +115,16 @@ contains
     integer :: nkinterp ! number of kpoints for which we perform the interpolation
     integer, allocatable :: counts(:), displs(:)
     integer :: my_node_id, num_nodes
-    integer, dimension(:), allocatable :: kpointidx, localkpointidx
-    real(kind=dp), dimension(:, :), allocatable :: kpoints, localkpoints
-    real(kind=dp), dimension(3) :: kpt, frac
-    real(kind=dp), dimension(:, :, :), allocatable :: localdeleig
-    real(kind=dp), dimension(:, :, :), allocatable :: globaldeleig
-    real(kind=dp), dimension(:, :), allocatable :: localeig
-    real(kind=dp), dimension(:, :), allocatable :: globaleig
-    complex(kind=dp), dimension(:, :), allocatable :: HH
-    complex(kind=dp), dimension(:, :), allocatable :: UU
-    complex(kind=dp), dimension(:, :, :), allocatable :: delHH
+    integer, allocatable :: kpointidx(:), localkpointidx(:)
+    real(kind=dp), allocatable :: kpoints(:, :), localkpoints(:, :)
+    real(kind=dp)  :: kpt(3), frac(3)
+    real(kind=dp), allocatable :: localdeleig(:, :, :)
+    real(kind=dp), allocatable :: globaldeleig(:, :, :)
+    real(kind=dp), allocatable :: localeig(:, :)
+    real(kind=dp), allocatable :: globaleig(:, :)
+    complex(kind=dp), allocatable :: HH(:, :)
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: delHH(:, :, :)
     character(len=500) :: commentline
     character(len=50) :: cdum
     character(len=200) :: outdat_filename

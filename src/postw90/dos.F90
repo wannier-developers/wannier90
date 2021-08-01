@@ -63,7 +63,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
@@ -102,18 +102,15 @@ contains
     integer :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
     integer :: dos_unit, ndim, ierr
     integer :: my_node_id, num_nodes
-    integer :: num_freq
-    !! Number of sampling points
+    integer :: num_freq !! Number of sampling points
 
     real(kind=dp), allocatable :: dos_k(:, :)
     real(kind=dp), allocatable :: dos_all(:, :)
     real(kind=dp) :: kweight, kpt(3), omega
-!   real(kind=dp), dimension(:), allocatable :: dos_energyarray
     real(kind=dp), allocatable :: dos_energyarray(:)
     real(kind=dp) :: del_eig(num_wann, 3)
     real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
-    real(kind=dp) :: d_omega
-    !! Step between energies
+    real(kind=dp) :: d_omega !! Step between energies
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)

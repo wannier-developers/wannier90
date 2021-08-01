@@ -2506,10 +2506,11 @@ contains
     use w90_io, only: io_wallclocktime
 
     implicit none
-!   passed variables
+
+    ! arguments
     integer, intent(in) :: loop_k, start_k, end_k, step_k, stdout
 
-!   local variables
+    ! local variables
     real(kind=dp) :: cur_time, finished
     real(kind=dp), save :: prev_time
     integer :: i, j, n, last_k

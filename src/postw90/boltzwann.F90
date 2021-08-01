@@ -132,21 +132,21 @@ contains
     ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
-    real(kind=dp), dimension(:), allocatable :: TempArray, MuArray, KTArray
-    real(kind=dp), dimension(:, :, :), allocatable :: TDF ! (coordinate,Energy)
-    real(kind=dp), dimension(:), allocatable :: TDFEnergyArray
-    real(kind=dp), dimension(:, :), allocatable :: IntegrandArray ! (coordinate, Energy) at a given T and mu
-    real(kind=dp), dimension(3, 3) :: SigmaS_FP, ThisElCond, ElCondInverse, ThisSeebeck
-    real(kind=dp), dimension(2, 2) :: ThisElCond2d, ElCondInverse2d
+    real(kind=dp), allocatable :: TempArray(:), MuArray(:), KTArray(:)
+    real(kind=dp), allocatable :: TDF(:, :, :) ! (coordinate,Energy)
+    real(kind=dp), allocatable :: TDFEnergyArray(:)
+    real(kind=dp), allocatable :: IntegrandArray(:, :) ! (coordinate, Energy) at a given T and mu
+    real(kind=dp) :: SigmaS_FP(3, 3), ThisElCond(3, 3), ElCondInverse(3, 3), ThisSeebeck(3, 3)
+    real(kind=dp) :: ThisElCond2d(2, 2), ElCondInverse2d(2, 2)
     !real(kind=dp), dimension(6) :: ElCondTimesSeebeck
-    real(kind=dp), dimension(:, :, :), allocatable :: ElCond ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:, :, :), allocatable :: SigmaS ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:, :, :), allocatable :: Seebeck ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:, :, :), allocatable :: Kappa ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:, :), allocatable :: LocalElCond ! (coordinate,Temp+mu combined index)
-    real(kind=dp), dimension(:, :), allocatable :: LocalSigmaS ! (coordinate,Temp+mu combined index)
-    real(kind=dp), dimension(:, :), allocatable :: LocalSeebeck ! (coordinate,Temp+mu combined index)
-    real(kind=dp), dimension(:, :), allocatable :: LocalKappa ! (coordinate,Temp+mu combined index)
+    real(kind=dp), allocatable :: ElCond(:, :, :) ! (coordinate,Temp, mu)
+    real(kind=dp), allocatable :: SigmaS(:, :, :) ! (coordinate,Temp, mu)
+    real(kind=dp), allocatable :: Seebeck(:, :, :) ! (coordinate,Temp, mu)
+    real(kind=dp), allocatable :: Kappa(:, :, :) ! (coordinate,Temp, mu)
+    real(kind=dp), allocatable :: LocalElCond(:, :) ! (coordinate,Temp+mu combined index)
+    real(kind=dp), allocatable :: LocalSigmaS(:, :) ! (coordinate,Temp+mu combined index)
+    real(kind=dp), allocatable :: LocalSeebeck(:, :) ! (coordinate,Temp+mu combined index)
+    real(kind=dp), allocatable :: LocalKappa(:, :) ! (coordinate,Temp+mu combined index)
     real(kind=dp) :: Determinant
     integer :: tdf_unit, elcond_unit, sigmas_unit, seebeck_unit, kappa_unit, ndim
 
@@ -715,7 +715,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), dimension(:, :, :), intent(out) :: TDF ! (coordinate,Energy,spin)
+    real(kind=dp), intent(out) :: TDF(:, :, :) ! (coordinate,Energy,spin)
     !! The TDF(i,EnIdx,spin) output array, where:
     !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
     !!          $$ Sigma_{ij}(\eps) $$,
@@ -727,7 +727,7 @@ contains
     !!          TDFEnergyArray(EndIdx) array (in eV).
     !!        - Spin may be only 1 if spin_decomp=.false. If it is instead true, 1 contains the total TDF,
     !!          2 the spin-up component and 3 the spin-up component
-    real(kind=dp), dimension(:), intent(in) :: TDFEnergyArray
+    real(kind=dp), intent(in) :: TDFEnergyArray(:)
     !! TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
     ! Comments:
     ! issue warnings if going outside of the energy window
@@ -744,7 +744,7 @@ contains
     logical, intent(in) :: have_disentangled
 
     ! local variables
-    real(kind=dp), dimension(3) :: kpt, orig_kpt
+    real(kind=dp) :: kpt(3), orig_kpt(3)
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
     complex(kind=dp), allocatable :: HH(:, :)
@@ -1131,8 +1131,7 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
+    ! arguments
     type(boltzwann_type), intent(in) :: boltz
     type(real_space_type), intent(in) :: rs_region
     type(postw90_spin_type), intent(in) :: pw90_spin
@@ -1144,20 +1143,20 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), dimension(3), intent(in) :: kpt
+    real(kind=dp), intent(in) :: kpt(3)
     !! the three coordinates of the k point vector whose DOS contribution we
     !! want to calculate (in relative coordinates)
-    real(kind=dp), dimension(:), intent(in) :: EnergyArray
+    real(kind=dp), intent(in) :: EnergyArray(:)
     !! array with the energy grid on which to calculate the DOS (in eV)
     !! It must have at least two elements
-    real(kind=dp), dimension(:), intent(in) :: eig_k
+    real(kind=dp), intent(in) :: eig_k(:)
     !! array with the eigenvalues at the given k point (in eV)
-    real(kind=dp), dimension(:, :), intent(in) :: deleig_k
+    real(kind=dp), intent(in) :: deleig_k(:, :)
     !! array with the band derivatives at the given k point
     !! (in eV * angstrom / (2pi) as internally given by the code)
     !! already corrected in case of degeneracies, as returned by the
     !! wham_get_deleig_a routine
-    real(kind=dp), dimension(:, :, :), intent(out) :: TDF_k
+    real(kind=dp), intent(out) :: TDF_k(:, :, :)
     !! TDF_k array in which the contribution is stored. Three dimensions:
     !! TDF_k(ij, energyidx, spinidx), where:
     !! - ij indexes the components of the TDF (symmetric) tensor (1=XX, 2=XY, ...);
