@@ -40,11 +40,11 @@ contains
     type(geninterp_type), intent(in) :: geninterp
     integer, intent(in) :: outdat_unit
     !! Integer with the output file unit. The file must be already open.
-    character(len=*)    :: commentline !! no intent?
+    character(len=*) :: commentline !! no intent?
     !! String with the comment taken from the output, to be written on the output
 
 !   local variables
-    character(len=9)   :: cdate, ctime
+    character(len=9) :: cdate, ctime
 
     call io_date(cdate, ctime)
     write (outdat_unit, '(A)') "# Written on "//cdate//" at "//ctime ! Date and time
@@ -59,10 +59,10 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_window, geninterp, k_points, param_input, pw90_common, pw90_ham, &
-                            wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
-                            real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                            seedname, stdout, comm)
+  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_common, pw90_ham, rs_region, &
+                            wann_data, ws_distance, ws_vec, verbose, HH_R, v_matrix, u_matrix, &
+                            eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
+                            num_wann, num_valence_bands, have_disentangled, seedname, stdout, comm)
 
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
@@ -73,8 +73,8 @@ contains
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
     use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, postw90_ham_type
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
-      wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+      wannier_data_type, real_space_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
@@ -88,9 +88,10 @@ contains
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(geninterp_type), intent(in) :: geninterp
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -104,29 +105,30 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_bands, num_kpts, num_wann, stdout
+    integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
-    integer              :: kpt_unit, outdat_unit, ierr, i, j, enidx
-    integer              :: nkinterp ! number of kpoints for which we perform the interpolation
+    integer :: kpt_unit, outdat_unit, ierr, i, j, enidx
+    integer :: nkinterp ! number of kpoints for which we perform the interpolation
     integer, allocatable :: counts(:), displs(:)
-    integer              :: my_node_id, num_nodes
-    integer, dimension(:), allocatable              :: kpointidx, localkpointidx
-    real(kind=dp), dimension(:, :), allocatable      :: kpoints, localkpoints
-    real(kind=dp), dimension(3)                     :: kpt, frac
-    real(kind=dp), dimension(:, :, :), allocatable    :: localdeleig
-    real(kind=dp), dimension(:, :, :), allocatable    :: globaldeleig
-    real(kind=dp), dimension(:, :), allocatable      :: localeig
-    real(kind=dp), dimension(:, :), allocatable      :: globaleig
-    complex(kind=dp), dimension(:, :), allocatable   :: HH
-    complex(kind=dp), dimension(:, :), allocatable   :: UU
+    integer :: my_node_id, num_nodes
+    integer, dimension(:), allocatable :: kpointidx, localkpointidx
+    real(kind=dp), dimension(:, :), allocatable :: kpoints, localkpoints
+    real(kind=dp), dimension(3) :: kpt, frac
+    real(kind=dp), dimension(:, :, :), allocatable :: localdeleig
+    real(kind=dp), dimension(:, :, :), allocatable :: globaldeleig
+    real(kind=dp), dimension(:, :), allocatable :: localeig
+    real(kind=dp), dimension(:, :), allocatable :: globaleig
+    complex(kind=dp), dimension(:, :), allocatable :: HH
+    complex(kind=dp), dimension(:, :), allocatable :: UU
     complex(kind=dp), dimension(:, :, :), allocatable :: delHH
     character(len=500) :: commentline
-    character(len=50)  :: cdum
-    character(len=200)                              :: outdat_filename
-    logical                                         :: absoluteCoords
+    character(len=50) :: cdum
+    character(len=200) :: outdat_filename
+    logical :: absoluteCoords
     logical :: on_root = .false.
 
     my_node_id = mpirank(comm)
@@ -135,7 +137,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (param_input%iprint > 0 .and. (param_input%timing_level > 0)) &
+    if (verbose%iprint > 0 .and. (verbose%timing_level > 0)) &
       call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
     if (on_root) then
@@ -181,9 +183,9 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  have_disentangled, seedname, stdout, comm)
 
     if (on_root) then
       allocate (kpointidx(nkinterp), stat=ierr)
@@ -289,13 +291,14 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+        call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
                                  wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
-                                 UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
-                                 recip_lattice, mp_grid, num_bands, num_kpts, num_wann, seedname, &
-                                 stdout, comm)
+                                 UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, &
+                                 real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
+                                 comm)
       else
-        call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+        call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, 0, num_wann, &
                                        seedname, stdout)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
@@ -382,8 +385,8 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
-                                                                        stdout, seedname)
+    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
+                                                                    stdout, seedname)
 
     return
 

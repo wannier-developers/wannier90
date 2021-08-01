@@ -35,9 +35,9 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                      v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                      stdout, comm)
+  subroutine get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+                      v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
+                      num_valence_bands, have_disentangled, seedname, stdout, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -49,20 +49,20 @@ contains
     use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
     ! passed variables
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(wigner_seitz_type), intent(inout)      :: ws_vec
-    type(w90commtype), intent(in)               :: comm
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(w90commtype), intent(in) :: comm
+    type(wigner_seitz_type), intent(inout) :: ws_vec
 
-    integer, intent(in) :: num_bands, num_kpts, num_wann, stdout
+    integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
 
@@ -70,6 +70,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
     character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
@@ -85,13 +86,13 @@ contains
     logical :: on_root = .false.
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, ws_vec%nrpts))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     end if
@@ -169,7 +170,7 @@ contains
       call comms_bcast(ws_vec%ndegen(1), ws_vec%nrpts, stdout, seedname, comm)
       call comms_bcast(ws_vec%irvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
       call comms_bcast(ws_vec%crvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     endif
@@ -184,13 +185,13 @@ contains
 
     HH_q = cmplx_0
     do ik = 1, num_kpts
-      if (param_input%have_disentangled) then
+      if (have_disentangled) then
         num_states(ik) = dis_window%ndimwin(ik)
       else
         num_states(ik) = num_wann
       endif
 
-      call get_win_min(num_bands, dis_window, param_input, ik, winmin_q)
+      call get_win_min(num_bands, dis_window, ik, winmin_q, have_disentangled)
       do m = 1, num_wann
         do n = 1, m
           do i = 1, num_states(ik)
@@ -209,14 +210,14 @@ contains
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
     !
-    if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+    if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
       allocate (sciss_R(num_wann, num_wann, ws_vec%nrpts))
       allocate (sciss_q(num_wann, num_wann, num_kpts))
       sciss_q = cmplx_0
       do ik = 1, num_kpts
         do j = 1, num_wann
           do i = 1, j
-            do m = 1, param_input%num_valence_bands
+            do m = 1, num_valence_bands
               sciss_q(i, j, ik) = sciss_q(i, j, ik) - &
                                   conjg(u_matrix(m, i, ik))*u_matrix(m, j, ik)
             enddo
@@ -233,7 +234,7 @@ contains
       HH_R = HH_R + sciss_R
     endif
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
     return
 
@@ -243,9 +244,9 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
+  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, &
                       HH_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                      seedname, stdout, comm)
+                      have_disentangled, seedname, stdout, comm)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -259,18 +260,18 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
-      parameter_input_type
+      print_output_type
 
     implicit none
 
     ! passed variables
-    type(berry_type), intent(in)                :: berry
+    type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in)           :: kmesh_info
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(w90commtype), intent(in)               :: comm
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -280,6 +281,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
 
+    logical, intent(in) :: have_disentangled
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -301,13 +303,13 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     end if
@@ -357,7 +359,7 @@ contains
         endif
       endif
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     endif
@@ -377,7 +379,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -454,8 +456,9 @@ contains
         ! Wannier-gauge overlap matrix S in the projected subspace
         !
         call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                      param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
-                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, S)
+                                      verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, &
+                                      have_disentangled, S)
 
         ! Berry connection matrix
         ! Assuming all neighbors of a given point are read in sequence!
@@ -508,7 +511,7 @@ contains
 
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
     return
 
@@ -522,8 +525,9 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(dis_window, kmesh_info, k_points, param_input, pw90_common, BB_R, v_matrix, &
-                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, seedname, stdout, comm)
+  subroutine get_BB_R(dis_window, kmesh_info, k_points, verbose, pw90_common, BB_R, v_matrix, &
+                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                      seedname, stdout, comm)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -536,17 +540,17 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
-      parameter_input_type
+      print_output_type
 
     implicit none
 
     ! passed variables
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in)           :: kmesh_info
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(w90commtype), intent(in)               :: comm
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -555,6 +559,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
 
+    logical, intent(in) :: have_disentangled
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -575,12 +580,12 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
       return
     end if
@@ -596,7 +601,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -659,12 +664,14 @@ contains
           call io_error('Neighbour not found', stdout, seedname)
         end if
 
-        call get_win_min(num_bands, dis_window, param_input, ik, winmin_q)
-        call get_win_min(num_bands, dis_window, param_input, kmesh_info%nnlist(ik, nn), winmin_qb)
+        call get_win_min(num_bands, dis_window, ik, winmin_q, have_disentangled)
+        call get_win_min(num_bands, dis_window, kmesh_info%nnlist(ik, nn), winmin_qb, &
+                         have_disentangled)
 
         call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                      param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
-                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, H=H_q_qb)
+                                      verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      num_states(kmesh_info%nnlist(ik, nn)), S_o, &
+                                      have_disentangled, H=H_q_qb)
         do idir = 1, 3
           BB_q(:, :, ik, idir) = BB_q(:, :, ik, idir) &
                                  + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*H_q_qb(:, :)
@@ -681,7 +688,7 @@ contains
 
     call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
     return
 
@@ -692,9 +699,9 @@ contains
 
   !=============================================================
 
-  subroutine get_CC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+  subroutine get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
                       CC_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                      seedname, stdout, comm)
+                      have_disentangled, seedname, stdout, comm)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -707,18 +714,18 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
-      parameter_input_type
+      print_output_type
 
     implicit none
 
     ! passed variables
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in)           :: kmesh_info
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_oper_type), intent(in)         :: postw90_oper
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(w90commtype), intent(in)               :: comm
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(print_output_type), intent(in) :: verbose
+    type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -727,6 +734,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
 
+    logical, intent(in) :: have_disentangled
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -743,13 +751,13 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
       return
     end if
@@ -765,7 +773,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -805,10 +813,10 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_window, param_input, qb2, winmin_qb2)
+          call get_win_min(num_bands, dis_window, qb2, winmin_qb2, have_disentangled)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_window, param_input, qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_window, qb1, winmin_qb1, have_disentangled)
             !
             ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -837,8 +845,8 @@ contains
             !
 
             call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                          param_input, qb1, num_states(qb1), qb2, num_states(qb2), &
-                                          Ho_qb1_q_qb2, H_qb1_q_qb2)
+                                          verbose, qb1, num_states(qb1), qb2, num_states(qb2), &
+                                          Ho_qb1_q_qb2, have_disentangled, H_qb1_q_qb2)
             do b = 1, 3
               do a = 1, b
                 CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
@@ -867,7 +875,7 @@ contains
 
     call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
     return
 
@@ -880,7 +888,7 @@ contains
 
   !===========================================================
   subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_window, &
-                      kmesh_info, k_points, param_input, stdout, seedname, comm)
+                      kmesh_info, k_points, verbose, have_disentangled, stdout, seedname, comm)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -891,23 +899,24 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, print_output_type
 
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(print_output_type), intent(in) :: verbose
+    type(w90commtype), intent(in) :: comm
+
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
 
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(w90commtype), intent(in) :: comm
-
     character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variable
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
@@ -922,12 +931,12 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
       return
     end if
 
@@ -939,7 +948,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -969,10 +978,10 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_window, param_input, qb2, winmin_qb2)
+          call get_win_min(num_bands, dis_window, qb2, winmin_qb2, have_disentangled)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_window, param_input, qb1, winmin_qb1)
+            call get_win_min(num_bands, dis_window, qb1, winmin_qb1, have_disentangled)
             !
             ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -1034,7 +1043,7 @@ contains
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
 
 107 call io_error &
@@ -1045,8 +1054,9 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
-                      irvec, nrpts, num_bands, num_kpts, num_wann, seedname, stdout, comm)
+  subroutine get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, irvec, &
+                      nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
+                      comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1058,15 +1068,15 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type
 
     implicit none
 
     ! passed variables
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(postw90_oper_type), intent(in) :: postw90_oper
+    type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
@@ -1077,6 +1087,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
 
     character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
@@ -1089,7 +1100,7 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
 
     if (.not. allocated(SS_R)) then
@@ -1105,7 +1116,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -1185,8 +1196,8 @@ contains
         do is = 1, 3
 
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        param_input, ik, num_states(ik), ik, num_states(ik), &
-                                        spn_o(:, :, ik, is), SS_q(:, :, ik, is))
+                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, ik, is))
         enddo !is
       enddo !ik
 
@@ -1198,7 +1209,7 @@ contains
 
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
     return
 
 109 call io_error &
@@ -1209,9 +1220,10 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+  subroutine get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
                        spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, irvec, nrpts, num_bands, &
-                       num_kpts, num_wann, seedname, stdout, comm)
+                       num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
+                       comm)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1225,7 +1237,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, print_output_type
 
     implicit none
 
@@ -1233,13 +1245,14 @@ contains
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(print_output_type), intent(in) :: verbose
     type(spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
 
-    integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
+    integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, num_valence_bands
+    integer, intent(in) :: irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
 
@@ -1249,6 +1262,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
 
     character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
@@ -1281,27 +1295,27 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
@@ -1314,7 +1328,7 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (param_input%have_disentangled) then
+        if (have_disentangled) then
           num_states(ik) = dis_window%ndimwin(ik)
         else
           num_states(ik) = num_wann
@@ -1401,8 +1415,8 @@ contains
           H_o(m, m, ik) = eigval(m, ik)
         enddo
         ! scissors shift applied to the original Hamiltonian
-        if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
-          do m = param_input%num_valence_bands + 1, num_bands
+        if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+          do m = num_valence_bands + 1, num_bands
             H_o(m, m, ik) = H_o(m, m, ik) + pw90_common%scissors_shift
           end do
         else if (spin_hall%bandshift) then
@@ -1456,8 +1470,8 @@ contains
           SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
 
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        param_input, ik, num_states(ik), ik, num_states(ik), &
-                                        SH_o(:, :, ik, is), SH_q(:, :, ik, is))
+                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        SH_o(:, :, ik, is), have_disentangled, SH_q(:, :, ik, is))
         end do
       end do
 
@@ -1521,18 +1535,18 @@ contains
           !
           ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        param_input, ik, num_states(ik), ik, num_states(ik), &
-                                        spn_o(:, :, ik, is), SS_q(:, :, is))
+                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, is))
           ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SM_o(:, :, is), &
-                                        SM_q(:, :, is))
+                                        have_disentangled, SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        param_input, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SHM_o(:, :, is), &
-                                        SHM_q(:, :, is))
+                                        have_disentangled, SHM_q(:, :, is))
 
           ! Assuming all neighbors of a given point are read in sequence!
           !
@@ -1558,9 +1572,11 @@ contains
         call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SH_q(:, :, :, is), SH_R(:, :, :, is))
         do idir = 1, 3
           ! QZYZ18 Eq.(44)
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SR_q(:, :, :, is, idir), &
+                              SR_R(:, :, :, is, idir))
           ! QZYZ18 Eq.(45)
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SHR_q(:, :, :, is, idir), &
+                              SHR_R(:, :, :, is, idir))
         end do
       end do
       SR_R = cmplx_i*SR_R
@@ -1574,7 +1590,7 @@ contains
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
     return
 
@@ -1606,10 +1622,10 @@ contains
     implicit none
 
     ! Arguments
+    type(k_point_type), intent(in) :: k_points
     integer, intent(in) :: num_kpts, nrpts, irvec(:, :)
     complex(kind=dp), intent(in) :: op_q(:, :, :) !! Operator in q-space
     complex(kind=dp), intent(out) :: op_R(:, :, :) !! Operator in R-space
-    type(k_point_type), intent(in) :: k_points
 
     ! local variables
     integer :: ir, ik
@@ -1629,7 +1645,7 @@ contains
   end subroutine fourier_q_to_R
 
   !===============================================
-  subroutine get_win_min(num_bands, dis_window, param_input, ik, win_min)
+  subroutine get_win_min(num_bands, dis_window, ik, win_min, have_disentangled)
     !===============================================
     !
     !! Find the lower bound (band index) of the
@@ -1637,10 +1653,8 @@ contains
     !
     !===============================================
 
-    ! JJ, it seems inefficient to pass param_input and dis_window just for this
-
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_manifold_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, print_output_type
 
     implicit none
 
@@ -1648,12 +1662,12 @@ contains
     integer, intent(in) :: num_bands, ik !! Index of the required k-point
     integer, intent(out) :: win_min !! Index of the lower band of the outer energy window
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(parameter_input_type), intent(in) :: param_input
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     integer :: j
 
-    if (.not. param_input%have_disentangled) then
+    if (.not. have_disentangled) then
       win_min = 1
       return
     endif
@@ -1668,8 +1682,8 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                      param_input, ik_a, ns_a, ik_b, ns_b, S_o, S, H)
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, verbose, &
+                                      ik_a, ns_a, ik_b, ns_b, S_o, have_disentangled, S, H)
     !==========================================================
     !
     ! Wannier-gauge overlap matrix S in the projected subspace
@@ -1681,24 +1695,25 @@ contains
     !==========================================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_manifold_type, parameter_input_type
+    use w90_param_types, only: disentangle_manifold_type, print_output_type
     use w90_utility, only: utility_zgemmm
 
     implicit none
 
     ! passed variables
+    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(print_output_type), intent(in) :: verbose
     integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
     complex(kind=dp), intent(out), optional :: S(:, :), H(:, :)
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(parameter_input_type), intent(in) :: param_input
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     integer :: wm_a, wm_b
 
-    call get_win_min(num_bands, dis_window, param_input, ik_a, wm_a)
-    call get_win_min(num_bands, dis_window, param_input, ik_b, wm_b)
+    call get_win_min(num_bands, dis_window, ik_a, wm_a, have_disentangled)
+    call get_win_min(num_bands, dis_window, ik_b, wm_b, have_disentangled)
 
     call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a), 'C', &
                         S_o(wm_a:wm_a + ns_a - 1, wm_b:wm_b + ns_b - 1), 'N', &

@@ -40,11 +40,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, param_input, &
-                    postw90_oper, pw90_common, pw90_ham, pw90_spin, spec_points, spin_hall, &
-                    wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
-                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, mp_grid, &
-                    num_wann, num_bands, num_kpts, seedname, stdout, comm)
+  subroutine k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, postw90_oper, &
+                    pw90_common, pw90_ham, pw90_spin, rs_region, spec_points, spin_hall, &
+                    wann_data, ws_vec, ws_distance, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, &
+                    SR_R, SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, &
+                    mp_grid, num_wann, num_bands, num_kpts, num_valence_bands, have_disentangled, &
+                    seedname, stdout, comm)
 
     !! Main routine
 
@@ -56,8 +57,8 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
-    use w90_param_types, only: special_kpoints_type, fermi_data_type, parameter_input_type, &
-      wannier_data_type, disentangle_manifold_type, k_point_type, kmesh_info_type
+    use w90_param_types, only: special_kpoints_type, fermi_data_type, print_output_type, &
+      wannier_data_type, disentangle_manifold_type, k_point_type, kmesh_info_type, real_space_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
@@ -74,11 +75,12 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(kpath_type), intent(in) :: kpath
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
     type(special_kpoints_type), intent(in) :: spec_points
     type(spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
@@ -101,10 +103,11 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_wann, num_bands, num_kpts
+    integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
     integer, intent(in) :: stdout
 
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
@@ -170,42 +173,43 @@ contains
 
     ! Set up the needed Wannier matrix elements
 
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  have_disentangled, seedname, stdout, comm)
     if (plot_curv .or. plot_morb) then
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
-                    HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, seedname, stdout, comm)
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+                    v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
     endif
     if (plot_morb) then
 
-      call get_BB_R(dis_window, kmesh_info, k_points, param_input, pw90_common, BB_R, v_matrix, &
-                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, &
-                    stdout, comm)
+      call get_BB_R(dis_window, kmesh_info, k_points, verbose, pw90_common, BB_R, v_matrix, &
+                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
 
-      call get_CC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
-                    CC_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, seedname, stdout, comm)
+      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, CC_R, &
+                    v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
     endif
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
 
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
-                    HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, seedname, stdout, comm)
-      call get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, stdout, &
-                    comm)
-      call get_SHC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+                    v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
+      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                    seedname, stdout, comm)
+      call get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
                      spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, &
-                     num_bands, num_kpts, num_wann, seedname, stdout, comm)
+                     num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
+                     seedname, stdout, comm)
     endif
 
     if (plot_bands .and. kpath%bands_colour == 'spin') then
-      call get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, stdout, &
-                    comm)
+      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                    seedname, stdout, comm)
     end if
 
     if (on_root) then
@@ -257,7 +261,7 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+        call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, 0, num_wann, &
                                        seedname, stdout)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
@@ -266,9 +270,8 @@ contains
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(param_input, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
-                           kpt, real_lattice, recip_lattice, spn_k, mp_grid, num_wann, seedname, &
-                           stdout)
+          call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
+                           real_lattice, recip_lattice, spn_k, mp_grid, num_wann, seedname, stdout)
 
           my_color(:, loop_kpt) = spn_k(:)
           !
@@ -284,21 +287,23 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(berry, dis_window, fermi, k_points, param_input, pw90_common, &
-                                   pw90_ham, spin_hall, wann_data, ws_distance, ws_vec, AA_R, HH_R, &
-                                   SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, kpt, &
-                                   real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   num_wann, seedname, stdout, comm, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(rs_region, berry, dis_window, fermi, k_points, verbose, &
+                                   pw90_common, pw90_ham, spin_hall, wann_data, ws_distance, &
+                                   ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
+                                   v_matrix, eigval, kpt, real_lattice, recip_lattice, mp_grid, &
+                                   num_bands, num_kpts, num_wann, num_valence_bands, &
+                                   have_disentangled, seedname, stdout, comm, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(dis_window, fermi, k_points, param_input, pw90_common, &
+        call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                   mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm, &
-                                   imf_k_list, img_k_list, imh_k_list)
+                                   mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                   have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                   img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -309,11 +314,11 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(dis_window, fermi, k_points, param_input, pw90_common, &
+          call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                   imf_k_list, mp_grid, num_bands, num_kpts, num_wann, seedname, &
-                                   stdout, comm)
+                                   imf_k_list, mp_grid, num_bands, num_kpts, num_wann, &
+                                   num_valence_bands, have_disentangled, seedname, stdout, comm)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -321,11 +326,12 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(berry, dis_window, fermi, k_points, param_input, pw90_common, &
-                                 pw90_ham, spin_hall, wann_data, ws_distance, ws_vec, AA_R, HH_R, &
-                                 SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, kpt, &
-                                 real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                 num_wann, seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(rs_region, berry, dis_window, fermi, k_points, verbose, &
+                                 pw90_common, pw90_ham, spin_hall, wann_data, ws_distance, &
+                                 ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, &
+                                 eigval, kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
+                                 num_kpts, num_wann, num_valence_bands, have_disentangled, &
+                                 seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt
@@ -1079,14 +1085,16 @@ contains
     use w90_io, only: io_error
     use w90_param_types, only: fermi_data_type
 
-    integer, intent(in) :: stdout
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
     type(kpath_type), intent(in) :: kpath
     type(w90commtype), intent(in) :: comm
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(in) :: berry_curv_unit
-    logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
+    logical, intent(in) :: plot_bands, plot_curv, plot_morb, plot_shc
 
+    ! local variables
     logical :: on_root = .false.
     if (mpirank(comm) == 0) on_root = .true.
 
@@ -1149,17 +1157,18 @@ contains
     use w90_param_types, only: special_kpoints_type
     use w90_utility, only: utility_metric
 
-    integer, intent(out)    :: num_paths, total_pts
-    real(kind=dp), allocatable, dimension(:), intent(out)   :: kpath_len, xval
-    real(kind=dp), allocatable, dimension(:, :), intent(out) :: plot_kpoint
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    ! arguments
     type(kpath_type), intent(in) :: kpath
     type(special_kpoints_type), intent(in) :: spec_points
+    integer, intent(out) :: num_paths, total_pts
+    real(kind=dp), allocatable, intent(out)   :: kpath_len(:), xval(:)
+    real(kind=dp), allocatable, intent(out) :: plot_kpoint(:, :)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
+    ! local variables
     integer :: counter, loop_path, loop_i
-
     integer, allocatable, dimension(:) :: kpath_pts
-    real(kind=dp)                      :: vec(3)
+    real(kind=dp) :: vec(3)
     real(kind=dp) :: recip_metric(3, 3)
 
     call utility_metric(recip_lattice, recip_metric)

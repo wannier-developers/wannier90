@@ -57,11 +57,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, param_input, &
-                             pw90_common, pw90_ham, postw90_oper, physics, wann_data, ws_vec, &
-                             ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
-                             eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                             num_wann, seedname, stdout, comm)
+  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, verbose, &
+                             pw90_common, pw90_ham, postw90_oper, physics, rs_region, system, &
+                             wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, &
+                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
+                             num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
+                             comm)
 
     !============================================================!
     !                                                            !
@@ -80,8 +81,8 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: gyrotropic_type, berry_type, postw90_oper_type, postw90_ham_type, &
       postw90_common_type
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
-      kmesh_info_type, fermi_data_type, wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+      kmesh_info_type, fermi_data_type, wannier_data_type, real_space_type, w90_system_type
     use w90_utility, only: utility_det3
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -95,12 +96,14 @@ contains
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
+    type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
+    type(real_space_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
+    type(w90_system_type), intent(in) :: system
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -120,6 +123,7 @@ contains
     integer, intent(in) :: stdout
 
     character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
@@ -148,7 +152,7 @@ contains
     if (fermi%n == 0) call io_error( &
       'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. param_input%iprint > 0) &
+    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
       call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
 
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
@@ -181,44 +185,44 @@ contains
       eval_C = .true.
       eval_D = .true.
       eval_Dw = .true.
-      if (param_input%spinors) eval_spn = .true.
+      if (system%spinors) eval_spn = .true.
       eval_NOA = .true.
       eval_DOS = .true.
     endif
 
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
-    if ((.not. param_input%spinors) .and. eval_spn) call io_error( &
+    if ((.not. system%spinors) .and. eval_spn) call io_error( &
       "spin contribution requested for gyrotropic, but the wavefunctions are not spinors", &
       stdout, seedname)
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, num_bands, num_kpts, num_wann, system%num_valence_bands, &
+                  have_disentangled, seedname, stdout, comm)
 
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, &
                     HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, seedname, stdout, comm)
+                    num_wann, have_disentangled, seedname, stdout, comm)
     endif
 
     if (eval_spn) then
 
-      call get_SS_R(dis_window, k_points, param_input, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, stdout, &
-                    comm)
+      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                    seedname, stdout, comm)
     endif
 
     if (eval_K) then
-      call get_BB_R(dis_window, kmesh_info, k_points, param_input, pw90_common, BB_R, v_matrix, &
-                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, seedname, &
-                    stdout, comm)
-      call get_CC_R(dis_window, kmesh_info, k_points, param_input, postw90_oper, pw90_common, &
+      call get_BB_R(dis_window, kmesh_info, k_points, verbose, pw90_common, BB_R, v_matrix, &
+                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
+      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
                     CC_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, seedname, stdout, comm)
+                    num_wann, have_disentangled, seedname, stdout, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
@@ -256,7 +260,7 @@ contains
       endif
     endif
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
       flush(stdout)
       write (stdout, '(/,/,1x,a)') 'Properties calculated in module  g y r o t r o p i c'
       write (stdout, '(1x,a)') '------------------------------------------'
@@ -296,7 +300,7 @@ contains
           'band-diagonal Wannier matrix elements of r, etc.'
       endif
 
-      if (param_input%timing_level > 1) then
+      if (verbose%timing_level > 1) then
         call io_stopwatch('gyrotropic: prelims', 2, stdout, seedname)
         call io_stopwatch('gyrotropic: k-interpolation', 1, stdout, seedname)
       endif
@@ -305,7 +309,7 @@ contains
 
       flush(stdout)
 
-    end if ! param_input%iprint >0, aka "on_root"
+    end if ! verbose%iprint >0, aka "on_root"
 
     ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
@@ -322,9 +326,10 @@ contains
       kpt(3) = loop_z*db3
       kpt(:) = gyrotropic%box_corner(:) + matmul(kpt, gyrotropic%box)
 
-      call gyrotropic_get_k_list(kpt, kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
+      call gyrotropic_get_k_list(rs_region, system%num_valence_bands, have_disentangled, kpt, &
+                                 kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
-                                 eval_NOA, eval_spn, eval_C, eval_dos, num_wann, param_input, &
+                                 eval_NOA, eval_spn, eval_C, eval_dos, num_wann, verbose, &
                                  fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                  gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
@@ -360,10 +365,10 @@ contains
                                       'SUM', stdout, seedname, comm)
     endif
 
-    if (param_input%iprint > 0) then
+    if (verbose%iprint > 0) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, &
-                                                          stdout, seedname)
+      if (verbose%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, &
+                                                      stdout, seedname)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)
@@ -507,14 +512,15 @@ contains
                                         arrEf1d=gyro_DOS, units=units_tmp, comment=comment_tmp)
       endif
 
-    end if !param_input%iprint >0, aka "on_root"
+    end if !verbose%iprint >0, aka "on_root"
 
   end subroutine gyrotropic_main
 
-  subroutine gyrotropic_get_k_list(kpt, kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
-                                   gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
-                                   eval_NOA, eval_spn, eval_C, eval_dos, num_wann, param_input, &
-                                   fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+  subroutine gyrotropic_get_k_list(rs_region, num_valence_bands, have_disentangled, kpt, kweight, &
+                                   gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, gyro_DOS, &
+                                   gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, eval_NOA, &
+                                   eval_spn, eval_C, eval_dos, num_wann, verbose, fermi, &
+                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                    gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
                                    seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
@@ -552,11 +558,9 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, &
-      wannier_data_type, fermi_data_type
-!   use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+      wannier_data_type, fermi_data_type, real_space_type
     use w90_postw90_common, only: wigner_seitz_type, &
-      !     pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_fourier_R_to_k_vec
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, utility_w0gauss
@@ -565,45 +569,49 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
-    real(kind=dp), intent(in)                      :: kpt(3), kweight
-    real(kind=dp), allocatable, dimension(:, :, :), intent(inout)   :: gyro_K_spn, &
-                                                                       gyro_K_orb, &
-                                                                       gyro_D, &
-                                                                       gyro_C
-    real(kind=dp), allocatable, dimension(:, :, :, :), intent(inout) :: gyro_Dw, gyro_NOA_spn, &
-                                                                        gyro_NOA_orb
-    real(kind=dp), allocatable, dimension(:), intent(inout) :: gyro_DOS
-
-    logical, intent(in) :: eval_K, eval_D, eval_Dw, &
-                           eval_C, eval_NOA, eval_spn, eval_dos
-
-    integer, intent(in) :: num_bands, num_kpts, num_wann
-    type(parameter_input_type), intent(in) :: param_input
-    type(fermi_data_type), intent(in) :: fermi
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in) :: k_points
+    type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic
+    type(k_point_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands
     integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
-    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+
+    real(kind=dp), allocatable, intent(inout) :: gyro_DOS(:)
+    real(kind=dp), allocatable, intent(inout) :: gyro_Dw(:, :, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_NOA_spn(:, :, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_NOA_orb(:, :, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_K_spn(:, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_K_orb(:, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_D(:, :, :)
+    real(kind=dp), allocatable, intent(inout) :: gyro_C(:, :, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: kpt(3), kweight
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
 
-    type(w90commtype), intent(in) :: comm
+    character(len=50), intent(in) :: seedname
 
+    logical, intent(in) :: eval_K, eval_D, eval_Dw, eval_C, eval_NOA, eval_spn, eval_dos
+    logical, intent(in) :: have_disentangled
+
+    ! local variables
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
@@ -628,15 +636,16 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, wann_data, &
-                             ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                             del_eig, eig, eigval, kpt, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, num_wann, seedname, stdout, comm)
+    call wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
+                             wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
+                             v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                             mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                             have_disentangled, seedname, stdout, comm)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
-      call pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, AA_R, kpt, &
+      call pw90common_fourier_R_to_k_vec(rs_region, wann_data, ws_distance, ws_vec, AA_R, kpt, &
                                          real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
                                          stdout, OO_true=AA)
       do i = 1, 3
@@ -677,7 +686,7 @@ contains
         ! Spin is computed for all bands simultaneously
         !
         if (eval_spn .and. .not. got_spin) then
-          call spin_get_S(kpt, S, num_wann, param_input, wann_data, real_lattice, recip_lattice, &
+          call spin_get_S(kpt, S, num_wann, rs_region, wann_data, real_lattice, recip_lattice, &
                           mp_grid, ws_distance, HH_R, SS_R, ws_vec, stdout, seedname)
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
@@ -688,11 +697,12 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imfgh_klist(dis_window, fermi, k_points, param_input, pw90_common, &
-                                       wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                       u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                       mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, comm, &
-                                       imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, &
+                                       pw90_common, wann_data, ws_distance, ws_vec, AA_R, BB_R, &
+                                       CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
+                                       recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                                       num_valence_bands, have_disentangled, seedname, stdout, &
+                                       comm, imf_k, img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -701,11 +711,12 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(dis_window, fermi, k_points, param_input, pw90_common, &
+            call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
                                      wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                      u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                     imf_k, mp_grid, num_bands, num_kpts, num_wann, seedname, &
-                                     stdout, comm, occ)
+                                     imf_k, mp_grid, num_bands, num_kpts, num_wann, &
+                                     num_valence_bands, have_disentangled, seedname, stdout, comm, &
+                                     occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo
@@ -744,14 +755,14 @@ contains
 
     if (eval_NOA) then
       if (eval_spn) then
-        call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
-                                  param_input, fermi, wann_data, real_lattice, recip_lattice, &
-                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
+        call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
+                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R, gyro_NOA_spn)
       else
-        call gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
-                                  param_input, fermi, wann_data, real_lattice, recip_lattice, &
-                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
+        call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
+                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R)
       endif
     endif
@@ -774,14 +785,13 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
+    ! arguments
     type(gyrotropic_type), intent(in) :: gyrotropic
+    real(kind=dp), intent(in) :: eig(:)
+    real(kind=dp), intent(out) :: curv_w_k(:, :, :)  ! (num_wann,n_freq,3)
+    complex(kind=dp), intent(in) :: AA(:, :, :)
 
-    real(kind=dp), intent(in)                    :: eig(:)
-    complex(kind=dp), intent(in)                 :: AA(:, :, :)
-    real(kind=dp), dimension(:, :, :), intent(out) :: curv_w_k  ! (num_wann,n_freq,3)
-
+    ! local variables
     real(kind=dp), allocatable    :: multWre(:)
     integer          :: i, n, m, n1, m1
     real(kind=dp)    :: wmn
@@ -805,9 +815,9 @@ contains
 
   end subroutine gyrotropic_get_curv_w_k
 
-  subroutine gyrotropic_get_NOA_k(kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, num_wann, &
-                                  param_input, fermi, wann_data, real_lattice, recip_lattice, &
-                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
+  subroutine gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
+                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R, gyro_NOA_spn)
     !====================================================================!
     !                                                                    !
@@ -831,7 +841,7 @@ contains
     use pw90_parameters, only: gyrotropic_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
-    use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type
+    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, real_space_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
@@ -839,49 +849,49 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
-    real(kind=dp), intent(in)       :: kpt(3), kweight
-    real(kind=dp), dimension(:, :, :, :), optional, intent(inout)    :: gyro_NOA_spn
-    real(kind=dp), dimension(:, :, :, :), intent(inout)    :: gyro_NOA_orb
-    complex(kind=dp), dimension(:, :, :), intent(in)       :: AA
-    complex(kind=dp), dimension(:, :), intent(in)       :: UU
-    real(kind=dp), dimension(:), intent(in)       :: eig
-    real(kind=dp), dimension(:, :), intent(in)       :: del_eig
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
     type(gyrotropic_type), intent(in) :: gyrotropic
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: del_eig(:, :)
+    real(kind=dp), intent(in) :: eig(:)
+    real(kind=dp), intent(inout) :: gyro_NOA_orb(:, :, :, :)
+    real(kind=dp), intent(inout), optional :: gyro_NOA_spn(:, :, :, :)
+    real(kind=dp), intent(in) :: kpt(3), kweight
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
-    !complex(kind=dp), intent(in) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: AA(:, :, :)
+    complex(kind=dp), intent(in) :: UU(:, :)
 
-    complex(kind=dp), allocatable :: Bnl_orb(:, :, :, :)
-    complex(kind=dp), allocatable :: Bnl_spin(:, :, :, :)
-    complex(kind=dp), allocatable :: SS(:, :, :)
-    complex(kind=dp), allocatable :: S_h(:, :, :)
-
-    complex(kind=dp)              :: multW1(gyrotropic%nfreq)
-    real(kind=dp) :: multWe(gyrotropic%nfreq), multWm(gyrotropic%nfreq)
-
+    ! local variables
+    integer :: j, n, l, n1, l1, a, b, c, ab, ifermi
     integer ::  num_occ, num_unocc, occ_list(num_wann), unocc_list(num_wann)
 
-    !real(kind=dp)    ::  wmn
+    real(kind=dp) :: wln
+    real(kind=dp) :: multWe(gyrotropic%nfreq), multWm(gyrotropic%nfreq)
+    complex(kind=dp) :: multW1(gyrotropic%nfreq)
 
-    integer          :: j, n, l, n1, l1, a, b, c, ab, ifermi
-    real(kind=dp)    :: wln
+    complex(kind=dp), allocatable :: S_h(:, :, :)
+    complex(kind=dp), allocatable :: SS(:, :, :)
+    complex(kind=dp), allocatable :: Bnl_orb(:, :, :, :)
+    complex(kind=dp), allocatable :: Bnl_spin(:, :, :, :)
 
     if (present(gyro_NOA_spn)) then
       allocate (SS(num_wann, num_wann, 3))
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
-        call pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, &
+        call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, &
                                            SS_R(:, :, :, j), kpt, real_lattice, recip_lattice, &
                                            mp_grid, num_wann, seedname, stdout, OO=SS(:, :, j))
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
@@ -904,14 +914,14 @@ contains
       enddo
 
       if (num_occ == 0) then
-        if (param_input%iprint .ge. 2) &
+        if (verbose%iprint .ge. 2) &
           write (stdout, *) "WARNING no occupied bands included in the calculation for kpt=", &
           kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
         cycle
       endif
 
       if (num_unocc == 0) then
-        if (param_input%iprint .ge. 2) &
+        if (verbose%iprint .ge. 2) &
           write (stdout, *) "WARNING no unoccupied bands included in the calculation for kpt=", &
           kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
         cycle
@@ -977,17 +987,17 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
+    ! arguments
     type(gyrotropic_type), intent(in) :: gyrotropic
-    integer, intent(in) ::num_occ, num_unocc
-    integer, dimension(:), intent(in) ::occ_list, unocc_list
-    real(kind=dp), dimension(:), intent(in) ::eig     !  n
-    real(kind=dp), dimension(:, :), intent(in) ::del_eig !  n
-    complex(kind=dp), dimension(:, :, :), intent(in) ::AA      !  n,l,a
-    complex(kind=dp), dimension(:, :, :, :), intent(out)::Bnl     !   n,l,a,c
-    integer n, m, l, a, c, n1, m1, l1
+    integer, intent(in) :: num_occ, num_unocc
+    integer, intent(in) :: occ_list(:), unocc_list(:)
+    real(kind=dp), intent(in) :: eig(:)               !  n
+    real(kind=dp), intent(in) :: del_eig(:, :)        !  n
+    complex(kind=dp), intent(in) :: AA(:, :, :)       !  n,l,a
+    complex(kind=dp), intent(out) :: Bnl(:, :, :, :)  !  n,l,a,c
 
+    ! local variables
+    integer n, m, l, a, c, n1, m1, l1
     Bnl(:, :, :, :) = cmplx_0
 
     do a = 1, 3
@@ -1023,12 +1033,13 @@ contains
 
     implicit none
 
-    ! Arguments
-    !
-    integer, intent(in) ::num_occ, num_unocc
-    integer, dimension(:), intent(in) ::occ_list, unocc_list
-    complex(kind=dp), dimension(:, :, :), intent(in) ::S_h     !  n,l,a
-    complex(kind=dp), dimension(:, :, :, :), intent(out)::Bnl     !   n,l,a,c
+    ! arguments
+    integer, intent(in) :: num_occ, num_unocc
+    integer, intent(in) :: occ_list(:), unocc_list(:)
+    complex(kind=dp), intent(in) :: S_h(:, :, :)     !  n,l,a
+    complex(kind=dp), intent(out) :: Bnl(:, :, :, :)     !   n,l,a,c
+
+    ! local variables
     integer n, l, a, b, c, n1, l1
 
     Bnl(:, :, :, :) = cmplx_0
@@ -1057,19 +1068,23 @@ contains
 
     implicit none
 
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
+    type(gyrotropic_type), intent(in) :: gyrotropic
 
     integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in), optional :: arrEf(:, :, :)
+    real(kind=dp), intent(in), optional :: arrEfW(:, :, :, :)
+    real(kind=dp), intent(in), optional :: arrEf1D(:)
     character(len=30), intent(in) :: f_out_name
+    character(len=50), intent(in) :: seedname
     character(len=30), intent(in), optional :: units
     character(len=120), intent(in), optional :: comment
-    real(kind=dp), dimension(:, :, :), intent(in), optional :: arrEf
-    real(kind=dp), dimension(:, :, :, :), intent(in), optional :: arrEfW
-    real(kind=dp), dimension(:), intent(in), optional :: arrEf1D
-    logical, optional, intent(in) :: symmetrize
-    character(len=50), intent(in)  :: seedname
 
+    logical, optional, intent(in) :: symmetrize
+
+    ! local variables
     character(len=120)  :: file_name
     integer             :: i, file_unit
     logical             :: lsym
@@ -1108,22 +1123,25 @@ contains
 
     implicit none
 
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
 
     integer, intent(in) :: file_unit
     real(kind=dp), intent(in) :: omega
-    real(kind=dp), dimension(:, :, :), optional, intent(in) :: arr33N
-    real(kind=dp), dimension(:), optional, intent(in) :: arrN
+    real(kind=dp), optional, intent(in) :: arr33N(:, :, :)
+    real(kind=dp), optional, intent(in) :: arrN(:)
+
     ! symmetrize= True  - get symmetric and assimetric parts
     ! symmetrize= False - write the asymmetric (in xy) tensor gamma_{xyz}
     ! symmetrize not present - write as is
     logical, optional, intent(in) :: symmetrize
 
+    ! local variables
     real(kind=dp) ::  xx(fermi%n), yy(fermi%n), zz(fermi%n), &
                      xy(fermi%n), xz(fermi%n), yz(fermi%n), &
                      x(fermi%n), y(fermi%n), z(fermi%n)
-    integer       ::  i
-    logical lsym
+    integer :: i
+    logical :: lsym
 
     if (present(arr33N)) then
       lsym = .false.

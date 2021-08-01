@@ -82,19 +82,19 @@ contains
 
   ! Public procedures have names starting with wanint_
 
-  subroutine pw90common_wanint_setup(num_wann, param_input, real_lattice, mp_grid, pw90_common, &
+  subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, &
                                      ws_vec, stdout, seedname, world)
     !! Setup data ready for interpolation
     use w90_constants, only: dp !, cmplx_0
 !   use w90_io, only: io_error, io_file_unit, seedname
     use w90_io, only: io_error, io_file_unit
     use w90_utility, only: utility_cart_to_frac
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: print_output_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: mpirank, w90commtype, comms_bcast
 
     integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: verbose
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
     type(postw90_common_type), intent(in) :: pw90_common
@@ -126,7 +126,7 @@ contains
       endif
       call comms_bcast(ws_vec%nrpts, 1, stdout, seedname, world)
     else
-      call wigner_seitz(param_input, real_lattice, mp_grid, ws_vec, stdout, seedname, .true., world)
+      call wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, .true., world)
     endif
 
     ! Now can allocate several arrays
@@ -151,7 +151,7 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
       !
-      call wigner_seitz(param_input, real_lattice, mp_grid, ws_vec, stdout, seedname, &
+      call wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, &
                         .false., world)
       !
       ! Convert from reduced to Cartesian coordinates
@@ -252,7 +252,7 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(param_input, rs_region, kmesh_info, k_points, num_kpts, &
+  subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
                                           dis_window, system, fermi, num_bands, num_wann, eigval, &
                                           mp_grid, real_lattice, recip_lattice, pw90_calcs, &
                                           pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
@@ -274,7 +274,7 @@ contains
       postw90_spin_type, postw90_ham_type, kpath_type, kslice_type, dos_plot_type, berry_type, &
       spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
-    type(print_output_type), intent(inout) :: param_input
+    type(print_output_type), intent(inout) :: verbose
     type(real_space_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
@@ -321,14 +321,14 @@ contains
       call comms_bcast(num_bands, 1, stdout, seedname, world)
     endif
     call comms_bcast(num_wann, 1, stdout, seedname, world)
-    call comms_bcast(param_input%timing_level, 1, stdout, seedname, world)
+    call comms_bcast(verbose%timing_level, 1, stdout, seedname, world)
 
     !______________________________________
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
-    iprintroot = param_input%iprint
-    param_input%iprint = 0
-    call comms_bcast(param_input%iprint, 1, stdout, seedname, world)
-    if (on_root) param_input%iprint = iprintroot
+    iprintroot = verbose%iprint
+    verbose%iprint = 0
+    call comms_bcast(verbose%iprint, 1, stdout, seedname, world)
+    if (on_root) verbose%iprint = iprintroot
     !______________________________________
 
     call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, world)
@@ -407,7 +407,7 @@ contains
 !
 ! New input variables in development
 !
-    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag), stdout, seedname, world)
+    call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, world)
     call comms_bcast(pw90_calcs%spin_moment, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_polar, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_azimuth, 1, stdout, seedname, world)
@@ -765,8 +765,7 @@ contains
     ! (See my e-mail of 20Sept07)
     !
     do i = 1, 3
-      Delta_k_i(i) = sqrt(dot_product(recip_lattice(i, :), recip_lattice(i, :))) &
-                     /num_points
+      Delta_k_i(i) = sqrt(dot_product(recip_lattice(i, :), recip_lattice(i, :)))/num_points
     end do
     kmesh_spacing_singleinteger = maxval(Delta_k_i)
 
@@ -777,21 +776,20 @@ contains
 
     integer, dimension(3), intent(in) :: mesh
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    real(kind=dp)                     :: kmesh_spacing_mesh
+    real(kind=dp) :: kmesh_spacing_mesh
 
     integer        :: i
     real(kind=dp) :: Delta_k_i(3)
 
     do i = 1, 3
-      Delta_k_i(i) = sqrt(dot_product(recip_lattice(i, :), recip_lattice(i, :))) &
-                     /mesh(i)
+      Delta_k_i(i) = sqrt(dot_product(recip_lattice(i, :), recip_lattice(i, :)))/mesh(i)
     end do
     kmesh_spacing_mesh = maxval(Delta_k_i)
 
   end function kmesh_spacing_mesh
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, OO, OO_R, kpt, &
+  subroutine pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, OO, OO_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, alpha, num_wann, &
                                        seedname, stdout)
     !=========================================================!
@@ -808,33 +806,30 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: wannier_data_type, real_space_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
-    ! Arguments
-    !
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(ws_distance_type), intent(inout)  :: ws_distance
-    type(wigner_seitz_type), intent(in)    :: ws_vec
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(in) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     integer, intent(in) :: alpha
 
-    real(kind=dp)                                   :: kpt(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :, :), intent(in)  :: OO_R
-    complex(kind=dp), dimension(:, :), intent(out)   :: OO
+    complex(kind=dp), intent(in) :: OO_R(:, :, :)
+    complex(kind=dp), intent(out) :: OO(:, :)
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
-
+    ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
@@ -844,8 +839,8 @@ contains
 !                               wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts, &
 !                               irvec, force_recompute)
 
-    if (param_input%rs_region%use_ws_distance) then
-      CALL ws_translate_dist(ws_distance, stdout, seedname, param_input%rs_region, &
+    if (rs_region%use_ws_distance) then
+      CALL ws_translate_dist(ws_distance, stdout, seedname, rs_region, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
                              mp_grid, ws_vec%nrpts, ws_vec%irvec)
     endif
@@ -853,7 +848,7 @@ contains
     OO(:, :) = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -892,7 +887,7 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, OO_R, kpt, &
+  subroutine pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, OO_R, kpt, &
                                            real_lattice, recip_lattice, mp_grid, num_wann, &
                                            seedname, stdout, OO, OO_dx, OO_dy, OO_dz)
     !=======================================================!
@@ -906,42 +901,41 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
-    ! Arguments
-    !
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(ws_distance_type), intent(inout)  :: ws_distance
-    type(wigner_seitz_type), intent(in)    :: ws_vec
+
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(in) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp)                                             :: kpt(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :, :), intent(in)           :: OO_R
-    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO
-    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dx
-    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dy
-    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dz
+    complex(kind=dp), intent(in) :: OO_R(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO(:, :)
+    complex(kind=dp), optional, intent(out) :: OO_dx(:, :)
+    complex(kind=dp), optional, intent(out) :: OO_dy(:, :)
+    complex(kind=dp), optional, intent(out) :: OO_dz(:, :)
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -949,7 +943,7 @@ contains
     if (present(OO_dz)) OO_dz = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -986,7 +980,7 @@ contains
   end subroutine pw90common_fourier_R_to_k_new
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, param_input, wann_data, &
+  subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, rs_region, wann_data, &
                                                     real_lattice, recip_lattice, mp_grid, &
                                                     ws_distance, ws_vec, stdout, seedname, OO, &
                                                     OO_da, OO_dadb)
@@ -1004,43 +998,46 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
-    ! Arguments
-    !
-    real(kind=dp)                                                 :: kpt(3)
-    complex(kind=dp), dimension(:, :, :), intent(in)                :: OO_R
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
-    complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
 
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(in) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+
+    character(len=50), intent(in)  :: seedname
+    complex(kind=dp), intent(in) :: OO_R(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO(:, :)
+    complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_dadb(:, :, :, :)
+
+    ! local variables
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1093,7 +1090,7 @@ contains
   end subroutine pw90common_fourier_R_to_k_new_second_d
 
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
-                                                            param_input, wann_data, real_lattice, &
+                                                            rs_region, wann_data, real_lattice, &
                                                             recip_lattice, mp_grid, ws_distance, &
                                                             ws_vec, stdout, seedname, OO, OO_da, &
                                                             OO_dadb)
@@ -1113,43 +1110,46 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
-    ! Arguments
-    !
-    real(kind=dp)                                                 :: kpt(3)
-    complex(kind=dp), dimension(:, :, :), intent(in)                :: OO_R
-    complex(kind=dp), dimension(:, :, :, :), intent(in)     :: oo_a_R
-    integer, intent(in) :: num_wann
-    type(parameter_input_type), intent(in) :: param_input
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    complex(kind=dp), optional, dimension(:, :), intent(out)       :: OO
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
-    complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
+    type(ws_distance_type), intent(inout) :: ws_distance
 
-    integer          :: ir, i, j, ideg, a, b
-    real(kind=dp)    :: rdotk
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+
+    complex(kind=dp), intent(in) :: oo_a_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: OO_R(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO(:, :)
+    complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_dadb(:, :, :, :)
+
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
+    integer :: ir, i, j, ideg, a, b
+    real(kind=dp) :: rdotk
+    real(kind=dp) :: local_wannier_centres(3, num_wann), wannier_centres_frac(3, num_wann)
+    real(kind=dp) :: r_sum(3)
     complex(kind=dp) :: phase_fac
-    real(kind=dp)    :: local_wannier_centres(3, num_wann), wannier_centres_frac(3, num_wann)
-    real(kind=dp)                                                 :: r_sum(3)
 
     r_sum = 0.d0
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1175,7 +1175,7 @@ contains
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1247,7 +1247,7 @@ contains
   ! ***NEW***
   !
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec(param_input, wann_data, ws_distance, ws_vec, OO_R, kpt, &
+  subroutine pw90common_fourier_R_to_k_vec(rs_region, wann_data, ws_distance, ws_vec, OO_R, kpt, &
                                            real_lattice, recip_lattice, mp_grid, num_wann, &
                                            seedname, stdout, OO_true, OO_pseudo)
     !====================================================================!
@@ -1258,47 +1258,45 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
-    ! Arguments
-    !
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(ws_distance_type), intent(inout)  :: ws_distance
-    type(wigner_seitz_type), intent(in)    :: ws_vec
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(wigner_seitz_type), intent(in) :: ws_vec
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp)                                     :: kpt(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_true
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_pseudo
+    complex(kind=dp), intent(in)  :: OO_R(:, :, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_true(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_pseudo(:, :, :)
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
 
-!   local variables
+    ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1356,7 +1354,7 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec_dadb(param_input, wann_data, ws_distance, ws_vec, OO_R, &
+  subroutine pw90common_fourier_R_to_k_vec_dadb(rs_region, wann_data, ws_distance, ws_vec, OO_R, &
                                                 kpt, real_lattice, recip_lattice, mp_grid, &
                                                 num_wann, seedname, stdout, OO_da, OO_dadb)
     !====================================================================!
@@ -1370,47 +1368,45 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
-    ! Arguments
-    !
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(ws_distance_type), intent(inout)  :: ws_distance
-    type(wigner_seitz_type), intent(in)    :: ws_vec
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(wigner_seitz_type), intent(in) :: ws_vec
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp)                                     :: kpt(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)     :: OO_da
-    complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
+    complex(kind=dp), intent(in)  :: OO_R(:, :, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_dadb(:, :, :, :)
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
 
-!   local variables
+    ! local variables
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1459,7 +1455,7 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec_dadb
 
   !=========================================================!
-  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(param_input, wann_data, ws_distance, &
+  subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(rs_region, wann_data, ws_distance, &
                                                         ws_vec, OO_R, kpt, real_lattice, &
                                                         recip_lattice, mp_grid, num_wann, &
                                                         seedname, stdout, OO_da, OO_dadb)
@@ -1478,33 +1474,31 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: parameter_input_type, wannier_data_type
+    use w90_param_types, only: real_space_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
-    ! Arguments
-    !
-    type(parameter_input_type), intent(in) :: param_input
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(ws_distance_type), intent(inout)  :: ws_distance
-    type(wigner_seitz_type), intent(in)    :: ws_vec
+    ! arguments
+    type(real_space_type), intent(in) :: rs_region
+    type(wannier_data_type), intent(in) :: wann_data
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(wigner_seitz_type), intent(in) :: ws_vec
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp)             :: kpt(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :, :, :), intent(in)              :: OO_R
-    complex(kind=dp), optional, dimension(:, :, :), intent(out)      :: OO_da
-    complex(kind=dp), optional, dimension(:, :, :, :), intent(out)   :: OO_dadb
+    complex(kind=dp), intent(in) :: OO_R(:, :, :, :)
+    complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
+    complex(kind=dp), optional, intent(out)   :: OO_dadb(:, :, :, :)
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
 
-!   local variables
+    ! local variables
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
@@ -1513,11 +1507,11 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
-                                                                      param_input%rs_region, num_wann, &
-                                                                      wann_data%centres, real_lattice, &
-                                                                      recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                                      ws_vec%irvec)
+    if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+                                                          rs_region, num_wann, &
+                                                          wann_data%centres, real_lattice, &
+                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
+                                                          ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1560,7 +1554,7 @@ contains
 
     do ir = 1, ws_vec%nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (param_input%rs_region%use_ws_distance) then
+      if (rs_region%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, ws_distance%ndeg(i, j, ir)
@@ -1668,7 +1662,7 @@ contains
   !===========================================================!
 
   !================================!
-  subroutine wigner_seitz(param_input, real_lattice, mp_grid, ws_vec, stdout, seedname, &
+  subroutine wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, &
                           count_pts, world)
     !================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
@@ -1678,9 +1672,8 @@ contains
     !==========================================================================!
 
     use w90_constants, only: dp
-!   use w90_io, only: stdout, io_error, io_stopwatch
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: parameter_input_type
+    use w90_param_types, only: print_output_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90commtype, mpirank
 
@@ -1689,15 +1682,17 @@ contains
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
-    type(parameter_input_type), intent(in) :: param_input
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    integer, intent(in) :: mp_grid(3)
-    type(wigner_seitz_type), intent(inout) :: ws_vec
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    logical, intent(in) :: count_pts
+    ! arguments
+    type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: world
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+    logical, intent(in) :: count_pts
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    character(len=50), intent(in) :: seedname
 
+    ! local variables
     integer       :: ndiff(3)
     real(kind=dp) :: dist(125), tot, dist_min
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
@@ -1705,7 +1700,7 @@ contains
     logical :: on_root = .false.
     if (mpirank(world) == 0) on_root = .true.
 
-    if (param_input%timing_level > 1 .and. on_root) &
+    if (verbose%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 1, stdout, seedname)
 
     call utility_metric(real_lattice, real_metric)
@@ -1775,12 +1770,12 @@ contains
     enddo
     !
     if (count_pts) then
-      if (param_input%timing_level > 1 .and. on_root) &
+      if (verbose%timing_level > 1 .and. on_root) &
         call io_stopwatch('postw90_common: wigner_seitz', 2, stdout, seedname)
       return
     end if
 
-    if (param_input%iprint >= 3 .and. on_root) then
+    if (verbose%iprint >= 3 .and. on_root) then
       write (stdout, '(1x,i4,a,/)') ws_vec%nrpts, &
         ' lattice points in Wigner-Seitz supercell:'
       do ir = 1, ws_vec%nrpts
@@ -1800,7 +1795,7 @@ contains
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) &
       call io_error('ERROR in wigner_seitz: error in finding Wigner-Seitz points', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) &
+    if (verbose%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 2, stdout, seedname)
 
     return

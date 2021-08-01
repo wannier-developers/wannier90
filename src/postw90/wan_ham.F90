@@ -39,18 +39,17 @@ contains
     use w90_utility, only: utility_rotate
     use w90_postw90_common, only: pw90common_get_occ
 
-    ! Arguments
-    !
-    complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
-    complex(kind=dp), dimension(:, :), intent(in)  :: UU
-    complex(kind=dp), dimension(:, :), intent(out) :: D_h_a
+    ! arguments
+    complex(kind=dp), intent(in)  :: delHH_a(:, :)
+    complex(kind=dp), intent(in)  :: UU(:, :)
+    complex(kind=dp), intent(out) :: D_h_a(:, :)
 
-    real(kind=dp), dimension(:), intent(in)  :: eig
-    real(kind=dp), intent(in)  :: ef
+    real(kind=dp), intent(in) :: eig(:)
+    real(kind=dp), intent(in) :: ef
 
     integer, intent(in) :: num_wann
 
-!   local variables
+    ! local variables
     complex(kind=dp), allocatable :: delHH_a_bar(:, :)
     real(kind=dp)                 :: occ(num_wann)
     integer                       :: n, m
@@ -87,17 +86,16 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_utility, only: utility_rotate
 
-    ! Arguments
-    !
-    complex(kind=dp), dimension(:, :, :), intent(in)  :: delHH
-    complex(kind=dp), dimension(:, :), intent(in)    :: UU
-    complex(kind=dp), dimension(:, :, :), intent(out) :: D_h
+    ! arguments
+    complex(kind=dp), intent(in) :: delHH(:, :, :)
+    complex(kind=dp), intent(in) :: UU(:, :)
+    complex(kind=dp), intent(out) :: D_h(:, :, :)
 
-    real(kind=dp), dimension(:), intent(in)    :: eig
+    real(kind=dp), intent(in) :: eig(:)
 
     integer, intent(in) :: num_wann
 
-!   local variables
+    ! local variables
     complex(kind=dp), allocatable :: delHH_bar_i(:, :)
     integer                       :: n, m, i
 
@@ -133,19 +131,18 @@ contains
     use pw90_parameters, only: berry_type !sc_eta
     use w90_utility, only: utility_rotate
 
-    ! Arguments
-    !
+    ! arguments
     type(berry_type), intent(in) :: berry
 
     integer, intent(in) :: num_wann
 
-    real(kind=dp), dimension(:), intent(in)    :: eig
+    real(kind=dp), intent(in) :: eig(:)
 
-    complex(kind=dp), dimension(:, :, :), intent(in)  :: delHH
-    complex(kind=dp), dimension(:, :), intent(in)    :: UU
-    complex(kind=dp), dimension(:, :, :), intent(out) :: D_h
+    complex(kind=dp), intent(in)  :: delHH(:, :, :)
+    complex(kind=dp), intent(in)    :: UU(:, :)
+    complex(kind=dp), intent(out) :: D_h(:, :, :)
 
-!   local variables
+    ! local variables
     complex(kind=dp), allocatable :: delHH_bar_i(:, :)
     integer                       :: n, m, i
     real(kind=dp)                 :: deltaE
@@ -185,17 +182,19 @@ contains
     use w90_utility, only: utility_rotate_new
     use w90_param_types, only: fermi_data_type
 
-    complex(kind=dp), dimension(:, :), intent(inout) :: delHH
-    complex(kind=dp), dimension(:, :), intent(in)    :: UU
-    real(kind=dp), dimension(:), intent(in)    :: eig
-    complex(kind=dp), dimension(:, :, :), intent(out) :: JJp_list
-    complex(kind=dp), dimension(:, :, :), intent(out) :: JJm_list
-    integer, intent(in) :: num_wann
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: eig(:)
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    complex(kind=dp), intent(inout) :: delHH(:, :)
+    complex(kind=dp), intent(in) :: UU(:, :)
+    complex(kind=dp), intent(out) :: JJm_list(:, :, :)
+    complex(kind=dp), intent(out) :: JJp_list(:, :, :)
 
-    integer                       :: n, m, ife, nfermi_loc
-    real(kind=dp)                 :: fe
+    ! local variables
+    integer :: n, m, ife, nfermi_loc
+    real(kind=dp) :: fe
 
     if (present(occ)) then
       nfermi_loc = 1
@@ -247,23 +246,22 @@ contains
     use w90_postw90_common, only: pw90common_get_occ
     use w90_io, only: io_error
 
-    ! Arguments
-    !
+    ! arguments
     type(fermi_data_type), intent(in) :: fermi
 
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
 
-    real(kind=dp), intent(in), optional, dimension(:) :: eig
-    real(kind=dp), intent(in), optional, dimension(:) :: occ
+    real(kind=dp), intent(in), optional :: eig(:)
+    real(kind=dp), intent(in), optional :: occ(:)
 
-    complex(kind=dp), dimension(:, :), intent(in)  :: UU
-    complex(kind=dp), dimension(:, :, :), intent(out) :: f_list
-    complex(kind=dp), dimension(:, :, :), intent(out) :: g_list
+    complex(kind=dp), intent(in)  :: UU(:, :)
+    complex(kind=dp), intent(out) :: f_list(:, :, :)
+    complex(kind=dp), intent(out) :: g_list(:, :, :)
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer       :: n, m, i, if, nfermi_loc
     real(kind=dp), allocatable :: occ_list(:, :)
 
@@ -317,19 +315,17 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag
     use pw90_parameters, only: postw90_ham_type
 
-    ! Arguments
-    !
-    integer, intent(in) :: num_wann
-    real(kind=dp), intent(out) :: deleig_a(num_wann)
-    real(kind=dp), intent(in)  :: eig(num_wann)
-    complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
-    complex(kind=dp), dimension(:, :), intent(in)  :: UU
+    ! arguments
     type(postw90_ham_type), intent(in) :: pw90_ham
+    integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(in) :: eig(num_wann)
+    real(kind=dp), intent(out) :: deleig_a(num_wann)
+    complex(kind=dp), intent(in) :: delHH_a(:, :)
+    complex(kind=dp), intent(in) :: UU(:, :)
+    character(len=50), intent(in) :: seedname
 
-    ! Misc/Dummy
-    !
+    ! local variables
     integer                       :: i, degen_min, degen_max, dim
     real(kind=dp)                 :: diff
     complex(kind=dp), allocatable :: delHH_bar_a(:, :), U_deg(:, :)
@@ -406,11 +402,11 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(dis_window, k_points, param_input, pw90_common, pw90_ham, &
+  subroutine wham_get_eig_deleig(rs_region, dis_window, k_points, verbose, pw90_common, pw90_ham, &
                                  wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
                                  UU, v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
-                                 recip_lattice, mp_grid, num_bands, num_kpts, num_wann, seedname, &
-                                 stdout, comm)
+                                 recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                                 num_valence_bands, have_disentangled, seedname, stdout, comm)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
@@ -420,7 +416,8 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, parameter_input_type, wannier_data_type
+    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+      wannier_data_type, real_space_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
@@ -428,18 +425,19 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(postw90_ham_type), intent(in)          :: pw90_ham
-    type(wannier_data_type), intent(in)         :: wann_data
-    type(ws_distance_type), intent(inout)       :: ws_distance
-    type(wigner_seitz_type), intent(inout)      :: ws_vec
-    type(w90commtype), intent(in)               :: comm
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
-    integer, intent(in) :: num_wann, num_kpts, num_bands
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
@@ -451,35 +449,36 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :), intent(out)   :: HH
+    complex(kind=dp), intent(out)   :: HH(:, :)
     !! the Hamiltonian matrix at kpt
-    complex(kind=dp), dimension(:, :, :), intent(out) :: delHH
+    complex(kind=dp), intent(out) :: delHH(:, :, :)
     !! the delHH matrix (derivative of H) at kpt
-    complex(kind=dp), dimension(:, :), intent(out)   :: UU
+    complex(kind=dp), intent(out)   :: UU(:, :)
     !! the rotation matrix that gives the eigenvectors of HH
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
 
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
                                    real_lattice, recip_lattice, mp_grid, 0, num_wann, seedname, &
                                    stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-    call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, delHH(:, :, 1), &
+    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 1), &
                                    HH_R, kpt, real_lattice, recip_lattice, mp_grid, 1, num_wann, &
                                    seedname, stdout)
-    call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, delHH(:, :, 2), &
+    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 2), &
                                    HH_R, kpt, real_lattice, recip_lattice, mp_grid, 2, num_wann, &
                                    seedname, stdout)
-    call pw90common_fourier_R_to_k(param_input, wann_data, ws_distance, ws_vec, delHH(:, :, 3), &
+    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 3), &
                                    HH_R, kpt, real_lattice, recip_lattice, mp_grid, 3, num_wann, &
                                    seedname, stdout)
     call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
@@ -499,22 +498,20 @@ contains
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-!   use w90_postw90_common, only: pw90common_fourier_R_to_k
     use pw90_parameters, only: postw90_ham_type
 
-    !real(kind=dp), dimension(3), intent(in)         :: kpt
-    !! the three coordinates of the k point vector (in relative coordinates)
+    ! arguments
     type(postw90_ham_type), intent(in) :: pw90_ham
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(out)                      :: del_eig(num_wann, 3)
-    real(kind=dp), intent(in)                      :: eig(num_wann)
+    real(kind=dp), intent(out) :: del_eig(num_wann, 3)
+    real(kind=dp), intent(in) :: eig(num_wann)
 
-    complex(kind=dp), dimension(:, :, :), intent(in) :: delHH
+    complex(kind=dp), intent(in) :: delHH(:, :, :)
     !! the delHH matrix (derivative of H) at kpt
-    complex(kind=dp), dimension(:, :), intent(in)   :: UU
+    complex(kind=dp), intent(in) :: UU(:, :)
     !! the rotation matrix that gives the eigenvectors of HH
 
     character(len=50), intent(in)  :: seedname
@@ -528,11 +525,12 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, param_input, pw90_common, &
+  subroutine wham_get_eig_UU_HH_JJlist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
                                        wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, &
                                        JJp_list, u_matrix, UU, v_matrix, eig, eigval, kpt, &
                                        real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                       num_wann, seedname, stdout, comm, occ)
+                                       num_wann, num_valence_bands, have_disentangled, seedname, &
+                                       stdout, comm, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -544,54 +542,55 @@ contains
       pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
-    use w90_param_types, only: fermi_data_type, parameter_input_type, wannier_data_type, &
-      disentangle_manifold_type, k_point_type
+    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
+      disentangle_manifold_type, k_point_type, real_space_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in)           :: fermi
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(wannier_data_type), intent(in)         :: wann_data
-    type(ws_distance_type), intent(inout)       :: ws_distance
-    type(wigner_seitz_type), intent(inout)      :: ws_vec
-    type(w90commtype), intent(in)               :: comm
+    type(fermi_data_type), intent(in) :: fermi
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
-    integer, intent(in) :: num_wann, num_kpts, num_bands
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), dimension(3), intent(in)           :: kpt
-    real(kind=dp), intent(out)                        :: eig(num_wann)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(out) :: eig(:)
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
-    real(kind=dp), intent(in), optional, dimension(:) :: occ
+    real(kind=dp), intent(in), optional :: occ(:)
 
-    complex(kind=dp), dimension(:, :), intent(out)     :: UU
-    complex(kind=dp), dimension(:, :), intent(out)     :: HH
-    complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJp_list
-    complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJm_list
+    complex(kind=dp), intent(out) :: UU(:, :)
+    complex(kind=dp), intent(out) :: HH(:, :)
+    complex(kind=dp), intent(out) :: JJp_list(:, :, :, :)
+    complex(kind=dp), intent(out) :: JJm_list(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
 
     !local variables
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, have_disentangled, seedname, stdout, comm)
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(param_input, wann_data, ws_distance, ws_vec, HH_R, kpt, &
+    call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, HH_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
                                        stdout, OO=HH, OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
@@ -609,12 +608,13 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, &
-                                              param_input, pw90_common, wann_data, ws_distance, &
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(rs_region, berry, dis_window, kmesh_info, k_points, &
+                                              verbose, pw90_common, wann_data, ws_distance, &
                                               ws_vec, AA_R, HH, HH_da, HH_dadb, HH_R, u_matrix, &
                                               UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                               recip_lattice, mp_grid, num_bands, num_kpts, &
-                                              num_wann, seedname, stdout, comm)
+                                              num_wann, num_valence_bands, have_disentangled, &
+                                              seedname, stdout, comm)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -625,8 +625,8 @@ contains
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv, wigner_seitz_type
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_manifold_type, &
-      k_point_type, kmesh_info_type
+    use w90_param_types, only: print_output_type, wannier_data_type, disentangle_manifold_type, &
+      k_point_type, kmesh_info_type, real_space_type
     use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: postw90_common_type, berry_type
     use w90_comms, only: w90commtype, mpirank
@@ -635,45 +635,46 @@ contains
     implicit none
 
     ! passed variables
-    type(berry_type), intent(in)                :: berry
+    type(berry_type), intent(in) :: berry
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in)           :: kmesh_info
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(wannier_data_type), intent(in)         :: wann_data
-    type(ws_distance_type), intent(inout)       :: ws_distance
-    type(wigner_seitz_type), intent(inout)      :: ws_vec
-    type(w90commtype), intent(in)               :: comm
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
-    integer, intent(in) :: num_wann, num_kpts, num_bands
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), dimension(3), intent(in)           :: kpt
-    real(kind=dp), intent(out)                        :: eig(num_wann)
+    real(kind=dp), intent(out) :: eig(num_wann)
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :), intent(out)     :: UU
-    complex(kind=dp), dimension(:, :), intent(out)     :: HH
-    complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
-    complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    complex(kind=dp), intent(out) :: UU(:, :)
+    complex(kind=dp), intent(out) :: HH(:, :)
+    complex(kind=dp), intent(out) :: HH_da(:, :, :)
+    complex(kind=dp), intent(out) :: HH_dadb(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
 
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
 
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  have_disentangled, seedname, stdout, comm)
 
-    call get_AA_R(berry, dis_window, kmesh_info, k_points, param_input, pw90_common, AA_R, &
-                  HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                  num_wann, seedname, stdout, comm)
+    call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+                  v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                  have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, param_input, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, rs_region, &
                                                         wann_data, real_lattice, recip_lattice, &
                                                         mp_grid, ws_distance, ws_vec, stdout, &
                                                         seedname, OO=HH, OO_da=HH_da(:, :, :), &
@@ -682,11 +683,11 @@ contains
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, param_input, pw90_common, wann_data, &
-                                      ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
-                                      v_matrix, eig, eigval, kpt, real_lattice, recip_lattice, &
-                                      mp_grid, num_bands, num_kpts, num_wann, seedname, stdout, &
-                                      comm)
+  subroutine wham_get_eig_UU_HH_AA_sc(rs_region, dis_window, k_points, verbose, pw90_common, &
+                                      wann_data, ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, &
+                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
+                                      recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
+                                      num_valence_bands, have_disentangled, seedname, stdout, comm)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -700,8 +701,8 @@ contains
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
-    use w90_param_types, only: parameter_input_type, wannier_data_type, disentangle_manifold_type, &
-      k_point_type
+    use w90_param_types, only: print_output_type, wannier_data_type, disentangle_manifold_type, &
+      k_point_type, real_space_type
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
 
@@ -709,37 +710,38 @@ contains
 
     ! passed variables
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in)              :: k_points
-    type(parameter_input_type), intent(in)      :: param_input
-    type(postw90_common_type), intent(in)       :: pw90_common
-    type(wannier_data_type), intent(in)         :: wann_data
-    type(ws_distance_type), intent(inout)       :: ws_distance
-    type(wigner_seitz_type), intent(inout)      :: ws_vec
-    type(w90commtype), intent(in)               :: comm
+    type(k_point_type), intent(in) :: k_points
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(print_output_type), intent(in) :: verbose
+    type(real_space_type), intent(in) :: rs_region
+    type(w90commtype), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wann_data
+    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(ws_distance_type), intent(inout) :: ws_distance
 
-    integer, intent(in) :: num_wann, num_kpts, num_bands
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), dimension(3), intent(in)           :: kpt
-    real(kind=dp), intent(out)                        :: eig(num_wann)
+    real(kind=dp), intent(out) :: eig(num_wann)
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
 
-    complex(kind=dp), dimension(:, :), intent(out)     :: UU
-    complex(kind=dp), dimension(:, :), intent(out)     :: HH
-    complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
-    complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    complex(kind=dp), intent(out) :: UU(:, :)
+    complex(kind=dp), intent(out) :: HH(:, :)
+    complex(kind=dp), intent(out) :: HH_da(:, :, :)
+    complex(kind=dp), intent(out) :: HH_dadb(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
 
-    call get_HH_R(dis_window, k_points, param_input, pw90_common, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, param_input, wann_data, &
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, rs_region, wann_data, &
                                                 real_lattice, recip_lattice, mp_grid, ws_distance, &
                                                 ws_vec, stdout, seedname, OO=HH, &
                                                 OO_da=HH_da(:, :, :), &

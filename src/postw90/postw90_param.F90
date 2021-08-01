@@ -187,9 +187,8 @@ end module pw90_parameters
 module pw90_param_methods
 
   use w90_constants, only: dp
-! use w90_io, only: stdout, maxlen
   use w90_io, only: maxlen
-  use w90_param_types, only: print_output_type, parameter_input_type, wannier_data_type, &
+  use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type, &
     exclude_bands_type, real_space_type
@@ -247,54 +246,55 @@ contains
     !!
     !                                                                  !
     !===================================================================
-    !use w90_utility, only: utility_recip_lattice
-    !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
+
     implicit none
 
-    !data from parameters module
-    type(print_output_type), intent(inout) :: verbose
-    type(real_space_type), intent(inout) :: rs_region
-    type(w90_system_type), intent(inout) :: system
-    type(exclude_bands_type), intent(inout) :: excluded_bands
-    type(wannier_data_type), intent(inout) :: wann_data
-    type(param_kmesh_type), intent(inout) :: kmesh_data
-    type(k_point_type), intent(inout) :: k_points
-    integer, intent(inout) :: num_kpts
-    type(disentangle_manifold_type), intent(inout) :: dis_window
-    type(fermi_data_type), intent(inout) :: fermi
+    ! arguments
     type(atom_data_type), intent(inout) :: atoms
+    type(berry_type), intent(inout) :: berry
+    type(boltzwann_type), intent(inout) :: boltz
+    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(exclude_bands_type), intent(inout) :: excluded_bands
+    type(fermi_data_type), intent(inout) :: fermi
+    type(geninterp_type), intent(inout) :: geninterp
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(kpath_type), intent(inout) :: kpath
+    type(k_point_type), intent(inout) :: k_points
+    type(kslice_type), intent(inout) :: kslice
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(postw90_common_type), intent(inout) :: pw90_common
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(print_output_type), intent(inout) :: verbose
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    type(pw90_extra_io_type), intent(inout) :: write_data
+    type(real_space_type), intent(inout) :: rs_region
+    type(special_kpoints_type), intent(inout) :: spec_points
+    type(spin_hall_type), intent(inout) :: spin_hall
+    type(w90_system_type), intent(inout) :: system
+    type(wannier_data_type), intent(inout) :: wann_data
+
+    integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_kpts
     integer, intent(inout) :: num_wann
     integer, intent(in) :: stdout
+
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    integer, intent(inout) :: mp_grid(3)
-    !integer, intent(inout) :: num_proj
-    !type(select_projection_type), intent(inout) :: select_proj
+    real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
-    type(special_kpoints_type), intent(inout) :: spec_points
-    type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    type(postw90_oper_type), intent(inout) :: postw90_oper
-    type(postw90_common_type), intent(inout) :: pw90_common
-    type(postw90_spin_type), intent(inout) :: pw90_spin
-    type(postw90_ham_type), intent(inout) :: pw90_ham
-    type(kpath_type), intent(inout) :: kpath
-    type(kslice_type), intent(inout) :: kslice
-    type(dos_plot_type), intent(inout) :: dos_data
-    type(berry_type), intent(inout) :: berry
-    type(spin_hall_type), intent(inout) :: spin_hall
-    type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(geninterp_type), intent(inout) :: geninterp
-    type(boltzwann_type), intent(inout) :: boltz
-    logical, intent(inout) :: eig_found
-    type(pw90_extra_io_type), intent(inout) :: write_data
-    logical, intent(inout) :: gamma_only
-    real(kind=dp), intent(in) :: bohr
+
     character(len=50), intent(in)  :: seedname
 
-    !local variables
+    logical, intent(inout) :: eig_found
+    logical, intent(inout) :: gamma_only
+
+    ! local variables
     logical :: dos_plot
-    logical                                  :: found_fermi_energy
+    logical :: found_fermi_energy
     logical :: disentanglement, library, ok
     character(len=20) :: energy_unit
 
@@ -1409,7 +1409,7 @@ contains
     implicit none
 
     !data from parameters module
-    type(parameter_input_type), intent(in) :: param_input
+    type(print_output_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
     type(fermi_data_type), intent(in) :: fermi
     type(atom_data_type), intent(in) :: atoms
@@ -1945,7 +1945,9 @@ contains
                                      spin_decomp, num_wann, stdout)
 
     ! JJ, should only be called from root node
+
     implicit none
+
     type(disentangle_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
