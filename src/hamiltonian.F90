@@ -210,8 +210,7 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_manifold_type, &
-      print_output_type
+    use w90_param_types, only: atom_data_type, disentangle_manifold_type, print_output_type
     use wannier_param_types, only: param_hamiltonian_type
 
     implicit none
@@ -439,7 +438,7 @@ contains
 
       use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-      use w90_param_types, only: parameter_input_type, atom_data_type
+      use w90_param_types, only: atom_data_type
       use wannier_param_types, only: param_hamiltonian_type
 
       implicit none
