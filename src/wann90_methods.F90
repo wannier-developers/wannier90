@@ -123,8 +123,9 @@ contains
     integer                   :: kmesh(3)
     logical                   :: global_kmesh_set
     logical :: has_kpath
+    logical :: disentanglement
 
-    w90_calcs%disentanglement = .false.
+    disentanglement = .false.
     call param_in_file(seedname, stdout)
     call param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
 
@@ -139,7 +140,7 @@ contains
       call param_read_exclude_bands(excluded_bands, stdout, seedname)
       call param_read_num_bands(.false., library, excluded_bands%num_exclude_bands, num_bands, &
                                 num_wann, library_param_read_first_pass, stdout, seedname)
-      w90_calcs%disentanglement = (num_bands > num_wann)
+      disentanglement = (num_bands > num_wann)
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_wannierise(param_wannierise, num_wann, write_data%ccentres_frac, &
                                  stdout, seedname)
@@ -155,7 +156,7 @@ contains
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
       call param_read_outfiles(out_files, num_kpts, system%num_valence_bands, &
-                               w90_calcs%disentanglement, gamma_only, stdout, seedname)
+                               disentanglement, gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, band_plot, rs_region, write_data%one_dim_axis, &
@@ -164,7 +165,7 @@ contains
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
-                              out_files%write_hr, w90_calcs%disentanglement, eig_found, &
+                              out_files%write_hr, disentanglement, eig_found, &
                               eigval, library, w90_calcs%postproc_setup, num_bands, num_kpts, &
                               stdout, seedname)
       dis_window%win_min = -1.0_dp
@@ -174,7 +175,7 @@ contains
       call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
       call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
       call param_read_hamil(param_hamil, stdout, seedname)
-      call param_read_bloch_phase(use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
+      call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
@@ -207,8 +208,8 @@ contains
       param_wannierise%omega%tilde = -999.0_dp
       param_wannierise%omega%invariant = -999.0_dp
       !param_input%have_disentangled = .false.
-      call param_read_final_alloc(w90_calcs%disentanglement, dis_window, &
-                                  wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
+      call param_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, num_bands, &
+                                  num_kpts, stdout, seedname)
     endif
   end subroutine param_read
 
@@ -1207,7 +1208,9 @@ contains
 !   local variables
     integer :: i, nkp, loop, nat, nsp
     real(kind=dp) :: cell_volume
+    logical :: disentanglement
 
+    disentanglement = (num_bands > num_wann)
     if (w90_calcs%transport .and. tran%read_ht) goto 401
 
     ! System
@@ -1433,9 +1436,10 @@ contains
     !
     ! Disentanglement
     !
-    if (w90_calcs%disentanglement .or. verbose%iprint > 2) then
+    if (disentanglement .or. verbose%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------------- DISENTANGLE --------------------------------*'
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using band disentanglement                :', w90_calcs%disentanglement, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using band disentanglement                :', &
+        disentanglement, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', dis_data%num_iter, '|'
       write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :', dis_data%mix_ratio, '|'
       write (stdout, '(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :', dis_data%conv_tol, '|'
@@ -1782,7 +1786,7 @@ contains
 
 !===========================================!
   subroutine param_memory_estimate(atoms, kmesh_info, param_wannierise, proj_input, &
-                                   verbose, w90_calcs, num_bands, num_kpts, num_proj, num_wann, &
+                                   verbose, num_bands, num_kpts, num_proj, num_wann, &
                                    gamma_only, stdout)
     !===========================================!
     !                                           !
@@ -1795,7 +1799,6 @@ contains
     implicit none
 
     !data from parameters module
-    type(w90_calculation_type), intent(in) :: w90_calcs
     type(print_output_type), intent(in) :: verbose
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -1823,7 +1826,9 @@ contains
     real(kind=dp) :: mem_bw
     !integer :: NumPoints1, NumPoints2, NumPoints3, ndim
     !real(kind=dp) :: TDF_exceeding_energy
+    logical :: disentanglement
 
+    disentanglement = (num_bands > num_wann)
     mem_param = 0
     mem_dis = 0
     mem_dis1 = 0
@@ -1834,10 +1839,10 @@ contains
 
     ! First the data stored in the parameters module
     mem_param = mem_param + num_wann*num_wann*num_kpts*size_cmplx                   !u_matrix
-    if (.not. w90_calcs%disentanglement) &
+    if (.not. disentanglement) &
       mem_param = mem_param + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx       !m_matrix
 
-    if (w90_calcs%disentanglement) then
+    if (disentanglement) then
       mem_param = mem_param + num_bands*num_wann*num_kpts*size_cmplx             ! u_matrix_opt
     endif
 
@@ -1879,14 +1884,14 @@ contains
     mem_param = mem_param + num_bands*num_kpts*size_real             !eigval
     mem_param = mem_param + 3*num_kpts*size_real                     !kpt_cart
     mem_param = mem_param + 3*num_kpts*size_real                     !kpt_latt
-    if (w90_calcs%disentanglement) then
+    if (disentanglement) then
       mem_param = mem_param + num_kpts*size_int                     !ndimwin
       mem_param = mem_param + num_bands*num_kpts*size_log           !lwindow
     endif
     mem_param = mem_param + 3*num_wann*size_real                     !wannier_centres
     mem_param = mem_param + num_wann*size_real                       !wannier_spreads
 
-    if (w90_calcs%disentanglement) then
+    if (disentanglement) then
       ! Module vars
       mem_dis = mem_dis + num_bands*num_kpts*size_real              !eigval_opt
       mem_dis = mem_dis + num_kpts*size_int                         !nfirstwin
@@ -1973,7 +1978,7 @@ contains
       mem_wan = mem_wan + (num_wann*num_wann)*size_cmplx    !  'crt'
     end if
 
-    if (w90_calcs%disentanglement) &
+    if (disentanglement) &
       mem_wan = mem_wan + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx       !m_matrix
 
     if (verbose%iprint > 0) then
@@ -1981,13 +1986,13 @@ contains
       write (stdout, '(1x,a)') '|                              MEMORY ESTIMATE                               |'
       write (stdout, '(1x,a)') '|         Maximum RAM allocated during each phase of the calculation         |'
       write (stdout, '(1x,a)') '*============================================================================*'
-      if (w90_calcs%disentanglement) &
+      if (disentanglement) &
         write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', (mem_param + mem_dis)/(1024**2), ' Mb'
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan)/(1024**2), ' Mb'
       if (verbose%optimisation > 0 .and. verbose%iprint > 1) then
         write (stdout, '(1x,a)') '|                                                                            |'
         write (stdout, '(1x,a)') '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
-        if (w90_calcs%disentanglement) &
+        if (disentanglement) &
           write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', &
           (mem_param + mem_dis - max(mem_dis1, mem_dis2) + mem_dis1)/(1024**2), ' Mb'
         if (gamma_only) then
@@ -2097,8 +2102,10 @@ contains
     logical :: on_root = .false.
     integer :: ierr
     integer :: iprintroot !JJ
+    logical :: disentanglement
 
     if (mpirank(comm) == 0) on_root = .true.
+    disentanglement = (num_bands > num_wann)
 
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, stdout, seedname, comm)
@@ -2338,7 +2345,7 @@ contains
     ! [gp-end]
 
     call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%disentanglement, 1, stdout, seedname, comm)
+    !call comms_bcast(w90_calcs%disentanglement, 1, stdout, seedname, comm)
 
     call comms_bcast(w90_calcs%transport, 1, stdout, seedname, comm)
     call comms_bcast(tran%easy_fix, 1, stdout, seedname, comm)
@@ -2519,7 +2526,7 @@ contains
       allocate (wann_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_dist', stdout, seedname)
       wann_data%spreads = 0.0_dp
-      if (w90_calcs%disentanglement) then
+      if (disentanglement) then
         allocate (dis_window%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in param_dist', stdout, seedname)
         allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)

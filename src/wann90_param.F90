@@ -29,8 +29,6 @@ module wannier_param_types
     !! =========================
     logical :: postproc_setup
     character(len=20) :: restart
-    ! REVIEW_2021-07-22: disentanglement is a derived variable that is internal to the code. Keep separate.
-    logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot !plot, wannier_lib
     logical :: fermi_surface_plot ! plot, wannier_lib!

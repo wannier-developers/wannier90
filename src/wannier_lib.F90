@@ -225,6 +225,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   integer :: stdout
   character(len=50)  :: seedname
   logical :: wout_found
+  logical :: disentanglement
 
   time0 = io_time()
 
@@ -273,6 +274,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                   gamma_only, lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, &
                   seedname, stdout)
   have_disentangled = .false.
+  disentanglement = (num_bands > num_wann)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
@@ -452,6 +454,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer, allocatable :: displs(:)
   integer :: num_nodes, my_node_id
   type(w90commtype) :: comm
+  logical :: disentanglement
 
   ! serial only (until communicator is passed as an argument)
   ! these library routines are obsolete
@@ -510,6 +513,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   gamma_only, lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, &
                   seedname, stdout)
   have_disentangled = .false.
+  disentanglement = (num_bands > num_wann)
   call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, out_files, &
                    param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
@@ -528,8 +532,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call comms_array_split(num_kpts, counts, displs, comm)
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        verbose%timing_level, w90_calcs%disentanglement, seedname, stdout, comm)
-  if (w90_calcs%disentanglement) then
+                        verbose%timing_level, seedname, stdout, comm)
+  if (disentanglement) then
     m_matrix_orig = m_matrix_loc
     a_matrix = a_matrix_loc
     u_matrix_opt = cmplx_0
@@ -541,7 +545,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   ! IMPORTANT NOTE: _loc are variables local to this function, passed in as variables
   ! Instead, _local are variables local to the MPI process.
-  if (w90_calcs%disentanglement) then
+  if (disentanglement) then
     call comms_scatterv(m_matrix_orig_local, &
                         num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), m_matrix_orig, &
                         num_bands*num_bands*kmesh_info%nntot*counts, &
@@ -555,7 +559,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~  if (gamma_only) call overlap_check_m_symmetry()
 
-  if (w90_calcs%disentanglement) then
+  if (disentanglement) then
     have_disentangled = .false.
 
     call dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, &
@@ -635,7 +639,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   u_matrix_loc = u_matrix
   if (present(u_matrix_opt_loc) .and. present(lwindow_loc)) then
-  if (w90_calcs%disentanglement) then
+  if (disentanglement) then
     u_matrix_opt_loc = u_matrix_opt
     lwindow_loc = dis_window%lwindow
   else

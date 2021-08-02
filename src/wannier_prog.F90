@@ -212,7 +212,7 @@ program wannier
 
   logical :: use_bloch_phases, cp_pp, calc_only_A
   logical :: gamma_only
-  logical :: have_disentangled
+  logical :: have_disentangled, disentanglement
 
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
@@ -298,8 +298,7 @@ program wannier
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     call param_memory_estimate(atoms, kmesh_info, param_wannierise, input_proj, verbose, &
-                               w90_calcs, num_bands, num_kpts, num_proj, num_wann, gamma_only, &
-                               stdout)
+                               num_bands, num_kpts, num_proj, num_wann, gamma_only, stdout)
   end if !on_root
 
   if (dryrun) then
@@ -321,6 +320,7 @@ program wannier
                   symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
                   cp_pp, gamma_only, have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, &
                   seedname, stdout, w90comm)
+  disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -390,9 +390,8 @@ program wannier
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        verbose%timing_level, w90_calcs%disentanglement, seedname, stdout, &
-                        w90comm)
-  call overlap_read(kmesh_info, select_proj, sym, w90_calcs, a_matrix, m_matrix, m_matrix_local, &
+                        verbose%timing_level, seedname, stdout, w90comm)
+  call overlap_read(kmesh_info, select_proj, sym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, verbose%timing_level, cp_pp, &
                     gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
@@ -402,7 +401,7 @@ program wannier
 
   have_disentangled = .false.
 
-  if (w90_calcs%disentanglement) then
+  if (disentanglement) then
 
     call dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &

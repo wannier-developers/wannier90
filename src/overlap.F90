@@ -34,8 +34,7 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, disentanglement, seedname, stdout, &
-                              comm)
+                              num_kpts, num_wann, timing_level, seedname, stdout, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -58,8 +57,6 @@ contains
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
-    logical, intent(in) :: disentanglement
-
     type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -70,6 +67,9 @@ contains
     logical :: on_root = .false.
     integer, allocatable :: counts(:)
     integer, allocatable :: displs(:)
+    logical :: disentanglement
+
+    disentanglement = (num_bands > num_wann)
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
@@ -131,11 +131,10 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(kmesh_info, select_proj, sym, w90_calcs, a_matrix, m_matrix, &
-                          m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
-                          cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                          comm)
+  subroutine overlap_read(kmesh_info, select_proj, sym, a_matrix, m_matrix, m_matrix_local, &
+                          m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
+                          num_kpts, num_proj, num_wann, timing_level, cp_pp, gamma_only, &
+                          lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -143,7 +142,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_sitesym, only: sitesym_data
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: w90_calculation_type, select_projection_type
+    use wannier_param_types, only: select_projection_type
 
     implicit none
 
@@ -151,7 +150,6 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_proj
     type(sitesym_data), intent(in) :: sym
-    type(w90_calculation_type), intent(in) :: w90_calcs
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands
@@ -185,10 +183,13 @@ contains
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
 
+    logical :: disentanglement
     integer :: num_nodes, my_node_id
     logical :: on_root = .false.
     integer, allocatable :: counts(:)
     integer, allocatable :: displs(:)
+
+    disentanglement = (num_bands > num_wann)
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
@@ -201,7 +202,7 @@ contains
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
-    if (w90_calcs%disentanglement) then
+    if (disentanglement) then
       if (on_root) then
         m_matrix_orig = cmplx_0
       endif
@@ -267,7 +268,7 @@ contains
             ' Error reading '//trim(seedname)//'.mmn:', ncount, nkp, nkp2, nn, nnl, nnm, nnn
           call io_error('Neighbour not found', stdout, seedname)
         end if
-        if (w90_calcs%disentanglement) then
+        if (disentanglement) then
           m_matrix_orig(:, :, nn, nkp) = mmn_tmp(:, :)
         else
           ! disentanglement=.false. means numbands=numwann, so no the dimensions are the same
@@ -279,7 +280,7 @@ contains
       close (mmn_in)
     endif
 
-    if (w90_calcs%disentanglement) then
+    if (disentanglement) then
 !       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
 !JJ fixme these function calls are a bit crazy?
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
@@ -321,7 +322,7 @@ contains
 
         ! Read the projections
         num_amn = num_bands*num_proj*num_kpts
-        if (w90_calcs%disentanglement) then
+        if (disentanglement) then
           do ncount = 1, num_amn
             read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
             if (select_proj%proj2wann_map(n) < 0) cycle
@@ -337,7 +338,7 @@ contains
         close (amn_in)
       endif
 
-      if (w90_calcs%disentanglement) then
+      if (disentanglement) then
         call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
       else
         call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
@@ -379,7 +380,7 @@ contains
 !~       endif
 !
 !~[aam]
-    if ((.not. w90_calcs%disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
+    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
         call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, &
