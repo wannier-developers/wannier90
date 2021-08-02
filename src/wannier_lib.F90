@@ -129,7 +129,6 @@ module wannlib_param_data
 
   public
 
-  type(param_driver_type), save :: driver
   type(w90_calculation_type), save :: w90_calcs
   type(param_plot_type), save :: param_plot
   type(band_plot_type), save :: band_plot
@@ -264,7 +263,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   ! GP: at this point we don't know yet the number of excluded bands...
   num_bands = num_bands_tot
   !library_param_read_first_pass = .true.
-  call param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+  call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, param_plot, &
                   param_wannierise, proj, input_proj, rs_region, select_proj, spec_points, &
                   system, tran, verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &
@@ -285,9 +284,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-  if (.not. driver%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
-                                                   k_points%kpt_cart, recip_lattice, num_kpts, &
-                                                   gamma_only, seedname, stdout)
+  if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
+                                                       k_points%kpt_cart, recip_lattice, num_kpts, &
+                                                       gamma_only, seedname, stdout)
   ! Now we zero all of the local output data, then copy in the data
   ! from the parameters module
 
@@ -500,7 +499,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice, stdout, seedname)
 
-  call param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+  call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, param_plot, &
                   param_wannierise, proj, input_proj, rs_region, select_proj, spec_points, &
                   system, tran, verbose, wann_data, wann_plot, write_data, w90_calcs, eigval, &

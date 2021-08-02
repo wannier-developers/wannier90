@@ -40,7 +40,7 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+  subroutine param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
                         param_plot, param_wannierise, proj, proj_input, rs_region, select_proj, &
                         spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
@@ -61,7 +61,6 @@ contains
     implicit none
 
     !data from parameters module
-    type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(print_output_type), intent(inout) :: verbose
     type(exclude_bands_type), intent(inout) :: excluded_bands
@@ -176,8 +175,8 @@ contains
       call param_read_bloch_phase(use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
-      call param_read_explicit_kpts(library, driver%explicit_nnkpts, w90_calcs, kmesh_info, &
-                                    num_kpts, bohr, stdout, seedname)
+      call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
+                                    seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
                                    stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
@@ -919,14 +918,12 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
   end subroutine param_read_bloch_phase
 
-  subroutine param_read_explicit_kpts(library, explicit_nnkpts, driver, kmesh_info, num_kpts, &
-                                      bohr, stdout, seedname)
+  subroutine param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr, stdout, seedname)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
-    logical, intent(out) :: explicit_nnkpts
     type(w90_calculation_type), intent(in) :: driver
     type(kmesh_info_type), intent(inout) :: kmesh_info
     integer, intent(in) :: num_kpts
@@ -939,8 +936,9 @@ contains
     integer, allocatable, dimension(:) :: nnkpts_idx
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call param_get_block_length(stdout, seedname, 'nnkpts', explicit_nnkpts, rows, library)
-    if (explicit_nnkpts) then
+    call param_get_block_length(stdout, seedname, 'nnkpts', kmesh_info%explicit_nnkpts, &
+                                rows, library)
+    if (kmesh_info%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
         call io_error('The number of rows in nnkpts must be a multiple of num_kpts', stdout, seedname)
@@ -1601,7 +1599,6 @@ contains
 !   passed variables
     implicit none
     !data from parameters module
-    !type(param_driver_type), intent(inout) :: driver
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(band_plot_type), intent(inout) :: band_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -2013,7 +2010,7 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+  subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
                         param_plot, param_wannierise, proj_input, rs_region, system, tran, &
                         verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
@@ -2032,7 +2029,6 @@ contains
 
     implicit none
     !passed variables
-    type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
@@ -2361,7 +2357,7 @@ contains
     call comms_bcast(param_hamil%translation_centre_frac(1), 3, stdout, seedname, comm)
     call comms_bcast(kmesh_data%num_shells, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%skip_B1_tests, 1, stdout, seedname, comm)
-    call comms_bcast(driver%explicit_nnkpts, 1, stdout, seedname, comm)
+    call comms_bcast(kmesh_info%explicit_nnkpts, 1, stdout, seedname, comm)
 
     !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
@@ -2469,7 +2465,7 @@ contains
     !endif
 
     !if (.not. pw90_common%effective_model .and. .not. driver%explicit_nnkpts) then
-    if (.not. driver%explicit_nnkpts) then
+    if (.not. kmesh_info%explicit_nnkpts) then
 
       call comms_bcast(kmesh_info%nnh, 1, stdout, seedname, comm)
       call comms_bcast(kmesh_info%nntot, 1, stdout, seedname, comm)

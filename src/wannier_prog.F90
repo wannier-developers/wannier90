@@ -94,7 +94,6 @@ program wannier
   type(w90_calculation_type) :: w90_calcs
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
-  type(param_driver_type) :: driver
   character(len=20) :: checkpoint
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
@@ -245,7 +244,7 @@ program wannier
     call io_date(cdate, ctime)
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
-    call param_read(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+    call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
                     param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
@@ -291,9 +290,9 @@ program wannier
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. driver%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
-                                                     k_points%kpt_cart, recip_lattice, num_kpts, &
-                                                     gamma_only, seedname, stdout)
+    if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
+                                                         k_points%kpt_cart, recip_lattice, num_kpts, &
+                                                         gamma_only, seedname, stdout)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
@@ -314,7 +313,7 @@ program wannier
   endif
 
   ! We now distribute the parameters to the other nodes
-  call param_dist(atoms, band_plot, dis_data, dis_window, driver, excluded_bands, fermi, &
+  call param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, param_plot, &
                   param_wannierise, input_proj, rs_region, system, tran, verbose, wann_data, &
                   wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, &

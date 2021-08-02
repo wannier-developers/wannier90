@@ -158,6 +158,8 @@ module w90_param_types
     real(kind=dp), allocatable :: wb(:)         ! weights associated with neighbours of each k-point
     real(kind=dp), allocatable :: bk(:, :, :)     ! the b-vectors that go from each k-point to its neighbours
     real(kind=dp), allocatable :: bka(:, :)      ! the b-directions from 1st k-point to its neighbours
+    logical :: explicit_nnkpts
+    !! nnkpts block is in the input file (allowed only for post-proc setup)
   end type kmesh_info_type
 
   ! used in wannierise, hamiltonian, plot and others (postw90 also)

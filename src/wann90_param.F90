@@ -23,12 +23,6 @@ module wannier_param_types
 
   public
 
-  type param_driver_type
-    ! REVIEW_2021-07-22: move explicit_nnkpts to kmesh_info_type in parameters.F90
-    logical :: explicit_nnkpts
-    !! nnkpts block is in the input file (allowed only for post-proc setup)
-  end type param_driver_type
-
   type w90_calculation_type
     !! =========================
     !! Contains variables to control the execution path of the program.

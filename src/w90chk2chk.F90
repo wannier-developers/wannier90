@@ -83,7 +83,6 @@ module wannchk_param_data
 
   public
 
-  type(param_driver_type), save :: driver
   type(w90_calculation_type), save :: w90_calcs
   type(param_plot_type), save :: param_plot
   !type(disentangle_type), save :: dis_data
