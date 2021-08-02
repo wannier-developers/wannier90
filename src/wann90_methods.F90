@@ -375,6 +375,9 @@ contains
     region%hr_cutoff = 0.0_dp
     call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=region%hr_cutoff)
 
+    region%system_dim = 3
+    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=region%system_dim)
+
   end subroutine param_read_dist_cutoff
 
   subroutine param_read_wannierise(param_wannierise, num_wann, ccentres_frac, stdout, seedname)
@@ -801,9 +804,6 @@ contains
     band_plot%plot_mode = 's-k'
     call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%plot_mode)
 
-    band_plot%plot_dim = 3
-    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=band_plot%plot_dim)
-
     band_plot%num_project = 0
     call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
                                 band_plot%num_project, lcount=.true.)
@@ -881,7 +881,7 @@ contains
     if (w90_calcs%transport .and. .not. tran_read_ht .and. &
         (region%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised', stdout, seedname)
     if (w90_calcs%bands_plot .and. (index(band_plot%plot_mode, 'cut') .ne. 0) .and. &
-        ((band_plot%plot_dim .ne. 3) .or. &
+        ((region%system_dim .ne. 3) .or. &
          (index(region%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
         (region%one_dim_dir .eq. 0)) &
       call io_error('Error: one_dim_axis not recognised', stdout, seedname)
@@ -1517,11 +1517,11 @@ contains
           trim(band_plot%plot_mode), '|'
         if (index(band_plot%plot_mode, 'cut') .ne. 0) then
           write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
-            band_plot%plot_dim, '|'
-          if (band_plot%plot_dim .eq. 1) &
+            rs_region%system_dim, '|'
+          if (rs_region%system_dim .eq. 1) &
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
             trim(write_data%one_dim_axis), '|'
-          if (band_plot%plot_dim .eq. 2) &
+          if (rs_region%system_dim .eq. 2) &
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
             trim(write_data%one_dim_axis), '|'
           write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
@@ -2225,7 +2225,7 @@ contains
       call comms_bcast(band_plot%plot_project(1), band_plot%num_project, stdout, &
                        seedname, comm)
     end if
-    call comms_bcast(band_plot%plot_dim, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%system_dim, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_hr, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_rmn, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_tb, 1, stdout, seedname, comm)

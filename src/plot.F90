@@ -621,7 +621,7 @@ contains
 
       irvec_max = maxval(irvec, DIM=2) + 1
 
-      if (band_plot%plot_dim .ne. 3) then
+      if (rs_region%system_dim .ne. 3) then
         ! Find one_dim_vec which is parallel to one_dim_dir
         ! two_dim_vec - the other two lattice vectors
         ! Along the confined directions, take only irvec=0
@@ -641,11 +641,11 @@ contains
             two_dim_vec(j) = i
           end if
         end do
-        if (band_plot%plot_dim .eq. 1) then
+        if (rs_region%system_dim .eq. 1) then
           irvec_max(two_dim_vec(1)) = 0
           irvec_max(two_dim_vec(2)) = 0
         end if
-        if (band_plot%plot_dim .eq. 2) irvec_max(one_dim_vec) = 0
+        if (rs_region%system_dim .eq. 2) irvec_max(one_dim_vec) = 0
       end if
 
       nrpts_cut = (2*irvec_max(1) + 1)*(2*irvec_max(2) + 1)*(2*irvec_max(3) + 1)

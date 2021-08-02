@@ -81,6 +81,12 @@ module w90_param_types
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
+    ! REVIEW_2021-07-22: plot_dim is really providing information about the dimensionality
+    ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
+    ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
+    ! REVIEW_2021-07-22: to put it in real_space_ham_type in parameters.F90 and to call it
+    ! REVIEW_2021-07-22: something more general, such as system_dim.
+    integer :: system_dim
   end type real_space_ham_type
 
   ! setup in wannierise, but used by plot, ws_distance etc

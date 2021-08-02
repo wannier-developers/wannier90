@@ -66,13 +66,6 @@ module wannier_param_types
     integer, allocatable :: plot_project(:)
     ! REVIEW_2021-07-22: num_project can be removed (similar to num_exclude_bands -- see discussion there)
     integer :: num_project
-    ! REVIEW_2021-07-22: plot_dim is really providing information about the dimensionality
-    ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
-    ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
-    ! REVIEW_2021-07-22: to put it in real_space_ham_type in parameters.F90 and to call it
-    ! REVIEW_2021-07-22: something more general, such as system_dim.
-    integer :: plot_dim
-    ! others from param_input? MAYBE
   end type band_plot_type
 
   ! REVIEW_2021-07-22: REVIEWED UP TO HERE SO FAR. WE ARE MEETING AGAIN TO COMPLETE
