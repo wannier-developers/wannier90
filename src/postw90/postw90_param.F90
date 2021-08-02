@@ -189,7 +189,7 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
+    kmesh_input_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type, &
     exclude_bands_type, real_space_ham_type
   use w90_param_methods
@@ -262,7 +262,7 @@ contains
     type(kpath_type), intent(inout) :: kpath
     type(k_point_type), intent(inout) :: k_points
     type(kslice_type), intent(inout) :: kslice
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(postw90_common_type), intent(inout) :: pw90_common
     type(postw90_ham_type), intent(inout) :: pw90_ham
     type(postw90_oper_type), intent(inout) :: postw90_oper
@@ -1910,7 +1910,7 @@ contains
     !data from parameters module
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(input_proj_type), intent(inout) :: proj_input
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_manifold_type), intent(inout) :: dis_window

@@ -58,14 +58,14 @@ contains
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar
-    use w90_param_types, only: kmesh_info_type, param_kmesh_type, print_output_type
+    use w90_param_types, only: kmesh_info_type, kmesh_input_type, print_output_type
 
     implicit none
 
     ! passed variables
     type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
 
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -652,7 +652,7 @@ contains
     !===================================================================
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: kmesh_info_type, param_kmesh_type, &
+    use w90_param_types, only: kmesh_info_type, kmesh_input_type, &
       input_proj_type, print_output_type, exclude_bands_type
 
     implicit none
@@ -916,13 +916,13 @@ contains
     !
     !=============================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: param_kmesh_type, print_output_type
+    use w90_param_types, only: kmesh_input_type, print_output_type
 
     implicit none
 
 !   passed variables
     type(print_output_type), intent(in) :: verbose
-    type(param_kmesh_type), intent(in)  :: kmesh_data
+    type(kmesh_input_type), intent(in)  :: kmesh_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -984,12 +984,12 @@ contains
 
     use w90_constants, only: eps5, eps6
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: param_kmesh_type, print_output_type
+    use w90_param_types, only: kmesh_input_type, print_output_type
 
     implicit none
 !   passed variables
     type(print_output_type), intent(in) :: verbose
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1240,12 +1240,12 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: param_kmesh_type, print_output_type
+    use w90_param_types, only: kmesh_input_type, print_output_type
 
     implicit none
 !   passed variables
     type(print_output_type), intent(in) :: verbose
-    type(param_kmesh_type), intent(in) :: kmesh_data
+    type(kmesh_input_type), intent(in) :: kmesh_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1389,13 +1389,13 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch, io_file_unit, maxlen
-    use w90_param_types, only: param_kmesh_type, print_output_type
+    use w90_param_types, only: kmesh_input_type, print_output_type
 
     implicit none
 
 !   passed variables
     type(print_output_type), intent(in) :: verbose
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout

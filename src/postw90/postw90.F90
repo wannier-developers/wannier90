@@ -105,7 +105,7 @@ program postw90
   type(exclude_bands_type) :: excluded_bands
   type(real_space_ham_type) :: rs_region
   type(wannier_data_type) :: wann_data
-  type(param_kmesh_type) :: kmesh_data
+  type(kmesh_input_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
   type(k_point_type) :: k_points
   integer :: num_kpts !BGS put in k_point_type?

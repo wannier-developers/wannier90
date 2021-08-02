@@ -66,7 +66,7 @@ module w90lib_parameters
   type(exclude_bands_type), save :: excluded_bands
   type(real_space_ham_type) :: rs_region
   type(wannier_data_type), save :: wann_data
-  type(param_kmesh_type), save :: kmesh_data
+  type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
   type(k_point_type), save :: k_points
   integer, save :: num_kpts !BGS put in k_point_type?

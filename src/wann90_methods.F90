@@ -72,7 +72,7 @@ contains
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
@@ -1596,7 +1596,7 @@ contains
     type(band_plot_type), intent(inout) :: band_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
     type(disentangle_manifold_type), intent(inout) :: dis_window
@@ -2030,7 +2030,7 @@ contains
     type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data

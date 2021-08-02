@@ -100,9 +100,7 @@ module w90_param_types
   integer, parameter :: max_shells = 6
   integer, parameter :: num_nnmax = 12
 
-  ! REVIEW_2021-07-22: maybe rename kmesh_input_type? Also rename all other
-  ! REVIEW_2021-07-22: "param_" types (to keep names more meaninful and shorter)
-  type param_kmesh_type
+  type kmesh_input_type
     !! ================================
     !! Contains information that can be provided by the user about determining the kmesh
     !! ================================
@@ -113,7 +111,7 @@ module w90_param_types
     integer, allocatable :: shell_list(:)
     integer :: search_shells
     real(kind=dp) :: tol
-  end type param_kmesh_type
+  end type kmesh_input_type
 
   !AAM: There are a number of ways one can handle the initial guess. (i) specify explicit
   !AAM: projections; (ii) use random (s-orbital) projections; (iii) a combination of (i) and
@@ -789,7 +787,7 @@ contains
     use w90_io, only: io_error
 !   use w90_utility, only: utility_recip_lattice
     implicit none
-    type(param_kmesh_type), intent(out) :: kmesh_data
+    type(kmesh_input_type), intent(out) :: kmesh_data
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
@@ -1612,7 +1610,7 @@ contains
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(wannier_data_type), intent(inout) :: wann_data
     type(input_proj_type), intent(inout) :: input_proj
-    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
