@@ -229,8 +229,7 @@ module w90_param_types
   end type atom_data_type
 
   ! plot.F90 and postw90/kpath
-  ! REVIEW_2021-07-22: rename to kpoint_path_type.
-  type special_kpoints_type
+  type kpoint_path_type
     !! ============================
     !! Contains information that specifies the k-point path for plotting and other purposes.
     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
@@ -241,9 +240,9 @@ module w90_param_types
     ! REVIEW_2021-07-22: Include bands_num_points here (removing it from
     ! REVIEW_2021-07-22: band_plot_type%num_points in wann90_param.F90) and
     ! REVIEW_2021-07-22: rename num_points_first_segment.
-    character(len=20), allocatable ::bands_label(:) ! REVIEW_2021-07-22: rename spec_points_label
-    real(kind=dp), allocatable ::bands_spec_points(:, :) ! REVIEW_2021-07-22: rename spec_points
-  end type special_kpoints_type
+    character(len=20), allocatable :: labels(:)
+    real(kind=dp), allocatable :: points(:, :)
+  end type kpoint_path_type
 
 end module w90_param_types
 
@@ -538,7 +537,7 @@ contains
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
-    type(special_kpoints_type), intent(out) :: spec_points
+    type(kpoint_path_type), intent(out) :: spec_points
     integer, intent(in) :: stdout
     logical, intent(out) :: ok
     character(len=50), intent(in)  :: seedname
@@ -551,12 +550,12 @@ contains
     if (found) then
       ok = .true.
       spec_points%bands_num_spec_points = i_temp*2
-      if (allocated(spec_points%bands_label)) deallocate (spec_points%bands_label)
-      allocate (spec_points%bands_label(spec_points%bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_label in param_read', stdout, seedname)
-      if (allocated(spec_points%bands_spec_points)) deallocate (spec_points%bands_spec_points)
-      allocate (spec_points%bands_spec_points(3, spec_points%bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_spec_points in param_read', stdout, seedname)
+      if (allocated(spec_points%labels)) deallocate (spec_points%labels)
+      allocate (spec_points%labels(spec_points%bands_num_spec_points), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating labels in param_read', stdout, seedname)
+      if (allocated(spec_points%points)) deallocate (spec_points%points)
+      allocate (spec_points%points(3, spec_points%bands_num_spec_points), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating points in param_read', stdout, seedname)
       call param_get_keyword_kpath(spec_points, stdout, seedname)
     else
       ok = .false.
@@ -1006,7 +1005,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
-    !type(special_kpoints_type) :: spec_points ! for the special case of param_get_keyword_kpath
+    !type(kpoint_path_type) :: spec_points ! for the special case of param_get_keyword_kpath
     logical :: found
 
     ! keywords for wannier.x
@@ -1464,7 +1463,7 @@ contains
     implicit none
 
     type(atom_data_type), intent(inout) :: atoms
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     character(len=*), intent(inout) :: length_unit
     integer :: nsp, ic, loop, inner_loop
 
@@ -1483,10 +1482,10 @@ contains
 
     ! Bands labels (eg, x --> X)
     do loop = 1, spec_points%bands_num_spec_points
-      do inner_loop = 1, len(spec_points%bands_label(loop))
-        ic = ichar(spec_points%bands_label(loop) (inner_loop:inner_loop))
+      do inner_loop = 1, len(spec_points%labels(loop))
+        ic = ichar(spec_points%labels(loop) (inner_loop:inner_loop))
         if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-          spec_points%bands_label(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+          spec_points%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
       enddo
     enddo
 
@@ -1616,7 +1615,7 @@ contains
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     character(len=50), intent(in)  :: seedname
     integer, intent(in) :: stdout
 
@@ -1646,13 +1645,13 @@ contains
       deallocate (k_points%kpt_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating kpt_cart in param_dealloc', stdout, seedname)
     endif
-    if (allocated(spec_points%bands_label)) then
-      deallocate (spec_points%bands_label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bands_label in param_dealloc', stdout, seedname)
+    if (allocated(spec_points%labels)) then
+      deallocate (spec_points%labels, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating labels in param_dealloc', stdout, seedname)
     end if
-    if (allocated(spec_points%bands_spec_points)) then
-      deallocate (spec_points%bands_spec_points, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bands_spec_points in param_dealloc', stdout, seedname)
+    if (allocated(spec_points%points)) then
+      deallocate (spec_points%points, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating points in param_dealloc', stdout, seedname)
     end if
     if (allocated(atoms%label)) then
       deallocate (atoms%label, stat=ierr)
@@ -3797,7 +3796,7 @@ contains
 
     implicit none
 
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -3851,9 +3850,9 @@ contains
 
       counter = counter + 2
       dummy = in_data(loop)
-      read (dummy, *, err=240, end=240) spec_points%bands_label(counter - 1), &
-        (spec_points%bands_spec_points(i, counter - 1), i=1, 3), &
-        spec_points%bands_label(counter), (spec_points%bands_spec_points(i, counter), i=1, 3)
+      read (dummy, *, err=240, end=240) spec_points%labels(counter - 1), &
+        (spec_points%points(i, counter - 1), i=1, 3), &
+        spec_points%labels(counter), (spec_points%points(i, counter), i=1, 3)
     end do
 
     in_data(line_s:line_e) (1:maxlen) = ' '

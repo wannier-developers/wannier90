@@ -83,7 +83,7 @@ contains
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     type(w90_system_type), intent(inout) :: system
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     type(select_projection_type), intent(inout) :: select_proj
     type(proj_input_type), intent(inout) :: proj_input
     type(w90_extra_io_type), intent(inout) :: write_data
@@ -1183,7 +1183,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     type(select_projection_type), intent(in) :: select_proj
     type(proj_input_type), intent(in) :: proj_input
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
     type(w90_extra_io_type), intent(in) :: write_data
     type(wannier_plot_type), intent(in) :: wann_plot
     type(proj_input_type), intent(in) :: proj
@@ -1538,8 +1538,8 @@ contains
         else
           do loop = 1, spec_points%bands_num_spec_points, 2
             write (stdout, '(1x,a10,1x,a5,1x,3F7.3,5x,a3,1x,a5,1x,3F7.3,3x,a1)') '|    From:', &
-              spec_points%bands_label(loop), (spec_points%bands_spec_points(i, loop), i=1, 3), &
-              'To:', spec_points%bands_label(loop + 1), (spec_points%bands_spec_points(i, loop + 1), i=1, 3), '|'
+              spec_points%labels(loop), (spec_points%points(i, loop), i=1, 3), &
+              'To:', spec_points%labels(loop + 1), (spec_points%points(i, loop + 1), i=1, 3), '|'
           end do
         end if
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1617,7 +1617,7 @@ contains
     type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     type(w90_extra_io_type), intent(inout) :: write_data
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(proj_input_type), intent(inout) :: proj

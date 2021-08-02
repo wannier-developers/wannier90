@@ -161,7 +161,7 @@ program wannier
   !parameters derived from input
   real(kind=dp) :: recip_lattice(3, 3)
 
-  type(special_kpoints_type) :: spec_points
+  type(kpoint_path_type) :: spec_points
   ! end data from parameters module
 
 ! integer, save :: rpt_origin

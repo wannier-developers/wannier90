@@ -68,7 +68,7 @@ module w90chk_parameters
   !parameters derived from input
   real(kind=dp), save :: recip_lattice(3, 3)
 
-  type(special_kpoints_type), save :: spec_points
+  type(kpoint_path_type), save :: spec_points
 
 end module w90chk_parameters
 

@@ -57,7 +57,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
-    use w90_param_types, only: special_kpoints_type, fermi_data_type, print_output_type, &
+    use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
       wannier_data_type, disentangle_manifold_type, k_point_type, kmesh_info_type, &
       real_space_ham_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
@@ -82,7 +82,7 @@ contains
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(real_space_ham_type), intent(in) :: rs_region
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
     type(spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
@@ -400,15 +400,15 @@ contains
 
       ! Axis labels
       !
-      glabel(1) = ' '//spec_points%bands_label(1)//' '
+      glabel(1) = ' '//spec_points%labels(1)//' '
       do i = 2, num_paths
-        if (spec_points%bands_label(2*(i - 1)) /= spec_points%bands_label(2*(i - 1) + 1)) then
-          glabel(i) = spec_points%bands_label(2*(i - 1))//'/'//spec_points%bands_label(2*(i - 1) + 1)
+        if (spec_points%labels(2*(i - 1)) /= spec_points%labels(2*(i - 1) + 1)) then
+          glabel(i) = spec_points%labels(2*(i - 1))//'/'//spec_points%labels(2*(i - 1) + 1)
         else
-          glabel(i) = ' '//spec_points%bands_label(2*(i - 1))//' '
+          glabel(i) = ' '//spec_points%labels(2*(i - 1))//' '
         end if
       end do
-      glabel(num_spts) = ' '//spec_points%bands_label(spec_points%bands_num_spec_points)//' '
+      glabel(num_spts) = ' '//spec_points%labels(spec_points%bands_num_spec_points)//' '
 
       ! Now write the plotting files
 
@@ -1155,12 +1155,12 @@ contains
     !===================================================================!
 
     use pw90_parameters, only: kpath_type
-    use w90_param_types, only: special_kpoints_type
+    use w90_param_types, only: kpoint_path_type
     use w90_utility, only: utility_metric
 
     ! arguments
     type(kpath_type), intent(in) :: kpath
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
     integer, intent(out) :: num_paths, total_pts
     real(kind=dp), allocatable, intent(out)   :: kpath_len(:), xval(:)
     real(kind=dp), allocatable, intent(out) :: plot_kpoint(:, :)
@@ -1180,8 +1180,8 @@ contains
     allocate (kpath_pts(num_paths))
     allocate (kpath_len(num_paths))
     do loop_path = 1, num_paths
-      vec = spec_points%bands_spec_points(:, 2*loop_path) &
-            - spec_points%bands_spec_points(:, 2*loop_path - 1)
+      vec = spec_points%points(:, 2*loop_path) &
+            - spec_points%points(:, 2*loop_path - 1)
       kpath_len(loop_path) = &
         sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       !
@@ -1218,9 +1218,9 @@ contains
           xval(counter) = xval(counter - 1) &
                           + kpath_len(loop_path)/real(kpath_pts(loop_path), dp)
         end if
-        plot_kpoint(:, counter) = spec_points%bands_spec_points(:, 2*loop_path - 1) &
-                                  + (spec_points%bands_spec_points(:, 2*loop_path) &
-                                     - spec_points%bands_spec_points(:, 2*loop_path - 1) &
+        plot_kpoint(:, counter) = spec_points%points(:, 2*loop_path - 1) &
+                                  + (spec_points%points(:, 2*loop_path) &
+                                     - spec_points%points(:, 2*loop_path - 1) &
                                      ) &
                                   *(real(loop_i - 1, dp)/real(kpath_pts(loop_path), dp))
       end do
@@ -1229,7 +1229,7 @@ contains
     ! Last point
     !
     xval(total_pts) = sum(kpath_len)
-    plot_kpoint(:, total_pts) = spec_points%bands_spec_points(:, spec_points%bands_num_spec_points)
+    plot_kpoint(:, total_pts) = spec_points%points(:, spec_points%bands_num_spec_points)
 
   end subroutine
 

@@ -145,7 +145,7 @@ program postw90
   !parameters derived from input
   real(kind=dp) :: recip_lattice(3, 3)
 
-  type(special_kpoints_type) :: spec_points
+  type(kpoint_path_type) :: spec_points
   ! end w90_parameters
   ! data from pw90_parameters
   type(pw90_calculation_type), save :: pw90_calcs

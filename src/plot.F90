@@ -46,7 +46,7 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      special_kpoints_type, print_output_type, real_space_ham_type
+      kpoint_path_type, print_output_type, real_space_ham_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, output_file_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
@@ -68,7 +68,7 @@ contains
     type(disentangle_manifold_type), intent(in)  :: dis_window
     type(fermi_data_type), intent(in)            :: fermi
     type(fermi_surface_type), intent(in)         :: fermi_surface_data
-    type(special_kpoints_type), intent(in)       :: spec_points
+    type(kpoint_path_type), intent(in)       :: spec_points
     type(ham_logical), intent(inout)             :: hmlg
 
     integer, intent(inout)              :: rpt_origin
@@ -210,7 +210,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
-    use w90_param_types, only: wannier_data_type, special_kpoints_type, print_output_type, &
+    use w90_param_types, only: wannier_data_type, kpoint_path_type, print_output_type, &
       real_space_ham_type
     use wannier_param_types, only: band_plot_type
 
@@ -220,7 +220,7 @@ contains
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in)      :: band_plot
     type(wannier_data_type), intent(in)    :: wann_data
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
 
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -313,10 +313,10 @@ contains
     do i = 2, num_paths
       ! If either the coordinates are different or the label is different, compute again the point
       ! (it will end up at the same x coordinate)
-      if ((SUM((spec_points%bands_spec_points(:, (i - 1)*2) - &
-                spec_points%bands_spec_points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
-          (TRIM(spec_points%bands_label((i - 1)*2)) .ne. &
-           TRIM(spec_points%bands_label((i - 1)*2 + 1)))) then
+      if ((SUM((spec_points%points(:, (i - 1)*2) - &
+                spec_points%points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
+          (TRIM(spec_points%labels((i - 1)*2)) .ne. &
+           TRIM(spec_points%labels((i - 1)*2 + 1)))) then
         kpath_print_first_point(i) = .true.
       end if
     enddo
@@ -328,8 +328,8 @@ contains
     end do
 
     do loop_spts = 1, num_paths
-      vec = spec_points%bands_spec_points(:, 2*loop_spts) - &
-            spec_points%bands_spec_points(:, 2*loop_spts - 1)
+      vec = spec_points%points(:, 2*loop_spts) - &
+            spec_points%points(:, 2*loop_spts - 1)
       kpath_len(loop_spts) = sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       if (loop_spts == 1) then
         kpath_pts(loop_spts) = band_plot%num_points
@@ -376,7 +376,7 @@ contains
           ! on the x axis, there was a jump in the path here.
           xval(counter) = xval(counter - 1)
         endif
-        plot_kpoint(:, counter) = spec_points%bands_spec_points(:, 2*loop_spts - 1)
+        plot_kpoint(:, counter) = spec_points%points(:, 2*loop_spts - 1)
 
         idx_special_points(2*loop_spts - 1) = counter
         xval_special_points(2*loop_spts - 1) = xval(counter)
@@ -393,16 +393,16 @@ contains
         else
           xval(counter) = xval(counter - 1) + kpath_len(loop_spts)/real(kpath_pts(loop_spts), dp)
         endif
-        plot_kpoint(:, counter) = spec_points%bands_spec_points(:, 2*loop_spts - 1) + &
-                                  (spec_points%bands_spec_points(:, 2*loop_spts) &
-                                   - spec_points%bands_spec_points(:, 2*loop_spts - 1))* &
+        plot_kpoint(:, counter) = spec_points%points(:, 2*loop_spts - 1) + &
+                                  (spec_points%points(:, 2*loop_spts) &
+                                   - spec_points%points(:, 2*loop_spts - 1))* &
                                   (real(loop_i, dp)/real(kpath_pts(loop_spts), dp))
       end do
       idx_special_points(2*loop_spts) = counter
       xval_special_points(2*loop_spts) = xval(counter)
     end do
     !xval(total_pts)=sum(kpath_len)
-    plot_kpoint(:, total_pts) = spec_points%bands_spec_points(:, spec_points%bands_num_spec_points)
+    plot_kpoint(:, total_pts) = spec_points%points(:, spec_points%bands_num_spec_points)
     !
     ! Write out the kpoints in the path
     !
@@ -422,7 +422,7 @@ contains
       if ((MOD(loop_spts, 2) .eq. 1) .and. &
           (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
       write (bndunit, '(a,3x,I10,3x,4f18.10)') &
-        spec_points%bands_label(loop_spts), &
+        spec_points%labels(loop_spts), &
         idx_special_points(loop_spts), &
         xval_special_points(loop_spts), &
         (plot_kpoint(loop_i, idx_special_points(loop_spts)), loop_i=1, 3)
@@ -769,13 +769,13 @@ contains
       use w90_constants, only: dp
 !     use w90_io, only: io_file_unit, seedname
       use w90_io, only: io_file_unit
-      use w90_param_types, only: special_kpoints_type
+      use w90_param_types, only: kpoint_path_type
       use wannier_param_types, only: band_plot_type
 
       implicit none
 
       type(band_plot_type), intent(in) :: band_plot
-      type(special_kpoints_type), intent(in) :: spec_points
+      type(kpoint_path_type), intent(in) :: spec_points
 
       integer, intent(in) :: num_wann
       !
@@ -798,16 +798,16 @@ contains
       enddo
       close (bndunit)
       ! Axis labels
-      glabel(1) = TRIM(spec_points%bands_label(1))
+      glabel(1) = TRIM(spec_points%labels(1))
       do i = 2, num_paths
-        if (spec_points%bands_label(2*(i - 1)) /= spec_points%bands_label(2*(i - 1) + 1)) then
-          glabel(i) = TRIM(spec_points%bands_label(2*(i - 1)))//'|'// &
-                      TRIM(spec_points%bands_label(2*(i - 1) + 1))
+        if (spec_points%labels(2*(i - 1)) /= spec_points%labels(2*(i - 1) + 1)) then
+          glabel(i) = TRIM(spec_points%labels(2*(i - 1)))//'|'// &
+                      TRIM(spec_points%labels(2*(i - 1) + 1))
         else
-          glabel(i) = TRIM(spec_points%bands_label(2*(i - 1)))
+          glabel(i) = TRIM(spec_points%labels(2*(i - 1)))
         end if
       end do
-      glabel(num_paths + 1) = TRIM(spec_points%bands_label(2*num_paths))
+      glabel(num_paths + 1) = TRIM(spec_points%labels(2*num_paths))
       ! gnu file
       write (gnuunit, 701) xval(total_pts), emin, emax
       do i = 1, num_paths - 1
@@ -860,11 +860,11 @@ contains
 
 !     use w90_io, only: io_file_unit, seedname, io_date
       use w90_io, only: io_file_unit, io_date
-      use w90_param_types, only: special_kpoints_type
+      use w90_param_types, only: kpoint_path_type
 
       implicit none
 
-      type(special_kpoints_type), intent(in) :: spec_points
+      type(kpoint_path_type), intent(in) :: spec_points
 
       integer, intent(in) :: num_wann
 
@@ -877,10 +877,10 @@ contains
       ! Switch any G to Gamma
 
       do i = 1, spec_points%bands_num_spec_points
-        if (spec_points%bands_label(i) == 'G') then
+        if (spec_points%labels(i) == 'G') then
           ctemp(i) = '\xG\0'
         else
-          ctemp(i) = spec_points%bands_label(i)
+          ctemp(i) = spec_points%labels(i)
         end if
       end do
 

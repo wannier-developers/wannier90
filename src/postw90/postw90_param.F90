@@ -190,7 +190,7 @@ module pw90_param_methods
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
     kmesh_input_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
-    fermi_data_type, atom_data_type, special_kpoints_type, proj_input_type, w90_system_type, &
+    fermi_data_type, atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, &
     exclude_bands_type, real_space_ham_type
   use w90_param_methods
   use pw90_parameters
@@ -271,7 +271,7 @@ contains
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
     type(pw90_extra_io_type), intent(inout) :: write_data
     type(real_space_ham_type), intent(inout) :: rs_region
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     type(spin_hall_type), intent(inout) :: spin_hall
     type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
@@ -828,7 +828,7 @@ contains
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(kpath_type), intent(out) :: kpath
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -1417,7 +1417,7 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(kpoint_path_type), intent(in) :: spec_points
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_common_type), intent(in) :: pw90_common
@@ -1651,8 +1651,8 @@ contains
       else
         do loop = 1, spec_points%bands_num_spec_points, 2
           write (stdout, '(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:', &
-            spec_points%bands_label(loop), (spec_points%bands_spec_points(i, loop), i=1, 3), &
-            'To:', spec_points%bands_label(loop + 1), (spec_points%bands_spec_points(i, loop + 1), i=1, 3), '|'
+            spec_points%labels(loop), (spec_points%points(i, loop), i=1, 3), &
+            'To:', spec_points%labels(loop + 1), (spec_points%points(i, loop + 1), i=1, 3), '|'
         end do
       end if
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1917,7 +1917,7 @@ contains
     type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: spec_points
     type(dos_plot_type), intent(inout) :: dos_data
     type(berry_type), intent(inout) :: berry
     character(len=50), intent(in)  :: seedname
