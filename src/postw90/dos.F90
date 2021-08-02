@@ -214,7 +214,7 @@ contains
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
                          adpt_smr_max=dos_data%smr%max, levelspacing_k=levelspacing_k, UU=UU)
@@ -224,7 +224,7 @@ contains
                                          seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr%index, &
                          smr_fixed_en_width=dos_data%smr%fixed_en_width, UU=UU)
@@ -256,7 +256,7 @@ contains
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
                          adpt_smr_max=dos_data%smr%max, levelspacing_k=levelspacing_k, UU=UU)
@@ -266,7 +266,7 @@ contains
                                          seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=dos_data%smr%index, &
                          smr_fixed_en_width=dos_data%smr%fixed_en_width, UU=UU)
@@ -532,7 +532,7 @@ contains
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(num_elec_per_state, rs_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
-                       verbose, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                       wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
                        pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
 
@@ -540,7 +540,7 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use pw90_parameters, only: postw90_spin_type, dos_plot_type
-    use w90_param_types, only: print_output_type, wannier_data_type, real_space_ham_type
+    use w90_param_types, only: wannier_data_type, real_space_ham_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
@@ -549,7 +549,6 @@ contains
     ! Arguments
     type(dos_plot_type), intent(in) :: dos_data
     type(postw90_spin_type), intent(in) :: pw90_spin
-    type(print_output_type), intent(in) :: verbose
     type(real_space_ham_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec

@@ -951,7 +951,7 @@ contains
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                                 num_wann, verbose, wann_data, real_lattice, recip_lattice, &
+                                 num_wann, wann_data, real_lattice, recip_lattice, &
                                  mp_grid, dos_data, pw90_spin, ws_distance, ws_vec, stdout, &
                                  seedname, HH_R, SS_R, smr_index=boltz%dos_smr%index, &
                                  adpt_smr_fac=boltz%dos_smr%fac, adpt_smr_max=boltz%dos_smr%max, &
@@ -963,7 +963,7 @@ contains
             end do
           else
             call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                           num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                           num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                            dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
                            SS_R, smr_index=boltz%dos_smr%index, adpt_smr_fac=boltz%dos_smr%fac, &
                            adpt_smr_max=boltz%dos_smr%max, levelspacing_k=levelspacing_k)
@@ -971,7 +971,7 @@ contains
           end if
         else
           call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                         num_wann, verbose, wann_data, real_lattice, recip_lattice, mp_grid, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          smr_index=boltz%dos_smr%index, &
                          smr_fixed_en_width=boltz%dos_smr%fixed_en_width)
