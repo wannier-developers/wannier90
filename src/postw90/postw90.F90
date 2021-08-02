@@ -103,7 +103,7 @@ program postw90
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
   type(exclude_bands_type) :: excluded_bands
-  type(real_space_type) :: rs_region
+  type(real_space_ham_type) :: rs_region
   type(wannier_data_type) :: wann_data
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info

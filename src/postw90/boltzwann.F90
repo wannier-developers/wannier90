@@ -89,7 +89,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_param_types, only: disentangle_manifold_type, print_output_type, wannier_data_type, &
-      k_point_type, disentangle_manifold_type, real_space_type, w90_system_type
+      k_point_type, disentangle_manifold_type, real_space_ham_type, w90_system_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
       postw90_ham_type, dos_plot_type, postw90_oper_type
     use w90_ws_distance, only: ws_distance_type
@@ -108,7 +108,7 @@ contains
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
     type(w90_system_type), intent(in) :: system
     type(wannier_data_type), intent(in) :: wann_data
@@ -685,7 +685,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_param_types, only: print_output_type, wannier_data_type, k_point_type, &
-      disentangle_manifold_type, real_space_type
+      disentangle_manifold_type, real_space_ham_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
       postw90_common_type, postw90_oper_type
     use w90_param_methods, only: param_get_smearing_type
@@ -705,7 +705,7 @@ contains
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -1122,7 +1122,7 @@ contains
     use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_param_types, only: print_output_type, wannier_data_type, real_space_type
+    use w90_param_types, only: print_output_type, wannier_data_type, real_space_ham_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
@@ -1133,7 +1133,7 @@ contains
 
     ! arguments
     type(boltzwann_type), intent(in) :: boltz
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(wannier_data_type), intent(in) :: wann_data
     type(ws_distance_type), intent(inout) :: ws_distance

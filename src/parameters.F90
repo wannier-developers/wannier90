@@ -62,7 +62,7 @@ module w90_param_types
     ! REVIEW_2021-07-22: CHECK WHERE IS NUM_BANDS (TO FINISH)
   end type exclude_bands_type
 
-  type real_space_type ! REVIEW_2021-07-22: rename real_space_ham_type ?
+  type real_space_ham_type
     !! ===============================
     !! Contains information to control the structure of the real-space Hamiltonian
     !! and how it is calculated.
@@ -81,7 +81,7 @@ module w90_param_types
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
-  end type real_space_type
+  end type real_space_ham_type
 
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
@@ -642,7 +642,7 @@ contains
   subroutine param_read_ws_data(param_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(real_space_type), intent(inout) :: param_input
+    type(real_space_ham_type), intent(inout) :: param_input
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 

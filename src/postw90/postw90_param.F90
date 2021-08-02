@@ -191,7 +191,7 @@ module pw90_param_methods
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, special_kpoints_type, input_proj_type, w90_system_type, &
-    exclude_bands_type, real_space_type
+    exclude_bands_type, real_space_ham_type
   use w90_param_methods
   use pw90_parameters
 
@@ -270,7 +270,7 @@ contains
     type(print_output_type), intent(inout) :: verbose
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
     type(pw90_extra_io_type), intent(inout) :: write_data
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(special_kpoints_type), intent(inout) :: spec_points
     type(spin_hall_type), intent(inout) :: spin_hall
     type(w90_system_type), intent(inout) :: system

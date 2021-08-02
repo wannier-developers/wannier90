@@ -80,13 +80,13 @@ contains
 
     use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-    use w90_param_types, only: real_space_type
+    use w90_param_types, only: real_space_ham_type
 
     implicit none
 
     type(ws_distance_type), intent(inout) :: ws_distance
 !   from w90_parameters
-    type(real_space_type), intent(in) :: cutoff
+    type(real_space_ham_type), intent(in) :: cutoff
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     !integer, intent(in) :: iprint

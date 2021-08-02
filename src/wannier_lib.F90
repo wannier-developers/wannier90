@@ -64,7 +64,7 @@ module w90lib_parameters
   type(print_output_type), save :: verbose
   type(w90_system_type), save :: system
   type(exclude_bands_type), save :: excluded_bands
-  type(real_space_type) :: rs_region
+  type(real_space_ham_type) :: rs_region
   type(wannier_data_type), save :: wann_data
   type(param_kmesh_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info

@@ -66,7 +66,7 @@ contains
       w90_calculation_type, param_hamiltonian_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
-      exclude_bands_type, real_space_type
+      exclude_bands_type, real_space_ham_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -85,7 +85,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(w90_system_type), intent(in) :: system
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(param_hamiltonian_type), intent(inout) :: param_hamil

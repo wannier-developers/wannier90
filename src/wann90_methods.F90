@@ -65,7 +65,7 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(print_output_type), intent(inout) :: verbose
     type(exclude_bands_type), intent(inout) :: excluded_bands
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
@@ -344,7 +344,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(real_space_type), intent(inout) :: region
+    type(real_space_ham_type), intent(inout) :: region
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -854,7 +854,7 @@ contains
     integer, intent(in) :: stdout
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(band_plot_type), intent(in) :: band_plot
-    type(real_space_type), intent(inout) :: region
+    type(real_space_ham_type), intent(inout) :: region
     character(len=*), intent(out) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
     character(len=50), intent(in)  :: seedname
@@ -1156,7 +1156,7 @@ contains
     !passed vaiables
     type(param_driver_type), intent(in) :: driver
     type(w90_calculation_type), intent(in) :: w90_calcs
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(param_plot_type), intent(in) :: param_plot
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in) :: band_plot
@@ -2021,7 +2021,7 @@ contains
     type(param_driver_type), intent(inout) :: driver
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(exclude_bands_type), intent(inout) :: excluded_bands
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(inout) :: verbose
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot

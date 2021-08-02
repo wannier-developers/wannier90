@@ -97,7 +97,7 @@ program wannier
   type(param_driver_type) :: driver
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
-  type(real_space_type) :: rs_region
+  type(real_space_ham_type) :: rs_region
   type(exclude_bands_type) :: excluded_bands
   logical :: eig_found
   type(param_plot_type) :: param_plot

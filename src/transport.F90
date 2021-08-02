@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, &
-      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_type
+      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_ham_type
     use wannier_param_types, only: w90_calculation_type, transport_type, &
       param_hamiltonian_type
 
@@ -104,7 +104,7 @@ contains
 
     ! arguments
     type(transport_type), intent(inout)         :: tran
-    type(real_space_type), intent(inout)        :: rs_region
+    type(real_space_ham_type), intent(inout)        :: rs_region
     type(print_output_type), intent(in)         :: verbose
     type(w90_calculation_type), intent(in)      :: w90_calcs
     type(wannier_data_type), intent(in)         :: wann_data
@@ -293,12 +293,12 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: real_space_type
+    use w90_param_types, only: real_space_ham_type
 
     implicit none
 
     ! passed vars
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -401,13 +401,13 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: io_stopwatch, stdout
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: print_output_type, real_space_type
+    use w90_param_types, only: print_output_type, real_space_ham_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
     ! arguments
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 
@@ -1975,7 +1975,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: wannier_data_type, atom_data_type, &
-      print_output_type, real_space_type
+      print_output_type, real_space_ham_type
     use wannier_param_types, only: transport_type, w90_calculation_type
 
     implicit none
@@ -2002,7 +2002,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     type(atom_data_type), intent(in) :: atoms
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
     type(wannier_data_type), intent(in) :: wann_data
@@ -3306,7 +3306,7 @@ contains
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_point_type, fermi_data_type, &
-      print_output_type, real_space_type
+      print_output_type, real_space_ham_type
     use wannier_param_types, only: transport_type
 
     implicit none
@@ -3339,7 +3339,7 @@ contains
 
     type(fermi_data_type), intent(in) :: fermi
     type(k_point_type), intent(in) :: k_points
-    type(real_space_type), intent(inout) :: rs_region
+    type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran
 

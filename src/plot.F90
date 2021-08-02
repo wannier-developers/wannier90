@@ -46,7 +46,7 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      special_kpoints_type, print_output_type, real_space_type
+      special_kpoints_type, print_output_type, real_space_ham_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
@@ -55,7 +55,7 @@ contains
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(k_point_type), intent(in)               :: k_points
-    type(real_space_type), intent(in)            :: rs_region
+    type(real_space_ham_type), intent(in)            :: rs_region
     type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
@@ -210,12 +210,12 @@ contains
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
     use w90_param_types, only: wannier_data_type, special_kpoints_type, print_output_type, &
-      real_space_type
+      real_space_ham_type
     use wannier_param_types, only: band_plot_type
 
     implicit none
 
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in)      :: band_plot
     type(wannier_data_type), intent(in)    :: wann_data
@@ -589,14 +589,14 @@ contains
       use w90_constants, only: dp, cmplx_0, eps8
 !     use w90_io, only: io_error, stdout
       use w90_io, only: io_error
-      use w90_param_types, only: real_space_type
+      use w90_param_types, only: real_space_ham_type
       use wannier_param_types, only: band_plot_type
 
 !     use w90_hamiltonian, only: wannier_centres_translated
 
       implicit none
 
-      type(real_space_type), intent(in) :: rs_region
+      type(real_space_ham_type), intent(in) :: rs_region
       type(band_plot_type), intent(in) :: band_plot
 
       real(kind=dp), intent(in) :: wannier_centres_translated(:, :)

@@ -50,13 +50,13 @@ contains
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_param_types, only: print_output_type, real_space_type
+    use w90_param_types, only: print_output_type, real_space_ham_type
     use wannier_param_types, only: w90_calculation_type
 
     implicit none
 
     ! passed variables
-    type(real_space_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: rs_region
     type(print_output_type), intent(in)   :: verbose
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(ham_logical), intent(inout)       :: hmlg
@@ -612,7 +612,7 @@ contains
     use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
-    use w90_param_types, only: print_output_type, real_space_type
+    use w90_param_types, only: print_output_type, real_space_ham_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -622,7 +622,7 @@ contains
     implicit none
 
     ! passed variables
-    type(real_space_type), intent(in)   :: cutoff
+    type(real_space_ham_type), intent(in)   :: cutoff
     type(print_output_type), intent(in) :: verbose
 
     integer, intent(inout)              :: nrpts
