@@ -456,7 +456,7 @@ contains
         ! Wannier-gauge overlap matrix S in the projected subspace
         !
         call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                      verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, &
                                       have_disentangled, S)
 
@@ -669,7 +669,7 @@ contains
                          have_disentangled)
 
         call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                      verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                      ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, &
                                       have_disentangled, H=H_q_qb)
         do idir = 1, 3
@@ -845,7 +845,7 @@ contains
             !
 
             call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                          verbose, qb1, num_states(qb1), qb2, num_states(qb2), &
+                                          qb1, num_states(qb1), qb2, num_states(qb2), &
                                           Ho_qb1_q_qb2, have_disentangled, H_qb1_q_qb2)
             do b = 1, 3
               do a = 1, b
@@ -1196,7 +1196,7 @@ contains
         do is = 1, 3
 
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, ik, is))
         enddo !is
       enddo !ik
@@ -1470,7 +1470,7 @@ contains
           SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
 
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        ik, num_states(ik), ik, num_states(ik), &
                                         SH_o(:, :, ik, is), have_disentangled, SH_q(:, :, ik, is))
         end do
       end do
@@ -1535,16 +1535,16 @@ contains
           !
           ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        verbose, ik, num_states(ik), ik, num_states(ik), &
+                                        ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, is))
           ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SM_o(:, :, is), &
                                         have_disentangled, SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
           call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
-                                        verbose, ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
+                                        ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SHM_o(:, :, is), &
                                         have_disentangled, SHM_q(:, :, is))
 
@@ -1682,7 +1682,7 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, verbose, &
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
                                       ik_a, ns_a, ik_b, ns_b, S_o, have_disentangled, S, H)
     !==========================================================
     !
@@ -1695,14 +1695,14 @@ contains
     !==========================================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_manifold_type, print_output_type
+    use w90_param_types, only: disentangle_manifold_type
     use w90_utility, only: utility_zgemmm
 
     implicit none
 
     ! arguments
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(print_output_type), intent(in) :: verbose
+    !type(print_output_type), intent(in) :: verbose
     integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
