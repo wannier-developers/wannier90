@@ -41,13 +41,14 @@ contains
 
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                        fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                        param_plot, param_wannierise, proj, proj_input, rs_region, select_proj, &
-                        spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
-                        w90_calcs, eigval, real_lattice, recip_lattice, bohr, symmetrize_eps, &
-                        mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
-                        cp_pp, gamma_only, lhasproj, library, library_param_read_first_pass, &
-                        lsitesymmetry, use_bloch_phases, seedname, stdout)
+                        fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+                        param_hamil, param_plot, param_wannierise, proj, proj_input, rs_region, &
+                        select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
+                        write_data, w90_calcs, eigval, real_lattice, recip_lattice, bohr, &
+                        symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
+                        eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, library, &
+                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, seedname, &
+                        stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -62,6 +63,7 @@ contains
 
     !data from parameters module
     type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(output_file_type), intent(inout) :: out_files
     type(print_output_type), intent(inout) :: verbose
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
@@ -148,12 +150,12 @@ contains
       call param_read_restart(w90_calcs, stdout, seedname)
       call param_read_system(library, system, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
-      call param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
-                           stdout, seedname)
+      call param_read_plot(w90_calcs, out_files, param_plot, band_plot, wann_plot, num_wann, &
+                           has_kpath, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
-      call param_read_outfiles(w90_calcs, num_kpts, system%num_valence_bands, &
-                               gamma_only, stdout, seedname)
+      call param_read_outfiles(out_files, num_kpts, system%num_valence_bands, &
+                               w90_calcs%disentanglement, gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, band_plot, rs_region, write_data%one_dim_axis, &
@@ -162,7 +164,7 @@ contains
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
-                              w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
+                              out_files%write_hr, w90_calcs%disentanglement, eig_found, &
                               eigval, library, w90_calcs%postproc_setup, num_bands, num_kpts, &
                               stdout, seedname)
       dis_window%win_min = -1.0_dp
@@ -610,15 +612,15 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_read_restart
 
-  subroutine param_read_outfiles(w90_calcs, num_kpts, num_valence_bands, gamma_only, stdout, &
-                                 seedname)
+  subroutine param_read_outfiles(w90_calcs, num_kpts, num_valence_bands, disentanglement, &
+                                 gamma_only, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(output_file_type), intent(inout) :: w90_calcs
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_valence_bands
-    logical, intent(in) :: gamma_only
+    logical, intent(in) :: disentanglement, gamma_only
     character(len=50), intent(in)  :: seedname
 
     logical :: found, hr_plot
@@ -665,19 +667,20 @@ contains
         call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', &
                       stdout, seedname)
     endif
-    if (w90_calcs%write_vdw_data .and. w90_calcs%disentanglement .and. num_valence_bands <= 0) &
+    if (w90_calcs%write_vdw_data .and. disentanglement .and. num_valence_bands <= 0) &
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined', stdout, seedname)
 
   end subroutine param_read_outfiles
 
-  subroutine param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
-                             stdout, seedname)
+  subroutine param_read_plot(w90_calcs, out_files, param_plot, band_plot, wann_plot, num_wann, &
+                             has_kpath, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(output_file_type), intent(inout) :: out_files
     type(param_plot_type), intent(out) :: param_plot
     type(band_plot_type), intent(out) :: band_plot
     type(wannier_plot_type), intent(out) :: wann_plot
@@ -781,12 +784,12 @@ contains
       if (wann_plot%plot_scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
     endif
 
-    w90_calcs%write_u_matrices = .false.
+    out_files%write_u_matrices = .false.
     call param_get_keyword(stdout, seedname, 'write_u_matrices', found, &
-                           l_value=w90_calcs%write_u_matrices)
+                           l_value=out_files%write_u_matrices)
 
-    w90_calcs%write_bvec = .false.
-    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=w90_calcs%write_bvec)
+    out_files%write_bvec = .false.
+    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=out_files%write_bvec)
 
     band_plot%num_points = 100
     call param_get_keyword(stdout, seedname, 'bands_num_points', found, i_value=band_plot%num_points)
@@ -1148,9 +1151,9 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, &
-                         k_points, param_hamil, param_plot, param_wannierise, proj, proj_input, &
-                         rs_region, select_proj, spec_points, tran, verbose, wann_data, &
-                         wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
+                         k_points, out_files, param_hamil, param_plot, param_wannierise, proj, &
+                         proj_input, rs_region, select_proj, spec_points, tran, verbose, &
+                         wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, gamma_only, lsitesymmetry, spinors, use_bloch_phases, stdout)
     !==================================================================!
@@ -1163,6 +1166,7 @@ contains
 
     !passed vaiables
     type(w90_calculation_type), intent(in) :: w90_calcs
+    type(output_file_type), intent(in) :: out_files
     type(real_space_ham_type), intent(in) :: rs_region
     type(param_plot_type), intent(in) :: param_plot
     type(print_output_type), intent(in) :: verbose
@@ -1400,11 +1404,11 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between backing up to disk     :', &
       param_wannierise%control%num_dump_cycles, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', &
-      w90_calcs%write_r2mn, '|'
+      out_files%write_r2mn, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', &
-      w90_calcs%write_xyz, '|'
+      out_files%write_xyz, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
-      w90_calcs%write_hr_diag, '|'
+      out_files%write_hr_diag, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
       param_wannierise%control%guiding_centres, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
@@ -1453,7 +1457,7 @@ contains
     ! Plotting
     !
     if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
-        .or. w90_calcs%write_hr .or. verbose%iprint > 2) then
+        .or. out_files%write_hr .or. verbose%iprint > 2) then
       !
       write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
       !
@@ -1464,9 +1468,9 @@ contains
           wann_plot%plot_supercell(1), 'x', wann_plot%plot_supercell(2), 'x', &
           wann_plot%plot_supercell(3), '|'
 
-        if (w90_calcs%translate_home_cell) then
+        if (out_files%translate_home_cell) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') &
-            '|  Translating WFs to home cell              :', w90_calcs%translate_home_cell, '|'
+            '|  Translating WFs to home cell              :', out_files%translate_home_cell, '|'
         end if
 
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
@@ -1537,13 +1541,13 @@ contains
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
       !
-      if (w90_calcs%write_hr .or. verbose%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', w90_calcs%write_hr, '|'
+      if (out_files%write_hr .or. verbose%iprint > 2) then
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', out_files%write_hr, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       endif
-      if (w90_calcs%write_vdw_data .or. verbose%iprint > 2) then
+      if (out_files%write_vdw_data .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
-          w90_calcs%write_vdw_data, '|'
+          out_files%write_vdw_data, '|'
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       endif
       !
@@ -2011,9 +2015,9 @@ contains
 
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                        fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
-                        param_plot, param_wannierise, proj_input, rs_region, system, tran, &
-                        verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
+                        fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+                        param_hamil, param_plot, param_wannierise, proj_input, rs_region, system, &
+                        tran, verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
                         recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                         num_wann, eig_found, cp_pp, gamma_only, have_disentangled, lhasproj, &
                         lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
@@ -2030,6 +2034,7 @@ contains
     implicit none
     !passed variables
     type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(output_file_type), intent(inout) :: out_files
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(inout) :: verbose
@@ -2194,9 +2199,9 @@ contains
                      seedname, comm)
     call comms_bcast(wann_plot%plot_spinor_mode, len(wann_plot%plot_spinor_mode), &
                      stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_u_matrices, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_u_matrices, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%bands_plot, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_bvec, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_bvec, 1, stdout, seedname, comm)
     call comms_bcast(band_plot%num_points, 1, stdout, seedname, comm)
     call comms_bcast(band_plot%plot_format, len(band_plot%plot_format), stdout, &
                      seedname, comm)
@@ -2214,9 +2219,9 @@ contains
                        seedname, comm)
     end if
     call comms_bcast(band_plot%plot_dim, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_hr, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_rmn, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_tb, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_hr, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_rmn, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_tb, 1, stdout, seedname, comm)
     call comms_bcast(rs_region%hr_cutoff, 1, stdout, seedname, comm)
     call comms_bcast(rs_region%dist_cutoff, 1, stdout, seedname, comm)
     call comms_bcast(rs_region%dist_cutoff_mode, len(rs_region%dist_cutoff_mode), stdout, &
@@ -2362,26 +2367,26 @@ contains
     !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%restart, len(w90_calcs%restart), stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_r2mn, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_r2mn, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_guide_cycles, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_no_guide_iter, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%fixed_step, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%trial_step, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%precond, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_proj, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_proj, 1, stdout, seedname, comm)
     call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
     call comms_bcast(system%spinors, 1, stdout, seedname, comm)
     call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%translate_home_cell, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_xyz, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_hr_diag, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%translate_home_cell, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_xyz, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_hr_diag, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%conv_noise_amp, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%conv_noise_num, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%plot_radius, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%plot_scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
     call comms_bcast(verbose%optimisation, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calcs%write_vdw_data, 1, stdout, seedname, comm)
+    call comms_bcast(out_files%write_vdw_data, 1, stdout, seedname, comm)
     call comms_bcast(verbose%lenconfac, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%lfixstep, 1, stdout, seedname, comm)
     call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)

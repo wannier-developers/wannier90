@@ -92,6 +92,7 @@ program wannier
   type(w90_physical_constants) :: physics
   ! data from parameters module
   type(w90_calculation_type) :: w90_calcs
+  type(output_file_type) :: out_files
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
   character(len=20) :: checkpoint
@@ -245,7 +246,7 @@ program wannier
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
     call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                    fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, &
+                    fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                     param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
                     w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
@@ -282,7 +283,7 @@ program wannier
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
     call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
-                     param_hamil, param_plot, param_wannierise, proj, input_proj, &
+                     out_files, param_hamil, param_plot, param_wannierise, proj, input_proj, &
                      rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
                      write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
                      num_bands, num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -314,12 +315,12 @@ program wannier
 
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                  fermi_surface_data, kmesh_data, kmesh_info, k_points, param_hamil, param_plot, &
-                  param_wannierise, input_proj, rs_region, system, tran, verbose, wann_data, &
-                  wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, symmetrize_eps, &
-                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
-                  have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
-                  stdout, w90comm)
+                  fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
+                  param_plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
+                  wann_data, wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, &
+                  symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
+                  cp_pp, gamma_only, have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, &
+                  seedname, stdout, w90comm)
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
 
@@ -428,15 +429,16 @@ program wannier
   if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
   if (.not. gamma_only) then
-    call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, param_hamil, &
-                   param_wannierise, rs_region, sym, system, verbose, wann_data, w90_calcs, ham_k, &
-                   ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
-                   wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                   num_bands, num_kpts, num_proj, num_wann, rpt_origin, band_plot%plot_mode, &
-                   tran%mode, have_disentangled, lsitesymmetry, seedname, stdout, w90comm)
+    call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
+                   param_hamil, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                   w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
+                   ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
+                   band_plot%plot_mode, tran%mode, have_disentangled, lsitesymmetry, seedname, &
+                   stdout, w90comm)
   else
-    call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, &
-                         param_wannierise, system, verbose, wann_data, w90_calcs, m_matrix, &
+    call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, out_files, &
+                         param_wannierise, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
                          w90comm)
@@ -459,11 +461,12 @@ program wannier
     time2 = io_time()
 
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, param_hamil, param_plot, rs_region, spec_points, verbose, wann_data, &
-                   wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
-                   real_lattice, recip_lattice, wannier_centres_translated, physics%bohr, irvec, &
-                   mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                   tran%mode, have_disentangled, lsitesymmetry, system%spinors, seedname, stdout)
+                   k_points, out_files, param_hamil, param_plot, rs_region, spec_points, verbose, &
+                   wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                   u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
+                   physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
+                   num_wann, rpt_origin, tran%mode, have_disentangled, lsitesymmetry, &
+                   system%spinors, seedname, stdout)
     time1 = io_time()
 
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
@@ -474,7 +477,7 @@ program wannier
     if (w90_calcs%transport) then
       time2 = io_time()
 
-      call tran_main(atoms, dis_window, fermi, hmlg, k_points, param_hamil, &
+      call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, &
                      rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
                      u_matrix_opt, eigval, real_lattice, recip_lattice, &
                      wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &

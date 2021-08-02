@@ -29,8 +29,8 @@ contains
 !                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
 !                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, param_hamil, param_plot, rs_region, spec_points, verbose, &
-                       wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                       k_points, out_files, param_hamil, param_plot, rs_region, spec_points, &
+                       verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                        u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
@@ -47,15 +47,16 @@ contains
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
       special_kpoints_type, print_output_type, real_space_ham_type
-    use wannier_param_types, only: w90_calculation_type, param_plot_type, &
+    use wannier_param_types, only: w90_calculation_type, param_plot_type, output_file_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
     implicit none
 
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
+    type(output_file_type), intent(in)           :: out_files
     type(k_point_type), intent(in)               :: k_points
-    type(real_space_ham_type), intent(in)            :: rs_region
+    type(real_space_ham_type), intent(in)        :: rs_region
     type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
@@ -108,16 +109,16 @@ contains
     if (verbose%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
     ! Print the header only if there is something to plot
-    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
-        w90_calcs%wannier_plot .or. w90_calcs%write_u_matrices .or. w90_calcs%write_tb) then
+    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr .or. &
+        w90_calcs%wannier_plot .or. out_files%write_u_matrices .or. out_files%write_tb) then
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, *)
     end if
 
-    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
-        w90_calcs%write_tb) then
+    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr .or. &
+        out_files%write_tb) then
       ! Check if the kmesh includes the gamma point
       have_gamma = .false.
       do nkp = 1, num_kpts
@@ -152,18 +153,18 @@ contains
                                                                 verbose%timing_level, stdout, &
                                                                 seedname)
       !
-      if (w90_calcs%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+      if (out_files%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
                                                         num_wann, verbose%timing_level, seedname, &
                                                         stdout)
       !
-      if (w90_calcs%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
+      if (out_files%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
                                                           k_points%kpt_latt, irvec, nrpts, &
                                                           num_kpts, num_wann, stdout, seedname)
-      if (w90_calcs%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
+      if (out_files%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
                                                         k_points%kpt_latt, real_lattice, irvec, &
                                                         ndegen, nrpts, num_kpts, num_wann, &
                                                         stdout, verbose%timing_level, seedname)
-      if (w90_calcs%write_hr .or. w90_calcs%write_rmn .or. w90_calcs%write_tb) then
+      if (out_files%write_hr .or. out_files%write_rmn .or. out_files%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            rs_region, num_wann, &
                                                            wann_data%centres, real_lattice, &
@@ -179,9 +180,9 @@ contains
                                                   num_wann, have_disentangled, spinors, bohr, &
                                                   stdout, seedname)
 
-    if (w90_calcs%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
+    if (out_files%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
-    if (w90_calcs%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
+    if (out_files%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
                                                          have_disentangled, num_wann, num_kpts, &
                                                          num_bands, seedname)
 

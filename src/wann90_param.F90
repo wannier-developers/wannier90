@@ -35,7 +35,9 @@ module wannier_param_types
     logical :: wannier_plot !plot, wannier_lib
     logical :: fermi_surface_plot ! plot, wannier_lib!
     logical :: transport ! also hamiltonian, wannier_prog, wannier_lib
-    ! REVIEW_2021-07-22: put these write_ variables in a separate type (called, eg, output_write_type).
+  end type w90_calculation_type
+
+  type output_file_type
     logical :: write_hr !plot, transport and wannier_lib
     logical :: write_r2mn
     logical :: write_proj
@@ -53,7 +55,7 @@ module wannier_param_types
     ! REVIEW_2021-07-22: we plan to do, translate_home_cell probably should not be in
     ! REVIEW_2021-07-22: this type as it will end up being more general.
     logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
-  end type w90_calculation_type
+  end type output_file_type
 
   type band_plot_type
     !! ========================
