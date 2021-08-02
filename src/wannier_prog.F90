@@ -95,6 +95,7 @@ program wannier
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
   type(param_driver_type) :: driver
+  character(len=20) :: checkpoint
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
   type(real_space_ham_type) :: rs_region
@@ -333,12 +334,12 @@ program wannier
       call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, wann_data, m_matrix, &
                             u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
                             param_wannierise%omega%invariant, mp_grid, num_bands, num_kpts, &
-                            num_wann, driver%checkpoint, have_disentangled, .false., &
+                            num_wann, checkpoint, have_disentangled, .false., &
                             seedname, stdout)
     endif
     call param_chkpt_dist(dis_window, wann_data, u_matrix, u_matrix_opt, &
                           param_wannierise%omega%invariant, num_bands, num_kpts, num_wann, &
-                          driver%checkpoint, have_disentangled, seedname, stdout, w90comm)
+                          checkpoint, have_disentangled, seedname, stdout, w90comm)
     if (lsitesymmetry) call sitesym_read(sym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
@@ -346,10 +347,10 @@ program wannier
     case ('default')    ! continue from where last checkpoint was written
       if (on_root) write (stdout, '(/1x,a)', advance='no') &
         'Resuming a previous Wannier90 calculation '
-      if (driver%checkpoint .eq. 'postdis') then
+      if (checkpoint .eq. 'postdis') then
         if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
         goto 1001         ! go to wann_main
-      elseif (driver%checkpoint .eq. 'postwann') then
+      elseif (checkpoint .eq. 'postwann') then
         if (on_root) write (stdout, '(a/)') 'from plotting ...'
         goto 2002         ! go to plot_main
       else

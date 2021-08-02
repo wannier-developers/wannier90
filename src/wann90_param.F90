@@ -24,21 +24,19 @@ module wannier_param_types
   public
 
   type param_driver_type
-      ! REVIEW_2021-07-22: move explicit_nnkpts to kmesh_info_type in parameters.F90
+    ! REVIEW_2021-07-22: move explicit_nnkpts to kmesh_info_type in parameters.F90
     logical :: explicit_nnkpts
     !! nnkpts block is in the input file (allowed only for post-proc setup)
     ! REVIEW_2021-07-22: move these to w90_calculation_type below and remove param_driver_type altogether.
     logical :: postproc_setup
     character(len=20) :: restart
-    ! REVIEW_2021-07-22: checkpoint does not need to be exposed to the external code.
-    character(len=20) :: checkpoint
   end type param_driver_type
 
   type w90_calculation_type
-     !! =========================
-     !! Contains variables to control the execution path of the program.
-     !! =========================
-     ! REVIEW_2021-07-22: disentanglement is a derived variable that is internal to the code. Keep separate.
+    !! =========================
+    !! Contains variables to control the execution path of the program.
+    !! =========================
+    ! REVIEW_2021-07-22: disentanglement is a derived variable that is internal to the code. Keep separate.
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot !plot, wannier_lib
@@ -65,9 +63,9 @@ module wannier_param_types
   end type w90_calculation_type
 
   type band_plot_type
-     !! ========================
-     !! Contains information to control how the bandstructure plotting is performed and formatted.
-     !! ========================
+    !! ========================
+    !! Contains information to control how the bandstructure plotting is performed and formatted.
+    !! ========================
     character(len=20) :: plot_mode !hamiltonian (setup only), plot
     ! REVIEW_2021-07-22: move num_points to kpoint_path_type (see discussion in parameters.F90)
     integer :: num_points
@@ -79,14 +77,14 @@ module wannier_param_types
     ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
     ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
     ! REVIEW_2021-07-22: to put it in real_space_ham_type in parameters.F90 and to call it
-    ! REVIEW_2021-07-22: something more general, such as system_dim.  
+    ! REVIEW_2021-07-22: something more general, such as system_dim.
     integer :: plot_dim
     ! others from param_input? MAYBE
   end type band_plot_type
 
   ! REVIEW_2021-07-22: REVIEWED UP TO HERE SO FAR. WE ARE MEETING AGAIN TO COMPLETE
   ! REVIEW_2021-07-22: REVIEW ON 4 AUG, BEFORE THE NEXT MEETING WITH STFC
-  
+
   type wannier_plot_type
     integer :: num_plot
     integer, allocatable :: plot_list(:)
