@@ -27,15 +27,14 @@ module wannier_param_types
     ! REVIEW_2021-07-22: move explicit_nnkpts to kmesh_info_type in parameters.F90
     logical :: explicit_nnkpts
     !! nnkpts block is in the input file (allowed only for post-proc setup)
-    ! REVIEW_2021-07-22: move these to w90_calculation_type below and remove param_driver_type altogether.
-    logical :: postproc_setup
-    character(len=20) :: restart
   end type param_driver_type
 
   type w90_calculation_type
     !! =========================
     !! Contains variables to control the execution path of the program.
     !! =========================
+    logical :: postproc_setup
+    character(len=20) :: restart
     ! REVIEW_2021-07-22: disentanglement is a derived variable that is internal to the code. Keep separate.
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib

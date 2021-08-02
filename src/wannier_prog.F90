@@ -256,7 +256,7 @@ program wannier
     have_disentangled = .false.
     close (stdout, status='delete')
 
-    if (driver%restart .eq. ' ') then
+    if (w90_calcs%restart .eq. ' ') then
       stat = 'replace'
       pos = 'rewind'
     else
@@ -282,7 +282,7 @@ program wannier
     else
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
-    call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
+    call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
                      param_hamil, param_plot, param_wannierise, proj, input_proj, &
                      rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
                      write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
@@ -327,7 +327,7 @@ program wannier
   if (w90_calcs%transport .and. tran%read_ht) goto 3003
 
   ! Sort out restarts
-  if (driver%restart .eq. ' ') then  ! start a fresh calculation
+  if (w90_calcs%restart .eq. ' ') then  ! start a fresh calculation
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
     if (on_root) then
@@ -343,7 +343,7 @@ program wannier
     if (lsitesymmetry) call sitesym_read(sym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
-    select case (driver%restart)
+    select case (w90_calcs%restart)
     case ('default')    ! continue from where last checkpoint was written
       if (on_root) write (stdout, '(/1x,a)', advance='no') &
         'Resuming a previous Wannier90 calculation '
@@ -371,7 +371,7 @@ program wannier
     end select
   endif
 
-  if (driver%postproc_setup) then
+  if (w90_calcs%postproc_setup) then
     if (on_root) call kmesh_write(excluded_bands, kmesh_info, input_proj, verbose, &
                                   k_points%kpt_latt, real_lattice, recip_lattice, num_kpts, &
                                   num_proj, calc_only_A, system%spinors, seedname, stdout)

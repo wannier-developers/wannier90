@@ -276,7 +276,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
 
-  call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
+  call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
                    param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
@@ -326,7 +326,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
       excluded_bands%exclude_bands(1:excluded_bands%num_exclude_bands)
   end if
 
-  if (driver%postproc_setup) then
+  if (w90_calcs%postproc_setup) then
     call kmesh_write(excluded_bands, kmesh_info, input_proj, verbose, k_points%kpt_latt, &
                      real_lattice, recip_lattice, num_kpts, num_proj, calc_only_A, &
                      system%spinors, seedname, stdout)
@@ -508,7 +508,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, gamma_only, &
                   lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, seedname, stdout)
   have_disentangled = .false.
-  call param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, k_points, &
+  call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
                    param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &

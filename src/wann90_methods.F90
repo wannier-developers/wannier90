@@ -129,7 +129,7 @@ contains
 
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_w90_calcs(w90_calcs, stdout, seedname)
-    call param_read_transport(w90_calcs%transport, tran, driver%restart, stdout, seedname)
+    call param_read_transport(w90_calcs%transport, tran, w90_calcs%restart, stdout, seedname)
     call param_read_dist_cutoff(rs_region, stdout, seedname)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
@@ -145,8 +145,8 @@ contains
       call param_read_devel(verbose%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-      call param_read_post_proc(cp_pp, calc_only_A, driver%postproc_setup, stdout, seedname)
-      call param_read_restart(driver, stdout, seedname)
+      call param_read_post_proc(cp_pp, calc_only_A, w90_calcs%postproc_setup, stdout, seedname)
+      call param_read_restart(w90_calcs, stdout, seedname)
       call param_read_system(library, system, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
       call param_read_plot(w90_calcs, param_plot, band_plot, wann_plot, num_wann, has_kpath, &
@@ -164,7 +164,8 @@ contains
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
                               w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
-                              eigval, library, driver%postproc_setup, num_bands, num_kpts, stdout, seedname)
+                              eigval, library, w90_calcs%postproc_setup, num_bands, num_kpts, &
+                              stdout, seedname)
       dis_window%win_min = -1.0_dp
       dis_window%win_max = 0.0_dp
       if (eig_found) dis_window%win_min = minval(eigval)
@@ -175,8 +176,10 @@ contains
       call param_read_bloch_phase(use_bloch_phases, w90_calcs%disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
-      call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr, stdout, seedname)
-      call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
+      call param_read_explicit_kpts(library, driver%explicit_nnkpts, w90_calcs, kmesh_info, &
+                                    num_kpts, bohr, stdout, seedname)
+      call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
+                                   stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%control%guiding_centres, &
@@ -587,7 +590,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(param_driver_type), intent(inout) :: driver
+    type(w90_calculation_type), intent(inout) :: driver
     character(len=50), intent(in)  :: seedname
 
     logical :: found, chk_found
@@ -916,13 +919,15 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
   end subroutine param_read_bloch_phase
 
-  subroutine param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr, stdout, seedname)
+  subroutine param_read_explicit_kpts(library, explicit_nnkpts, driver, kmesh_info, num_kpts, &
+                                      bohr, stdout, seedname)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
-    type(param_driver_type), intent(inout) :: driver
+    logical, intent(out) :: explicit_nnkpts
+    type(w90_calculation_type), intent(in) :: driver
     type(kmesh_info_type), intent(inout) :: kmesh_info
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: bohr
@@ -934,8 +939,8 @@ contains
     integer, allocatable, dimension(:) :: nnkpts_idx
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call param_get_block_length(stdout, seedname, 'nnkpts', driver%explicit_nnkpts, rows, library)
-    if (driver%explicit_nnkpts) then
+    call param_get_block_length(stdout, seedname, 'nnkpts', explicit_nnkpts, rows, library)
+    if (explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
         call io_error('The number of rows in nnkpts must be a multiple of num_kpts', stdout, seedname)
@@ -1144,7 +1149,7 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atoms, band_plot, dis_data, driver, fermi, fermi_surface_data, &
+  subroutine param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, &
                          k_points, param_hamil, param_plot, param_wannierise, proj, proj_input, &
                          rs_region, select_proj, spec_points, tran, verbose, wann_data, &
                          wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
@@ -1159,7 +1164,6 @@ contains
     implicit none
 
     !passed vaiables
-    type(param_driver_type), intent(in) :: driver
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(real_space_ham_type), intent(in) :: rs_region
     type(param_plot_type), intent(in) :: param_plot
@@ -1349,7 +1353,8 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', verbose%timing_level, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', verbose%optimisation, '|'
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(verbose%length_unit), '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', driver%postproc_setup, '|'
+    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', &
+      w90_calcs%postproc_setup, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', gamma_only, '|'
     !YN: RS:
     if (lsitesymmetry) then
@@ -2096,7 +2101,7 @@ contains
 
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, stdout, seedname, comm)
-    call comms_bcast(driver%postproc_setup, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calcs%postproc_setup, 1, stdout, seedname, comm)
     call comms_bcast(cp_pp, 1, stdout, seedname, comm)
     !if (.not. pw90_common%effective_model) then
     call comms_bcast(mp_grid(1), 3, stdout, seedname, comm)
@@ -2360,7 +2365,7 @@ contains
 
     !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
-    call comms_bcast(driver%restart, len(driver%restart), stdout, seedname, comm)
+    call comms_bcast(w90_calcs%restart, len(w90_calcs%restart), stdout, seedname, comm)
     call comms_bcast(w90_calcs%write_r2mn, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_guide_cycles, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_no_guide_iter, 1, stdout, seedname, comm)
