@@ -109,7 +109,7 @@ program wannier
   type(wannier_data_type) :: wann_data
   type(param_hamiltonian_type) :: param_hamil
   type(kmesh_input_type) :: kmesh_data
-  type(input_proj_type) :: input_proj
+  type(proj_input_type) :: input_proj
   type(kmesh_info_type) :: kmesh_info
   type(k_point_type) :: k_points
   integer :: num_kpts
@@ -205,7 +205,7 @@ program wannier
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
-  type(projection_type) :: proj
+  type(proj_input_type) :: proj
   !Projections
   logical :: lhasproj
 

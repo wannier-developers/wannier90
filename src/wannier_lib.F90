@@ -73,7 +73,7 @@ module w90lib_parameters
   type(disentangle_manifold_type), save :: dis_window
   type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
-  type(input_proj_type), save :: input_proj
+  type(proj_input_type), save :: input_proj
 
   logical, save :: cp_pp, calc_only_A
   logical, save :: use_bloch_phases
@@ -215,7 +215,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
-  type(projection_type) :: proj
+  type(proj_input_type) :: proj
   !Projections
   logical :: lhasproj
 
@@ -442,7 +442,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
-  type(projection_type) :: proj
+  type(proj_input_type) :: proj
   !Projections
   logical :: lhasproj
 

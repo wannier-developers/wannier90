@@ -84,10 +84,10 @@ contains
     type(w90_system_type), intent(inout) :: system
     type(special_kpoints_type), intent(inout) :: spec_points
     type(select_projection_type), intent(inout) :: select_proj
-    type(input_proj_type), intent(inout) :: proj_input
+    type(proj_input_type), intent(inout) :: proj_input
     type(w90_extra_io_type), intent(inout) :: write_data
     ! was in driver, only used by wannier_lib
-    type(projection_type), intent(inout) :: proj
+    type(proj_input_type), intent(inout) :: proj
 
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -180,9 +180,14 @@ contains
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   param_wannierise%control%guiding_centres, &
-                                  param_wannierise%proj_site, proj_input, select_proj, num_proj, &
+                                  proj_input, select_proj, num_proj, &
                                   atoms, recip_lattice, num_wann, gamma_only, &
                                   system%spinors, library, bohr, stdout, seedname)
+      if (allocated(proj%site)) then
+        if (allocated(param_wannierise%proj_site)) deallocate (param_wannierise%proj_site)
+        allocate (param_wannierise%proj_site(3, num_wann))
+        param_wannierise%proj_site(:, :) = proj%site(:, :)
+      endif
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%constrain%slwf_constrain) then
         call param_read_constrained_centres(write_data%ccentres_frac, param_wannierise, &
@@ -975,16 +980,16 @@ contains
   end subroutine param_read_explicit_kpts
 
   subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
-                                    proj_site, proj_input, select_proj, num_proj, &
+                                    proj_input, select_proj, num_proj, &
                                     atoms, recip_lattice, num_wann, gamma_only, &
                                     spinors, library, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(projection_type), intent(inout) :: proj
+    type(proj_input_type), intent(inout) :: proj
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
     logical, intent(out) :: lhasproj
-    real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
-    type(input_proj_type), intent(inout) :: proj_input
+    !real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
+    type(proj_input_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
     integer, intent(inout) :: num_proj
     type(atom_data_type), intent(in) :: atoms
@@ -1013,7 +1018,7 @@ contains
       if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
                                                      stdout, seedname)
       lhasproj = .true.
-      call param_get_projections(num_proj, atoms, num_wann, proj_input, proj_site, &
+      call param_get_projections(num_proj, atoms, num_wann, proj_input, &
                                  proj, recip_lattice, .true., spinors, bohr, stdout, seedname)
     else
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
@@ -1063,24 +1068,24 @@ contains
     endif
 
     if (lhasproj) then
-      call param_get_projections(num_proj, atoms, num_wann, proj_input, proj_site, &
+      call param_get_projections(num_proj, atoms, num_wann, proj_input, &
                                  proj, recip_lattice, .false., spinors, bohr, stdout, seedname)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
-        proj_site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
-        proj%l(select_proj%proj2wann_map(loop)) = proj_input%proj%l(loop)
-        proj%m(select_proj%proj2wann_map(loop)) = proj_input%proj%m(loop)
-        proj%z(:, select_proj%proj2wann_map(loop)) = proj_input%proj%z(:, loop)
-        proj%x(:, select_proj%proj2wann_map(loop)) = proj_input%proj%x(:, loop)
-        proj%radial(select_proj%proj2wann_map(loop)) = proj_input%proj%radial(loop)
-        proj%zona(select_proj%proj2wann_map(loop)) = proj_input%proj%zona(loop)
+        proj%site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
+        proj%l(select_proj%proj2wann_map(loop)) = proj_input%l(loop)
+        proj%m(select_proj%proj2wann_map(loop)) = proj_input%m(loop)
+        proj%z(:, select_proj%proj2wann_map(loop)) = proj_input%z(:, loop)
+        proj%x(:, select_proj%proj2wann_map(loop)) = proj_input%x(:, loop)
+        proj%radial(select_proj%proj2wann_map(loop)) = proj_input%radial(loop)
+        proj%zona(select_proj%proj2wann_map(loop)) = proj_input%zona(loop)
       enddo
 
       if (spinors) then
         do loop = 1, num_proj
           if (select_proj%proj2wann_map(loop) < 0) cycle
-          proj%s(select_proj%proj2wann_map(loop)) = proj_input%proj%s(loop)
-          proj%s_qaxis(:, select_proj%proj2wann_map(loop)) = proj_input%proj%s_qaxis(:, loop)
+          proj%s(select_proj%proj2wann_map(loop)) = proj_input%s(loop)
+          proj%s_qaxis(:, select_proj%proj2wann_map(loop)) = proj_input%s_qaxis(:, loop)
         enddo
       endif
     endif
@@ -1170,11 +1175,11 @@ contains
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atoms
     type(select_projection_type), intent(in) :: select_proj
-    type(input_proj_type), intent(in) :: proj_input
+    type(proj_input_type), intent(in) :: proj_input
     type(special_kpoints_type), intent(in) :: spec_points
     type(w90_extra_io_type), intent(in) :: write_data
     type(wannier_plot_type), intent(in) :: wann_plot
-    type(projection_type), intent(in) :: proj
+    type(proj_input_type), intent(in) :: proj
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -1279,12 +1284,12 @@ contains
       do nsp = 1, num_proj
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)') &
           '|', proj_input%site(1, nsp), proj_input%site(2, nsp), &
-          proj_input%site(3, nsp), proj_input%proj%l(nsp), &
-          proj_input%proj%m(nsp), proj_input%proj%radial(nsp), &
-          proj_input%proj%z(1, nsp), proj_input%proj%z(2, nsp), &
-          proj_input%proj%z(3, nsp), proj_input%proj%x(1, nsp), &
-          proj_input%proj%x(2, nsp), proj_input%proj%x(3, nsp), &
-          proj_input%proj%zona(nsp), '|'
+          proj_input%site(3, nsp), proj_input%l(nsp), &
+          proj_input%m(nsp), proj_input%radial(nsp), &
+          proj_input%z(1, nsp), proj_input%z(2, nsp), &
+          proj_input%z(3, nsp), proj_input%x(1, nsp), &
+          proj_input%x(2, nsp), proj_input%x(3, nsp), &
+          proj_input%zona(nsp), '|'
       end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, *) ' '
@@ -1605,8 +1610,8 @@ contains
     type(special_kpoints_type), intent(inout) :: spec_points
     type(w90_extra_io_type), intent(inout) :: write_data
     type(wannier_plot_type), intent(inout) :: wann_plot
-    type(projection_type), intent(inout) :: proj
-    type(input_proj_type), intent(inout) :: proj_input
+    type(proj_input_type), intent(inout) :: proj
+    type(proj_input_type), intent(inout) :: proj_input
 
     integer, intent(in) :: stdout
 
@@ -1635,7 +1640,7 @@ contains
     endif
     if (allocated(param_wannierise%proj_site)) then
       deallocate (param_wannierise%proj_site, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_site in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating wannier proj_site in param_dealloc', stdout, seedname)
     end if
     if (allocated(param_wannierise%constrain%ccentres_cart)) then
       deallocate (param_wannierise%constrain%ccentres_cart, stat=ierr)
@@ -1644,6 +1649,10 @@ contains
     if (allocated(proj%l)) then
       deallocate (proj%l, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating proj_l in param_dealloc', stdout, seedname)
+    end if
+    if (allocated(proj%site)) then
+      deallocate (proj%site, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating proj_site in param_dealloc', stdout, seedname)
     end if
     if (allocated(proj%m)) then
       deallocate (proj%m, stat=ierr)
@@ -1785,7 +1794,7 @@ contains
     type(param_wannierise_type), intent(in) :: param_wannierise
     type(kmesh_info_type), intent(in) :: kmesh_info
     !type(disentangle_type), intent(in) :: dis_data
-    type(input_proj_type), intent(in) :: proj_input
+    type(proj_input_type), intent(in) :: proj_input
     type(atom_data_type), intent(in) :: atoms
 
     integer, intent(in) :: num_bands
@@ -2036,7 +2045,7 @@ contains
     type(disentangle_type), intent(inout) :: dis_data
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
-    type(input_proj_type), intent(inout) :: proj_input
+    type(proj_input_type), intent(inout) :: proj_input
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     type(disentangle_manifold_type), intent(inout) :: dis_window
