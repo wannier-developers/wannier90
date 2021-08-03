@@ -132,7 +132,7 @@ module wannlib_param_data
   type(w90_calculation_type), save :: w90_calcs
   type(output_file_type), save :: out_files
   type(real_space_ham_type) :: rs_region
-  type(param_plot_type), save :: param_plot
+  type(plot_type), save :: plot
   type(band_plot_type), save :: band_plot
   type(wannier_plot_type), save :: wann_plot
   type(disentangle_type), save :: dis_data
@@ -268,7 +268,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !library_param_read_first_pass = .true.
   call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
-                  param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
+                  plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                   spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
                   w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
                   mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
@@ -281,7 +281,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !library_param_read_first_pass = .false.
 
   call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, out_files, &
-                   param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
+                   param_hamil, plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
                    num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -507,7 +507,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
-                  param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
+                  plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                   spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
                   w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
                   mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
@@ -516,7 +516,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   have_disentangled = .false.
   disentanglement = (num_bands > num_wann)
   call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, out_files, &
-                   param_hamil, param_plot, param_wannierise, proj, input_proj, rs_region, &
+                   param_hamil, plot, param_wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, num_bands, &
                    num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -614,7 +614,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr) then
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, out_files, param_hamil, param_plot, rs_region, spec_points, &
+                   k_points, out_files, param_hamil, plot, rs_region, spec_points, &
                    verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, &
                    u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                    wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, shift_vec, &

@@ -102,7 +102,7 @@ program wannier
   type(ws_region_type) :: ws_region
   type(exclude_bands_type) :: excluded_bands
   logical :: eig_found
-  type(param_plot_type) :: param_plot
+  type(plot_type) :: plot
   type(band_plot_type) :: band_plot
   type(wannier_plot_type) :: wann_plot
   type(param_wannierise_type) :: param_wannierise
@@ -248,7 +248,7 @@ program wannier
 
     call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
-                    param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
+                    plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
                     ws_region, w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, &
                     symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
@@ -284,7 +284,7 @@ program wannier
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
     call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
-                     out_files, param_hamil, param_plot, param_wannierise, proj, input_proj, &
+                     out_files, param_hamil, plot, param_wannierise, proj, input_proj, &
                      rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
                      write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
                      num_bands, num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -316,7 +316,7 @@ program wannier
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
-                  param_plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
+                  plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
                   wann_data, wann_plot, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
                   symmetrize_eps, mp_grid, spec_points%num_points_first_segment, num_bands, &
                   num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, have_disentangled, &
@@ -461,7 +461,7 @@ program wannier
     time2 = io_time()
 
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, out_files, param_hamil, param_plot, rs_region, spec_points, verbose, &
+                   k_points, out_files, param_hamil, plot, rs_region, spec_points, verbose, &
                    wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &

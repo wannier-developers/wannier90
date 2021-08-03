@@ -22,14 +22,8 @@ module w90_plot
 contains
 
   !============================================!
-! subroutine plot_main(num_kpts, w90_calcs, k_points, param_input, param_plot, &
-!                      real_lattice, num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, &
-!                      atoms, param_hamil, dis_window, u_matrix_opt, eigval, u_matrix, &
-!                      lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
-!                      fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-!                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, out_files, param_hamil, param_plot, rs_region, spec_points, &
+                       k_points, out_files, param_hamil, plot, rs_region, spec_points, &
                        verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -47,7 +41,7 @@ contains
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
-    use wannier_param_types, only: w90_calculation_type, param_plot_type, output_file_type, &
+    use wannier_param_types, only: w90_calculation_type, plot_type, output_file_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
       real_space_ham_type
 
@@ -60,7 +54,7 @@ contains
     type(real_space_ham_type), intent(in)        :: rs_region
     type(ws_region_type), intent(in)             :: ws_region
     type(print_output_type), intent(in)          :: verbose
-    type(param_plot_type), intent(in)            :: param_plot
+    type(plot_type), intent(in)                  :: plot
     type(band_plot_type), intent(in)             :: band_plot
     type(wannier_plot_type), intent(in)          :: wann_plot
     type(kmesh_info_type), intent(in)            :: kmesh_info
@@ -176,7 +170,7 @@ contains
       end if
     end if
 
-    if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, &
+    if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, plot, wann_data, &
                                                   verbose, u_matrix_opt, dis_window, real_lattice, &
                                                   atoms, k_points, u_matrix, num_kpts, num_bands, &
                                                   num_wann, have_disentangled, spinors, bohr, &
@@ -1104,7 +1098,7 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, wann_plot, param_plot, wann_data, verbose, &
+  subroutine plot_wannier(recip_lattice, wann_plot, plot, wann_data, verbose, &
                           u_matrix_opt, dis_window, real_lattice, atoms, k_points, u_matrix, &
                           num_kpts, num_bands, num_wann, have_disentangled, spinors, bohr, &
                           stdout, seedname)
@@ -1120,7 +1114,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_point_type, wannier_data_type, &
       atom_data_type, disentangle_manifold_type, print_output_type
-    use wannier_param_types, only: param_plot_type, wannier_plot_type
+    use wannier_param_types, only: plot_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
     implicit none
@@ -1128,7 +1122,7 @@ contains
     type(k_point_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
     type(wannier_plot_type), intent(in) :: wann_plot
-    type(param_plot_type), intent(in) :: param_plot
+    type(plot_type), intent(in) :: plot
     type(wannier_data_type), intent(in) :: wann_data
     type(atom_data_type), intent(in) :: atoms
     type(disentangle_manifold_type), intent(in) :: dis_window
@@ -1199,7 +1193,7 @@ contains
     associate (ngs=>wann_plot%plot_supercell)
       !
       if (.not. spinors) then
-        write (wfnname, 200) 1, param_plot%spin
+        write (wfnname, 200) 1, plot%spin
       else
         write (wfnname, 199) 1
       endif
@@ -1207,7 +1201,7 @@ contains
       if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout, seedname)
 
       file_unit = io_file_unit()
-      if (param_plot%wvfn_formatted) then
+      if (plot%wvfn_formatted) then
         open (unit=file_unit, file=wfnname, form='formatted')
         read (file_unit, *) ngx, ngy, ngz, nk, nbnd
       else
@@ -1258,12 +1252,12 @@ contains
         end if
 
         if (.not. spinors) then
-          write (wfnname, 200) loop_kpt, param_plot%spin
+          write (wfnname, 200) loop_kpt, plot%spin
         else
           write (wfnname, 199) loop_kpt
         endif
         file_unit = io_file_unit()
-        if (param_plot%wvfn_formatted) then
+        if (plot%wvfn_formatted) then
           open (unit=file_unit, file=wfnname, form='formatted')
           read (file_unit, *) ix, iy, iz, ik, nbnd
         else
@@ -1282,7 +1276,7 @@ contains
           counter = 1
           do loop_b = 1, num_bands
             if (counter > num_inc) exit
-            if (param_plot%wvfn_formatted) then
+            if (plot%wvfn_formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1309,7 +1303,7 @@ contains
           end do
         else
           do loop_b = 1, num_bands
-            if (param_plot%wvfn_formatted) then
+            if (plot%wvfn_formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1479,7 +1473,7 @@ contains
       if (wann_plot%plot_format .eq. 'xcrysden') then
         call internal_xsf_format()
       elseif (wann_plot%plot_format .eq. 'cube') then
-        call internal_cube_format(atoms, wann_data, param_plot, have_disentangled, &
+        call internal_cube_format(atoms, wann_data, plot, have_disentangled, &
                                   recip_lattice, bohr)
       else
         call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
@@ -1494,7 +1488,7 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format(atoms, wann_data, param_plot, have_disentangled, &
+    subroutine internal_cube_format(atoms, wann_data, plot, have_disentangled, &
                                     recip_lattice, bohr)
       !============================================!
       !                                            !
@@ -1506,11 +1500,11 @@ contains
       use w90_utility, only: utility_translate_home, &
         utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: wannier_data_type, atom_data_type
-      use wannier_param_types, only: param_plot_type
+      use wannier_param_types, only: plot_type
 
       implicit none
 
-      type(param_plot_type), intent(in) :: param_plot
+      type(plot_type), intent(in) :: plot
       type(wannier_data_type), intent(in) :: wann_data
       type(atom_data_type), intent(in) :: atoms
       real(kind=dp), intent(in) :: bohr

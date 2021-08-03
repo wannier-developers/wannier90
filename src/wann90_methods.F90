@@ -42,7 +42,7 @@ contains
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                        param_hamil, param_plot, param_wannierise, proj, proj_input, rs_region, &
+                        param_hamil, plot, param_wannierise, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
@@ -68,7 +68,7 @@ contains
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
-    type(param_plot_type), intent(inout) :: param_plot
+    type(plot_type), intent(inout) :: plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -152,7 +152,7 @@ contains
       call param_read_restart(w90_calcs, stdout, seedname)
       call param_read_system(library, system, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, w90_calcs%bands_plot, stdout, seedname)
-      call param_read_plot(w90_calcs, out_files, param_plot, band_plot, wann_plot, num_wann, &
+      call param_read_plot(w90_calcs, out_files, plot, band_plot, wann_plot, num_wann, &
                            has_kpath, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
@@ -677,7 +677,7 @@ contains
 
   end subroutine param_read_outfiles
 
-  subroutine param_read_plot(w90_calcs, out_files, param_plot, band_plot, wann_plot, num_wann, &
+  subroutine param_read_plot(w90_calcs, out_files, plot, band_plot, wann_plot, num_wann, &
                              has_kpath, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
@@ -686,7 +686,7 @@ contains
     implicit none
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(output_file_type), intent(inout) :: out_files
-    type(param_plot_type), intent(out) :: param_plot
+    type(plot_type), intent(out) :: plot
     type(band_plot_type), intent(out) :: band_plot
     type(wannier_plot_type), intent(out) :: wann_plot
     integer, intent(in) :: stdout
@@ -698,16 +698,16 @@ contains
     logical :: found
     character(len=6) :: spin_str
 
-    param_plot%wvfn_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=param_plot%wvfn_formatted)
+    plot%wvfn_formatted = .false.       ! formatted or "binary" file
+    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=plot%wvfn_formatted)
 
-    param_plot%spin = 1
+    plot%spin = 1
     call param_get_keyword(stdout, seedname, 'spin', found, c_value=spin_str)
     if (found) then
       if (index(spin_str, 'up') > 0) then
-        param_plot%spin = 1
+        plot%spin = 1
       elseif (index(spin_str, 'down') > 0) then
-        param_plot%spin = 2
+        plot%spin = 2
       else
         call io_error('Error: unrecognised value of spin found: '//trim(spin_str), stdout, seedname)
       end if
@@ -1149,7 +1149,7 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, &
-                         k_points, out_files, param_hamil, param_plot, param_wannierise, proj, &
+                         k_points, out_files, param_hamil, plot, param_wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
@@ -1166,7 +1166,7 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(output_file_type), intent(in) :: out_files
     type(real_space_ham_type), intent(in) :: rs_region
-    type(param_plot_type), intent(in) :: param_plot
+    type(plot_type), intent(in) :: plot
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in) :: band_plot
     type(param_wannierise_type), intent(in) :: param_wannierise
@@ -1368,12 +1368,12 @@ contains
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
       cp_pp, '|'
     if (w90_calcs%wannier_plot .or. verbose%iprint > 2) then
-      if (param_plot%wvfn_formatted) then
+      if (plot%wvfn_formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
       else
         write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'unformatted', '|'
       endif
-      if (param_plot%spin == 1) then
+      if (plot%spin == 1) then
         write (stdout, '(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :', 'up', '|'
       else
         write (stdout, '(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :', 'down', '|'
@@ -2018,7 +2018,7 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                        param_hamil, param_plot, param_wannierise, proj_input, rs_region, system, &
+                        param_hamil, plot, param_wannierise, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
                         real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
                         num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
@@ -2042,7 +2042,7 @@ contains
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
     type(print_output_type), intent(inout) :: verbose
-    type(param_plot_type), intent(inout) :: param_plot
+    type(plot_type), intent(inout) :: plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -2129,11 +2129,11 @@ contains
 
     !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
     call comms_bcast(verbose%length_unit, 1, stdout, seedname, comm)
-    call comms_bcast(param_plot%wvfn_formatted, 1, stdout, seedname, comm)
+    call comms_bcast(plot%wvfn_formatted, 1, stdout, seedname, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
     !call comms_bcast(berry_uHu_formatted, 1)
-    call comms_bcast(param_plot%spin, 1, stdout, seedname, comm)
+    call comms_bcast(plot%spin, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_dump_cycles, 1, stdout, seedname, comm)
     call comms_bcast(param_wannierise%control%num_print_cycles, 1, stdout, seedname, comm)
     call comms_bcast(atoms%num_atoms, 1, stdout, seedname, comm)   ! Ivo: not used in postw90, right?

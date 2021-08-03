@@ -101,12 +101,12 @@ module wannier_param_types
   end type wannier_plot_type
 
   ! MAYBE - seems almost redundant
-  type param_plot_type ! only in plot.F90
+  type plot_type ! only in plot.F90
     logical :: wvfn_formatted
     !! Read the wvfn from fortran formatted file
     integer :: spin
     !! Spin up=1 down=2
-  end type param_plot_type
+  end type plot_type
 
   ! parameters used to control the minimisation of the disentanglement process
   type disentangle_type

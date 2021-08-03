@@ -84,7 +84,7 @@ module wannchk_param_data
   public
 
   type(w90_calculation_type), save :: w90_calcs
-  type(param_plot_type), save :: param_plot
+  !type(plot_type), save :: plot
   !type(disentangle_type), save :: dis_data
   type(param_wannierise_type), save :: param_wannierise
   ! RS: symmetry-adapted Wannier functions
