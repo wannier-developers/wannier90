@@ -41,7 +41,7 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+  subroutine hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, transport_mode)
@@ -50,13 +50,12 @@ contains
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_param_types, only: print_output_type, real_space_ham_type, ws_region_type
+    use w90_param_types, only: print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type
 
     implicit none
 
     ! passed variables
-    type(real_space_ham_type), intent(in) :: rs_region
     type(ws_region_type), intent(in) :: ws_region
     type(print_output_type), intent(in)   :: verbose
     type(w90_calculation_type), intent(in) :: w90_calcs
@@ -97,7 +96,7 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(rs_region, ws_region, verbose, real_lattice, irvec, mp_grid, &
+    call hamiltonian_wigner_seitz(ws_region, verbose, real_lattice, irvec, mp_grid, &
                                   ndegen, nrpts, rpt_origin, seedname, stdout, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
@@ -119,7 +118,7 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(rs_region, ws_region, verbose, real_lattice, irvec, mp_grid, &
+    call hamiltonian_wigner_seitz(ws_region, verbose, real_lattice, irvec, mp_grid, &
                                   ndegen, nrpts, rpt_origin, seedname, stdout, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
@@ -602,7 +601,7 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(cutoff, region, verbose, real_lattice, irvec, mp_grid, &
+  subroutine hamiltonian_wigner_seitz(region, verbose, real_lattice, irvec, mp_grid, &
                                       ndegen, nrpts, rpt_origin, seedname, stdout, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
@@ -613,7 +612,7 @@ contains
     use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
-    use w90_param_types, only: print_output_type, real_space_ham_type, ws_region_type
+    use w90_param_types, only: print_output_type, ws_region_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -623,7 +622,6 @@ contains
     implicit none
 
     ! passed variables
-    type(real_space_ham_type), intent(in)   :: cutoff
     type(ws_region_type), intent(in) :: region
     type(print_output_type), intent(in) :: verbose
 

@@ -96,9 +96,9 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
-      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_ham_type
+      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
-      param_hamiltonian_type
+      param_hamiltonian_type, real_space_ham_type
 
     implicit none
 
@@ -183,7 +183,7 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+        call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, tran%mode)
@@ -213,7 +213,7 @@ contains
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+        call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, tran%mode)
@@ -295,7 +295,7 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: real_space_ham_type
+    use wannier_param_types, only: real_space_ham_type
 
     implicit none
 
@@ -403,8 +403,8 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: io_stopwatch, stdout
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: print_output_type, real_space_ham_type
-    use wannier_param_types, only: transport_type
+    use w90_param_types, only: print_output_type
+    use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
 
@@ -1976,9 +1976,8 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: wannier_data_type, atom_data_type, &
-      print_output_type, real_space_ham_type
-    use wannier_param_types, only: transport_type
+    use w90_param_types, only: wannier_data_type, atom_data_type, print_output_type
+    use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
 
@@ -3307,9 +3306,8 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_point_type, fermi_data_type, &
-      print_output_type, real_space_ham_type
-    use wannier_param_types, only: transport_type
+    use w90_param_types, only: k_point_type, fermi_data_type, print_output_type
+    use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
 

@@ -64,7 +64,6 @@ module w90lib_parameters
   type(print_output_type), save :: verbose
   type(w90_system_type), save :: system
   type(exclude_bands_type), save :: excluded_bands
-  type(real_space_ham_type) :: rs_region
   type(ws_region_type) :: ws_region
   type(wannier_data_type), save :: wann_data
   type(kmesh_input_type), save :: kmesh_data
@@ -132,6 +131,7 @@ module wannlib_param_data
 
   type(w90_calculation_type), save :: w90_calcs
   type(output_file_type), save :: out_files
+  type(real_space_ham_type) :: rs_region
   type(param_plot_type), save :: param_plot
   type(band_plot_type), save :: band_plot
   type(wannier_plot_type), save :: wann_plot
@@ -596,7 +596,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                          num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
   else
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                   param_hamil, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                   param_hamil, param_wannierise, sym, system, verbose, wann_data, &
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &

@@ -55,6 +55,25 @@ module wannier_param_types
     logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
   end type output_file_type
 
+  type real_space_ham_type
+    !! ===============================
+    !! Contains information to control the structure of the real-space Hamiltonian
+    !! and how it is calculated.
+    !! ===============================
+    real(kind=dp) :: hr_cutoff !plot and transport
+    ! dist_cutoff - only plot and transport
+    real(kind=dp) :: dist_cutoff !plot and transport
+    character(len=20) :: dist_cutoff_mode !plot and transport
+    real(kind=dp) :: dist_cutoff_hc !plot and transport
+    integer :: one_dim_dir ! transport and plot
+    ! REVIEW_2021-07-22: plot_dim is really providing information about the dimensionality
+    ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
+    ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
+    ! REVIEW_2021-07-22: to put it in real_space_ham_type in parameters.F90 and to call it
+    ! REVIEW_2021-07-22: something more general, such as system_dim.
+    integer :: system_dim
+  end type real_space_ham_type
+
   type band_plot_type
     !! ========================
     !! Contains information to control how the bandstructure plotting is performed and formatted.

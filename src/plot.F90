@@ -46,9 +46,10 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      kpoint_path_type, print_output_type, real_space_ham_type, ws_region_type
+      kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, output_file_type, &
-      param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
+      param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
+      real_space_ham_type
 
     implicit none
 
@@ -130,7 +131,7 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, &
                              seedname, transport_mode)
@@ -212,8 +213,8 @@ contains
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
     use w90_param_types, only: wannier_data_type, kpoint_path_type, print_output_type, &
-      real_space_ham_type, ws_region_type
-    use wannier_param_types, only: band_plot_type
+      ws_region_type
+    use wannier_param_types, only: band_plot_type, real_space_ham_type
 
     implicit none
 
@@ -592,8 +593,7 @@ contains
       use w90_constants, only: dp, cmplx_0, eps8
 !     use w90_io, only: io_error, stdout
       use w90_io, only: io_error
-      use w90_param_types, only: real_space_ham_type
-      use wannier_param_types, only: band_plot_type
+      use wannier_param_types, only: band_plot_type, real_space_ham_type
 
 !     use w90_hamiltonian, only: wannier_centres_translated
 

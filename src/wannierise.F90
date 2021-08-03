@@ -49,7 +49,7 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                       param_hamil, param_wannierise, rs_region, sym, system, verbose, wann_data, &
+                       param_hamil, param_wannierise, sym, system, verbose, wann_data, &
                        ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
                        eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
                        mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
@@ -66,7 +66,7 @@ contains
       w90_calculation_type, param_hamiltonian_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
-      exclude_bands_type, real_space_ham_type, ws_region_type
+      exclude_bands_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -85,7 +85,6 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_point_type), intent(in) :: k_points
     type(w90_system_type), intent(in) :: system
-    type(real_space_ham_type), intent(in) :: rs_region
     type(ws_region_type), intent(in) :: ws_region
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
@@ -249,7 +248,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
     if (param_wannierise%control%precond) then
-      call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
@@ -812,7 +811,7 @@ contains
     endif
 
     if (out_files%write_hr_diag) then
-      call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
