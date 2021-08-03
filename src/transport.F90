@@ -83,8 +83,8 @@ module w90_transport
 contains
   !==================================================================!
   subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, &
-                       rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
-                       u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
+                       u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, &
                        have_disentangled, lsitesymmetry, seedname, stdout)
@@ -95,7 +95,7 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
-    use w90_param_types, only: wannier_data_type, print_output_type, &
+    use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type, real_space_ham_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
       param_hamiltonian_type
@@ -104,10 +104,11 @@ contains
 
     ! arguments
     type(transport_type), intent(inout)         :: tran
-    type(real_space_ham_type), intent(inout)        :: rs_region
+    type(real_space_ham_type), intent(inout)    :: rs_region
+    type(ws_region_type), intent(inout)         :: ws_region
     type(print_output_type), intent(in)         :: verbose
     type(w90_calculation_type), intent(in)      :: w90_calcs
-    type(output_file_type), intent(in)      :: out_files
+    type(output_file_type), intent(in)          :: out_files
     type(wannier_data_type), intent(in)         :: wann_data
     type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
@@ -182,10 +183,10 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
-                               wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                               num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
-                               tran%mode)
+        call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+                               real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                               num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
+                               seedname, tran%mode)
         call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &
@@ -212,10 +213,10 @@ contains
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
-                               wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                               num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, seedname, &
-                               tran%mode)
+        call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+                               real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                               num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
+                               seedname, tran%mode)
         call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &

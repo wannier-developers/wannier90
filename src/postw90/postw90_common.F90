@@ -275,7 +275,7 @@ contains
       spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
     type(print_output_type), intent(inout) :: verbose
-    type(real_space_ham_type), intent(inout) :: rs_region
+    type(ws_region_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
@@ -806,13 +806,13 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: wannier_data_type, real_space_ham_type
+    use w90_param_types, only: wannier_data_type, ws_region_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -901,13 +901,13 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -998,13 +998,13 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1110,14 +1110,14 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1258,13 +1258,13 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec
@@ -1368,13 +1368,13 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec
@@ -1474,14 +1474,14 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: real_space_ham_type, wannier_data_type
+    use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec

@@ -30,8 +30,8 @@ contains
 !                      rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
                        k_points, out_files, param_hamil, param_plot, rs_region, spec_points, &
-                       verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
-                       u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, &
+                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
                        have_disentangled, lsitesymmetry, spinors, seedname, stdout)
@@ -46,7 +46,7 @@ contains
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
-      kpoint_path_type, print_output_type, real_space_ham_type
+      kpoint_path_type, print_output_type, real_space_ham_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, param_plot_type, output_file_type, &
       param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type
 
@@ -57,6 +57,7 @@ contains
     type(output_file_type), intent(in)           :: out_files
     type(k_point_type), intent(in)               :: k_points
     type(real_space_ham_type), intent(in)        :: rs_region
+    type(ws_region_type), intent(in)             :: ws_region
     type(print_output_type), intent(in)          :: verbose
     type(param_plot_type), intent(in)            :: param_plot
     type(band_plot_type), intent(in)             :: band_plot
@@ -68,7 +69,7 @@ contains
     type(disentangle_manifold_type), intent(in)  :: dis_window
     type(fermi_data_type), intent(in)            :: fermi
     type(fermi_surface_type), intent(in)         :: fermi_surface_data
-    type(kpoint_path_type), intent(in)       :: spec_points
+    type(kpoint_path_type), intent(in)           :: spec_points
     type(ham_logical), intent(inout)             :: hmlg
 
     integer, intent(inout)              :: rpt_origin
@@ -129,10 +130,10 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, rs_region, verbose, w90_calcs, ham_k, ham_r, real_lattice, &
-                             wannier_centres_translated, irvec, mp_grid, ndegen, num_kpts, &
-                             num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, seedname, &
-                             transport_mode)
+      call hamiltonian_setup(hmlg, rs_region, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+                             real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                             num_kpts, num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, &
+                             seedname, transport_mode)
       !
       call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
@@ -141,10 +142,10 @@ contains
                               stdout, seedname, lsitesymmetry)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
-                                                            spec_points, rs_region, verbose, &
-                                                            recip_lattice, num_wann, wann_data, &
-                                                            ham_r, irvec, ndegen, nrpts, &
-                                                            wannier_centres_translated, &
+                                                            spec_points, rs_region, ws_region, &
+                                                            verbose, recip_lattice, num_wann, &
+                                                            wann_data, ham_r, irvec, ndegen, &
+                                                            nrpts, wannier_centres_translated, &
                                                             ws_distance, stdout, seedname)
       !
       if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, &
@@ -166,10 +167,10 @@ contains
                                                         stdout, verbose%timing_level, seedname)
       if (out_files%write_hr .or. out_files%write_rmn .or. out_files%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                           rs_region, num_wann, &
+                                                           ws_region, num_wann, &
                                                            wann_data%centres, real_lattice, &
                                                            recip_lattice, mp_grid, nrpts, irvec)
-        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, rs_region%use_ws_distance, &
+        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
                           stdout, seedname)
       end if
     end if
@@ -195,8 +196,8 @@ contains
   !-----------------------------------!
 
   !============================================!
-  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, &
-                                    rs_region, verbose, recip_lattice, num_wann, wann_data, &
+  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, rs_region, &
+                                    ws_region, verbose, recip_lattice, num_wann, wann_data, &
                                     ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
                                     ws_distance, stdout, seedname)
     !============================================!
@@ -211,12 +212,13 @@ contains
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
     use w90_utility, only: utility_metric
     use w90_param_types, only: wannier_data_type, kpoint_path_type, print_output_type, &
-      real_space_ham_type
+      real_space_ham_type, ws_region_type
     use wannier_param_types, only: band_plot_type
 
     implicit none
 
     type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: ws_region
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in)      :: band_plot
     type(wannier_data_type), intent(in)    :: wann_data
@@ -438,13 +440,13 @@ contains
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
-    if (rs_region%use_ws_distance) then
+    if (ws_region%use_ws_distance) then
       if (index(band_plot%plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, rs_region, num_wann, &
+        call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute=.true.)
       elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, rs_region, num_wann, &
+        call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
       else
@@ -460,7 +462,7 @@ contains
       if (index(band_plot%plot_mode, 's-k') .ne. 0) then
         do irpt = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-          if (rs_region%use_ws_distance) then
+          if (ws_region%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
               do ideg = 1, ws_distance%ndeg(i, j, irpt)
@@ -483,7 +485,7 @@ contains
       elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
         do irpt = 1, nrpts_cut
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-          if (rs_region%use_ws_distance) then
+          if (ws_region%use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
               do ideg = 1, ws_distance%ndeg(i, j, irpt)

@@ -82,7 +82,7 @@ contains
     use pw90_parameters, only: gyrotropic_type, berry_type, postw90_oper_type, postw90_ham_type, &
       postw90_common_type
     use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
-      kmesh_info_type, fermi_data_type, wannier_data_type, real_space_ham_type, w90_system_type
+      kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
     use w90_utility, only: utility_det3
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -101,7 +101,7 @@ contains
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
     type(w90_system_type), intent(in) :: system
     type(wannier_data_type), intent(in) :: wann_data
@@ -559,7 +559,7 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
     use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
-      wannier_data_type, fermi_data_type, real_space_ham_type
+      wannier_data_type, fermi_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
@@ -577,7 +577,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -841,7 +841,7 @@ contains
     use pw90_parameters, only: gyrotropic_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
-    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, real_space_ham_type
+    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
@@ -853,7 +853,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(print_output_type), intent(in) :: verbose
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance

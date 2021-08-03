@@ -73,14 +73,6 @@ module w90_param_types
     character(len=20) :: dist_cutoff_mode !plot and transport
     real(kind=dp) :: dist_cutoff_hc !plot and transport
     integer :: one_dim_dir ! transport and plot
-    ! REVIEW_2021-07-22: The ones above are logically somewhat distinct
-    ! REVIEW_2021-07-22: to those below -- separate? (TO FINISH)
-    logical :: use_ws_distance !ws_distance, plot and postw90_common
-    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
-    !! absolute tolerance for the distance to equivalent positions
-    integer :: ws_search_size(3) ! ws_distance, hamiltonian
-    !! maximum extension in each direction of the supercell of the BvK cell
-    !! to search for points inside the Wigner-Seitz cell
     ! REVIEW_2021-07-22: plot_dim is really providing information about the dimensionality
     ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
     ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
@@ -88,6 +80,15 @@ module w90_param_types
     ! REVIEW_2021-07-22: something more general, such as system_dim.
     integer :: system_dim
   end type real_space_ham_type
+
+  type ws_region_type
+    logical :: use_ws_distance !ws_distance, plot and postw90_common
+    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
+    !! absolute tolerance for the distance to equivalent positions
+    integer :: ws_search_size(3) ! ws_distance, hamiltonian
+    !! maximum extension in each direction of the supercell of the BvK cell
+    !! to search for points inside the Wigner-Seitz cell
+  end type ws_region_type
 
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
@@ -646,7 +647,7 @@ contains
   subroutine param_read_ws_data(param_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(real_space_ham_type), intent(inout) :: param_input
+    type(ws_region_type), intent(inout) :: param_input
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 

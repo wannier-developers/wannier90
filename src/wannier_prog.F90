@@ -99,6 +99,7 @@ program wannier
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
   type(real_space_ham_type) :: rs_region
+  type(ws_region_type) :: ws_region
   type(exclude_bands_type) :: excluded_bands
   logical :: eig_found
   type(param_plot_type) :: param_plot
@@ -249,9 +250,9 @@ program wannier
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                     param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
-                    w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
-                    mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, &
-                    cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
+                    ws_region, w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, &
+                    symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
+                    calc_only_A, cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
                     use_bloch_phases, seedname, stdout)
     have_disentangled = .false.
     close (stdout, status='delete')
@@ -316,7 +317,7 @@ program wannier
   call param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                   param_plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
-                  wann_data, wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, &
+                  wann_data, wann_plot, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
                   symmetrize_eps, mp_grid, spec_points%num_points_first_segment, num_bands, &
                   num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, have_disentangled, &
                   lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
@@ -430,7 +431,7 @@ program wannier
   if (.not. gamma_only) then
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
                    param_hamil, param_wannierise, rs_region, sym, system, verbose, wann_data, &
-                   w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
                    band_plot%plot_mode, tran%mode, have_disentangled, lsitesymmetry, seedname, &
@@ -461,7 +462,7 @@ program wannier
 
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
                    k_points, out_files, param_hamil, param_plot, rs_region, spec_points, verbose, &
-                   wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                   wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
                    num_wann, rpt_origin, tran%mode, have_disentangled, lsitesymmetry, &
@@ -477,8 +478,8 @@ program wannier
       time2 = io_time()
 
       call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, &
-                     rs_region, tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, &
-                     u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                     rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
+                     u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                      wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                      num_bands, num_kpts, num_wann, rpt_origin, band_plot%plot_mode, &
                      have_disentangled, lsitesymmetry, seedname, stdout)

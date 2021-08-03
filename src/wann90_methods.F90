@@ -44,8 +44,8 @@ contains
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         param_hamil, param_plot, param_wannierise, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
-                        write_data, w90_calcs, eigval, real_lattice, recip_lattice, bohr, &
-                        symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
+                        write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
+                        bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                         eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, library, &
                         library_param_read_first_pass, lsitesymmetry, use_bloch_phases, seedname, &
                         stdout)
@@ -67,6 +67,7 @@ contains
     type(print_output_type), intent(inout) :: verbose
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
+    type(ws_region_type), intent(inout) :: ws_region
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
@@ -161,7 +162,7 @@ contains
     ! BGS tran/plot related stuff...
     call param_read_one_dim(w90_calcs, band_plot, rs_region, write_data%one_dim_axis, &
                             tran%read_ht, stdout, seedname)
-    call param_read_ws_data(rs_region, stdout, seedname) !ws_search etc
+    call param_read_ws_data(ws_region, stdout, seedname) !ws_search etc
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
@@ -2018,9 +2019,9 @@ contains
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         param_hamil, param_plot, param_wannierise, proj_input, rs_region, system, &
-                        tran, verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
-                        recip_lattice, symmetrize_eps, mp_grid, first_segment, num_bands, &
-                        num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
+                        tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
+                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
+                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
                         have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
                         stdout, comm)
     !===========================================================!
@@ -2039,6 +2040,7 @@ contains
     type(output_file_type), intent(inout) :: out_files
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
+    type(ws_region_type), intent(inout) :: ws_region
     type(print_output_type), intent(inout) :: verbose
     type(param_plot_type), intent(inout) :: param_plot
     type(band_plot_type), intent(inout) :: band_plot
@@ -2233,9 +2235,9 @@ contains
                      seedname, comm)
     call comms_bcast(rs_region%dist_cutoff_hc, 1, stdout, seedname, comm)
     !call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
-    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
-    call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, comm)
-    call comms_bcast(rs_region%ws_search_size(1), 3, stdout, seedname, comm)
+    call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
+    call comms_bcast(ws_region%ws_distance_tol, 1, stdout, seedname, comm)
+    call comms_bcast(ws_region%ws_search_size(1), 3, stdout, seedname, comm)
     call comms_bcast(w90_calcs%fermi_surface_plot, 1, stdout, seedname, comm)
     call comms_bcast(fermi_surface_data%num_points, 1, stdout, seedname, comm)
     call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), stdout, &
@@ -2342,7 +2344,7 @@ contains
     !call comms_bcast(boltz%bandshift_energyshift, 1)
     ! [gp-end]
 
-    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
+    call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
     !call comms_bcast(w90_calcs%disentanglement, 1, stdout, seedname, comm)
 
     call comms_bcast(w90_calcs%transport, 1, stdout, seedname, comm)

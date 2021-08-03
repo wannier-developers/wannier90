@@ -65,6 +65,7 @@ module w90lib_parameters
   type(w90_system_type), save :: system
   type(exclude_bands_type), save :: excluded_bands
   type(real_space_ham_type) :: rs_region
+  type(ws_region_type) :: ws_region
   type(wannier_data_type), save :: wann_data
   type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
@@ -268,9 +269,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                   param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
-                  spec_points, system, tran, verbose, wann_data, wann_plot, write_data, w90_calcs, &
-                  eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
+                  w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
+                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
                   gamma_only, lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, &
                   seedname, stdout)
   have_disentangled = .false.
@@ -507,9 +508,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                   param_plot, param_wannierise, proj, input_proj, rs_region, select_proj, &
-                  spec_points, system, tran, verbose, wann_data, wann_plot, write_data, w90_calcs, &
-                  eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                  num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
+                  spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
+                  w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
+                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
                   gamma_only, lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, &
                   seedname, stdout)
   have_disentangled = .false.
@@ -596,7 +597,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   else
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
                    param_hamil, param_wannierise, rs_region, sym, system, verbose, wann_data, &
-                   w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
                    band_plot%plot_mode, tran%mode, have_disentangled, lsitesymmetry, &
@@ -614,11 +615,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr) then
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
                    k_points, out_files, param_hamil, param_plot, rs_region, spec_points, &
-                   verbose, wann_data, wann_plot, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
-                   u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
-                   physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
-                   num_wann, rpt_origin, tran%mode, have_disentangled, lsitesymmetry, &
-                   system%spinors, seedname, stdout)
+                   verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, &
+                   u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                   wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, shift_vec, &
+                   nrpts, num_bands, num_kpts, num_wann, rpt_origin, tran%mode, have_disentangled, &
+                   lsitesymmetry, system%spinors, seedname, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
   end if
@@ -626,10 +627,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   time2 = io_time()
   if (w90_calcs%transport) then
     call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, rs_region, &
-                   tran, verbose, wann_data, w90_calcs, ham_k, ham_r, u_matrix, u_matrix_opt, &
-                   eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
-                   mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                   band_plot%plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
+                   tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, u_matrix, &
+                   u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
+                   irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                   rpt_origin, band_plot%plot_mode, have_disentangled, lsitesymmetry, seedname, &
+                   stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if
