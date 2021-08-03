@@ -86,7 +86,7 @@ module wannchk_param_data
   type(w90_calculation_type), save :: w90_calcs
   !type(plot_type), save :: plot
   !type(disentangle_type), save :: dis_data
-  type(param_wannierise_type), save :: param_wannierise
+  !type(param_wannierise_type), save :: param_wannierise
   ! RS: symmetry-adapted Wannier functions
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3

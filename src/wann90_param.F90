@@ -166,13 +166,13 @@ module wannier_param_types
     !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   end type wann_localise_type
 
-  type param_wannierise_type
+  type wannierise_type
     type(wann_control_type) :: control
     type(wann_localise_type) :: constrain
     type(wann_omega_type) :: omega
     ! Projections, used when guiding_centres=.true. or for constrained if slwf_constrain=.true.
     real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
-  end type param_wannierise_type
+  end type wannierise_type
 
   ! MAYBE which vars did Arash mean from parameter_input?
   type param_hamiltonian_type
