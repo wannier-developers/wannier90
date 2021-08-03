@@ -150,7 +150,7 @@ contains
       call param_read_post_proc(cp_pp, calc_only_A, w90_calcs%postproc_setup, stdout, seedname)
       call param_read_restart(w90_calcs, stdout, seedname)
       call param_read_system(library, system, stdout, seedname)
-      call param_read_kpath(library, spec_points, has_kpath, stdout, seedname)
+      call param_read_kpath(library, spec_points, has_kpath, w90_calcs%bands_plot, stdout, seedname)
       call param_read_plot(w90_calcs, out_files, param_plot, band_plot, wann_plot, num_wann, &
                            has_kpath, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
@@ -795,9 +795,6 @@ contains
     out_files%write_bvec = .false.
     call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=out_files%write_bvec)
 
-    band_plot%num_points = 100
-    call param_get_keyword(stdout, seedname, 'bands_num_points', found, i_value=band_plot%num_points)
-
     band_plot%plot_format = 'gnuplot'
     call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%plot_format)
 
@@ -828,7 +825,6 @@ contains
         call io_error('Error: bands_plot_format not recognised', stdout, seedname)
       if ((index(band_plot%plot_mode, 's-k') .eq. 0) .and. (index(band_plot%plot_mode, 'cut') .eq. 0)) &
         call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
-      if (band_plot%num_points < 0) call io_error('Error: bands_num_points must be positive', stdout, seedname)
     endif
 
   end subroutine param_read_plot
@@ -1510,7 +1506,7 @@ contains
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
           spec_points%bands_num_spec_points/2, '|'
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
-          band_plot%num_points, '|'
+          spec_points%num_points_first_segment, '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
           trim(band_plot%plot_format), '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :', &
@@ -2023,9 +2019,10 @@ contains
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         param_hamil, param_plot, param_wannierise, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, w90_calcs, eigval, real_lattice, &
-                        recip_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                        num_wann, eig_found, cp_pp, gamma_only, have_disentangled, lhasproj, &
-                        lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+                        recip_lattice, symmetrize_eps, mp_grid, first_segment, num_bands, &
+                        num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
+                        have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
+                        stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2062,6 +2059,7 @@ contains
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(w90commtype), intent(in) :: comm
 
+    integer, intent(inout) :: first_segment
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     integer, intent(inout) :: stdout
@@ -2209,7 +2207,7 @@ contains
     call comms_bcast(out_files%write_u_matrices, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%bands_plot, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_bvec, 1, stdout, seedname, comm)
-    call comms_bcast(band_plot%num_points, 1, stdout, seedname, comm)
+    call comms_bcast(first_segment, 1, stdout, seedname, comm)
     call comms_bcast(band_plot%plot_format, len(band_plot%plot_format), stdout, &
                      seedname, comm)
     call comms_bcast(band_plot%plot_mode, len(band_plot%plot_mode), stdout, &

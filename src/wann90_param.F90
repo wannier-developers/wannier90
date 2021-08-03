@@ -60,8 +60,6 @@ module wannier_param_types
     !! Contains information to control how the bandstructure plotting is performed and formatted.
     !! ========================
     character(len=20) :: plot_mode !hamiltonian (setup only), plot
-    ! REVIEW_2021-07-22: move num_points to kpoint_path_type (see discussion in parameters.F90)
-    integer :: num_points
     character(len=20) :: plot_format
     integer, allocatable :: plot_project(:)
     ! REVIEW_2021-07-22: num_project can be removed (similar to num_exclude_bands -- see discussion there)

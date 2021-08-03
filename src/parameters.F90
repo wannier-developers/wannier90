@@ -237,9 +237,7 @@ module w90_param_types
     !! ============================
     ! REVIEW_2021-07-22: Remove bands_num_spec_points (same reason as for num_exclude_bands - see above)
     integer :: bands_num_spec_points
-    ! REVIEW_2021-07-22: Include bands_num_points here (removing it from
-    ! REVIEW_2021-07-22: band_plot_type%num_points in wann90_param.F90) and
-    ! REVIEW_2021-07-22: rename num_points_first_segment.
+    integer num_points_first_segment
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)
   end type kpoint_path_type
@@ -533,10 +531,10 @@ contains
 
   end subroutine param_read_system
 
-  subroutine param_read_kpath(library, spec_points, ok, stdout, seedname)
+  subroutine param_read_kpath(library, spec_points, ok, bands_plot, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    logical, intent(in) :: library
+    logical, intent(in) :: library, bands_plot
     type(kpoint_path_type), intent(out) :: spec_points
     integer, intent(in) :: stdout
     logical, intent(out) :: ok
@@ -560,6 +558,14 @@ contains
     else
       ok = .false.
     end if
+    spec_points%num_points_first_segment = 100
+    call param_get_keyword(stdout, seedname, 'bands_num_points', found, &
+                           i_value=spec_points%num_points_first_segment)
+    ! checks
+    if (bands_plot) then
+      if (spec_points%num_points_first_segment < 0) &
+        call io_error('Error: bands_num_points must be positive', stdout, seedname)
+    endif
   end subroutine param_read_kpath
 
   subroutine param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)

@@ -332,10 +332,10 @@ contains
             spec_points%points(:, 2*loop_spts - 1)
       kpath_len(loop_spts) = sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       if (loop_spts == 1) then
-        kpath_pts(loop_spts) = band_plot%num_points
+        kpath_pts(loop_spts) = spec_points%num_points_first_segment
       else
-        kpath_pts(loop_spts) = nint(real(band_plot%num_points, dp)*kpath_len(loop_spts)/ &
-                                    kpath_len(1))
+        kpath_pts(loop_spts) = nint(real(spec_points%num_points_first_segment, dp) &
+                                    *kpath_len(loop_spts)/kpath_len(1))
         ! At least 1 point
         !if (kpath_pts(loop_spts) .eq. 0) kpath_pts(loop_spts) = 1
       end if

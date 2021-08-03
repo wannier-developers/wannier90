@@ -317,9 +317,9 @@ program wannier
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
                   param_plot, param_wannierise, input_proj, rs_region, system, tran, verbose, &
                   wann_data, wann_plot, w90_calcs, eigval, real_lattice, recip_lattice, &
-                  symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
-                  cp_pp, gamma_only, have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, &
-                  seedname, stdout, w90comm)
+                  symmetrize_eps, mp_grid, spec_points%num_points_first_segment, num_bands, &
+                  num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, have_disentangled, &
+                  lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
   disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)

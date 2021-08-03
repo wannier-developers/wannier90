@@ -317,7 +317,7 @@ contains
                             stdout, seedname)
     call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
     call param_read_system(library, system, stdout, seedname)
-    call param_read_kpath(library, spec_points, ok, stdout, seedname)
+    call param_read_kpath(library, spec_points, ok, .false., stdout, seedname)
     call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(write_data%smear, stdout, seedname)
