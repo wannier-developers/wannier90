@@ -285,6 +285,7 @@ module w90_param_methods
   public :: param_read_verbosity
   public :: param_read_num_wann
   public :: param_read_exclude_bands
+  public :: param_read_dist_cutoff
   public :: param_read_lattice
   public :: param_read_atoms
   public :: param_read_units
@@ -530,6 +531,36 @@ contains
     ! there is a check on this parameter later
 
   end subroutine param_read_system
+
+  subroutine param_read_dist_cutoff(region, stdout, seedname)
+    use w90_io, only: io_error
+    implicit none
+    integer, intent(in) :: stdout
+    type(real_space_ham_type), intent(inout) :: region
+    character(len=50), intent(in)  :: seedname
+
+    logical :: found
+
+    region%dist_cutoff_mode = 'three_dim'
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, c_value=region%dist_cutoff_mode)
+    if ((index(region%dist_cutoff_mode, 'three_dim') .eq. 0) &
+        .and. (index(region%dist_cutoff_mode, 'two_dim') .eq. 0) &
+        .and. (index(region%dist_cutoff_mode, 'one_dim') .eq. 0)) &
+      call io_error('Error: dist_cutoff_mode not recognised', stdout, seedname)
+
+    region%dist_cutoff = 1000.0_dp
+    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, r_value=region%dist_cutoff)
+
+    region%dist_cutoff_hc = region%dist_cutoff
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, r_value=region%dist_cutoff_hc)
+
+    region%hr_cutoff = 0.0_dp
+    call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=region%hr_cutoff)
+
+    region%system_dim = 3
+    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=region%system_dim)
+
+  end subroutine param_read_dist_cutoff
 
   subroutine param_read_kpath(library, spec_points, ok, bands_plot, stdout, seedname)
     use w90_io, only: io_error
