@@ -90,7 +90,7 @@ module wannchk_param_data
   ! RS: symmetry-adapted Wannier functions
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3
-  type(param_hamiltonian_type), save :: param_hamil
+  !type(param_hamiltonian_type), save :: param_hamil
   type(fermi_surface_type), save :: fermi_surface_data
   type(transport_type), save :: tran
   type(select_projection_type), save :: select_proj

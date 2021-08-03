@@ -197,7 +197,7 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+  subroutine hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, ham_r, &
                                 u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                                 recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, &
@@ -211,14 +211,14 @@ contains
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: atom_data_type, disentangle_manifold_type, print_output_type
-    use wannier_param_types, only: param_hamiltonian_type
+    use wannier_param_types, only: hamiltonian_type
 
     implicit none
 
     ! passed variables
     type(ham_logical), intent(inout)            :: hmlg
     type(atom_data_type), intent(in)            :: atoms
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(hamiltonian_type), intent(inout) :: hamiltonian
     type(print_output_type), intent(in)         :: verbose
     type(disentangle_manifold_type), intent(in) :: dis_window
 
@@ -379,7 +379,7 @@ contains
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout, &
                                    seedname)
-      call internal_translate_centres(atoms, param_hamil, real_lattice, recip_lattice, &
+      call internal_translate_centres(atoms, hamiltonian, real_lattice, recip_lattice, &
                                       wannier_centres, wannier_centres_translated, shift_vec, &
                                       verbose%iprint, num_wann, seedname, stdout)
       do irpt = 1, nrpts
@@ -430,7 +430,7 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(atoms, param_hamil, real_lattice, recip_lattice, &
+    subroutine internal_translate_centres(atoms, hamiltonian, real_lattice, recip_lattice, &
                                           wannier_centres, wannier_centres_translated, shift_vec, &
                                           iprint, num_wann, seedname, stdout)
       !! Translate the centres of the WF into the home cell
@@ -439,13 +439,13 @@ contains
       use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: atom_data_type
-      use wannier_param_types, only: param_hamiltonian_type
+      use wannier_param_types, only: hamiltonian_type
 
       implicit none
 
       ! passed variables
       type(atom_data_type), intent(in)            :: atoms
-      type(param_hamiltonian_type), intent(inout) :: param_hamil
+      type(hamiltonian_type), intent(inout) :: hamiltonian
 
       integer, intent(inout) :: shift_vec(:, :)
       integer, intent(in)    :: iprint
@@ -479,7 +479,7 @@ contains
                                    stdout, seedname)
       r_home = 0.0_dp; r_frac = 0.0_dp
 
-      if (param_hamil%automatic_translation) then
+      if (hamiltonian%automatic_translation) then
         ! Calculate centre of atomic positions
         c_pos_cart = 0.0_dp; c_pos_frac = 0.0_dp
         do nsp = 1, atoms%num_species
@@ -489,10 +489,10 @@ contains
         enddo
         c_pos_cart = c_pos_cart/atoms%num_atoms
         ! Cartesian --> fractional
-        call utility_cart_to_frac(c_pos_cart, param_hamil%translation_centre_frac, recip_lattice)
+        call utility_cart_to_frac(c_pos_cart, hamiltonian%translation_centre_frac, recip_lattice)
       end if
       ! Wannier function centres will be in [c_pos_frac-0.5,c_pos_frac+0.5]
-      r_frac_min(:) = param_hamil%translation_centre_frac(:) - 0.5_dp
+      r_frac_min(:) = hamiltonian%translation_centre_frac(:) - 0.5_dp
 
       ! Cartesian --> fractional
       do iw = 1, num_wann
@@ -511,7 +511,7 @@ contains
       if (iprint > 0) then
         write (stdout, '(1x,a)') 'Translated centres'
         write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', &
-          param_hamil%translation_centre_frac(:)
+          hamiltonian%translation_centre_frac(:)
         do iw = 1, num_wann
           write (stdout, 888) iw, (r_home(ind, iw)*verbose%lenconfac, ind=1, 3)
         end do

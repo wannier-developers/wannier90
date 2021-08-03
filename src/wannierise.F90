@@ -49,7 +49,7 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                       param_hamil, wannierise, sym, system, verbose, wann_data, &
+                       hamiltonian, wannierise, sym, system, verbose, wann_data, &
                        ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
                        eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
                        mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
@@ -63,7 +63,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: wannierise_type, output_file_type, &
-      w90_calculation_type, param_hamiltonian_type
+      w90_calculation_type, hamiltonian_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_point_type, disentangle_manifold_type, w90_system_type, &
       exclude_bands_type, ws_region_type
@@ -89,7 +89,7 @@ contains
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(output_file_type), intent(in) :: out_files
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(hamiltonian_type), intent(inout) :: hamiltonian
     type(wannierise_type), intent(inout) :: wannierise
     type(sitesym_data), intent(in) :: sym
     type(w90_calculation_type), intent(in) :: w90_calcs
@@ -815,7 +815,7 @@ contains
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+      call hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                               recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &

@@ -174,12 +174,11 @@ module wannier_param_types
     real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
   end type wannierise_type
 
-  ! MAYBE which vars did Arash mean from parameter_input?
-  type param_hamiltonian_type
+  type hamiltonian_type
     real(kind=dp) :: translation_centre_frac(3)
     ! For Hamiltonian matrix in WF representation
     logical              :: automatic_translation
-  end type param_hamiltonian_type
+  end type hamiltonian_type
 
   type fermi_surface_type
     integer :: num_points

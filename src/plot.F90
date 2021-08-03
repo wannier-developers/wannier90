@@ -23,7 +23,7 @@ contains
 
   !============================================!
   subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, out_files, param_hamil, plot, rs_region, spec_points, &
+                       k_points, out_files, hamiltonian, plot, rs_region, spec_points, &
                        verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -42,7 +42,7 @@ contains
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, plot_type, output_file_type, &
-      param_hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
+      hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
       real_space_ham_type
 
     implicit none
@@ -60,7 +60,7 @@ contains
     type(kmesh_info_type), intent(in)            :: kmesh_info
     type(wannier_data_type), intent(in)          :: wann_data
     type(atom_data_type), intent(in)             :: atoms
-    type(param_hamiltonian_type), intent(inout)  :: param_hamil
+    type(hamiltonian_type), intent(inout)        :: hamiltonian
     type(disentangle_manifold_type), intent(in)  :: dis_window
     type(fermi_data_type), intent(in)            :: fermi
     type(fermi_surface_type), intent(in)         :: fermi_surface_data
@@ -130,7 +130,7 @@ contains
                              num_kpts, num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, &
                              seedname, transport_mode)
       !
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, ham_r, &
+      call hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
                               recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &

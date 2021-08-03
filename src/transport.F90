@@ -82,7 +82,7 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, &
+  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, hamiltonian, &
                        rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
                        u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -98,7 +98,7 @@ contains
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
-      param_hamiltonian_type, real_space_ham_type
+      hamiltonian_type, real_space_ham_type
 
     implicit none
 
@@ -111,7 +111,7 @@ contains
     type(output_file_type), intent(in)          :: out_files
     type(wannier_data_type), intent(in)         :: wann_data
     type(atom_data_type), intent(in)            :: atoms
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(hamiltonian_type), intent(inout)       :: hamiltonian
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(k_point_type), intent(in)              :: k_points
     type(fermi_data_type), intent(in)           :: fermi
@@ -187,7 +187,7 @@ contains
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
@@ -217,7 +217,7 @@ contains
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, param_hamil, verbose, ham_k, &
+        call hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
                                 real_lattice, recip_lattice, wann_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &

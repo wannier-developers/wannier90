@@ -42,7 +42,7 @@ contains
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                        param_hamil, plot, wannierise, proj, proj_input, rs_region, &
+                        hamiltonian, plot, wannierise, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
@@ -73,7 +73,7 @@ contains
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(wannierise_type), intent(inout) :: wannierise
     type(wannier_data_type), intent(inout) :: wann_data
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(hamiltonian_type), intent(inout) :: hamiltonian
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
@@ -175,7 +175,7 @@ contains
       if (eig_found) dis_window%win_max = maxval(eigval)
       call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
       call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
-      call param_read_hamil(param_hamil, stdout, seedname)
+      call param_read_hamil(hamiltonian, stdout, seedname)
       call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
@@ -885,21 +885,21 @@ contains
 
   end subroutine param_read_one_dim
 
-  subroutine param_read_hamil(param_hamil, stdout, seedname)
+  subroutine param_read_hamil(hamiltonian, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
-    type(param_hamiltonian_type), intent(out) :: param_hamil
+    type(hamiltonian_type), intent(out) :: hamiltonian
     real(kind=dp) :: rv_temp(3)
     character(len=50), intent(in)  :: seedname
 
     logical :: found
 
-    param_hamil%automatic_translation = .true.
-    param_hamil%translation_centre_frac = 0.0_dp
+    hamiltonian%automatic_translation = .true.
+    hamiltonian%translation_centre_frac = 0.0_dp
     call param_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, r_value=rv_temp)
     if (found) then
-      param_hamil%translation_centre_frac = rv_temp
-      param_hamil%automatic_translation = .false.
+      hamiltonian%translation_centre_frac = rv_temp
+      hamiltonian%automatic_translation = .false.
     endif
   end subroutine param_read_hamil
 
@@ -1149,7 +1149,7 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, &
-                         k_points, out_files, param_hamil, plot, wannierise, proj, &
+                         k_points, out_files, hamiltonian, plot, wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
@@ -1171,7 +1171,7 @@ contains
     type(band_plot_type), intent(in) :: band_plot
     type(wannierise_type), intent(in) :: wannierise
     type(wannier_data_type), intent(in) :: wann_data
-    type(param_hamiltonian_type), intent(in) :: param_hamil
+    type(hamiltonian_type), intent(in) :: hamiltonian
     type(k_point_type), intent(in) :: k_points
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_surface_type), intent(in) :: fermi_surface_data
@@ -1577,9 +1577,9 @@ contains
       end if
 
       write (stdout, '(1x,a78)') '|   Centre of the unit cell to which WF are translated (fract. coords):      |'
-      write (stdout, '(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', param_hamil%translation_centre_frac(1), ',', &
-        param_hamil%translation_centre_frac(2), ',', &
-        param_hamil%translation_centre_frac(3), '|'
+      write (stdout, '(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', hamiltonian%translation_centre_frac(1), ',', &
+        hamiltonian%translation_centre_frac(2), ',', &
+        hamiltonian%translation_centre_frac(3), '|'
 
       if (size(fermi%energy_list) == 1) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi%energy_list(1), '|'
@@ -2018,7 +2018,7 @@ contains
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
                         fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                        param_hamil, plot, wannierise, proj_input, rs_region, system, &
+                        hamiltonian, plot, wannierise, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
                         real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
                         num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
@@ -2048,7 +2048,7 @@ contains
     type(wannierise_type), intent(inout) :: wannierise
     type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(hamiltonian_type), intent(inout) :: hamiltonian
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_point_type), intent(inout) :: k_points
@@ -2366,7 +2366,7 @@ contains
     call comms_bcast(tran%num_cell_ll, 1, stdout, seedname, comm)
     call comms_bcast(tran%num_cell_rr, 1, stdout, seedname, comm)
     call comms_bcast(tran%group_threshold, 1, stdout, seedname, comm)
-    call comms_bcast(param_hamil%translation_centre_frac(1), 3, stdout, seedname, comm)
+    call comms_bcast(hamiltonian%translation_centre_frac(1), 3, stdout, seedname, comm)
     call comms_bcast(kmesh_data%num_shells, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%skip_B1_tests, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_info%explicit_nnkpts, 1, stdout, seedname, comm)

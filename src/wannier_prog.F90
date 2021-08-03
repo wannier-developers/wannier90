@@ -109,7 +109,7 @@ program wannier
   logical :: lsitesymmetry = .false. ! RS: symmetry-adapted Wannier functions
   real(kind=dp) :: symmetrize_eps = 1.d-3
   type(wannier_data_type) :: wann_data
-  type(param_hamiltonian_type) :: param_hamil
+  type(hamiltonian_type) :: hamiltonian
   type(kmesh_input_type) :: kmesh_data
   type(proj_input_type) :: input_proj
   type(kmesh_info_type) :: kmesh_info
@@ -247,7 +247,7 @@ program wannier
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
     call param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                    fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
+                    fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, hamiltonian, &
                     plot, wannierise, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
                     ws_region, w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, &
@@ -284,7 +284,7 @@ program wannier
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
     call param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, k_points, &
-                     out_files, param_hamil, plot, wannierise, proj, input_proj, &
+                     out_files, hamiltonian, plot, wannierise, proj, input_proj, &
                      rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
                      write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
                      num_bands, num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -315,7 +315,7 @@ program wannier
 
   ! We now distribute the parameters to the other nodes
   call param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                  fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, param_hamil, &
+                  fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, hamiltonian, &
                   plot, wannierise, input_proj, rs_region, system, tran, verbose, &
                   wann_data, wann_plot, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
                   symmetrize_eps, mp_grid, spec_points%num_points_first_segment, num_bands, &
@@ -430,7 +430,7 @@ program wannier
 
   if (.not. gamma_only) then
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                   param_hamil, wannierise, sym, system, verbose, wann_data, &
+                   hamiltonian, wannierise, sym, system, verbose, wann_data, &
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
@@ -461,7 +461,7 @@ program wannier
     time2 = io_time()
 
     call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, out_files, param_hamil, plot, rs_region, spec_points, verbose, &
+                   k_points, out_files, hamiltonian, plot, rs_region, spec_points, verbose, &
                    wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    physics%bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, &
@@ -477,7 +477,7 @@ program wannier
     if (w90_calcs%transport) then
       time2 = io_time()
 
-      call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, param_hamil, &
+      call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, hamiltonian, &
                      rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
                      u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                      wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
