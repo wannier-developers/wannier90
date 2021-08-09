@@ -117,7 +117,8 @@ module w90_param_types
     ! REVIEW_2021-07-22: Make a new type for guiding centres that only contains sites.
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
     ! REVIEW_2021-07-22: For now, when defining proj_input_type, also define sites inside the
-    ! REVIEW_2021-07-22: new guiding centres type (call it guiding_centres_input_type).
+     ! REVIEW_2021-07-22: new guiding centres type (call it guiding_centres_type).
+     ! REVIEW_2021-08-04: see comment in wann90_methods.F90
     real(kind=dp), allocatable :: site(:, :)
     integer, allocatable :: l(:)
     integer, allocatable :: m(:)
@@ -151,7 +152,11 @@ module w90_param_types
   end type kmesh_info_type
 
   ! used in wannierise, hamiltonian, plot and others (postw90 also)
+  ! REVIEW_2021-08-09: Rename k_points_type
   type k_point_type
+     !! =====================
+     !! Contains information about the kpoints used in the calculation.
+     !! =====================
     real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
     ! REVIEW_2021-07-22: we can generate kpt_cart from kpt_latt as and when
     ! REVIEW_2021-07-22: we need it (usage is very localised in the code).
@@ -161,6 +166,8 @@ module w90_param_types
   end type k_point_type
 
   ! this contains data which described the disentangled manifold, also used in postw90
+  ! REVIEW_2021-08-04: Spheres variables in disentanglement_type should be moved here.
+  ! REVIEW_2021-08-04: rename "dis_manifold_type"
   type disentangle_manifold_type
     !! ===========================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.

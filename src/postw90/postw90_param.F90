@@ -21,8 +21,11 @@ module pw90_parameters
 
   public
 
-  !AAM: pw90_calculation_type contains information about the high-level task that pw90 is being asked to do.
   type pw90_calculation_type !postw90.F90
+     !! =================
+     !! Contains information about the high-level task that pw90 is being asked to do,
+     !! including any global variables that affect all calculation branches.
+     !! =================
     logical :: kpath
     logical :: kslice
     logical :: dos
@@ -31,16 +34,25 @@ module pw90_parameters
     logical :: geninterp
     logical :: boltzwann
     logical :: spin_moment !postw90_common and postw90
+    ! REVIEW_2021-08-09: move decomp here and rename to spin_decomp
   end type pw90_calculation_type
 
+  ! REVIEW_2021-08-09: Rename pw90_oper_read_type (make all of them pw90_* for consistency)
   type postw90_oper_type ! only in postw90/get_oper.F90
-    logical :: spn_formatted
+     !! ==============
+     !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
+     !! ==============
+     logical :: spn_formatted
     !! Read the spin from fortran formatted file
     logical :: uHu_formatted
     !! Read the uHu from fortran formatted file
   end type postw90_oper_type
 
   ! consider removing this
+  ! REVIEW_2021-08-09: See Issue 34 in the main repo for a discussion about scissors_shift
+  ! REVIEW_2021-08-09: which has been deprecated and should be removed in a future version of
+  ! REVIEW_2021-08-09: the code. For now, please keep it as a standalone variable.
+  ! REVIEW_2021-08-09: effective_model should also be a standalone variable.
   type postw90_common_type
     real(kind=dp) :: scissors_shift ! get_oper and berry
     ! IVO
@@ -49,7 +61,13 @@ module pw90_parameters
   end type postw90_common_type
 
   ! Module  s p i n
+  ! REVIEW_2021-08-09: Maybe rename pw90_spin_mod_type to make it clear that these
+  ! REVIEW_2021-08-09: are variables related to the spin module (rather than spin as a physical property)
   type postw90_spin_type
+     !! ===============
+     !! Contains variables used in the spin module of postw90
+     !! ===============
+     ! REVIEW_2021-08-09: we agree that decomp should go into pw90_calculation_type
     logical :: decomp !postw90_common, berry, dos and boltzwann (could be in calculation_type)
     real(kind=dp) :: axis_polar
     real(kind=dp) :: axis_azimuth
@@ -57,20 +75,43 @@ module pw90_parameters
     integer :: kmesh(3)
   end type postw90_spin_type
 
+  
+  ! REVIEW_2021-08-09: A general comment, which we record here so we don't forget.
+  ! REVIEW_2021-08-09: It would be good to try to keep type and variable names
+  ! REVIEW_2021-08-09: as consistent as possible. As an example, at the top of berry.F90, we have
+  ! REVIEW_2021-08-09: type(kmesh_info_type), intent(in) :: kmesh_info   ! consistent
+  ! REVIEW_2021-08-09: type(kpoint_dist_type), intent(in) :: kdist       ! not consistent
+  ! REVIEW_2021-08-09: type(k_point_type), intent(in) :: k_points        ! not consistent
+  ! REVIEW_2021-08-09: This would make reading and debugging the code easier in future.
+
+  
+  ! REVIEW_2021-08-09: rename pw90_band_deriv_degen_type 
   type postw90_ham_type
+     !! ================
+     !! Contains variables for doing degenerate perturbation theory when bands are degenerate
+     !! and band derivatives are needed.
+     !! ================
     logical :: use_degen_pert
     real(kind=dp) :: degen_thr
   end type postw90_ham_type
 
   ! module  k p a t h (used by postw90/kpath)
+  ! REVIEW_2021-08-09: rename pw90_kpath_mod_type
   type kpath_type
-    character(len=20) :: task
+     !! ================
+     !! Contains control variables for the kpath module of postw90
+     !! ================
+     character(len=20) :: task
     integer :: num_points
     character(len=20) :: bands_colour
   end type kpath_type
 
   ! module  k s l i c e (postw90/kslice)
+  ! REVIEW_2021-08-09: rename pw90_kslice_mod_type
   type kslice_type
+     !! ===============
+     !! Contains control variables for the kslice module of postw90
+     !! ===============
     character(len=20) :: task
     real(kind=dp) :: corner(3)
     real(kind=dp) :: b1(3)
@@ -79,17 +120,31 @@ module pw90_parameters
     character(len=20) :: fermi_lines_colour
   end type kslice_type
 
+  ! REVIEW_2021-08-09: rename pw90_smearing_type
   type adapt_smear_type
-    logical    :: adpt
-    real(kind=dp)    :: fac
+     !! =============
+     !! Contains variables for controlling the smearing.
+     !! =============
+     ! REVIEW_2021-08-09: rename use_adaptive
+     logical    :: adpt
+     ! REVIEW_2021-08-09: rename adaptive_prefactor
+     real(kind=dp)    :: fac
+     ! REVIEW_2021-08-09: rename type_index
     integer    :: index
+    ! REVIEW_2021-08-09: rename fixed_width
     real(kind=dp)    :: fixed_en_width
+    ! REVIEW_2021-08-09: rename adaptive_max_width
     real(kind=dp)    :: max
   end type adapt_smear_type
 
+  ! REVIEW_2021-08-09: rename pw90_dos_mod_type
   type dos_plot_type
-    character(len=20)    :: task
-    type(adapt_smear_type) :: smr
+     !! ===============
+     !! Contains variables for the dos module of postw90
+     !! ===============
+     character(len=20)    :: task
+    ! REVIEW_2021-08-09: rename smearing
+    type(adapt_smear_type) :: smr 
     real(kind=dp)    :: energy_max
     real(kind=dp)    :: energy_min
     real(kind=dp)    :: energy_step
@@ -102,13 +157,18 @@ module pw90_parameters
   end type dos_plot_type
 
   ! Module  b e r r y (mainly postw90/berry)
+  ! REVIEW_2021-08-09: rename pw90_berry_mod_type
   type berry_type
+     !! =============
+     !! Contains variables for the berry module of postw90
+     !! =============
     character(len=120) :: task
     real(kind=dp) :: kmesh_spacing
     integer :: kmesh(3)
     integer :: curv_adpt_kmesh
     real(kind=dp) :: curv_adpt_kmesh_thresh
     character(len=20) :: curv_unit ! postw90/kpath, kslice as well
+    ! REVIEW_2021-08-09: rename kubo_smearing
     type(adapt_smear_type) :: kubo_smr
     integer :: sc_phase_conv
     real(kind=dp) :: sc_eta ! also postw90/wan_ham
@@ -121,8 +181,12 @@ module pw90_parameters
   end type berry_type
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
+  ! REVIEW_2021-08-09: rename pw90_spin_hall_type
   type spin_hall_type
-    logical :: freq_scan
+     !! =============
+     !! Contains variables controlling the calculation of spin hall conductivity in postw90
+     !! =============
+   logical :: freq_scan
     integer :: alpha
     integer :: beta
     integer :: gamma
@@ -131,10 +195,15 @@ module pw90_parameters
     real(kind=dp) :: bandshift_energyshift
   end type spin_hall_type
 
+  ! REVIEW_2021-08-09: rename pw90_gyrotropic_type
   type gyrotropic_type ! postw90 - common, gyrotropic
+     !! =============
+     !! Contains variables for the gyrotropic module of postw90
+     !! =============
     character(len=120) :: task
     integer :: kmesh(3)
     real(kind=dp) :: kmesh_spacing
+    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
     integer :: smr_index
     real(kind=dp) :: smr_fixed_en_width
     integer :: nfreq
@@ -143,13 +212,19 @@ module pw90_parameters
     real(kind=dp) :: degen_thresh
     integer, allocatable :: band_list(:)
     integer :: num_bands
-    real(kind=dp) :: smr_max_arg
+    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
+    ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
+    real(kind=dp) :: smr_max_arg  
     real(kind=dp) :: eigval_max
   end type gyrotropic_type
 
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables - postw90/geninterp
+  ! REVIEW_2021-08-09: rename pw90_boltzwann_type
   type geninterp_type
+     !! =============
+     !! Contains variables for the geninterp module of postw90
+     !! =============
     logical :: alsofirstder
     logical :: single_file
   end type geninterp_type
@@ -157,12 +232,17 @@ module pw90_parameters
 
   ! [gp-begin, Apr 12, 2012]
   ! BoltzWann variables (postw90/boltzwann.F90)
+  ! REVIEW_2021-08-09: rename pw90_boltzwann_type
   type boltzwann_type
+     !! =============
+     !! Contains variables for the boltzwann module of postw90
+     !! =============
     logical :: calc_also_dos
     integer :: dir_num_2d
     real(kind=dp) :: dos_energy_step
     real(kind=dp) :: dos_energy_min
     real(kind=dp) :: dos_energy_max
+    ! REVIEW_2021-08-09: rename dos_smearing
     type(adapt_smear_type) :: dos_smr
     real(kind=dp) :: mu_min
     real(kind=dp) :: mu_max
@@ -173,6 +253,8 @@ module pw90_parameters
     real(kind=dp) :: kmesh_spacing
     integer :: kmesh(3)
     real(kind=dp) :: tdf_energy_step
+    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
+    ! REVIEW_2021-08-09: If we use the smearing type, then rename tdf_smearing
     integer :: TDF_smr_index
     real(kind=dp) :: TDF_smr_fixed_en_width
     real(kind=dp) :: relax_time
