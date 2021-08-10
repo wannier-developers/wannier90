@@ -128,11 +128,11 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use pw90_parameters, only: berry_type !sc_eta
+    use pw90_parameters, only: pw90_berry_mod_type !sc_eta
     use w90_utility, only: utility_rotate
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
 
     integer, intent(in) :: num_wann
 
@@ -628,14 +628,14 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, kmesh_info_type, ws_region_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: postw90_common_type, berry_type
+    use pw90_parameters, only: postw90_common_type, pw90_berry_mod_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points

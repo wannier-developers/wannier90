@@ -79,8 +79,8 @@ contains
     use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use pw90_parameters, only: gyrotropic_type, berry_type, pw90_oper_read_type, pw90_band_deriv_degen_type, &
-      postw90_common_type
+    use pw90_parameters, only: gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
+      pw90_band_deriv_degen_type, postw90_common_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
     use w90_utility, only: utility_det3
@@ -90,7 +90,7 @@ contains
     implicit none
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic

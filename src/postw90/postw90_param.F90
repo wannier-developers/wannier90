@@ -141,8 +141,7 @@ module pw90_parameters
   end type pw90_dos_mod_type
 
   ! Module  b e r r y (mainly postw90/berry)
-  ! REVIEW_2021-08-09: rename pw90_berry_mod_type
-  type berry_type
+  type pw90_berry_mod_type
     !! =============
     !! Contains variables for the berry module of postw90
     !! =============
@@ -152,8 +151,7 @@ module pw90_parameters
     integer :: curv_adpt_kmesh
     real(kind=dp) :: curv_adpt_kmesh_thresh
     character(len=20) :: curv_unit ! postw90/kpath, kslice as well
-    ! REVIEW_2021-08-09: rename kubo_smearing
-    type(pw90_smearing_type) :: kubo_smr
+    type(pw90_smearing_type) :: kubo_smearing
     integer :: sc_phase_conv
     real(kind=dp) :: sc_eta ! also postw90/wan_ham
     real(kind=dp) :: sc_w_thr
@@ -162,7 +160,7 @@ module pw90_parameters
     integer :: kubo_nfreq
     complex(kind=dp), allocatable :: kubo_freq_list(:)
     real(kind=dp) :: kubo_eigval_max
-  end type berry_type
+  end type pw90_berry_mod_type
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
   ! REVIEW_2021-08-09: rename pw90_spin_hall_type
@@ -317,7 +315,7 @@ contains
 
     ! arguments
     type(atom_data_type), intent(inout) :: atoms
-    type(berry_type), intent(inout) :: berry
+    type(pw90_berry_mod_type), intent(inout) :: berry
     type(boltzwann_type), intent(inout) :: boltz
     type(dis_manifold_type), intent(inout) :: dis_window
     type(pw90_dos_mod_type), intent(inout) :: dos_data
@@ -728,7 +726,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(berry_type), intent(out) :: berry
+    type(pw90_berry_mod_type), intent(out) :: berry
     type(pw90_smearing_type), intent(in) :: smearing
     character(len=50), intent(in)  :: seedname
 
@@ -782,25 +780,25 @@ contains
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
-    berry%kubo_smr%use_adaptive = smearing%use_adaptive
-    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, l_value=berry%kubo_smr%use_adaptive)
+    berry%kubo_smearing%use_adaptive = smearing%use_adaptive
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, l_value=berry%kubo_smearing%use_adaptive)
 
-    berry%kubo_smr%adaptive_prefactor = smearing%adaptive_prefactor
+    berry%kubo_smearing%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found, &
-                           r_value=berry%kubo_smr%adaptive_prefactor)
-    if (found .and. (berry%kubo_smr%adaptive_prefactor <= 0._dp)) call io_error &
+                           r_value=berry%kubo_smearing%adaptive_prefactor)
+    if (found .and. (berry%kubo_smearing%adaptive_prefactor <= 0._dp)) call io_error &
       ('Error: kubo_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    berry%kubo_smr%adaptive_max_width = smearing%adaptive_max_width
+    berry%kubo_smearing%adaptive_max_width = smearing%adaptive_max_width
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found, &
-                           r_value=berry%kubo_smr%adaptive_max_width)
-    if (berry%kubo_smr%adaptive_max_width <= 0._dp) call io_error &
+                           r_value=berry%kubo_smearing%adaptive_max_width)
+    if (berry%kubo_smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: kubo_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    berry%kubo_smr%fixed_width = smearing%fixed_width
+    berry%kubo_smearing%fixed_width = smearing%fixed_width
     call param_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found, &
-                           r_value=berry%kubo_smr%fixed_width)
-    if (found .and. (berry%kubo_smr%fixed_width < 0._dp)) call io_error &
+                           r_value=berry%kubo_smearing%fixed_width)
+    if (found .and. (berry%kubo_smearing%fixed_width < 0._dp)) call io_error &
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     berry%sc_phase_conv = 1
@@ -809,9 +807,9 @@ contains
       call io_error('Error: sc_phase_conv must be either 1 or 2', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    berry%kubo_smr%type_index = smearing%type_index
+    berry%kubo_smearing%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'kubo_smr_type', found, c_value=ctmp)
-    if (found) berry%kubo_smr%type_index = get_smearing_index(ctmp, 'kubo_smr_type', stdout, seedname)
+    if (found) berry%kubo_smearing%type_index = get_smearing_index(ctmp, 'kubo_smr_type', stdout, seedname)
 
     berry%sc_eta = 0.04
     call param_get_keyword(stdout, seedname, 'sc_eta', found, r_value=berry%sc_eta)
@@ -1231,7 +1229,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(berry_type), intent(inout) :: berry
+    type(pw90_berry_mod_type), intent(inout) :: berry
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(dis_manifold_type), intent(in) :: dis_window
@@ -1345,7 +1343,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(berry_type), intent(inout) :: berry
+    type(pw90_berry_mod_type), intent(inout) :: berry
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(gyrotropic_type), intent(inout) :: gyrotropic
@@ -1491,7 +1489,7 @@ contains
     type(pw90_kpath_mod_type), intent(in) :: kpath
     type(pw90_kslice_mod_type), intent(in) :: kslice
     type(pw90_dos_mod_type), intent(in) :: dos_data
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(geninterp_type), intent(in) :: geninterp
     type(boltzwann_type), intent(in) :: boltz
@@ -1801,26 +1799,26 @@ contains
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(berry%sc_phase_conv)), '|'
       end if
-      if (berry%kubo_smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
-          berry%kubo_smr%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
-          berry%kubo_smr%adaptive_max_width == write_data%smear%adaptive_max_width &
-          .and. berry%kubo_smr%fixed_width == write_data%smear%fixed_width .and. &
-          write_data%smear%type_index == berry%kubo_smr%type_index) then
+      if (berry%kubo_smearing%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+          berry%kubo_smearing%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
+          berry%kubo_smearing%adaptive_max_width == write_data%smear%adaptive_max_width &
+          .and. berry%kubo_smearing%fixed_width == write_data%smear%fixed_width .and. &
+          write_data%smear%type_index == berry%kubo_smearing%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
-        if (berry%kubo_smr%use_adaptive) then
+        if (berry%kubo_smearing%use_adaptive) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
-            berry%kubo_smr%adaptive_prefactor, '|'
+            berry%kubo_smearing%adaptive_prefactor, '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', &
-            berry%kubo_smr%adaptive_max_width, '|'
+            berry%kubo_smearing%adaptive_max_width, '|'
         else
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-            berry%kubo_smr%fixed_width, '|'
+            berry%kubo_smearing%fixed_width, '|'
         endif
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
-          trim(param_get_smearing_type(berry%kubo_smr%type_index)), '|'
+          trim(param_get_smearing_type(berry%kubo_smearing%type_index)), '|'
       endif
       if (write_data%kmesh(1) == berry%kmesh(1) .and. write_data%kmesh(2) == berry%kmesh(2) .and. &
           write_data%kmesh(3) == berry%kmesh(3)) then
@@ -1989,7 +1987,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(kpoint_path_type), intent(inout) :: spec_points
     type(pw90_dos_mod_type), intent(inout) :: dos_data
-    type(berry_type), intent(inout) :: berry
+    type(pw90_berry_mod_type), intent(inout) :: berry
     character(len=50), intent(in)  :: seedname
 
     integer :: ierr

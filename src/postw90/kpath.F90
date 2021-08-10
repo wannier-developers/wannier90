@@ -58,7 +58,7 @@ contains
     use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
       wannier_data_type, dis_manifold_type, k_points_type, kmesh_info_type, &
       ws_region_type
-    use pw90_parameters, only: berry_type, spin_hall_type, pw90_kpath_mod_type, &
+    use pw90_parameters, only: pw90_berry_mod_type, spin_hall_type, pw90_kpath_mod_type, &
       pw90_spin_mod_type, pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
@@ -68,7 +68,7 @@ contains
     implicit none
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -154,7 +154,7 @@ contains
       if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
-        if (berry%kubo_smr%use_adaptive) call io_error( &
+        if (berry%kubo_smearing%use_adaptive) call io_error( &
           'Error: Must use fixed smearing when plotting spin Hall conductivity', stdout, seedname)
       end if
       if (plot_shc) then

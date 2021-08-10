@@ -164,7 +164,7 @@ program postw90
   logical          :: dos_plot
 
   type(pw90_dos_mod_type) :: dos_data
-  type(berry_type) :: berry
+  type(pw90_berry_mod_type) :: berry
   type(spin_hall_type) :: spin_hall
   type(gyrotropic_type) :: gyrotropic
   type(geninterp_type) :: geninterp

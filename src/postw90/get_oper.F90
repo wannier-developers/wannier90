@@ -255,7 +255,8 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: berry_type, postw90_common_type, pw90_oper_read_type, spin_hall_type
+    use pw90_parameters, only: pw90_berry_mod_type, postw90_common_type, pw90_oper_read_type, &
+      spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -265,7 +266,7 @@ contains
     implicit none
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points

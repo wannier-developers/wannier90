@@ -49,7 +49,7 @@ contains
 
     !! Main routine
 
-    use pw90_parameters, only: pw90_kslice_mod_type, berry_type, pw90_spin_mod_type, &
+    use pw90_parameters, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
@@ -67,7 +67,7 @@ contains
     implicit none
 
     ! arguments
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -153,7 +153,7 @@ contains
                     //'curv/morb/shc heatmap plots', stdout, seedname)
     end if
     if (plot_shc) then
-      if (berry%kubo_smr%use_adaptive) then
+      if (berry%kubo_smearing%use_adaptive) then
         call io_error('Error: Must use fixed smearing when plotting ' &
                       //'spin Hall conductivity', stdout, seedname)
       end if
@@ -899,11 +899,11 @@ contains
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
                                plot_shc, stdout, seedname, berry, fermi)
-    use pw90_parameters, only: berry_type
+    use pw90_parameters, only: pw90_berry_mod_type
     use w90_io, only: io_error
     use w90_param_types, only: fermi_data_type
 
-    type(berry_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: berry
     type(fermi_data_type), intent(in) :: fermi
     integer, intent(in) :: stdout
     logical, intent(in) :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
