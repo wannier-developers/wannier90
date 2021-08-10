@@ -51,7 +51,7 @@ contains
     !=======================================================!
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
-    use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, &
+    use pw90_parameters, only: pw90_dos_mod_type, postw90_common_type, berry_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, ws_region_type, w90_system_type
@@ -66,7 +66,7 @@ contains
     ! arguments
     type(berry_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
-    type(dos_plot_type), intent(in) :: dos_data
+    type(pw90_dos_mod_type), intent(in) :: dos_data
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -184,7 +184,7 @@ contains
 
       write (stdout, '(/,5x,a,(f6.3,1x))') &
         'Adaptive smearing width prefactor: ', &
-        dos_data%smr%adaptive_prefactor
+        dos_data%smearing%adaptive_prefactor
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
         dos_data%kmesh(1:3)
@@ -204,7 +204,7 @@ contains
       !
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
-        if (dos_data%smr%use_adaptive) then
+        if (dos_data%smearing%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
@@ -216,8 +216,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%type_index, adpt_smr_fac=dos_data%smr%adaptive_prefactor, &
-                         adpt_smr_max=dos_data%smr%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
+                         smr_index=dos_data%smearing%type_index, adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
+                         adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
                                          kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
@@ -226,8 +226,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%type_index, &
-                         smr_fixed_en_width=dos_data%smr%fixed_width, UU=UU)
+                         smr_index=dos_data%smearing%type_index, &
+                         smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kdist%weight(loop_tot)
       end do
@@ -246,7 +246,7 @@ contains
         kpt(1) = real(loop_x, dp)/real(dos_data%kmesh(1), dp)
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
-        if (dos_data%smr%use_adaptive) then
+        if (dos_data%smearing%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
@@ -258,8 +258,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%type_index, adpt_smr_fac=dos_data%smr%adaptive_prefactor, &
-                         adpt_smr_max=dos_data%smr%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
+                         smr_index=dos_data%smearing%type_index, adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
+                         adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
                                          kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
@@ -268,8 +268,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%type_index, &
-                         smr_fixed_en_width=dos_data%smr%fixed_width, UU=UU)
+                         smr_index=dos_data%smearing%type_index, &
+                         smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
       end do
@@ -539,7 +539,7 @@ contains
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use pw90_parameters, only: pw90_spin_mod_type, dos_plot_type
+    use pw90_parameters, only: pw90_spin_mod_type, pw90_dos_mod_type
     use w90_param_types, only: wannier_data_type, ws_region_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
@@ -547,7 +547,7 @@ contains
     use w90_postw90_common, only: wigner_seitz_type
 
     ! Arguments
-    type(dos_plot_type), intent(in) :: dos_data
+    type(pw90_dos_mod_type), intent(in) :: dos_data
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data

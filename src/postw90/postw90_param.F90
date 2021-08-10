@@ -123,14 +123,12 @@ module pw90_parameters
     real(kind=dp)    :: adaptive_max_width
   end type pw90_smearing_type
 
-  ! REVIEW_2021-08-09: rename pw90_dos_mod_type
-  type dos_plot_type
+  type pw90_dos_mod_type
     !! ===============
     !! Contains variables for the dos module of postw90
     !! ===============
     character(len=20)    :: task
-    ! REVIEW_2021-08-09: rename smearing
-    type(pw90_smearing_type) :: smr
+    type(pw90_smearing_type) :: smearing
     real(kind=dp)    :: energy_max
     real(kind=dp)    :: energy_min
     real(kind=dp)    :: energy_step
@@ -140,7 +138,7 @@ module pw90_parameters
     real(kind=dp)    :: kmesh_spacing
     integer    :: kmesh(3)
     !  real(kind=dp) :: gaussian_width
-  end type dos_plot_type
+  end type pw90_dos_mod_type
 
   ! Module  b e r r y (mainly postw90/berry)
   ! REVIEW_2021-08-09: rename pw90_berry_mod_type
@@ -322,7 +320,7 @@ contains
     type(berry_type), intent(inout) :: berry
     type(boltzwann_type), intent(inout) :: boltz
     type(dis_manifold_type), intent(inout) :: dis_window
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(fermi_data_type), intent(inout) :: fermi
     type(geninterp_type), intent(inout) :: geninterp
@@ -936,7 +934,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(dos_plot_type), intent(out) :: dos_data
+    type(pw90_dos_mod_type), intent(out) :: dos_data
     logical, intent(in) :: found_fermi_energy
     integer, intent(in) :: num_wann
     type(pw90_smearing_type), intent(in) :: smearing
@@ -975,26 +973,26 @@ contains
     call param_get_keyword(stdout, seedname, 'dos_energy_step', found, &
                            r_value=dos_data%energy_step)
 
-    dos_data%smr%use_adaptive = smearing%use_adaptive
+    dos_data%smearing%use_adaptive = smearing%use_adaptive
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr', found, &
-                           l_value=dos_data%smr%use_adaptive)
+                           l_value=dos_data%smearing%use_adaptive)
 
-    dos_data%smr%adaptive_prefactor = smearing%adaptive_prefactor
+    dos_data%smearing%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found, &
-                           r_value=dos_data%smr%adaptive_prefactor)
-    if (found .and. (dos_data%smr%adaptive_prefactor <= 0._dp)) &
+                           r_value=dos_data%smearing%adaptive_prefactor)
+    if (found .and. (dos_data%smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    dos_data%smr%adaptive_max_width = smearing%adaptive_max_width
+    dos_data%smearing%adaptive_max_width = smearing%adaptive_max_width
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found, &
-                           r_value=dos_data%smr%adaptive_max_width)
-    if (dos_data%smr%adaptive_max_width <= 0._dp) call io_error &
+                           r_value=dos_data%smearing%adaptive_max_width)
+    if (dos_data%smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    dos_data%smr%fixed_width = smearing%fixed_width
+    dos_data%smearing%fixed_width = smearing%fixed_width
     call param_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found, &
-                           r_value=dos_data%smr%fixed_width)
-    if (found .and. (dos_data%smr%fixed_width < 0._dp)) &
+                           r_value=dos_data%smearing%fixed_width)
+    if (found .and. (dos_data%smearing%fixed_width < 0._dp)) &
       call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
 !    dos_gaussian_width        = 0.1_dp
@@ -1028,9 +1026,9 @@ contains
     endif
 
     ! By default: use the "global" smearing index
-    dos_data%smr%type_index = smearing%type_index
+    dos_data%smearing%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'dos_smr_type', found, c_value=ctmp)
-    if (found) dos_data%smr%type_index = get_smearing_index(ctmp, 'dos_smr_type', stdout, seedname)
+    if (found) dos_data%smearing%type_index = get_smearing_index(ctmp, 'dos_smr_type', stdout, seedname)
 
   end subroutine param_read_dos
 
@@ -1234,7 +1232,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     type(berry_type), intent(inout) :: berry
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
@@ -1348,7 +1346,7 @@ contains
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(berry_type), intent(inout) :: berry
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(boltzwann_type), intent(inout) :: boltz
@@ -1492,7 +1490,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(pw90_kpath_mod_type), intent(in) :: kpath
     type(pw90_kslice_mod_type), intent(in) :: kslice
-    type(dos_plot_type), intent(in) :: dos_data
+    type(pw90_dos_mod_type), intent(in) :: dos_data
     type(berry_type), intent(in) :: berry
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(geninterp_type), intent(in) :: geninterp
@@ -1648,26 +1646,26 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', dos_data%energy_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', dos_data%energy_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', dos_data%energy_step, '|'
-      if (dos_data%smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
-          dos_data%smr%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
-          dos_data%smr%adaptive_max_width == write_data%smear%adaptive_max_width .and. &
-          dos_data%smr%fixed_width == write_data%smear%fixed_width .and. &
-          write_data%smear%type_index == dos_data%smr%type_index) then
+      if (dos_data%smearing%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+          dos_data%smearing%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
+          dos_data%smearing%adaptive_max_width == write_data%smear%adaptive_max_width .and. &
+          dos_data%smearing%fixed_width == write_data%smear%fixed_width .and. &
+          write_data%smear%type_index == dos_data%smearing%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
-        if (dos_data%smr%use_adaptive) then
+        if (dos_data%smearing%use_adaptive) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
-            dos_data%smr%adaptive_prefactor, '|'
+            dos_data%smearing%adaptive_prefactor, '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', &
-            dos_data%smr%adaptive_max_width, '|'
+            dos_data%smearing%adaptive_max_width, '|'
         else
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-            dos_data%smr%fixed_width, '|'
+            dos_data%smearing%fixed_width, '|'
         endif
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
-          trim(param_get_smearing_type(dos_data%smr%type_index)), '|'
+          trim(param_get_smearing_type(dos_data%smearing%type_index)), '|'
       endif
       if (write_data%kmesh(1) == dos_data%kmesh(1) .and. &
           write_data%kmesh(2) == dos_data%kmesh(2) .and. &
@@ -1990,7 +1988,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(kpoint_path_type), intent(inout) :: spec_points
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(berry_type), intent(inout) :: berry
     character(len=50), intent(in)  :: seedname
 

@@ -163,7 +163,7 @@ program postw90
   ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical          :: dos_plot
 
-  type(dos_plot_type) :: dos_data
+  type(pw90_dos_mod_type) :: dos_data
   type(berry_type) :: berry
   type(spin_hall_type) :: spin_hall
   type(gyrotropic_type) :: gyrotropic

@@ -271,7 +271,7 @@ contains
     use w90_comms, only: mpirank, w90commtype, comms_bcast
     use w90_param_types
     use pw90_parameters, only: pw90_calculation_type, postw90_common_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, dos_plot_type, &
+      pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       berry_type, spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
     type(print_output_type), intent(inout) :: verbose
@@ -294,7 +294,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
     type(pw90_kpath_mod_type), intent(inout) :: kpath
     type(pw90_kslice_mod_type), intent(inout) :: kslice
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(berry_type), intent(inout) :: berry
     type(spin_hall_type), intent(inout) :: spin_hall
     type(gyrotropic_type), intent(inout) :: gyrotropic
@@ -340,13 +340,13 @@ contains
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1, stdout, seedname, world)
     call comms_bcast(dos_data%energy_step, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smr%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smr%type_index, 1, stdout, seedname, world)
+    call comms_bcast(dos_data%smearing%use_adaptive, 1, stdout, seedname, world)
+    call comms_bcast(dos_data%smearing%type_index, 1, stdout, seedname, world)
     call comms_bcast(dos_data%kmesh_spacing, 1, stdout, seedname, world)
     call comms_bcast(dos_data%kmesh(1), 3, stdout, seedname, world)
-    call comms_bcast(dos_data%smr%adaptive_max_width, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smr%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smr%adaptive_prefactor, 1, stdout, seedname, world)
+    call comms_bcast(dos_data%smearing%adaptive_max_width, 1, stdout, seedname, world)
+    call comms_bcast(dos_data%smearing%fixed_width, 1, stdout, seedname, world)
+    call comms_bcast(dos_data%smearing%adaptive_prefactor, 1, stdout, seedname, world)
     call comms_bcast(dos_data%num_project, 1, stdout, seedname, world)
 
     call comms_bcast(pw90_calcs%berry, 1, stdout, seedname, world)
