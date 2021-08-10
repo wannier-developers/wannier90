@@ -154,7 +154,7 @@ contains
       if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
-        if (berry%kubo_smr%adpt) call io_error( &
+        if (berry%kubo_smr%use_adaptive) call io_error( &
           'Error: Must use fixed smearing when plotting spin Hall conductivity', stdout, seedname)
       end if
       if (plot_shc) then

@@ -112,22 +112,16 @@ module pw90_parameters
     character(len=20) :: fermi_lines_colour
   end type pw90_kslice_mod_type
 
-  ! REVIEW_2021-08-09: rename pw90_smearing_type
-  type adapt_smear_type
+  type pw90_smearing_type
     !! =============
     !! Contains variables for controlling the smearing.
     !! =============
-    ! REVIEW_2021-08-09: rename use_adaptive
-    logical    :: adpt
-    ! REVIEW_2021-08-09: rename adaptive_prefactor
-    real(kind=dp)    :: fac
-    ! REVIEW_2021-08-09: rename type_index
-    integer    :: index
-    ! REVIEW_2021-08-09: rename fixed_width
-    real(kind=dp)    :: fixed_en_width
-    ! REVIEW_2021-08-09: rename adaptive_max_width
-    real(kind=dp)    :: max
-  end type adapt_smear_type
+    logical    :: use_adaptive
+    real(kind=dp)    :: adaptive_prefactor
+    integer    :: type_index
+    real(kind=dp)    :: fixed_width
+    real(kind=dp)    :: adaptive_max_width
+  end type pw90_smearing_type
 
   ! REVIEW_2021-08-09: rename pw90_dos_mod_type
   type dos_plot_type
@@ -136,7 +130,7 @@ module pw90_parameters
     !! ===============
     character(len=20)    :: task
     ! REVIEW_2021-08-09: rename smearing
-    type(adapt_smear_type) :: smr
+    type(pw90_smearing_type) :: smr
     real(kind=dp)    :: energy_max
     real(kind=dp)    :: energy_min
     real(kind=dp)    :: energy_step
@@ -161,7 +155,7 @@ module pw90_parameters
     real(kind=dp) :: curv_adpt_kmesh_thresh
     character(len=20) :: curv_unit ! postw90/kpath, kslice as well
     ! REVIEW_2021-08-09: rename kubo_smearing
-    type(adapt_smear_type) :: kubo_smr
+    type(pw90_smearing_type) :: kubo_smr
     integer :: sc_phase_conv
     real(kind=dp) :: sc_eta ! also postw90/wan_ham
     real(kind=dp) :: sc_w_thr
@@ -235,7 +229,7 @@ module pw90_parameters
     real(kind=dp) :: dos_energy_min
     real(kind=dp) :: dos_energy_max
     ! REVIEW_2021-08-09: rename dos_smearing
-    type(adapt_smear_type) :: dos_smr
+    type(pw90_smearing_type) :: dos_smr
     real(kind=dp) :: mu_min
     real(kind=dp) :: mu_max
     real(kind=dp) :: mu_step
@@ -285,7 +279,7 @@ module pw90_param_methods
     ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
     ! Only internal, always use the local variables defined by each module
     ! that take this value as default
-    type(adapt_smear_type) :: smear
+    type(pw90_smearing_type) :: smear
     ! [gp-begin, Apr 13, 2012]
     ! Global interpolation k mesh variables
     ! These don't need to be public, since their values are copied in the variables of the
@@ -398,8 +392,8 @@ contains
     call param_read_scissors_shift(pw90_common, stdout, seedname)
     call param_read_pw90spin(pw90_calcs%spin_moment, pw90_spin%decomp, pw90_spin, &
                              system%num_elec_per_state, stdout, seedname)
-    call param_read_gyrotropic(gyrotropic, num_wann, write_data%smear%fixed_en_width, &
-                               write_data%smear%index, stdout, seedname)
+    call param_read_gyrotropic(gyrotropic, num_wann, write_data%smear%fixed_width, &
+                               write_data%smear%type_index, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, write_data%smear, stdout, seedname)
     call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry%task, stdout, seedname)
     call param_read_pw90ham(pw90_ham, stdout, seedname)
@@ -567,7 +561,7 @@ contains
   subroutine param_read_smearing(smearing, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(adapt_smear_type), intent(out) :: smearing
+    type(pw90_smearing_type), intent(out) :: smearing
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -576,32 +570,32 @@ contains
     ! [gp-begin, Apr 20, 2012]
 
     ! By default: Gaussian
-    smearing%index = 0
+    smearing%type_index = 0
     call param_get_keyword(stdout, seedname, 'smr_type', found, c_value=ctmp)
-    if (found) smearing%index = get_smearing_index(ctmp, 'smr_type', stdout, seedname)
+    if (found) smearing%type_index = get_smearing_index(ctmp, 'smr_type', stdout, seedname)
 
     ! By default: adaptive smearing
-    smearing%adpt = .true.
-    call param_get_keyword(stdout, seedname, 'adpt_smr', found, l_value=smearing%adpt)
+    smearing%use_adaptive = .true.
+    call param_get_keyword(stdout, seedname, 'adpt_smr', found, l_value=smearing%use_adaptive)
 
     ! By default: a=sqrt(2)
-    smearing%fac = sqrt(2.0_dp)
-    call param_get_keyword(stdout, seedname, 'adpt_smr_fac', found, r_value=smearing%fac)
-    if (found .and. (smearing%fac <= 0._dp)) &
+    smearing%adaptive_prefactor = sqrt(2.0_dp)
+    call param_get_keyword(stdout, seedname, 'adpt_smr_fac', found, r_value=smearing%adaptive_prefactor)
+    if (found .and. (smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: adpt_smr_fac must be greater than zero', stdout, seedname)
 
     ! By default: 1 eV
-    smearing%max = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'adpt_smr_max', found, r_value=smearing%max)
-    if (smearing%max <= 0._dp) &
+    smearing%adaptive_max_width = 1.0_dp
+    call param_get_keyword(stdout, seedname, 'adpt_smr_max', found, r_value=smearing%adaptive_max_width)
+    if (smearing%adaptive_max_width <= 0._dp) &
       call io_error('Error: adpt_smr_max must be greater than zero', stdout, seedname)
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
-    smearing%fixed_en_width = 0.0_dp
+    smearing%fixed_width = 0.0_dp
     call param_get_keyword(stdout, seedname, 'smr_fixed_en_width', found, &
-                           r_value=smearing%fixed_en_width)
-    if (found .and. (smearing%fixed_en_width < 0._dp)) &
+                           r_value=smearing%fixed_width)
+    if (found .and. (smearing%fixed_width < 0._dp)) &
       call io_error('Error: smr_fixed_en_width must be greater than or equal to zero', stdout, &
                     seedname)
     ! [gp-end]
@@ -737,7 +731,7 @@ contains
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(berry_type), intent(out) :: berry
-    type(adapt_smear_type), intent(in) :: smearing
+    type(pw90_smearing_type), intent(in) :: smearing
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -790,25 +784,25 @@ contains
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
-    berry%kubo_smr%adpt = smearing%adpt
-    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, l_value=berry%kubo_smr%adpt)
+    berry%kubo_smr%use_adaptive = smearing%use_adaptive
+    call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, l_value=berry%kubo_smr%use_adaptive)
 
-    berry%kubo_smr%fac = smearing%fac
+    berry%kubo_smr%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found, &
-                           r_value=berry%kubo_smr%fac)
-    if (found .and. (berry%kubo_smr%fac <= 0._dp)) call io_error &
+                           r_value=berry%kubo_smr%adaptive_prefactor)
+    if (found .and. (berry%kubo_smr%adaptive_prefactor <= 0._dp)) call io_error &
       ('Error: kubo_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    berry%kubo_smr%max = smearing%max
+    berry%kubo_smr%adaptive_max_width = smearing%adaptive_max_width
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found, &
-                           r_value=berry%kubo_smr%max)
-    if (berry%kubo_smr%max <= 0._dp) call io_error &
+                           r_value=berry%kubo_smr%adaptive_max_width)
+    if (berry%kubo_smr%adaptive_max_width <= 0._dp) call io_error &
       ('Error: kubo_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    berry%kubo_smr%fixed_en_width = smearing%fixed_en_width
+    berry%kubo_smr%fixed_width = smearing%fixed_width
     call param_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found, &
-                           r_value=berry%kubo_smr%fixed_en_width)
-    if (found .and. (berry%kubo_smr%fixed_en_width < 0._dp)) call io_error &
+                           r_value=berry%kubo_smr%fixed_width)
+    if (found .and. (berry%kubo_smr%fixed_width < 0._dp)) call io_error &
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     berry%sc_phase_conv = 1
@@ -817,9 +811,9 @@ contains
       call io_error('Error: sc_phase_conv must be either 1 or 2', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    berry%kubo_smr%index = smearing%index
+    berry%kubo_smr%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'kubo_smr_type', found, c_value=ctmp)
-    if (found) berry%kubo_smr%index = get_smearing_index(ctmp, 'kubo_smr_type', stdout, seedname)
+    if (found) berry%kubo_smr%type_index = get_smearing_index(ctmp, 'kubo_smr_type', stdout, seedname)
 
     berry%sc_eta = 0.04
     call param_get_keyword(stdout, seedname, 'sc_eta', found, r_value=berry%sc_eta)
@@ -945,7 +939,7 @@ contains
     type(dos_plot_type), intent(out) :: dos_data
     logical, intent(in) :: found_fermi_energy
     integer, intent(in) :: num_wann
-    type(adapt_smear_type), intent(in) :: smearing
+    type(pw90_smearing_type), intent(in) :: smearing
     logical, intent(out) :: dos_plot
     character(len=50), intent(in)  :: seedname
 
@@ -981,26 +975,26 @@ contains
     call param_get_keyword(stdout, seedname, 'dos_energy_step', found, &
                            r_value=dos_data%energy_step)
 
-    dos_data%smr%adpt = smearing%adpt
+    dos_data%smr%use_adaptive = smearing%use_adaptive
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr', found, &
-                           l_value=dos_data%smr%adpt)
+                           l_value=dos_data%smr%use_adaptive)
 
-    dos_data%smr%fac = smearing%fac
+    dos_data%smr%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found, &
-                           r_value=dos_data%smr%fac)
-    if (found .and. (dos_data%smr%fac <= 0._dp)) &
+                           r_value=dos_data%smr%adaptive_prefactor)
+    if (found .and. (dos_data%smr%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    dos_data%smr%max = smearing%max
+    dos_data%smr%adaptive_max_width = smearing%adaptive_max_width
     call param_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found, &
-                           r_value=dos_data%smr%max)
-    if (dos_data%smr%max <= 0._dp) call io_error &
+                           r_value=dos_data%smr%adaptive_max_width)
+    if (dos_data%smr%adaptive_max_width <= 0._dp) call io_error &
       ('Error: dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    dos_data%smr%fixed_en_width = smearing%fixed_en_width
+    dos_data%smr%fixed_width = smearing%fixed_width
     call param_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found, &
-                           r_value=dos_data%smr%fixed_en_width)
-    if (found .and. (dos_data%smr%fixed_en_width < 0._dp)) &
+                           r_value=dos_data%smr%fixed_width)
+    if (found .and. (dos_data%smr%fixed_width < 0._dp)) &
       call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
 !    dos_gaussian_width        = 0.1_dp
@@ -1034,9 +1028,9 @@ contains
     endif
 
     ! By default: use the "global" smearing index
-    dos_data%smr%index = smearing%index
+    dos_data%smr%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'dos_smr_type', found, c_value=ctmp)
-    if (found) dos_data%smr%index = get_smearing_index(ctmp, 'dos_smr_type', stdout, seedname)
+    if (found) dos_data%smr%type_index = get_smearing_index(ctmp, 'dos_smr_type', stdout, seedname)
 
   end subroutine param_read_dos
 
@@ -1072,7 +1066,7 @@ contains
     integer, intent(in) :: stdout
     type(boltzwann_type), intent(inout) :: boltz
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
-    type(adapt_smear_type), intent(in) :: smearing
+    type(pw90_smearing_type), intent(in) :: smearing
     logical, intent(in) :: do_boltzwann
     character(len=4), intent(out) :: boltz_2d_dir
     character(len=50), intent(in)  :: seedname
@@ -1133,24 +1127,24 @@ contains
     if (boltz%dos_energy_max <= boltz%dos_energy_min) &
       call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', stdout, seedname)
 
-    boltz%dos_smr%adpt = smearing%adpt
+    boltz%dos_smr%use_adaptive = smearing%use_adaptive
     call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found, &
-                           l_value=boltz%dos_smr%adpt)
+                           l_value=boltz%dos_smr%use_adaptive)
 
-    boltz%dos_smr%fac = smearing%fac
+    boltz%dos_smr%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found, &
-                           r_value=boltz%dos_smr%fac)
-    if (found .and. (boltz%dos_smr%fac <= 0._dp)) &
+                           r_value=boltz%dos_smr%adaptive_prefactor)
+    if (found .and. (boltz%dos_smr%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    boltz%dos_smr%max = smearing%max
-    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, r_value=boltz%dos_smr%max)
-    if (boltz%dos_smr%max <= 0._dp) call io_error &
+    boltz%dos_smr%adaptive_max_width = smearing%adaptive_max_width
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, r_value=boltz%dos_smr%adaptive_max_width)
+    if (boltz%dos_smr%adaptive_max_width <= 0._dp) call io_error &
       ('Error: boltz_dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    boltz%dos_smr%fixed_en_width = smearing%fixed_en_width
-    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smr%fixed_en_width)
-    if (found .and. (boltz%dos_smr%fixed_en_width < 0._dp)) &
+    boltz%dos_smr%fixed_width = smearing%fixed_width
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smr%fixed_width)
+    if (found .and. (boltz%dos_smr%fixed_width < 0._dp)) &
       call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     boltz%mu_min = -999._dp
@@ -1199,20 +1193,20 @@ contains
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
-    boltz%TDF_smr_fixed_en_width = smearing%fixed_en_width
+    boltz%TDF_smr_fixed_en_width = smearing%fixed_width
     call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, r_value=boltz%TDF_smr_fixed_en_width)
     if (found .and. (boltz%TDF_smr_fixed_en_width < 0._dp)) &
       call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    boltz%TDF_smr_index = smearing%index
+    boltz%TDF_smr_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found, c_value=ctmp)
     if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    boltz%dos_smr%index = smearing%index
+    boltz%dos_smr%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found, c_value=ctmp)
-    if (found) boltz%dos_smr%index = get_smearing_index(ctmp, 'boltz_dos_smr_type', stdout, seedname)
+    if (found) boltz%dos_smr%type_index = get_smearing_index(ctmp, 'boltz_dos_smr_type', stdout, seedname)
 
     ! By default: 10 fs relaxation time
     boltz%relax_time = 10._dp
@@ -1613,20 +1607,20 @@ contains
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(param_input%length_unit), '|'
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     write (stdout, '(1x,a78)') '*------------------------ Global Smearing Parameters ------------------------*'
-    if (write_data%smear%adpt) then
+    if (write_data%smear%use_adaptive) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
-        write_data%smear%fac, '|'
+        write_data%smear%adaptive_prefactor, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width (eV)       :', &
-        write_data%smear%max, '|'
+        write_data%smear%adaptive_max_width, '|'
 
     else
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-        write_data%smear%fixed_en_width, '|'
+        write_data%smear%fixed_width, '|'
     endif
     write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
-      trim(param_get_smearing_type(write_data%smear%index)), '|'
+      trim(param_get_smearing_type(write_data%smear%type_index)), '|'
     if (write_data%global_kmesh_set) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       T', '|'
       if (write_data%kmesh_spacing > 0.0_dp) then
@@ -1654,26 +1648,26 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', dos_data%energy_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', dos_data%energy_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', dos_data%energy_step, '|'
-      if (dos_data%smr%adpt .eqv. write_data%smear%adpt .and. &
-          dos_data%smr%fac == write_data%smear%fac .and. &
-          dos_data%smr%max == write_data%smear%max .and. &
-          dos_data%smr%fixed_en_width == write_data%smear%fixed_en_width .and. &
-          write_data%smear%index == dos_data%smr%index) then
+      if (dos_data%smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+          dos_data%smr%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
+          dos_data%smr%adaptive_max_width == write_data%smear%adaptive_max_width .and. &
+          dos_data%smr%fixed_width == write_data%smear%fixed_width .and. &
+          write_data%smear%type_index == dos_data%smr%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
-        if (dos_data%smr%adpt) then
+        if (dos_data%smr%use_adaptive) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
-            dos_data%smr%fac, '|'
+            dos_data%smr%adaptive_prefactor, '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', &
-            dos_data%smr%max, '|'
+            dos_data%smr%adaptive_max_width, '|'
         else
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-            dos_data%smr%fixed_en_width, '|'
+            dos_data%smr%fixed_width, '|'
         endif
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
-          trim(param_get_smearing_type(dos_data%smr%index)), '|'
+          trim(param_get_smearing_type(dos_data%smr%type_index)), '|'
       endif
       if (write_data%kmesh(1) == dos_data%kmesh(1) .and. &
           write_data%kmesh(2) == dos_data%kmesh(2) .and. &
@@ -1809,23 +1803,26 @@ contains
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(berry%sc_phase_conv)), '|'
       end if
-      if (berry%kubo_smr%adpt .eqv. write_data%smear%adpt .and. &
-          berry%kubo_smr%fac == write_data%smear%fac .and. &
-          berry%kubo_smr%max == write_data%smear%max &
-          .and. berry%kubo_smr%fixed_en_width == write_data%smear%fixed_en_width .and. &
-          write_data%smear%index == berry%kubo_smr%index) then
+      if (berry%kubo_smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+          berry%kubo_smr%adaptive_prefactor == write_data%smear%adaptive_prefactor .and. &
+          berry%kubo_smr%adaptive_max_width == write_data%smear%adaptive_max_width &
+          .and. berry%kubo_smr%fixed_width == write_data%smear%fixed_width .and. &
+          write_data%smear%type_index == berry%kubo_smr%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
-        if (berry%kubo_smr%adpt) then
+        if (berry%kubo_smr%use_adaptive) then
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
-          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', berry%kubo_smr%fac, '|'
-          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', berry%kubo_smr%max, '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
+            berry%kubo_smr%adaptive_prefactor, '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', &
+            berry%kubo_smr%adaptive_max_width, '|'
         else
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-            berry%kubo_smr%fixed_en_width, '|'
+            berry%kubo_smr%fixed_width, '|'
         endif
-        write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(berry%kubo_smr%index)), '|'
+        write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
+          trim(param_get_smearing_type(berry%kubo_smr%type_index)), '|'
       endif
       if (write_data%kmesh(1) == berry%kmesh(1) .and. write_data%kmesh(2) == berry%kmesh(2) .and. &
           write_data%kmesh(3) == berry%kmesh(3)) then
@@ -1868,8 +1865,8 @@ contains
         write_data%gyrotropic_freq_step, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', &
         gyrotropic%eigval_max, '|'
-      if (gyrotropic%smr_fixed_en_width == write_data%smear%fixed_en_width &
-          .and. write_data%smear%index == gyrotropic%smr_index) then
+      if (gyrotropic%smr_fixed_en_width == write_data%smear%fixed_width &
+          .and. write_data%smear%type_index == gyrotropic%smr_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
@@ -1939,25 +1936,26 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', boltz%dos_energy_min, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', boltz%dos_energy_max, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', boltz%dos_energy_step, '|'
-        if (boltz%dos_smr%adpt .eqv. write_data%smear%adpt .and. &
-            boltz%dos_smr%fac == write_data%smear%fac &
-            .and. boltz%dos_smr%max == write_data%smear%max &
-            .and. boltz%dos_smr%fixed_en_width == write_data%smear%fixed_en_width .and. &
-            write_data%smear%index == boltz%dos_smr%index) then
+        if (boltz%dos_smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+            boltz%dos_smr%adaptive_prefactor == write_data%smear%adaptive_prefactor &
+            .and. boltz%dos_smr%adaptive_max_width == write_data%smear%adaptive_max_width &
+            .and. boltz%dos_smr%fixed_width == write_data%smear%fixed_width .and. &
+            write_data%smear%type_index == boltz%dos_smr%type_index) then
           write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
         else
-          if (boltz%dos_smr%adpt) then
+          if (boltz%dos_smr%use_adaptive) then
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Adaptive width smearing               :', '       T', '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-              '|  DOS Adaptive smearing factor              :', boltz%dos_smr%fac, '|'
+              '|  DOS Adaptive smearing factor              :', boltz%dos_smr%adaptive_prefactor, '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-              '|  DOS Maximum allowed smearing width        :', boltz%dos_smr%max, '|'
+              '|  DOS Maximum allowed smearing width        :', boltz%dos_smr%adaptive_max_width, '|'
           else
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Fixed width smearing                  :', '       T', '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :', &
-              boltz%dos_smr%fixed_en_width, '|'
+              boltz%dos_smr%fixed_width, '|'
           endif
-          write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(boltz%dos_smr%index)), '|'
+          write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
+            trim(param_get_smearing_type(boltz%dos_smr%type_index)), '|'
         endif
       endif
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'

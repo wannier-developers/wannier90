@@ -836,19 +836,19 @@ contains
 
     if (boltz%calc_also_dos .and. on_root .and. (verbose%iprint > 1)) then
       write (stdout, '(5X,A)') "Smearing for DOS: "
-      if (boltz%dos_smr%adpt) then
-        write (stdout, '(7X,A)') trim(param_get_smearing_type(boltz%dos_smr%index))//", adaptive"
+      if (boltz%dos_smr%use_adaptive) then
+        write (stdout, '(7X,A)') trim(param_get_smearing_type(boltz%dos_smr%type_index))//", adaptive"
       else
-        if (boltz%dos_smr%fixed_en_width/(DOS_EnergyArray(2) - DOS_EnergyArray(1)) < &
+        if (boltz%dos_smr%fixed_width/(DOS_EnergyArray(2) - DOS_EnergyArray(1)) < &
             min_smearing_binwidth_ratio) then
           write (stdout, '(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
         else
-          write (stdout, '(7X,A,G18.10)') trim(param_get_smearing_type(boltz%dos_smr%index))// &
-            ", non-adaptive, width (eV) =", boltz%dos_smr%fixed_en_width
+          write (stdout, '(7X,A,G18.10)') trim(param_get_smearing_type(boltz%dos_smr%type_index))// &
+            ", non-adaptive, width (eV) =", boltz%dos_smr%fixed_width
         end if
       end if
     end if
-    if (boltz%calc_also_dos .and. boltz%dos_smr%adpt .and. (boltz%dos_smr%fixed_en_width .ne. 0._dp) .and. on_root) then
+    if (boltz%calc_also_dos .and. boltz%dos_smr%use_adaptive .and. (boltz%dos_smr%fixed_width .ne. 0._dp) .and. on_root) then
       write (stdout, '(5X,A)') "*** WARNING! boltz_dos_smr_fixed_en_width ignored since you chose"
       write (stdout, '(5X,A)') "             an adaptive smearing."
     end if
@@ -925,7 +925,7 @@ contains
       ! DOS part !
 
       if (boltz%calc_also_dos) then
-        if (boltz%dos_smr%adpt) then
+        if (boltz%dos_smr%use_adaptive) then
 
           ! This may happen if at least one band has zero derivative (along all three directions)
           ! Then I substitute this point with its 8 neighbors (+/- 1/4 of the spacing with the next point on the grid
@@ -953,8 +953,9 @@ contains
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wann_data, real_lattice, recip_lattice, &
                                  mp_grid, dos_data, pw90_spin, ws_distance, ws_vec, stdout, &
-                                 seedname, HH_R, SS_R, smr_index=boltz%dos_smr%index, &
-                                 adpt_smr_fac=boltz%dos_smr%fac, adpt_smr_max=boltz%dos_smr%max, &
+                                 seedname, HH_R, SS_R, smr_index=boltz%dos_smr%type_index, &
+                                 adpt_smr_fac=boltz%dos_smr%adaptive_prefactor, &
+                                 adpt_smr_max=boltz%dos_smr%adaptive_max_width, &
                                  levelspacing_k=levelspacing_k)
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
                   dos_all = dos_all + dos_k*kweight/8.
@@ -965,16 +966,16 @@ contains
             call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                            dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
-                           SS_R, smr_index=boltz%dos_smr%index, adpt_smr_fac=boltz%dos_smr%fac, &
-                           adpt_smr_max=boltz%dos_smr%max, levelspacing_k=levelspacing_k)
+                           SS_R, smr_index=boltz%dos_smr%type_index, adpt_smr_fac=boltz%dos_smr%adaptive_prefactor, &
+                           adpt_smr_max=boltz%dos_smr%adaptive_max_width, levelspacing_k=levelspacing_k)
             dos_all = dos_all + dos_k*kweight
           end if
         else
           call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=boltz%dos_smr%index, &
-                         smr_fixed_en_width=boltz%dos_smr%fixed_en_width)
+                         smr_index=boltz%dos_smr%type_index, &
+                         smr_fixed_en_width=boltz%dos_smr%fixed_width)
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
           ! So that the DOS will be in units of 1/eV, normalized so that
@@ -1001,24 +1002,24 @@ contains
     if (boltz%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (boltzdos_unit, '(A)') "# The first column."
-      if (boltz%dos_smr%adpt) then
+      if (boltz%dos_smr%use_adaptive) then
         write (boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
         write (boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
         if (pw90_spin%decomp) then
           write (boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
           write (boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
         end if
-        write (boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz%dos_smr%fac
+        write (boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz%dos_smr%adaptive_prefactor
         write (boltzdos_unit, '(A,I0,A,I0)') '# Number of points refined: ', NumPtsRefined, &
           ' out of ', product(boltz%kmesh)
         write (boltzdos_unit, '(A,G18.10,A,G18.10,A)') '# (Min spacing: ', min_spacing, &
           ', max spacing: ', max_spacing, ')'
       else
-        if (boltz%dos_smr%fixed_en_width/(DOS_EnergyArray(2) - DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
+        if (boltz%dos_smr%fixed_width/(DOS_EnergyArray(2) - DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
           write (boltzdos_unit, '(A)') '# The second column is the unsmeared DOS.'
         else
           write (boltzdos_unit, '(A,G14.6,A)') '# The second column is the DOS for a fixed smearing of ', &
-            boltz%dos_smr%fixed_en_width, ' eV.'
+            boltz%dos_smr%fixed_width, ' eV.'
         end if
       end if
       write (boltzdos_unit, '(A,1X,G14.6)') '# Cell volume (ang^3): ', cell_volume

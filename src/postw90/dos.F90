@@ -184,7 +184,7 @@ contains
 
       write (stdout, '(/,5x,a,(f6.3,1x))') &
         'Adaptive smearing width prefactor: ', &
-        dos_data%smr%fac
+        dos_data%smr%adaptive_prefactor
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
         dos_data%kmesh(1:3)
@@ -204,7 +204,7 @@ contains
       !
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
-        if (dos_data%smr%adpt) then
+        if (dos_data%smr%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
@@ -216,8 +216,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
-                         adpt_smr_max=dos_data%smr%max, levelspacing_k=levelspacing_k, UU=UU)
+                         smr_index=dos_data%smr%type_index, adpt_smr_fac=dos_data%smr%adaptive_prefactor, &
+                         adpt_smr_max=dos_data%smr%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
                                          kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
@@ -226,8 +226,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%index, &
-                         smr_fixed_en_width=dos_data%smr%fixed_en_width, UU=UU)
+                         smr_index=dos_data%smr%type_index, &
+                         smr_fixed_en_width=dos_data%smr%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kdist%weight(loop_tot)
       end do
@@ -246,7 +246,7 @@ contains
         kpt(1) = real(loop_x, dp)/real(dos_data%kmesh(1), dp)
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
-        if (dos_data%smr%adpt) then
+        if (dos_data%smr%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
@@ -258,8 +258,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%index, adpt_smr_fac=dos_data%smr%fac, &
-                         adpt_smr_max=dos_data%smr%max, levelspacing_k=levelspacing_k, UU=UU)
+                         smr_index=dos_data%smr%type_index, adpt_smr_fac=dos_data%smr%adaptive_prefactor, &
+                         adpt_smr_max=dos_data%smr%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
                                          kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
@@ -268,8 +268,8 @@ contains
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
                          dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smr%index, &
-                         smr_fixed_en_width=dos_data%smr%fixed_en_width, UU=UU)
+                         smr_index=dos_data%smr%type_index, &
+                         smr_fixed_en_width=dos_data%smr%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
       end do

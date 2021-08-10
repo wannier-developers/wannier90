@@ -903,14 +903,14 @@ contains
                                                      '(1x,a20,3(i0,1x))') 'Interpolation grid: ', berry%kmesh(1:3)
         endif
         write (stdout, '(a)') ''
-        if (berry%kubo_smr%adpt) then
+        if (berry%kubo_smr%use_adaptive) then
           write (stdout, '(1x,a)') 'Using adaptive smearing'
-          write (stdout, '(7x,a,f8.3)') 'adaptive smearing prefactor ', berry%kubo_smr%fac
-          write (stdout, '(7x,a,f8.3,a)') 'adaptive smearing max width ', berry%kubo_smr%max, ' eV'
+          write (stdout, '(7x,a,f8.3)') 'adaptive smearing prefactor ', berry%kubo_smr%adaptive_prefactor
+          write (stdout, '(7x,a,f8.3,a)') 'adaptive smearing max width ', berry%kubo_smr%adaptive_max_width, ' eV'
         else
           write (stdout, '(1x,a)') 'Using fixed smearing'
           write (stdout, '(7x,a,f8.3,a)') 'fixed smearing width ', &
-            berry%kubo_smr%fixed_en_width, ' eV'
+            berry%kubo_smr%fixed_width, ' eV'
         endif
         write (stdout, '(a)') ''
         if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
@@ -1762,7 +1762,7 @@ contains
     allocate (D_h(num_wann, num_wann, 3))
     allocate (AA(num_wann, num_wann, 3))
 
-    if (berry%kubo_smr%adpt) then
+    if (berry%kubo_smr%use_adaptive) then
       call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
                                wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                                v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
@@ -1791,9 +1791,9 @@ contains
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
 
     ! Replace imaginary part of frequency with a fixed value
-    if (.not. berry%kubo_smr%adpt .and. berry%kubo_smr%fixed_en_width /= 0.0_dp) &
+    if (.not. berry%kubo_smr%use_adaptive .and. berry%kubo_smr%fixed_width /= 0.0_dp) &
       berry%kubo_freq_list = real(berry%kubo_freq_list, dp) &
-                             + cmplx_i*berry%kubo_smr%fixed_en_width
+                             + cmplx_i*berry%kubo_smr%fixed_width
 
     kubo_H_k = cmplx_0
     kubo_AH_k = cmplx_0
@@ -1818,14 +1818,14 @@ contains
             ispn = 3 ! spin-flip
           end if
         end if
-        if (berry%kubo_smr%adpt) then
+        if (berry%kubo_smr%use_adaptive) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
           joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
-          eta_smr = min(joint_level_spacing*berry%kubo_smr%fac, &
-                        berry%kubo_smr%max)
+          eta_smr = min(joint_level_spacing*berry%kubo_smr%adaptive_prefactor, &
+                        berry%kubo_smr%adaptive_max_width)
         else
-          eta_smr = berry%kubo_smr%fixed_en_width
+          eta_smr = berry%kubo_smr%fixed_width
         endif
         rfac1 = (occ(m) - occ(n))*(eig(m) - eig(n))
         occ_prod = occ(n)*(1.0_dp - occ(m))
@@ -1833,7 +1833,7 @@ contains
           !
           ! Complex frequency for the anti-Hermitian conductivity
           !
-          if (berry%kubo_smr%adpt) then
+          if (berry%kubo_smr%use_adaptive) then
             omega = real(berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
           else
             omega = berry%kubo_freq_list(ifreq)
@@ -1844,7 +1844,7 @@ contains
           arg = (eig(m) - eig(n) - real(omega, dp))/eta_smr
           ! If only Hermitean part were computed, could speed up
           ! by inserting here 'if(abs(arg)>10.0_dp) cycle'
-          delta = utility_w0gauss(arg, berry%kubo_smr%index, stdout, seedname)/eta_smr
+          delta = utility_w0gauss(arg, berry%kubo_smr%type_index, stdout, seedname)/eta_smr
           !
           ! Lorentzian shape (for testing purposes)
 !             delta=1.0_dp/(1.0_dp+arg*arg)/pi
@@ -2030,7 +2030,7 @@ contains
     call wham_get_D_h_P_value(berry, HH_da, D_h, UU, eig, num_wann)
 
     ! calculate k-spacing in case of adaptive smearing
-    if (berry%kubo_smr%adpt) Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
+    if (berry%kubo_smr%use_adaptive) Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
 
     ! rotate quantities from W to H gauge (we follow wham_get_D_h for delHH_bar_i)
     do a = 1, 3
@@ -2063,12 +2063,12 @@ contains
         if (abs(occ_fac) < 1e-10) cycle
 
         ! set delta function smearing
-        if (berry%kubo_smr%adpt) then
+        if (berry%kubo_smr%use_adaptive) then
           vdum(:) = eig_da(m, :) - eig_da(n, :)
           joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
-          eta_smr = min(joint_level_spacing*berry%kubo_smr%fac, berry%kubo_smr%max)
+          eta_smr = min(joint_level_spacing*berry%kubo_smr%adaptive_prefactor, berry%kubo_smr%adaptive_max_width)
         else
-          eta_smr = berry%kubo_smr%fixed_en_width
+          eta_smr = berry%kubo_smr%fixed_width
         endif
 
         ! restrict to energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr]
@@ -2129,7 +2129,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr%index, stdout, seedname)/eta_smr
+            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr%type_index, stdout, seedname)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
         ! same for delta(E_mn-w)
@@ -2138,7 +2138,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr%index, stdout, seedname)/eta_smr
+            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr%type_index, stdout, seedname)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
 
@@ -2297,7 +2297,7 @@ contains
 
     ! adpt_smr only works with berry_kmesh, so do not use
     ! adpt_smr in kpath or kslice plots.
-    if (berry%kubo_smr%adpt) then
+    if (berry%kubo_smr%use_adaptive) then
       Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
     endif
     if (lfreq) then
@@ -2324,14 +2324,14 @@ contains
         !this will calculate AHC
         !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
         prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, spin_hall%beta)
-        if (berry%kubo_smr%adpt) then
+        if (berry%kubo_smr%use_adaptive) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
           joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
-          eta_smr = min(joint_level_spacing*berry%kubo_smr%fac, &
-                        berry%kubo_smr%max)
+          eta_smr = min(joint_level_spacing*berry%kubo_smr%adaptive_prefactor, &
+                        berry%kubo_smr%adaptive_max_width)
         else
-          eta_smr = berry%kubo_smr%fixed_en_width
+          eta_smr = berry%kubo_smr%fixed_width
         endif
         if (lfreq) then
           do ifreq = 1, berry%kubo_nfreq
