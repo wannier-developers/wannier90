@@ -272,7 +272,8 @@ contains
     use w90_param_types
     use pw90_parameters, only: pw90_calculation_type, postw90_common_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
-      pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, geninterp_type, boltzwann_type
+      pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
+      boltzwann_type
 
     type(print_output_type), intent(inout) :: verbose
     type(ws_region_type), intent(inout) :: rs_region
@@ -298,7 +299,7 @@ contains
     type(pw90_berry_mod_type), intent(inout) :: berry
     type(pw90_spin_hall_type), intent(inout) :: spin_hall
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
-    type(geninterp_type), intent(inout) :: geninterp
+    type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
     integer, intent(in) :: stdout

@@ -33,11 +33,11 @@ contains
   subroutine internal_write_header(outdat_unit, commentline, geninterp)
     !! Writes a header for the output file(s).
 
-    use pw90_parameters, only: geninterp_type
+    use pw90_parameters, only: pw90_geninterp_mod_type
     use w90_io, only: io_date
 
     ! arguments
-    type(geninterp_type), intent(in) :: geninterp
+    type(pw90_geninterp_mod_type), intent(in) :: geninterp
     integer, intent(in) :: outdat_unit
     !! Integer with the output file unit. The file must be already open.
     character(len=*) :: commentline !! no intent?
@@ -72,7 +72,8 @@ contains
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
-    use pw90_parameters, only: postw90_common_type, geninterp_type, pw90_band_deriv_degen_type
+    use pw90_parameters, only: postw90_common_type, pw90_geninterp_mod_type, &
+      pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, ws_region_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
@@ -86,7 +87,7 @@ contains
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(geninterp_type), intent(in) :: geninterp
+    type(pw90_geninterp_mod_type), intent(in) :: geninterp
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham

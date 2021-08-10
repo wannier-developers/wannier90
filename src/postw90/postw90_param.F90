@@ -200,14 +200,13 @@ module pw90_parameters
 
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables - postw90/geninterp
-  ! REVIEW_2021-08-09: rename pw90_boltzwann_type
-  type geninterp_type
+  type pw90_geninterp_mod_type
     !! =============
     !! Contains variables for the geninterp module of postw90
     !! =============
     logical :: alsofirstder
     logical :: single_file
-  end type geninterp_type
+  end type pw90_geninterp_mod_type
   ! [gp-end, Jun 1, 2012]
 
   ! [gp-begin, Apr 12, 2012]
@@ -319,7 +318,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(fermi_data_type), intent(inout) :: fermi
-    type(geninterp_type), intent(inout) :: geninterp
+    type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: kpath
     type(k_points_type), intent(inout) :: k_points
@@ -1036,7 +1035,7 @@ contains
 !   use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(geninterp_type), intent(out) :: geninterp
+    type(pw90_geninterp_mod_type), intent(out) :: geninterp
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -1489,7 +1488,7 @@ contains
     type(pw90_dos_mod_type), intent(in) :: dos_data
     type(pw90_berry_mod_type), intent(in) :: berry
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
-    type(geninterp_type), intent(in) :: geninterp
+    type(pw90_geninterp_mod_type), intent(in) :: geninterp
     type(boltzwann_type), intent(in) :: boltz
     type(pw90_extra_io_type), intent(in) :: write_data
 

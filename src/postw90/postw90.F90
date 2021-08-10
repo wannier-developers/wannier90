@@ -167,7 +167,7 @@ program postw90
   type(pw90_berry_mod_type) :: berry
   type(pw90_spin_hall_type) :: spin_hall
   type(pw90_gyrotropic_type) :: gyrotropic
-  type(geninterp_type) :: geninterp
+  type(pw90_geninterp_mod_type) :: geninterp
   type(boltzwann_type) :: boltz
   ! end pw90_parameters
   ! from postw90_common
