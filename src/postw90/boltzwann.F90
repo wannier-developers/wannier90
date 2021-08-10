@@ -69,7 +69,7 @@ contains
                             postw90_oper, pw90_spin, physics, rs_region, system, wann_data, &
                             ws_distance, ws_vec, verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, &
                             real_lattice, recip_lattice, mp_grid, num_wann, num_bands, num_kpts, &
-                            have_disentangled, seedname, stdout, comm)
+                            have_disentangled, spin_decomp, seedname, stdout, comm)
 
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
@@ -128,6 +128,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spin_decomp
 
     ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
@@ -246,7 +247,7 @@ contains
                           + real(i - 1, dp)*boltz%tdf_energy_step
     end do
 
-    if (pw90_spin%decomp) then
+    if (spin_decomp) then
       ndim = 3
     else
       ndim = 1
@@ -262,7 +263,7 @@ contains
                        SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
                        TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
                        system%num_valence_bands, system%num_elec_per_state, have_disentangled, &
-                       seedname, stdout, comm)
+                       spin_decomp, seedname, stdout, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -657,8 +658,8 @@ contains
                            pw90_common, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
                            TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
-                           num_valence_bands, num_elec_per_state, have_disentangled, seedname, &
-                           stdout, comm)
+                           num_valence_bands, num_elec_per_state, have_disentangled, spin_decomp, &
+                           seedname, stdout, comm)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -742,6 +743,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spin_decomp
 
     ! local variables
     real(kind=dp) :: kpt(3), orig_kpt(3)
@@ -786,7 +788,7 @@ contains
     call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, &
                   stdout, comm)
-    if (pw90_spin%decomp) then
+    if (spin_decomp) then
       ndim = 3
 
       call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
@@ -916,7 +918,7 @@ contains
 
       call TDF_kpt(boltz, rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
                    del_eig, eig, TDFEnergyArray, kpt, real_lattice, recip_lattice, TDF_k, mp_grid, &
-                   num_wann, num_elec_per_state, pw90_spin%decomp, seedname, stdout)
+                   num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -953,8 +955,8 @@ contains
                                             recip_lattice)
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wann_data, real_lattice, recip_lattice, &
-                                 mp_grid, dos_data, pw90_spin, ws_distance, ws_vec, stdout, &
-                                 seedname, HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
+                                 mp_grid, dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, &
+                                 stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
                                  adpt_smr_fac=boltz%dos_smearing%adaptive_prefactor, &
                                  adpt_smr_max=boltz%dos_smearing%adaptive_max_width, &
                                  levelspacing_k=levelspacing_k)
@@ -966,16 +968,17 @@ contains
           else
             call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                           dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
-                           SS_R, smr_index=boltz%dos_smearing%type_index, adpt_smr_fac=boltz%dos_smearing%adaptive_prefactor, &
+                           dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, &
+                           seedname, HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
+                           adpt_smr_fac=boltz%dos_smearing%adaptive_prefactor, &
                            adpt_smr_max=boltz%dos_smearing%adaptive_max_width, levelspacing_k=levelspacing_k)
             dos_all = dos_all + dos_k*kweight
           end if
         else
           call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=boltz%dos_smearing%type_index, &
+                         dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
+                         HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
                          smr_fixed_en_width=boltz%dos_smearing%fixed_width)
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
@@ -1006,7 +1009,7 @@ contains
       if (boltz%dos_smearing%use_adaptive) then
         write (boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
         write (boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
-        if (pw90_spin%decomp) then
+        if (spin_decomp) then
           write (boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
           write (boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
         end if

@@ -411,7 +411,7 @@ contains
     call comms_bcast(pw90_calcs%spin_moment, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_polar, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_azimuth, 1, stdout, seedname, world)
-    call comms_bcast(pw90_spin%decomp, 1, stdout, seedname, world)
+    call comms_bcast(pw90_calcs%spin_decomp, 1, stdout, seedname, world)
     call comms_bcast(pw90_ham%use_degen_pert, 1, stdout, seedname, world)
     call comms_bcast(pw90_ham%degen_thr, 1, stdout, seedname, world)
     call comms_bcast(system%num_valence_bands, 1, stdout, seedname, world)

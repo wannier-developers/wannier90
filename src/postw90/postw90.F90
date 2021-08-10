@@ -364,7 +364,8 @@ program postw90
     call dos_main(berry, dis_window, dos_data, kpt_dist, k_points, pw90_common, pw90_ham, &
                   postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, verbose, HH_R, SS_R, &
                   u_matrix, v_matrix, eigval, real_lattice, recip_lattice, ws_region, system, &
-                  mp_grid, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
+                  mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
+                  pw90_calcs%spin_decomp, seedname, stdout, comm)
   endif
 
 ! find_fermi_level commented for the moment in dos.F90
@@ -430,8 +431,8 @@ program postw90
                     pw90_ham, postw90_oper, pw90_spin, physics, ws_region, spin_hall, wann_data, &
                     ws_distance, ws_vec, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
                     u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, num_wann, &
-                    num_kpts, num_bands, system%num_valence_bands, have_disentangled, seedname, &
-                    stdout, comm)
+                    num_kpts, num_bands, system%num_valence_bands, have_disentangled, &
+                    pw90_calcs%spin_decomp, seedname, stdout, comm)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
@@ -453,7 +454,7 @@ program postw90
                         postw90_oper, pw90_spin, physics, ws_region, system, wann_data, &
                         ws_distance, ws_vec, verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, &
                         real_lattice, recip_lattice, mp_grid, num_wann, num_bands, num_kpts, &
-                        have_disentangled, seedname, stdout, comm)
+                        have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, comm)
   end if
 
   if (pw90_calcs%gyrotropic) then

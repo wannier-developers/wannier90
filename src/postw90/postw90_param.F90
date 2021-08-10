@@ -34,7 +34,7 @@ module pw90_parameters
     logical :: geninterp
     logical :: boltzwann
     logical :: spin_moment !postw90_common and postw90
-    ! REVIEW_2021-08-09: move decomp here and rename to spin_decomp
+    logical :: spin_decomp !postw90_common, berry, dos and boltzwann
   end type pw90_calculation_type
 
   type pw90_oper_read_type ! only in postw90/get_oper.F90
@@ -64,8 +64,6 @@ module pw90_parameters
     !! ===============
     !! Contains variables used in the spin module of postw90
     !! ===============
-    ! REVIEW_2021-08-09: we agree that decomp should go into pw90_calculation_type
-    logical :: decomp !postw90_common, berry, dos and boltzwann (could be in calculation_type)
     real(kind=dp) :: axis_polar
     real(kind=dp) :: axis_azimuth
     real(kind=dp) :: kmesh_spacing
@@ -381,7 +379,7 @@ contains
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(write_data%smear, stdout, seedname)
     call param_read_scissors_shift(pw90_common, stdout, seedname)
-    call param_read_pw90spin(pw90_calcs%spin_moment, pw90_spin%decomp, pw90_spin, &
+    call param_read_pw90spin(pw90_calcs%spin_moment, pw90_calcs%spin_decomp, pw90_spin, &
                              system%num_elec_per_state, stdout, seedname)
     call param_read_gyrotropic(gyrotropic, num_wann, write_data%smear%fixed_width, &
                                write_data%smear%type_index, stdout, seedname)
@@ -1565,11 +1563,11 @@ contains
         write (stdout, '(1x,a78)') '|  Number of valence bands                   :       not defined             |'
       endif
     endif
-    if (pw90_spin%decomp .or. param_input%iprint > 2) &
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Spin decomposition                        :', pw90_spin%decomp, '|'
+    if (pw90_calcs%spin_decomp .or. param_input%iprint > 2) &
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Spin decomposition                        :', pw90_calcs%spin_decomp, '|'
     if (pw90_calcs%spin_moment .or. param_input%iprint > 2) &
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Spin moment                       :', pw90_calcs%spin_moment, '|'
-    if (pw90_spin%decomp .or. pw90_calcs%spin_moment .or. param_input%iprint > 2) then
+    if (pw90_calcs%spin_decomp .or. pw90_calcs%spin_moment .or. param_input%iprint > 2) then
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :', pw90_spin%axis_polar, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :', pw90_spin%axis_azimuth, '|'
       if (postw90_oper%spn_formatted) then

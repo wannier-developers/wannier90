@@ -38,8 +38,8 @@ contains
   subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, pw90_common, pw90_ham, &
                       postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                       SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, rs_region, &
-                      system, mp_grid, num_bands, num_kpts, num_wann, have_disentangled, seedname, &
-                      stdout, comm)
+                      system, mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
+                      spin_decomp, seedname, stdout, comm)
 
     !=======================================================!
     !                                                       !
@@ -93,6 +93,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spin_decomp
 
     ! local variables
     ! 'dos_k' contains contrib. from one k-point,
@@ -143,7 +144,7 @@ contains
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   system%num_valence_bands, have_disentangled, seedname, stdout, comm)
 
-    if (pw90_spin%decomp) then
+    if (spin_decomp) then
       ndim = 3
       call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                     ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
@@ -215,8 +216,9 @@ contains
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smearing%type_index, adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
+                         dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
+                         HH_R, SS_R, smr_index=dos_data%smearing%type_index, &
+                         adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
                          adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
@@ -224,9 +226,9 @@ contains
                                          seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smearing%type_index, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
+                         SS_R, smr_index=dos_data%smearing%type_index, &
                          smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kdist%weight(loop_tot)
@@ -256,9 +258,10 @@ contains
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smearing%type_index, adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
+                         SS_R, smr_index=dos_data%smearing%type_index, &
+                         adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
                          adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
@@ -266,9 +269,9 @@ contains
                                          seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smearing%type_index, &
+                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
+                         SS_R, smr_index=dos_data%smearing%type_index, &
                          smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
@@ -532,7 +535,7 @@ contains
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(num_elec_per_state, rs_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
-                       wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                       wann_data, real_lattice, recip_lattice, mp_grid, dos_data, spin_decomp, &
                        pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
 
@@ -574,6 +577,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
     complex(kind=dp), intent(in), optional :: UU(:, :)
 
+    logical, intent(in) :: spin_decomp
     character(len=50), intent(in) :: seedname
 
     ! Adaptive smearing
@@ -613,7 +617,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_spin%decomp) then
+    if (spin_decomp) then
       call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
                        real_lattice, recip_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
     endif
@@ -622,7 +626,7 @@ contains
 
     dos_k = 0.0_dp
     do i = 1, num_wann
-      if (pw90_spin%decomp) then
+      if (spin_decomp) then
         ! Contribution to spin-up DOS of Bloch spinor with component
         ! (alpha,beta) with respect to the chosen quantization axis
         alpha_sq = (1.0_dp + spn_nk(i))/2.0_dp ! |alpha|^2
@@ -677,7 +681,7 @@ contains
           ! [GP] I don't put num_elec_per_state here below: if we are
           ! calculating the spin decomposition, we should be doing a
           ! calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if (pw90_spin%decomp) then
+          if (spin_decomp) then
             ! Spin-up contribution
             dos_k(loop_f, 2) = dos_k(loop_f, 2) + rdum*alpha_sq
             ! Spin-down contribution
@@ -691,7 +695,7 @@ contains
           do j = 1, dos_data%num_project
             dos_k(loop_f, 1) = dos_k(loop_f, 1) + rdum*r_num_elec_per_state &
                                *abs(UU(dos_data%project(j), i))**2
-            if (pw90_spin%decomp) then
+            if (spin_decomp) then
               ! Spin-up contribution
               dos_k(loop_f, 2) = dos_k(loop_f, 2) &
                                  + rdum*alpha_sq*abs(UU(dos_data%project(j), i))**2
