@@ -96,7 +96,7 @@ contains
     use w90_param_types, only: print_output_type, fermi_data_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, postw90_common_type, pw90_spin_mod_type, &
-      spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type
+      pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
@@ -115,7 +115,7 @@ contains
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
     type(ws_region_type), intent(in) :: rs_region
-    type(spin_hall_type), intent(in) :: spin_hall
+    type(pw90_spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -2183,8 +2183,8 @@ contains
     use w90_comms, only: w90commtype
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
-    use pw90_parameters, only: pw90_berry_mod_type, spin_hall_type, pw90_band_deriv_degen_type, &
-      postw90_common_type
+    use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, &
+      pw90_band_deriv_degen_type, postw90_common_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
       pw90common_kmesh_spacing, wigner_seitz_type
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -2201,7 +2201,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(spin_hall_type), intent(in) :: spin_hall
+    type(pw90_spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -2388,7 +2388,7 @@ contains
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
       use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
-      use pw90_parameters, only: spin_hall_type
+      use pw90_parameters, only: pw90_spin_hall_type
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec, &
         wigner_seitz_type
       use w90_ws_distance, only: ws_distance_type
@@ -2397,7 +2397,7 @@ contains
 
       ! arguments
       type(ws_region_type), intent(in) :: rs_region
-      type(spin_hall_type), intent(in) :: spin_hall
+      type(pw90_spin_hall_type), intent(in) :: spin_hall
       type(wannier_data_type), intent(in) :: wann_data
       type(wigner_seitz_type), intent(in) :: ws_vec
       type(ws_distance_type), intent(inout) :: ws_distance

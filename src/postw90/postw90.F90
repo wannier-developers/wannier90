@@ -165,7 +165,7 @@ program postw90
 
   type(pw90_dos_mod_type) :: dos_data
   type(pw90_berry_mod_type) :: berry
-  type(spin_hall_type) :: spin_hall
+  type(pw90_spin_hall_type) :: spin_hall
   type(gyrotropic_type) :: gyrotropic
   type(geninterp_type) :: geninterp
   type(boltzwann_type) :: boltz

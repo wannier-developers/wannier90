@@ -256,7 +256,7 @@ contains
     !==================================================
 
     use pw90_parameters, only: pw90_berry_mod_type, postw90_common_type, pw90_oper_read_type, &
-      spin_hall_type
+      pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -1234,7 +1234,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type, spin_hall_type
+    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type, pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -1249,7 +1249,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
-    type(spin_hall_type), intent(in) :: spin_hall
+    type(pw90_spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, num_valence_bands

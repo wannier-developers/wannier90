@@ -163,8 +163,7 @@ module pw90_parameters
   end type pw90_berry_mod_type
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
-  ! REVIEW_2021-08-09: rename pw90_spin_hall_type
-  type spin_hall_type
+  type pw90_spin_hall_type
     !! =============
     !! Contains variables controlling the calculation of spin hall conductivity in postw90
     !! =============
@@ -175,7 +174,7 @@ module pw90_parameters
     logical :: bandshift
     integer :: bandshift_firstband
     real(kind=dp) :: bandshift_energyshift
-  end type spin_hall_type
+  end type pw90_spin_hall_type
 
   ! REVIEW_2021-08-09: rename pw90_gyrotropic_type
   type gyrotropic_type ! postw90 - common, gyrotropic
@@ -336,7 +335,7 @@ contains
     type(pw90_extra_io_type), intent(inout) :: write_data
     type(ws_region_type), intent(inout) :: rs_region
     type(kpoint_path_type), intent(inout) :: spec_points
-    type(spin_hall_type), intent(inout) :: spin_hall
+    type(pw90_spin_hall_type), intent(inout) :: spin_hall
     type(w90_system_type), intent(inout) :: system
     type(wannier_data_type), intent(inout) :: wann_data
 
@@ -825,7 +824,7 @@ contains
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
-    type(spin_hall_type), intent(out) :: spin_hall
+    type(pw90_spin_hall_type), intent(out) :: spin_hall
     character(len=*), intent(in) :: berry_task
     character(len=50), intent(in)  :: seedname
 

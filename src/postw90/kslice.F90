@@ -50,7 +50,7 @@ contains
     !! Main routine
 
     use pw90_parameters, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type, spin_hall_type
+      pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type, pw90_spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
@@ -79,7 +79,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(spin_hall_type), intent(in) :: spin_hall
+    type(pw90_spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
