@@ -58,7 +58,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
-      wannier_data_type, disentangle_manifold_type, k_point_type, kmesh_info_type, &
+      wannier_data_type, disentangle_manifold_type, k_points_type, kmesh_info_type, &
       ws_region_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
       postw90_ham_type, postw90_common_type, postw90_oper_type
@@ -75,7 +75,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(kpath_type), intent(in) :: kpath
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper

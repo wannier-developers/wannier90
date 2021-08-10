@@ -107,8 +107,8 @@ program postw90
   type(wannier_data_type) :: wann_data
   type(kmesh_input_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
-  type(k_point_type) :: k_points
-  integer :: num_kpts !BGS put in k_point_type?
+  type(k_points_type) :: k_points
+  integer :: num_kpts
   type(disentangle_manifold_type) :: dis_window
   type(fermi_data_type) :: fermi
   type(atom_data_type) :: atoms

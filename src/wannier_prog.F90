@@ -113,7 +113,7 @@ program wannier
   type(kmesh_input_type) :: kmesh_data
   type(proj_input_type) :: input_proj
   type(kmesh_info_type) :: kmesh_info
-  type(k_point_type) :: k_points
+  type(k_points_type) :: k_points
   integer :: num_kpts
   type(disentangle_type) :: dis_data
   type(disentangle_manifold_type) :: dis_window

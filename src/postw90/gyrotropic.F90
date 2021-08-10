@@ -81,7 +81,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: gyrotropic_type, berry_type, postw90_oper_type, postw90_ham_type, &
       postw90_common_type
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
     use w90_utility, only: utility_det3
     use w90_ws_distance, only: ws_distance_type
@@ -95,7 +95,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(postw90_oper_type), intent(in) :: postw90_oper
@@ -558,7 +558,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
-    use w90_param_types, only: disentangle_manifold_type, k_point_type, print_output_type, &
+    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, fermi_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
@@ -573,7 +573,7 @@ contains
     type(disentangle_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(gyrotropic_type), intent(in) :: gyrotropic
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose

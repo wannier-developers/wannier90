@@ -22,10 +22,10 @@ module pw90_parameters
   public
 
   type pw90_calculation_type !postw90.F90
-     !! =================
-     !! Contains information about the high-level task that pw90 is being asked to do,
-     !! including any global variables that affect all calculation branches.
-     !! =================
+    !! =================
+    !! Contains information about the high-level task that pw90 is being asked to do,
+    !! including any global variables that affect all calculation branches.
+    !! =================
     logical :: kpath
     logical :: kslice
     logical :: dos
@@ -39,10 +39,10 @@ module pw90_parameters
 
   ! REVIEW_2021-08-09: Rename pw90_oper_read_type (make all of them pw90_* for consistency)
   type postw90_oper_type ! only in postw90/get_oper.F90
-     !! ==============
-     !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
-     !! ==============
-     logical :: spn_formatted
+    !! ==============
+    !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
+    !! ==============
+    logical :: spn_formatted
     !! Read the spin from fortran formatted file
     logical :: uHu_formatted
     !! Read the uHu from fortran formatted file
@@ -64,10 +64,10 @@ module pw90_parameters
   ! REVIEW_2021-08-09: Maybe rename pw90_spin_mod_type to make it clear that these
   ! REVIEW_2021-08-09: are variables related to the spin module (rather than spin as a physical property)
   type postw90_spin_type
-     !! ===============
-     !! Contains variables used in the spin module of postw90
-     !! ===============
-     ! REVIEW_2021-08-09: we agree that decomp should go into pw90_calculation_type
+    !! ===============
+    !! Contains variables used in the spin module of postw90
+    !! ===============
+    ! REVIEW_2021-08-09: we agree that decomp should go into pw90_calculation_type
     logical :: decomp !postw90_common, berry, dos and boltzwann (could be in calculation_type)
     real(kind=dp) :: axis_polar
     real(kind=dp) :: axis_azimuth
@@ -75,22 +75,20 @@ module pw90_parameters
     integer :: kmesh(3)
   end type postw90_spin_type
 
-  
   ! REVIEW_2021-08-09: A general comment, which we record here so we don't forget.
   ! REVIEW_2021-08-09: It would be good to try to keep type and variable names
   ! REVIEW_2021-08-09: as consistent as possible. As an example, at the top of berry.F90, we have
   ! REVIEW_2021-08-09: type(kmesh_info_type), intent(in) :: kmesh_info   ! consistent
   ! REVIEW_2021-08-09: type(kpoint_dist_type), intent(in) :: kdist       ! not consistent
-  ! REVIEW_2021-08-09: type(k_point_type), intent(in) :: k_points        ! not consistent
+  ! REVIEW_2021-08-09: type(k_point_type), intent(in) :: k_points        ! fixed
   ! REVIEW_2021-08-09: This would make reading and debugging the code easier in future.
 
-  
-  ! REVIEW_2021-08-09: rename pw90_band_deriv_degen_type 
+  ! REVIEW_2021-08-09: rename pw90_band_deriv_degen_type
   type postw90_ham_type
-     !! ================
-     !! Contains variables for doing degenerate perturbation theory when bands are degenerate
-     !! and band derivatives are needed.
-     !! ================
+    !! ================
+    !! Contains variables for doing degenerate perturbation theory when bands are degenerate
+    !! and band derivatives are needed.
+    !! ================
     logical :: use_degen_pert
     real(kind=dp) :: degen_thr
   end type postw90_ham_type
@@ -98,10 +96,10 @@ module pw90_parameters
   ! module  k p a t h (used by postw90/kpath)
   ! REVIEW_2021-08-09: rename pw90_kpath_mod_type
   type kpath_type
-     !! ================
-     !! Contains control variables for the kpath module of postw90
-     !! ================
-     character(len=20) :: task
+    !! ================
+    !! Contains control variables for the kpath module of postw90
+    !! ================
+    character(len=20) :: task
     integer :: num_points
     character(len=20) :: bands_colour
   end type kpath_type
@@ -109,9 +107,9 @@ module pw90_parameters
   ! module  k s l i c e (postw90/kslice)
   ! REVIEW_2021-08-09: rename pw90_kslice_mod_type
   type kslice_type
-     !! ===============
-     !! Contains control variables for the kslice module of postw90
-     !! ===============
+    !! ===============
+    !! Contains control variables for the kslice module of postw90
+    !! ===============
     character(len=20) :: task
     real(kind=dp) :: corner(3)
     real(kind=dp) :: b1(3)
@@ -122,14 +120,14 @@ module pw90_parameters
 
   ! REVIEW_2021-08-09: rename pw90_smearing_type
   type adapt_smear_type
-     !! =============
-     !! Contains variables for controlling the smearing.
-     !! =============
-     ! REVIEW_2021-08-09: rename use_adaptive
-     logical    :: adpt
-     ! REVIEW_2021-08-09: rename adaptive_prefactor
-     real(kind=dp)    :: fac
-     ! REVIEW_2021-08-09: rename type_index
+    !! =============
+    !! Contains variables for controlling the smearing.
+    !! =============
+    ! REVIEW_2021-08-09: rename use_adaptive
+    logical    :: adpt
+    ! REVIEW_2021-08-09: rename adaptive_prefactor
+    real(kind=dp)    :: fac
+    ! REVIEW_2021-08-09: rename type_index
     integer    :: index
     ! REVIEW_2021-08-09: rename fixed_width
     real(kind=dp)    :: fixed_en_width
@@ -139,12 +137,12 @@ module pw90_parameters
 
   ! REVIEW_2021-08-09: rename pw90_dos_mod_type
   type dos_plot_type
-     !! ===============
-     !! Contains variables for the dos module of postw90
-     !! ===============
-     character(len=20)    :: task
+    !! ===============
+    !! Contains variables for the dos module of postw90
+    !! ===============
+    character(len=20)    :: task
     ! REVIEW_2021-08-09: rename smearing
-    type(adapt_smear_type) :: smr 
+    type(adapt_smear_type) :: smr
     real(kind=dp)    :: energy_max
     real(kind=dp)    :: energy_min
     real(kind=dp)    :: energy_step
@@ -159,9 +157,9 @@ module pw90_parameters
   ! Module  b e r r y (mainly postw90/berry)
   ! REVIEW_2021-08-09: rename pw90_berry_mod_type
   type berry_type
-     !! =============
-     !! Contains variables for the berry module of postw90
-     !! =============
+    !! =============
+    !! Contains variables for the berry module of postw90
+    !! =============
     character(len=120) :: task
     real(kind=dp) :: kmesh_spacing
     integer :: kmesh(3)
@@ -183,10 +181,10 @@ module pw90_parameters
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
   ! REVIEW_2021-08-09: rename pw90_spin_hall_type
   type spin_hall_type
-     !! =============
-     !! Contains variables controlling the calculation of spin hall conductivity in postw90
-     !! =============
-   logical :: freq_scan
+    !! =============
+    !! Contains variables controlling the calculation of spin hall conductivity in postw90
+    !! =============
+    logical :: freq_scan
     integer :: alpha
     integer :: beta
     integer :: gamma
@@ -197,9 +195,9 @@ module pw90_parameters
 
   ! REVIEW_2021-08-09: rename pw90_gyrotropic_type
   type gyrotropic_type ! postw90 - common, gyrotropic
-     !! =============
-     !! Contains variables for the gyrotropic module of postw90
-     !! =============
+    !! =============
+    !! Contains variables for the gyrotropic module of postw90
+    !! =============
     character(len=120) :: task
     integer :: kmesh(3)
     real(kind=dp) :: kmesh_spacing
@@ -214,7 +212,7 @@ module pw90_parameters
     integer :: num_bands
     ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
     ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
-    real(kind=dp) :: smr_max_arg  
+    real(kind=dp) :: smr_max_arg
     real(kind=dp) :: eigval_max
   end type gyrotropic_type
 
@@ -222,9 +220,9 @@ module pw90_parameters
   ! GeneralInterpolator variables - postw90/geninterp
   ! REVIEW_2021-08-09: rename pw90_boltzwann_type
   type geninterp_type
-     !! =============
-     !! Contains variables for the geninterp module of postw90
-     !! =============
+    !! =============
+    !! Contains variables for the geninterp module of postw90
+    !! =============
     logical :: alsofirstder
     logical :: single_file
   end type geninterp_type
@@ -234,9 +232,9 @@ module pw90_parameters
   ! BoltzWann variables (postw90/boltzwann.F90)
   ! REVIEW_2021-08-09: rename pw90_boltzwann_type
   type boltzwann_type
-     !! =============
-     !! Contains variables for the boltzwann module of postw90
-     !! =============
+    !! =============
+    !! Contains variables for the boltzwann module of postw90
+    !! =============
     logical :: calc_also_dos
     integer :: dir_num_2d
     real(kind=dp) :: dos_energy_step
@@ -271,7 +269,7 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, k_point_type, disentangle_manifold_type, &
+    kmesh_input_type, kmesh_info_type, k_points_type, disentangle_manifold_type, &
     fermi_data_type, atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, &
     exclude_bands_type, ws_region_type
   use w90_param_methods
@@ -342,7 +340,7 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(kpath_type), intent(inout) :: kpath
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     type(kslice_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(postw90_common_type), intent(inout) :: pw90_common
@@ -1994,7 +1992,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(proj_input_type), intent(inout) :: proj_input
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms

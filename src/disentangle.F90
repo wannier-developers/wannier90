@@ -20,7 +20,7 @@ module w90_disentangle
     w90commtype, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
-  use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_point_type, &
+  use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, &
     print_output_type
   use wannier_param_types, only: disentangle_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
@@ -68,7 +68,7 @@ contains
     type(disentangle_type), intent(inout) :: dis_data
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
     type(sitesym_data), intent(inout) :: sym
     type(w90commtype), intent(in) :: comm

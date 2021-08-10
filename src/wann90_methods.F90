@@ -76,7 +76,7 @@ contains
     type(hamiltonian_type), intent(inout) :: hamiltonian
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
@@ -1172,7 +1172,7 @@ contains
     type(wannierise_type), intent(in) :: wannierise
     type(wannier_data_type), intent(in) :: wann_data
     type(hamiltonian_type), intent(in) :: hamiltonian
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(disentangle_type), intent(in) :: dis_data
     type(fermi_surface_type), intent(in) :: fermi_surface_data
     type(fermi_data_type), intent(in) :: fermi
@@ -1609,7 +1609,7 @@ contains
     type(wannierise_type), intent(inout) :: wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
     type(disentangle_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
@@ -1719,7 +1719,7 @@ contains
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(wannier_data_type), intent(in) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     integer, intent(in) :: num_kpts
     type(disentangle_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_bands
@@ -2051,7 +2051,7 @@ contains
     type(hamiltonian_type), intent(inout) :: hamiltonian
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi

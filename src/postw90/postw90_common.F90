@@ -278,7 +278,7 @@ contains
     type(ws_region_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_point_type), intent(inout) :: k_points
+    type(k_points_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(disentangle_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi

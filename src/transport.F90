@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
-      atom_data_type, disentangle_manifold_type, k_point_type, fermi_data_type
+      atom_data_type, disentangle_manifold_type, k_points_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
       hamiltonian_type, real_space_ham_type
 
@@ -113,7 +113,7 @@ contains
     type(atom_data_type), intent(in)            :: atoms
     type(hamiltonian_type), intent(inout)       :: hamiltonian
     type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_point_type), intent(in)              :: k_points
+    type(k_points_type), intent(in)              :: k_points
     type(fermi_data_type), intent(in)           :: fermi
     type(ham_logical), intent(inout)            :: hmlg
 
@@ -3306,7 +3306,7 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_point_type, fermi_data_type, print_output_type
+    use w90_param_types, only: k_points_type, fermi_data_type, print_output_type
     use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
@@ -3338,7 +3338,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     type(fermi_data_type), intent(in) :: fermi
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
     type(transport_type), intent(inout) :: tran

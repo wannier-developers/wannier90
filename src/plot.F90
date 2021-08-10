@@ -38,7 +38,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
-    use w90_param_types, only: k_point_type, kmesh_info_type, &
+    use w90_param_types, only: k_points_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, plot_type, output_file_type, &
@@ -50,7 +50,7 @@ contains
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calcs
     type(output_file_type), intent(in)           :: out_files
-    type(k_point_type), intent(in)               :: k_points
+    type(k_points_type), intent(in)               :: k_points
     type(real_space_ham_type), intent(in)        :: rs_region
     type(ws_region_type), intent(in)             :: ws_region
     type(print_output_type), intent(in)          :: verbose
@@ -1112,14 +1112,14 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_point_type, wannier_data_type, &
+    use w90_param_types, only: k_points_type, wannier_data_type, &
       atom_data_type, disentangle_manifold_type, print_output_type
     use wannier_param_types, only: plot_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
     implicit none
 
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
     type(wannier_plot_type), intent(in) :: wann_plot
     type(plot_type), intent(in) :: plot
@@ -1904,11 +1904,11 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_time, io_stopwatch, io_date
     use w90_constants, only: dp  !lp
-    use w90_param_types, only: k_point_type
+    use w90_param_types, only: k_points_type
 
     implicit none
 
-    type(k_point_type), intent(in) :: k_points
+    type(k_points_type), intent(in) :: k_points
 
     integer             :: matunit
     integer             :: i, j, nkp
