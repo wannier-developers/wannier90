@@ -58,8 +58,8 @@ contains
     use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
       wannier_data_type, dis_manifold_type, k_points_type, kmesh_info_type, &
       ws_region_type
-    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type
+    use pw90_parameters, only: berry_type, spin_hall_type, pw90_kpath_mod_type, &
+      pw90_spin_mod_type, pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_ws_distance, only: ws_distance_type
@@ -72,7 +72,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(kpath_type), intent(in) :: kpath
+    type(pw90_kpath_mod_type), intent(in) :: kpath
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
@@ -1079,14 +1079,14 @@ contains
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi, kpath, &
                                berry_curv_unit, stdout, seedname, comm)
 
-    use pw90_parameters, only: kpath_type
+    use pw90_parameters, only: pw90_kpath_mod_type
     use w90_comms, only: w90commtype, mpirank
     use w90_io, only: io_error
     use w90_param_types, only: fermi_data_type
 
     ! arguments
     type(fermi_data_type), intent(in) :: fermi
-    type(kpath_type), intent(in) :: kpath
+    type(pw90_kpath_mod_type), intent(in) :: kpath
     type(w90commtype), intent(in) :: comm
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -1152,12 +1152,12 @@ contains
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use pw90_parameters, only: kpath_type
+    use pw90_parameters, only: pw90_kpath_mod_type
     use w90_param_types, only: kpoint_path_type
     use w90_utility, only: utility_metric
 
     ! arguments
-    type(kpath_type), intent(in) :: kpath
+    type(pw90_kpath_mod_type), intent(in) :: kpath
     type(kpoint_path_type), intent(in) :: spec_points
     integer, intent(out) :: num_paths, total_pts
     real(kind=dp), allocatable, intent(out)   :: kpath_len(:), xval(:)

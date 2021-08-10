@@ -148,27 +148,27 @@ program postw90
   type(kpoint_path_type) :: spec_points
   ! end w90_parameters
   ! data from pw90_parameters
-  type(pw90_calculation_type), save :: pw90_calcs
+  type(pw90_calculation_type) :: pw90_calcs
 
-  logical, save :: eig_found ! used to control broadcast of eigval
+  logical :: eig_found ! used to control broadcast of eigval
 
-  type(pw90_oper_read_type), save :: postw90_oper
-  type(postw90_common_type), save :: pw90_common
-  type(pw90_spin_mod_type), save :: pw90_spin
-  type(pw90_band_deriv_degen_type), save :: pw90_ham
-  type(kpath_type), save :: kpath
-  type(kslice_type), save :: kslice
+  type(pw90_oper_read_type) :: postw90_oper
+  type(postw90_common_type) :: pw90_common
+  type(pw90_spin_mod_type) :: pw90_spin
+  type(pw90_band_deriv_degen_type) :: pw90_ham
+  type(pw90_kpath_mod_type) :: kpath
+  type(kslice_type) :: kslice
 
   ! module  d o s
   ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical          :: dos_plot
 
-  type(dos_plot_type), save :: dos_data
-  type(berry_type), save :: berry
-  type(spin_hall_type), save :: spin_hall
-  type(gyrotropic_type), save :: gyrotropic
-  type(geninterp_type), save :: geninterp
-  type(boltzwann_type), save :: boltz
+  type(dos_plot_type) :: dos_data
+  type(berry_type) :: berry
+  type(spin_hall_type) :: spin_hall
+  type(gyrotropic_type) :: gyrotropic
+  type(geninterp_type) :: geninterp
+  type(boltzwann_type) :: boltz
   ! end pw90_parameters
   ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)

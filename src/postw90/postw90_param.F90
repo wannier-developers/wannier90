@@ -91,14 +91,14 @@ module pw90_parameters
 
   ! module  k p a t h (used by postw90/kpath)
   ! REVIEW_2021-08-09: rename pw90_kpath_mod_type
-  type kpath_type
+  type pw90_kpath_mod_type
     !! ================
     !! Contains control variables for the kpath module of postw90
     !! ================
     character(len=20) :: task
     integer :: num_points
     character(len=20) :: bands_colour
-  end type kpath_type
+  end type pw90_kpath_mod_type
 
   ! module  k s l i c e (postw90/kslice)
   ! REVIEW_2021-08-09: rename pw90_kslice_mod_type
@@ -335,7 +335,7 @@ contains
     type(fermi_data_type), intent(inout) :: fermi
     type(geninterp_type), intent(inout) :: geninterp
     type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(kpath_type), intent(inout) :: kpath
+    type(pw90_kpath_mod_type), intent(inout) :: kpath
     type(k_points_type), intent(inout) :: k_points
     type(kslice_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
@@ -903,7 +903,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(kpath_type), intent(out) :: kpath
+    type(pw90_kpath_mod_type), intent(out) :: kpath
     type(kpoint_path_type), intent(in) :: spec_points
     character(len=50), intent(in)  :: seedname
 
@@ -1498,7 +1498,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(kpath_type), intent(in) :: kpath
+    type(pw90_kpath_mod_type), intent(in) :: kpath
     type(kslice_type), intent(in) :: kslice
     type(dos_plot_type), intent(in) :: dos_data
     type(berry_type), intent(in) :: berry
