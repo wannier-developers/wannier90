@@ -116,7 +116,7 @@ program wannier
   type(k_points_type) :: k_points
   integer :: num_kpts
   type(disentangle_type) :: dis_data
-  type(disentangle_manifold_type) :: dis_window
+  type(dis_manifold_type) :: dis_window
   type(fermi_surface_type) :: fermi_surface_data
   type(fermi_data_type) :: fermi
   type(transport_type) :: tran

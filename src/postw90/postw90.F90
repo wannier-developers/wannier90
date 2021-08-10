@@ -109,7 +109,7 @@ program postw90
   type(kmesh_info_type) :: kmesh_info
   type(k_points_type) :: k_points
   integer :: num_kpts
-  type(disentangle_manifold_type) :: dis_window
+  type(dis_manifold_type) :: dis_window
   type(fermi_data_type) :: fermi
   type(atom_data_type) :: atoms
 

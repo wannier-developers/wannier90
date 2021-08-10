@@ -78,7 +78,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
@@ -1611,7 +1611,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_points_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     type(kpoint_path_type), intent(inout) :: spec_points
@@ -1721,7 +1721,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     integer, intent(in) :: num_kpts
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -2058,7 +2058,7 @@ contains
     type(proj_input_type), intent(inout) :: proj_input
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(w90commtype), intent(in) :: comm
 
     integer, intent(inout) :: first_segment

@@ -280,7 +280,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -577,14 +577,14 @@ contains
     use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, wannier_data_type
+    use w90_param_types, only: dis_manifold_type, wannier_data_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank, comms_bcast
 
     implicit none
     integer, intent(in) :: num_wann, num_kpts, num_bands
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(wannier_data_type), intent(inout) :: wann_data
     type(postw90_common_type), intent(in) :: pw90_common
     complex(kind=dp), allocatable :: v_matrix(:, :, :)

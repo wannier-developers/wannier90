@@ -269,7 +269,7 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, k_points_type, disentangle_manifold_type, &
+    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, &
     fermi_data_type, atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, &
     exclude_bands_type, ws_region_type
   use w90_param_methods
@@ -333,7 +333,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     type(berry_type), intent(inout) :: berry
     type(boltzwann_type), intent(inout) :: boltz
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(dos_plot_type), intent(inout) :: dos_data
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(fermi_data_type), intent(inout) :: fermi
@@ -1248,7 +1248,7 @@ contains
     type(berry_type), intent(inout) :: berry
     type(dos_plot_type), intent(inout) :: dos_data
     type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     type(pw90_extra_io_type), intent(inout) :: write_data
@@ -1993,7 +1993,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(proj_input_type), intent(inout) :: proj_input
     type(k_points_type), intent(inout) :: k_points
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -2028,7 +2028,7 @@ contains
 
     implicit none
 
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     !real(kind=dp), parameter :: size_log = 1.0_dp

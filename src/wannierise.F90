@@ -65,7 +65,7 @@ contains
     use wannier_param_types, only: wannierise_type, output_file_type, &
       w90_calculation_type, hamiltonian_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_points_type, disentangle_manifold_type, w90_system_type, &
+      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
       exclude_bands_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
@@ -80,7 +80,7 @@ contains
 
     ! passed variables
     type(atom_data_type), intent(in) :: atoms
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(ham_logical), intent(inout) :: hmlg
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -3202,7 +3202,7 @@ contains
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: wannierise_type, output_file_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_points_type, disentangle_manifold_type, w90_system_type, &
+      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
       exclude_bands_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
@@ -3222,7 +3222,7 @@ contains
     type(k_points_type), intent(in) :: k_points ! needed for write_chkpt
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(output_file_type), intent(in) :: out_files
-    type(disentangle_manifold_type), intent(in) :: dis_window ! needed for write_chkpt
+    type(dis_manifold_type), intent(in) :: dis_window ! needed for write_chkpt
     type(atom_data_type), intent(in) :: atoms
 
     integer, intent(in) :: stdout

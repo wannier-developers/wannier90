@@ -416,7 +416,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type, &
+    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k, wigner_seitz_type
@@ -426,7 +426,7 @@ contains
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
@@ -543,7 +543,7 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
-      disentangle_manifold_type, k_points_type, ws_region_type
+      dis_manifold_type, k_points_type, ws_region_type
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
@@ -551,7 +551,7 @@ contains
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -625,7 +625,7 @@ contains
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv, wigner_seitz_type
-    use w90_param_types, only: print_output_type, wannier_data_type, disentangle_manifold_type, &
+    use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, kmesh_info_type, ws_region_type
     use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: postw90_common_type, berry_type
@@ -636,7 +636,7 @@ contains
 
     ! arguments
     type(berry_type), intent(in) :: berry
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -701,7 +701,7 @@ contains
     use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
-    use w90_param_types, only: print_output_type, wannier_data_type, disentangle_manifold_type, &
+    use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, ws_region_type
     use w90_utility, only: utility_diagonalize
     use w90_ws_distance, only: ws_distance_type
@@ -709,7 +709,7 @@ contains
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose

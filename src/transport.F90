@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
-      atom_data_type, disentangle_manifold_type, k_points_type, fermi_data_type
+      atom_data_type, dis_manifold_type, k_points_type, fermi_data_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
       hamiltonian_type, real_space_ham_type
 
@@ -112,8 +112,8 @@ contains
     type(wannier_data_type), intent(in)         :: wann_data
     type(atom_data_type), intent(in)            :: atoms
     type(hamiltonian_type), intent(inout)       :: hamiltonian
-    type(disentangle_manifold_type), intent(in) :: dis_window
-    type(k_points_type), intent(in)              :: k_points
+    type(dis_manifold_type), intent(in)         :: dis_window
+    type(k_points_type), intent(in)             :: k_points
     type(fermi_data_type), intent(in)           :: fermi
     type(ham_logical), intent(inout)            :: hmlg
 

@@ -166,8 +166,7 @@ module w90_param_types
 
   ! this contains data which described the disentangled manifold, also used in postw90
   ! REVIEW_2021-08-04: Spheres variables in disentanglement_type should be moved here.
-  ! REVIEW_2021-08-04: rename "dis_manifold_type"
-  type disentangle_manifold_type
+  type dis_manifold_type
     !! ===========================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
     !! ===========================
@@ -184,7 +183,7 @@ module w90_param_types
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
     logical, allocatable :: lwindow(:, :)
-  end type disentangle_manifold_type
+  end type dis_manifold_type
 
   ! plot, transport, postw90: common, wan_ham, spin, berry, gyrotropic, kpath, kslice
   type fermi_data_type
@@ -743,7 +742,7 @@ contains
     implicit none
     logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     !integer, intent(in) :: num_bands, num_wann
@@ -1284,7 +1283,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
     !type(parameter_input_type), intent(inout) :: param_input
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     !type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -1606,7 +1605,7 @@ contains
     type(proj_input_type), intent(inout) :: input_proj
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_points_type), intent(inout) :: k_points
-    type(disentangle_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(kpoint_path_type), intent(inout) :: spec_points
@@ -1824,7 +1823,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(disentangle_manifold_type), intent(inout) :: dis_data
+    type(dis_manifold_type), intent(inout) :: dis_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -2000,7 +1999,7 @@ contains
 
     !data from parameters module
     type(wannier_data_type), intent(inout) :: wann_data
-    type(disentangle_manifold_type), intent(inout) :: dis_data
+    type(dis_manifold_type), intent(inout) :: dis_data
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: stdout

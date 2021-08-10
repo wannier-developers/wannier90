@@ -49,13 +49,13 @@ contains
     use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
@@ -259,14 +259,14 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, &
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
       print_output_type
 
     implicit none
 
     ! arguments
     type(berry_type), intent(in) :: berry
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -539,13 +539,13 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, &
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
       print_output_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -713,13 +713,13 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, &
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
       print_output_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -899,12 +899,12 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, print_output_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
@@ -1068,12 +1068,12 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
     type(postw90_oper_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
@@ -1237,12 +1237,12 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, print_output_type
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -1654,14 +1654,14 @@ contains
     !===============================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_manifold_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, print_output_type
 
     implicit none
 
     ! Arguments
     integer, intent(in) :: num_bands, ik !! Index of the required k-point
     integer, intent(out) :: win_min !! Index of the lower band of the outer energy window
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     logical, intent(in) :: have_disentangled
 
     ! local variables
@@ -1695,13 +1695,13 @@ contains
     !==========================================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: disentangle_manifold_type
+    use w90_param_types, only: dis_manifold_type
     use w90_utility, only: utility_zgemmm
 
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     !type(print_output_type), intent(in) :: verbose
     integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     real(kind=dp), intent(in) :: eigval(:, :)

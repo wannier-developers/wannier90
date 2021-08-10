@@ -39,7 +39,7 @@ contains
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_points_type, kmesh_info_type, &
-      wannier_data_type, atom_data_type, disentangle_manifold_type, fermi_data_type, &
+      wannier_data_type, atom_data_type, dis_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, plot_type, output_file_type, &
       hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
@@ -61,7 +61,7 @@ contains
     type(wannier_data_type), intent(in)          :: wann_data
     type(atom_data_type), intent(in)             :: atoms
     type(hamiltonian_type), intent(inout)        :: hamiltonian
-    type(disentangle_manifold_type), intent(in)  :: dis_window
+    type(dis_manifold_type), intent(in)  :: dis_window
     type(fermi_data_type), intent(in)            :: fermi
     type(fermi_surface_type), intent(in)         :: fermi_surface_data
     type(kpoint_path_type), intent(in)           :: spec_points
@@ -1113,7 +1113,7 @@ contains
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_points_type, wannier_data_type, &
-      atom_data_type, disentangle_manifold_type, print_output_type
+      atom_data_type, dis_manifold_type, print_output_type
     use wannier_param_types, only: plot_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
@@ -1125,7 +1125,7 @@ contains
     type(plot_type), intent(in) :: plot
     type(wannier_data_type), intent(in) :: wann_data
     type(atom_data_type), intent(in) :: atoms
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     logical, intent(in) :: spinors
     logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: bohr

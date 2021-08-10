@@ -56,7 +56,7 @@ contains
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
-    use w90_param_types, only: disentangle_manifold_type, kmesh_info_type, k_points_type, &
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
       print_output_type, fermi_data_type, wannier_data_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_spin, only: spin_get_nk
@@ -68,7 +68,7 @@ contains
 
     ! arguments
     type(berry_type), intent(in) :: berry
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points

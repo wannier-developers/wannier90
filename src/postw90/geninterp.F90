@@ -73,7 +73,7 @@ contains
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
     use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, postw90_ham_type
-    use w90_param_types, only: disentangle_manifold_type, k_points_type, print_output_type, &
+    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, ws_region_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
@@ -85,7 +85,7 @@ contains
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(geninterp_type), intent(in) :: geninterp
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common

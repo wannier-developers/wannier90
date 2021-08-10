@@ -210,7 +210,7 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, disentangle_manifold_type, print_output_type
+    use w90_param_types, only: atom_data_type, dis_manifold_type, print_output_type
     use wannier_param_types, only: hamiltonian_type
 
     implicit none
@@ -220,7 +220,7 @@ contains
     type(atom_data_type), intent(in)            :: atoms
     type(hamiltonian_type), intent(inout) :: hamiltonian
     type(print_output_type), intent(in)         :: verbose
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout)              :: irvec(:, :)

@@ -46,7 +46,7 @@ contains
     use w90_io, only: io_error
     use pw90_parameters, only: postw90_spin_type, postw90_common_type, postw90_oper_type
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
-      disentangle_manifold_type, k_points_type, ws_region_type
+      dis_manifold_type, k_points_type, ws_region_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
@@ -54,7 +54,7 @@ contains
     implicit none
 
     ! arguments
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_points_type), intent(in) :: k_points

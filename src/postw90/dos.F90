@@ -53,7 +53,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
       postw90_spin_type, postw90_oper_type
-    use w90_param_types, only: print_output_type, wannier_data_type, disentangle_manifold_type, &
+    use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, ws_region_type, w90_system_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
@@ -65,7 +65,7 @@ contains
 
     ! arguments
     type(berry_type), intent(in) :: berry
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_points_type), intent(in) :: k_points

@@ -88,8 +88,8 @@ contains
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
-    use w90_param_types, only: disentangle_manifold_type, print_output_type, wannier_data_type, &
-      k_points_type, disentangle_manifold_type, ws_region_type, w90_system_type
+    use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
+      k_points_type, ws_region_type, w90_system_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
       postw90_ham_type, dos_plot_type, postw90_oper_type
     use w90_ws_distance, only: ws_distance_type
@@ -99,7 +99,7 @@ contains
 
     ! arguments
     type(boltzwann_type), intent(in) :: boltz
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -685,7 +685,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
-      disentangle_manifold_type, ws_region_type
+      dis_manifold_type, ws_region_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
       postw90_common_type, postw90_oper_type
     use w90_param_methods, only: param_get_smearing_type
@@ -697,7 +697,7 @@ contains
 
     ! arguments
     type(boltzwann_type), intent(in) :: boltz
-    type(disentangle_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_window
     type(dos_plot_type), intent(in) :: dos_data
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
