@@ -273,7 +273,7 @@ contains
     use pw90_parameters, only: pw90_calculation_type, postw90_common_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
-      boltzwann_type
+      pw90_boltzwann_type
 
     type(print_output_type), intent(inout) :: verbose
     type(ws_region_type), intent(inout) :: rs_region
@@ -300,7 +300,7 @@ contains
     type(pw90_spin_hall_type), intent(inout) :: spin_hall
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_geninterp_mod_type), intent(inout) :: geninterp
-    type(boltzwann_type), intent(inout) :: boltz
+    type(pw90_boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -452,10 +452,10 @@ contains
     call comms_bcast(boltz%dos_energy_step, 1, stdout, seedname, world)
     call comms_bcast(boltz%dos_energy_min, 1, stdout, seedname, world)
     call comms_bcast(boltz%dos_energy_max, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smr%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smr%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smr%adaptive_prefactor, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smr%adaptive_max_width, 1, stdout, seedname, world)
+    call comms_bcast(boltz%dos_smearing%use_adaptive, 1, stdout, seedname, world)
+    call comms_bcast(boltz%dos_smearing%fixed_width, 1, stdout, seedname, world)
+    call comms_bcast(boltz%dos_smearing%adaptive_prefactor, 1, stdout, seedname, world)
+    call comms_bcast(boltz%dos_smearing%adaptive_max_width, 1, stdout, seedname, world)
     call comms_bcast(boltz%mu_min, 1, stdout, seedname, world)
     call comms_bcast(boltz%mu_max, 1, stdout, seedname, world)
     call comms_bcast(boltz%mu_step, 1, stdout, seedname, world)
@@ -468,7 +468,7 @@ contains
     call comms_bcast(boltz%relax_time, 1, stdout, seedname, world)
     call comms_bcast(boltz%TDF_smr_fixed_en_width, 1, stdout, seedname, world)
     call comms_bcast(boltz%TDF_smr_index, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smr%type_index, 1, stdout, seedname, world)
+    call comms_bcast(boltz%dos_smearing%type_index, 1, stdout, seedname, world)
     call comms_bcast(boltz%bandshift, 1, stdout, seedname, world)
     call comms_bcast(boltz%bandshift_firstband, 1, stdout, seedname, world)
     call comms_bcast(boltz%bandshift_energyshift, 1, stdout, seedname, world)

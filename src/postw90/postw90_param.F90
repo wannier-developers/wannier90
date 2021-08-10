@@ -211,8 +211,7 @@ module pw90_parameters
 
   ! [gp-begin, Apr 12, 2012]
   ! BoltzWann variables (postw90/boltzwann.F90)
-  ! REVIEW_2021-08-09: rename pw90_boltzwann_type
-  type boltzwann_type
+  type pw90_boltzwann_type
     !! =============
     !! Contains variables for the boltzwann module of postw90
     !! =============
@@ -221,8 +220,7 @@ module pw90_parameters
     real(kind=dp) :: dos_energy_step
     real(kind=dp) :: dos_energy_min
     real(kind=dp) :: dos_energy_max
-    ! REVIEW_2021-08-09: rename dos_smearing
-    type(pw90_smearing_type) :: dos_smr
+    type(pw90_smearing_type) :: dos_smearing
     real(kind=dp) :: mu_min
     real(kind=dp) :: mu_max
     real(kind=dp) :: mu_step
@@ -240,7 +238,7 @@ module pw90_parameters
     logical :: bandshift
     integer :: bandshift_firstband
     real(kind=dp) :: bandshift_energyshift
-  end type boltzwann_type
+  end type pw90_boltzwann_type
   ! [gp-end, Apr 12, 2012]
 
 end module pw90_parameters
@@ -313,7 +311,7 @@ contains
     ! arguments
     type(atom_data_type), intent(inout) :: atoms
     type(pw90_berry_mod_type), intent(inout) :: berry
-    type(boltzwann_type), intent(inout) :: boltz
+    type(pw90_boltzwann_type), intent(inout) :: boltz
     type(dis_manifold_type), intent(inout) :: dis_window
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(exclude_bands_type), intent(inout) :: excluded_bands
@@ -1057,7 +1055,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(boltzwann_type), intent(inout) :: boltz
+    type(pw90_boltzwann_type), intent(inout) :: boltz
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     type(pw90_smearing_type), intent(in) :: smearing
     logical, intent(in) :: do_boltzwann
@@ -1120,24 +1118,24 @@ contains
     if (boltz%dos_energy_max <= boltz%dos_energy_min) &
       call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', stdout, seedname)
 
-    boltz%dos_smr%use_adaptive = smearing%use_adaptive
+    boltz%dos_smearing%use_adaptive = smearing%use_adaptive
     call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found, &
-                           l_value=boltz%dos_smr%use_adaptive)
+                           l_value=boltz%dos_smearing%use_adaptive)
 
-    boltz%dos_smr%adaptive_prefactor = smearing%adaptive_prefactor
+    boltz%dos_smearing%adaptive_prefactor = smearing%adaptive_prefactor
     call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found, &
-                           r_value=boltz%dos_smr%adaptive_prefactor)
-    if (found .and. (boltz%dos_smr%adaptive_prefactor <= 0._dp)) &
+                           r_value=boltz%dos_smearing%adaptive_prefactor)
+    if (found .and. (boltz%dos_smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
-    boltz%dos_smr%adaptive_max_width = smearing%adaptive_max_width
-    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, r_value=boltz%dos_smr%adaptive_max_width)
-    if (boltz%dos_smr%adaptive_max_width <= 0._dp) call io_error &
+    boltz%dos_smearing%adaptive_max_width = smearing%adaptive_max_width
+    call param_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, r_value=boltz%dos_smearing%adaptive_max_width)
+    if (boltz%dos_smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: boltz_dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
-    boltz%dos_smr%fixed_width = smearing%fixed_width
-    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smr%fixed_width)
-    if (found .and. (boltz%dos_smr%fixed_width < 0._dp)) &
+    boltz%dos_smearing%fixed_width = smearing%fixed_width
+    call param_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, r_value=boltz%dos_smearing%fixed_width)
+    if (found .and. (boltz%dos_smearing%fixed_width < 0._dp)) &
       call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     boltz%mu_min = -999._dp
@@ -1197,9 +1195,9 @@ contains
     if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    boltz%dos_smr%type_index = smearing%type_index
+    boltz%dos_smearing%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found, c_value=ctmp)
-    if (found) boltz%dos_smr%type_index = get_smearing_index(ctmp, 'boltz_dos_smr_type', stdout, seedname)
+    if (found) boltz%dos_smearing%type_index = get_smearing_index(ctmp, 'boltz_dos_smr_type', stdout, seedname)
 
     ! By default: 10 fs relaxation time
     boltz%relax_time = 10._dp
@@ -1344,7 +1342,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
-    type(boltzwann_type), intent(inout) :: boltz
+    type(pw90_boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: global_kmesh_set
     real(kind=dp), intent(in) :: kmesh_spacing
@@ -1489,7 +1487,7 @@ contains
     type(pw90_berry_mod_type), intent(in) :: berry
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(pw90_geninterp_mod_type), intent(in) :: geninterp
-    type(boltzwann_type), intent(in) :: boltz
+    type(pw90_boltzwann_type), intent(in) :: boltz
     type(pw90_extra_io_type), intent(in) :: write_data
 
     integer :: i, loop, nat, nsp
@@ -1929,26 +1927,26 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', boltz%dos_energy_min, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', boltz%dos_energy_max, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', boltz%dos_energy_step, '|'
-        if (boltz%dos_smr%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
-            boltz%dos_smr%adaptive_prefactor == write_data%smear%adaptive_prefactor &
-            .and. boltz%dos_smr%adaptive_max_width == write_data%smear%adaptive_max_width &
-            .and. boltz%dos_smr%fixed_width == write_data%smear%fixed_width .and. &
-            write_data%smear%type_index == boltz%dos_smr%type_index) then
+        if (boltz%dos_smearing%use_adaptive .eqv. write_data%smear%use_adaptive .and. &
+            boltz%dos_smearing%adaptive_prefactor == write_data%smear%adaptive_prefactor &
+            .and. boltz%dos_smearing%adaptive_max_width == write_data%smear%adaptive_max_width &
+            .and. boltz%dos_smearing%fixed_width == write_data%smear%fixed_width .and. &
+            write_data%smear%type_index == boltz%dos_smearing%type_index) then
           write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
         else
-          if (boltz%dos_smr%use_adaptive) then
+          if (boltz%dos_smearing%use_adaptive) then
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Adaptive width smearing               :', '       T', '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-              '|  DOS Adaptive smearing factor              :', boltz%dos_smr%adaptive_prefactor, '|'
+              '|  DOS Adaptive smearing factor              :', boltz%dos_smearing%adaptive_prefactor, '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-              '|  DOS Maximum allowed smearing width        :', boltz%dos_smr%adaptive_max_width, '|'
+              '|  DOS Maximum allowed smearing width        :', boltz%dos_smearing%adaptive_max_width, '|'
           else
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Fixed width smearing                  :', '       T', '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :', &
-              boltz%dos_smr%fixed_width, '|'
+              boltz%dos_smearing%fixed_width, '|'
           endif
           write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
-            trim(param_get_smearing_type(boltz%dos_smr%type_index)), '|'
+            trim(param_get_smearing_type(boltz%dos_smearing%type_index)), '|'
         endif
       endif
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -2023,7 +2021,7 @@ contains
     real(kind=dp), intent(in) :: mem_param
     real(kind=dp), intent(inout) :: mem_bw
     logical, intent(in) :: do_boltzwann, spin_decomp
-    type(boltzwann_type) :: boltz
+    type(pw90_boltzwann_type) :: boltz
     integer :: NumPoints1, NumPoints2, NumPoints3, ndim
     real(kind=dp) :: TDF_exceeding_energy
 

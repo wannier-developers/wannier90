@@ -168,7 +168,7 @@ program postw90
   type(pw90_spin_hall_type) :: spin_hall
   type(pw90_gyrotropic_type) :: gyrotropic
   type(pw90_geninterp_mod_type) :: geninterp
-  type(boltzwann_type) :: boltz
+  type(pw90_boltzwann_type) :: boltz
   ! end pw90_parameters
   ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
