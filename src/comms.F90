@@ -1359,5 +1359,5 @@ contains
 #endif
 
   end subroutine comms_scatterv_int_3
-
 end module w90_comms
+

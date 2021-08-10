@@ -40,11 +40,11 @@ wannier: ../../wannier90.x
 w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
-../../w90chk2chk.x: $(OBJS) ../w90chk2chk.F90
-	$(COMPILER) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
+../../w90chk2chk.x: $(OBJSLIB) ../w90chk2chk.F90
+	$(F90) ../w90chk2chk.F90 $(LDOPTS) $(OBJSLIB) $(LIBS) -o ../../w90chk2chk.x
 
-../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
-	$(COMPILER) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
+../../w90spn2spn.x: $(OBJSLIB) ../w90spn2spn.F90
+	$(F90) ../w90spn2spn.F90 $(LDOPTS) $(OBJSLIB) $(LIBS) -o ../../w90spn2spn.x
 
 ../../wannier90.x: $(LIBRARYV2) ../wannier_prog.F90
 	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
@@ -102,7 +102,13 @@ clean:
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90
 
-io.o: ../io.F90 constants.o
+comms-abort-serial.o: ../comms-abort.F90
+	$(COMPILER) $(FCOPTS) -c ../comms-abort.F90 -o comms-abort-serial.o
+
+comms-abort.o: ../comms-abort.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms-abort.F90
+
+io.o: ../io.F90 constants.o comms-abort.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../io.F90
 
 utility.o: ../utility.F90  constants.o io.o
