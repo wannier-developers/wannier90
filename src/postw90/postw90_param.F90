@@ -37,8 +37,7 @@ module pw90_parameters
     ! REVIEW_2021-08-09: move decomp here and rename to spin_decomp
   end type pw90_calculation_type
 
-  ! REVIEW_2021-08-09: Rename pw90_oper_read_type (make all of them pw90_* for consistency)
-  type postw90_oper_type ! only in postw90/get_oper.F90
+  type pw90_oper_read_type ! only in postw90/get_oper.F90
     !! ==============
     !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
     !! ==============
@@ -46,7 +45,7 @@ module pw90_parameters
     !! Read the spin from fortran formatted file
     logical :: uHu_formatted
     !! Read the uHu from fortran formatted file
-  end type postw90_oper_type
+  end type pw90_oper_read_type
 
   ! consider removing this
   ! REVIEW_2021-08-09: See Issue 34 in the main repo for a discussion about scissors_shift
@@ -345,7 +344,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(postw90_common_type), intent(inout) :: pw90_common
     type(postw90_ham_type), intent(inout) :: pw90_ham
-    type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(pw90_oper_read_type), intent(inout) :: postw90_oper
     type(postw90_spin_type), intent(inout) :: pw90_spin
     type(print_output_type), intent(inout) :: verbose
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
@@ -486,7 +485,7 @@ contains
   subroutine param_read_oper(postw90_oper, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
-    type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(pw90_oper_read_type), intent(inout) :: postw90_oper
     character(len=50), intent(in)  :: seedname
 
     logical :: found
@@ -1499,7 +1498,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(kpoint_path_type), intent(in) :: spec_points
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(kpath_type), intent(in) :: kpath

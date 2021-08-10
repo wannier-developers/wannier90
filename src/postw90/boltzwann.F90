@@ -91,7 +91,7 @@ contains
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       k_points_type, ws_region_type, w90_system_type
     use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
-      postw90_ham_type, dos_plot_type, postw90_oper_type
+      postw90_ham_type, dos_plot_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
 
@@ -104,7 +104,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
@@ -687,7 +687,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
       dis_manifold_type, ws_region_type
     use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
-      postw90_common_type, postw90_oper_type
+      postw90_common_type, pw90_oper_read_type
     use w90_param_methods, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
@@ -702,7 +702,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region

@@ -289,7 +289,6 @@ contains
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    !type(postw90_oper_type), intent(inout) :: postw90_oper
     type(postw90_common_type), intent(inout) :: pw90_common
     type(postw90_spin_type), intent(inout) :: pw90_spin
     type(postw90_ham_type), intent(inout) :: pw90_ham

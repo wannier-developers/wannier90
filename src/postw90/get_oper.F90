@@ -255,7 +255,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: berry_type, postw90_common_type, postw90_oper_type, spin_hall_type
+    use pw90_parameters, only: berry_type, postw90_common_type, pw90_oper_read_type, spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -709,7 +709,7 @@ contains
     !
     !=============================================================
 
-    use pw90_parameters, only: postw90_common_type, postw90_oper_type
+    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -723,7 +723,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -1064,7 +1064,7 @@ contains
     !
     !================================================================
 
-    use pw90_parameters, only: postw90_common_type, postw90_oper_type
+    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -1075,7 +1075,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -1233,7 +1233,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: postw90_common_type, postw90_oper_type, spin_hall_type
+    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type, spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -1246,7 +1246,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(spin_hall_type), intent(in) :: spin_hall
     type(w90commtype), intent(in) :: comm

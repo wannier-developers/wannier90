@@ -152,7 +152,7 @@ program postw90
 
   logical, save :: eig_found ! used to control broadcast of eigval
 
-  type(postw90_oper_type), save :: postw90_oper
+  type(pw90_oper_read_type), save :: postw90_oper
   type(postw90_common_type), save :: pw90_common
   type(postw90_spin_type), save :: pw90_spin
   type(postw90_ham_type), save :: pw90_ham

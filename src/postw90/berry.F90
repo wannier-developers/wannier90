@@ -96,7 +96,7 @@ contains
     use w90_param_types, only: print_output_type, fermi_data_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
     use pw90_parameters, only: berry_type, postw90_common_type, postw90_spin_type, spin_hall_type, &
-      postw90_ham_type, postw90_oper_type
+      postw90_ham_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
@@ -110,7 +110,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
-    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_spin_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
