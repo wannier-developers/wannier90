@@ -77,7 +77,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
-    type(disentangle_type), intent(inout) :: dis_data
+    type(dis_control_type), intent(inout) :: dis_data
     type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
@@ -521,7 +521,7 @@ contains
     !logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
     integer, intent(in) :: stdout
-    type(disentangle_type), intent(inout) :: dis_data
+    type(dis_control_type), intent(inout) :: dis_data
     integer, intent(in) :: num_bands, num_wann
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
@@ -1173,7 +1173,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     type(hamiltonian_type), intent(in) :: hamiltonian
     type(k_points_type), intent(in) :: k_points
-    type(disentangle_type), intent(in) :: dis_data
+    type(dis_control_type), intent(in) :: dis_data
     type(fermi_surface_type), intent(in) :: fermi_surface_data
     type(fermi_data_type), intent(in) :: fermi
     type(transport_type), intent(in) :: tran
@@ -1610,7 +1610,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_points_type), intent(inout) :: k_points
-    type(disentangle_type), intent(inout) :: dis_data
+    type(dis_control_type), intent(inout) :: dis_data
     type(dis_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
@@ -1799,7 +1799,7 @@ contains
     type(print_output_type), intent(in) :: verbose
     type(wannierise_type), intent(in) :: wannierise
     type(kmesh_info_type), intent(in) :: kmesh_info
-    !type(disentangle_type), intent(in) :: dis_data
+    !type(dis_control_type), intent(in) :: dis_data
     type(proj_input_type), intent(in) :: proj_input
     type(atom_data_type), intent(in) :: atoms
 
@@ -2052,7 +2052,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
-    type(disentangle_type), intent(inout) :: dis_data
+    type(dis_control_type), intent(inout) :: dis_data
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(proj_input_type), intent(inout) :: proj_input

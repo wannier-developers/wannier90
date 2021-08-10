@@ -135,7 +135,7 @@ module wannlib_param_data
   type(wvfn_read_type), save :: plot
   type(band_plot_type), save :: band_plot
   type(wannier_plot_type), save :: wann_plot
-  type(disentangle_type), save :: dis_data
+  type(dis_control_type), save :: dis_data
   type(wannierise_type), save :: wannierise
   ! RS: symmetry-adapted Wannier functions
   logical, save :: lsitesymmetry = .false.

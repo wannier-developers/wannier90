@@ -115,8 +115,7 @@ module wannier_param_types
   end type wvfn_read_type
 
   ! parameters used to control the minimisation of the disentanglement process
-  ! REVIEW_2021-08-04: rename "dis_control_type"
-  type disentangle_type
+  type dis_control_type
     !! ========================
     !! Contains parameters that control the disentanglement minimisation procedure
     !! ========================
@@ -134,7 +133,7 @@ module wannier_param_types
     integer :: spheres_num
     real(kind=dp), allocatable :: spheres(:, :)
     ! GS-end
-  end type disentangle_type
+  end type dis_control_type
 
   type wann_control_type ! only in wannierise.F90
     !! ========================

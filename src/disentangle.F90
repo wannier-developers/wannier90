@@ -22,7 +22,7 @@ module w90_disentangle
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
     print_output_type
-  use wannier_param_types, only: disentangle_type
+  use wannier_param_types, only: dis_control_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
     sitesym_dis_extract_symmetry, sitesym_data
@@ -65,7 +65,7 @@ contains
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
-    type(disentangle_type), intent(inout) :: dis_data
+    type(dis_control_type), intent(inout) :: dis_data
     type(dis_manifold_type), intent(inout) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -727,7 +727,7 @@ contains
     implicit none
 
     ! passed variables
-    type(disentangle_type), intent(in) :: dis_data
+    type(dis_control_type), intent(in) :: dis_data
     type(dis_manifold_type), intent(inout) :: window ! ndimwin alone is modified
 
     integer, intent(in) :: iprint, timing_level
@@ -1685,7 +1685,7 @@ contains
     logical, intent(in) :: on_root, lsitesymmetry
     character(len=50), intent(in)  :: seedname
 
-    type(disentangle_type), intent(in) :: dis_data
+    type(dis_control_type), intent(in) :: dis_data
     type(dis_manifold_type), intent(in) :: window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: verbose
@@ -2611,7 +2611,7 @@ contains
     implicit none
 
     ! passed variables
-    type(disentangle_type), intent(in) :: dis_data
+    type(dis_control_type), intent(in) :: dis_data
     type(dis_manifold_type), intent(in) :: window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: verbose
