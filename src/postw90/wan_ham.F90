@@ -313,10 +313,10 @@ contains
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag
-    use pw90_parameters, only: postw90_ham_type
+    use pw90_parameters, only: pw90_band_deriv_degen_type
 
     ! arguments
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: eig(num_wann)
@@ -411,7 +411,7 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_constants, only: dp
-    use pw90_parameters, only: postw90_common_type, postw90_ham_type
+    use pw90_parameters, only: postw90_common_type, pw90_band_deriv_degen_type
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
@@ -429,7 +429,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -498,10 +498,10 @@ contains
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    use pw90_parameters, only: postw90_ham_type
+    use pw90_parameters, only: pw90_band_deriv_degen_type
 
     ! arguments
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout

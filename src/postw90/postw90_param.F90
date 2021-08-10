@@ -80,15 +80,14 @@ module pw90_parameters
   ! REVIEW_2021-08-09: type(k_point_type), intent(in) :: k_points        ! fixed
   ! REVIEW_2021-08-09: This would make reading and debugging the code easier in future.
 
-  ! REVIEW_2021-08-09: rename pw90_band_deriv_degen_type
-  type postw90_ham_type
+  type pw90_band_deriv_degen_type
     !! ================
     !! Contains variables for doing degenerate perturbation theory when bands are degenerate
     !! and band derivatives are needed.
     !! ================
     logical :: use_degen_pert
     real(kind=dp) :: degen_thr
-  end type postw90_ham_type
+  end type pw90_band_deriv_degen_type
 
   ! module  k p a t h (used by postw90/kpath)
   ! REVIEW_2021-08-09: rename pw90_kpath_mod_type
@@ -341,7 +340,7 @@ contains
     type(kslice_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(postw90_common_type), intent(inout) :: pw90_common
-    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
     type(pw90_oper_read_type), intent(inout) :: postw90_oper
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(print_output_type), intent(inout) :: verbose
@@ -886,7 +885,7 @@ contains
 !   use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(postw90_ham_type), intent(out) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(out) :: pw90_ham
     character(len=50), intent(in)  :: seedname
 
     logical :: found

@@ -79,7 +79,7 @@ contains
     use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use pw90_parameters, only: gyrotropic_type, berry_type, pw90_oper_read_type, postw90_ham_type, &
+    use pw90_parameters, only: gyrotropic_type, berry_type, pw90_oper_read_type, pw90_band_deriv_degen_type, &
       postw90_common_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
@@ -97,7 +97,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
@@ -557,7 +557,7 @@ contains
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use pw90_parameters, only: gyrotropic_type, postw90_common_type, postw90_ham_type
+    use pw90_parameters, only: gyrotropic_type, postw90_common_type, pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, fermi_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
@@ -575,7 +575,7 @@ contains
     type(gyrotropic_type), intent(in) :: gyrotropic
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm

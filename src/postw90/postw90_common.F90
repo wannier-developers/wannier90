@@ -271,7 +271,7 @@ contains
     use w90_comms, only: mpirank, w90commtype, comms_bcast
     use w90_param_types
     use pw90_parameters, only: pw90_calculation_type, postw90_common_type, &
-      pw90_spin_mod_type, postw90_ham_type, kpath_type, kslice_type, dos_plot_type, berry_type, &
+      pw90_spin_mod_type, pw90_band_deriv_degen_type, kpath_type, kslice_type, dos_plot_type, berry_type, &
       spin_hall_type, gyrotropic_type, geninterp_type, boltzwann_type
 
     type(print_output_type), intent(inout) :: verbose
@@ -291,7 +291,7 @@ contains
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
     type(postw90_common_type), intent(inout) :: pw90_common
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
-    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
     type(kpath_type), intent(inout) :: kpath
     type(kslice_type), intent(inout) :: kslice
     type(dos_plot_type), intent(inout) :: dos_data

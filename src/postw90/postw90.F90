@@ -155,7 +155,7 @@ program postw90
   type(pw90_oper_read_type), save :: postw90_oper
   type(postw90_common_type), save :: pw90_common
   type(pw90_spin_mod_type), save :: pw90_spin
-  type(postw90_ham_type), save :: pw90_ham
+  type(pw90_band_deriv_degen_type), save :: pw90_ham
   type(kpath_type), save :: kpath
   type(kslice_type), save :: kslice
 

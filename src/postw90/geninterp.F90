@@ -72,7 +72,8 @@ contains
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
-    use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, postw90_ham_type
+    use pw90_parameters, only: postw90_common_type, spin_hall_type, geninterp_type, &
+      pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, ws_region_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
@@ -89,7 +90,7 @@ contains
     type(geninterp_type), intent(in) :: geninterp
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm

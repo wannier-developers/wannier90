@@ -59,7 +59,7 @@ contains
       wannier_data_type, dis_manifold_type, k_points_type, kmesh_info_type, &
       ws_region_type
     use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, pw90_spin_mod_type, &
-      postw90_ham_type, postw90_common_type, pw90_oper_read_type
+      pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_ws_distance, only: ws_distance_type
@@ -75,7 +75,7 @@ contains
     type(kpath_type), intent(in) :: kpath
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose

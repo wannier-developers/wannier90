@@ -96,7 +96,7 @@ contains
     use w90_param_types, only: print_output_type, fermi_data_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
     use pw90_parameters, only: berry_type, postw90_common_type, pw90_spin_mod_type, spin_hall_type, &
-      postw90_ham_type, pw90_oper_read_type
+      pw90_band_deriv_degen_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
@@ -109,7 +109,7 @@ contains
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
@@ -1693,7 +1693,7 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, k_points_type, ws_region_type
-    use pw90_parameters, only: berry_type, postw90_common_type, pw90_spin_mod_type, postw90_ham_type
+    use pw90_parameters, only: berry_type, postw90_common_type, pw90_spin_mod_type, pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, wigner_seitz_type
     use w90_spin, only: spin_get_nk
@@ -1708,7 +1708,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -1903,7 +1903,7 @@ contains
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
-    use pw90_parameters, only: berry_type, postw90_ham_type, postw90_common_type
+    use pw90_parameters, only: berry_type, pw90_band_deriv_degen_type, postw90_common_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
       pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -1923,7 +1923,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -2180,7 +2180,8 @@ contains
     use w90_comms, only: w90commtype
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
-    use pw90_parameters, only: berry_type, spin_hall_type, postw90_ham_type, postw90_common_type
+    use pw90_parameters, only: berry_type, spin_hall_type, pw90_band_deriv_degen_type, &
+      postw90_common_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
       pw90common_kmesh_spacing, wigner_seitz_type
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -2194,7 +2195,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_ham_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(spin_hall_type), intent(in) :: spin_hall
