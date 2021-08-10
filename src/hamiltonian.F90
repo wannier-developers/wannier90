@@ -211,14 +211,14 @@ contains
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: atom_data_type, dis_manifold_type, print_output_type
-    use wannier_param_types, only: hamiltonian_type
+    use wannier_param_types, only: real_space_ham_type
 
     implicit none
 
     ! passed variables
     type(ham_logical), intent(inout)            :: hmlg
     type(atom_data_type), intent(in)            :: atoms
-    type(hamiltonian_type), intent(inout) :: hamiltonian
+    type(real_space_ham_type), intent(inout) :: hamiltonian
     type(print_output_type), intent(in)         :: verbose
     type(dis_manifold_type), intent(in) :: dis_window
 
@@ -439,13 +439,13 @@ contains
       use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: atom_data_type
-      use wannier_param_types, only: hamiltonian_type
+      use wannier_param_types, only: real_space_ham_type
 
       implicit none
 
       ! passed variables
       type(atom_data_type), intent(in)            :: atoms
-      type(hamiltonian_type), intent(inout) :: hamiltonian
+      type(real_space_ham_type), intent(inout) :: hamiltonian
 
       integer, intent(inout) :: shift_vec(:, :)
       integer, intent(in)    :: iprint

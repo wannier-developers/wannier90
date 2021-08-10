@@ -63,7 +63,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: wannierise_type, output_file_type, &
-      w90_calculation_type, hamiltonian_type
+      w90_calculation_type, real_space_ham_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
       exclude_bands_type, ws_region_type
@@ -89,7 +89,7 @@ contains
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(print_output_type), intent(in) :: verbose
     type(output_file_type), intent(in) :: out_files
-    type(hamiltonian_type), intent(inout) :: hamiltonian
+    type(real_space_ham_type), intent(inout) :: hamiltonian
     type(wannierise_type), intent(inout) :: wannierise
     type(sitesym_data), intent(in) :: sym
     type(w90_calculation_type), intent(in) :: w90_calcs

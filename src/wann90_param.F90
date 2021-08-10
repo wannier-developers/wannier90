@@ -71,11 +71,13 @@ module wannier_param_types
     ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
     ! REVIEW_2021-07-22: to put it here.
     integer :: system_dim
-    ! REVIEW_2021-08-09: move contents of what is currently "hamiltonian_type" into here.
     ! REVIEW_2021-08-09: future plan is that these variables (translation_centre_frac and
     ! REVIEW_2021-08-09: automatic_translation will also result in the hamiltonian being
     ! REVIEW_2021-08-09: modified to be consistent with the translated Wannier centres.
     ! REVIEW_2021-08-09: This is related to Issue 39 in the main repo.
+    real(kind=dp) :: translation_centre_frac(3)
+    ! For Hamiltonian matrix in WF representation
+    logical              :: automatic_translation
   end type real_space_ham_type
 
   type band_plot_type
@@ -206,17 +208,6 @@ module wannier_param_types
     ! REVIEW_2021-08-04: remove proj_site altogether.
     real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
   end type wannierise_type
-
-  ! REVIEW_2021-08-09: move contents of "hamiltonian_type" into real_space_ham_type above.
-  ! REVIEW_2021-08-09: future plan is that these variables (translation_centre_frac and
-  ! REVIEW_2021-08-09: automatic_translation will also result in the hamiltonian being
-  ! REVIEW_2021-08-09: modified to be consistent with the translated Wannier centres.
-  ! REVIEW_2021-08-09: This is related to Issue 39 in the main repo.
-  type hamiltonian_type
-    real(kind=dp) :: translation_centre_frac(3)
-    ! For Hamiltonian matrix in WF representation
-    logical              :: automatic_translation
-  end type hamiltonian_type
 
   ! REVIEW_2021-08-09: Perhaps rename fermi_surface_plot_type
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.
