@@ -389,8 +389,8 @@ contains
 
     ! constrained centres part
     lambda_loc = 0.0_dp
-    if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
-      lambda_loc = wannierise%constrain%slwf_lambda
+    if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
+      lambda_loc = wannierise%constrain%lambda
     end if
 
     ! calculate initial centers and spread
@@ -430,7 +430,7 @@ contains
       write (stdout, 1001) (sum(rave(ind, :))*verbose%lenconfac, ind=1, 3), &
         (sum(r2ave) - sum(rave2))*verbose%lenconfac**2
       write (stdout, *)
-      if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
+      if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
         write (stdout, '(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') iter, &
           (wann_spread%om_tot - old_spread%om_tot)*verbose%lenconfac**2, &
           sqrt(abs(gcnorm1))*verbose%lenconfac, &
@@ -440,7 +440,7 @@ contains
           ' O_IOD=', (wann_spread%om_iod + wann_spread%om_nu)*verbose%lenconfac**2, &
           ' O_TOT=', wann_spread%om_tot*verbose%lenconfac**2, ' <-- SPRD'
         write (stdout, '(1x,a78)') repeat('-', 78)
-      elseif (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%slwf_constrain) then
+      elseif (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%constrain) then
         write (stdout, '(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') iter, &
           (wann_spread%om_tot - old_spread%om_tot)*verbose%lenconfac**2, &
           sqrt(abs(gcnorm1))*verbose%lenconfac, &
@@ -637,7 +637,7 @@ contains
         write (stdout, 1001) (sum(rave(ind, :))*verbose%lenconfac, ind=1, 3), &
           (sum(r2ave) - sum(rave2))*verbose%lenconfac**2
         write (stdout, *)
-        if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
+        if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
           write (stdout, '(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
             iter, (wann_spread%om_tot - old_spread%om_tot)*verbose%lenconfac**2, &
             sqrt(abs(gcnorm1))*verbose%lenconfac, &
@@ -652,7 +652,7 @@ contains
             ' O_D=', (wann_spread%om_d - old_spread%om_d)*verbose%lenconfac**2, &
             ' O_TOT=', (wann_spread%om_tot - old_spread%om_tot)*verbose%lenconfac**2, ' <-- DLTA'
           write (stdout, '(1x,a78)') repeat('-', 78)
-        elseif (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%slwf_constrain) then
+        elseif (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%constrain) then
           write (stdout, '(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
             iter, (wann_spread%om_tot - old_spread%om_tot)*verbose%lenconfac**2, &
             sqrt(abs(gcnorm1))*verbose%lenconfac, &
@@ -752,12 +752,12 @@ contains
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
 
     ! Evaluate the penalty functional
-    if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
+    if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
       rnr0n2 = 0.0_dp
       do iw = 1, wannierise%constrain%slwf_num
-        rnr0n2(iw) = (wann_data%centres(1, iw) - wannierise%constrain%ccentres_cart(iw, 1))**2 &
-                     + (wann_data%centres(2, iw) - wannierise%constrain%ccentres_cart(iw, 2))**2 &
-                     + (wann_data%centres(3, iw) - wannierise%constrain%ccentres_cart(iw, 3))**2
+        rnr0n2(iw) = (wann_data%centres(1, iw) - wannierise%constrain%centres(iw, 1))**2 &
+                     + (wann_data%centres(2, iw) - wannierise%constrain%centres(iw, 2))**2 &
+                     + (wann_data%centres(3, iw) - wannierise%constrain%centres(iw, 3))**2
       end do
     end if
 
@@ -770,7 +770,7 @@ contains
       write (stdout, 1001) (sum(rave(ind, :))*verbose%lenconfac, ind=1, 3), &
         (sum(r2ave) - sum(rave2))*verbose%lenconfac**2
       write (stdout, *)
-      if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
+      if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
         write (stdout, '(3x,a21,a,f15.9)') '     Spreads ('//trim(verbose%length_unit)//'^2)', &
           '       Omega IOD_C   = ', (wann_spread%om_iod + wann_spread%om_nu)*verbose%lenconfac**2
         write (stdout, '(3x,a,f15.9)') '     ================       Omega D       = ', &
@@ -782,7 +782,7 @@ contains
         write (stdout, '(3x,a21,a,f15.9)') 'Final Spread ('//trim(verbose%length_unit)//'^2)', &
           '       Omega Total_C = ', wann_spread%om_tot*verbose%lenconfac**2
         write (stdout, '(1x,a78)') repeat('-', 78)
-      else if (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%slwf_constrain) then
+      else if (wannierise%constrain%selective_loc .and. .not. wannierise%constrain%constrain) then
         write (stdout, '(3x,a21,a,f15.9)') '     Spreads ('//trim(verbose%length_unit)//'^2)', &
           '       Omega IOD    = ', wann_spread%om_iod*verbose%lenconfac**2
         write (stdout, '(3x,a,f15.9)') '     ================       Omega D      = ', &
@@ -2069,16 +2069,7 @@ contains
 
     ! from w90_parameters
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: nntot
-!   real(kind=dp), intent(in) :: wb(:)
-!   real(kind=dp), intent(in) :: bk(:, :, :)
     integer, intent(in) :: num_kpts
-!   real(kind=dp), intent(in) :: omega_invariant
-!   logical, intent(in) :: selective_loc
-!   logical, intent(in) :: slwf_constrain
-!   integer, intent(in) :: slwf_num
-!   real(kind=dp), intent(in) :: ccentres_cart(:, :)
-!   integer, intent(in) :: timing_level
     ! end of parameters
     integer, intent(in) :: counts(0:), displs(0:)
     real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
@@ -2217,7 +2208,7 @@ contains
             summ = summ &
                    + real(m_matrix_loc(n, n, nn, nkp_loc) &
                           *conjg(m_matrix_loc(n, n, nn, nkp_loc)), kind=dp)
-            if (wann_constrain%slwf_constrain) then
+            if (wann_constrain%constrain) then
               !! Centre constraint contribution. Zero if slwf_constrain=false
               summ = summ - lambda_loc*ln_tmp_loc(n, nn, nkp_loc)**2
             end if
@@ -2249,14 +2240,14 @@ contains
 
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
-      if (wann_constrain%slwf_constrain) then
+      if (wann_constrain%constrain) then
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           do nn = 1, kmesh_info%nntot
             do n = 1, wann_constrain%slwf_num
               wann_spread%om_nu = wann_spread%om_nu + 2.0_dp*kmesh_info%wb(nn)* &
                                   ln_tmp_loc(n, nn, nkp_loc)*lambda_loc* &
-                                  sum(kmesh_info%bk(:, nn, nkp)*wann_constrain%ccentres_cart(n, :))
+                                  sum(kmesh_info%bk(:, nn, nkp)*wann_constrain%centres(n, :))
             enddo
           enddo
         enddo
@@ -2267,7 +2258,7 @@ contains
 
         do n = 1, wann_constrain%slwf_num
           wann_spread%om_nu = wann_spread%om_nu &
-                              + lambda_loc*sum(wann_constrain%ccentres_cart(n, :)**2)
+                              + lambda_loc*sum(wann_constrain%centres(n, :)**2)
         end do
 
       end if
@@ -2418,7 +2409,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating cr in wann_domega', stdout, seedname)
     allocate (crt(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating crt in wann_domega', stdout, seedname)
-    if (wann_constrain%selective_loc .and. wann_constrain%slwf_constrain) then
+    if (wann_constrain%selective_loc .and. wann_constrain%constrain) then
       allocate (r0kb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating r0kb in wann_domega', stdout, seedname)
     end if
@@ -2452,14 +2443,14 @@ contains
     call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout, seedname, comm)
 
     ! b.r_0n are calculated
-    if (wann_constrain%selective_loc .and. wann_constrain%slwf_constrain) then
+    if (wann_constrain%selective_loc .and. wann_constrain%constrain) then
       r0kb = 0.0_dp
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             r0kb(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp) &
-                                       *wann_constrain%ccentres_cart(n, :))
+                                       *wann_constrain%centres(n, :))
           enddo
         enddo
       enddo
@@ -2503,7 +2494,7 @@ contains
                                              - (crt(m, n)*rnkb_loc(n, nn, nkp_loc) &
                                                 + conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc))) &
                                              *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                  if (wann_constrain%slwf_constrain) then
+                  if (wann_constrain%constrain) then
                     cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                                *(crt(m, n)*ln_tmp_loc(n, nn, nkp_loc) &
                                                  + conjg(crt(n, m)*ln_tmp_loc(m, nn, nkp_loc))) &
@@ -2529,7 +2520,7 @@ contains
                                              - conjg(crt(n, m)*(ln_tmp_loc(m, nn, nkp_loc) &
                                                                 + kmesh_info%wb(nn)*rnkb_loc(m, nn, nkp_loc))) &
                                              *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                  if (wann_constrain%slwf_constrain) then
+                  if (wann_constrain%constrain) then
                     cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                                *conjg(crt(n, m)*(ln_tmp_loc(m, nn, nkp_loc) &
                                                                  + kmesh_info%wb(nn)*rnkb_loc(m, nn, nkp_loc))) &
@@ -2549,7 +2540,7 @@ contains
                                            - crt(m, n)*(ln_tmp_loc(n, nn, nkp_loc) &
                                                         + kmesh_info%wb(nn)*rnkb_loc(n, nn, nkp_loc)) &
                                            *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                if (wann_constrain%slwf_constrain) then
+                if (wann_constrain%constrain) then
                   cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                              *crt(m, n)*(ln_tmp_loc(n, nn, nkp_loc) &
                                                          + kmesh_info%wb(nn)*rnkb_loc(n, nn, nkp_loc)) &

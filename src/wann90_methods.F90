@@ -195,7 +195,7 @@ contains
         wannierise%proj_site(:, :) = proj%site(:, :)
       endif
       ! projections needs to be allocated before reading constrained centres
-      if (wannierise%constrain%slwf_constrain) then
+      if (wannierise%constrain%constrain) then
         call param_read_constrained_centres(write_data%ccentres_frac, wannierise, &
                                             real_lattice, num_wann, library, stdout, seedname)
       endif
@@ -490,27 +490,27 @@ contains
         wannierise%constrain%selective_loc = .true.
     end if
 
-    wannierise%constrain%slwf_constrain = .false.
+    wannierise%constrain%constrain = .false.
     call param_get_keyword(stdout, seedname, 'slwf_constrain', found, &
-                           l_value=wannierise%constrain%slwf_constrain)
-    if (found .and. wannierise%constrain%slwf_constrain) then
+                           l_value=wannierise%constrain%constrain)
+    if (found .and. wannierise%constrain%constrain) then
       if (wannierise%constrain%selective_loc) then
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
-        allocate (wannierise%constrain%ccentres_cart(num_wann, 3), stat=ierr)
+        allocate (wannierise%constrain%centres(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
       else
         write (stdout, *) ' No selective localisation requested. Ignoring constraints on centres'
-        wannierise%constrain%slwf_constrain = .false.
+        wannierise%constrain%constrain = .false.
       end if
     end if
 
-    wannierise%constrain%slwf_lambda = 1.0_dp
+    wannierise%constrain%lambda = 1.0_dp
     call param_get_keyword(stdout, seedname, 'slwf_lambda', found, &
-                           r_value=wannierise%constrain%slwf_lambda)
+                           r_value=wannierise%constrain%lambda)
     if (found) then
-      if (wannierise%constrain%slwf_lambda < 0.0_dp) &
+      if (wannierise%constrain%lambda < 0.0_dp) &
         call io_error('Error: slwf_lambda  must be positive.', stdout, seedname)
     endif
   end subroutine param_read_wannierise
@@ -1115,10 +1115,10 @@ contains
     ! Constrained centres
     call param_get_block_length(stdout, seedname, 'slwf_centres', found, i_temp, library)
     if (found) then
-      if (wannierise%constrain%slwf_constrain) then
+      if (wannierise%constrain%constrain) then
         ! Allocate array for constrained centres
         call param_get_centre_constraints(ccentres_frac, &
-                                          wannierise%constrain%ccentres_cart, &
+                                          wannierise%constrain%centres, &
                                           wannierise%proj_site, &
                                           num_wann, real_lattice, stdout, seedname)
       else
@@ -1126,7 +1126,7 @@ contains
       end if
       ! Check that either projections or constrained centres are specified if slwf_constrain=.true.
     elseif (.not. found) then
-      if (wannierise%constrain%slwf_constrain) then
+      if (wannierise%constrain%constrain) then
         if (.not. allocated(wannierise%proj_site)) then
           call io_error('Error: slwf_constrain = true, but neither &
                & <slwf_centre> block  nor &
@@ -1134,14 +1134,14 @@ contains
         else
           ! Allocate array for constrained centres
           call param_get_centre_constraints(ccentres_frac, &
-                                            wannierise%constrain%ccentres_cart, &
+                                            wannierise%constrain%centres, &
                                             wannierise%proj_site, &
                                             num_wann, real_lattice, stdout, seedname)
         end if
       end if
     end if
     ! Warning
-    if (wannierise%constrain%slwf_constrain .and. allocated(wannierise%proj_site) &
+    if (wannierise%constrain%constrain .and. allocated(wannierise%proj_site) &
         .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
@@ -1267,7 +1267,7 @@ contains
     end if
     ! Constrained centres
     if (wannierise%constrain%selective_loc .and. &
-        wannierise%constrain%slwf_constrain) then
+        wannierise%constrain%constrain) then
       write (stdout, *) ' '
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
@@ -1423,11 +1423,11 @@ contains
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
         wannierise%constrain%selective_loc, '|'
     end if
-    if (wannierise%constrain%slwf_constrain .or. verbose%iprint > 2) then
+    if (wannierise%constrain%constrain .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use constrains in selective localization  :', &
-        wannierise%constrain%slwf_constrain, '|'
+        wannierise%constrain%constrain, '|'
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
-           &wannierise%constrain%slwf_lambda, '|'
+           &wannierise%constrain%lambda, '|'
     end if
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     !
@@ -1649,8 +1649,8 @@ contains
       deallocate (wannierise%proj_site, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier proj_site in param_dealloc', stdout, seedname)
     end if
-    if (allocated(wannierise%constrain%ccentres_cart)) then
-      deallocate (wannierise%constrain%ccentres_cart, stat=ierr)
+    if (allocated(wannierise%constrain%centres)) then
+      deallocate (wannierise%constrain%centres, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating ccentres_cart in param_dealloc', stdout, seedname)
     end if
     if (allocated(proj%l)) then
@@ -2389,18 +2389,18 @@ contains
 
     !vv: Constrained centres
     call comms_bcast(wannierise%constrain%slwf_num, 1, stdout, seedname, comm)
-    call comms_bcast(wannierise%constrain%slwf_constrain, 1, stdout, seedname, comm)
-    call comms_bcast(wannierise%constrain%slwf_lambda, 1, stdout, seedname, comm)
+    call comms_bcast(wannierise%constrain%constrain, 1, stdout, seedname, comm)
+    call comms_bcast(wannierise%constrain%lambda, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%constrain%selective_loc, 1, stdout, seedname, comm)
-    if (wannierise%constrain%selective_loc .and. wannierise%constrain%slwf_constrain) then
+    if (wannierise%constrain%selective_loc .and. wannierise%constrain%constrain) then
       if (.not. on_root) then
         !allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
-        allocate (wannierise%constrain%ccentres_cart(num_wann, 3), stat=ierr)
+        allocate (wannierise%constrain%centres(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
       endif
       !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
-      call comms_bcast(wannierise%constrain%ccentres_cart(1, 1), 3*num_wann, stdout, seedname, comm)
+      call comms_bcast(wannierise%constrain%centres(1, 1), 3*num_wann, stdout, seedname, comm)
     end if
 
     ! vv: automatic projections

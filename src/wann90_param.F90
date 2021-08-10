@@ -135,6 +135,23 @@ module wannier_param_types
     ! GS-end
   end type dis_control_type
 
+  ! REVIEW_2021-08-04: Nest this type in wann_control_type
+  type wann_slwf_type
+    !! ===================
+    !! Contains parameters that control the selective localisation and constrained centres algorithm
+    !! ===================
+    integer :: slwf_num
+    !! Number of objective Wannier functions (others excluded from spread functional)
+    logical :: selective_loc
+    !! Selective localization
+    logical :: constrain
+    !! Constrained centres in Cartesian coordinates in angstrom.
+    real(kind=dp), allocatable :: centres(:, :)
+    real(kind=dp) :: lambda
+    !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
+    !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
+  end type wann_slwf_type
+
   type wann_control_type ! only in wannierise.F90
     !! ========================
     !! Contains parameters that control the wannierisation minimisation procedure
@@ -176,26 +193,6 @@ module wannier_param_types
     real(kind=dp) :: total
     real(kind=dp) :: tilde
   end type wann_omega_type
-
-  ! REVIEW_2021-08-04: Nest this type in wann_control_type
-  type wann_slwf_type
-    !! ===================
-    !! Contains parameters that control the selective localisation and constrained centres algorithm
-    !! ===================
-    integer :: slwf_num
-    !! Number of objective Wannier functions (others excluded from spread functional)
-    logical :: selective_loc
-    !! Selective localization
-    ! REVIEW_2021-08-04: rename "constrain". This is the right place for this.
-    logical :: slwf_constrain ! MAYBE or in main wannier_type
-    ! REVIEW_2021-08-04: rename "centres"
-    !! Constrained centres in Cartesian coordinates in angstrom.
-    real(kind=dp), allocatable :: ccentres_cart(:, :)
-    ! REVIEW_2021-08-04: rename "lambda"
-    real(kind=dp) :: slwf_lambda
-    !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
-    !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
-  end type wann_slwf_type
 
   ! REVIEW_2021-08-04: We don't think there is a need to have this type.
   type wannierise_type
