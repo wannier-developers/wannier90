@@ -176,8 +176,7 @@ module pw90_parameters
     real(kind=dp) :: bandshift_energyshift
   end type pw90_spin_hall_type
 
-  ! REVIEW_2021-08-09: rename pw90_gyrotropic_type
-  type gyrotropic_type ! postw90 - common, gyrotropic
+  type pw90_gyrotropic_type ! postw90 - common, gyrotropic
     !! =============
     !! Contains variables for the gyrotropic module of postw90
     !! =============
@@ -197,7 +196,7 @@ module pw90_parameters
     ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
     real(kind=dp) :: smr_max_arg
     real(kind=dp) :: eigval_max
-  end type gyrotropic_type
+  end type pw90_gyrotropic_type
 
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables - postw90/geninterp
@@ -321,7 +320,7 @@ contains
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(fermi_data_type), intent(inout) :: fermi
     type(geninterp_type), intent(inout) :: geninterp
-    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: kpath
     type(k_points_type), intent(inout) :: k_points
     type(pw90_kslice_mod_type), intent(inout) :: kslice
@@ -645,7 +644,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(gyrotropic_type), intent(out) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(out) :: gyrotropic
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: smr_fixed_en_width
     integer, intent(in) :: smr_index
@@ -1230,7 +1229,7 @@ contains
     integer, intent(in) :: stdout
     type(pw90_berry_mod_type), intent(inout) :: berry
     type(pw90_dos_mod_type), intent(inout) :: dos_data
-    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
@@ -1345,7 +1344,7 @@ contains
     type(pw90_berry_mod_type), intent(inout) :: berry
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
-    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: global_kmesh_set
@@ -1489,7 +1488,7 @@ contains
     type(pw90_kslice_mod_type), intent(in) :: kslice
     type(pw90_dos_mod_type), intent(in) :: dos_data
     type(pw90_berry_mod_type), intent(in) :: berry
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(geninterp_type), intent(in) :: geninterp
     type(boltzwann_type), intent(in) :: boltz
     type(pw90_extra_io_type), intent(in) :: write_data

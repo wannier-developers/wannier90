@@ -79,7 +79,7 @@ contains
     use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use pw90_parameters, only: gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
+    use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, postw90_common_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
@@ -93,7 +93,7 @@ contains
     type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
@@ -557,7 +557,7 @@ contains
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use pw90_parameters, only: gyrotropic_type, postw90_common_type, pw90_band_deriv_degen_type
+    use pw90_parameters, only: pw90_gyrotropic_type, postw90_common_type, pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, fermi_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
@@ -572,7 +572,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
@@ -780,13 +780,13 @@ contains
     !                                        !
     !======================================================================!
 
-    use pw90_parameters, only: gyrotropic_type
+    use pw90_parameters, only: pw90_gyrotropic_type
     use w90_constants, only: dp
 
     implicit none
 
     ! arguments
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     real(kind=dp), intent(in) :: eig(:)
     real(kind=dp), intent(out) :: curv_w_k(:, :, :)  ! (num_wann,n_freq,3)
     complex(kind=dp), intent(in) :: AA(:, :, :)
@@ -838,7 +838,7 @@ contains
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
     !====================================================================!
 
-    use pw90_parameters, only: gyrotropic_type
+    use pw90_parameters, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, ws_region_type
@@ -851,7 +851,7 @@ contains
 
     ! arguments
     type(fermi_data_type), intent(in) :: fermi
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
@@ -982,13 +982,13 @@ contains
     !   in units eV*Ang^2                                                !
     !====================================================================!
 
-    use pw90_parameters, only: gyrotropic_type
+    use pw90_parameters, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_i, cmplx_0
 
     implicit none
 
     ! arguments
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     integer, intent(in) :: num_occ, num_unocc
     integer, intent(in) :: occ_list(:), unocc_list(:)
     real(kind=dp), intent(in) :: eig(:)               !  n
@@ -1062,7 +1062,7 @@ contains
 
   subroutine gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name, arrEf, &
                                         arrEF1D, arrEfW, units, comment, symmetrize)
-    use pw90_parameters, only: gyrotropic_type
+    use pw90_parameters, only: pw90_gyrotropic_type
     use w90_param_types, only: fermi_data_type
     use w90_io, only: io_file_unit
 
@@ -1070,7 +1070,7 @@ contains
 
     ! arguments
     type(fermi_data_type), intent(in) :: fermi
-    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(pw90_gyrotropic_type), intent(in) :: gyrotropic
 
     integer, intent(in) :: stdout
 
