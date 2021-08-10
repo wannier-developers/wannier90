@@ -49,8 +49,6 @@ contains
 
     !! Main routine
 
-    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
-      postw90_ham_type, postw90_common_type, pw90_oper_read_type
     use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
     use w90_constants, only: dp, eps8
@@ -60,7 +58,7 @@ contains
     use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
       wannier_data_type, dis_manifold_type, k_points_type, kmesh_info_type, &
       ws_region_type
-    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, postw90_spin_type, &
+    use pw90_parameters, only: berry_type, spin_hall_type, kpath_type, pw90_spin_mod_type, &
       postw90_ham_type, postw90_common_type, pw90_oper_read_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
@@ -79,7 +77,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(kpoint_path_type), intent(in) :: spec_points

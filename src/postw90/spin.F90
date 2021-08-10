@@ -44,7 +44,7 @@ contains
     use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error
-    use pw90_parameters, only: postw90_spin_type, postw90_common_type, pw90_oper_read_type
+    use pw90_parameters, only: pw90_spin_mod_type, postw90_common_type, pw90_oper_read_type
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, k_points_type, ws_region_type
     use w90_get_oper, only: get_HH_R, get_SS_R
@@ -60,7 +60,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -199,12 +199,12 @@ contains
     use w90_constants, only: dp, pi
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
-    use pw90_parameters, only: postw90_spin_type
+    use pw90_parameters, only: pw90_spin_mod_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec

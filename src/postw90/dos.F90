@@ -52,7 +52,7 @@ contains
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
     use pw90_parameters, only: dos_plot_type, postw90_common_type, berry_type, postw90_ham_type, &
-      postw90_spin_type, pw90_oper_read_type
+      pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, ws_region_type, w90_system_type
     use w90_get_oper, only: get_HH_R, get_SS_R
@@ -72,7 +72,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -539,7 +539,7 @@ contains
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use pw90_parameters, only: postw90_spin_type, dos_plot_type
+    use pw90_parameters, only: pw90_spin_mod_type, dos_plot_type
     use w90_param_types, only: wannier_data_type, ws_region_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
@@ -548,7 +548,7 @@ contains
 
     ! Arguments
     type(dos_plot_type), intent(in) :: dos_data
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(ws_region_type), intent(in) :: rs_region
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(in) :: ws_vec

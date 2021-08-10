@@ -49,7 +49,7 @@ contains
 
     !! Main routine
 
-    use pw90_parameters, only: kslice_type, berry_type, postw90_spin_type, postw90_ham_type, &
+    use pw90_parameters, only: kslice_type, berry_type, pw90_spin_mod_type, postw90_ham_type, &
       postw90_common_type, pw90_oper_read_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
@@ -76,7 +76,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(spin_hall_type), intent(in) :: spin_hall

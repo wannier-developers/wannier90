@@ -60,9 +60,7 @@ module pw90_parameters
   end type postw90_common_type
 
   ! Module  s p i n
-  ! REVIEW_2021-08-09: Maybe rename pw90_spin_mod_type to make it clear that these
-  ! REVIEW_2021-08-09: are variables related to the spin module (rather than spin as a physical property)
-  type postw90_spin_type
+  type pw90_spin_mod_type
     !! ===============
     !! Contains variables used in the spin module of postw90
     !! ===============
@@ -72,7 +70,7 @@ module pw90_parameters
     real(kind=dp) :: axis_azimuth
     real(kind=dp) :: kmesh_spacing
     integer :: kmesh(3)
-  end type postw90_spin_type
+  end type pw90_spin_mod_type
 
   ! REVIEW_2021-08-09: A general comment, which we record here so we don't forget.
   ! REVIEW_2021-08-09: It would be good to try to keep type and variable names
@@ -345,7 +343,7 @@ contains
     type(postw90_common_type), intent(inout) :: pw90_common
     type(postw90_ham_type), intent(inout) :: pw90_ham
     type(pw90_oper_read_type), intent(inout) :: postw90_oper
-    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(print_output_type), intent(inout) :: verbose
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
     type(pw90_extra_io_type), intent(inout) :: write_data
@@ -632,7 +630,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(out) :: spin_moment ! from pw90_calcs
     logical, intent(out) :: spin_decomp ! from pw90_common
-    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     integer, intent(in) :: num_elec_per_state
     character(len=50), intent(in)  :: seedname
 
@@ -1360,7 +1358,7 @@ contains
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(berry_type), intent(inout) :: berry
     type(dos_plot_type), intent(inout) :: dos_data
-    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -1500,7 +1498,7 @@ contains
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(postw90_common_type), intent(in) :: pw90_common
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(kpath_type), intent(in) :: kpath
     type(kslice_type), intent(in) :: kslice
     type(dos_plot_type), intent(in) :: dos_data

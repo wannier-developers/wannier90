@@ -90,7 +90,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       k_points_type, ws_region_type, w90_system_type
-    use pw90_parameters, only: boltzwann_type, postw90_common_type, postw90_spin_type, &
+    use pw90_parameters, only: boltzwann_type, postw90_common_type, pw90_spin_mod_type, &
       postw90_ham_type, dos_plot_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -105,7 +105,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(pw90_physical_constants), intent(in) :: physics
     type(ws_region_type), intent(in) :: rs_region
@@ -686,7 +686,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
       dis_manifold_type, ws_region_type
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type, postw90_ham_type, dos_plot_type, &
+    use pw90_parameters, only: boltzwann_type, pw90_spin_mod_type, postw90_ham_type, dos_plot_type, &
       postw90_common_type, pw90_oper_read_type
     use w90_param_methods, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -703,7 +703,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(postw90_ham_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -1119,11 +1119,10 @@ contains
     !!       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
     !!
 
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
-    use pw90_parameters, only: boltzwann_type, postw90_spin_type
+    use pw90_parameters, only: boltzwann_type, pw90_spin_mod_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
     use w90_ws_distance, only: ws_distance_type
@@ -1134,7 +1133,7 @@ contains
     ! arguments
     type(boltzwann_type), intent(in) :: boltz
     type(ws_region_type), intent(in) :: rs_region
-    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(wannier_data_type), intent(in) :: wann_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: ws_vec
