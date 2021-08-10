@@ -2050,11 +2050,11 @@ contains
     use w90_io, only: io_stopwatch
     use w90_comms, only: comms_allreduce, w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type, print_output_type
-    use wannier_param_types, only: wann_localise_type
+    use wannier_param_types, only: wann_slwf_type
 
     implicit none
 
-    type(wann_localise_type), intent(in) :: wann_constrain
+    type(wann_slwf_type), intent(in) :: wann_constrain
     real(kind=dp), intent(in) :: omega_invariant
 
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -2363,12 +2363,12 @@ contains
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: wann_localise_type
+    use wannier_param_types, only: wann_slwf_type
 
     implicit none
 
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(wann_localise_type), intent(inout) :: wann_constrain
+    type(wann_slwf_type), intent(inout) :: wann_constrain
 
     complex(kind=dp), intent(in)  :: csheet(:, :, :)
     real(kind=dp), intent(in)  :: sheet(:, :, :)

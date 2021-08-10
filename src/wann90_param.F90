@@ -177,9 +177,8 @@ module wannier_param_types
     real(kind=dp) :: tilde
   end type wann_omega_type
 
-  ! REVIEW_2021-08-04: Rename wann_slwf_type
   ! REVIEW_2021-08-04: Nest this type in wann_control_type
-  type wann_localise_type
+  type wann_slwf_type
     !! ===================
     !! Contains parameters that control the selective localisation and constrained centres algorithm
     !! ===================
@@ -196,13 +195,13 @@ module wannier_param_types
     real(kind=dp) :: slwf_lambda
     !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
     !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
-  end type wann_localise_type
+  end type wann_slwf_type
 
   ! REVIEW_2021-08-04: We don't think there is a need to have this type.
   type wannierise_type
     type(wann_control_type) :: control
     ! REVIEW_2021-08-04: Nest this type inside wann_control_type (see comments above)
-    type(wann_localise_type) :: constrain
+    type(wann_slwf_type) :: constrain
     type(wann_omega_type) :: omega
     ! Projections, used when guiding_centres=.true. or for constrained if slwf_constrain=.true.
     ! REVIEW_2021-08-04: See whether it is possible to avoid using this variable and instead use
