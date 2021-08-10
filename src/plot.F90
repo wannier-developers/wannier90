@@ -42,7 +42,7 @@ contains
       wannier_data_type, atom_data_type, dis_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
-      fermi_surface_type, band_plot_type, wannier_plot_type, real_space_ham_type
+      fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type
 
     implicit none
 
@@ -61,7 +61,7 @@ contains
     type(atom_data_type), intent(in)             :: atoms
     type(dis_manifold_type), intent(in)          :: dis_window
     type(fermi_data_type), intent(in)            :: fermi
-    type(fermi_surface_type), intent(in)         :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(in)    :: fermi_surface_data
     type(kpoint_path_type), intent(in)           :: spec_points
     type(ham_logical), intent(inout)             :: hmlg
 
@@ -956,12 +956,12 @@ contains
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_param_types, only: fermi_data_type
-    use wannier_param_types, only: fermi_surface_type
+    use wannier_param_types, only: fermi_surface_plot_type
 
     implicit none
 
     type(fermi_data_type), intent(in)      :: fermi
-    type(fermi_surface_type), intent(in)   :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(in)   :: fermi_surface_data
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: ndegen(:)

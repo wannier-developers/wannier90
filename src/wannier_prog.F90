@@ -116,7 +116,7 @@ program wannier
   integer :: num_kpts
   type(dis_control_type) :: dis_data
   type(dis_manifold_type) :: dis_window
-  type(fermi_surface_type) :: fermi_surface_data
+  type(fermi_surface_plot_type) :: fermi_surface_data
   type(fermi_data_type) :: fermi
   type(transport_type) :: tran
   type(atom_data_type) :: atoms

@@ -78,7 +78,7 @@ contains
     type(k_points_type), intent(inout) :: k_points
     type(dis_control_type), intent(inout) :: dis_data
     type(dis_manifold_type), intent(inout) :: dis_window
-    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
@@ -833,7 +833,7 @@ contains
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
-    type(fermi_surface_type), intent(out) :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(out) :: fermi_surface_data
     logical, intent(in) :: fermi_surface_plot
     character(len=50), intent(in)  :: seedname
 
@@ -1172,7 +1172,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     type(k_points_type), intent(in) :: k_points
     type(dis_control_type), intent(in) :: dis_data
-    type(fermi_surface_type), intent(in) :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(in) :: fermi_surface_data
     type(fermi_data_type), intent(in) :: fermi
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atoms
@@ -2050,7 +2050,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
     type(dis_control_type), intent(inout) :: dis_data
-    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(proj_input_type), intent(inout) :: proj_input
     type(transport_type), intent(inout) :: tran

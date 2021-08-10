@@ -209,15 +209,14 @@ module wannier_param_types
     real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
   end type wannierise_type
 
-  ! REVIEW_2021-08-09: Perhaps rename fermi_surface_plot_type
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.
-  type fermi_surface_type
+  type fermi_surface_plot_type
     !! ==================
     !! Contains variables to control Fermi surface plotting in the main wannier code.
     !! ==================
     integer :: num_points
     character(len=20) :: plot_format
-  end type fermi_surface_type
+  end type fermi_surface_plot_type
 
   ! REVIEW_2021-08-09: This functionality should be moved to postw90 at some point.
   ! REVIEW_2021-08-09: See Issue 31 in the main repo.

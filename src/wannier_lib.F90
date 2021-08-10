@@ -141,7 +141,7 @@ module wannlib_param_data
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3
   !type(hamiltonian_type), save :: hamiltonian
-  type(fermi_surface_type), save :: fermi_surface_data
+  type(fermi_surface_plot_type), save :: fermi_surface_data
   type(transport_type), save :: tran
   type(select_projection_type), save :: select_proj
 
