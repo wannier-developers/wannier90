@@ -68,7 +68,7 @@ contains
     type(exclude_bands_type), intent(inout) :: excluded_bands
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
-    type(plot_type), intent(inout) :: plot
+    type(wvfn_read_type), intent(inout) :: plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(wannierise_type), intent(inout) :: wannierise
@@ -686,7 +686,7 @@ contains
     implicit none
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(output_file_type), intent(inout) :: out_files
-    type(plot_type), intent(out) :: plot
+    type(wvfn_read_type), intent(out) :: plot
     type(band_plot_type), intent(out) :: band_plot
     type(wannier_plot_type), intent(out) :: wann_plot
     integer, intent(in) :: stdout
@@ -698,16 +698,16 @@ contains
     logical :: found
     character(len=6) :: spin_str
 
-    plot%wvfn_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=plot%wvfn_formatted)
+    plot%formatted = .false.       ! formatted or "binary" file
+    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=plot%formatted)
 
-    plot%spin = 1
+    plot%spin_channel = 1
     call param_get_keyword(stdout, seedname, 'spin', found, c_value=spin_str)
     if (found) then
       if (index(spin_str, 'up') > 0) then
-        plot%spin = 1
+        plot%spin_channel = 1
       elseif (index(spin_str, 'down') > 0) then
-        plot%spin = 2
+        plot%spin_channel = 2
       else
         call io_error('Error: unrecognised value of spin found: '//trim(spin_str), stdout, seedname)
       end if
@@ -1166,7 +1166,7 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(output_file_type), intent(in) :: out_files
     type(real_space_ham_type), intent(in) :: rs_region
-    type(plot_type), intent(in) :: plot
+    type(wvfn_read_type), intent(in) :: plot
     type(print_output_type), intent(in) :: verbose
     type(band_plot_type), intent(in) :: band_plot
     type(wannierise_type), intent(in) :: wannierise
@@ -1368,12 +1368,12 @@ contains
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
       cp_pp, '|'
     if (w90_calcs%wannier_plot .or. verbose%iprint > 2) then
-      if (plot%wvfn_formatted) then
+      if (plot%formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
       else
         write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'unformatted', '|'
       endif
-      if (plot%spin == 1) then
+      if (plot%spin_channel == 1) then
         write (stdout, '(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :', 'up', '|'
       else
         write (stdout, '(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :', 'down', '|'
@@ -2042,7 +2042,7 @@ contains
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
     type(print_output_type), intent(inout) :: verbose
-    type(plot_type), intent(inout) :: plot
+    type(wvfn_read_type), intent(inout) :: plot
     type(band_plot_type), intent(inout) :: band_plot
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(wannierise_type), intent(inout) :: wannierise
@@ -2073,19 +2073,6 @@ contains
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(inout) :: symmetrize_eps
-    !type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    !type(postw90_oper_type), intent(inout) :: postw90_oper
-    !type(postw90_common_type), intent(inout) :: pw90_common
-    !type(postw90_spin_type), intent(inout) :: pw90_spin
-    !type(postw90_ham_type), intent(inout) :: pw90_ham
-    !type(kpath_type), intent(inout) :: kpath
-    !type(kslice_type), intent(inout) :: kslice
-    !type(dos_plot_type), intent(inout) :: dos_data
-    !type(berry_type), intent(inout) :: berry
-    !type(spin_hall_type), intent(inout) :: spin_hall
-    !type(gyrotropic_type), intent(inout) :: gyrotropic
-    !type(geninterp_type), intent(inout) :: geninterp
-    !type(boltzwann_type), intent(inout) :: boltz
 
     character(len=50), intent(in)  :: seedname
 
@@ -2129,11 +2116,11 @@ contains
 
     !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
     call comms_bcast(verbose%length_unit, 1, stdout, seedname, comm)
-    call comms_bcast(plot%wvfn_formatted, 1, stdout, seedname, comm)
+    call comms_bcast(plot%formatted, 1, stdout, seedname, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
     !call comms_bcast(berry_uHu_formatted, 1)
-    call comms_bcast(plot%spin, 1, stdout, seedname, comm)
+    call comms_bcast(plot%spin_channel, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%num_dump_cycles, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%num_print_cycles, 1, stdout, seedname, comm)
     call comms_bcast(atoms%num_atoms, 1, stdout, seedname, comm)   ! Ivo: not used in postw90, right?

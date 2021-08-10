@@ -102,7 +102,7 @@ program wannier
   type(ws_region_type) :: ws_region
   type(exclude_bands_type) :: excluded_bands
   logical :: eig_found
-  type(plot_type) :: plot
+  type(wvfn_read_type) :: plot
   type(band_plot_type) :: band_plot
   type(wannier_plot_type) :: wann_plot
   type(wannierise_type) :: wannierise

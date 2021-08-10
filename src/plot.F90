@@ -41,7 +41,7 @@ contains
     use w90_param_types, only: k_points_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, dis_manifold_type, fermi_data_type, &
       kpoint_path_type, print_output_type, ws_region_type
-    use wannier_param_types, only: w90_calculation_type, plot_type, output_file_type, &
+    use wannier_param_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
       hamiltonian_type, fermi_surface_type, band_plot_type, wannier_plot_type, &
       real_space_ham_type
 
@@ -54,7 +54,7 @@ contains
     type(real_space_ham_type), intent(in)        :: rs_region
     type(ws_region_type), intent(in)             :: ws_region
     type(print_output_type), intent(in)          :: verbose
-    type(plot_type), intent(in)                  :: plot
+    type(wvfn_read_type), intent(in)                  :: plot
     type(band_plot_type), intent(in)             :: band_plot
     type(wannier_plot_type), intent(in)          :: wann_plot
     type(kmesh_info_type), intent(in)            :: kmesh_info
@@ -1114,7 +1114,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_points_type, wannier_data_type, &
       atom_data_type, dis_manifold_type, print_output_type
-    use wannier_param_types, only: plot_type, wannier_plot_type
+    use wannier_param_types, only: wvfn_read_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
     implicit none
@@ -1122,7 +1122,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
     type(wannier_plot_type), intent(in) :: wann_plot
-    type(plot_type), intent(in) :: plot
+    type(wvfn_read_type), intent(in) :: plot
     type(wannier_data_type), intent(in) :: wann_data
     type(atom_data_type), intent(in) :: atoms
     type(dis_manifold_type), intent(in) :: dis_window
@@ -1193,7 +1193,7 @@ contains
     associate (ngs=>wann_plot%plot_supercell)
       !
       if (.not. spinors) then
-        write (wfnname, 200) 1, plot%spin
+        write (wfnname, 200) 1, plot%spin_channel
       else
         write (wfnname, 199) 1
       endif
@@ -1201,7 +1201,7 @@ contains
       if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout, seedname)
 
       file_unit = io_file_unit()
-      if (plot%wvfn_formatted) then
+      if (plot%formatted) then
         open (unit=file_unit, file=wfnname, form='formatted')
         read (file_unit, *) ngx, ngy, ngz, nk, nbnd
       else
@@ -1252,12 +1252,12 @@ contains
         end if
 
         if (.not. spinors) then
-          write (wfnname, 200) loop_kpt, plot%spin
+          write (wfnname, 200) loop_kpt, plot%spin_channel
         else
           write (wfnname, 199) loop_kpt
         endif
         file_unit = io_file_unit()
-        if (plot%wvfn_formatted) then
+        if (plot%formatted) then
           open (unit=file_unit, file=wfnname, form='formatted')
           read (file_unit, *) ix, iy, iz, ik, nbnd
         else
@@ -1276,7 +1276,7 @@ contains
           counter = 1
           do loop_b = 1, num_bands
             if (counter > num_inc) exit
-            if (plot%wvfn_formatted) then
+            if (plot%formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1303,7 +1303,7 @@ contains
           end do
         else
           do loop_b = 1, num_bands
-            if (plot%wvfn_formatted) then
+            if (plot%formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1500,11 +1500,11 @@ contains
       use w90_utility, only: utility_translate_home, &
         utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: wannier_data_type, atom_data_type
-      use wannier_param_types, only: plot_type
+      use wannier_param_types, only: wvfn_read_type
 
       implicit none
 
-      type(plot_type), intent(in) :: plot
+      type(wvfn_read_type), intent(in) :: plot
       type(wannier_data_type), intent(in) :: wann_data
       type(atom_data_type), intent(in) :: atoms
       real(kind=dp), intent(in) :: bohr

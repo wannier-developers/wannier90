@@ -132,7 +132,7 @@ module wannlib_param_data
   type(w90_calculation_type), save :: w90_calcs
   type(output_file_type), save :: out_files
   type(real_space_ham_type) :: rs_region
-  type(plot_type), save :: plot
+  type(wvfn_read_type), save :: plot
   type(band_plot_type), save :: band_plot
   type(wannier_plot_type), save :: wann_plot
   type(disentangle_type), save :: dis_data
