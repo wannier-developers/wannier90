@@ -49,8 +49,8 @@ contains
 
     !! Main routine
 
-    use pw90_parameters, only: kslice_type, berry_type, pw90_spin_mod_type, pw90_band_deriv_degen_type, &
-      postw90_common_type, pw90_oper_read_type, spin_hall_type
+    use pw90_parameters, only: pw90_kslice_mod_type, berry_type, pw90_spin_mod_type, &
+      pw90_band_deriv_degen_type, postw90_common_type, pw90_oper_read_type, spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
@@ -72,7 +72,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(kslice_type), intent(in) :: kslice
+    type(pw90_kslice_mod_type), intent(in) :: kslice
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper

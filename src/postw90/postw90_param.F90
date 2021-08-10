@@ -90,7 +90,6 @@ module pw90_parameters
   end type pw90_band_deriv_degen_type
 
   ! module  k p a t h (used by postw90/kpath)
-  ! REVIEW_2021-08-09: rename pw90_kpath_mod_type
   type pw90_kpath_mod_type
     !! ================
     !! Contains control variables for the kpath module of postw90
@@ -101,8 +100,7 @@ module pw90_parameters
   end type pw90_kpath_mod_type
 
   ! module  k s l i c e (postw90/kslice)
-  ! REVIEW_2021-08-09: rename pw90_kslice_mod_type
-  type kslice_type
+  type pw90_kslice_mod_type
     !! ===============
     !! Contains control variables for the kslice module of postw90
     !! ===============
@@ -112,7 +110,7 @@ module pw90_parameters
     real(kind=dp) :: b2(3)
     integer :: kmesh2d(2)
     character(len=20) :: fermi_lines_colour
-  end type kslice_type
+  end type pw90_kslice_mod_type
 
   ! REVIEW_2021-08-09: rename pw90_smearing_type
   type adapt_smear_type
@@ -337,7 +335,7 @@ contains
     type(gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: kpath
     type(k_points_type), intent(inout) :: k_points
-    type(kslice_type), intent(inout) :: kslice
+    type(pw90_kslice_mod_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(postw90_common_type), intent(inout) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
@@ -499,7 +497,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: pw90_kslice
-    type(kslice_type), intent(inout) :: kslice
+    type(pw90_kslice_mod_type), intent(inout) :: kslice
     character(len=50), intent(in)  :: seedname
 
     integer :: i
@@ -1499,7 +1497,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(pw90_kpath_mod_type), intent(in) :: kpath
-    type(kslice_type), intent(in) :: kslice
+    type(pw90_kslice_mod_type), intent(in) :: kslice
     type(dos_plot_type), intent(in) :: dos_data
     type(berry_type), intent(in) :: berry
     type(gyrotropic_type), intent(in) :: gyrotropic

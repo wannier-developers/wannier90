@@ -157,7 +157,7 @@ program postw90
   type(pw90_spin_mod_type) :: pw90_spin
   type(pw90_band_deriv_degen_type) :: pw90_ham
   type(pw90_kpath_mod_type) :: kpath
-  type(kslice_type) :: kslice
+  type(pw90_kslice_mod_type) :: kslice
 
   ! module  d o s
   ! No need to save 'dos_plot', only used here (introduced 'dos_task')
