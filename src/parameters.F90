@@ -237,7 +237,6 @@ module w90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types
-  use wannier_param_types
 
   implicit none
 

@@ -114,7 +114,7 @@ wann90_param.o: ../wann90_param.F90 constants.o io.o
 wann90_methods.o: ../wann90_methods.F90 constants.o io.o parameters.o wann90_param.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wann90_methods.F90
 
-parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o wann90_param.o
+parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../parameters.F90
 
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o wann90_param.o
