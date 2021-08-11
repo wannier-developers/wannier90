@@ -139,7 +139,6 @@ module wannier_param_types
     ! GS-end
   end type dis_spheres_type
 
-  ! REVIEW_2021-08-04: Nest this type in wann_control_type
   type wann_slwf_type
     !! ===================
     !! Contains parameters that control the selective localisation and constrained centres algorithm

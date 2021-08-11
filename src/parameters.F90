@@ -115,8 +115,7 @@ module w90_param_types
     ! REVIEW_2021-07-22: Make a new type for guiding centres that only contains sites.
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
     ! REVIEW_2021-07-22: For now, when defining proj_input_type, also define sites inside the
-    ! REVIEW_2021-07-22: new guiding centres type (call it guiding_centres_type).
-    ! REVIEW_2021-08-04: see comment in wann90_methods.F90
+    ! REVIEW_2021-07-22: new guiding centres type.
     real(kind=dp), allocatable :: site(:, :)
     integer, allocatable :: l(:)
     integer, allocatable :: m(:)
@@ -163,7 +162,6 @@ module w90_param_types
   end type k_points_type
 
   ! this contains data which described the disentangled manifold, also used in postw90
-  ! REVIEW_2021-08-04: Spheres variables in disentanglement_type should be moved here.
   type dis_manifold_type
     !! ===========================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
