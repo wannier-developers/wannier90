@@ -40,8 +40,8 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                        fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+  subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, &
+                        fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
@@ -77,6 +77,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
     type(dis_control_type), intent(inout) :: dis_data
+    type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
@@ -173,7 +174,8 @@ contains
       if (eig_found) dis_window%win_min = minval(eigval)
       if (eig_found) dis_window%win_max = maxval(eigval)
       call param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
-      call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
+      call param_read_disentangle_w90(dis_data, dis_spheres, num_bands, num_wann, bohr, &
+                                      stdout, seedname)
       call param_read_hamil(rs_region, stdout, seedname)
       call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
@@ -515,13 +517,15 @@ contains
     endif
   end subroutine param_read_wannierise
 
-  subroutine param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr, stdout, seedname)
+  subroutine param_read_disentangle_w90(dis_data, dis_spheres, num_bands, num_wann, bohr, stdout, &
+                                        seedname)
     use w90_io, only: io_error
     implicit none
     !logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
     integer, intent(in) :: stdout
     type(dis_control_type), intent(inout) :: dis_data
+    type(dis_spheres_type), intent(inout) :: dis_spheres
     integer, intent(in) :: num_bands, num_wann
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
@@ -547,22 +551,22 @@ contains
     if (dis_data%conv_window < 0) call io_error('Error: dis_conv_window must be positive', stdout, seedname)
 
     ! GS-start
-    dis_data%spheres_first_wann = 1
-    call param_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found, i_value=dis_data%spheres_first_wann)
-    if (dis_data%spheres_first_wann < 1) call io_error('Error: dis_spheres_first_wann must be greater than 0', stdout, seedname)
-    if (dis_data%spheres_first_wann > num_bands - num_wann + 1) &
+    dis_spheres%first_wann = 1
+    call param_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found, i_value=dis_spheres%first_wann)
+    if (dis_spheres%first_wann < 1) call io_error('Error: dis_spheres_first_wann must be greater than 0', stdout, seedname)
+    if (dis_spheres%first_wann > num_bands - num_wann + 1) &
       call io_error('Error: dis_spheres_first_wann is larger than num_bands-num_wann+1', stdout, seedname)
-    dis_data%spheres_num = 0
-    call param_get_keyword(stdout, seedname, 'dis_spheres_num', found, i_value=dis_data%spheres_num)
-    if (dis_data%spheres_num < 0) call io_error('Error: dis_spheres_num cannot be negative', stdout, seedname)
-    if (dis_data%spheres_num > 0) then
-      allocate (dis_data%spheres(4, dis_data%spheres_num), stat=ierr)
+    dis_spheres%num = 0
+    call param_get_keyword(stdout, seedname, 'dis_spheres_num', found, i_value=dis_spheres%num)
+    if (dis_spheres%num < 0) call io_error('Error: dis_spheres_num cannot be negative', stdout, seedname)
+    if (dis_spheres%num > 0) then
+      allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dis_spheres in param_read', stdout, seedname)
-      call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_data%spheres_num, 4, bohr, &
-                                   r_value=dis_data%spheres)
+      call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, bohr, &
+                                   r_value=dis_spheres%spheres)
       if (.not. found) call io_error('Error: Did not find dis_spheres in the input file', stdout, seedname)
-      do nkp = 1, dis_data%spheres_num
-        if (dis_data%spheres(4, nkp) < 1.0e-15_dp) &
+      do nkp = 1, dis_spheres%num
+        if (dis_spheres%spheres(4, nkp) < 1.0e-15_dp) &
           call io_error('Error: radius for dis_spheres must be > 0', stdout, seedname)
       enddo
     endif
@@ -1148,7 +1152,7 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atoms, band_plot, dis_data, fermi, fermi_surface_data, &
+  subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi, fermi_surface_data, &
                          k_points, out_files, plot, wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
@@ -1173,6 +1177,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     type(k_points_type), intent(in) :: k_points
     type(dis_control_type), intent(in) :: dis_data
+    type(dis_spheres_type), intent(in) :: dis_spheres
     type(fermi_surface_plot_type), intent(in) :: fermi_surface_data
     type(fermi_data_type), intent(in) :: fermi
     type(transport_type), intent(in) :: tran
@@ -1444,14 +1449,14 @@ contains
       write (stdout, '(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :', dis_data%conv_tol, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', dis_data%conv_window, '|'
       ! GS-start
-      if (dis_data%spheres_num .gt. 0) then
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :', dis_data%spheres_num, '|'
-        do nkp = 1, dis_data%spheres_num
+      if (dis_spheres%num .gt. 0) then
+        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :', dis_spheres%num, '|'
+        do nkp = 1, dis_spheres%num
           write (stdout, '(1x,a13,I4,a2,2x,3F8.3,a15,F8.3,9x,a1)') &
-            '|   center n.', nkp, ' :', dis_data%spheres(1:3, nkp), ',    radius   =', dis_data%spheres(4, nkp), '|'
+            '|   center n.', nkp, ' :', dis_spheres%spheres(1:3, nkp), ',    radius   =', dis_spheres%spheres(4, nkp), '|'
         enddo
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :', &
-          dis_data%spheres_first_wann, '|'
+          dis_spheres%first_wann, '|'
       endif
       ! GS-end
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1599,8 +1604,8 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(atoms, band_plot, dis_data, dis_window, excluded_bands, kmesh_data, &
-                               k_points, wannierise, proj, proj_input, spec_points, &
+  subroutine param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, excluded_bands, &
+                               kmesh_data, k_points, wannierise, proj, proj_input, spec_points, &
                                wann_data, wann_plot, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
@@ -1612,7 +1617,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(k_points_type), intent(inout) :: k_points
-    type(dis_control_type), intent(inout) :: dis_data
+    type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
     !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
@@ -1691,8 +1696,8 @@ contains
       deallocate (proj%zona, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating proj_zona in param_dealloc', stdout, seedname)
     end if
-    if (allocated(dis_data%spheres)) then
-      deallocate (dis_data%spheres, stat=ierr)
+    if (allocated(dis_spheres%spheres)) then
+      deallocate (dis_spheres%spheres, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout, seedname)
     endif
   end subroutine param_w90_dealloc
@@ -2018,8 +2023,8 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atoms, band_plot, dis_data, dis_window, excluded_bands, fermi, &
-                        fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+  subroutine param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, &
+                        fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
                         real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
@@ -2054,6 +2059,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(k_points_type), intent(inout) :: k_points
     type(dis_control_type), intent(inout) :: dis_data
+    type(dis_spheres_type), intent(inout) :: dis_spheres
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
     type(proj_input_type), intent(inout) :: proj_input
@@ -2161,15 +2167,15 @@ contains
     call comms_bcast(dis_data%mix_ratio, 1, stdout, seedname, comm)
     call comms_bcast(dis_data%conv_tol, 1, stdout, seedname, comm)
     call comms_bcast(dis_data%conv_window, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%spheres_first_wann, 1, stdout, seedname, comm)
-    call comms_bcast(dis_data%spheres_num, 1, stdout, seedname, comm)
-    if (dis_data%spheres_num > 0) then
+    call comms_bcast(dis_spheres%first_wann, 1, stdout, seedname, comm)
+    call comms_bcast(dis_spheres%num, 1, stdout, seedname, comm)
+    if (dis_spheres%num > 0) then
       if (.not. on_root) then
-        allocate (dis_data%spheres(4, dis_data%spheres_num), stat=ierr)
+        allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating dis_spheres in param_dist', stdout, seedname)
       endif
-      call comms_bcast(dis_data%spheres(1, 1), 4*dis_data%spheres_num, stdout, seedname, comm)
+      call comms_bcast(dis_spheres%spheres(1, 1), 4*dis_spheres%num, stdout, seedname, comm)
     end if
     call comms_bcast(wannierise%control%num_iter, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%num_cg_steps, 1, stdout, seedname, comm)

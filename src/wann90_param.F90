@@ -129,13 +129,15 @@ module wannier_param_types
     !! Convergence tolerance for the disentanglement
     integer :: conv_window
     !! Size of the convergence window for disentanglement
-    ! REVIEW_2021-08-04: these spheres variables belong in disentangle_manifold_type
+  end type dis_control_type
+
+  type dis_spheres_type
     ! GS-start
-    integer :: spheres_first_wann
-    integer :: spheres_num
+    integer :: first_wann
+    integer :: num
     real(kind=dp), allocatable :: spheres(:, :)
     ! GS-end
-  end type dis_control_type
+  end type dis_spheres_type
 
   ! REVIEW_2021-08-04: Nest this type in wann_control_type
   type wann_slwf_type

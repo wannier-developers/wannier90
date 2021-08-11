@@ -22,7 +22,7 @@ module w90_disentangle
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
     print_output_type
-  use wannier_param_types, only: dis_control_type
+  use wannier_param_types, only: dis_control_type, dis_spheres_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
     sitesym_dis_extract_symmetry, sitesym_data
@@ -35,7 +35,7 @@ contains
 
   !==================================================================!
 
-  subroutine dis_main(dis_data, dis_window, kmesh_info, k_points, sym, verbose, &
+  subroutine dis_main(dis_data, dis_spheres, dis_window, kmesh_info, k_points, sym, verbose, &
                       a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                       u_matrix, u_matrix_opt, eigval, recip_lattice, omega_invariant, num_bands, &
                       num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
@@ -66,6 +66,7 @@ contains
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
     type(dis_control_type), intent(inout) :: dis_data
+    type(dis_spheres_type), intent(in) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -115,7 +116,7 @@ contains
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(dis_data, dis_window, eigval_opt, k_points%kpt_latt, recip_lattice, indxfroz, &
+    call dis_windows(dis_spheres, dis_window, eigval_opt, k_points%kpt_latt, recip_lattice, indxfroz, &
                      indxnfroz, ndimfroz, nfirstwin, verbose%iprint, num_bands, num_kpts, &
                      num_wann, verbose%timing_level, lfrozen, linner, on_root, seedname, stdout)
 
@@ -703,9 +704,9 @@ contains
   end subroutine internal_find_u_gamma
 ![ysl-e]
 
-  subroutine dis_windows(dis_data, window, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
-                         indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, num_wann, &
-                         timing_level, lfrozen, linner, on_root, seedname, stdout)
+  subroutine dis_windows(dis_spheres, window, eigval_opt, kpt_latt, recip_lattice, &
+                         indxfroz, indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, &
+                         num_wann, timing_level, lfrozen, linner, on_root, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
@@ -727,7 +728,7 @@ contains
     implicit none
 
     ! passed variables
-    type(dis_control_type), intent(in) :: dis_data
+    type(dis_spheres_type), intent(in) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: window ! ndimwin alone is modified
 
     integer, intent(in) :: iprint, timing_level
@@ -836,15 +837,15 @@ contains
       !~~ GS-start
       ! disentangle at the current k-point only if it is within one of the
       ! spheres centered at the k-points listed in kpt_dis
-      if (dis_data%spheres_num .gt. 0) then
+      if (dis_spheres%num .gt. 0) then
         dis_ok = .false.
         ! loop on the sphere centers
-        do i = 1, dis_data%spheres_num
-          dk = kpt_latt(:, nkp) - dis_data%spheres(1:3, i)
+        do i = 1, dis_spheres%num
+          dk = kpt_latt(:, nkp) - dis_spheres%spheres(1:3, i)
           dk = matmul(anint(dk) - dk, recip_lattice(:, :))
           ! if the current k-point is included in at least one sphere,
           ! then perform disentanglement as usual
-          if (abs(dot_product(dk, dk)) .lt. dis_data%spheres(4, i)**2) then
+          if (abs(dot_product(dk, dk)) .lt. dis_spheres%spheres(4, i)**2) then
             dis_ok = .true.
             exit
           endif
@@ -852,7 +853,7 @@ contains
         ! this kpoint is not included in any sphere: no disentaglement
         if (.not. dis_ok) then
           window%ndimwin(nkp) = num_wann
-          nfirstwin(nkp) = dis_data%spheres_first_wann
+          nfirstwin(nkp) = dis_spheres%first_wann
         endif
       endif
       !~~ GS-end
