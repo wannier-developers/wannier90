@@ -144,7 +144,7 @@ contains
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_wannierise(wannierise, num_wann, write_data%ccentres_frac, &
                                  stdout, seedname)
-      call param_read_devel(verbose%devel_flag, stdout, seedname)
+      !call param_read_devel(verbose%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
       call param_read_post_proc(cp_pp, calc_only_A, w90_calcs%postproc_setup, stdout, seedname)
@@ -2278,7 +2278,7 @@ contains
     !call comms_bcast(spin_hall%bandshift_firstband, 1)
     !call comms_bcast(spin_hall%bandshift_energyshift, 1)
 
-    call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, comm)
+    !call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, comm)
     !call comms_bcast(pw90_common%spin_moment, 1)
     !call comms_bcast(pw90_spin%spin_axis_polar, 1)
     !call comms_bcast(pw90_spin%spin_axis_azimuth, 1)

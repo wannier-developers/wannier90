@@ -181,33 +181,33 @@ contains
     end if
 
     ! Get the shell weights to satisfy the B1 condition
-    if (index(verbose%devel_flag, 'kmesh_degen') > 0) then
-      call kmesh_shell_from_file(kmesh_data, verbose, bvec_inp, bweight, dnn, kpt_cart, &
-                                 recip_lattice, lmn, multi, num_kpts, seedname, stdout)
-    else
-      if (kmesh_data%num_shells == 0) then
-        call kmesh_shell_automatic(kmesh_data, verbose, bweight, dnn, kpt_cart, recip_lattice, &
-                                   lmn, multi, num_kpts, seedname, stdout)
-      elseif (kmesh_data%num_shells > 0) then
-        call kmesh_shell_fixed(kmesh_data, verbose, bweight, dnn, kpt_cart, recip_lattice, lmn, &
-                               multi, num_kpts, seedname, stdout)
-      end if
-
-      if (verbose%iprint > 0) then
-        write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
-        do ndnn = 1, kmesh_data%num_shells
-          if (ndnn .eq. kmesh_data%num_shells) then
-            write (stdout, '(i3,1x)', advance='no') kmesh_data%shell_list(ndnn)
-          else
-            write (stdout, '(i3,",")', advance='no') kmesh_data%shell_list(ndnn)
-          endif
-        enddo
-        do l = 1, 11 - kmesh_data%num_shells
-          write (stdout, '(4x)', advance='no')
-        enddo
-        write (stdout, '("|")')
-      endif
+    !if (index(verbose%devel_flag, 'kmesh_degen') > 0) then
+    !  call kmesh_shell_from_file(kmesh_data, verbose, bvec_inp, bweight, dnn, kpt_cart, &
+    !                             recip_lattice, lmn, multi, num_kpts, seedname, stdout)
+    !else
+    if (kmesh_data%num_shells == 0) then
+      call kmesh_shell_automatic(kmesh_data, verbose, bweight, dnn, kpt_cart, recip_lattice, &
+                                 lmn, multi, num_kpts, seedname, stdout)
+    elseif (kmesh_data%num_shells > 0) then
+      call kmesh_shell_fixed(kmesh_data, verbose, bweight, dnn, kpt_cart, recip_lattice, lmn, &
+                             multi, num_kpts, seedname, stdout)
     end if
+
+    if (verbose%iprint > 0) then
+      write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
+      do ndnn = 1, kmesh_data%num_shells
+        if (ndnn .eq. kmesh_data%num_shells) then
+          write (stdout, '(i3,1x)', advance='no') kmesh_data%shell_list(ndnn)
+        else
+          write (stdout, '(i3,",")', advance='no') kmesh_data%shell_list(ndnn)
+        endif
+      enddo
+      do l = 1, 11 - kmesh_data%num_shells
+        write (stdout, '(4x)', advance='no')
+      enddo
+      write (stdout, '("|")')
+    endif
+    !end if
 
     kmesh_info%nntot = 0
     do loop_s = 1, kmesh_data%num_shells
@@ -293,77 +293,77 @@ contains
       write (stdout, '(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
       write (stdout, '(1x,a)') '|                        -----   --------------------                        |'
     endif
-    if (index(verbose%devel_flag, 'kmesh_degen') == 0) then
-      !
-      ! Standard routine
-      !
-      nnshell = 0
-      do nkp = 1, num_kpts
-        nnx = 0
-        ok: do ndnnx = 1, kmesh_data%num_shells
-          ndnn = kmesh_data%shell_list(ndnnx)
-          do loop = 1, (2*nsupcell + 1)**3
-            l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
-            vkpp2 = matmul(lmn(:, loop), recip_lattice)
-            do nkp2 = 1, num_kpts
-              vkpp = vkpp2 + kpt_cart(:, nkp2)
-              dist = sqrt((kpt_cart(1, nkp) - vkpp(1))**2 &
-                          + (kpt_cart(2, nkp) - vkpp(2))**2 + (kpt_cart(3, nkp) - vkpp(3))**2)
-              if ((dist .ge. dnn(ndnn)*(1 - kmesh_data%tol)) .and. (dist .le. dnn(ndnn)*(1 + kmesh_data%tol))) then
-                nnx = nnx + 1
-                nnshell(nkp, ndnn) = nnshell(nkp, ndnn) + 1
-                kmesh_info%nnlist(nkp, nnx) = nkp2
-                kmesh_info%nncell(1, nkp, nnx) = l
-                kmesh_info%nncell(2, nkp, nnx) = m
-                kmesh_info%nncell(3, nkp, nnx) = n
-                bk_local(:, nnx, nkp) = vkpp(:) - kpt_cart(:, nkp)
-              endif
-              !if we have the right number of neighbours we can exit
-              if (nnshell(nkp, ndnn) == multi(ndnn)) cycle ok
-            enddo
-          enddo
-          ! check to see if too few neighbours here
-        end do ok
-
-      end do
-
-    else
-      !
-      ! incase we set the bvectors explicitly
-      !
-      nnshell = 0
-      do nkp = 1, num_kpts
-        nnx = 0
-        ok2: do loop = 1, (2*nsupcell + 1)**3
+    !if (index(verbose%devel_flag, 'kmesh_degen') == 0) then
+    !
+    ! Standard routine
+    !
+    nnshell = 0
+    do nkp = 1, num_kpts
+      nnx = 0
+      ok: do ndnnx = 1, kmesh_data%num_shells
+        ndnn = kmesh_data%shell_list(ndnnx)
+        do loop = 1, (2*nsupcell + 1)**3
           l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
           vkpp2 = matmul(lmn(:, loop), recip_lattice)
           do nkp2 = 1, num_kpts
             vkpp = vkpp2 + kpt_cart(:, nkp2)
-            bnum = 0
-            do ndnnx = 1, kmesh_data%num_shells
-              do nbvec = 1, multi(ndnnx)
-                bnum = bnum + 1
-                kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
-                dist = sqrt((kpbvec(1) - vkpp(1))**2 &
-                            + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
-                if (abs(dist) < kmesh_data%tol) then
-                  nnx = nnx + 1
-                  nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
-                  kmesh_info%nnlist(nkp, bnum) = nkp2
-                  kmesh_info%nncell(1, nkp, bnum) = l
-                  kmesh_info%nncell(2, nkp, bnum) = m
-                  kmesh_info%nncell(3, nkp, bnum) = n
-                  bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
-                endif
-              enddo
-            end do
-            if (nnx == sum(multi)) exit ok2
-          end do
-        enddo ok2
+            dist = sqrt((kpt_cart(1, nkp) - vkpp(1))**2 &
+                        + (kpt_cart(2, nkp) - vkpp(2))**2 + (kpt_cart(3, nkp) - vkpp(3))**2)
+            if ((dist .ge. dnn(ndnn)*(1 - kmesh_data%tol)) .and. (dist .le. dnn(ndnn)*(1 + kmesh_data%tol))) then
+              nnx = nnx + 1
+              nnshell(nkp, ndnn) = nnshell(nkp, ndnn) + 1
+              kmesh_info%nnlist(nkp, nnx) = nkp2
+              kmesh_info%nncell(1, nkp, nnx) = l
+              kmesh_info%nncell(2, nkp, nnx) = m
+              kmesh_info%nncell(3, nkp, nnx) = n
+              bk_local(:, nnx, nkp) = vkpp(:) - kpt_cart(:, nkp)
+            endif
+            !if we have the right number of neighbours we can exit
+            if (nnshell(nkp, ndnn) == multi(ndnn)) cycle ok
+          enddo
+        enddo
         ! check to see if too few neighbours here
-      end do
+      end do ok
 
-    end if
+    end do
+
+    !else
+    !
+    ! incase we set the bvectors explicitly
+    !
+    !nnshell = 0
+    !do nkp = 1, num_kpts
+    !  nnx = 0
+    !  ok2: do loop = 1, (2*nsupcell + 1)**3
+    !    l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
+    !    vkpp2 = matmul(lmn(:, loop), recip_lattice)
+    !    do nkp2 = 1, num_kpts
+    !      vkpp = vkpp2 + kpt_cart(:, nkp2)
+    !      bnum = 0
+    !      do ndnnx = 1, kmesh_data%num_shells
+    !        do nbvec = 1, multi(ndnnx)
+    !          bnum = bnum + 1
+    !          kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
+    !          dist = sqrt((kpbvec(1) - vkpp(1))**2 &
+    !                      + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
+    !          if (abs(dist) < kmesh_data%tol) then
+    !            nnx = nnx + 1
+    !            nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
+    !            kmesh_info%nnlist(nkp, bnum) = nkp2
+    !            kmesh_info%nncell(1, nkp, bnum) = l
+    !            kmesh_info%nncell(2, nkp, bnum) = m
+    !            kmesh_info%nncell(3, nkp, bnum) = n
+    !            bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
+    !          endif
+    !        enddo
+    !      end do
+    !      if (nnx == sum(multi)) exit ok2
+    !    end do
+    !  enddo ok2
+    ! check to see if too few neighbours here
+    !end do
+
+    !end if
 
     do ndnnx = 1, kmesh_data%num_shells
       ndnn = kmesh_data%shell_list(ndnnx)

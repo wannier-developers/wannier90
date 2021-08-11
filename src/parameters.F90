@@ -38,8 +38,6 @@ module w90_param_types
     character(len=20) :: length_unit ! MAYBE, just have a separate variable?
     ! Units for length
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
-    ! REVIEW_2021-07-22: devel_flag doesn't fit here; but we agree that this can be deprecated/removed.
-    character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common MAYBE
   end type print_output_type
 
   type w90_system_type

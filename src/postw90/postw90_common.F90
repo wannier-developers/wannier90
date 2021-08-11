@@ -407,7 +407,7 @@ contains
 !
 ! New input variables in development
 !
-    call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, world)
+    !call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, world)
     call comms_bcast(pw90_calcs%spin_moment, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_polar, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%axis_azimuth, 1, stdout, seedname, world)

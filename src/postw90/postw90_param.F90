@@ -369,7 +369,7 @@ contains
                               excluded_bands%num_exclude_bands, num_bands, num_wann, .false., &
                               stdout, seedname)
     disentanglement = (num_bands > num_wann)
-    call param_read_devel(verbose%devel_flag, stdout, seedname)
+    !call param_read_devel(verbose%devel_flag, stdout, seedname)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, &
                             stdout, seedname)
     call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)

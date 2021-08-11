@@ -132,7 +132,7 @@ contains
       endif
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, dis_window%ndimwin, verbose%iprint, &
-                         num_bands, num_kpts, num_wann, verbose%timing_level, verbose%devel_flag, &
+                         num_bands, num_kpts, num_wann, verbose%timing_level, &
                          lfrozen, on_root, seedname, stdout)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
@@ -1255,8 +1255,7 @@ contains
   end subroutine dis_project
 
   subroutine dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, ndimwin, iprint, num_bands, &
-                           num_kpts, num_wann, timing_level, devel_flag, lfrozen, on_root, &
-                           seedname, stdout)
+                           num_kpts, num_wann, timing_level, lfrozen, on_root, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
@@ -1284,7 +1283,7 @@ contains
 
     logical, intent(in) :: on_root, lfrozen(:, :) ! (num_bands, num_kpts)
 
-    character(len=50), intent(in) :: devel_flag
+    !character(len=50), intent(in) :: devel_flag
     character(len=50), intent(in)  :: seedname
 
     ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
@@ -1494,113 +1493,113 @@ contains
         ! checking their orthogonality to the frozen states.
         ! === For version 1.0.1 we make this the default ===
 
-        if (index(devel_flag, 'no-orth-fix') == 0) then
-          nzero = 0; goods = 0
-          do j = ndimwin(nkp), ndimwin(nkp) - (num_wann - ndimfroz(nkp)) + 1, -1
-            if (w(j) < eps8) then
-              nzero = nzero + 1
-            else
-              goods = goods + 1
-            end if
+        !if (index(devel_flag, 'no-orth-fix') == 0) then
+        nzero = 0; goods = 0
+        do j = ndimwin(nkp), ndimwin(nkp) - (num_wann - ndimfroz(nkp)) + 1, -1
+          if (w(j) < eps8) then
+            nzero = nzero + 1
+          else
+            goods = goods + 1
+          end if
+        end do
+        if (nzero > 0) then
+          if (iprint > 2 .and. on_root) then
+            write (stdout, *) ' '
+            write (stdout, '(1x,a,i0,a)') 'An eigenvalue of QPQ is close to zero at kpoint ', &
+              nkp, '. Using safety check.'
+            write (stdout, '(1x,a,i4,a,i4)') 'We must find ', nzero, &
+              ' eigenvectors with zero eigenvalues out of a set of ', ndimwin(nkp) - goods
+          endif
+          !First lets put the 'good' states into vamp
+          vmap = 0
+          counter = 1
+          do j = ndimwin(nkp), ndimwin(nkp) - goods + 1, -1
+            vmap(counter) = j
+            counter = counter + 1
           end do
-          if (nzero > 0) then
-            if (iprint > 2 .and. on_root) then
-              write (stdout, *) ' '
-              write (stdout, '(1x,a,i0,a)') 'An eigenvalue of QPQ is close to zero at kpoint ', &
-                nkp, '. Using safety check.'
-              write (stdout, '(1x,a,i4,a,i4)') 'We must find ', nzero, &
-                ' eigenvectors with zero eigenvalues out of a set of ', ndimwin(nkp) - goods
-            endif
-            !First lets put the 'good' states into vamp
-            vmap = 0
-            counter = 1
-            do j = ndimwin(nkp), ndimwin(nkp) - goods + 1, -1
-              vmap(counter) = j
-              counter = counter + 1
-            end do
 
-            if (iprint > 2 .and. on_root) then
-              do loop_f = 1, ndimwin(nkp)
-                write (stdout, '(1x,a,i4,a,es13.6)') 'Eigenvector number', loop_f, &
-                  '    Eigenvalue: ', w(loop_f)
-                do loop_v = 1, ndimwin(nkp)
-                  write (stdout, '(20x,2f12.8)') cz(loop_v, loop_f)
-                end do
-                write (stdout, *)
+          if (iprint > 2 .and. on_root) then
+            do loop_f = 1, ndimwin(nkp)
+              write (stdout, '(1x,a,i4,a,es13.6)') 'Eigenvector number', loop_f, &
+                '    Eigenvalue: ', w(loop_f)
+              do loop_v = 1, ndimwin(nkp)
+                write (stdout, '(20x,2f12.8)') cz(loop_v, loop_f)
               end do
-            end if
-
-            ! We need to find nzero vectors out of the remining ndimwin(nkp)-goods vectors
-
-            do loop_f = 1, nzero
-              do loop_v = ndimwin(nkp), 1, -1 !loop backwards for efficiency only
-                if (any(vmap == loop_v)) cycle
-                !check to see if vector is orthogonal to frozen states in u_matrix_opt
-                take = .true.
-                do m = 1, ndimfroz(nkp)
-                  ctmp = cmplx_0
-                  do j = 1, ndimwin(nkp)
-                    ctmp = ctmp + conjg(u_matrix_opt(j, m, nkp))*cz(j, loop_v)
-                  enddo
-                  if (abs(ctmp) .gt. eps8) then
-                    take = .false.
-                  endif
-                enddo
-                if (take) then !vector is good and we add it to vmap
-                  vmap(goods + loop_f) = loop_v
-                  exit
-                end if
-              end do
+              write (stdout, *)
             end do
-
-            if (iprint > 2 .and. on_root) then
-              write (rep, '(i4)') num_wann - ndimfroz(nkp)
-              write (stdout, '(1x,a,'//trim(rep)//'(i0,1x))') &
-                'We use the following eigenvectors: ', vmap(1:(num_wann - ndimfroz(nkp)))
-            end if
-            do l = 1, num_wann - ndimfroz(nkp)
-              if (vmap(l) == 0) then
-                call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors', stdout, seedname)
-              endif
-            end do
-
-            ! put the correct eigenvectors into u_matrix_opt, and we're all done!
-            counter = 1
-            do l = ndimfroz(nkp) + 1, num_wann
-              u_matrix_opt(1:ndimwin(nkp), l, nkp) = cz(1:ndimwin(nkp), vmap(counter))
-              counter = counter + 1
-            enddo
-
-          else ! we don't need to use the fix
-
-            do l = ndimfroz(nkp) + 1, num_wann
-              u_matrix_opt(1:ndimwin(nkp), l, nkp) = cz(1:ndimwin(nkp), il)
-              il = il + 1
-            enddo
-
-            if (il - 1 .ne. iu) then
-              call io_error('dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)', stdout, seedname)
-            endif
-
           end if
 
-        else ! if .not. using ortho-fix
+          ! We need to find nzero vectors out of the remining ndimwin(nkp)-goods vectors
 
-          ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
-          ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN u_matrix_opt
+          do loop_f = 1, nzero
+            do loop_v = ndimwin(nkp), 1, -1 !loop backwards for efficiency only
+              if (any(vmap == loop_v)) cycle
+              !check to see if vector is orthogonal to frozen states in u_matrix_opt
+              take = .true.
+              do m = 1, ndimfroz(nkp)
+                ctmp = cmplx_0
+                do j = 1, ndimwin(nkp)
+                  ctmp = ctmp + conjg(u_matrix_opt(j, m, nkp))*cz(j, loop_v)
+                enddo
+                if (abs(ctmp) .gt. eps8) then
+                  take = .false.
+                endif
+              enddo
+              if (take) then !vector is good and we add it to vmap
+                vmap(goods + loop_f) = loop_v
+                exit
+              end if
+            end do
+          end do
+
+          if (iprint > 2 .and. on_root) then
+            write (rep, '(i4)') num_wann - ndimfroz(nkp)
+            write (stdout, '(1x,a,'//trim(rep)//'(i0,1x))') &
+              'We use the following eigenvectors: ', vmap(1:(num_wann - ndimfroz(nkp)))
+          end if
+          do l = 1, num_wann - ndimfroz(nkp)
+            if (vmap(l) == 0) then
+              call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors', stdout, seedname)
+            endif
+          end do
+
+          ! put the correct eigenvectors into u_matrix_opt, and we're all done!
+          counter = 1
           do l = ndimfroz(nkp) + 1, num_wann
-            if (on_root) write (stdout, *) 'il=', il
+            u_matrix_opt(1:ndimwin(nkp), l, nkp) = cz(1:ndimwin(nkp), vmap(counter))
+            counter = counter + 1
+          enddo
+
+        else ! we don't need to use the fix
+
+          do l = ndimfroz(nkp) + 1, num_wann
             u_matrix_opt(1:ndimwin(nkp), l, nkp) = cz(1:ndimwin(nkp), il)
             il = il + 1
           enddo
 
-          ! DEBUG
           if (il - 1 .ne. iu) then
-            call io_error('dis_proj_frozen: error -  il-1.ne.iu', stdout, seedname)
+            call io_error('dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)', stdout, seedname)
           endif
-          ! ENDDEBUG
 
         end if
+
+        !else ! if .not. using ortho-fix
+
+        ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
+        ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN u_matrix_opt
+        !do l = ndimfroz(nkp) + 1, num_wann
+        !  if (on_root) write (stdout, *) 'il=', il
+        !  u_matrix_opt(1:ndimwin(nkp), l, nkp) = cz(1:ndimwin(nkp), il)
+        !  il = il + 1
+        !enddo
+
+        ! DEBUG
+        !if (il - 1 .ne. iu) then
+        !  call io_error('dis_proj_frozen: error -  il-1.ne.iu', stdout, seedname)
+        !endif
+        ! ENDDEBUG
+
+        !end if
 
       endif   ! num_wann>nDIMFROZ(NKP)
 
@@ -2047,37 +2046,37 @@ contains
         ! wkomegai1(nkp), add it to womegai1
         womegai1 = womegai1 + wkomegai1_loc(nkp_loc)
 
-        if (index(verbose%devel_flag, 'compspace') > 0) then
+        !if (index(verbose%devel_flag, 'compspace') > 0) then
 
-          ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
-          ! COMPLEMENT SPACE
+        ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
+        ! COMPLEMENT SPACE
 
-          if (iter .eq. dis_data%num_iter) then
-            allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
-            if (ierr /= 0) call io_error('Error allocating camp in dis_extract', stdout, seedname)
-            allocate (camp_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
-            if (ierr /= 0) call io_error('Error allocating ucamp_loc in dis_extract', stdout, seedname)
+        !  if (iter .eq. dis_data%num_iter) then
+        !    allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
+        !    if (ierr /= 0) call io_error('Error allocating camp in dis_extract', stdout, seedname)
+        !    allocate (camp_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
+        !    if (ierr /= 0) call io_error('Error allocating ucamp_loc in dis_extract', stdout, seedname)
 
-            if (window%ndimwin(nkp) .gt. num_wann) then
-              do j = 1, window%ndimwin(nkp) - num_wann
-                if (num_wann .gt. ndimfroz(nkp)) then
-                  ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                  camp_loc(1:window%ndimwin(nkp), j, nkp_loc) = cz(1:window%ndimwin(nkp), j)
-                else
-                  ! Then num_wann=NDIMFROZ(NKP)
-                  ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
-                  do i = 1, window%ndimwin(nkp)
-                    camp_loc(i, j, nkp_loc) = cmplx_0
-                    if (i .eq. indxnfroz(j, nkp)) camp_loc(i, j, nkp_loc) = cmplx_1
-                  enddo
-                endif
-              enddo
-            else
-              icompflag = 1
-            endif
-          endif
+        !    if (window%ndimwin(nkp) .gt. num_wann) then
+        !      do j = 1, window%ndimwin(nkp) - num_wann
+        !        if (num_wann .gt. ndimfroz(nkp)) then
+        !          ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
+        !          camp_loc(1:window%ndimwin(nkp), j, nkp_loc) = cz(1:window%ndimwin(nkp), j)
+        !        else
+        ! Then num_wann=NDIMFROZ(NKP)
+        ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
+        !          do i = 1, window%ndimwin(nkp)
+        !            camp_loc(i, j, nkp_loc) = cmplx_0
+        !            if (i .eq. indxnfroz(j, nkp)) camp_loc(i, j, nkp_loc) = cmplx_1
+        !          enddo
+        !        endif
+        !      enddo
+        !    else
+        !      icompflag = 1
+        !    endif
+        !  endif
 
-        end if ! index(verbose%devel_flag,'compspace')>0
+        !end if ! index(verbose%devel_flag,'compspace')>0
 
       enddo
       ! [Loop over k points (nkp)]
@@ -2096,15 +2095,15 @@ contains
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, &
                                                           num_wann, seedname, stdout, &
                                                           window%lwindow) !RS:
-      if (index(verbose%devel_flag, 'compspace') > 0) then
-        if (iter .eq. dis_data%num_iter) then
-          call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
-                             num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
-                             seedname, comm)
+      !if (index(verbose%devel_flag, 'compspace') > 0) then
+      !  if (iter .eq. dis_data%num_iter) then
+      !    call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
+      !                       num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
+      !                       seedname, comm)
 
-          call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
-        endif
-      endif
+      !    call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
+      !  endif
+      !endif
 
       if (verbose%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2, stdout, seedname)
 
@@ -2249,30 +2248,30 @@ contains
       endif
     endif
 
-    if (index(verbose%devel_flag, 'compspace') > 0) then
+    !if (index(verbose%devel_flag, 'compspace') > 0) then
 
-      if (icompflag .eq. 1) then
-        if (verbose%iprint > 2) then
-          if (on_root) write (stdout, ('(/4x,a)')) &
-            'WARNING: Complement subspace has zero dimensions at the following k-points:'
-          i = 0
-          if (on_root) write (stdout, '(4x)', advance='no')
-          do nkp = 1, num_kpts
-            if (window%ndimwin(nkp) .eq. num_wann) then
-              i = i + 1
-              if (i .le. 12) then
-                if (on_root) write (stdout, '(i6)', advance='no') nkp
-              else
-                i = 1
-                if (on_root) write (stdout, '(/4x)', advance='no')
-                if (on_root) write (stdout, '(i6)', advance='no') nkp
-              endif
-            endif
-          enddo
-        endif
-      endif
+    !  if (icompflag .eq. 1) then
+    !    if (verbose%iprint > 2) then
+    !      if (on_root) write (stdout, ('(/4x,a)')) &
+    !        'WARNING: Complement subspace has zero dimensions at the following k-points:'
+    !      i = 0
+    !      if (on_root) write (stdout, '(4x)', advance='no')
+    !      do nkp = 1, num_kpts
+    !        if (window%ndimwin(nkp) .eq. num_wann) then
+    !          i = i + 1
+    !          if (i .le. 12) then
+    !            if (on_root) write (stdout, '(i6)', advance='no') nkp
+    !          else
+    !            i = 1
+    !            if (on_root) write (stdout, '(/4x)', advance='no')
+    !            if (on_root) write (stdout, '(i6)', advance='no') nkp
+    !          endif
+    !        endif
+    !      enddo
+    !    endif
+    !  endif
 
-    endif
+    !endif
 
     ! Write the final womegai. This should remain unchanged during the
     ! subsequent minimization of Omega_tilde in wannierise.f90
@@ -2362,52 +2361,52 @@ contains
     call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, stdout, seedname, comm)
     call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
 
-    if (index(verbose%devel_flag, 'compspace') > 0) then
+    !if (index(verbose%devel_flag, 'compspace') > 0) then
 
-      if (icompflag .eq. 1) then
-        if (verbose%iprint > 2) then
-          if (on_root) then
-            write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
-            write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
-          endif
-        endif
-      else
-        ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
-        ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
-        do nkp = 1, num_kpts
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, window%ndimwin(nkp) - num_wann
-              cham(i, j, nkp) = cmplx_0
-              do l = 1, window%ndimwin(nkp)
-                cham(i, j, nkp) = cham(i, j, nkp) + conjg(camp(l, i, nkp)) &
-                                  *camp(l, j, nkp)*eigval_opt(l, nkp)
-              enddo
-            enddo
-          enddo
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, j
-              cap(i + ((j - 1)*j)/2) = cham(i, j, nkp)
-            enddo
-          enddo
-          ndiff = window%ndimwin(nkp) - num_wann
-          call ZHPEVX('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
-                      -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
-          if (info .lt. 0) then
-            if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
-            if (on_root) write (stdout, *) 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call io_error(' dis_extract: error', stdout, seedname)
-          endif
-          if (info .gt. 0) then
-            if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
-            if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-            call io_error(' dis_extract: error', stdout, seedname)
-          endif
-          ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
-          ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, window%ndimwin(nkp)
-              camp(i, j, nkp) = cmplx_0
-              do l = 1, window%ndimwin(nkp) - num_wann
+    !  if (icompflag .eq. 1) then
+    !    if (verbose%iprint > 2) then
+    !      if (on_root) then
+    !        write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
+    !        write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
+    !      endif
+    !    endif
+    !  else
+    ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
+    ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
+    !    do nkp = 1, num_kpts
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, window%ndimwin(nkp) - num_wann
+    !          cham(i, j, nkp) = cmplx_0
+    !          do l = 1, window%ndimwin(nkp)
+    !            cham(i, j, nkp) = cham(i, j, nkp) + conjg(camp(l, i, nkp)) &
+    !                              *camp(l, j, nkp)*eigval_opt(l, nkp)
+    !          enddo
+    !        enddo
+    !      enddo
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, j
+    !          cap(i + ((j - 1)*j)/2) = cham(i, j, nkp)
+    !        enddo
+    !      enddo
+    !      ndiff = window%ndimwin(nkp) - num_wann
+    !      call ZHPEVX('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
+    !                  -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
+    !      if (info .lt. 0) then
+    !        if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
+    !        if (on_root) write (stdout, *) 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
+    !        call io_error(' dis_extract: error', stdout, seedname)
+    !      endif
+    !      if (info .gt. 0) then
+    !        if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
+    !        if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
+    !        call io_error(' dis_extract: error', stdout, seedname)
+    !      endif
+    ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
+    ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, window%ndimwin(nkp)
+    !          camp(i, j, nkp) = cmplx_0
+    !          do l = 1, window%ndimwin(nkp) - num_wann
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
@@ -2416,14 +2415,14 @@ contains
 ! aam: 20/10/2006 -- the second dimension of u_matrix_opt is out of bounds (allocated as num_wann)!
 ! commenting this line out.
 !                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
-              enddo
-            enddo
-          enddo
-        enddo   ! [loop over k points (nkp)]
+    !         enddo
+    !       enddo
+    !     enddo
+    !   enddo   ! [loop over k points (nkp)]
 
-      endif   ! [if icompflag=1]
+    ! endif   ! [if icompflag=1]
 
-    endif     ![if(index(devel_flag,'compspace')>0)]
+    !endif     ![if(index(devel_flag,'compspace')>0)]
 
     deallocate (history, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating history in dis_extract', stdout, seedname)
@@ -2902,31 +2901,31 @@ contains
 
         ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
         ! COMPLEMENT SPACE
-        if (index(verbose%devel_flag, 'compspace') > 0) then
+        !if (index(verbose%devel_flag, 'compspace') > 0) then
 
-          if (iter .eq. dis_data%num_iter) then
-            allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
-            camp = cmplx_0
-            if (ierr /= 0) call io_error('Error allocating camp in dis_extract_gamma', stdout, seedname)
-            if (window%ndimwin(nkp) .gt. num_wann) then
-              do j = 1, window%ndimwin(nkp) - num_wann
-                if (num_wann .gt. ndimfroz(nkp)) then
-                  ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                  camp(1:window%ndimwin(nkp), j, nkp) = cz(1:window%ndimwin(nkp), j)
-                else
-                  ! Then num_wann=NDIMFROZ(NKP)
-                  ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
-                  do i = 1, window%ndimwin(nkp)
-                    camp(i, j, nkp) = cmplx_0
-                    if (i .eq. indxnfroz(j, nkp)) camp(i, j, nkp) = cmplx_1
-                  enddo
-                endif
-              enddo
-            else
-              icompflag = 1
-            endif
-          endif
-        end if
+        !  if (iter .eq. dis_data%num_iter) then
+        !    allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
+        !    camp = cmplx_0
+        !    if (ierr /= 0) call io_error('Error allocating camp in dis_extract_gamma', stdout, seedname)
+        !    if (window%ndimwin(nkp) .gt. num_wann) then
+        !      do j = 1, window%ndimwin(nkp) - num_wann
+        !        if (num_wann .gt. ndimfroz(nkp)) then
+        !          ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
+        !          camp(1:window%ndimwin(nkp), j, nkp) = cz(1:window%ndimwin(nkp), j)
+        !        else
+        !          ! Then num_wann=NDIMFROZ(NKP)
+        !          ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
+        !          do i = 1, window%ndimwin(nkp)
+        !            camp(i, j, nkp) = cmplx_0
+        !            if (i .eq. indxnfroz(j, nkp)) camp(i, j, nkp) = cmplx_1
+        !          enddo
+        !        endif
+        !      enddo
+        !    else
+        !      icompflag = 1
+        !    endif
+        !  endif
+        !end if
 
       enddo
       ! [Loop over k points (nkp)]
@@ -3144,59 +3143,59 @@ contains
 
     ! aam: 01/05/2009: added devel_flag if statement as the complementary
     !      subspace code was causing catastrophic seg-faults
-    if (index(verbose%devel_flag, 'compspace') > 0) then
+    !if (index(verbose%devel_flag, 'compspace') > 0) then
 
-      ! The compliment subspace code needs work: jry
-      if (icompflag .eq. 1) then
-        if (verbose%iprint > 2) then
-          write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
-          write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
-        endif
-      else
-        ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
-        ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
-        do nkp = 1, num_kpts
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, window%ndimwin(nkp) - num_wann
-              cham(i, j, nkp) = cmplx_0
-              do l = 1, window%ndimwin(nkp)
-                cham(i, j, nkp) = cham(i, j, nkp) + conjg(camp(l, i, nkp)) &
-                                  *camp(l, j, nkp)*eigval_opt(l, nkp)
-              enddo
-            enddo
-          enddo
+    ! The compliment subspace code needs work: jry
+    !  if (icompflag .eq. 1) then
+    !    if (verbose%iprint > 2) then
+    !      write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
+    !      write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
+    !    endif
+    !  else
+    ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
+    ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
+    !    do nkp = 1, num_kpts
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, window%ndimwin(nkp) - num_wann
+    !          cham(i, j, nkp) = cmplx_0
+    !          do l = 1, window%ndimwin(nkp)
+    !            cham(i, j, nkp) = cham(i, j, nkp) + conjg(camp(l, i, nkp)) &
+    !                              *camp(l, j, nkp)*eigval_opt(l, nkp)
+    !          enddo
+    !        enddo
+    !      enddo
 !@@@
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, j
-              cap_r(i + ((j - 1)*j)/2) = real(cham(i, j, nkp), dp)
-            enddo
-          enddo
-          ndiff = window%ndimwin(nkp) - num_wann
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, j
+    !          cap_r(i + ((j - 1)*j)/2) = real(cham(i, j, nkp), dp)
+    !        enddo
+    !      enddo
+    !      ndiff = window%ndimwin(nkp) - num_wann
 
-          call DSPEVX('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
-                      m, w, rz, num_bands, work, iwork, ifail, info)
+    !     call DSPEVX('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
+    !                  m, w, rz, num_bands, work, iwork, ifail, info)
 
-          if (info .lt. 0) then
-            write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
-            write (stdout, *) 'THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-            call io_error(' dis_extract_gamma: error', stdout, seedname)
-          endif
-          if (info .gt. 0) then
-            write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
-            write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-            call io_error(' dis_extract_gamma: error', stdout, seedname)
-          endif
+    !      if (info .lt. 0) then
+    !        write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
+    !        write (stdout, *) 'THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
+    !        call io_error(' dis_extract_gamma: error', stdout, seedname)
+    !      endif
+    !      if (info .gt. 0) then
+    !        write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
+    !        write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
+    !        call io_error(' dis_extract_gamma: error', stdout, seedname)
+    !      endif
 
-          cz = cmplx_0
-          cz(1:ndiff, 1:ndiff) = cmplx(rz(1:ndiff, 1:ndiff), 0.0_dp, dp)
+    !      cz = cmplx_0
+    !      cz(1:ndiff, 1:ndiff) = cmplx(rz(1:ndiff, 1:ndiff), 0.0_dp, dp)
 
 !@@@
-          ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
-          ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
-          do j = 1, window%ndimwin(nkp) - num_wann
-            do i = 1, window%ndimwin(nkp)
-              camp(i, j, nkp) = cmplx_0
-              do l = 1, window%ndimwin(nkp) - num_wann
+    ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
+    ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
+    !      do j = 1, window%ndimwin(nkp) - num_wann
+    !        do i = 1, window%ndimwin(nkp)
+    !          camp(i, j, nkp) = cmplx_0
+    !          do l = 1, window%ndimwin(nkp) - num_wann
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
@@ -3205,16 +3204,16 @@ contains
 ! aam: 20/10/2006 -- the second dimension of u_matrix_opt is out of bounds (allocated as num_wann)!
 ! commenting this line out.
 !                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
-              enddo
-            enddo
-          enddo
-        enddo
-        ! [loop over k points (nkp)]
+    !          enddo
+    !        enddo
+    !      enddo
+    !    enddo
+    ! [loop over k points (nkp)]
 
-      endif
-      ! [if icompflag=1]
+    !  endif
+    ! [if icompflag=1]
 
-    endif
+    !endif
     ! [if index(devel_flag,'compspace')>0]
 
     deallocate (history, stat=ierr)
