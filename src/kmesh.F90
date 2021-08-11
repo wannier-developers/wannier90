@@ -77,7 +77,7 @@ contains
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnsh, nn, nnx, loop, i, j
     integer :: stdout
-    integer :: ifound, counter, na, nap, loop_s, loop_b, shell, nbvec, bnum
+    integer :: ifound, counter, na, nap, loop_s, loop_b, shell !, nbvec, bnum
     integer :: ifpos, ifneg, ierr, multi(kmesh_data%search_shells)
     integer :: nnshell(num_kpts, kmesh_data%search_shells)
     integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
@@ -88,9 +88,9 @@ contains
     real(kind=dp) :: bweight(max_shells)
     real(kind=dp) :: dnn(kmesh_data%search_shells)
     real(kind=dp) :: wb_local(num_nnmax)
-    real(kind=dp) :: bk_local(3, num_nnmax, num_kpts), kpbvec(3)
+    real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp), allocatable :: bvec_tmp(:, :)
-    real(kind=dp) :: bvec_inp(3, num_nnmax, max_shells) ! The input b-vectors (only used in the rare case they are read from file)
+    !real(kind=dp) :: bvec_inp(3, num_nnmax, max_shells) ! The input b-vectors (only used in the rare case they are read from file)
 
     if (verbose%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
 
