@@ -154,6 +154,13 @@ module wannier_param_types
     !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   end type wann_slwf_type
 
+  type guiding_centres_type
+    logical :: enable
+    integer :: num_guide_cycles
+    integer :: num_no_guide_iter
+    real(kind=dp), allocatable :: centres(:, :)
+  end type guiding_centres_type
+
   type wann_control_type ! only in wannierise.F90
     !! ========================
     !! Contains parameters that control the wannierisation minimisation procedure
@@ -168,13 +175,7 @@ module wannier_param_types
     !! Number of Conjugate Gradient steps
     real(kind=dp) :: conv_tol
     integer :: conv_window
-    ! REVIEW_2021-08-04: move these three guiding centres parameters to a new type (see below) which can be
-    ! REVIEW_2021-08-04: nested inside this type.
-    logical :: guiding_centres
-    integer :: num_guide_cycles
-    integer :: num_no_guide_iter
-    ! REVIEW_2021-08-04: make a new guiding_centres_type that includes guiding_centres(logical) [which we can rename "enable"]
-    ! REVIEW_2021-08-04: num_guide_cycles, num_no_guide_iter and guiding_centres(real array) [which we can rename "centres"]
+    type(guiding_centres_type) :: guiding_centres
     real(kind=dp) :: fixed_step
     real(kind=dp) :: trial_step
     logical :: precond
@@ -206,7 +207,6 @@ module wannier_param_types
     ! REVIEW_2021-08-04: See whether it is possible to avoid using this variable and instead use
     ! REVIEW_2021-08-04: guiding_centres_type%centres or wann_slwf_type%centres as appropriate and
     ! REVIEW_2021-08-04: remove proj_site altogether.
-    real(kind=dp), allocatable :: proj_site(:, :) ! MAYBE
   end type wannierise_type
 
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.

@@ -184,14 +184,15 @@ contains
                                    stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
-                                  wannierise%control%guiding_centres, &
+                                  wannierise%control%guiding_centres%enable, &
                                   proj_input, select_proj, num_proj, &
                                   atoms, recip_lattice, num_wann, gamma_only, &
                                   system%spinors, library, bohr, stdout, seedname)
       if (allocated(proj%site)) then
-        if (allocated(wannierise%proj_site)) deallocate (wannierise%proj_site)
-        allocate (wannierise%proj_site(3, num_wann))
-        wannierise%proj_site(:, :) = proj%site(:, :)
+        if (allocated(wannierise%control%guiding_centres%centres)) &
+          deallocate (wannierise%control%guiding_centres%centres)
+        allocate (wannierise%control%guiding_centres%centres(3, num_wann))
+        wannierise%control%guiding_centres%centres(:, :) = proj%site(:, :)
       endif
       ! projections needs to be allocated before reading constrained centres
       if (wannierise%constrain%constrain) then
@@ -441,20 +442,20 @@ contains
     if (wannierise%control%conv_noise_num < 0) &
       call io_error('Error: conv_noise_num must be positive', stdout, seedname)
 
-    wannierise%control%guiding_centres = .false.
+    wannierise%control%guiding_centres%enable = .false.
     call param_get_keyword(stdout, seedname, 'guiding_centres', found, &
-                           l_value=wannierise%control%guiding_centres)
+                           l_value=wannierise%control%guiding_centres%enable)
 
-    wannierise%control%num_guide_cycles = 1
+    wannierise%control%guiding_centres%num_guide_cycles = 1
     call param_get_keyword(stdout, seedname, 'num_guide_cycles', found, &
-                           i_value=wannierise%control%num_guide_cycles)
-    if (wannierise%control%num_guide_cycles < 0) &
+                           i_value=wannierise%control%guiding_centres%num_guide_cycles)
+    if (wannierise%control%guiding_centres%num_guide_cycles < 0) &
       call io_error('Error: num_guide_cycles must be >= 0', stdout, seedname)
 
-    wannierise%control%num_no_guide_iter = 0
+    wannierise%control%guiding_centres%num_no_guide_iter = 0
     call param_get_keyword(stdout, seedname, 'num_no_guide_iter', found, &
-                           i_value=wannierise%control%num_no_guide_iter)
-    if (wannierise%control%num_no_guide_iter < 0) &
+                           i_value=wannierise%control%guiding_centres%num_no_guide_iter)
+    if (wannierise%control%guiding_centres%num_no_guide_iter < 0) &
       call io_error('Error: num_no_guide_iter must be >= 0', stdout, seedname)
 
     wannierise%control%fixed_step = -999.0_dp; 
@@ -1118,7 +1119,7 @@ contains
         ! Allocate array for constrained centres
         call param_get_centre_constraints(ccentres_frac, &
                                           wannierise%constrain%centres, &
-                                          wannierise%proj_site, &
+                                          wannierise%control%guiding_centres%centres, &
                                           num_wann, real_lattice, stdout, seedname)
       else
         write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
@@ -1126,7 +1127,7 @@ contains
       ! Check that either projections or constrained centres are specified if slwf_constrain=.true.
     elseif (.not. found) then
       if (wannierise%constrain%constrain) then
-        if (.not. allocated(wannierise%proj_site)) then
+        if (.not. allocated(wannierise%control%guiding_centres%centres)) then
           call io_error('Error: slwf_constrain = true, but neither &
                & <slwf_centre> block  nor &
                & <projection_block> are specified.', stdout, seedname)
@@ -1134,13 +1135,13 @@ contains
           ! Allocate array for constrained centres
           call param_get_centre_constraints(ccentres_frac, &
                                             wannierise%constrain%centres, &
-                                            wannierise%proj_site, &
+                                            wannierise%control%guiding_centres%centres, &
                                             num_wann, real_lattice, stdout, seedname)
         end if
       end if
     end if
     ! Warning
-    if (wannierise%constrain%constrain .and. allocated(wannierise%proj_site) &
+    if (wannierise%constrain%constrain .and. allocated(wannierise%control%guiding_centres%centres) &
         .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
@@ -1299,7 +1300,8 @@ contains
       write (stdout, *) ' '
     end if
 
-    if (verbose%iprint > 1 .and. select_proj%lselproj .and. allocated(wannierise%proj_site)) then
+    if (verbose%iprint > 1 .and. select_proj%lselproj .and. &
+        allocated(wannierise%control%guiding_centres%centres)) then
       write (stdout, '(30x,a)') '--------------------'
       write (stdout, '(30x,a)') 'SELECTED PROJECTIONS'
       write (stdout, '(30x,a)') '--------------------'
@@ -1310,8 +1312,10 @@ contains
       do nsp = 1, num_wann
         if (select_proj%proj2wann_map(nsp) < 0) cycle
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
-  &              '|', wannierise%proj_site(1, nsp), wannierise%proj_site(2, nsp), &
-             wannierise%proj_site(3, nsp), proj%l(nsp), proj%m(nsp), proj%radial(nsp), &
+            &              '|', wannierise%control%guiding_centres%centres(1, nsp), &
+            wannierise%control%guiding_centres%centres(2, nsp), &
+            wannierise%control%guiding_centres%centres(3, nsp), proj%l(nsp), &
+            proj%m(nsp), proj%radial(nsp), &
              proj%z(1, nsp), proj%z(2, nsp), proj%z(3, nsp), proj%x(1, nsp), &
              proj%x(2, nsp), proj%x(3, nsp), proj%zona(nsp), '|'
       end do
@@ -1408,14 +1412,14 @@ contains
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
       out_files%write_hr_diag, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
-      wannierise%control%guiding_centres, '|'
+      wannierise%control%guiding_centres%enable, '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
       use_bloch_phases, '|'
-    if (wannierise%control%guiding_centres .or. verbose%iprint > 2) then
+    if (wannierise%control%guiding_centres%enable .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
-        wannierise%control%num_no_guide_iter, '|'
+        wannierise%control%guiding_centres%num_no_guide_iter, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between using guiding centres  :', &
-        wannierise%control%num_guide_cycles, '|'
+        wannierise%control%guiding_centres%num_guide_cycles, '|'
     end if
     if (wannierise%constrain%selective_loc .or. verbose%iprint > 2) then
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
@@ -1643,8 +1647,8 @@ contains
       deallocate (write_data%ccentres_frac, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating ccentres_frac in param_w90_dealloc', stdout, seedname)
     endif
-    if (allocated(wannierise%proj_site)) then
-      deallocate (wannierise%proj_site, stat=ierr)
+    if (allocated(wannierise%control%guiding_centres%centres)) then
+      deallocate (wannierise%control%guiding_centres%centres, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier proj_site in param_dealloc', stdout, seedname)
     end if
     if (allocated(wannierise%constrain%centres)) then
@@ -1859,7 +1863,7 @@ contains
       mem_param = mem_param + (num_proj)*size_real                !input_proj_zona
     endif
 
-    if (allocated(wannierise%proj_site)) then
+    if (allocated(wannierise%control%guiding_centres%centres)) then
       mem_param = mem_param + (3*num_wann)*size_real              !proj_site
       mem_param = mem_param + (num_wann)*size_int                !proj_l
       mem_param = mem_param + (num_wann)*size_int                 !proj_m
@@ -2171,7 +2175,7 @@ contains
     call comms_bcast(wannierise%control%num_cg_steps, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%conv_tol, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%conv_window, 1, stdout, seedname, comm)
-    call comms_bcast(wannierise%control%guiding_centres, 1, stdout, seedname, comm)
+    call comms_bcast(wannierise%control%guiding_centres%enable, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%wannier_plot, 1, stdout, seedname, comm) !!BGS!!
     call comms_bcast(wann_plot%num_plot, 1, stdout, seedname, comm)
     if (wann_plot%num_plot > 0) then
@@ -2359,8 +2363,8 @@ contains
     call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
     call comms_bcast(w90_calcs%restart, len(w90_calcs%restart), stdout, seedname, comm)
     call comms_bcast(out_files%write_r2mn, 1, stdout, seedname, comm)
-    call comms_bcast(wannierise%control%num_guide_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(wannierise%control%num_no_guide_iter, 1, stdout, seedname, comm)
+    call comms_bcast(wannierise%control%guiding_centres%num_guide_cycles, 1, stdout, seedname, comm)
+    call comms_bcast(wannierise%control%guiding_centres%num_no_guide_iter, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%fixed_step, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%trial_step, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%control%precond, 1, stdout, seedname, comm)
@@ -2409,11 +2413,11 @@ contains
       if (.not. on_root) then
         allocate (proj_input%site(3, num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_site in param_dist', stdout, seedname)
-        allocate (wannierise%proj_site(3, num_wann), stat=ierr)
+        allocate (wannierise%control%guiding_centres%centres(3, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_site in param_dist', stdout, seedname)
       endif
       call comms_bcast(proj_input%site(1, 1), 3*num_proj, stdout, seedname, comm)
-      call comms_bcast(wannierise%proj_site(1, 1), 3*num_wann, stdout, seedname, comm)
+      call comms_bcast(wannierise%control%guiding_centres%centres(1, 1), 3*num_wann, stdout, seedname, comm)
     endif
 
     ! These variables are different from the ones above in that they are

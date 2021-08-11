@@ -355,9 +355,10 @@ contains
     gcnorm1 = 0.0_dp; gcnorm0 = 0.0_dp
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
-    if (wannierise%control%guiding_centres) then
+    if (wannierise%control%guiding_centres%enable) then
       do n = 1, num_proj
-        call utility_frac_to_cart(wannierise%proj_site(:, n), rguide(:, n), real_lattice)
+        call utility_frac_to_cart(wannierise%control%guiding_centres%centres(:, n), &
+                                  rguide(:, n), real_lattice)
       enddo
 !       if(spinors) then ! not needed with new changes to spinor proj 2013 JRY
 !          do n=1,num_proj
@@ -380,7 +381,7 @@ contains
     endif
 
     irguide = 0
-    if (wannierise%control%guiding_centres .and. (wannierise%control%num_no_guide_iter .le. 0)) then
+    if (wannierise%control%guiding_centres%enable .and. (wannierise%control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -484,8 +485,9 @@ contains
 
       if (lprint .and. verbose%iprint > 0) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
 
-      if (wannierise%control%guiding_centres .and. (iter .gt. wannierise%control%num_no_guide_iter) &
-          .and. (mod(iter, wannierise%control%num_guide_cycles) .eq. 0)) then
+      if (wannierise%control%guiding_centres%enable .and. &
+          (iter .gt. wannierise%control%guiding_centres%num_no_guide_iter) &
+          .and. (mod(iter, wannierise%control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                          stdout, seedname, verbose%iprint, comm)
@@ -832,7 +834,7 @@ contains
       endif
     endif
 
-    if (wannierise%control%guiding_centres) then
+    if (wannierise%control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -3340,15 +3342,16 @@ contains
 
 !~    lguide = .false.
     ! guiding centres are not neede for orthorhombic systems
-    if (kmesh_info%nntot .eq. 3) wannierise%control%guiding_centres = .false.
+    if (kmesh_info%nntot .eq. 3) wannierise%control%guiding_centres%enable = .false.
 
-    if (wannierise%control%guiding_centres) then
+    if (wannierise%control%guiding_centres%enable) then
       ! initialise rguide to projection centres (Cartesians in units of Ang)
 !~       if ( use_bloch_phases) then
 !~          lguide = .true.
 !~       else
       do n = 1, num_wann
-        call utility_frac_to_cart(wannierise%proj_site(:, n), rguide(:, n), real_lattice)
+        call utility_frac_to_cart(wannierise%control%guiding_centres%centres(:, n), rguide(:, n), &
+                                  real_lattice)
       enddo
 !~       endif
     endif
@@ -3369,7 +3372,7 @@ contains
 !~       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
 !~       irguide=1
 !~    endif
-    if (wannierise%control%guiding_centres .and. (wannierise%control%num_no_guide_iter .le. 0)) then
+    if (wannierise%control%guiding_centres%enable .and. (wannierise%control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -3452,8 +3455,9 @@ contains
 !~          irguide=1
 !~       endif
 
-      if (wannierise%control%guiding_centres .and. (iter .gt. wannierise%control%num_no_guide_iter) &
-          .and. (mod(iter, wannierise%control%num_guide_cycles) .eq. 0)) then
+      if (wannierise%control%guiding_centres%enable .and. &
+          (iter .gt. wannierise%control%guiding_centres%num_no_guide_iter) &
+          .and. (mod(iter, wannierise%control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                          stdout, seedname, verbose%iprint, comm, m_w)
@@ -3561,7 +3565,7 @@ contains
                           real_lattice, recip_lattice, atoms, verbose, stdout, seedname)
     endif
 
-    if (wannierise%control%guiding_centres) then
+    if (wannierise%control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)

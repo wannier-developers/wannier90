@@ -312,8 +312,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   nncell_loc(:, :, 1:kmesh_info%nntot) = kmesh_info%nncell(:, :, 1:kmesh_info%nntot)
   num_bands_loc = num_bands
   num_wann_loc = num_wann
-  if (allocated(wannierise%proj_site)) then
-    proj_site_loc(:, 1:num_proj) = wannierise%proj_site(:, 1:num_proj)
+  if (allocated(wannierise%control%guiding_centres%centres)) then
+    proj_site_loc(:, 1:num_proj) = wannierise%control%guiding_centres%centres(:, 1:num_proj)
     proj_l_loc(1:num_proj) = proj%l(1:num_proj)
     proj_m_loc(1:num_proj) = proj%m(1:num_proj)
     proj_z_loc(:, 1:num_proj) = proj%z(:, 1:num_proj)
