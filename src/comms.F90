@@ -71,6 +71,14 @@ module w90_comms
 #endif
   end type
 
+  type, public :: w90statustype
+#ifdef MPI08
+    type(mpi_status) :: stat ! f08 mpi interface
+#else
+    integer :: stat ! f90 mpi or no mpi
+#endif
+  end type
+
   interface comms_bcast
     module procedure comms_bcast_int
     module procedure comms_bcast_logical
@@ -464,14 +472,10 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
-#ifdef MPIH
-    integer :: status
-#else
-    type(mpi_status) :: status
-#endif
+    type(w90statustype) :: status
     integer :: ierr
 
-    call mpi_recv(array, size, MPI_LOGICAL, from, mpi_send_tag, w90comm%comm, status, ierr)
+    call mpi_recv(array, size, MPI_LOGICAL, from, mpi_send_tag, w90comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_logical', stdout, seedname)
@@ -492,14 +496,10 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
-#ifdef MPIH
-    integer :: status
-#else
-    type(mpi_status) :: status
-#endif
+    type(w90statustype) :: status
     integer :: ierr
 
-    call mpi_recv(array, size, MPI_INTEGER, from, mpi_send_tag, w90comm%comm, status, ierr)
+    call mpi_recv(array, size, MPI_INTEGER, from, mpi_send_tag, w90comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_int', stdout, seedname)
@@ -520,14 +520,10 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
-#ifdef MPIH
-    integer :: status
-#else
-    type(mpi_status) :: status
-#endif
+    type(w90statustype) :: status
     integer :: ierr
 
-    call mpi_recv(array, size, MPI_CHARACTER, from, mpi_send_tag, w90comm%comm, status, ierr)
+    call mpi_recv(array, size, MPI_CHARACTER, from, mpi_send_tag, w90comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_char', stdout, seedname)
@@ -548,15 +544,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
-#ifdef MPIH
-    integer :: status
-#else
-    type(mpi_status) :: status
-#endif
+    type(w90statustype) :: status
     integer :: ierr
 
-    call mpi_recv(array, size, MPI_DOUBLE_PRECISION, from, mpi_send_tag, w90comm%comm, status, &
-                  ierr)
+    call mpi_recv(array, size, MPI_DOUBLE_PRECISION, from, mpi_send_tag, w90comm%comm, &
+                  status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_real', stdout, seedname)
@@ -577,14 +569,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
-#ifdef MPIH
-    integer :: status
-#else
-    type(mpi_status) :: status
-#endif
+    type(w90statustype) :: status
     integer :: ierr
 
-    call mpi_recv(array, size, MPI_DOUBLE_COMPLEX, from, mpi_send_tag, w90comm%comm, status, ierr)
+    call mpi_recv(array, size, MPI_DOUBLE_COMPLEX, from, mpi_send_tag, w90comm%comm, &
+                  status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_cmplx', stdout, seedname)
