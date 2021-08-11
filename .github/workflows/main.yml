@@ -9,7 +9,7 @@ on:
     - gh-actions
     # Added this to see tests running also in the branch we're working on
     # To be removed once merged in develop
-    - type-review
+    - use-types
 
 jobs:
   pre-commit:
