@@ -137,7 +137,8 @@ module wannlib_param_data
   type(wannier_plot_type), save :: wann_plot
   type(dis_control_type), save :: dis_data
   type(dis_spheres_type), save :: dis_spheres
-  type(wannierise_type), save :: wannierise
+  type(wann_control_type), save :: wannierise
+  type(wann_omega_type), save :: wann_omega
   ! RS: symmetry-adapted Wannier functions
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3
@@ -269,7 +270,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !library_param_read_first_pass = .true.
   call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                  plot, wannierise, proj, input_proj, rs_region, select_proj, &
+                  plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
                   spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
                   w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
                   mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
@@ -313,8 +314,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   nncell_loc(:, :, 1:kmesh_info%nntot) = kmesh_info%nncell(:, :, 1:kmesh_info%nntot)
   num_bands_loc = num_bands
   num_wann_loc = num_wann
-  if (allocated(wannierise%control%guiding_centres%centres)) then
-    proj_site_loc(:, 1:num_proj) = wannierise%control%guiding_centres%centres(:, 1:num_proj)
+  if (allocated(wannierise%guiding_centres%centres)) then
+    proj_site_loc(:, 1:num_proj) = wannierise%guiding_centres%centres(:, 1:num_proj)
     proj_l_loc(1:num_proj) = proj%l(1:num_proj)
     proj_m_loc(1:num_proj) = proj%m(1:num_proj)
     proj_z_loc(:, 1:num_proj) = proj%z(:, 1:num_proj)
@@ -508,7 +509,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                  plot, wannierise, proj, input_proj, rs_region, select_proj, &
+                  plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
                   spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
                   w90_calcs, eigval, real_lattice, recip_lattice, physics%bohr, symmetrize_eps, &
                   mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
@@ -566,14 +567,14 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
     call dis_main(dis_data, dis_spheres, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, &
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                  u_matrix_opt, eigval, recip_lattice, wannierise%omega%invariant, &
+                  u_matrix_opt, eigval, recip_lattice, wann_omega%invariant, &
                   num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
                   stdout, seedname, comm)
     have_disentangled = .true.
     call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, &
                            k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
                            u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
-                           wannierise%omega%invariant, have_disentangled, stdout, seedname)
+                           wann_omega%invariant, have_disentangled, stdout, seedname)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
@@ -592,12 +593,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   if (gamma_only) then
     call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, out_files, &
-                         wannierise, system, verbose, wann_data, m_matrix, &
+                         wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
   else
     call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                   rs_region, wannierise, sym, system, verbose, wann_data, &
+                   rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
@@ -608,7 +609,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call param_write_chkpt('postwann', excluded_bands, wann_data, kmesh_info, k_points, &
                          num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
                          m_matrix, mp_grid, real_lattice, recip_lattice, &
-                         wannierise%omega%invariant, have_disentangled, stdout, seedname)
+                         wann_omega%invariant, have_disentangled, stdout, seedname)
 
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
@@ -659,9 +660,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (present(wann_centres_loc)) wann_centres_loc = wann_data%centres
   if (present(wann_spreads_loc)) wann_spreads_loc = wann_data%spreads
   if (present(spread_loc)) then
-    spread_loc(1) = wannierise%omega%total
-    spread_loc(2) = wannierise%omega%invariant
-    spread_loc(3) = wannierise%omega%tilde
+    spread_loc(1) = wann_omega%total
+    spread_loc(2) = wann_omega%invariant
+    spread_loc(3) = wann_omega%tilde
   endif
   call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)

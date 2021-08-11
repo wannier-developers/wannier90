@@ -184,7 +184,7 @@ module wannier_param_types
     logical :: lfixstep ! derived from input
     real(kind=dp) :: conv_noise_amp
     integer :: conv_noise_num
-    ! REVIEW_2021-08-04: Nest wann_slwf_type in here (currently called wann_localise_type)
+    type(wann_slwf_type) :: constrain
   end type wann_control_type
 
   type wann_omega_type
@@ -198,18 +198,6 @@ module wannier_param_types
     real(kind=dp) :: total
     real(kind=dp) :: tilde
   end type wann_omega_type
-
-  ! REVIEW_2021-08-04: We don't think there is a need to have this type.
-  type wannierise_type
-    type(wann_control_type) :: control
-    ! REVIEW_2021-08-04: Nest this type inside wann_control_type (see comments above)
-    type(wann_slwf_type) :: constrain
-    type(wann_omega_type) :: omega
-    ! Projections, used when guiding_centres=.true. or for constrained if slwf_constrain=.true.
-    ! REVIEW_2021-08-04: See whether it is possible to avoid using this variable and instead use
-    ! REVIEW_2021-08-04: guiding_centres_type%centres or wann_slwf_type%centres as appropriate and
-    ! REVIEW_2021-08-04: remove proj_site altogether.
-  end type wannierise_type
 
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.
   type fermi_surface_plot_type

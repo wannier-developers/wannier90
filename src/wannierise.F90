@@ -49,7 +49,7 @@ contains
 
   !==================================================================!
   subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
-                       hamiltonian, wannierise, sym, system, verbose, wann_data, &
+                       hamiltonian, wannierise, omega, sym, system, verbose, wann_data, &
                        ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
                        eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
                        mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
@@ -62,8 +62,8 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
-    use wannier_param_types, only: wannierise_type, output_file_type, &
-      w90_calculation_type, real_space_ham_type
+    use wannier_param_types, only: wann_control_type, output_file_type, &
+      w90_calculation_type, real_space_ham_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
       exclude_bands_type, ws_region_type
@@ -90,7 +90,8 @@ contains
     type(print_output_type), intent(in) :: verbose
     type(output_file_type), intent(in) :: out_files
     type(real_space_ham_type), intent(inout) :: hamiltonian
-    type(wannierise_type), intent(inout) :: wannierise
+    type(wann_control_type), intent(inout) :: wannierise
+    type(wann_omega_type), intent(inout) :: omega
     type(sitesym_data), intent(in) :: sym
     type(w90_calculation_type), intent(in) :: w90_calcs
     type(w90commtype), intent(in) :: comm
@@ -210,7 +211,7 @@ contains
 
     ! Allocate stuff
 
-    allocate (history(wannierise%control%conv_window), stat=ierr)
+    allocate (history(wannierise%conv_window), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating history in wann_main', stdout, seedname)
 
     ! module data
@@ -247,7 +248,7 @@ contains
     allocate (rguide(3, num_wann))
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
-    if (wannierise%control%precond) then
+    if (wannierise%precond) then
       call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
@@ -307,7 +308,7 @@ contains
 !    if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
 !    allocate( m_matrix_1b_loc  (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr )
 !    if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
-    if (wannierise%control%precond) then
+    if (wannierise%precond) then
       allocate (cdodq_precond_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_precond_loc in wann_main', stdout, seedname)
     end if
@@ -355,9 +356,9 @@ contains
     gcnorm1 = 0.0_dp; gcnorm0 = 0.0_dp
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
-    if (wannierise%control%guiding_centres%enable) then
+    if (wannierise%guiding_centres%enable) then
       do n = 1, num_proj
-        call utility_frac_to_cart(wannierise%control%guiding_centres%centres(:, n), &
+        call utility_frac_to_cart(wannierise%guiding_centres%centres(:, n), &
                                   rguide(:, n), real_lattice)
       enddo
 !       if(spinors) then ! not needed with new changes to spinor proj 2013 JRY
@@ -381,7 +382,7 @@ contains
     endif
 
     irguide = 0
-    if (wannierise%control%guiding_centres%enable .and. (wannierise%control%guiding_centres%num_no_guide_iter .le. 0)) then
+    if (wannierise%guiding_centres%enable .and. (wannierise%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -397,16 +398,16 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, verbose, wannierise%constrain, &
-                    wannierise%omega%invariant, counts, displs, ln_tmp_loc, m_matrix_loc, &
+                    omega%invariant, counts, displs, ln_tmp_loc, m_matrix_loc, &
                     lambda_loc, first_pass, stdout, seedname, comm)
 
     ! public variables
     if (.not. wannierise%constrain%selective_loc) then
-      wannierise%omega%total = wann_spread%om_tot
-      wannierise%omega%invariant = wann_spread%om_i
-      wannierise%omega%tilde = wann_spread%om_d + wann_spread%om_od
+      omega%total = wann_spread%om_tot
+      omega%invariant = wann_spread%om_i
+      omega%tilde = wann_spread%om_d + wann_spread%om_od
     else
-      wannierise%omega%total = wann_spread%om_tot
+      omega%total = wann_spread%om_tot
       ! omega_invariant = wann_spread%om_iod
       ! omega_tilde = wann_spread%om_d + wann_spread%om_nu
     end if
@@ -415,7 +416,7 @@ contains
     wann_data%centres = rave
     wann_data%spreads = r2ave - rave2
 
-    if (wannierise%control%lfixstep) lquad = .false.
+    if (wannierise%lfixstep) lquad = .false.
     ncg = 0
     iter = 0
     old_spread%om_tot = 0.0_dp
@@ -467,27 +468,27 @@ contains
     lconverged = .false.; lfirst = .true.; lrandom = .false.
     conv_count = 0; noise_count = 0
 
-    if (.not. wannierise%control%lfixstep .and. verbose%optimisation <= 0) then
+    if (.not. wannierise%lfixstep .and. verbose%optimisation <= 0) then
       page_unit = io_file_unit()
       open (unit=page_unit, status='scratch', form='unformatted')
     endif
 
     ! main iteration loop
-    do iter = 1, wannierise%control%num_iter
+    do iter = 1, wannierise%num_iter
 
       lprint = .false.
-      if ((mod(iter, wannierise%control%num_print_cycles) .eq. 0) .or. (iter .eq. 1) &
-          .or. (iter .eq. wannierise%control%num_iter)) lprint = .true.
+      if ((mod(iter, wannierise%num_print_cycles) .eq. 0) .or. (iter .eq. 1) &
+          .or. (iter .eq. wannierise%num_iter)) lprint = .true.
 
       ldump = .false.
-      if ((wannierise%control%num_dump_cycles .gt. 0) .and. &
-          (mod(iter, wannierise%control%num_dump_cycles) .eq. 0)) ldump = .true.
+      if ((wannierise%num_dump_cycles .gt. 0) .and. &
+          (mod(iter, wannierise%num_dump_cycles) .eq. 0)) ldump = .true.
 
       if (lprint .and. verbose%iprint > 0) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
 
-      if (wannierise%control%guiding_centres%enable .and. &
-          (iter .gt. wannierise%control%guiding_centres%num_no_guide_iter) &
-          .and. (mod(iter, wannierise%control%guiding_centres%num_guide_cycles) .eq. 0)) then
+      if (wannierise%guiding_centres%enable .and. &
+          (iter .gt. wannierise%guiding_centres%num_no_guide_iter) &
+          .and. (mod(iter, wannierise%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                          stdout, seedname, verbose%iprint, comm)
@@ -496,7 +497,7 @@ contains
 
       ! calculate gradient of omega
 
-      if (lsitesymmetry .or. wannierise%control%precond) then
+      if (lsitesymmetry .or. wannierise%precond) then
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wannierise%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
                          m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, verbose%timing_level, &
@@ -512,7 +513,7 @@ contains
         write (stdout, *) ' LINE --> Iteration                     :', iter
 
       ! calculate search direction (cdq)
-      if (wannierise%control%precond) then
+      if (wannierise%precond) then
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                       k_to_r, wann_spread, num_wann, num_kpts, &
                                       k_points%kpt_latt, real_lattice, nrpts, irvec, ndegen, &
@@ -520,7 +521,7 @@ contains
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
-                                     wannierise%control, num_wann, &
+                                     wannierise, num_wann, &
                                      kmesh_info%wbtot, cdq_loc, cdodq_loc, counts, stdout)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(sym, cdq, 2, num_kpts, num_wann) !RS:
 
@@ -528,15 +529,15 @@ contains
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
 
       ! check whether we're doing fixed step lengths
-      if (wannierise%control%lfixstep) then
+      if (wannierise%lfixstep) then
 
-        alphamin = wannierise%control%fixed_step
+        alphamin = wannierise%fixed_step
 
         ! or a parabolic line search
       else
 
         ! take trial step
-        cdq_loc(:, :, :) = cdqkeep_loc(:, :, :)*(wannierise%control%trial_step/(4.0_dp*kmesh_info%wbtot))
+        cdq_loc(:, :, :) = cdqkeep_loc(:, :, :)*(wannierise%trial_step/(4.0_dp*kmesh_info%wbtot))
 
         ! store original U and M before rotating
         u0_loc = u_matrix_loc
@@ -558,46 +559,46 @@ contains
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, verbose, wannierise%constrain, &
-                        wannierise%omega%invariant, counts, displs, ln_tmp_loc, &
+                        omega%invariant, counts, displs, ln_tmp_loc, &
                         m_matrix_loc, lambda_loc, first_pass, stdout, seedname, comm)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
-                                   lprint, wannierise%control%trial_step, stdout)
+                                   lprint, wannierise%trial_step, stdout)
       endif
 
       ! print line search information
       if (lprint .and. verbose%iprint > 2) then
         write (stdout, *) ' LINE --> Spread at initial point       :', &
           wann_spread%om_tot*verbose%lenconfac**2
-        if (.not. wannierise%control%lfixstep) &
+        if (.not. wannierise%lfixstep) &
           write (stdout, *) ' LINE --> Spread at trial step          :', &
           trial_spread%om_tot*verbose%lenconfac**2
         write (stdout, *) ' LINE --> Slope along search direction  :', &
           doda0*verbose%lenconfac**2
         write (stdout, *) ' LINE --> ||SD gradient||^2             :', &
           gcnorm1*verbose%lenconfac**2
-        if (.not. wannierise%control%lfixstep) then
-          write (stdout, *) ' LINE --> Trial step length             :', wannierise%control%trial_step
+        if (.not. wannierise%lfixstep) then
+          write (stdout, *) ' LINE --> Trial step length             :', wannierise%trial_step
           if (lquad) then
             write (stdout, *) ' LINE --> Optimal parabolic step length :', alphamin
             write (stdout, *) ' LINE --> Spread at predicted minimum   :', &
               falphamin*verbose%lenconfac**2
           endif
         else
-          write (stdout, *) ' LINE --> Fixed step length             :', wannierise%control%fixed_step
+          write (stdout, *) ' LINE --> Fixed step length             :', wannierise%fixed_step
         endif
         write (stdout, *) ' LINE --> CG coefficient                :', gcfac
       endif
 
       ! if taking a fixed step or if parabolic line search was successful
-      if (wannierise%control%lfixstep .or. lquad) then
+      if (wannierise%lfixstep .or. lquad) then
 
         ! take optimal step
         cdq_loc(:, :, :) = cdqkeep_loc(:, :, :)*(alphamin/(4.0_dp*kmesh_info%wbtot))
 
         ! if doing a line search then restore original U and M before rotating
-        if (.not. wannierise%control%lfixstep) then
+        if (.not. wannierise%lfixstep) then
           u_matrix_loc = u0_loc
           if (verbose%optimisation <= 0) then
 !                read(page_unit)  m_matrix
@@ -619,7 +620,7 @@ contains
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, verbose, wannierise%constrain, &
-                        wannierise%omega%invariant, counts, displs, ln_tmp_loc, &
+                        omega%invariant, counts, displs, ln_tmp_loc, &
                         m_matrix_loc, lambda_loc, first_pass, stdout, seedname, comm)
 
         ! parabolic line search was unsuccessful, use trial step already taken
@@ -691,10 +692,10 @@ contains
 
       ! Public variables
       if (.not. wannierise%constrain%selective_loc) then
-        wannierise%omega%total = wann_spread%om_tot
-        wannierise%omega%tilde = wann_spread%om_d + wann_spread%om_od
+        omega%total = wann_spread%om_tot
+        omega%tilde = wann_spread%om_d + wann_spread%om_od
       else
-        wannierise%omega%total = wann_spread%om_tot
+        omega%total = wann_spread%om_tot
         !omega_tilde = wann_spread%om_d + wann_spread%om_nu
       end if
 
@@ -713,20 +714,20 @@ contains
                                             k_points, num_kpts, dis_window, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, recip_lattice, &
-                                            wannierise%omega%invariant, have_disentangled, &
+                                            omega%invariant, have_disentangled, &
                                             stdout, seedname)
       endif
 
-      if (wannierise%control%conv_window .gt. 1) then
+      if (wannierise%conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                        conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                       wannierise%control, stdout)
+                                       wannierise, stdout)
       endif
 
       if (lconverged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
-          '<<<     Delta <', wannierise%control%conv_tol, &
-          '  over ', wannierise%control%conv_window, ' iterations     >>>'
+          '<<<     Delta <', wannierise%conv_tol, &
+          '  over ', wannierise%conv_window, ' iterations     >>>'
         write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
         exit
       endif
@@ -834,7 +835,7 @@ contains
       endif
     endif
 
-    if (wannierise%control%guiding_centres%enable) then
+    if (wannierise%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -910,7 +911,7 @@ contains
     if (ierr /= 0) call io_error('Error in deallocating cwschur3 in wann_main', stdout, seedname)
     deallocate (cwschur1, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating cwschur1 in wann_main', stdout, seedname)
-    if (wannierise%control%precond) then
+    if (wannierise%precond) then
       if (verbose%optimisation >= 3) then
         deallocate (k_to_r, stat=ierr)
         if (ierr /= 0) call io_error('Error in deallocating k_to_r in wann_main', stdout, seedname)
@@ -3181,7 +3182,7 @@ contains
 
   !==================================================================!
   subroutine wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, out_files, &
-                             wannierise, system, verbose, wann_data, m_matrix, &
+                             wannierise, omega, system, verbose, wann_data, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, seedname, &
                              stdout, comm)
@@ -3193,7 +3194,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use wannier_param_types, only: wannierise_type, output_file_type
+    use wannier_param_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
       exclude_bands_type
@@ -3208,7 +3209,8 @@ contains
     ! passed variables
     type(wannier_data_type), intent(inout) :: wann_data
     type(w90commtype), intent(in) :: comm
-    type(wannierise_type), intent(inout) :: wannierise
+    type(wann_control_type), intent(inout) :: wannierise
+    type(wann_omega_type), intent(inout) :: omega
     type(exclude_bands_type), intent(in) :: excluded_bands
     type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
@@ -3275,7 +3277,7 @@ contains
 
     ! Allocate stuff
 
-    allocate (history(wannierise%control%conv_window), stat=ierr)
+    allocate (history(wannierise%conv_window), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating history in wann_main_gamma', stdout, seedname)
 
 !~    if (.not.allocated(ph_g)) then
@@ -3342,15 +3344,15 @@ contains
 
 !~    lguide = .false.
     ! guiding centres are not neede for orthorhombic systems
-    if (kmesh_info%nntot .eq. 3) wannierise%control%guiding_centres%enable = .false.
+    if (kmesh_info%nntot .eq. 3) wannierise%guiding_centres%enable = .false.
 
-    if (wannierise%control%guiding_centres%enable) then
+    if (wannierise%guiding_centres%enable) then
       ! initialise rguide to projection centres (Cartesians in units of Ang)
 !~       if ( use_bloch_phases) then
 !~          lguide = .true.
 !~       else
       do n = 1, num_wann
-        call utility_frac_to_cart(wannierise%control%guiding_centres%centres(:, n), rguide(:, n), &
+        call utility_frac_to_cart(wannierise%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
       enddo
 !~       endif
@@ -3372,7 +3374,7 @@ contains
 !~       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
 !~       irguide=1
 !~    endif
-    if (wannierise%control%guiding_centres%enable .and. (wannierise%control%guiding_centres%num_no_guide_iter .le. 0)) then
+    if (wannierise%guiding_centres%enable .and. (wannierise%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
@@ -3390,13 +3392,13 @@ contains
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                           kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
-                          wannierise%omega%invariant, ln_tmp, first_pass, &
+                          omega%invariant, ln_tmp, first_pass, &
                           verbose%timing_level, stdout, seedname)
 
     ! public variables
-    wannierise%omega%total = wann_spread%om_tot
-    wannierise%omega%invariant = wann_spread%om_i
-    wannierise%omega%tilde = wann_spread%om_d + wann_spread%om_od
+    omega%total = wann_spread%om_tot
+    omega%invariant = wann_spread%om_i
+    omega%tilde = wann_spread%om_d + wann_spread%om_od
 
     ! Public array of Wannier centres and spreads
     wann_data%centres = rave
@@ -3432,15 +3434,15 @@ contains
 
     ! main iteration loop
 
-    do iter = 1, wannierise%control%num_iter
+    do iter = 1, wannierise%num_iter
 
       lprint = .false.
-      if ((mod(iter, wannierise%control%num_print_cycles) .eq. 0) .or. (iter .eq. 1) &
-          .or. (iter .eq. wannierise%control%num_iter)) lprint = .true.
+      if ((mod(iter, wannierise%num_print_cycles) .eq. 0) .or. (iter .eq. 1) &
+          .or. (iter .eq. wannierise%num_iter)) lprint = .true.
 
       ldump = .false.
-      if ((wannierise%control%num_dump_cycles .gt. 0) .and. &
-          (mod(iter, wannierise%control%num_dump_cycles) .eq. 0)) ldump = .true.
+      if ((wannierise%num_dump_cycles .gt. 0) .and. &
+          (mod(iter, wannierise%num_dump_cycles) .eq. 0)) ldump = .true.
 
       if (lprint .and. verbose%iprint > 0) write (stdout, '(1x,a,i6)') 'Cycle: ', iter
 
@@ -3455,9 +3457,9 @@ contains
 !~          irguide=1
 !~       endif
 
-      if (wannierise%control%guiding_centres%enable .and. &
-          (iter .gt. wannierise%control%guiding_centres%num_no_guide_iter) &
-          .and. (mod(iter, wannierise%control%guiding_centres%num_guide_cycles) .eq. 0)) then
+      if (wannierise%guiding_centres%enable .and. &
+          (iter .gt. wannierise%guiding_centres%num_no_guide_iter) &
+          .and. (mod(iter, wannierise%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                          stdout, seedname, verbose%iprint, comm, m_w)
@@ -3472,7 +3474,7 @@ contains
       ! calculate the new centers and spread
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                             kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
-                            wannierise%omega%invariant, ln_tmp, first_pass, &
+                            omega%invariant, ln_tmp, first_pass, &
                             verbose%timing_level, stdout, seedname)
 
       ! print the new centers and spreads
@@ -3503,8 +3505,8 @@ contains
       wann_data%spreads = r2ave - rave2
 
       ! Public variables
-      wannierise%omega%total = wann_spread%om_tot
-      wannierise%omega%tilde = wann_spread%om_d + wann_spread%om_od
+      omega%total = wann_spread%om_tot
+      omega%tilde = wann_spread%om_d + wann_spread%om_od
 
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
@@ -3512,20 +3514,19 @@ contains
         call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, k_points, &
                                num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
                                m_matrix, mp_grid, real_lattice, recip_lattice, &
-                               wannierise%omega%invariant, have_disentangled, &
-                               stdout, seedname)
+                               omega%invariant, have_disentangled, stdout, seedname)
       endif
 
-      if (wannierise%control%conv_window .gt. 1) then
+      if (wannierise%conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, history, &
-                                             iter, lconverged, wannierise%control%conv_window, &
-                                             wannierise%control%conv_tol, stdout)
+                                             iter, lconverged, wannierise%conv_window, &
+                                             wannierise%conv_tol, stdout)
       endif
 
       if (lconverged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
-          '<<<     Delta <', wannierise%control%conv_tol, &
-          '  over ', wannierise%control%conv_window, ' iterations     >>>'
+          '<<<     Delta <', wannierise%conv_tol, &
+          '  over ', wannierise%conv_window, ' iterations     >>>'
         write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
         exit
       endif
@@ -3565,7 +3566,7 @@ contains
                           real_lattice, recip_lattice, atoms, verbose, stdout, seedname)
     endif
 
-    if (wannierise%control%guiding_centres%enable) then
+    if (wannierise%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, verbose%timing_level, &
                        stdout, seedname, verbose%iprint, comm)
