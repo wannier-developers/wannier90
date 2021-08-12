@@ -2101,7 +2101,6 @@ contains
     logical :: disentanglement
 
     if (mpirank(comm) == 0) on_root = .true.
-    disentanglement = (num_bands > num_wann)
 
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, stdout, seedname, comm)
@@ -2114,6 +2113,8 @@ contains
     !endif
     call comms_bcast(num_wann, 1, stdout, seedname, comm)
     call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
+
+    disentanglement = (num_bands > num_wann)
 
     !______________________________________
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
