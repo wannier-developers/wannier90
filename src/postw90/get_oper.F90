@@ -35,7 +35,7 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+  subroutine get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                       v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                       num_valence_bands, have_disentangled, seedname, stdout, comm)
     !======================================================
@@ -71,6 +71,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
@@ -99,7 +100,7 @@ contains
 
     ! Real-space Hamiltonian H(R) is read from file
     !
-    if (pw90_common%effective_model) then
+    if (effective_model) then
       HH_R = cmplx_0
       if (on_root) then
         write (stdout, '(/a)') ' Reading real-space Hamiltonian from file ' &
@@ -244,7 +245,7 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, &
+  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, &
                       HH_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
     !==================================================
@@ -283,6 +284,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
 
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -317,7 +319,7 @@ contains
 
     ! Real-space position matrix elements read from file
     !
-    if (pw90_common%effective_model) then
+    if (effective_model) then
       if (.not. allocated(HH_R)) call io_error( &
         'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first', stdout, seedname)
       AA_R = cmplx_0

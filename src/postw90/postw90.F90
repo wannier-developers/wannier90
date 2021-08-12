@@ -176,6 +176,7 @@ program postw90
   type(kpoint_dist_type) :: kpt_dist
   logical :: gamma_only
   logical :: have_disentangled
+  logical :: effective_model = .false.
 
   ! local vars
   integer :: my_node_id, num_nodes, ierr
@@ -248,7 +249,7 @@ program postw90
     call param_postw90_read(ws_region, system, excluded_bands, verbose, wann_data, kmesh_data, &
                             k_points, num_kpts, dis_window, fermi, atoms, num_bands, num_wann, &
                             eigval, mp_grid, real_lattice, recip_lattice, spec_points, &
-                            pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
+                            pw90_calcs, postw90_oper, pw90_common, effective_model, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
                             spin_hall, gyrotropic, geninterp, boltz, eig_found, write_data, &
                             gamma_only, physics%bohr, stdout, seedname)
@@ -262,7 +263,7 @@ program postw90
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. pw90_common%effective_model) then
+    if (.not. effective_model) then
       ! Check if the q-mesh includes the gamma point
       !
       have_gamma = .false.
@@ -308,11 +309,11 @@ program postw90
   call pw90common_wanint_param_dist(verbose, ws_region, kmesh_info, k_points, num_kpts, &
                                     dis_window, system, fermi, num_bands, num_wann, eigval, &
                                     mp_grid, real_lattice, recip_lattice, pw90_calcs, &
-                                    pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                                    pw90_common, effective_model, pw90_spin, pw90_ham, kpath, kslice, &
                                     dos_data, berry, spin_hall, gyrotropic, geninterp, &
                                     boltz, eig_found, stdout, seedname, comm)
 
-  if (.not. pw90_common%effective_model) then
+  if (.not. effective_model) then
     !
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
@@ -345,7 +346,7 @@ program postw90
 
   ! Setup a number of common variables for all interpolation tasks
   !
-  call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, &
+  call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, effective_model, &
                                ws_vec, stdout, seedname, comm)
 
   if (on_root) then
@@ -361,7 +362,7 @@ program postw90
   ! ---------------------------------------------------------------
   !
   if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) then
-    call dos_main(berry, dis_window, dos_data, kpt_dist, k_points, pw90_common, pw90_ham, &
+    call dos_main(berry, dis_window, dos_data, kpt_dist, k_points, pw90_common, effective_model, pw90_ham, &
                   postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, verbose, HH_R, SS_R, &
                   u_matrix, v_matrix, eigval, real_lattice, recip_lattice, ws_region, system, &
                   mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
@@ -375,7 +376,7 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   if (pw90_calcs%kpath) then
-    call k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, postw90_oper, pw90_common, &
+    call k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, postw90_oper, pw90_common, effective_model, &
                 pw90_ham, pw90_spin, ws_region, spec_points, spin_hall, wann_data, ws_vec, &
                 ws_distance, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, v_matrix, &
                 u_matrix, physics%bohr, eigval, real_lattice, recip_lattice, mp_grid, num_wann, &
@@ -389,7 +390,7 @@ program postw90
   !
   if (pw90_calcs%kslice) then
 
-    call k_slice(berry, dis_window, fermi, kmesh_info, k_points, kslice, pw90_common, pw90_ham, &
+    call k_slice(berry, dis_window, fermi, kmesh_info, k_points, kslice, pw90_common, effective_model, pw90_ham, &
                  postw90_oper, pw90_spin, ws_region, spin_hall, wann_data, ws_distance, ws_vec, &
                  verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, v_matrix, u_matrix, &
                  physics%bohr, eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
@@ -401,7 +402,7 @@ program postw90
   ! --------------------
   !
   if (pw90_calcs%spin_moment) then
-    call spin_get_moment(dis_window, fermi, kpt_dist, k_points, pw90_common, postw90_oper, &
+    call spin_get_moment(dis_window, fermi, kpt_dist, k_points, pw90_common, effective_model, postw90_oper, &
                          pw90_spin, ws_region, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                          SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
                          num_wann, num_bands, num_kpts, system%num_valence_bands, &
@@ -427,7 +428,7 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if (pw90_calcs%berry) then
-    call berry_main(berry, dis_window, fermi, kmesh_info, kpt_dist, k_points, pw90_common, &
+    call berry_main(berry, dis_window, fermi, kmesh_info, kpt_dist, k_points, pw90_common, effective_model, &
                     pw90_ham, postw90_oper, pw90_spin, physics, ws_region, spin_hall, wann_data, &
                     ws_distance, ws_vec, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
                     u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, num_wann, &
@@ -443,14 +444,14 @@ program postw90
   endif
 
   if (pw90_calcs%geninterp) then
-    call geninterp_main(dis_window, geninterp, k_points, pw90_common, pw90_ham, ws_region, &
+    call geninterp_main(dis_window, geninterp, k_points, pw90_common, effective_model, pw90_ham, ws_region, &
                         wann_data, ws_distance, ws_vec, verbose, HH_R, v_matrix, u_matrix, eigval, &
                         real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                         system%num_valence_bands, have_disentangled, seedname, stdout, comm)
   end if
 
   if (pw90_calcs%boltzwann) then
-    call boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_common, pw90_ham, &
+    call boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_common, effective_model, pw90_ham, &
                         postw90_oper, pw90_spin, physics, ws_region, system, wann_data, &
                         ws_distance, ws_vec, verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, &
                         real_lattice, recip_lattice, mp_grid, num_wann, num_bands, num_kpts, &
@@ -459,7 +460,7 @@ program postw90
 
   if (pw90_calcs%gyrotropic) then
     call gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, verbose, &
-                         pw90_common, pw90_ham, postw90_oper, physics, ws_region, system, &
+                         pw90_common, effective_model, pw90_ham, postw90_oper, physics, ws_region, system, &
                          wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, &
                          v_matrix, eigval, real_lattice, recip_lattice, mp_grid, num_bands, &
                          num_kpts, num_wann, have_disentangled, seedname, stdout, comm)

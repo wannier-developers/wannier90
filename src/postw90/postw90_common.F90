@@ -82,7 +82,7 @@ contains
 
   ! Public procedures have names starting with wanint_
 
-  subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, &
+  subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, effective_model, &
                                      ws_vec, stdout, seedname, world)
     !! Setup data ready for interpolation
     use w90_constants, only: dp !, cmplx_0
@@ -100,6 +100,7 @@ contains
     type(postw90_common_type), intent(in) :: pw90_common
     type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: stdout
+    logical, intent(in) :: effective_model
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
 
@@ -110,7 +111,7 @@ contains
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
     !
-    if (pw90_common%effective_model) then
+    if (effective_model) then
       if (on_root) then
         ! nrpts is read from file, together with num_wann
         file_unit = io_file_unit()
@@ -146,7 +147,7 @@ contains
     ws_vec%rpt_origin = 0
 
     ! If effective_model, this is done in get_HH_R
-    if (.not. pw90_common%effective_model) then
+    if (.not. effective_model) then
       !
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
@@ -255,7 +256,7 @@ contains
   subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
                                           dis_window, system, fermi, num_bands, num_wann, eigval, &
                                           mp_grid, real_lattice, recip_lattice, pw90_calcs, &
-                                          pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                                          pw90_common, effective_model, pw90_spin, pw90_ham, kpath, kslice, &
                                           dos_data, berry, spin_hall, gyrotropic, geninterp, &
                                           boltz, eig_found, stdout, seedname, world)
     !===========================================================!
@@ -302,6 +303,7 @@ contains
     type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(pw90_boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    logical, intent(inout) :: effective_model
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
@@ -312,10 +314,10 @@ contains
 
     if (mpirank(world) == 0) on_root = .true.
 
-    call comms_bcast(pw90_common%effective_model, 1, stdout, seedname, world)
+    call comms_bcast(effective_model, 1, stdout, seedname, world)
     call comms_bcast(eig_found, 1, stdout, seedname, world)
 
-    if (.not. pw90_common%effective_model) then
+    if (.not. effective_model) then
       call comms_bcast(mp_grid(1), 3, stdout, seedname, world)
       call comms_bcast(num_kpts, 1, stdout, seedname, world)
       call comms_bcast(num_bands, 1, stdout, seedname, world)
@@ -497,7 +499,7 @@ contains
       allocate (dos_data%project(dos_data%num_project), stat=ierr)
       if (ierr /= 0) &
         call io_error('Error allocating dos_project in postw90_param_dist', stdout, seedname)
-      if (.not. pw90_common%effective_model) then
+      if (.not. effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
@@ -514,7 +516,7 @@ contains
     call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands, stdout, seedname, world)
     call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq, stdout, seedname, world)
     call comms_bcast(dos_data%project(1), dos_data%num_project, stdout, seedname, world)
-    if (.not. pw90_common%effective_model) then
+    if (.not. effective_model) then
       if (eig_found) then
         call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, world)
       end if
@@ -526,7 +528,7 @@ contains
     ! extra matrix elements entering the orbital magnetization, also
     ! need nnlist. In principle could only broadcast those four variables
 
-    if (.not. pw90_common%effective_model) then
+    if (.not. effective_model) then
 
       call comms_bcast(kmesh_info%nnh, 1, stdout, seedname, world)
       call comms_bcast(kmesh_info%nntot, 1, stdout, seedname, world)

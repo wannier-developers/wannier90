@@ -59,7 +59,7 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_common, pw90_ham, rs_region, &
+  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
                             wann_data, ws_distance, ws_vec, verbose, HH_R, v_matrix, u_matrix, &
                             eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
                             num_wann, num_valence_bands, have_disentangled, seedname, stdout, comm)
@@ -110,6 +110,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     integer :: kpt_unit, outdat_unit, ierr, i, j, enidx
@@ -184,7 +185,7 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
                   have_disentangled, seedname, stdout, comm)
 
@@ -292,7 +293,7 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
+        call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
                                  wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
                                  UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, &
                                  real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &

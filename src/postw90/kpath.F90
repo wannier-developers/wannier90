@@ -41,7 +41,7 @@ contains
   !===========================================================!
 
   subroutine k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, postw90_oper, &
-                    pw90_common, pw90_ham, pw90_spin, rs_region, spec_points, spin_hall, &
+                    pw90_common, effective_model, pw90_ham, pw90_spin, rs_region, spec_points, spin_hall, &
                     wann_data, ws_vec, ws_distance, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, &
                     SR_R, SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, &
                     mp_grid, num_wann, num_bands, num_kpts, num_valence_bands, have_disentangled, &
@@ -107,6 +107,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
@@ -172,11 +173,11 @@ contains
 
     ! Set up the needed Wannier matrix elements
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
                   have_disentangled, seedname, stdout, comm)
     if (plot_curv .or. plot_morb) then
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, HH_R, &
                     v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
     endif
@@ -193,7 +194,7 @@ contains
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
 
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, HH_R, &
                     v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
       call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
@@ -287,7 +288,7 @@ contains
           end do
         else if (kpath%bands_colour == 'shc') then
           call berry_get_shc_klist(rs_region, berry, dis_window, fermi, k_points, verbose, &
-                                   pw90_common, pw90_ham, spin_hall, wann_data, ws_distance, &
+                                   pw90_common, effective_model, pw90_ham, spin_hall, wann_data, ws_distance, &
                                    ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                    v_matrix, eigval, kpt, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -297,7 +298,7 @@ contains
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
+        call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, effective_model, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
                                    mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -313,7 +314,7 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
+          call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, effective_model, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
                                    imf_k_list, mp_grid, num_bands, num_kpts, num_wann, &
@@ -326,7 +327,7 @@ contains
 
       if (plot_shc) then
         call berry_get_shc_klist(rs_region, berry, dis_window, fermi, k_points, verbose, &
-                                 pw90_common, pw90_ham, spin_hall, wann_data, ws_distance, &
+                                 pw90_common, effective_model, pw90_ham, spin_hall, wann_data, ws_distance, &
                                  ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, &
                                  eigval, kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
                                  num_kpts, num_wann, num_valence_bands, have_disentangled, &

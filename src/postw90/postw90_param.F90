@@ -56,7 +56,7 @@ module pw90_parameters
     real(kind=dp) :: scissors_shift ! get_oper and berry
     ! IVO
     ! Are we running postw90 starting from an effective model?
-    logical :: effective_model = .false.
+!   logical :: effective_model = .false.
   end type postw90_common_type
 
   ! Module  s p i n
@@ -290,7 +290,7 @@ contains
                                 kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
                                 num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
-                                postw90_oper, pw90_common, pw90_spin, pw90_ham, &
+                                postw90_oper, pw90_common, effective_model, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
                                 gyrotropic, geninterp, boltz, eig_found, write_data, &
                                 gamma_only, bohr, stdout, seedname)
@@ -348,6 +348,7 @@ contains
 
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: gamma_only
+    logical, intent(inout) :: effective_model
 
     ! local variables
     logical :: dos_plot
@@ -359,18 +360,18 @@ contains
     call param_in_file(seedname, stdout)
     call param_read_verbosity(verbose, stdout, seedname)
     call param_read_pw90_calcs(pw90_calcs, stdout, seedname)
-    call param_read_effective_model(pw90_common%effective_model, stdout, seedname)
+    call param_read_effective_model(effective_model, stdout, seedname)
     call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
                           stdout, seedname)
     call param_read_oper(postw90_oper, stdout, seedname)
     call param_read_num_wann(num_wann, stdout, seedname)
     call param_read_exclude_bands(excluded_bands, stdout, seedname) !for read_chkpt
-    call param_read_num_bands(pw90_common%effective_model, library, &
+    call param_read_num_bands(effective_model, library, &
                               excluded_bands%num_exclude_bands, num_bands, num_wann, .false., &
                               stdout, seedname)
     disentanglement = (num_bands > num_wann)
     !call param_read_devel(verbose%devel_flag, stdout, seedname)
-    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, &
+    call param_read_mp_grid(effective_model, library, mp_grid, num_kpts, &
                             stdout, seedname)
     call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
     call param_read_system(library, system, stdout, seedname)
@@ -390,7 +391,7 @@ contains
     call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, write_data%smear, &
                         dos_plot, stdout, seedname)
     call param_read_ws_data(rs_region, stdout, seedname)
-    call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
+    call param_read_eigvals(effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, eig_found, eigval, &
                             library, .false., num_bands, num_kpts, stdout, seedname)
     dis_window%win_min = -1.0_dp
@@ -405,7 +406,7 @@ contains
                                  stdout, seedname)
     call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
-    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, &
+    call param_read_kpoints(effective_model, library, k_points, num_kpts, &
                             recip_lattice, bohr, stdout, seedname)
     call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
                                  write_data%kmesh, recip_lattice, stdout, seedname)

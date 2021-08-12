@@ -35,7 +35,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, pw90_common, pw90_ham, &
+  subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, pw90_common, effective_model, pw90_ham, &
                       postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                       SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, rs_region, &
                       system, mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
@@ -94,6 +94,7 @@ contains
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: spin_decomp
+    logical, intent(in) :: effective_model
 
     ! local variables
     ! 'dos_k' contains contrib. from one k-point,
@@ -140,7 +141,7 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   system%num_valence_bands, have_disentangled, seedname, stdout, comm)
 
@@ -206,7 +207,7 @@ contains
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
         if (dos_data%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+          call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
@@ -249,7 +250,7 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+          call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
                                    verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                    u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &

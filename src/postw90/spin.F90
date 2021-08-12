@@ -29,7 +29,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(dis_window, fermi, kdist, k_points, pw90_common, postw90_oper, &
+  subroutine spin_get_moment(dis_window, fermi, kdist, k_points, pw90_common, effective_model, postw90_oper, &
                              pw90_spin, rs_region, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                              SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
                              mp_grid, num_wann, num_bands, num_kpts, num_valence_bands, &
@@ -83,6 +83,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     integer       :: loop_x, loop_y, loop_z, loop_tot
@@ -95,7 +96,7 @@ contains
     num_nodes = mpisize(comm); 
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   num_valence_bands, have_disentangled, seedname, stdout, comm)
 

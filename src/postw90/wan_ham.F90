@@ -402,7 +402,7 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+  subroutine wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
                                  verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                  u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
                                  recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
@@ -460,11 +460,12 @@ contains
 
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   num_valence_bands, have_disentangled, seedname, stdout, comm)
 
@@ -525,7 +526,7 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, rs_region, &
+  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, effective_model, rs_region, &
                                        verbose, wann_data, ws_distance, ws_vec, HH, HH_R, &
                                        JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, eigval, &
                                        kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
@@ -580,12 +581,13 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     !local variables
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   num_valence_bands, have_disentangled, seedname, stdout, comm)
 
@@ -609,7 +611,7 @@ contains
   end subroutine wham_get_eig_UU_HH_JJlist
 
   subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, &
-                                              pw90_common, rs_region, verbose, wann_data, &
+                                              pw90_common, effective_model, rs_region, verbose, wann_data, &
                                               ws_distance, ws_vec, AA_R, HH, HH_da, HH_dadb, HH_R, &
                                               u_matrix, UU, v_matrix, eig, eigval, kpt, &
                                               real_lattice, recip_lattice, mp_grid, num_bands, &
@@ -665,12 +667,13 @@ contains
 
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
                   have_disentangled, seedname, stdout, comm)
 
-    call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, HH_R, &
+    call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, HH_R, &
                   v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                   have_disentangled, seedname, stdout, comm)
 
@@ -683,7 +686,7 @@ contains
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, pw90_common, rs_region, verbose, &
+  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, pw90_common, effective_model, rs_region, verbose, &
                                       wann_data, ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, &
                                       u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                       recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
@@ -736,8 +739,9 @@ contains
 
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
                   num_valence_bands, have_disentangled, seedname, stdout, comm)
 

@@ -58,7 +58,7 @@ contains
   !===========================================================!
 
   subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, verbose, &
-                             pw90_common, pw90_ham, postw90_oper, physics, rs_region, system, &
+                             pw90_common, effective_model, pw90_ham, postw90_oper, physics, rs_region, system, &
                              wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, &
                              u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
@@ -124,6 +124,7 @@ contains
 
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
@@ -198,13 +199,13 @@ contains
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, v_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, num_bands, num_kpts, num_wann, system%num_valence_bands, &
                   have_disentangled, seedname, stdout, comm)
 
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, AA_R, &
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, &
                     HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
     endif
@@ -332,7 +333,7 @@ contains
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, verbose, &
                                  fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                 gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
+                                 gyrotropic, pw90_common, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
                                  seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
 
     end do !loop_xyz
@@ -522,7 +523,7 @@ contains
                                    eval_spn, eval_C, eval_dos, num_wann, verbose, fermi, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                   gyrotropic, pw90_common, pw90_ham, ws_distance, ws_vec, stdout, &
+                                   gyrotropic, pw90_common, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
                                    seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
@@ -610,6 +611,7 @@ contains
 
     logical, intent(in) :: eval_K, eval_D, eval_Dw, eval_C, eval_NOA, eval_spn, eval_dos
     logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
 
     ! local variables
     complex(kind=dp), allocatable :: UU(:, :)
@@ -636,7 +638,7 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
+    call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
                              wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                              v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                              mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -698,7 +700,7 @@ contains
             occ(n) = 1.0_dp
 
             call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, &
-                                       pw90_common, wann_data, ws_distance, ws_vec, AA_R, BB_R, &
+                                       pw90_common, effective_model, wann_data, ws_distance, ws_vec, AA_R, BB_R, &
                                        CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                        recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                                        num_valence_bands, have_disentangled, seedname, stdout, &
@@ -711,7 +713,7 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, &
+            call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, effective_model, &
                                      wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                      u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
                                      imf_k, mp_grid, num_bands, num_kpts, num_wann, &

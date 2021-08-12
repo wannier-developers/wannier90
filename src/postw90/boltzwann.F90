@@ -65,7 +65,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_common, pw90_ham, &
+  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_common, effective_model, pw90_ham, &
                             postw90_oper, pw90_spin, physics, rs_region, system, wann_data, &
                             ws_distance, ws_vec, verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, &
                             real_lattice, recip_lattice, mp_grid, num_wann, num_bands, num_kpts, &
@@ -129,6 +129,7 @@ contains
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: spin_decomp
+    logical, intent(in) :: effective_model
 
     ! local vars
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
@@ -259,7 +260,7 @@ contains
 
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(rs_region, boltz, dis_window, dos_data, k_points, verbose, postw90_oper, &
-                       pw90_common, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+                       pw90_common, effective_model, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
                        SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
                        TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
                        system%num_valence_bands, system%num_elec_per_state, have_disentangled, &
@@ -655,7 +656,7 @@ contains
   end subroutine boltzwann_main
 
   subroutine calcTDFandDOS(rs_region, boltz, dis_window, dos_data, k_points, verbose, postw90_oper, &
-                           pw90_common, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+                           pw90_common, effective_model, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
                            TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
                            num_valence_bands, num_elec_per_state, have_disentangled, spin_decomp, &
@@ -744,6 +745,7 @@ contains
     character(len=50), intent(in) :: seedname
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: spin_decomp
+    logical, intent(in) :: effective_model
 
     ! local variables
     real(kind=dp) :: kpt(3), orig_kpt(3)
@@ -785,7 +787,7 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, ws_vec, HH_R, u_matrix, &
+    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
                   v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, &
                   stdout, comm)
     if (spin_decomp) then
@@ -904,7 +906,7 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, verbose, &
+      call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
                                wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
                                v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
                                mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -945,7 +947,7 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(dis_window, k_points, pw90_common, pw90_ham, rs_region, &
+                  call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
                                            verbose, wann_data, ws_distance, ws_vec, delHH, HH, &
                                            HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, &
                                            kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
