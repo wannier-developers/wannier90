@@ -38,6 +38,11 @@ program test_library
   !! NOTE! THIS PROGRAM ONLY WORKS IN SERIAL FOR NOW
   !! (even if there are some stubs that could make you think
   !! it works in parallel...)
+
+  ! JJ bypass explicitly any code conditionally exposed by MPI
+#ifdef MPI
+#undef MPI
+#endif
   implicit none
 
   integer, parameter :: dp = kind(1.0d0)

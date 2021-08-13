@@ -51,10 +51,6 @@
 
 module w90lib_parameters
 
-#if (defined(MPI) || defined(MPI08) || defined(MPI90) || defined(MPIH))
-#  error "this library interface must be built in serial, ie undefine MPI."
-#endif
-
   use w90_param_types
 
   implicit none
@@ -395,9 +391,17 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: comms_array_split, comms_scatterv, w90commtype
+  use w90_comms, only: comms_array_split, comms_scatterv, w90commtype, &
+    mpisize, mpirank
 
   use w90_param_methods, only: param_lib_set_atoms
+
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90
+  use mpi ! next best, use fortran90 interface
+#endif
 
   implicit none
 
@@ -447,7 +451,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   type(ham_logical) :: hmlg
 
   type(w90_extra_io_type) :: write_data
-  ! was in driver, only used by wannier_lib
   type(proj_input_type) :: proj
   !Projections
   logical :: lhasproj
@@ -459,10 +462,35 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   type(w90commtype) :: comm
   logical :: disentanglement
 
-  ! serial only (until communicator is passed as an argument)
-  ! these library routines are obsolete
+  ! CORRECT ONLY FOR SERIAL CASE!!!
+  ! THESE LIBRARY ROUTINES ARE OBSOLETE
+  !
+  ! depending on how the rest of the code is compiled (w or w/o MPI)
+  ! the various functions may or may not require a legitimate
+  ! MPI communicator
+  ! because the old "version 1" library interface does not support
+  ! providing a communicator, we open mpi_comm_world here and pass it
+  !
+  ! it is expected that this library is only invoked with one process
+  ! even when compiled with MPI
+  ! use with more than one process is not supported/tested
+  ! --JJ 13Aug21
+  !
+#if (defined(MPI) || defined(MPI08) || defined(MPI90) || defined(MPIH))
+  write (*, *) " warning: use of this (version 1) library interface with MPI is not recommended"
+#endif
+
+#ifdef MPI
+  comm%comm = MPI_COMM_WORLD
+  call mpi_init(ierr)
+
+  num_nodes = mpisize(comm)
+  my_node_id = mpirank(comm)
+#else
   num_nodes = 1
   my_node_id = 0
+#endif
+
   allocate (counts(0:num_nodes - 1)); 
   allocate (displs(0:num_nodes - 1)); 
   time0 = io_time()

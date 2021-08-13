@@ -707,10 +707,17 @@ program w90chk2chk
   !! Program to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv
   use w90_comms, only: comms_end, w90commtype, mpisize
+
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90
+  use mpi ! next best, use fortran90 interface
+#endif
+
   implicit none
 
   ! Export mode:
@@ -726,12 +733,13 @@ program w90chk2chk
   type(w90commtype) :: comm
 
 #ifdef MPI
-  w90comm%comm = MPI_COMM_WORLD
+  comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
   if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-#endif
-
   num_nodes = mpisize(comm)
+#else
+  num_nodes = 1
+#endif
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')

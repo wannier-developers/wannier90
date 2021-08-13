@@ -41,10 +41,10 @@ w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
 ../../w90chk2chk.x: $(OBJS) ../w90chk2chk.F90
-	$(COMPILER) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
+	$(COMPILER) $(POSTOPTS) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
 
 ../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
-	$(COMPILER) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
+	$(COMPILER) $(POSTOPTS) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
 ../../wannier90.x: $(LIBRARYV2) ../wannier_prog.F90
 	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
@@ -52,12 +52,6 @@ w90spn2spn: ../../w90spn2spn.x
 $(LIBRARYV2): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBRARYV2) $(OBJS)
         
-#../../wannier90.x: ../../libwan2.a ../wannier_prog.F90
-#	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
-#
-#../../libwan2.a: $(OBJS)
-#	$(AR) $(ARFLAGS) $(LIBRARYV2) $(OBJS)
-
 post: POSTOPTS = $(TEMP1)
 post: COMPILER = $(TEMP2)
 post: mpi_test ../../postw90.x
@@ -89,12 +83,12 @@ libs: $(LIBRARY) $(LIBRARYV2)
 
 dynlibs: $(DYNLIBRARY)
 
-$(LIBRARY): $(OBJS)
-	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS)
+$(LIBRARY): $(OBJS) $(OBJS_LIBV1)
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS) $(OBJS_LIBV1)
 
-$(DYNLIBRARY): $(OBJS) $(OBJS)
+$(DYNLIBRARY): $(OBJS) $(OBJS) $(OBJS_LIBV1)
 	echo $(COMPILER)
-	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(LIBS) -o $@
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(OBJS_LIBV1) $(LIBS) -o $@
 
 clean:
 	rm -f *.o *.mod *.MOD *.obj
@@ -190,7 +184,7 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
 	./wannierise.o ./plot.o ./transport.o ./wann90_param.o \
 	./wann90_methods.o ../wannier_lib.F90
-	 $(COMPILER) $(FCOPTS) -c ../wannier_lib.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannier_lib.F90
 
 
 .PHONY: wannier libs post clean mpi_test w90spn2spn

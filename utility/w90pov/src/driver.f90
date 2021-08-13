@@ -292,7 +292,8 @@ contains
     character(len=300) :: line
     integer :: iion, jion, i, j, ix, iy, iz, natomstmp
     character :: name(150)*3
-    integer :: radius(150), fact
+    integer :: fact
+    real(q) :: radius(150)
     real(q) :: color(3, 150), dist, mid(3), rad, rdir(3)
     real(q), allocatable :: tmppos(:, :)
     character, allocatable :: tmpnam(:)*3

@@ -2,6 +2,8 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o kmesh.o
         ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wann90_param.o \
         wann90_methods.o comms-abort.o
 
+OBJS_LIBV1 = wannier_lib.o
+
 OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
         postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
         boltzwann.o geninterp.o postw90_param.o comms-abort.o
