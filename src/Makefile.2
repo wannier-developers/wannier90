@@ -4,7 +4,7 @@
 
 include ../../make.inc
 
-# Contains definition of OBJS, OBJSLIB, OBJS_POST, LIBRARY, DYNLIBRARY
+# Contains definition of OBJS, OBJS_POST, LIBRARY, DYNLIBRARY
 include ../Makefile.header
 
 POSTDIR = ../postw90/
@@ -40,11 +40,11 @@ wannier: ../../wannier90.x
 w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
-../../w90chk2chk.x: $(OBJSLIB) ../w90chk2chk.F90
-	$(F90) ../w90chk2chk.F90 $(LDOPTS) $(OBJSLIB) $(LIBS) -o ../../w90chk2chk.x
+../../w90chk2chk.x: $(OBJS) ../w90chk2chk.F90
+	$(COMPILER) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
 
-../../w90spn2spn.x: $(OBJSLIB) ../w90spn2spn.F90
-	$(F90) ../w90spn2spn.F90 $(LDOPTS) $(OBJSLIB) $(LIBS) -o ../../w90spn2spn.x
+../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
+	$(COMPILER) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
 ../../wannier90.x: $(LIBRARYV2) ../wannier_prog.F90
 	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
@@ -89,12 +89,12 @@ libs: $(LIBRARY) $(LIBRARYV2)
 
 dynlibs: $(DYNLIBRARY)
 
-$(LIBRARY): $(OBJSLIB)
-	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB)
+$(LIBRARY): $(OBJS)
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS)
 
-$(DYNLIBRARY): $(OBJS) $(OBJSLIB)
+$(DYNLIBRARY): $(OBJS) $(OBJS)
 	echo $(COMPILER)
-	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(OBJSLIB) $(LIBS) -o $@
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(LIBS) -o $@
 
 clean:
 	rm -f *.o *.mod *.MOD *.obj
@@ -102,10 +102,7 @@ clean:
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90
 
-comms-abort-serial.o: ../comms-abort.F90
-	$(COMPILER) $(FCOPTS) -c ../comms-abort.F90 -o comms-abort-serial.o
-
-comms-abort.o: ../comms-abort.F90
+comms-abort.o: ../comms-abort.F90 ../../make.inc
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms-abort.F90
 
 io.o: ../io.F90 constants.o comms-abort.o
@@ -150,11 +147,8 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o wann90
 sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o wann90_param.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
-comms.o: ../comms.F90 constants.o io.o
+comms.o: ../comms.F90 constants.o io.o ../../make.inc
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
-
-comms-serial.o: ../comms.F90 constants.o io.o
-	$(COMPILER) $(FCOPTS) -c ../comms.F90 -o comms-serial.o
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o postw90_param.o ws_distance.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
