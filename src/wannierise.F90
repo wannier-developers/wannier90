@@ -725,10 +725,11 @@ contains
       endif
 
       if (lconverged) then
-        write (stdout, '(/13x,a,es10.3,a,i2,a)') &
-          '<<<     Delta <', wannierise%conv_tol, &
-          '  over ', wannierise%conv_window, ' iterations     >>>'
-        write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
+        if(verbose%iprint>0) then
+          write (stdout, '(/13x,a,es10.3,a,i2,a)') '<<<     Delta <', wannierise%conv_tol, &
+            '  over ', wannierise%conv_window, ' iterations     >>>'
+          write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
+        endif
         exit
       endif
 

@@ -79,6 +79,9 @@ contains
     end if
 
     call mpi_abort(w90comm%comm, 1, ierr)
+#else
+  write (stdout, *) 'Exiting.......'
+  write (stdout, '(1x,a)') trim(error_msg)
 #endif
 
   end subroutine comms_abort

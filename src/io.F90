@@ -317,13 +317,9 @@ contains
     character(len=50), intent(in)  :: seedname
     integer           :: stderr, ierr, stdout
 
-    write (stdout, *) 'Exiting.......'
-    write (stdout, '(1x,a)') trim(error_msg)
-
-    close (stdout)
-
     ! calls mpi_abort on mpi_comm_world if compiled with MPI support
     call comms_abort(seedname, error_msg, stdout)
+    close (stdout)
 
     write (*, '(1x,a)') trim(error_msg)
     write (*, '(A)') "Error: examine the output/error file for details"
