@@ -75,7 +75,9 @@ module w90_comms
 #ifdef MPI08
     type(mpi_status) :: stat ! f08 mpi interface
 #else
-    integer :: stat ! f90 mpi or no mpi
+    ! I'm not sure whether all "mpi.h" define MPI_STATUS_SIZE
+    ! maybe it depends on the system? fixme-JJ-13Aug21
+    integer :: stat(MPI_STATUS_SIZE) ! f90 mpi or no mpi
 #endif
   end type
 
