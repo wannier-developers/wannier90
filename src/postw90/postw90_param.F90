@@ -898,7 +898,7 @@ contains
         index(kpath%task, 'morb') == 0 .and. &
         index(kpath%task, 'shc') == 0) call io_error &
       ('Error: value of kpath_task not recognised in param_read', stdout, seedname)
-    if (spec_points%bands_num_spec_points == 0 .and. pw90_calcs%kpath) &
+    if (.not. allocated(spec_points%labels) .and. pw90_calcs%kpath) &
       call io_error('Error: a kpath plot has been requested but there is no kpoint_path block', stdout, seedname)
 
     kpath%num_points = 100
@@ -1705,10 +1705,10 @@ contains
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the bands    :', trim(kpath%bands_colour), '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
-      if (spec_points%bands_num_spec_points == 0) then
+      if (.not. allocated(spec_points%labels)) then
         write (stdout, '(1x,a78)') '|     None defined                                                           |'
       else
-        do loop = 1, spec_points%bands_num_spec_points, 2
+        do loop = 1, size(spec_points%labels), 2
           write (stdout, '(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:', &
             spec_points%labels(loop), (spec_points%points(i, loop), i=1, 3), &
             'To:', spec_points%labels(loop + 1), (spec_points%points(i, loop + 1), i=1, 3), '|'

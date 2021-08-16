@@ -212,6 +212,7 @@ contains
                     seedname, stdout, comm)
     end if
 
+    num_paths = 0
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as
       ! their reciprocal-lattice coordinates long the path (plot_kpoint)
@@ -409,7 +410,7 @@ contains
           glabel(i) = ' '//spec_points%labels(2*(i - 1))//' '
         end if
       end do
-      glabel(num_spts) = ' '//spec_points%labels(spec_points%bands_num_spec_points)//' '
+      glabel(num_spts) = ' '//spec_points%labels(num_paths*2)//' '
 
       ! Now write the plotting files
 
@@ -1177,7 +1178,12 @@ contains
     ! Work out how many points there are in the total path, and the
     ! positions of the special points
     !
-    num_paths = spec_points%bands_num_spec_points/2 ! number of straight line segments
+    if (allocated(spec_points%labels)) then
+      !num_paths = spec_points%bands_num_spec_points/2 ! number of straight line segments
+      num_paths = size(spec_points%labels)/2
+    else
+      num_paths = 0
+    endif
     allocate (kpath_pts(num_paths))
     allocate (kpath_len(num_paths))
     do loop_path = 1, num_paths
@@ -1230,7 +1236,7 @@ contains
     ! Last point
     !
     xval(total_pts) = sum(kpath_len)
-    plot_kpoint(:, total_pts) = spec_points%points(:, spec_points%bands_num_spec_points)
+    plot_kpoint(:, total_pts) = spec_points%points(:, num_paths*2)
 
   end subroutine
 

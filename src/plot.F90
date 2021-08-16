@@ -96,7 +96,7 @@ contains
     logical, intent(in) :: spinors
 !   local variables
 
-    integer :: nkp
+    integer :: nkp, bands_num_spec_points
     logical :: have_gamma
     type(ws_distance_type) :: ws_distance
 
@@ -133,13 +133,16 @@ contains
                               recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
+      bands_num_spec_points = 0
+      if (allocated(spec_points%labels)) bands_num_spec_points = size(spec_points%labels)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
                                                             spec_points, rs_region, ws_region, &
                                                             verbose, recip_lattice, num_wann, &
                                                             wann_data, ham_r, irvec, ndegen, &
                                                             nrpts, wannier_centres_translated, &
-                                                            ws_distance, stdout, seedname)
+                                                            ws_distance, bands_num_spec_points, &
+                                                            stdout, seedname)
       !
       if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, &
                                                                 fermi_surface_data, num_wann, &
@@ -192,7 +195,7 @@ contains
   subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, rs_region, &
                                     ws_region, verbose, recip_lattice, num_wann, wann_data, &
                                     ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
-                                    ws_distance, stdout, seedname)
+                                    ws_distance, bands_num_spec_points, stdout, seedname)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -222,6 +225,7 @@ contains
     integer, intent(in) :: irvec(:, :)
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
+    integer, intent(in) :: bands_num_spec_points
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -239,10 +243,10 @@ contains
     integer              :: loop_spts, total_pts, loop_i, nkp, ideg
     integer              :: num_paths, num_spts, ierr
     integer              :: bndunit, gnuunit, loop_w, loop_p
-    integer              :: kpath_pts(spec_points%bands_num_spec_points/2)
+    integer              :: kpath_pts(bands_num_spec_points/2)
     integer, allocatable :: idx_special_points(:)
 
-    real(kind=dp)              :: kpath_len(spec_points%bands_num_spec_points/2)
+    real(kind=dp)              :: kpath_len(bands_num_spec_points/2)
     real(kind=dp)              :: rdotk, vec(3), emin, emax, time0
     real(kind=dp), allocatable :: rwork(:)
     real(kind=dp), allocatable :: xval(:)
@@ -258,7 +262,7 @@ contains
     complex(kind=dp), allocatable  :: U_int(:, :)
     complex(kind=dp), allocatable  :: cwork(:)
 
-    logical            :: kpath_print_first_point(spec_points%bands_num_spec_points/2)
+    logical            :: kpath_print_first_point(bands_num_spec_points/2)
 
     character(len=20), allocatable  :: glabel(:)
     character(len=10), allocatable  :: xlabel(:)
@@ -288,16 +292,16 @@ contains
     allocate (ifail(num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ifail in plot_interpolate_bands', stdout, seedname)
 
-    allocate (idx_special_points(spec_points%bands_num_spec_points), stat=ierr)
+    allocate (idx_special_points(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating idx_special_points in plot_interpolate_bands', stdout, seedname)
-    allocate (xval_special_points(spec_points%bands_num_spec_points), stat=ierr)
+    allocate (xval_special_points(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating xval_special_points in plot_interpolate_bands', stdout, seedname)
     idx_special_points = -1
     xval_special_points = -1._dp
     !
     ! Work out how many points in the total path and the positions of the special points
     !
-    num_paths = spec_points%bands_num_spec_points/2
+    num_paths = bands_num_spec_points/2
 
     kpath_print_first_point = .false.
 
@@ -352,7 +356,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating num_spts in plot_interpolate_bands', stdout, seedname)
     allocate (xlabel(num_spts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating xlabel in plot_interpolate_bands', stdout, seedname)
-    allocate (ctemp(spec_points%bands_num_spec_points), stat=ierr)
+    allocate (ctemp(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ctemp in plot_interpolate_bands', stdout, seedname)
     eig_int = 0.0_dp; bands_proj = 0.0_dp
     !
@@ -397,7 +401,7 @@ contains
       xval_special_points(2*loop_spts) = xval(counter)
     end do
     !xval(total_pts)=sum(kpath_len)
-    plot_kpoint(:, total_pts) = spec_points%points(:, spec_points%bands_num_spec_points)
+    plot_kpoint(:, total_pts) = spec_points%points(:, bands_num_spec_points)
     !
     ! Write out the kpoints in the path
     !
@@ -413,7 +417,7 @@ contains
     !
     bndunit = io_file_unit()
     open (bndunit, file=trim(seedname)//'_band.labelinfo.dat', form='formatted')
-    do loop_spts = 1, spec_points%bands_num_spec_points
+    do loop_spts = 1, bands_num_spec_points
       if ((MOD(loop_spts, 2) .eq. 1) .and. &
           (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
       write (bndunit, '(a,3x,I10,3x,4f18.10)') &
@@ -537,8 +541,10 @@ contains
 
     if (index(band_plot%format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
                                                                           spec_points, &
+                                                                          bands_num_spec_points, &
                                                                           num_wann)
     if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(spec_points, &
+                                                                           bands_num_spec_points, &
                                                                            num_wann)
 
     write (stdout, '(1x,a,f11.3,a)') &
@@ -754,7 +760,7 @@ contains
     end subroutine plot_cut_hr
 
     !============================================!
-    subroutine plot_interpolate_gnuplot(band_plot, spec_points, num_wann)
+    subroutine plot_interpolate_gnuplot(band_plot, spec_points, bands_num_spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in gnuplot format
@@ -771,7 +777,7 @@ contains
       type(band_plot_type), intent(in) :: band_plot
       type(kpoint_path_type), intent(in) :: spec_points
 
-      integer, intent(in) :: num_wann
+      integer, intent(in) :: num_wann, bands_num_spec_points
       !
       bndunit = io_file_unit()
       open (bndunit, file=trim(seedname)//'_band.dat', form='formatted')
@@ -808,8 +814,8 @@ contains
         write (gnuunit, 705) sum(kpath_len(1:i)), emin, sum(kpath_len(1:i)), emax
       enddo
       write (gnuunit, 702, advance="no") TRIM(glabel(1)), 0.0_dp, &
-        (TRIM(glabel(i + 1)), sum(kpath_len(1:i)), i=1, spec_points%bands_num_spec_points/2 - 1)
-      write (gnuunit, 703) TRIM(glabel(1 + spec_points%bands_num_spec_points/2)), sum(kpath_len(:))
+        (TRIM(glabel(i + 1)), sum(kpath_len(1:i)), i=1, bands_num_spec_points/2 - 1)
+      write (gnuunit, 703) TRIM(glabel(1 + bands_num_spec_points/2)), sum(kpath_len(:))
       write (gnuunit, *) 'plot ', '"'//trim(seedname)//'_band.dat', '"'
       close (gnuunit)
 
@@ -828,8 +834,8 @@ contains
         write (gnuunit, '(a,f9.5,a)') 'set xrange [0:', xval(total_pts), ']'
         write (gnuunit, '(a,f9.5,a,f9.5,a)') 'set yrange [', emin, ':', emax, ']'
         write (gnuunit, 702, advance="no") glabel(1), 0.0_dp, &
-          (glabel(i + 1), sum(kpath_len(1:i)), i=1, spec_points%bands_num_spec_points/2 - 1)
-        write (gnuunit, 703) glabel(1 + spec_points%bands_num_spec_points/2), sum(kpath_len(:))
+          (glabel(i + 1), sum(kpath_len(1:i)), i=1, bands_num_spec_points/2 - 1)
+        write (gnuunit, 703) glabel(1 + bands_num_spec_points/2), sum(kpath_len(:))
 
         write (gnuunit, '(a,a,a,a)') 'splot ', '"'//trim(seedname)//'_band.dat', '"', &
           ' u 1:2:3 w p pt 13 palette'
@@ -846,7 +852,7 @@ contains
 
     end subroutine plot_interpolate_gnuplot
 
-    subroutine plot_interpolate_xmgrace(spec_points, num_wann)
+    subroutine plot_interpolate_xmgrace(spec_points, bands_num_spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in Xmgrace format
@@ -860,7 +866,7 @@ contains
 
       type(kpoint_path_type), intent(in) :: spec_points
 
-      integer, intent(in) :: num_wann
+      integer, intent(in) :: num_wann, bands_num_spec_points
 
       character(len=9) :: cdate, ctime
 
@@ -870,7 +876,7 @@ contains
 
       ! Switch any G to Gamma
 
-      do i = 1, spec_points%bands_num_spec_points
+      do i = 1, bands_num_spec_points
         if (spec_points%labels(i) == 'G') then
           ctemp(i) = '\xG\0'
         else
@@ -886,7 +892,7 @@ contains
           xlabel(i) = ctemp(2*(i - 1))
         end if
       end do
-      xlabel(num_paths + 1) = ctemp(spec_points%bands_num_spec_points)
+      xlabel(num_paths + 1) = ctemp(bands_num_spec_points)
 
       gnuunit = io_file_unit()
       open (gnuunit, file=trim(seedname)//'_band.agr', form='formatted')
@@ -913,15 +919,15 @@ contains
       write (gnuunit, '(a)') '@    xaxis  tick major linestyle 3'
       write (gnuunit, '(a)') '@    xaxis  tick major grid on'
       write (gnuunit, '(a)') '@    xaxis  tick spec type both'
-      write (gnuunit, '(a,i0)') '@    xaxis  tick spec ', 1 + spec_points%bands_num_spec_points/2
+      write (gnuunit, '(a,i0)') '@    xaxis  tick spec ', 1 + bands_num_spec_points/2
       write (gnuunit, '(a)') '@    xaxis  tick major 0, 0'
-      do i = 1, spec_points%bands_num_spec_points/2
+      do i = 1, bands_num_spec_points/2
         write (gnuunit, '(a,i0,a,a)') '@    xaxis  ticklabel ', i - 1, ',', '"'// &
           trim(adjustl(xlabel(i)))//'"'
         write (gnuunit, '(a,i0,a,f10.5)') '@    xaxis  tick major ', i, ' , ', sum(kpath_len(1:i))
       end do
-      write (gnuunit, '(a,i0,a)') '@    xaxis  ticklabel ', spec_points%bands_num_spec_points/2 &
-        , ',"'//trim(adjustl(xlabel(1 + spec_points%bands_num_spec_points/2)))//'"'
+      write (gnuunit, '(a,i0,a)') '@    xaxis  ticklabel ', bands_num_spec_points/2 &
+        , ',"'//trim(adjustl(xlabel(1 + bands_num_spec_points/2)))//'"'
       write (gnuunit, '(a)') '@    xaxis  ticklabel char size 1.500000'
       write (gnuunit, '(a)') '@    yaxis  tick major 10'
       write (gnuunit, '(a)') '@    yaxis  label "Band Energy (eV)"'

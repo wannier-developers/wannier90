@@ -1238,7 +1238,7 @@ contains
     logical, intent(in) :: spinors
 
 !   local variables
-    integer :: i, nkp, loop, nat, nsp
+    integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     real(kind=dp) :: cell_volume
     logical :: disentanglement
 
@@ -1541,8 +1541,10 @@ contains
       !
       if (w90_calcs%bands_plot .or. verbose%iprint > 2) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting interpolated bandstructure       :', w90_calcs%bands_plot, '|'
+        bands_num_spec_points = 0
+        if (allocated(spec_points%labels)) bands_num_spec_points = size(spec_points%labels)
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
-          spec_points%bands_num_spec_points/2, '|'
+          bands_num_spec_points/2, '|'
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
           spec_points%num_points_first_segment, '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
@@ -1567,10 +1569,10 @@ contains
         endif
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
-        if (spec_points%bands_num_spec_points == 0) then
+        if (bands_num_spec_points == 0) then
           write (stdout, '(1x,a78)') '|     None defined                                                           |'
         else
-          do loop = 1, spec_points%bands_num_spec_points, 2
+          do loop = 1, bands_num_spec_points, 2
             write (stdout, '(1x,a10,1x,a5,1x,3F7.3,5x,a3,1x,a5,1x,3F7.3,3x,a1)') '|    From:', &
               spec_points%labels(loop), (spec_points%points(i, loop), i=1, 3), &
               'To:', spec_points%labels(loop + 1), (spec_points%points(i, loop + 1), i=1, 3), '|'

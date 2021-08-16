@@ -218,8 +218,6 @@ module w90_param_types
     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
     !! number of segments specified by the user. Each pair of special points defines a segment.
     !! ============================
-    ! REVIEW_2021-07-22: Remove bands_num_spec_points (same reason as for num_exclude_bands - see above)
-    integer :: bands_num_spec_points
     integer num_points_first_segment
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)
@@ -522,19 +520,19 @@ contains
     logical, intent(out) :: ok
     character(len=50), intent(in)  :: seedname
 
-    integer :: i_temp, ierr
+    integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
 
-    spec_points%bands_num_spec_points = 0
+    bands_num_spec_points = 0
     call param_get_block_length(stdout, seedname, 'kpoint_path', found, i_temp, library)
     if (found) then
       ok = .true.
-      spec_points%bands_num_spec_points = i_temp*2
+      bands_num_spec_points = i_temp*2
       if (allocated(spec_points%labels)) deallocate (spec_points%labels)
-      allocate (spec_points%labels(spec_points%bands_num_spec_points), stat=ierr)
+      allocate (spec_points%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating labels in param_read', stdout, seedname)
       if (allocated(spec_points%points)) deallocate (spec_points%points)
-      allocate (spec_points%points(3, spec_points%bands_num_spec_points), stat=ierr)
+      allocate (spec_points%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating points in param_read', stdout, seedname)
       call param_get_keyword_kpath(spec_points, stdout, seedname)
     else
@@ -1469,13 +1467,15 @@ contains
     enddo
 
     ! Bands labels (eg, x --> X)
-    do loop = 1, spec_points%bands_num_spec_points
-      do inner_loop = 1, len(spec_points%labels(loop))
-        ic = ichar(spec_points%labels(loop) (inner_loop:inner_loop))
-        if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-          spec_points%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+    if (allocated(spec_points%labels)) then
+      do loop = 1, size(spec_points%labels)
+        do inner_loop = 1, len(spec_points%labels(loop))
+          ic = ichar(spec_points%labels(loop) (inner_loop:inner_loop))
+          if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+            spec_points%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+        enddo
       enddo
-    enddo
+    endif
 
     ! Length unit (ang --> Ang, bohr --> Bohr)
     ic = ichar(length_unit(1:1))
