@@ -153,8 +153,10 @@ contains
       call param_read_restart(w90_calcs, stdout, seedname)
       call param_read_system(library, system, stdout, seedname)
       call param_read_kpath(library, spec_points, has_kpath, w90_calcs%bands_plot, stdout, seedname)
-      call param_read_plot(w90_calcs, out_files, plot, band_plot, wann_plot, num_wann, &
-                           has_kpath, stdout, seedname)
+      call param_read_plot_info(plot, stdout, seedname)
+      call param_read_band_plot(band_plot, num_wann, has_kpath, w90_calcs%bands_plot, &
+                                stdout, seedname)
+      call param_read_wann_plot(wann_plot, num_wann, w90_calcs%wannier_plot, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
       call param_read_outfiles(out_files, num_kpts, system%num_valence_bands, &
@@ -622,11 +624,11 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_read_restart
 
-  subroutine param_read_outfiles(w90_calcs, num_kpts, num_valence_bands, disentanglement, &
+  subroutine param_read_outfiles(out_files, num_kpts, num_valence_bands, disentanglement, &
                                  gamma_only, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(output_file_type), intent(inout) :: w90_calcs
+    type(output_file_type), intent(inout) :: out_files
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_valence_bands
@@ -635,71 +637,70 @@ contains
 
     logical :: found, hr_plot
 
-    w90_calcs%write_xyz = .false.
-    call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=w90_calcs%write_xyz)
+    out_files%write_xyz = .false.
+    call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=out_files%write_xyz)
 
-    w90_calcs%translate_home_cell = .false.
+    out_files%translate_home_cell = .false.
     call param_get_keyword(stdout, seedname, 'translate_home_cell', found, &
-                           l_value=w90_calcs%translate_home_cell)
+                           l_value=out_files%translate_home_cell)
 
-    w90_calcs%write_r2mn = .false.
-    call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=w90_calcs%write_r2mn)
+    out_files%write_r2mn = .false.
+    call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=out_files%write_r2mn)
 
-    w90_calcs%write_proj = .false.
-    call param_get_keyword(stdout, seedname, 'write_proj', found, l_value=w90_calcs%write_proj)
+    out_files%write_proj = .false.
+    call param_get_keyword(stdout, seedname, 'write_proj', found, l_value=out_files%write_proj)
 
-    w90_calcs%write_hr_diag = .false.
+    out_files%write_hr_diag = .false.
     call param_get_keyword(stdout, seedname, 'write_hr_diag', found, &
-                           l_value=w90_calcs%write_hr_diag)
+                           l_value=out_files%write_hr_diag)
 
     hr_plot = .false.
     call param_get_keyword(stdout, seedname, 'hr_plot', found, l_value=hr_plot)
     if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.', stdout, seedname)
-    w90_calcs%write_hr = .false.
-    call param_get_keyword(stdout, seedname, 'write_hr', found, l_value=w90_calcs%write_hr)
+    out_files%write_hr = .false.
+    call param_get_keyword(stdout, seedname, 'write_hr', found, l_value=out_files%write_hr)
 
-    w90_calcs%write_rmn = .false.
-    call param_get_keyword(stdout, seedname, 'write_rmn', found, l_value=w90_calcs%write_rmn)
+    out_files%write_rmn = .false.
+    call param_get_keyword(stdout, seedname, 'write_rmn', found, l_value=out_files%write_rmn)
 
-    w90_calcs%write_tb = .false.
-    call param_get_keyword(stdout, seedname, 'write_tb', found, l_value=w90_calcs%write_tb)
+    out_files%write_tb = .false.
+    call param_get_keyword(stdout, seedname, 'write_tb', found, l_value=out_files%write_tb)
 
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
 
     ! aam: vdW
-    w90_calcs%write_vdw_data = .false.
+    out_files%write_vdw_data = .false.
     call param_get_keyword(stdout, seedname, 'write_vdw_data', found, &
-                           l_value=w90_calcs%write_vdw_data)
-    if (w90_calcs%write_vdw_data) then
+                           l_value=out_files%write_vdw_data)
+    if (out_files%write_vdw_data) then
       if ((.not. gamma_only) .or. (num_kpts .ne. 1)) &
         call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma', &
                       stdout, seedname)
     endif
-    if (w90_calcs%write_vdw_data .and. disentanglement .and. num_valence_bands <= 0) &
+    if (out_files%write_vdw_data .and. disentanglement .and. num_valence_bands <= 0) &
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined', stdout, seedname)
+
+    out_files%write_u_matrices = .false.
+    call param_get_keyword(stdout, seedname, 'write_u_matrices', found, &
+                           l_value=out_files%write_u_matrices)
+
+    out_files%write_bvec = .false.
+    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=out_files%write_bvec)
 
   end subroutine param_read_outfiles
 
-  subroutine param_read_plot(w90_calcs, out_files, plot, band_plot, wann_plot, num_wann, &
-                             has_kpath, stdout, seedname)
+  subroutine param_read_plot_info(plot, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(in) :: w90_calcs
-    type(output_file_type), intent(inout) :: out_files
     type(wvfn_read_type), intent(out) :: plot
-    type(band_plot_type), intent(out) :: band_plot
-    type(wannier_plot_type), intent(out) :: wann_plot
     integer, intent(in) :: stdout
-    integer, intent(in) :: num_wann
-    logical, intent(in) :: has_kpath
     character(len=50), intent(in)  :: seedname
 
-    integer :: i, loop, ierr, num_project, wann_plot_num
     logical :: found
     character(len=6) :: spin_str
 
@@ -717,6 +718,73 @@ contains
         call io_error('Error: unrecognised value of spin found: '//trim(spin_str), stdout, seedname)
       end if
     end if
+
+  end subroutine param_read_plot_info
+
+  subroutine param_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname)
+    !%%%%%%%%%
+    ! Plotting
+    !%%%%%%%%%
+    use w90_io, only: io_error
+    implicit none
+    type(band_plot_type), intent(out) :: band_plot
+    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: has_kpath
+    logical, intent(in) :: bands_plot
+    character(len=50), intent(in)  :: seedname
+
+    integer :: ierr, num_project
+    logical :: found
+
+    band_plot%format = 'gnuplot'
+    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%format)
+
+    band_plot%mode = 's-k'
+    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
+
+    num_project = 0
+    call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+                                num_project, lcount=.true.)
+    if (found) then
+      if (num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
+      if (allocated(band_plot%project)) deallocate (band_plot%project)
+      allocate (band_plot%project(num_project), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
+      call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+                                  num_project, .false., band_plot%project)
+      if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) &
+        call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
+    endif
+
+    if (.not. has_kpath .and. bands_plot) &
+      call io_error('A bandstructure plot has been requested but there is no kpoint_path block', stdout, seedname)
+
+    ! checks
+    if (bands_plot) then
+      if ((index(band_plot%format, 'gnu') .eq. 0) .and. &
+          (index(band_plot%format, 'xmgr') .eq. 0)) &
+        call io_error('Error: bands_plot_format not recognised', stdout, seedname)
+      if ((index(band_plot%mode, 's-k') .eq. 0) .and. (index(band_plot%mode, 'cut') .eq. 0)) &
+        call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
+    endif
+
+  end subroutine param_read_band_plot
+
+  subroutine param_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname)
+    !%%%%%%%%%
+    ! Plotting
+    !%%%%%%%%%
+    use w90_io, only: io_error
+    implicit none
+    type(wannier_plot_type), intent(out) :: wann_plot
+    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: wannier_plot
+    character(len=50), intent(in)  :: seedname
+
+    integer :: i, loop, ierr, wann_plot_num
+    logical :: found
 
     wann_plot%supercell = 2
 
@@ -782,7 +850,7 @@ contains
     call param_get_keyword(stdout, seedname, 'wannier_plot_scale', found, r_value=wann_plot%scale)
 
     ! checks
-    if (w90_calcs%wannier_plot) then
+    if (wannier_plot) then
       if ((index(wann_plot%format, 'xcrys') .eq. 0) .and. (index(wann_plot%format, 'cub') .eq. 0)) &
         call io_error('Error: wannier_plot_format not recognised', stdout, seedname)
       if ((index(wann_plot%mode, 'crys') .eq. 0) .and. (index(wann_plot%mode, 'mol') .eq. 0)) &
@@ -795,46 +863,7 @@ contains
       if (wann_plot%scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
     endif
 
-    out_files%write_u_matrices = .false.
-    call param_get_keyword(stdout, seedname, 'write_u_matrices', found, &
-                           l_value=out_files%write_u_matrices)
-
-    out_files%write_bvec = .false.
-    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=out_files%write_bvec)
-
-    band_plot%format = 'gnuplot'
-    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%format)
-
-    band_plot%mode = 's-k'
-    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
-
-    num_project = 0
-    call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                num_project, lcount=.true.)
-    if (found) then
-      if (num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
-      if (allocated(band_plot%project)) deallocate (band_plot%project)
-      allocate (band_plot%project(num_project), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                  num_project, .false., band_plot%project)
-      if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) &
-        call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
-    endif
-
-    if (.not. has_kpath .and. w90_calcs%bands_plot) &
-      call io_error('A bandstructure plot has been requested but there is no kpoint_path block', stdout, seedname)
-
-    ! checks
-    if (w90_calcs%bands_plot) then
-      if ((index(band_plot%format, 'gnu') .eq. 0) .and. &
-          (index(band_plot%format, 'xmgr') .eq. 0)) &
-        call io_error('Error: bands_plot_format not recognised', stdout, seedname)
-      if ((index(band_plot%mode, 's-k') .eq. 0) .and. (index(band_plot%mode, 'cut') .eq. 0)) &
-        call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
-    endif
-
-  end subroutine param_read_plot
+  end subroutine param_read_wann_plot
 
   subroutine param_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname)
     use w90_io, only: io_error
