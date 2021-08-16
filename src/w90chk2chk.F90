@@ -23,7 +23,7 @@ module w90chk_parameters
   public
 
   !type(parameter_input_type), save :: param_input
-  type(exclude_bands_type), save :: excluded_bands
+  integer, allocatable, save :: exclude_bands(:)
   type(wannier_data_type), save :: wann_data
   type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
@@ -33,6 +33,7 @@ module w90chk_parameters
   type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
   logical, save :: have_disentangled
+  integer, save :: num_exclude_bands
 
   integer, save :: num_bands
   !! Number of bands
@@ -217,21 +218,21 @@ contains
     ! Consistency checks
     read (chk_unit) num_bands                           ! Number of bands
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
-    read (chk_unit) excluded_bands%num_exclude_bands                   ! Number of excluded bands
-    if (excluded_bands%num_exclude_bands < 0) then
+    read (chk_unit) num_exclude_bands                   ! Number of excluded bands
+    if (num_exclude_bands < 0) then
       call io_error('Invalid value for num_exclude_bands', stdout, seedname)
     endif
-    allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
+    allocate (exclude_bands(num_exclude_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt', stdout, seedname)
-    read (chk_unit) (excluded_bands%exclude_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
+    read (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (stdout, '(a)', advance='no') "Excluded bands: "
-    if (excluded_bands%num_exclude_bands == 0) then
+    if (num_exclude_bands == 0) then
       write (stdout, '(a)') "none."
     else
-      do i = 1, excluded_bands%num_exclude_bands - 1
-        write (stdout, '(I0,a)', advance='no') excluded_bands%exclude_bands(i), ','
+      do i = 1, num_exclude_bands - 1
+        write (stdout, '(I0,a)', advance='no') exclude_bands(i), ','
       end do
-      write (stdout, '(I0,a)') excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), '.'
+      write (stdout, '(I0,a)') exclude_bands(num_exclude_bands), '.'
     end if
     read (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)  ! Real lattice
     write (stdout, '(a)') "Real lattice: read."
@@ -374,23 +375,23 @@ contains
     ! Consistency checks
     read (chk_unit, *) num_bands                           ! Number of bands
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
-    read (chk_unit, *) excluded_bands%num_exclude_bands                   ! Number of excluded bands
-    if (excluded_bands%num_exclude_bands < 0) then
+    read (chk_unit, *) num_exclude_bands                   ! Number of excluded bands
+    if (num_exclude_bands < 0) then
       call io_error('Invalid value for num_exclude_bands', stdout, seedname)
     endif
-    allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
+    allocate (exclude_bands(num_exclude_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt_fmt', stdout, seedname)
-    do i = 1, excluded_bands%num_exclude_bands
-      read (chk_unit, *) excluded_bands%exclude_bands(i) ! Excluded bands
+    do i = 1, num_exclude_bands
+      read (chk_unit, *) exclude_bands(i) ! Excluded bands
     end do
     write (stdout, '(a)', advance='no') "Excluded bands: "
-    if (excluded_bands%num_exclude_bands == 0) then
+    if (num_exclude_bands == 0) then
       write (stdout, '(a)') "none."
     else
-      do i = 1, excluded_bands%num_exclude_bands - 1
-        write (stdout, '(I0,a)', advance='no') excluded_bands%exclude_bands(i), ','
+      do i = 1, num_exclude_bands - 1
+        write (stdout, '(I0,a)', advance='no') exclude_bands(i), ','
       end do
-      write (stdout, '(I0,a)') excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), '.'
+      write (stdout, '(I0,a)') exclude_bands(num_exclude_bands), '.'
     end if
     read (chk_unit, *) ((real_lattice(i, j), i=1, 3), j=1, 3)  ! Real lattice
     write (stdout, '(a)') "Real lattice: read."
@@ -577,8 +578,8 @@ contains
 
     write (chk_unit) header                                   ! Date and time from the read file
     write (chk_unit) num_bands                                ! Number of bands
-    write (chk_unit) excluded_bands%num_exclude_bands            ! Number of excluded bands
-    write (chk_unit) (excluded_bands%exclude_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
+    write (chk_unit) num_exclude_bands            ! Number of excluded bands
+    write (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
@@ -631,9 +632,9 @@ contains
 
     write (chk_unit, '(A33)') header                                   ! Date and time from the read file
     write (chk_unit, '(I0)') num_bands                                ! Number of bands
-    write (chk_unit, '(I0)') excluded_bands%num_exclude_bands            ! Number of excluded bands
-    do i = 1, excluded_bands%num_exclude_bands
-      write (chk_unit, '(I0)') excluded_bands%exclude_bands(i) ! Excluded bands
+    write (chk_unit, '(I0)') num_exclude_bands            ! Number of excluded bands
+    do i = 1, num_exclude_bands
+      write (chk_unit, '(I0)') exclude_bands(i) ! Excluded bands
     end do
     write (chk_unit, '(9G25.17)') ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit, '(9G25.17)') ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice

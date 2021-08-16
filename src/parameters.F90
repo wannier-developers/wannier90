@@ -49,17 +49,6 @@ module w90_param_types
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
-  type exclude_bands_type
-    !! ==============================
-    !! (TO FINISH)
-    !! ==============================
-    integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
-    ! REVIEW_2021-07-22: num_exclude_bands could be removed as it is equal to the length of the
-    ! REVIEW_2021-07-22: array exclude_bands(:), but make sure the array is allocated in the code.
-    integer :: num_exclude_bands
-    ! REVIEW_2021-07-22: CHECK WHERE IS NUM_BANDS (TO FINISH)
-  end type exclude_bands_type
-
   type ws_region_type
     logical :: use_ws_distance !ws_distance, plot and postw90_common
     real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
@@ -346,29 +335,29 @@ contains
     if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero', stdout, seedname)
   end subroutine param_read_num_wann
 
-  subroutine param_read_exclude_bands(excluded_bands, stdout, seedname)
+  subroutine param_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
     use w90_io, only: io_error
     implicit none
 
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    integer, intent(out) :: num_exclude_bands
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     integer :: ierr
     logical :: found
 
-    excluded_bands%num_exclude_bands = 0
+    num_exclude_bands = 0
     call param_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                excluded_bands%num_exclude_bands, lcount=.true.)
+                                num_exclude_bands, lcount=.true.)
     if (found) then
-      if (excluded_bands%num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
-      if (allocated(excluded_bands%exclude_bands)) deallocate (excluded_bands%exclude_bands)
-      allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
+      if (num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
+      if (allocated(exclude_bands)) deallocate (exclude_bands)
+      allocate (exclude_bands(num_exclude_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating exclude_bands in param_read', stdout, seedname)
       call param_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                  excluded_bands%num_exclude_bands, .false., &
-                                  excluded_bands%exclude_bands)
-      if (any(excluded_bands%exclude_bands < 1)) &
+                                  num_exclude_bands, .false., exclude_bands)
+      if (any(exclude_bands < 1)) &
         call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
     end if
   end subroutine param_read_exclude_bands
@@ -1583,7 +1572,7 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(excluded_bands, wann_data, input_proj, kmesh_data, k_points, &
+  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_data, k_points, &
                            dis_window, atoms, eigval, spec_points, stdout, seedname)
     !==================================================================!
     !                                                                  !
@@ -1595,7 +1584,7 @@ contains
     implicit none
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wann_data
     type(proj_input_type), intent(inout) :: input_proj
     type(kmesh_input_type), intent(inout) :: kmesh_data
@@ -1697,8 +1686,8 @@ contains
       deallocate (input_proj%zona, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc', stdout, seedname)
     end if
-    if (allocated(excluded_bands%exclude_bands)) then
-      deallocate (excluded_bands%exclude_bands, stat=ierr)
+    if (allocated(exclude_bands)) then
+      deallocate (exclude_bands, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating exclude_bands in param_dealloc', stdout, seedname)
     end if
     if (allocated(wann_data%centres)) then
@@ -1793,9 +1782,9 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(dis_data, excluded_bands, kmesh_info, k_points, &
-                              wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                              recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
+  subroutine param_read_chkpt(dis_data, exclude_bands, kmesh_info, k_points, wann_data, m_matrix, &
+                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
+                              omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                               num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
     !=================================================!
     !! Read checkpoint file
@@ -1814,7 +1803,7 @@ contains
     implicit none
 
     !data from parameters module
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -1825,6 +1814,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_exclude_bands
 
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
@@ -1844,7 +1834,7 @@ contains
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
-    integer :: tmp_excl_bands(1:excluded_bands%num_exclude_bands), tmp_mp_grid(1:3)
+    integer :: tmp_excl_bands(1:num_exclude_bands), tmp_mp_grid(1:3)
 
     write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
@@ -1859,11 +1849,11 @@ contains
     read (chk_unit) ntmp                           ! Number of bands
     if (ntmp .ne. num_bands) call io_error('param_read_chk: Mismatch in num_bands', stdout, seedname)
     read (chk_unit) ntmp                           ! Number of excluded bands
-    if (ntmp .ne. excluded_bands%num_exclude_bands) &
+    if (ntmp .ne. num_exclude_bands) &
       call io_error('param_read_chk: Mismatch in num_exclude_bands', stdout, seedname)
-    read (chk_unit) (tmp_excl_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
-    do i = 1, excluded_bands%num_exclude_bands
-      if (tmp_excl_bands(i) .ne. excluded_bands%exclude_bands(i)) &
+    read (chk_unit) (tmp_excl_bands(i), i=1, num_exclude_bands) ! Excluded bands
+    do i = 1, num_exclude_bands
+      if (tmp_excl_bands(i) .ne. exclude_bands(i)) &
         call io_error('param_read_chk: Mismatch in exclude_bands', stdout, seedname)
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice

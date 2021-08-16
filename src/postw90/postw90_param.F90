@@ -246,9 +246,8 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, &
-    fermi_data_type, atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, &
-    exclude_bands_type, ws_region_type
+    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, fermi_data_type, &
+    atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, ws_region_type
   use w90_param_methods
   use pw90_parameters
 
@@ -286,7 +285,7 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(rs_region, system, excluded_bands, verbose, wann_data, &
+  subroutine param_postw90_read(rs_region, system, exclude_bands, verbose, wann_data, &
                                 kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
                                 num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
@@ -312,7 +311,7 @@ contains
     type(pw90_boltzwann_type), intent(inout) :: boltz
     type(dis_manifold_type), intent(inout) :: dis_window
     type(pw90_dos_mod_type), intent(inout) :: dos_data
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(fermi_data_type), intent(inout) :: fermi
     type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
@@ -351,6 +350,7 @@ contains
     logical, intent(inout) :: effective_model
 
     ! local variables
+    integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, library, ok
@@ -365,10 +365,9 @@ contains
                           stdout, seedname)
     call param_read_oper(postw90_oper, stdout, seedname)
     call param_read_num_wann(num_wann, stdout, seedname)
-    call param_read_exclude_bands(excluded_bands, stdout, seedname) !for read_chkpt
-    call param_read_num_bands(effective_model, library, &
-                              excluded_bands%num_exclude_bands, num_bands, num_wann, .false., &
-                              stdout, seedname)
+    call param_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname) !for read_chkpt
+    call param_read_num_bands(effective_model, library, num_exclude_bands, num_bands, num_wann, &
+                              .false., stdout, seedname)
     disentanglement = (num_bands > num_wann)
     !call param_read_devel(verbose%devel_flag, stdout, seedname)
     call param_read_mp_grid(effective_model, library, mp_grid, num_kpts, &
@@ -1964,14 +1963,14 @@ contains
 
   end subroutine param_postw90_write
 
-  subroutine param_pw90_dealloc(excluded_bands, wann_data, kmesh_data, k_points, dis_window, &
+  subroutine param_pw90_dealloc(exclude_bands, wann_data, kmesh_data, k_points, dis_window, &
                                 fermi, atoms, eigval, spec_points, dos_data, berry, proj_input, &
                                 stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     !data from parameters module
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(proj_input_type), intent(inout) :: proj_input
@@ -1987,7 +1986,7 @@ contains
 
     integer :: ierr
 
-    call param_dealloc(excluded_bands, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)

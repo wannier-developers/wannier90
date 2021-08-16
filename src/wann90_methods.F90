@@ -40,7 +40,7 @@ module wannier_methods
 contains
 
   !==================================================================!
-  subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, &
+  subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
                         fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, wann_omega, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
@@ -65,7 +65,7 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(output_file_type), intent(inout) :: out_files
     type(print_output_type), intent(inout) :: verbose
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: plot
@@ -118,6 +118,7 @@ contains
     logical, intent(inout) :: gamma_only
 
     !local variables
+    integer :: num_exclude_bands
     character(len=20) :: energy_unit
     !! Units for energy
     logical                   :: found_fermi_energy
@@ -139,8 +140,8 @@ contains
       call param_read_units(verbose%lenconfac, verbose%length_unit, energy_unit, bohr, &
                             stdout, seedname)
       call param_read_num_wann(num_wann, stdout, seedname)
-      call param_read_exclude_bands(excluded_bands, stdout, seedname)
-      call param_read_num_bands(.false., library, excluded_bands%num_exclude_bands, num_bands, &
+      call param_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
+      call param_read_num_bands(.false., library, num_exclude_bands, num_bands, &
                                 num_wann, library_param_read_first_pass, stdout, seedname)
       disentanglement = (num_bands > num_wann)
       call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
@@ -1636,14 +1637,14 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, excluded_bands, &
+  subroutine param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, &
                                kmesh_data, k_points, wannierise, proj, proj_input, spec_points, &
                                wann_data, wann_plot, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
     implicit none
     !data from parameters module
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(band_plot_type), intent(inout) :: band_plot
     type(wann_control_type), intent(inout) :: wannierise
     type(wannier_data_type), intent(inout) :: wann_data
@@ -1670,7 +1671,7 @@ contains
 !   passed variables
     integer :: ierr
 
-    call param_dealloc(excluded_bands, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, k_points, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
@@ -1735,7 +1736,7 @@ contains
   end subroutine param_w90_dealloc
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt, excluded_bands, wann_data, kmesh_info, k_points, num_kpts, &
+  subroutine param_write_chkpt(chkpt, exclude_bands, wann_data, kmesh_info, k_points, num_kpts, &
                                dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                mp_grid, real_lattice, recip_lattice, omega_invariant, &
                                have_disentangled, stdout, seedname)
@@ -1755,7 +1756,7 @@ contains
 
     character(len=*), intent(in) :: chkpt
     !data from parameters module
-    type(exclude_bands_type), intent(in) :: excluded_bands
+    integer, allocatable, intent(in) :: exclude_bands(:)
     type(wannier_data_type), intent(in) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -1774,7 +1775,7 @@ contains
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
 
-    integer :: chk_unit, nkp, i, j, k, l
+    integer :: chk_unit, nkp, i, j, k, l, num_exclude_bands
     character(len=9) :: cdate, ctime
     character(len=33) :: header
     character(len=20) :: chkpt1
@@ -1789,8 +1790,13 @@ contains
 
     write (chk_unit) header                                   ! Date and time
     write (chk_unit) num_bands                                ! Number of bands
-    write (chk_unit) excluded_bands%num_exclude_bands         ! Number of excluded bands
-    write (chk_unit) (excluded_bands%exclude_bands(i), i=1, excluded_bands%num_exclude_bands) ! Excluded bands
+    if (allocated(exclude_bands)) then
+      num_exclude_bands = size(exclude_bands)
+    else
+      num_exclude_bands = 0
+    endif
+    write (chk_unit) num_exclude_bands         ! Number of excluded bands
+    write (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
@@ -2055,7 +2061,7 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, &
+  subroutine param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
                         fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, wann_omega, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
@@ -2077,7 +2083,7 @@ contains
     !passed variables
     type(w90_calculation_type), intent(inout) :: w90_calcs
     type(output_file_type), intent(inout) :: out_files
-    type(exclude_bands_type), intent(inout) :: excluded_bands
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     type(real_space_ham_type), intent(inout) :: rs_region
     type(ws_region_type), intent(inout) :: ws_region
     type(print_output_type), intent(inout) :: verbose
@@ -2129,7 +2135,7 @@ contains
     logical :: on_root = .false.
     integer :: ierr
     integer :: iprintroot !JJ
-    integer :: num_project, wann_plot_num
+    integer :: num_project, wann_plot_num, num_exclude_bands
     logical :: disentanglement
 
     if (mpirank(comm) == 0) on_root = .true.
@@ -2181,16 +2187,19 @@ contains
     !call comms_bcast(dos_data%smr_fixed_en_width, 1)
     !call comms_bcast(dos_data%adpt_smr_fac, 1)
     !call comms_bcast(dos_data%num_project, 1)
-    call comms_bcast(excluded_bands%num_exclude_bands, 1, stdout, seedname, comm)
-    if (excluded_bands%num_exclude_bands > 0) then
+    num_exclude_bands = 0
+    if (on_root) then
+      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
+    endif
+    call comms_bcast(num_exclude_bands, 1, stdout, seedname, comm)
+    if (num_exclude_bands > 0) then
       if (.not. on_root) then
-        allocate (excluded_bands%exclude_bands(excluded_bands%num_exclude_bands), stat=ierr)
+        allocate (exclude_bands(num_exclude_bands), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating exclude_bands in param_dist', stdout, seedname)
       endif
 
-      call comms_bcast(excluded_bands%exclude_bands(1), excluded_bands%num_exclude_bands, stdout, &
-                       seedname, comm)
+      call comms_bcast(exclude_bands(1), num_exclude_bands, stdout, seedname, comm)
     end if
 
     call comms_bcast(gamma_only, 1, stdout, seedname, comm)

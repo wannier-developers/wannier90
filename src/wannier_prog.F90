@@ -100,7 +100,7 @@ program wannier
   type(w90_system_type) :: system
   type(real_space_ham_type) :: rs_region
   type(ws_region_type) :: ws_region
-  type(exclude_bands_type) :: excluded_bands
+  integer, allocatable :: exclude_bands(:)
   logical :: eig_found
   type(wvfn_read_type) :: plot
   type(band_plot_type) :: band_plot
@@ -155,6 +155,7 @@ program wannier
   !! Dimensions of the Monkhorst-Pack grid
 
   integer :: num_proj
+  integer :: num_exclude_bands
 
   type(select_projection_type) :: select_proj
 
@@ -247,7 +248,7 @@ program wannier
     call io_date(cdate, ctime)
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
-    call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, fermi, &
+    call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi, &
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                     plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
@@ -315,7 +316,7 @@ program wannier
   endif
 
   ! We now distribute the parameters to the other nodes
-  call param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, excluded_bands, fermi, &
+  call param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                   plot, wannierise, wann_omega, input_proj, rs_region, system, tran, verbose, &
                   wann_data, wann_plot, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
@@ -333,9 +334,11 @@ program wannier
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
     if (on_root) then
-      call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, wann_data, m_matrix, &
+      num_exclude_bands = 0
+      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
+      call param_read_chkpt(dis_window, exclude_bands, kmesh_info, k_points, wann_data, m_matrix, &
                             u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
-                            wann_omega%invariant, mp_grid, num_bands, num_kpts, &
+                            wann_omega%invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                             num_wann, checkpoint, have_disentangled, .false., &
                             seedname, stdout)
     endif
@@ -374,11 +377,11 @@ program wannier
   endif
 
   if (w90_calcs%postproc_setup) then
-    if (on_root) call kmesh_write(excluded_bands, kmesh_info, input_proj, verbose, &
+    if (on_root) call kmesh_write(exclude_bands, kmesh_info, input_proj, verbose, &
                                   k_points%kpt_latt, real_lattice, recip_lattice, num_kpts, &
                                   num_proj, calc_only_A, system%spinors, seedname, stdout)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
-    call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, excluded_bands, kmesh_data, &
+    call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
                            k_points, wannierise, proj, input_proj, spec_points, &
                            wann_data, wann_plot, write_data, eigval, seedname, stdout)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
@@ -416,7 +419,7 @@ program wannier
   endif
 
   if (on_root) then
-    call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, &
+    call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                            k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
                            u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
                            wann_omega%invariant, have_disentangled, stdout, seedname)
@@ -430,7 +433,7 @@ program wannier
   if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
   if (.not. gamma_only) then
-    call wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
+    call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, k_points, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
@@ -438,7 +441,7 @@ program wannier
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, seedname, &
                    stdout, w90comm)
   else
-    call wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, out_files, &
+    call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, k_points, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
@@ -450,7 +453,7 @@ program wannier
     ' (sec)'
 
   if (on_root) then
-    call param_write_chkpt('postwann', excluded_bands, wann_data, kmesh_info, &
+    call param_write_chkpt('postwann', exclude_bands, wann_data, kmesh_info, &
                            k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
                            u_matrix_opt, m_matrix, mp_grid, real_lattice, recip_lattice, &
                            wann_omega%invariant, have_disentangled, stdout, seedname)
@@ -497,7 +500,7 @@ program wannier
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, seedname, stdout, w90comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, excluded_bands, kmesh_data, &
+  call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
                          k_points, wannierise, proj, input_proj, spec_points, &
                          wann_data, wann_plot, write_data, eigval, seedname, stdout)
   if (lsitesymmetry) call sitesym_dealloc(sym, stdout, seedname) !YN:

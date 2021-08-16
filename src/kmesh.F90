@@ -620,7 +620,7 @@ contains
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(excluded_bands, kmesh_info, proj_input, verbose, kpt_latt, real_lattice, &
+  subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, verbose, kpt_latt, real_lattice, &
                          recip_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -653,11 +653,11 @@ contains
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: kmesh_info_type, kmesh_input_type, &
-      proj_input_type, print_output_type, exclude_bands_type
+      proj_input_type, print_output_type
 
     implicit none
 
-    type(exclude_bands_type), intent(in) :: excluded_bands
+    integer, allocatable, intent(in) :: exclude_bands(:)
     type(print_output_type), intent(in) :: verbose
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(proj_input_type), intent(in) :: proj_input
@@ -672,7 +672,7 @@ contains
     logical, intent(in) :: spinors
     character(len=50), intent(in)  :: seedname
 
-    integer           :: i, nkp, nn, nnkpout
+    integer           :: i, nkp, nn, nnkpout, num_exclude_bands
     character(len=9) :: cdate, ctime
 
     if (verbose%timing_level > 0) call io_stopwatch('kmesh: write', 1, stdout, seedname)
@@ -774,11 +774,13 @@ contains
     write (nnkpout, '(a/)') 'end nnkpts'
 
     !states to exclude
+    num_exclude_bands = 0
+    if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
     write (nnkpout, '(a)') 'begin exclude_bands'
-    write (nnkpout, '(i4)') excluded_bands%num_exclude_bands
-    if (excluded_bands%num_exclude_bands > 0) then
-      do i = 1, excluded_bands%num_exclude_bands
-        write (nnkpout, '(i4)') excluded_bands%exclude_bands(i)
+    write (nnkpout, '(i4)') num_exclude_bands
+    if (num_exclude_bands > 0) then
+      do i = 1, num_exclude_bands
+        write (nnkpout, '(i4)') exclude_bands(i)
       end do
     endif
     write (nnkpout, '(a)') 'end exclude_bands'

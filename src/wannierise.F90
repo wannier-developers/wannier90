@@ -48,7 +48,7 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main(atoms, dis_window, excluded_bands, hmlg, kmesh_info, k_points, out_files, &
+  subroutine wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, k_points, out_files, &
                        hamiltonian, wannierise, omega, sym, system, verbose, wann_data, &
                        ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
                        eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
@@ -64,9 +64,8 @@ contains
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type
-    use w90_param_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
-      exclude_bands_type, ws_region_type
+    use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
+      atom_data_type, k_points_type, dis_manifold_type, w90_system_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -86,7 +85,7 @@ contains
     type(k_points_type), intent(in) :: k_points
     type(w90_system_type), intent(in) :: system
     type(ws_region_type), intent(in) :: ws_region
-    type(exclude_bands_type), intent(in) :: excluded_bands
+    integer, allocatable, intent(in) :: exclude_bands(:)
     type(print_output_type), intent(in) :: verbose
     type(output_file_type), intent(in) :: out_files
     type(real_space_ham_type), intent(inout) :: hamiltonian
@@ -710,7 +709,7 @@ contains
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
-        if (on_root) call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, &
+        if (on_root) call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                                             k_points, num_kpts, dis_window, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, recip_lattice, &
@@ -3182,7 +3181,7 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(atoms, dis_window, excluded_bands, kmesh_info, k_points, out_files, &
+  subroutine wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, k_points, out_files, &
                              wannierise, omega, system, verbose, wann_data, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, seedname, &
@@ -3197,8 +3196,7 @@ contains
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type, &
-      exclude_bands_type
+      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90commtype
@@ -3212,7 +3210,7 @@ contains
     type(w90commtype), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wannierise
     type(wann_omega_type), intent(inout) :: omega
-    type(exclude_bands_type), intent(in) :: excluded_bands
+    integer, allocatable, intent(in) :: exclude_bands(:)
     type(w90_system_type), intent(in) :: system
     type(print_output_type), intent(in) :: verbose
     type(k_points_type), intent(in) :: k_points ! needed for write_chkpt
@@ -3512,7 +3510,7 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', excluded_bands, wann_data, kmesh_info, k_points, &
+        call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, k_points, &
                                num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
                                m_matrix, mp_grid, real_lattice, recip_lattice, &
                                omega%invariant, have_disentangled, stdout, seedname)

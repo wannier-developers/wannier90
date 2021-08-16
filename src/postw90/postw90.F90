@@ -102,7 +102,8 @@ program postw90
   ! w90_parameters stuff
   type(print_output_type) :: verbose
   type(w90_system_type) :: system
-  type(exclude_bands_type) :: excluded_bands
+  integer, allocatable :: exclude_bands(:)
+  integer :: num_exclude_bands
   type(ws_region_type) :: ws_region
   type(wannier_data_type) :: wann_data
   type(kmesh_input_type) :: kmesh_data
@@ -245,7 +246,7 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(ws_region, system, excluded_bands, verbose, wann_data, kmesh_data, &
+    call param_postw90_read(ws_region, system, exclude_bands, verbose, wann_data, kmesh_data, &
                             k_points, num_kpts, dis_window, fermi, atoms, num_bands, num_wann, &
                             eigval, mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, scissors_shift, effective_model, pw90_spin, &
@@ -318,10 +319,12 @@ program postw90
     ! both disentanglement and maximal localization, etc.)
     !
     if (on_root) then
-      call param_read_chkpt(dis_window, excluded_bands, kmesh_info, k_points, &
-                            wann_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                            recip_lattice, omega_invariant, mp_grid, num_bands, num_kpts, &
-                            num_wann, checkpoint, have_disentangled, .true., seedname, stdout)
+      num_exclude_bands = 0
+      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
+      call param_read_chkpt(dis_window, exclude_bands, kmesh_info, k_points, wann_data, m_matrix, &
+                            u_matrix, u_matrix_opt, real_lattice, recip_lattice, omega_invariant, &
+                            mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
+                            have_disentangled, .true., seedname, stdout)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes
