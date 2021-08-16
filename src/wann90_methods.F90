@@ -699,7 +699,7 @@ contains
     logical, intent(in) :: has_kpath
     character(len=50), intent(in)  :: seedname
 
-    integer :: i, loop, ierr
+    integer :: i, loop, ierr, num_project
     logical :: found
     character(len=6) :: spin_str
 
@@ -801,23 +801,23 @@ contains
     out_files%write_bvec = .false.
     call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=out_files%write_bvec)
 
-    band_plot%plot_format = 'gnuplot'
-    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%plot_format)
+    band_plot%format = 'gnuplot'
+    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%format)
 
-    band_plot%plot_mode = 's-k'
-    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%plot_mode)
+    band_plot%mode = 's-k'
+    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
 
-    band_plot%num_project = 0
+    num_project = 0
     call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                band_plot%num_project, lcount=.true.)
+                                num_project, lcount=.true.)
     if (found) then
-      if (band_plot%num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
-      if (allocated(band_plot%plot_project)) deallocate (band_plot%plot_project)
-      allocate (band_plot%plot_project(band_plot%num_project), stat=ierr)
+      if (num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
+      if (allocated(band_plot%project)) deallocate (band_plot%project)
+      allocate (band_plot%project(num_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
       call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                  band_plot%num_project, .false., band_plot%plot_project)
-      if (any(band_plot%plot_project < 1) .or. any(band_plot%plot_project > num_wann)) &
+                                  num_project, .false., band_plot%project)
+      if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
     endif
 
@@ -826,10 +826,10 @@ contains
 
     ! checks
     if (w90_calcs%bands_plot) then
-      if ((index(band_plot%plot_format, 'gnu') .eq. 0) .and. &
-          (index(band_plot%plot_format, 'xmgr') .eq. 0)) &
+      if ((index(band_plot%format, 'gnu') .eq. 0) .and. &
+          (index(band_plot%format, 'xmgr') .eq. 0)) &
         call io_error('Error: bands_plot_format not recognised', stdout, seedname)
-      if ((index(band_plot%plot_mode, 's-k') .eq. 0) .and. (index(band_plot%plot_mode, 'cut') .eq. 0)) &
+      if ((index(band_plot%mode, 's-k') .eq. 0) .and. (index(band_plot%mode, 'cut') .eq. 0)) &
         call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
     endif
 
@@ -882,7 +882,7 @@ contains
     if (index(one_dim_axis, 'z') > 0) region%one_dim_dir = 3
     if (w90_calcs%transport .and. .not. tran_read_ht .and. &
         (region%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised', stdout, seedname)
-    if (w90_calcs%bands_plot .and. (index(band_plot%plot_mode, 'cut') .ne. 0) .and. &
+    if (w90_calcs%bands_plot .and. (index(band_plot%mode, 'cut') .ne. 0) .and. &
         ((region%system_dim .ne. 3) .or. &
          (index(region%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
         (region%one_dim_dir .eq. 0)) &
@@ -1517,10 +1517,10 @@ contains
         write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
           spec_points%num_points_first_segment, '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
-          trim(band_plot%plot_format), '|'
+          trim(band_plot%format), '|'
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :', &
-          trim(band_plot%plot_mode), '|'
-        if (index(band_plot%plot_mode, 'cut') .ne. 0) then
+          trim(band_plot%mode), '|'
+        if (index(band_plot%mode, 'cut') .ne. 0) then
           write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
             rs_region%system_dim, '|'
           if (rs_region%system_dim .eq. 1) &
@@ -1645,8 +1645,8 @@ contains
       deallocate (wann_plot%plot_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in param_dealloc', stdout, seedname)
     end if
-    if (allocated(band_plot%plot_project)) then
-      deallocate (band_plot%plot_project, stat=ierr)
+    if (allocated(band_plot%project)) then
+      deallocate (band_plot%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating bands_plot_project in param_dealloc', stdout, seedname)
     endif
     if (allocated(write_data%ccentres_frac)) then
@@ -2098,6 +2098,7 @@ contains
     logical :: on_root = .false.
     integer :: ierr
     integer :: iprintroot !JJ
+    integer :: num_project
     logical :: disentanglement
 
     if (mpirank(comm) == 0) on_root = .true.
@@ -2207,20 +2208,23 @@ contains
     call comms_bcast(w90_calcs%bands_plot, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_bvec, 1, stdout, seedname, comm)
     call comms_bcast(first_segment, 1, stdout, seedname, comm)
-    call comms_bcast(band_plot%plot_format, len(band_plot%plot_format), stdout, &
+    call comms_bcast(band_plot%format, len(band_plot%format), stdout, &
                      seedname, comm)
-    call comms_bcast(band_plot%plot_mode, len(band_plot%plot_mode), stdout, &
+    call comms_bcast(band_plot%mode, len(band_plot%mode), stdout, &
                      seedname, comm)
-    call comms_bcast(band_plot%num_project, 1, stdout, seedname, comm)
+    num_project = 0
+    if (on_root) then
+      if (allocated(band_plot%project)) num_project = size(band_plot%project)
+    endif
+    call comms_bcast(num_project, 1, stdout, seedname, comm)
 
-    if (band_plot%num_project > 0) then
+    if (num_project > 0) then
       if (.not. on_root) then
-        allocate (band_plot%plot_project(band_plot%num_project), stat=ierr)
+        allocate (band_plot%project(num_project), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating bands_plot_project in param_dist', stdout, seedname)
       endif
-      call comms_bcast(band_plot%plot_project(1), band_plot%num_project, stdout, &
-                       seedname, comm)
+      call comms_bcast(band_plot%project(1), num_project, stdout, seedname, comm)
     end if
     call comms_bcast(rs_region%system_dim, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_hr, 1, stdout, seedname, comm)

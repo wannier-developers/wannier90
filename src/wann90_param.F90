@@ -84,11 +84,9 @@ module wannier_param_types
     !! ========================
     !! Contains information to control how the bandstructure plotting is performed and formatted.
     !! ========================
-    character(len=20) :: plot_mode !hamiltonian (setup only), plot
-    character(len=20) :: plot_format
-    integer, allocatable :: plot_project(:)
-    ! REVIEW_2021-07-22: num_project can be removed (similar to num_exclude_bands -- see discussion there)
-    integer :: num_project
+    character(len=20) :: mode !hamiltonian (setup only), plot
+    character(len=20) :: format
+    integer, allocatable :: project(:)
   end type band_plot_type
 
   type wannier_plot_type

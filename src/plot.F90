@@ -125,7 +125,7 @@ contains
       !
       call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                             num_kpts, num_wann, nrpts, rpt_origin, band_plot%plot_mode, stdout, &
+                             num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
                              seedname, transport_mode)
       !
       call hamiltonian_get_hr(atoms, dis_window, hmlg, rs_region, verbose, ham_k, ham_r, &
@@ -426,7 +426,7 @@ contains
     !
     ! Cut H matrix in real-space
     !
-    if (index(band_plot%plot_mode, 'cut') .ne. 0) then
+    if (index(band_plot%mode, 'cut') .ne. 0) then
       call plot_cut_hr(band_plot, rs_region, real_lattice, mp_grid, num_wann, &
                        wannier_centres_translated, stdout)
     endif
@@ -434,11 +434,11 @@ contains
     ! Interpolate the Hamiltonian at each kpoint
     !
     if (ws_region%use_ws_distance) then
-      if (index(band_plot%plot_mode, 's-k') .ne. 0) then
+      if (index(band_plot%mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute=.true.)
-      elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
+      elseif (index(band_plot%mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
@@ -452,7 +452,7 @@ contains
     do loop_kpt = 1, total_pts
       ham_kprm = cmplx_0
       !
-      if (index(band_plot%plot_mode, 's-k') .ne. 0) then
+      if (index(band_plot%mode, 's-k') .ne. 0) then
         do irpt = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
           if (ws_region%use_ws_distance) then
@@ -475,7 +475,7 @@ contains
           endif
         end do
         ! end of s-k mode
-      elseif (index(band_plot%plot_mode, 'cut') .ne. 0) then
+      elseif (index(band_plot%mode, 'cut') .ne. 0) then
         do irpt = 1, nrpts_cut
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
           if (ws_region%use_ws_distance) then
@@ -516,10 +516,10 @@ contains
         call io_error('Error in plot_interpolate_bands', stdout, seedname)
       endif
       ! Compute projection onto WF if requested
-      if (band_plot%num_project > 0) then
+      if (allocated(band_plot%project)) then
       do loop_w = 1, num_wann
         do loop_p = 1, num_wann
-          if (any(band_plot%plot_project == loop_p)) then
+          if (any(band_plot%project == loop_p)) then
             bands_proj(loop_w, loop_kpt) = bands_proj(loop_w, loop_kpt) + &
                                            abs(U_int(loop_p, loop_w))**2
           end if
@@ -535,11 +535,11 @@ contains
     emin = minval(eig_int) - 1.0_dp
     emax = maxval(eig_int) + 1.0_dp
 
-    if (index(band_plot%plot_format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
-                                                                               spec_points, &
-                                                                               num_wann)
-    if (index(band_plot%plot_format, 'xmgr') > 0) call plot_interpolate_xmgrace(spec_points, &
-                                                                                num_wann)
+    if (index(band_plot%format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
+                                                                          spec_points, &
+                                                                          num_wann)
+    if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(spec_points, &
+                                                                           num_wann)
 
     write (stdout, '(1x,a,f11.3,a)') &
       'Time to calculate interpolated band structure ', io_time() - time0, ' (sec)'
@@ -782,7 +782,7 @@ contains
       !
       do i = 1, num_wann
         do nkp = 1, total_pts
-          if (band_plot%num_project > 0) then
+          if (allocated(band_plot%project)) then
             write (bndunit, '(3E16.8)') xval(nkp), eig_int(i, nkp), bands_proj(i, nkp)
           else
             write (bndunit, '(2E16.8)') xval(nkp), eig_int(i, nkp)
@@ -813,7 +813,7 @@ contains
       write (gnuunit, *) 'plot ', '"'//trim(seedname)//'_band.dat', '"'
       close (gnuunit)
 
-      if (band_plot%num_project > 0) then
+      if (allocated(band_plot%project)) then
         gnuunit = io_file_unit()
         open (gnuunit, file=trim(seedname)//'_band_proj.gnu', form='formatted')
         write (gnuunit, '(a)') '#File to plot a colour-mapped Bandstructure'

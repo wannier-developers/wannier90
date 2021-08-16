@@ -630,7 +630,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, recip_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
-                   band_plot%plot_mode, tran%mode, have_disentangled, lsitesymmetry, &
+                   band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
                    seedname, stdout, comm)
   endif
 
@@ -660,7 +660,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                   rpt_origin, band_plot%plot_mode, have_disentangled, lsitesymmetry, seedname, &
+                   rpt_origin, band_plot%mode, have_disentangled, lsitesymmetry, seedname, &
                    stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
