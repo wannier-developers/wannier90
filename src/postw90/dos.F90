@@ -35,11 +35,11 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, pw90_common, effective_model, pw90_ham, &
-                      postw90_oper, pw90_spin, wann_data, ws_distance, ws_vec, verbose, HH_R, &
-                      SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, rs_region, &
-                      system, mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
-                      spin_decomp, seedname, stdout, comm)
+  subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, postw90_oper, pw90_ham, &
+                      pw90_spin, rs_region, system, verbose, wann_data, ws_distance, ws_vec, HH_R, &
+                      SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+                      scissors_shift, mp_grid, num_bands, num_kpts, num_wann, effective_model, &
+                      have_disentangled, spin_decomp, seedname, stdout, comm)
 
     !=======================================================!
     !                                                       !
@@ -51,7 +51,7 @@ contains
     !=======================================================!
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
-    use pw90_parameters, only: pw90_dos_mod_type, postw90_common_type, pw90_berry_mod_type, &
+    use pw90_parameters, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, ws_region_type, w90_system_type
@@ -64,28 +64,28 @@ contains
     implicit none
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in) :: berry
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(pw90_dos_mod_type), intent(in) :: dos_data
-    type(kpoint_dist_type), intent(in) :: kdist
-    type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
+    type(pw90_berry_mod_type), intent(in)        :: berry
+    type(dis_manifold_type), intent(in)          :: dis_window
+    type(pw90_dos_mod_type), intent(in)          :: dos_data
+    type(kpoint_dist_type), intent(in)           :: kdist
+    type(k_points_type), intent(in)              :: k_points
+    type(pw90_oper_read_type), intent(in)        :: postw90_oper
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
-    type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
-    type(w90_system_type), intent(in) :: system
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(pw90_spin_mod_type), intent(in)         :: pw90_spin
+    type(ws_region_type), intent(in)             :: rs_region
+    type(w90_system_type), intent(in)            :: system
+    type(print_output_type), intent(in)          :: verbose
+    type(wannier_data_type), intent(in)          :: wann_data
+    type(ws_distance_type), intent(inout)        :: ws_distance
+    type(wigner_seitz_type), intent(inout)       :: ws_vec
+    type(w90commtype), intent(in)                :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -141,9 +141,10 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
-                  system%num_valence_bands, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                  comm)
 
     if (spin_decomp) then
       ndim = 3
@@ -207,11 +208,11 @@ contains
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
         if (dos_data%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
-                                   verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
-                                   u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
-                                   real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   num_wann, system%num_valence_bands, have_disentangled, &
+          call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                                   ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                   del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
@@ -250,11 +251,11 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
-                                   verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
-                                   u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
-                                   real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                   num_wann, system%num_valence_bands, have_disentangled, &
+          call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                                   ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                   del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)

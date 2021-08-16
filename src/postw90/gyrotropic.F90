@@ -57,12 +57,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, verbose, &
-                             pw90_common, effective_model, pw90_ham, postw90_oper, physics, rs_region, system, &
+  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, &
+                             physics, postw90_oper, pw90_ham, rs_region, system, verbose, &
                              wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, &
-                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, mp_grid, &
-                             num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
-                             comm)
+                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+                             scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                             effective_model, have_disentangled, seedname, stdout, comm)
 
     !============================================================!
     !                                                            !
@@ -80,7 +80,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
-      pw90_band_deriv_degen_type, postw90_common_type
+      pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
     use w90_utility, only: utility_det3
@@ -96,7 +96,6 @@ contains
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
@@ -117,6 +116,7 @@ contains
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -199,15 +199,16 @@ contains
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
-                  eigval, real_lattice, num_bands, num_kpts, num_wann, system%num_valence_bands, &
-                  have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                  comm)
 
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, &
-                    HH_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, comm)
+      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                    effective_model, have_disentangled, seedname, stdout, comm)
     endif
 
     if (eval_spn) then
@@ -218,11 +219,11 @@ contains
     endif
 
     if (eval_K) then
-      call get_BB_R(dis_window, kmesh_info, k_points, verbose, pw90_common, BB_R, v_matrix, &
-                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+      call get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
+                    scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
-      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
-                    CC_R, v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
+      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
+                    eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
       allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
@@ -333,7 +334,7 @@ contains
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, verbose, &
                                  fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                 gyrotropic, pw90_common, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
+                                 gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
                                  seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
 
     end do !loop_xyz
@@ -523,7 +524,7 @@ contains
                                    eval_spn, eval_C, eval_dos, num_wann, verbose, fermi, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                   gyrotropic, pw90_common, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
+                                   gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
                                    seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
@@ -558,7 +559,7 @@ contains
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use pw90_parameters, only: pw90_gyrotropic_type, postw90_common_type, pw90_band_deriv_degen_type
+    use pw90_parameters, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, fermi_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
@@ -575,7 +576,6 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -599,6 +599,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt(3), kweight
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
@@ -638,11 +639,12 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
-                             wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
-                             v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
-                             mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                             have_disentangled, seedname, stdout, comm)
+    call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                             ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                             del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                             scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                             num_valence_bands, effective_model, have_disentangled, seedname, &
+                             stdout, comm)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
@@ -699,12 +701,12 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imfgh_klist(rs_region, dis_window, fermi, k_points, verbose, &
-                                       pw90_common, effective_model, wann_data, ws_distance, ws_vec, AA_R, BB_R, &
-                                       CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                       recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                       num_valence_bands, have_disentangled, seedname, stdout, &
-                                       comm, imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
+                                       ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
+                                       v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                       scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                       num_valence_bands, effective_model, have_disentangled, &
+                                       seedname, stdout, comm, imf_k, img_k, imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -713,12 +715,12 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(rs_region, dis_window, fermi, k_points, verbose, pw90_common, effective_model, &
-                                     wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                     u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                     imf_k, mp_grid, num_bands, num_kpts, num_wann, &
-                                     num_valence_bands, have_disentangled, seedname, stdout, comm, &
-                                     occ)
+            call berry_get_imf_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
+                                     ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
+                                     v_matrix, eigval, kpt, real_lattice, recip_lattice, imf_k, &
+                                     scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                     num_valence_bands, effective_model, have_disentangled, &
+                                     seedname, stdout, comm, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo

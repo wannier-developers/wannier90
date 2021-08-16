@@ -65,11 +65,11 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_common, effective_model, pw90_ham, &
-                            postw90_oper, pw90_spin, physics, rs_region, system, wann_data, &
-                            ws_distance, ws_vec, verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, &
-                            real_lattice, recip_lattice, mp_grid, num_wann, num_bands, num_kpts, &
-                            have_disentangled, spin_decomp, seedname, stdout, comm)
+  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_ham, postw90_oper, &
+                            pw90_spin, physics, rs_region, system, wann_data, ws_distance, ws_vec, &
+                            verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
+                            recip_lattice, scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
+                            effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
 
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
@@ -90,7 +90,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       k_points_type, ws_region_type, w90_system_type
-    use pw90_parameters, only: pw90_boltzwann_type, postw90_common_type, pw90_spin_mod_type, &
+    use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -102,7 +102,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(pw90_dos_mod_type), intent(in) :: dos_data
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -121,6 +120,7 @@ contains
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -259,12 +259,12 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(rs_region, boltz, dis_window, dos_data, k_points, verbose, postw90_oper, &
-                       pw90_common, effective_model, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
-                       SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
-                       TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
-                       system%num_valence_bands, system%num_elec_per_state, have_disentangled, &
-                       spin_decomp, seedname, stdout, comm)
+    call calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, pw90_spin, &
+                       rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, SS_R, u_matrix, &
+                       v_matrix, eigval, real_lattice, recip_lattice, TDF, TDFEnergyArray, &
+                       cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                       system%num_valence_bands, system%num_elec_per_state, effective_model, &
+                       have_disentangled, spin_decomp, seedname, stdout, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -655,12 +655,12 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(rs_region, boltz, dis_window, dos_data, k_points, verbose, postw90_oper, &
-                           pw90_common, effective_model, pw90_ham, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, &
+  subroutine calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, &
+                           pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
-                           TDFEnergyArray, cell_volume, mp_grid, num_bands, num_kpts, num_wann, &
-                           num_valence_bands, num_elec_per_state, have_disentangled, spin_decomp, &
-                           seedname, stdout, comm)
+                           TDFEnergyArray, cell_volume, scissors_shift, mp_grid, num_bands, &
+                           num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
+                           effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -689,7 +689,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
       dis_manifold_type, ws_region_type
     use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, pw90_band_deriv_degen_type, &
-      pw90_dos_mod_type, postw90_common_type, pw90_oper_read_type
+      pw90_dos_mod_type, pw90_oper_read_type
     use w90_param_methods, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
@@ -702,7 +702,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(pw90_dos_mod_type), intent(in) :: dos_data
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -737,6 +736,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp), intent(in) :: cell_volume
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -787,9 +787,9 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, &
-                  stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
     if (spin_decomp) then
       ndim = 3
 
@@ -906,11 +906,12 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
-                               wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, &
-                               v_matrix, del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
-                               mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                               have_disentangled, seedname, stdout, comm)
+      call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                               ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                               del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                               scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                               num_valence_bands, effective_model, have_disentangled, seedname, &
+                               stdout, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -947,12 +948,13 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
-                                           verbose, wann_data, ws_distance, ws_vec, delHH, HH, &
-                                           HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, &
-                                           kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
-                                           num_kpts, num_wann, num_valence_bands, &
-                                           have_disentangled, seedname, stdout, comm)
+                  call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, &
+                                           wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+                                           u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                           real_lattice, recip_lattice, scissors_shift, mp_grid, &
+                                           num_bands, num_kpts, num_wann, num_valence_bands, &
+                                           effective_model, have_disentangled, seedname, stdout, &
+                                           comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &

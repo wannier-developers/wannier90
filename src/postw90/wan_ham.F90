@@ -402,16 +402,17 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
-                                 verbose, wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
-                                 u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, real_lattice, &
-                                 recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                 num_valence_bands, have_disentangled, seedname, stdout, comm)
+  subroutine wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                                 ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                 del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                 scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                 num_valence_bands, effective_model, have_disentangled, seedname, &
+                                 stdout, comm)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_constants, only: dp
-    use pw90_parameters, only: postw90_common_type, pw90_band_deriv_degen_type
+    use pw90_parameters, only: pw90_band_deriv_degen_type
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
@@ -428,7 +429,6 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -448,6 +448,7 @@ contains
     !! for the derivatives along the three k directions]
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(out)   :: HH(:, :)
     !! the Hamiltonian matrix at kpt
@@ -465,9 +466,9 @@ contains
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
     call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
                                    real_lattice, recip_lattice, mp_grid, 0, num_wann, seedname, &
@@ -526,12 +527,12 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, pw90_common, effective_model, rs_region, &
-                                       verbose, wann_data, ws_distance, ws_vec, HH, HH_R, &
-                                       JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, eigval, &
-                                       kpt, real_lattice, recip_lattice, mp_grid, num_bands, &
-                                       num_kpts, num_wann, num_valence_bands, have_disentangled, &
-                                       seedname, stdout, comm, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
+                                       ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
+                                       u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
+                                       recip_lattice, scissors_shift, mp_grid, num_bands, &
+                                       num_kpts, num_wann, num_valence_bands, effective_model, &
+                                       have_disentangled, seedname, stdout, comm, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -545,7 +546,6 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
       dis_manifold_type, k_points_type, ws_region_type
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
 
@@ -555,7 +555,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(fermi_data_type), intent(in) :: fermi
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -570,6 +569,7 @@ contains
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp), intent(out) :: eig(:)
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
     real(kind=dp), intent(in), optional :: occ(:)
 
     complex(kind=dp), intent(out) :: UU(:, :)
@@ -587,9 +587,9 @@ contains
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
     allocate (delHH(num_wann, num_wann, 3))
     call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, HH_R, kpt, &
@@ -610,12 +610,12 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, &
-                                              pw90_common, effective_model, rs_region, verbose, wann_data, &
-                                              ws_distance, ws_vec, AA_R, HH, HH_da, HH_dadb, HH_R, &
-                                              u_matrix, UU, v_matrix, eig, eigval, kpt, &
-                                              real_lattice, recip_lattice, mp_grid, num_bands, &
-                                              num_kpts, num_wann, num_valence_bands, &
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, rs_region, &
+                                              verbose, wann_data, ws_distance, ws_vec, AA_R, HH, &
+                                              HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, &
+                                              eigval, kpt, real_lattice, recip_lattice, &
+                                              scissors_shift, mp_grid, num_bands, num_kpts, &
+                                              num_wann, num_valence_bands, effective_model, &
                                               have_disentangled, seedname, stdout, comm)
     !========================================================!
     !                                                        !
@@ -630,7 +630,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       k_points_type, kmesh_info_type, ws_region_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: postw90_common_type, pw90_berry_mod_type
+    use pw90_parameters, only: pw90_berry_mod_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
 
@@ -641,7 +641,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -656,6 +655,7 @@ contains
     real(kind=dp), intent(out) :: eig(num_wann)
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(out) :: UU(:, :)
     complex(kind=dp), intent(out) :: HH(:, :)
@@ -669,13 +669,13 @@ contains
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
-                  eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
-    call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, HH_R, &
-                  v_matrix, eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
-                  have_disentangled, seedname, stdout, comm)
+    call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+                  eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, rs_region, &
                                                         wann_data, real_lattice, recip_lattice, &
@@ -686,11 +686,12 @@ contains
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, pw90_common, effective_model, rs_region, verbose, &
-                                      wann_data, ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, &
-                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
-                                      recip_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                                      num_valence_bands, have_disentangled, seedname, stdout, comm)
+  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, k_points, rs_region, verbose, wann_data, &
+                                      ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
+                                      v_matrix, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                      scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                      num_valence_bands, effective_model, have_disentangled, &
+                                      seedname, stdout, comm)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -701,7 +702,6 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
@@ -714,7 +714,6 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -729,6 +728,7 @@ contains
     real(kind=dp), intent(out) :: eig(num_wann)
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(out) :: UU(:, :)
     complex(kind=dp), intent(out) :: HH(:, :)
@@ -741,9 +741,9 @@ contains
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                  v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, rs_region, wann_data, &
                                                 real_lattice, recip_lattice, mp_grid, ws_distance, &

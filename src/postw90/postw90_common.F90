@@ -82,22 +82,19 @@ contains
 
   ! Public procedures have names starting with wanint_
 
-  subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, pw90_common, effective_model, &
+  subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
                                      ws_vec, stdout, seedname, world)
     !! Setup data ready for interpolation
     use w90_constants, only: dp !, cmplx_0
-!   use w90_io, only: io_error, io_file_unit, seedname
     use w90_io, only: io_error, io_file_unit
     use w90_utility, only: utility_cart_to_frac
     use w90_param_types, only: print_output_type
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: mpirank, w90commtype, comms_bcast
 
     integer, intent(in) :: num_wann
     type(print_output_type), intent(in) :: verbose
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: mp_grid(3)
-    type(postw90_common_type), intent(in) :: pw90_common
     type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: stdout
     logical, intent(in) :: effective_model
@@ -256,7 +253,7 @@ contains
   subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
                                           dis_window, system, fermi, num_bands, num_wann, eigval, &
                                           mp_grid, real_lattice, recip_lattice, pw90_calcs, &
-                                          pw90_common, effective_model, pw90_spin, pw90_ham, kpath, kslice, &
+                                          scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, kslice, &
                                           dos_data, berry, spin_hall, gyrotropic, geninterp, &
                                           boltz, eig_found, stdout, seedname, world)
     !===========================================================!
@@ -271,7 +268,7 @@ contains
       io_stopwatch
     use w90_comms, only: mpirank, w90commtype, comms_bcast
     use w90_param_types
-    use pw90_parameters, only: pw90_calculation_type, postw90_common_type, pw90_spin_mod_type, &
+    use pw90_parameters, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
       pw90_boltzwann_type
@@ -290,8 +287,8 @@ contains
     integer, intent(inout) :: mp_grid(3)
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    real(kind=dp), intent(inout) :: scissors_shift
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    type(postw90_common_type), intent(inout) :: pw90_common
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
     type(pw90_kpath_mod_type), intent(inout) :: kpath
@@ -432,7 +429,7 @@ contains
                      world)
     call comms_bcast(berry%transl_inv, 1, stdout, seedname, world)
     call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, world)
-    call comms_bcast(pw90_common%scissors_shift, 1, stdout, seedname, world)
+    call comms_bcast(scissors_shift, 1, stdout, seedname, world)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -567,7 +564,7 @@ contains
 
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
-                                         dis_window, wann_data, pw90_common, v_matrix, &
+                                         dis_window, wann_data, scissors_shift, v_matrix, &
                                          num_valence_bands, have_disentangled, stdout, seedname, &
                                          world)
     !===========================================================!
@@ -580,7 +577,6 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_param_types, only: dis_manifold_type, wannier_data_type
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank, comms_bcast
 
     implicit none
@@ -588,11 +584,12 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
     type(dis_manifold_type), intent(inout) :: dis_window
     type(wannier_data_type), intent(inout) :: wann_data
-    type(postw90_common_type), intent(in) :: pw90_common
     complex(kind=dp), allocatable :: v_matrix(:, :, :)
     integer, intent(in) :: num_valence_bands
     logical, intent(inout) :: have_disentangled
     integer, intent(in) :: stdout
+    real(kind=dp), intent(in) :: scissors_shift
+
     character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: world
 
@@ -640,13 +637,13 @@ contains
         enddo
       endif
       if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
-      if (.not. (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp)) then
+      if (.not. (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp)) then
         if (allocated(u_matrix)) deallocate (u_matrix)
       endif
     endif
     call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, world)
 
-    if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+    if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) &

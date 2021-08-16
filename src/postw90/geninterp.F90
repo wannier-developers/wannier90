@@ -59,10 +59,11 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_common, effective_model, pw90_ham, rs_region, &
-                            wann_data, ws_distance, ws_vec, verbose, HH_R, v_matrix, u_matrix, &
-                            eigval, real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                            num_wann, num_valence_bands, have_disentangled, seedname, stdout, comm)
+  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_ham, rs_region, verbose, &
+                            wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
+                            real_lattice, recip_lattice, scissors_shift, mp_grid, num_bands, &
+                            num_kpts, num_wann, num_valence_bands, effective_model, &
+                            have_disentangled, seedname, stdout, comm)
 
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
@@ -72,7 +73,7 @@ contains
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
-    use pw90_parameters, only: postw90_common_type, pw90_geninterp_mod_type, &
+    use pw90_parameters, only: pw90_geninterp_mod_type, &
       pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
       wannier_data_type, ws_region_type
@@ -86,17 +87,16 @@ contains
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(pw90_geninterp_mod_type), intent(in) :: geninterp
-    type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
+    type(dis_manifold_type), intent(in)          :: dis_window
+    type(pw90_geninterp_mod_type), intent(in)    :: geninterp
+    type(k_points_type), intent(in)              :: k_points
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
-    type(ws_distance_type), intent(inout) :: ws_distance
+    type(ws_region_type), intent(in)             :: rs_region
+    type(print_output_type), intent(in)          :: verbose
+    type(wannier_data_type), intent(in)          :: wann_data
+    type(ws_distance_type), intent(inout)        :: ws_distance
+    type(wigner_seitz_type), intent(inout)       :: ws_vec
+    type(w90commtype), intent(in)                :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
@@ -104,6 +104,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
@@ -185,9 +186,9 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, v_matrix, &
-                  eigval, real_lattice, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
+                  effective_model, have_disentangled, seedname, stdout, comm)
 
     if (on_root) then
       allocate (kpointidx(nkinterp), stat=ierr)
@@ -293,12 +294,12 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_window, k_points, pw90_common, effective_model, pw90_ham, rs_region, verbose, &
-                                 wann_data, ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, &
-                                 UU, v_matrix, localdeleig(:, :, i), localeig(:, i), eigval, kpt, &
-                                 real_lattice, recip_lattice, mp_grid, num_bands, num_kpts, &
-                                 num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
-                                 comm)
+        call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+                                 ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                 localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
+                                 recip_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                 seedname, stdout, comm)
       else
         call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
                                        real_lattice, recip_lattice, mp_grid, 0, num_wann, &

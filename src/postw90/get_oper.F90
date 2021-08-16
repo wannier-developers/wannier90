@@ -35,9 +35,9 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(dis_window, k_points, verbose, pw90_common, effective_model, ws_vec, HH_R, u_matrix, &
-                      v_matrix, eigval, real_lattice, num_bands, num_kpts, num_wann, &
-                      num_valence_bands, have_disentangled, seedname, stdout, comm)
+  subroutine get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+                      real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                      num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -45,7 +45,6 @@ contains
     !
     !======================================================
 
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -57,7 +56,6 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -65,6 +63,7 @@ contains
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -162,7 +161,7 @@ contains
         ! result converges (rapidly) with the k-mesh density, but
         ! one should check
         !
-        if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
+        if (abs(scissors_shift) > 1.0e-7_dp) &
           call io_error( &
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T', stdout, seedname)
@@ -211,7 +210,7 @@ contains
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
     !
-    if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+    if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
       allocate (sciss_R(num_wann, num_wann, ws_vec%nrpts))
       allocate (sciss_q(num_wann, num_wann, num_kpts))
       sciss_q = cmplx_0
@@ -231,7 +230,7 @@ contains
       do n = 1, num_wann
         sciss_R(n, n, ws_vec%rpt_origin) = sciss_R(n, n, ws_vec%rpt_origin) + 1.0_dp
       end do
-      sciss_R = sciss_R*pw90_common%scissors_shift
+      sciss_R = sciss_R*scissors_shift
       HH_R = HH_R + sciss_R
     endif
 
@@ -245,8 +244,8 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, pw90_common, effective_model, AA_R, &
-                      HH_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
+  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, effective_model, &
                       have_disentangled, seedname, stdout, comm)
     !==================================================
     !
@@ -256,7 +255,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: pw90_berry_mod_type, postw90_common_type, pw90_oper_read_type, &
+    use pw90_parameters, only: pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -271,7 +270,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -528,9 +526,9 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(dis_window, kmesh_info, k_points, verbose, pw90_common, BB_R, v_matrix, &
-                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                      seedname, stdout, comm)
+  subroutine get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
+                      scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                      have_disentangled, seedname, stdout, comm)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -538,7 +536,6 @@ contains
     !
     !=====================================================
 
-    use pw90_parameters, only: postw90_common_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -551,13 +548,13 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
@@ -595,7 +592,7 @@ contains
 
     if (on_root) then
 
-      if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
+      if (abs(scissors_shift) > 1.0e-7_dp) &
         call io_error('Error: scissors correction not yet implemented for BB_R', stdout, seedname)
 
       allocate (BB_q(num_wann, num_wann, num_kpts, 3))
@@ -702,8 +699,8 @@ contains
 
   !=============================================================
 
-  subroutine get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
-                      CC_R, v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
+  subroutine get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
+                      eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
     !=============================================================
     !
@@ -712,7 +709,7 @@ contains
     !
     !=============================================================
 
-    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type
+    use pw90_parameters, only: pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -725,7 +722,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
@@ -733,6 +729,7 @@ contains
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
@@ -767,7 +764,7 @@ contains
 
     if (on_root) then
 
-      if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
+      if (abs(scissors_shift) > 1.0e-7_dp) &
         call io_error('Error: scissors correction not yet implemented for CC_R', stdout, seedname)
 
       allocate (Ho_qb1_q_qb2(num_bands, num_bands))
@@ -1067,7 +1064,7 @@ contains
     !
     !================================================================
 
-    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type
+    use pw90_parameters, only: pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -1223,8 +1220,8 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, pw90_common, &
-                       spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, irvec, nrpts, num_bands, &
+  subroutine get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, spin_hall, SH_R, &
+                       SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, &
                        num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
                        comm)
     !==================================================
@@ -1236,7 +1233,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: postw90_common_type, pw90_oper_read_type, pw90_spin_hall_type
+    use pw90_parameters, only: pw90_oper_read_type, pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -1248,7 +1245,6 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(pw90_spin_hall_type), intent(in) :: spin_hall
@@ -1258,6 +1254,7 @@ contains
     integer, intent(in) :: irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
@@ -1418,9 +1415,9 @@ contains
           H_o(m, m, ik) = eigval(m, ik)
         enddo
         ! scissors shift applied to the original Hamiltonian
-        if (num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+        if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
           do m = num_valence_bands + 1, num_bands
-            H_o(m, m, ik) = H_o(m, m, ik) + pw90_common%scissors_shift
+            H_o(m, m, ik) = H_o(m, m, ik) + scissors_shift
           end do
         else if (spin_hall%bandshift) then
           do m = spin_hall%bandshift_firstband, num_bands

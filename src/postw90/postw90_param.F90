@@ -52,12 +52,12 @@ module pw90_parameters
   ! REVIEW_2021-08-09: which has been deprecated and should be removed in a future version of
   ! REVIEW_2021-08-09: the code. For now, please keep it as a standalone variable.
   ! REVIEW_2021-08-09: effective_model should also be a standalone variable.
-  type postw90_common_type
-    real(kind=dp) :: scissors_shift ! get_oper and berry
-    ! IVO
-    ! Are we running postw90 starting from an effective model?
+! type postw90_common_type
+!   real(kind=dp) :: scissors_shift ! get_oper and berry
+  ! IVO
+  ! Are we running postw90 starting from an effective model?
 !   logical :: effective_model = .false.
-  end type postw90_common_type
+! end type postw90_common_type
 
   ! Module  s p i n
   type pw90_spin_mod_type
@@ -290,7 +290,7 @@ contains
                                 kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
                                 num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
-                                postw90_oper, pw90_common, effective_model, pw90_spin, pw90_ham, &
+                                postw90_oper, scissors_shift, effective_model, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
                                 gyrotropic, geninterp, boltz, eig_found, write_data, &
                                 gamma_only, bohr, stdout, seedname)
@@ -320,7 +320,6 @@ contains
     type(k_points_type), intent(inout) :: k_points
     type(pw90_kslice_mod_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
-    type(postw90_common_type), intent(inout) :: pw90_common
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
     type(pw90_oper_read_type), intent(inout) :: postw90_oper
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
@@ -343,6 +342,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    real(kind=dp), intent(inout) :: scissors_shift
 
     character(len=50), intent(in)  :: seedname
 
@@ -379,13 +379,13 @@ contains
     call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(write_data%smear, stdout, seedname)
-    call param_read_scissors_shift(pw90_common, stdout, seedname)
+    call param_read_scissors_shift(scissors_shift, stdout, seedname)
     call param_read_pw90spin(pw90_calcs%spin_moment, pw90_calcs%spin_decomp, pw90_spin, &
                              system%num_elec_per_state, stdout, seedname)
     call param_read_gyrotropic(gyrotropic, num_wann, write_data%smear%fixed_width, &
                                write_data%smear%type_index, stdout, seedname)
     call param_read_berry(pw90_calcs, berry, write_data%smear, stdout, seedname)
-    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry%task, stdout, seedname)
+    call param_read_spin_hall(pw90_calcs, scissors_shift, spin_hall, berry%task, stdout, seedname)
     call param_read_pw90ham(pw90_ham, stdout, seedname)
     call param_read_pw90_kpath(pw90_calcs, kpath, spec_points, stdout, seedname)
     call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, write_data%smear, &
@@ -591,16 +591,16 @@ contains
     ! [gp-end]
   end subroutine param_read_smearing
 
-  subroutine param_read_scissors_shift(pw90_common, stdout, seedname)
+  subroutine param_read_scissors_shift(scissors_shift, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
-    type(postw90_common_type), intent(inout) :: pw90_common
+    real(kind=dp), intent(inout) :: scissors_shift
     character(len=50), intent(in)  :: seedname
 
     logical :: found
 
-    pw90_common%scissors_shift = 0.0_dp
-    call param_get_keyword(stdout, seedname, 'scissors_shift', found, r_value=pw90_common%scissors_shift)
+    scissors_shift = 0.0_dp
+    call param_get_keyword(stdout, seedname, 'scissors_shift', found, r_value=scissors_shift)
 
   end subroutine param_read_scissors_shift
 
@@ -813,12 +813,12 @@ contains
 
   end subroutine param_read_berry
 
-  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall, berry_task, stdout, seedname)
+  subroutine param_read_spin_hall(pw90_calcs, scissors_shift, spin_hall, berry_task, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
+    real(kind=dp), intent(in) :: scissors_shift
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_spin_hall_type), intent(out) :: spin_hall
     character(len=*), intent(in) :: berry_task
     character(len=50), intent(in)  :: seedname
@@ -846,7 +846,7 @@ contains
     spin_hall%bandshift = .false.
     call param_get_keyword(stdout, seedname, 'shc_bandshift', found, l_value=spin_hall%bandshift)
     spin_hall%bandshift = spin_hall%bandshift .and. pw90_calcs%berry .and. .not. (index(berry_task, 'shc') == 0)
-    if ((abs(pw90_common%scissors_shift) > 1.0e-7_dp) .and. spin_hall%bandshift) &
+    if ((abs(scissors_shift) > 1.0e-7_dp) .and. spin_hall%bandshift) &
       call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously', stdout, seedname)
 
     spin_hall%bandshift_firstband = 0
@@ -1455,7 +1455,7 @@ contains
 !===================================================================
   subroutine param_postw90_write(param_input, system, fermi, atoms, num_wann, &
                                  real_lattice, recip_lattice, spec_points, &
-                                 pw90_calcs, postw90_oper, pw90_common, &
+                                 pw90_calcs, postw90_oper, scissors_shift, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
                                  gyrotropic, geninterp, boltz, write_data, stdout)
     !==================================================================!
@@ -1475,10 +1475,11 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
+
     type(kpoint_path_type), intent(in) :: spec_points
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(postw90_common_type), intent(in) :: pw90_common
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(pw90_kpath_mod_type), intent(in) :: kpath
     type(pw90_kslice_mod_type), intent(in) :: kslice
@@ -1555,8 +1556,8 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of electrons per state             :', &
       system%num_elec_per_state, '|'
-    if (abs(pw90_common%scissors_shift) > 1.0e-7_dp .or. param_input%iprint > 0) then
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :', pw90_common%scissors_shift, '|'
+    if (abs(scissors_shift) > 1.0e-7_dp .or. param_input%iprint > 0) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :', scissors_shift, '|'
       if (system%num_valence_bands > 0) then
         write (stdout, '(1x,a46,10x,i8,13x,a1)') '|  Number of valence bands                   :', &
           system%num_valence_bands, '|'
