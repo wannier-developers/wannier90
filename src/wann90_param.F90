@@ -93,15 +93,14 @@ module wannier_param_types
     !! ======================
     !! Contains information for how to plot the wannier functions.
     !! ======================
-    integer :: num_plot
-    integer, allocatable :: plot_list(:)
-    integer :: plot_supercell(3)
-    real(kind=dp) :: plot_radius
-    real(kind=dp) :: plot_scale
-    character(len=20) :: plot_format
-    character(len=20) :: plot_mode
-    character(len=20) :: plot_spinor_mode
-    logical :: plot_spinor_phase
+    integer, allocatable :: list(:)
+    integer :: supercell(3)
+    real(kind=dp) :: radius
+    real(kind=dp) :: scale
+    character(len=20) :: format
+    character(len=20) :: mode
+    character(len=20) :: spinor_mode
+    logical :: spinor_phase
   end type wannier_plot_type
 
   type wvfn_read_type ! only in plot.F90

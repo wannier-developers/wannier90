@@ -1180,6 +1180,7 @@ contains
     integer :: i, j, nsp, nat, nbnd, counter, ierr
     integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
+    integer :: wann_plot_num
     !integer :: ispinor
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
@@ -1188,7 +1189,7 @@ contains
     !
     if (verbose%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
     !
-    associate (ngs=>wann_plot%plot_supercell)
+    associate (ngs=>wann_plot%supercell)
       !
       if (.not. spinors) then
         write (wfnname, 200) 1, plot%spin_channel
@@ -1211,15 +1212,20 @@ contains
 200   format('UNK', i5.5, '.', i1)
 199   format('UNK', i5.5, '.', 'NC')
 
+      if (allocated(wann_plot%list)) then
+        wann_plot_num = size(wann_plot%list)
+      else
+        wann_plot_num = 0
+      endif
       allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                           -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                          -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot%num_plot), stat=ierr)
+                          -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating wann_func in plot_wannier', stdout, seedname)
       wann_func = cmplx_0
       if (spinors) then
         allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                                -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                               -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot%num_plot), stat=ierr)
+                               -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot_num), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating wann_func_nc in plot_wannier', stdout, seedname)
         wann_func_nc = cmplx_0
       endif
@@ -1377,30 +1383,30 @@ contains
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
               catmp = exp(twopi*cmplx_i*scalfac)
               do loop_b = 1, num_wann
-                do loop_w = 1, wann_plot%num_plot
+                do loop_w = 1, wann_plot_num
                   if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = &
                       wann_func(nxx, nyy, nzz, loop_w) + &
-                      u_matrix(loop_b, wann_plot%plot_list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
+                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
                   else
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                      u_matrix(loop_b, wann_plot%plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
+                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                      u_matrix(loop_b, wann_plot%plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
+                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
                     if (loop_b == num_wann) then ! last loop
                       upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
                                       conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
                       dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
                                       conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
-                      if (wann_plot%plot_spinor_phase) then
+                      if (wann_plot%spinor_phase) then
                         upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
                         dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
                       else
                         upphase = 1.0_dp; dnphase = 1.0_dp
                       endif
-                      select case (wann_plot%plot_spinor_mode)
+                      select case (wann_plot%spinor_mode)
                       case ('total')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
                       case ('up')
@@ -1409,7 +1415,7 @@ contains
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
                         call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wann_plot%plot_spinor_mode), stdout, seedname)
+                            &//trim(wann_plot%spinor_mode), stdout, seedname)
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = &
                         wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
@@ -1428,7 +1434,7 @@ contains
         ! fix the global phase by setting the wannier to
         ! be real at the point where it has max. modulus
 
-        do loop_w = 1, wann_plot%num_plot
+        do loop_w = 1, wann_plot_num
           tmaxx = 0.0
           wmod = cmplx_1
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
@@ -1450,7 +1456,7 @@ contains
         !
         ! Check the 'reality' of the WF
         !
-        do loop_w = 1, wann_plot%num_plot
+        do loop_w = 1, wann_plot_num
           ratmax = 0.0_dp
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
             do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
@@ -1463,14 +1469,14 @@ contains
               end do
             end do
           end do
-          write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wann_plot%plot_list(loop_w), &
+          write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wann_plot%list(loop_w), &
             'Maximum Im/Re Ratio = ', ratmax
         end do
       endif !!!!!
       write (stdout, *) ' '
-      if (wann_plot%plot_format .eq. 'xcrysden') then
+      if (wann_plot%format .eq. 'xcrysden') then
         call internal_xsf_format()
-      elseif (wann_plot%plot_format .eq. 'cube') then
+      elseif (wann_plot%format .eq. 'cube') then
         call internal_cube_format(atoms, wann_data, plot, have_disentangled, &
                                   recip_lattice, bohr)
       else
@@ -1544,15 +1550,15 @@ contains
            & 'Ac', 'Th', 'Pa', 'U ', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
            & 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt'/)
 
-      associate (ngs=>wann_plot%plot_supercell)
+      associate (ngs=>wann_plot%supercell)
 
         allocate (atomic_Z(atoms%num_species), stat=ierr)
         if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout, seedname)
 
         lmol = .false.
         lcrys = .false.
-        if (index(wann_plot%plot_mode, 'mol') > 0) lmol = .true.      ! molecule mode
-        if (index(wann_plot%plot_mode, 'crys') > 0) lcrys = .true.    ! crystal mode
+        if (index(wann_plot%mode, 'mol') > 0) lmol = .true.      ! molecule mode
+        if (index(wann_plot%mode, 'crys') > 0) lcrys = .true.    ! crystal mode
 
         val_Q = 1.0_dp ! dummy value for cube file
 
@@ -1592,9 +1598,9 @@ contains
         comf(:) = comf(:)/atoms%num_atoms
 
         ! Loop over WFs
-        do loop_w = 1, wann_plot%num_plot
+        do loop_w = 1, wann_plot_num
 
-          wann_index = wann_plot%plot_list(loop_w)
+          wann_index = wann_plot%list(loop_w)
           write (wancube, 202) trim(seedname), wann_index
 
           ! Find start and end of cube wrt simulation (home) cell origin
@@ -1603,11 +1609,11 @@ contains
             rstart(i) = (wann_data%centres(1, wann_index)*recip_lattice(i, 1) &
                          + wann_data%centres(2, wann_index)*recip_lattice(i, 2) &
                          + wann_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
-                        - twopi*wann_plot%plot_radius/(moda(i)*modb(i))
+                        - twopi*wann_plot%radius/(moda(i)*modb(i))
             rend(i) = (wann_data%centres(1, wann_index)*recip_lattice(i, 1) &
                        + wann_data%centres(2, wann_index)*recip_lattice(i, 2) &
                        + wann_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
-                      + twopi*wann_plot%plot_radius/(moda(i)*modb(i))
+                      + twopi*wann_plot%radius/(moda(i)*modb(i))
           enddo
 
           rlength(:) = rend(:) - rstart(:)
@@ -1721,7 +1727,7 @@ contains
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
-                      if (dist .le. (wann_plot%plot_scale*wann_plot%plot_radius)) then
+                      if (dist .le. (wann_plot%scale*wann_plot%radius)) then
                         icount = icount + 1
                       endif
                     enddo
@@ -1771,7 +1777,7 @@ contains
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
-                      if (dist .le. (wann_plot%plot_scale*wann_plot%plot_radius)) then
+                      if (dist .le. (wann_plot%scale*wann_plot%radius)) then
                         diff(:) = atoms%pos_frac(:, iat, isp) &
                                   + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                         call utility_frac_to_cart(diff, difc, real_lattice)
@@ -1814,7 +1820,7 @@ contains
 
 201   format(a, '_', i5.5, '.xsf')
 
-      associate (ngs=>wann_plot%plot_supercell)
+      associate (ngs=>wann_plot%supercell)
 
         ! this is to create the WF...xsf output, to be read by XCrySDen
         ! (coordinates + isosurfaces)
@@ -1836,9 +1842,9 @@ contains
           dirl(:, j) = fxcry(:)*real_lattice(:, j)
         end do
 
-        do loop_b = 1, wann_plot%num_plot
+        do loop_b = 1, wann_plot_num
 
-          write (wanxsf, 201) trim(seedname), wann_plot%plot_list(loop_b)
+          write (wanxsf, 201) trim(seedname), wann_plot%list(loop_b)
 
           file_unit = io_file_unit()
           open (unit=file_unit, file=trim(wanxsf), form='formatted', status='unknown')
@@ -1847,7 +1853,7 @@ contains
           write (file_unit, *) '      # On ', cdate, ' at ', ctime
           write (file_unit, *) '      #'
           ! should pass this into the code
-          if (index(wann_plot%plot_mode, 'mol') > 0) then
+          if (index(wann_plot%mode, 'mol') > 0) then
             write (file_unit, '("ATOMS")')
           else
             write (file_unit, '("CRYSTAL")')
