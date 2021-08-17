@@ -163,7 +163,8 @@ contains
 
   end subroutine wham_get_D_h_P_value
 
-  subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, num_wann, fermi, occ)
+  subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, num_wann, &
+                                   fermi_energy_list, occ)
     !===============================================!
     !                                               !
     ! Compute JJ^+_a and JJ^-_a (a=Cartesian index) !
@@ -180,10 +181,9 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate_new
-    use w90_param_types, only: fermi_data_type
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: eig(:)
     real(kind=dp), intent(in), optional, dimension(:) :: occ
@@ -199,12 +199,13 @@ contains
     if (present(occ)) then
       nfermi_loc = 1
     else
-      nfermi_loc = fermi%n
+      nfermi_loc = 0
+      if (allocated(fermi_energy_list)) nfermi_loc = size(fermi_energy_list)
     endif
 
     call utility_rotate_new(delHH, UU, num_wann)
     do ife = 1, nfermi_loc
-      fe = fermi%energy_list(ife)
+      fe = fermi_energy_list(ife)
       do m = 1, num_wann
         do n = 1, num_wann
           if (present(occ)) then
@@ -232,7 +233,8 @@ contains
 
   end subroutine wham_get_JJp_JJm_list
 
-  subroutine wham_get_occ_mat_list(fermi, f_list, g_list, UU, num_wann, seedname, stdout, eig, occ)
+  subroutine wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
+                                   stdout, eig, occ)
     !================================!
     !                                !
     !! Occupation matrix f, and g=1-f
@@ -242,12 +244,11 @@ contains
     !================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_param_types, only: fermi_data_type
     use w90_postw90_common, only: pw90common_get_occ
     use w90_io, only: io_error
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
 
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
@@ -268,7 +269,8 @@ contains
     if (present(occ)) then
       nfermi_loc = 1
     else
-      nfermi_loc = fermi%n
+      nfermi_loc = 0
+      if (allocated(fermi_energy_list)) nfermi_loc = size(fermi_energy_list)
     endif
     allocate (occ_list(num_wann, nfermi_loc))
 
@@ -284,7 +286,7 @@ contains
       occ_list(:, 1) = occ(:)
     else
       do if = 1, nfermi_loc
-        call pw90common_get_occ(fermi%energy_list(if), eig, occ_list(:, if), num_wann)
+        call pw90common_get_occ(fermi_energy_list(if), eig, occ_list(:, if), num_wann)
       enddo
     endif
 
@@ -527,12 +529,13 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
-                                       ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
-                                       u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
-                                       recip_lattice, scissors_shift, mp_grid, num_bands, &
-                                       num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, comm, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, k_points, rs_region, &
+                                       verbose, wann_data, ws_distance, ws_vec, HH, HH_R, &
+                                       JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, eigval, &
+                                       kpt, real_lattice, recip_lattice, scissors_shift, mp_grid, &
+                                       num_bands, num_kpts, num_wann, num_valence_bands, &
+                                       effective_model, have_disentangled, seedname, stdout, &
+                                       comm, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -544,7 +547,7 @@ contains
       pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
-    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
+    use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, k_points_type, ws_region_type
     use w90_comms, only: w90commtype, mpirank
     use w90_ws_distance, only: ws_distance_type
@@ -553,7 +556,7 @@ contains
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(k_points_type), intent(in) :: k_points
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -601,10 +604,10 @@ contains
     do i = 1, 3
       if (present(occ)) then
         call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), &
-                                   JJm_list(:, :, :, i), num_wann, fermi, occ=occ)
+                                   JJm_list(:, :, :, i), num_wann, fermi_energy_list, occ=occ)
       else
         call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), &
-                                   JJm_list(:, :, :, i), num_wann, fermi)
+                                   JJm_list(:, :, :, i), num_wann, fermi_energy_list)
       endif
     enddo
 

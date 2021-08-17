@@ -82,7 +82,7 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, &
+  subroutine tran_main(atoms, dis_window, fermi_energy_list, hmlg, k_points, out_files, &
                        rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
                        u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
-      atom_data_type, dis_manifold_type, k_points_type, fermi_data_type
+      atom_data_type, dis_manifold_type, k_points_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
       real_space_ham_type
 
@@ -113,7 +113,7 @@ contains
     type(atom_data_type), intent(in)            :: atoms
     type(dis_manifold_type), intent(in)         :: dis_window
     type(k_points_type), intent(in)             :: k_points
-    type(fermi_data_type), intent(in)           :: fermi
+    real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(ham_logical), intent(inout)            :: hmlg
 
     integer, intent(inout)              :: rpt_origin
@@ -201,7 +201,7 @@ contains
         call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
                                  wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                  one_dim_vec, seedname, stdout)
-        call tran_get_ht(fermi, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
+        call tran_get_ht(fermi_energy_list, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
                          verbose%timing_level, seedname, stdout)
         if (out_files%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
                                                      tran_sorted_idx, num_wann, seedname, stdout)
@@ -246,7 +246,7 @@ contains
 
         call tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
-        call tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi, k_points, num_wann, tran, &
+        call tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi_energy_list, k_points, num_wann, tran, &
                                     verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
@@ -565,21 +565,20 @@ contains
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
-                         timing_level, seedname, stdout)
+  subroutine tran_get_ht(fermi_energy_list, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
+                         num_wann, timing_level, seedname, stdout)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
     !
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use w90_param_types, only: fermi_data_type
     use wannier_param_types, only: transport_type
 
     implicit none
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(transport_type), intent(inout) :: tran
 
     integer, intent(in) :: num_pl
@@ -597,11 +596,14 @@ contains
     ! local variables
     integer :: ierr, file_unit
     integer :: i, j, n1, im, jm
+    integer :: fermi_n
     character(len=9) :: cdate, ctime
 
     if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, seedname)
     !
-    if (fermi%n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
+    fermi_n = 0
+    if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    if (fermi_n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
     !
     !
@@ -637,7 +639,7 @@ contains
 
     ! shift by fermi_energy
     do i = 1, tran%num_bb
-      hB0(i, i) = hB0(i, i) - fermi%energy_list(1)
+      hB0(i, i) = hB0(i, i) - fermi_energy_list(1)
     end do
 
     if (tran%write_ht) then
@@ -3289,8 +3291,8 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi, k_points, num_wann, tran, &
-                                    verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
+  subroutine tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi_energy_list, k_points, num_wann, &
+                                    tran, verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
                                     hR1, hr_one_dim, irvec_max, stdout, seedname)
@@ -3305,7 +3307,7 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_points_type, fermi_data_type, print_output_type
+    use w90_param_types, only: k_points_type, print_output_type
     use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
@@ -3336,7 +3338,7 @@ contains
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(k_points_type), intent(in) :: k_points
     type(real_space_ham_type), intent(inout) :: rs_region
     type(print_output_type), intent(in) :: verbose
@@ -3348,13 +3350,16 @@ contains
 
     ! local variables
     integer                :: i, j, k, num_wann_cell_ll, file_unit, ierr, band_size
+    integer                :: fermi_n
     real(dp), allocatable  :: sub_block(:, :)
     real(dp)               :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
     if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
 
-    if (fermi%n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
+    fermi_n = 0
+    if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    if (fermi_n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
 
     allocate (hL0(tran%num_ll, tran%num_ll), stat=ierr)
@@ -3632,11 +3637,11 @@ contains
     !Subtract the Fermi energy from the diagonal elements of hC,hL0,hR0
     !
     do i = 1, tran%num_ll
-      hL0(i, i) = hL0(i, i) - fermi%energy_list(1)
-      hR0(i, i) = hR0(i, i) - fermi%energy_list(1)
+      hL0(i, i) = hL0(i, i) - fermi_energy_list(1)
+      hR0(i, i) = hR0(i, i) - fermi_energy_list(1)
     enddo
     do i = 1, num_wann - (2*tran%num_ll)
-      hC(i, i) = hC(i, i) - fermi%energy_list(1)
+      hC(i, i) = hC(i, i) - fermi_energy_list(1)
     enddo
     !
     !Define tran_num_** parameters that are used later in tran_lcr

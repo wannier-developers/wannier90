@@ -251,11 +251,12 @@ contains
 
   !===========================================================!
   subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
-                                          dis_window, system, fermi, num_bands, num_wann, eigval, &
-                                          mp_grid, real_lattice, recip_lattice, pw90_calcs, &
-                                          scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, kslice, &
-                                          dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                          boltz, eig_found, stdout, seedname, world)
+                                          dis_window, system, fermi_energy_list, num_bands, &
+                                          num_wann, eigval, mp_grid, real_lattice, recip_lattice, &
+                                          pw90_calcs, scissors_shift, effective_model, pw90_spin, &
+                                          pw90_ham, kpath, kslice, dos_data, berry, spin_hall, &
+                                          gyrotropic, geninterp, boltz, eig_found, stdout, &
+                                          seedname, world)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors
@@ -280,7 +281,7 @@ contains
     type(k_points_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(dis_manifold_type), intent(inout) :: dis_window
-    type(fermi_data_type), intent(inout) :: fermi
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -307,6 +308,7 @@ contains
 
     integer :: ierr
     integer :: iprintroot
+    integer :: fermi_n
     logical :: on_root = .false.
 
     if (mpirank(world) == 0) on_root = .true.
@@ -391,7 +393,11 @@ contains
     call comms_bcast(berry%kubo_smearing%type_index, 1, stdout, seedname, world)
     call comms_bcast(berry%kubo_eigval_max, 1, stdout, seedname, world)
     call comms_bcast(berry%kubo_nfreq, 1, stdout, seedname, world)
-    call comms_bcast(fermi%n, 1, stdout, seedname, world)
+    fermi_n = 0
+    if (on_root) then
+      if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    endif
+    call comms_bcast(fermi_n, 1, stdout, seedname, world)
     call comms_bcast(dos_data%energy_min, 1, stdout, seedname, world)
     call comms_bcast(dos_data%energy_max, 1, stdout, seedname, world)
     call comms_bcast(pw90_spin%kmesh_spacing, 1, stdout, seedname, world)
@@ -478,7 +484,7 @@ contains
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if (.not. on_root) then
-      allocate (fermi%energy_list(fermi%n), stat=ierr)
+      allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating fermi_energy_read in postw90_param_dist', stdout, seedname)
       allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
@@ -508,7 +514,7 @@ contains
       endif
     end if
 
-    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n, stdout, seedname, world)
+    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, world)
     call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq, stdout, seedname, world)
     call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands, stdout, seedname, world)
     call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq, stdout, seedname, world)

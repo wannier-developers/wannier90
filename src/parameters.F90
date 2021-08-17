@@ -170,14 +170,6 @@ module w90_param_types
     logical, allocatable :: lwindow(:, :)
   end type dis_manifold_type
 
-  ! plot, transport, postw90: common, wan_ham, spin, berry, gyrotropic, kpath, kslice
-  type fermi_data_type
-    ! REVIEW_2021-07-22: can remove n for the same reason as num_exclude_bands (see above).
-    ! REVIEW_2021-07-22: Then fermi_energy_list can be a standalone variable.
-    integer :: n
-    real(kind=dp), allocatable :: energy_list(:)
-  end type fermi_data_type
-
   ! Atom sites - often used in the write_* routines
   ! hamiltonian, wannierise, plot, transport, wannier_lib
   type atom_data_type
@@ -537,11 +529,11 @@ contains
     endif
   end subroutine param_read_kpath
 
-  subroutine param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
+  subroutine param_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(out) :: found_fermi_energy
-    type(fermi_data_type), intent(out) :: fermi
+    real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -550,15 +542,15 @@ contains
     real(kind=dp) :: fermi_energy_min
     real(kind=dp) :: fermi_energy_max
     real(kind=dp) :: fermi_energy_step
-    integer :: i, ierr
+    integer :: i, ierr, n
     logical :: found
 
-    fermi%n = 0
+    n = 0
     found_fermi_energy = .false.
     call param_get_keyword(stdout, seedname, 'fermi_energy', found, r_value=fermi_energy)
     if (found) then
       found_fermi_energy = .true.
-      fermi%n = 1
+      n = 1
     endif
     !
     fermi_energy_scan = .false.
@@ -577,23 +569,23 @@ contains
                              r_value=fermi_energy_step)
       if (found .and. fermi_energy_step <= 0.0_dp) call io_error( &
         'Error: fermi_energy_step must be positive', stdout, seedname)
-      fermi%n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
+      n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
     endif
     !
     if (found_fermi_energy) then
-      if (allocated(fermi%energy_list)) deallocate (fermi%energy_list)
-      allocate (fermi%energy_list(1), stat=ierr)
-      fermi%energy_list(1) = fermi_energy
+      if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
+      allocate (fermi_energy_list(1), stat=ierr)
+      fermi_energy_list(1) = fermi_energy
     elseif (fermi_energy_scan) then
-      if (fermi%n .eq. 1) then
+      if (n .eq. 1) then
         fermi_energy_step = 0.0_dp
       else
-        fermi_energy_step = (fermi_energy_max - fermi_energy_min)/real(fermi%n - 1, dp)
+        fermi_energy_step = (fermi_energy_max - fermi_energy_min)/real(n - 1, dp)
       endif
-      if (allocated(fermi%energy_list)) deallocate (fermi%energy_list)
-      allocate (fermi%energy_list(fermi%n), stat=ierr)
-      do i = 1, fermi%n
-        fermi%energy_list(i) = fermi_energy_min + (i - 1)*fermi_energy_step
+      if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
+      allocate (fermi_energy_list(n), stat=ierr)
+      do i = 1, n
+        fermi_energy_list(i) = fermi_energy_min + (i - 1)*fermi_energy_step
       enddo
 !!    elseif(nfermi==0) then
 !!        ! This happens when both found_fermi_energy=.false. and
@@ -604,9 +596,9 @@ contains
 !! AAM_2017-03-27: if nfermi is zero (ie, fermi_energy* parameters are not set in input file)
 !! then allocate fermi_energy_list with length 1 and set to zero as default.
     else
-      if (allocated(fermi%energy_list)) deallocate (fermi%energy_list)
-      allocate (fermi%energy_list(1), stat=ierr)
-      fermi%energy_list(1) = 0.0_dp
+      if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
+      allocate (fermi_energy_list(1), stat=ierr)
+      fermi_energy_list(1) = 0.0_dp
     endif
     if (ierr /= 0) call io_error( &
       'Error allocating fermi_energy_list in param_read', stdout, seedname)

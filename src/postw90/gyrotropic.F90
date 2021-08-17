@@ -57,10 +57,10 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main(berry, dis_window, fermi, gyrotropic, kmesh_info, k_points, &
-                             physics, postw90_oper, pw90_ham, rs_region, system, verbose, &
-                             wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, &
-                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+  subroutine gyrotropic_main(berry, dis_window, fermi_energy_list, gyrotropic, kmesh_info, &
+                             k_points, physics, postw90_oper, pw90_ham, rs_region, system, &
+                             verbose, wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, &
+                             SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -82,7 +82,7 @@ contains
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
-      kmesh_info_type, fermi_data_type, wannier_data_type, ws_region_type, w90_system_type
+      kmesh_info_type, wannier_data_type, ws_region_type, w90_system_type
     use w90_utility, only: utility_det3
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -92,7 +92,7 @@ contains
     ! arguments
     type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(k_points_type), intent(in) :: k_points
@@ -144,13 +144,14 @@ contains
     real(kind=dp)     :: kweight, kpt(3), &
                          db1, db2, db3, fac
     integer           :: loop_x, loop_y, loop_z, loop_xyz
+    integer           :: fermi_n
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
     integer :: my_node_id, num_nodes
     my_node_id = mpirank(comm)
     num_nodes = mpisize(comm)
 
-    if (fermi%n == 0) call io_error( &
+    if (.not. allocated(fermi_energy_list)) call io_error( &
       'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
 
     if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
@@ -218,6 +219,8 @@ contains
                     seedname, stdout, comm)
     endif
 
+    ! not allocated was tested at start of routine
+    fermi_n = size(fermi_energy_list)
     if (eval_K) then
       call get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
                     scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
@@ -225,39 +228,39 @@ contains
       call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
                     eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
-      allocate (gyro_K_orb(3, 3, fermi%n))
+      allocate (gyro_K_orb(3, 3, fermi_n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
-        allocate (gyro_K_spn(3, 3, fermi%n))
+        allocate (gyro_K_spn(3, 3, fermi_n))
         gyro_K_spn = 0.0_dp
       endif
     endif
 
     if (eval_D) then
-      allocate (gyro_D(3, 3, fermi%n))
+      allocate (gyro_D(3, 3, fermi_n))
       gyro_D = 0.0_dp
     endif
 
     if (eval_DOS) then
-      allocate (gyro_DOS(fermi%n))
+      allocate (gyro_DOS(fermi_n))
       gyro_DOS = 0.0_dp
     endif
 
     if (eval_C) then
-      allocate (gyro_C(3, 3, fermi%n))
+      allocate (gyro_C(3, 3, fermi_n))
       gyro_C = 0.0_dp
     endif
 
     if (eval_Dw) then
-      allocate (gyro_Dw(3, 3, fermi%n, gyrotropic%nfreq))
+      allocate (gyro_Dw(3, 3, fermi_n, gyrotropic%nfreq))
       gyro_Dw = 0.0_dp
     endif
 
     if (eval_NOA) then
-      allocate (gyro_NOA_orb(3, 3, fermi%n, gyrotropic%nfreq))
+      allocate (gyro_NOA_orb(3, 3, fermi_n, gyrotropic%nfreq))
       gyro_NOA_orb = 0.0_dp
       if (eval_spn) then
-        allocate (gyro_NOA_spn(3, 3, fermi%n, gyrotropic%nfreq))
+        allocate (gyro_NOA_spn(3, 3, fermi_n, gyrotropic%nfreq))
         gyro_NOA_spn = 0.0_dp
       endif
     endif
@@ -332,7 +335,7 @@ contains
                                  kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, verbose, &
-                                 fermi, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                                 fermi_energy_list, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                  gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
                                  seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
@@ -342,28 +345,28 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, &
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, &
                                       seedname, comm)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi_n*gyrotropic%nfreq, 'SUM', stdout, &
                         seedname, comm)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_DOS(1), fermi_n, 'SUM', stdout, seedname, comm)
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout, &
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi_n*gyrotropic%nfreq, 'SUM', stdout, &
                         seedname, comm)
-      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, &
+      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi_n*gyrotropic%nfreq, &
                                       'SUM', stdout, seedname, comm)
     endif
 
@@ -395,7 +398,7 @@ contains
           f_out_name_tmp = 'K_spin'
           units_tmp = "Ampere"
           comment_tmp = "spin part of the K tensor -- Eq. 3 of TAS17"
-          call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+          call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                           arrEf=gyro_K_spn, units=units_tmp, comment=comment_tmp)
         endif  ! eval_K && eval_spin
 
@@ -418,7 +421,7 @@ contains
         f_out_name_tmp = 'K_orb'
         units_tmp = "Ampere"
         comment_tmp = "orbital part of the K tensor -- Eq. 3 of TAS17"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEf=gyro_K_orb, units=units_tmp, comment=comment_tmp)
       endif ! eval_K
 
@@ -429,7 +432,7 @@ contains
         f_out_name_tmp = 'D'
         units_tmp = "dimensionless"
         comment_tmp = "the D tensor -- Eq. 2 of TAS17"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEf=gyro_D, units=units_tmp, comment=comment_tmp)
       endif
 
@@ -440,7 +443,7 @@ contains
         f_out_name_tmp = 'tildeD'
         units_tmp = "dimensionless"
         comment_tmp = "the tildeD tensor -- Eq. 12 of TAS17"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEfW=gyro_Dw, units=units_tmp, comment=comment_tmp)
       endif
 
@@ -462,7 +465,7 @@ contains
         f_out_name_tmp = 'C'
         units_tmp = "Ampere/cm"
         comment_tmp = "the C tensor -- Eq. B6 of TAS17"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEf=gyro_C, units=units_tmp, comment=comment_tmp)
       endif
 
@@ -478,7 +481,7 @@ contains
         f_out_name_tmp = 'NOA_orb'
         units_tmp = "Ang"
         comment_tmp = "the tensor $gamma_{abc}^{orb}$ (Eq. C12,C14 of TAS17)"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEfW=gyro_NOA_orb, units=units_tmp, comment=comment_tmp, &
                                         symmetrize=.false.)
 
@@ -495,7 +498,7 @@ contains
           f_out_name_tmp = 'NOA_spin'
           units_tmp = "Ang"
           comment_tmp = "the tensor $gamma_{abc}^{spin}$ (Eq. C12,C15 of TAS17)"
-          call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+          call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                           arrEfW=gyro_NOA_spn, units=units_tmp, &
                                           comment=comment_tmp, symmetrize=.false.)
         endif
@@ -510,7 +513,7 @@ contains
         f_out_name_tmp = 'DOS'
         units_tmp = "eV^{-1}.Ang^{-3}"
         comment_tmp = "density of states"
-        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name_tmp, &
+        call gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, f_out_name_tmp, &
                                         arrEf1d=gyro_DOS, units=units_tmp, comment=comment_tmp)
       endif
 
@@ -521,7 +524,7 @@ contains
   subroutine gyrotropic_get_k_list(rs_region, num_valence_bands, have_disentangled, kpt, kweight, &
                                    gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, gyro_DOS, &
                                    gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, eval_NOA, &
-                                   eval_spn, eval_C, eval_dos, num_wann, verbose, fermi, &
+                                   eval_spn, eval_C, eval_dos, num_wann, verbose, fermi_energy_list, &
                                    wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
                                    gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
@@ -561,7 +564,7 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
-      wannier_data_type, fermi_data_type, ws_region_type
+      wannier_data_type, ws_region_type
     use w90_postw90_common, only: wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
@@ -573,7 +576,7 @@ contains
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(k_points_type), intent(in) :: k_points
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
@@ -624,7 +627,7 @@ contains
 
     real(kind=dp), allocatable :: curv_w_nk(:, :, :)
 
-    integer          :: i, j, n, n1, ifermi
+    integer          :: i, j, n, n1, ifermi, fermi_n
     real(kind=dp)    :: delta, occ(num_wann), &
                         eig(num_wann), del_eig(num_wann, 3), &
                         S(num_wann, 3), eta_smr, arg, &
@@ -677,9 +680,10 @@ contains
         if (eig(n + 1) - eig(n) <= gyrotropic%degen_thresh) cycle
       endif
       !---------------------------------------------------
+      fermi_n = size(fermi_energy_list)
       got_orb_n = .false.
-      do ifermi = 1, fermi%n
-        arg = (eig(n) - fermi%energy_list(ifermi))/eta_smr
+      do ifermi = 1, fermi_n
+        arg = (eig(n) - fermi_energy_list(ifermi))/eta_smr
         !
         ! To save time: far from the Fermi surface, negligible contribution
         !
@@ -701,12 +705,13 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imfgh_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
-                                       ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
-                                       v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                       scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                       num_valence_bands, effective_model, have_disentangled, &
-                                       seedname, stdout, comm, imf_k, img_k, imh_k, occ)
+            call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, &
+                                       verbose, wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, &
+                                       HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
+                                       recip_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                       num_kpts, num_wann, num_valence_bands, effective_model, &
+                                       have_disentangled, seedname, stdout, comm, imf_k, img_k, &
+                                       imh_k, occ)
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -715,12 +720,12 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
-                                     ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
-                                     v_matrix, eigval, kpt, real_lattice, recip_lattice, imf_k, &
-                                     scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                     num_valence_bands, effective_model, have_disentangled, &
-                                     seedname, stdout, comm, occ)
+            call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+                                     wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
+                                     u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                     imf_k, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                     num_wann, num_valence_bands, effective_model, &
+                                     have_disentangled, seedname, stdout, comm, occ)
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo
@@ -760,12 +765,12 @@ contains
     if (eval_NOA) then
       if (eval_spn) then
         call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
                                   recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R, gyro_NOA_spn)
       else
         call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
                                   recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R)
       endif
@@ -820,7 +825,7 @@ contains
   end subroutine gyrotropic_get_curv_w_k
 
   subroutine gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, verbose, fermi, wann_data, real_lattice, &
+                                  num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
                                   recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R, gyro_NOA_spn)
     !====================================================================!
@@ -845,7 +850,7 @@ contains
     use pw90_parameters, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
-    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, ws_region_type
+    use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
@@ -854,7 +859,7 @@ contains
     implicit none
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -902,13 +907,13 @@ contains
       enddo
     endif
 
-    do ifermi = 1, fermi%n
+    do ifermi = 1, size(fermi_energy_list)
 
       num_occ = 0
       num_unocc = 0
       do n1 = 1, gyrotropic%num_bands
         n = gyrotropic%band_list(n1)
-        if (eig(n) < fermi%energy_list(ifermi)) then
+        if (eig(n) < fermi_energy_list(ifermi)) then
           num_occ = num_occ + 1
           occ_list(num_occ) = n
         elseif (eig(n) < gyrotropic%eigval_max) then
@@ -920,14 +925,14 @@ contains
       if (num_occ == 0) then
         if (verbose%iprint .ge. 2) &
           write (stdout, *) "WARNING no occupied bands included in the calculation for kpt=", &
-          kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
+          kpt, ", EF[", ifermi, "]=", fermi_energy_list(ifermi), "eV"
         cycle
       endif
 
       if (num_unocc == 0) then
         if (verbose%iprint .ge. 2) &
           write (stdout, *) "WARNING no unoccupied bands included in the calculation for kpt=", &
-          kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
+          kpt, ", EF[", ifermi, "]=", fermi_energy_list(ifermi), "eV"
         cycle
       endif
 
@@ -1064,16 +1069,16 @@ contains
 
   end subroutine gyrotropic_get_NOA_Bnl_spin
 
-  subroutine gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi, f_out_name, arrEf, &
-                                        arrEF1D, arrEfW, units, comment, symmetrize)
+  subroutine gyrotropic_outprint_tensor(stdout, seedname, gyrotropic, fermi_energy_list, &
+                                        f_out_name, arrEf, arrEF1D, arrEfW, units, comment, &
+                                        symmetrize)
     use pw90_parameters, only: pw90_gyrotropic_type
-    use w90_param_types, only: fermi_data_type
     use w90_io, only: io_file_unit
 
     implicit none
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_gyrotropic_type), intent(in) :: gyrotropic
 
     integer, intent(in) :: stdout
@@ -1090,7 +1095,7 @@ contains
 
     ! local variables
     character(len=120)  :: file_name
-    integer             :: i, file_unit
+    integer             :: i, file_unit, fermi_n
     logical             :: lsym
 
     lsym = .true.
@@ -1107,31 +1112,33 @@ contains
     if (present(comment)) write (file_unit, *) "#"//trim(comment)
     if (present(units)) write (file_unit, *) "# in units of [ "//trim(units)//" ] "
 
+    fermi_n = size(fermi_energy_list)
     if (present(arrEf)) then
-      call gyrotropic_outprint_tensor_w(fermi, file_unit, 0.0_dp, arr33N=arrEf, symmetrize=lsym)
+      call gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, 0.0_dp, arr33N=arrEf, symmetrize=lsym)
     elseif (present(arrEfW)) then
       do i = 1, gyrotropic%nfreq
-        call gyrotropic_outprint_tensor_w(fermi, file_unit, real(gyrotropic%freq_list(i)), &
+        call gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, real(gyrotropic%freq_list(i)), &
                                           arr33N=arrEfW(:, :, :, i), symmetrize=lsym)
       enddo
     elseif (present(arrEf1D)) then
-      call gyrotropic_outprint_tensor_w(fermi, file_unit, 0.0_dp, arrN=arrEf1D)
+      call gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, 0.0_dp, arrN=arrEf1D)
     endif
 
     close (file_unit)
 
   end subroutine gyrotropic_outprint_tensor
 
-  subroutine gyrotropic_outprint_tensor_w(fermi, file_unit, omega, arr33N, arrN, symmetrize)
-    use w90_param_types, only: fermi_data_type
+  subroutine gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, omega, arr33N, &
+                                          arrN, symmetrize)
 
     implicit none
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
 
     integer, intent(in) :: file_unit
     real(kind=dp), intent(in) :: omega
+    integer, intent(in) :: fermi_n
     real(kind=dp), optional, intent(in) :: arr33N(:, :, :)
     real(kind=dp), optional, intent(in) :: arrN(:)
 
@@ -1141,9 +1148,9 @@ contains
     logical, optional, intent(in) :: symmetrize
 
     ! local variables
-    real(kind=dp) ::  xx(fermi%n), yy(fermi%n), zz(fermi%n), &
-                     xy(fermi%n), xz(fermi%n), yz(fermi%n), &
-                     x(fermi%n), y(fermi%n), z(fermi%n)
+    real(kind=dp) ::  xx(fermi_n), yy(fermi_n), zz(fermi_n), &
+                     xy(fermi_n), xz(fermi_n), yz(fermi_n), &
+                     x(fermi_n), y(fermi_n), z(fermi_n)
     integer :: i
     logical :: lsym
 
@@ -1186,15 +1193,15 @@ contains
         write (file_unit, '(11a15)') '# EFERMI(eV)', "omega(eV)", 'xx', 'yy', 'zz', 'xy', 'xz', 'yz', 'zy', 'xz', 'yx'
       endif
 
-      do i = 1, fermi%n
-        write (file_unit, '(11E15.6)') fermi%energy_list(i), omega, xx(i), yy(i), zz(i), xy(i), xz(i), yz(i), x(i), y(i), z(i)
+      do i = 1, fermi_n
+        write (file_unit, '(11E15.6)') fermi_energy_list(i), omega, xx(i), yy(i), zz(i), xy(i), xz(i), yz(i), x(i), y(i), z(i)
       enddo
     endif
 
     if (present(arrN)) then
       write (file_unit, '(2a15)') '# EFERMI(eV) '
-      do i = 1, fermi%n
-        write (file_unit, '(11E15.6)') fermi%energy_list(i), arrN(i)
+      do i = 1, fermi_n
+        write (file_unit, '(11E15.6)') fermi_energy_list(i), arrN(i)
       enddo
 
     endif

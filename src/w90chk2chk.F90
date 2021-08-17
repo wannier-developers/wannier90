@@ -30,7 +30,6 @@ module w90chk_parameters
   type(k_points_type), save :: k_points
   integer, save :: num_kpts
   type(dis_manifold_type), save :: dis_window
-  type(fermi_data_type), save :: fermi
   type(atom_data_type), save :: atoms
   logical, save :: have_disentangled
   integer, save :: num_exclude_bands

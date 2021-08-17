@@ -246,7 +246,7 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, fermi_data_type, &
+    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, &
     atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, ws_region_type
   use w90_param_methods
   use pw90_parameters
@@ -286,8 +286,8 @@ module pw90_param_methods
 contains
 
   subroutine param_postw90_read(rs_region, system, exclude_bands, verbose, wann_data, &
-                                kmesh_data, k_points, num_kpts, dis_window, fermi, atoms, &
-                                num_bands, num_wann, eigval, mp_grid, real_lattice, &
+                                kmesh_data, k_points, num_kpts, dis_window, fermi_energy_list, &
+                                atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, scissors_shift, effective_model, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
@@ -312,7 +312,7 @@ contains
     type(dis_manifold_type), intent(inout) :: dis_window
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(fermi_data_type), intent(inout) :: fermi
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: kpath
@@ -375,7 +375,7 @@ contains
     call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
     call param_read_system(library, system, stdout, seedname)
     call param_read_kpath(library, spec_points, ok, .false., stdout, seedname)
-    call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
+    call param_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
     call param_read_kslice(pw90_calcs%kslice, kslice, stdout, seedname)
     call param_read_smearing(write_data%smear, stdout, seedname)
     call param_read_scissors_shift(scissors_shift, stdout, seedname)
@@ -401,7 +401,7 @@ contains
     call param_read_geninterp(geninterp, stdout, seedname)
     call param_read_boltzwann(boltz, eigval, write_data%smear, pw90_calcs%boltzwann, &
                               write_data%boltz_2d_dir, stdout, seedname)
-    call param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi, eigval, write_data, &
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi_energy_list, eigval, write_data, &
                                  stdout, seedname)
     call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
@@ -1216,8 +1216,8 @@ contains
     ! [gp-end, Apr 12, 2012]
   end subroutine param_read_boltzwann
 
-  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi, eigval, &
-                                     write_data, stdout, seedname)
+  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi_energy_list, &
+                                     eigval, write_data, stdout, seedname)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
     implicit none
@@ -1226,7 +1226,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: dos_data
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     type(pw90_extra_io_type), intent(inout) :: write_data
     character(len=50), intent(in)  :: seedname
@@ -1258,7 +1258,7 @@ contains
                            r_value=write_data%kubo_freq_min)
     !
     if (dis_window%frozen_states) then
-      write_data%kubo_freq_max = dis_window%froz_max - fermi%energy_list(1) + 0.6667_dp
+      write_data%kubo_freq_max = dis_window%froz_max - fermi_energy_list(1) + 0.6667_dp
     elseif (allocated(eigval)) then
       write_data%kubo_freq_max = maxval(eigval) - minval(eigval) + 0.6667_dp
     else
@@ -1452,7 +1452,7 @@ contains
   end subroutine get_module_kmesh
 
 !===================================================================
-  subroutine param_postw90_write(param_input, system, fermi, atoms, num_wann, &
+  subroutine param_postw90_write(param_input, system, fermi_energy_list, atoms, num_wann, &
                                  real_lattice, recip_lattice, spec_points, &
                                  pw90_calcs, postw90_oper, scissors_shift, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
@@ -1468,7 +1468,7 @@ contains
     !data from parameters module
     type(print_output_type), intent(in) :: param_input
     type(w90_system_type), intent(in) :: system
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -1583,12 +1583,12 @@ contains
       endif
     end if
 
-    if (size(fermi%energy_list) == 1) then
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi%energy_list(1), '|'
+    if (size(fermi_energy_list) == 1) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi_energy_list(1), '|'
     else
-      write (stdout, '(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi%energy_list), &
-        ' steps from ', fermi%energy_list(1), ' to ', &
-        fermi%energy_list(size(fermi%energy_list)), ' eV', '|'
+      write (stdout, '(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi_energy_list), &
+        ' steps from ', fermi_energy_list(1), ' to ', &
+        fermi_energy_list(size(fermi_energy_list)), ' eV', '|'
     end if
 
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', param_input%iprint, '|'
@@ -1719,7 +1719,7 @@ contains
     if (pw90_calcs%kslice .or. param_input%iprint > 2) then
       write (stdout, '(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plot Properties along a slice in k-space  :', pw90_calcs%kslice, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi level used for slice                :', fermi%energy_list(1), '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi level used for slice                :', fermi_energy_list(1), '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Divisions along first kpath section       :', kpath%num_points, '|'
       if (index(kslice%task, 'fermi_lines') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :', '       T', '|'
@@ -1964,8 +1964,8 @@ contains
   end subroutine param_postw90_write
 
   subroutine param_pw90_dealloc(exclude_bands, wann_data, kmesh_data, k_points, dis_window, &
-                                fermi, atoms, eigval, spec_points, dos_data, berry, proj_input, &
-                                stdout, seedname)
+                                fermi_energy_list, atoms, eigval, spec_points, dos_data, berry, &
+                                proj_input, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -1976,7 +1976,7 @@ contains
     type(proj_input_type), intent(inout) :: proj_input
     type(k_points_type), intent(inout) :: k_points
     type(dis_manifold_type), intent(inout) :: dis_window
-    type(fermi_data_type), intent(inout) :: fermi
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(kpoint_path_type), intent(inout) :: spec_points
@@ -1992,8 +1992,8 @@ contains
       deallocate (dos_data%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dos_project in param_pw90_dealloc', stdout, seedname)
     endif
-    if (allocated(fermi%energy_list)) then
-      deallocate (fermi%energy_list, stat=ierr)
+    if (allocated(fermi_energy_list)) then
+      deallocate (fermi_energy_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating fermi_energy_list in param_pw90_dealloc', stdout, seedname)
     endif
     if (allocated(berry%kubo_freq_list)) then

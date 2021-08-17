@@ -119,7 +119,7 @@ program wannier
   type(dis_spheres_type) :: dis_spheres
   type(dis_manifold_type) :: dis_window
   type(fermi_surface_plot_type) :: fermi_surface_data
-  type(fermi_data_type) :: fermi
+  real(kind=dp), allocatable :: fermi_energy_list(:)
   type(transport_type) :: tran
   type(atom_data_type) :: atoms
 
@@ -248,7 +248,7 @@ program wannier
     call io_date(cdate, ctime)
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
-    call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi, &
+    call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
                     fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                     plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
                     spec_points, system, tran, verbose, wann_data, wann_plot, write_data, &
@@ -285,7 +285,7 @@ program wannier
     else
       write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
     endif
-    call param_write(atoms, band_plot, dis_data, dis_spheres, fermi, fermi_surface_data, k_points, &
+    call param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, k_points, &
                      out_files, plot, wannierise, proj, input_proj, &
                      rs_region, select_proj, spec_points, tran, verbose, wann_data, wann_plot, &
                      write_data, w90_calcs, real_lattice, recip_lattice, symmetrize_eps, mp_grid, &
@@ -316,7 +316,7 @@ program wannier
   endif
 
   ! We now distribute the parameters to the other nodes
-  call param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi, &
+  call param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
                   fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                   plot, wannierise, wann_omega, input_proj, rs_region, system, tran, verbose, &
                   wann_data, wann_plot, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
@@ -464,7 +464,7 @@ program wannier
     ! I call the routine always; the if statements to decide if/what to plot are inside the function
     time2 = io_time()
 
-    call plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
+    call plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, kmesh_info, &
                    k_points, out_files, plot, rs_region, spec_points, verbose, &
                    wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, recip_lattice, wannier_centres_translated, &
@@ -481,7 +481,7 @@ program wannier
     if (w90_calcs%transport) then
       time2 = io_time()
 
-      call tran_main(atoms, dis_window, fermi, hmlg, k_points, out_files, &
+      call tran_main(atoms, dis_window, fermi_energy_list, hmlg, k_points, out_files, &
                      rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
                      u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                      wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &

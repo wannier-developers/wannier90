@@ -29,9 +29,9 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(dis_window, fermi, kdist, k_points, postw90_oper, pw90_spin, &
-                             rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
-                             u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+  subroutine spin_get_moment(dis_window, fermi_energy_list, kdist, k_points, postw90_oper, &
+                             pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
+                             SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
                              scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                              num_valence_bands, effective_model, have_disentangled, &
                              wanint_kpoint_file, seedname, stdout, comm)
@@ -46,7 +46,7 @@ contains
     use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
     use w90_io, only: io_error
     use pw90_parameters, only: pw90_spin_mod_type, pw90_oper_read_type
-    use w90_param_types, only: fermi_data_type, print_output_type, wannier_data_type, &
+    use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, k_points_type, ws_region_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
@@ -56,7 +56,7 @@ contains
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kpoint_dist_type), intent(in) :: kdist
     type(k_points_type), intent(in) :: k_points
     type(pw90_oper_read_type), intent(in) :: postw90_oper
@@ -88,6 +88,7 @@ contains
 
     ! local variables
     integer       :: loop_x, loop_y, loop_z, loop_tot
+    integer       :: fermi_n
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv
 
@@ -95,7 +96,9 @@ contains
 
     my_node_id = mpirank(comm); 
     num_nodes = mpisize(comm); 
-    if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
+    fermi_n = 0
+    if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    if (fermi_n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
     call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -129,7 +132,7 @@ contains
       do loop_tot = 1, kdist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kdist%int_kpts(:, loop_tot)
         kweight = kdist%weight(loop_tot)
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, rs_region, wann_data, &
+        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, rs_region, wann_data, &
                                real_lattice, recip_lattice, mp_grid, ws_distance, HH_R, SS_R, &
                                ws_vec, stdout, seedname)
         spn_all = spn_all + spn_k*kweight
@@ -148,7 +151,7 @@ contains
         kpt(1) = (real(loop_x, dp)/real(pw90_spin%kmesh(1), dp))
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%kmesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%kmesh(3), dp))
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, num_wann, rs_region, wann_data, &
+        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, rs_region, wann_data, &
                                real_lattice, recip_lattice, mp_grid, ws_distance, HH_R, SS_R, &
                                ws_vec, stdout, seedname)
         spn_all = spn_all + spn_k*kweight

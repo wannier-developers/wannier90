@@ -22,8 +22,8 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(atoms, band_plot, dis_window, fermi, fermi_surface_data, hmlg, kmesh_info, &
-                       k_points, out_files, plot, rs_region, spec_points, &
+  subroutine plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, &
+                       kmesh_info, k_points, out_files, plot, rs_region, spec_points, &
                        verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -38,9 +38,8 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
-    use w90_param_types, only: k_points_type, kmesh_info_type, &
-      wannier_data_type, atom_data_type, dis_manifold_type, fermi_data_type, &
-      kpoint_path_type, print_output_type, ws_region_type
+    use w90_param_types, only: k_points_type, kmesh_info_type, wannier_data_type, atom_data_type, &
+      dis_manifold_type, kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
       fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type
 
@@ -60,7 +59,7 @@ contains
     type(wannier_data_type), intent(in)          :: wann_data
     type(atom_data_type), intent(in)             :: atoms
     type(dis_manifold_type), intent(in)          :: dis_window
-    type(fermi_data_type), intent(in)            :: fermi
+    real(kind=dp), allocatable, intent(in)       :: fermi_energy_list(:)
     type(fermi_surface_plot_type), intent(in)    :: fermi_surface_data
     type(kpoint_path_type), intent(in)           :: spec_points
     type(ham_logical), intent(inout)             :: hmlg
@@ -144,7 +143,7 @@ contains
                                                             ws_distance, bands_num_spec_points, &
                                                             stdout, seedname)
       !
-      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, &
+      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, recip_lattice, &
                                                                 fermi_surface_data, num_wann, &
                                                                 ham_r, irvec, ndegen, nrpts, &
                                                                 verbose%timing_level, stdout, &
@@ -950,7 +949,7 @@ contains
   end subroutine plot_interpolate_bands
 
   !===========================================================!
-  subroutine plot_fermi_surface(fermi, recip_lattice, fermi_surface_data, num_wann, &
+  subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_data, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
     !===========================================================!
     !                                                           !
@@ -961,12 +960,11 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
-    use w90_param_types, only: fermi_data_type
     use wannier_param_types, only: fermi_surface_plot_type
 
     implicit none
 
-    type(fermi_data_type), intent(in)      :: fermi
+    real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_data
 
     integer, intent(in) :: nrpts
@@ -991,6 +989,7 @@ contains
     integer, allocatable :: iwork(:), ifail(:)
     integer              :: loop_x, loop_y, loop_z, INFO, ikp, i, j, ierr
     integer              :: irpt, nfound, npts_plot, loop_kpt, bxsf_unit
+    integer              :: fermi_n
     character(len=9)     :: cdate, ctime
     !
     if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, seedname)
@@ -999,7 +998,9 @@ contains
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
     write (stdout, *)
     !
-    if (fermi%n > 1) call io_error("Error in plot: nfermi>1. Set the fermi level " &
+    fermi_n = 0
+    if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    if (fermi_n > 1) call io_error("Error in plot: nfermi>1. Set the fermi level " &
                                    //"using the input parameter 'fermi_level'", stdout, seedname)
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
@@ -1068,7 +1069,7 @@ contains
     write (bxsf_unit, *) '      # Generated by the Wannier90 code http://www.wannier.org'
     write (bxsf_unit, *) '      # On ', cdate, ' at ', ctime
     write (bxsf_unit, *) '      #'
-    write (bxsf_unit, *) '      Fermi Energy:', fermi%energy_list(1)
+    write (bxsf_unit, *) '      Fermi Energy:', fermi_energy_list(1)
     write (bxsf_unit, *) ' END_INFO'
     write (bxsf_unit, *)
     write (bxsf_unit, *) ' BEGIN_BLOCK_BANDGRID_3D'

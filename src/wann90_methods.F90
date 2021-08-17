@@ -41,7 +41,7 @@ contains
 
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                        fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, wann_omega, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
@@ -81,7 +81,7 @@ contains
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
-    type(fermi_data_type), intent(inout) :: fermi
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     type(w90_system_type), intent(inout) :: system
@@ -159,7 +159,7 @@ contains
                                 stdout, seedname)
       call param_read_wann_plot(wann_plot, num_wann, w90_calcs%wannier_plot, stdout, seedname)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot, stdout, seedname)
-      call param_read_fermi_energy(found_fermi_energy, fermi, stdout, seedname)
+      call param_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
       call param_read_outfiles(out_files, num_kpts, system%num_valence_bands, &
                                disentanglement, gamma_only, stdout, seedname)
     endif
@@ -1184,7 +1184,7 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi, fermi_surface_data, &
+  subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, &
                          k_points, out_files, plot, wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
@@ -1211,7 +1211,7 @@ contains
     type(dis_control_type), intent(in) :: dis_data
     type(dis_spheres_type), intent(in) :: dis_spheres
     type(fermi_surface_plot_type), intent(in) :: fermi_surface_data
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atoms
     type(select_projection_type), intent(in) :: select_proj
@@ -1621,12 +1621,12 @@ contains
         rs_region%translation_centre_frac(2), ',', &
         rs_region%translation_centre_frac(3), '|'
 
-      if (size(fermi%energy_list) == 1) then
-        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi%energy_list(1), '|'
+      if (size(fermi_energy_list) == 1) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi_energy_list(1), '|'
       else
-        write (stdout, '(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi%energy_list), &
-          ' steps from ', fermi%energy_list(1), ' to ', &
-          fermi%energy_list(size(fermi%energy_list)), ' eV', '|'
+        write (stdout, '(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi_energy_list), &
+          ' steps from ', fermi_energy_list(1), ' to ', &
+          fermi_energy_list(size(fermi_energy_list)), ' eV', '|'
       end if
       !
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1652,7 +1652,6 @@ contains
     type(k_points_type), intent(inout) :: k_points
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
-    !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     type(kpoint_path_type), intent(inout) :: spec_points
     type(w90_extra_io_type), intent(inout) :: write_data
@@ -2062,8 +2061,8 @@ contains
 
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                        fermi, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                        plot, wannierise, wann_omega, proj_input, rs_region, system, &
+                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, &
+                        out_files, plot, wannierise, wann_omega, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
                         real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
                         num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
@@ -2100,7 +2099,7 @@ contains
     type(dis_control_type), intent(inout) :: dis_data
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
-    type(fermi_data_type), intent(inout) :: fermi
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     type(proj_input_type), intent(inout) :: proj_input
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
@@ -2135,7 +2134,7 @@ contains
     logical :: on_root = .false.
     integer :: ierr
     integer :: iprintroot !JJ
-    integer :: num_project, wann_plot_num, num_exclude_bands
+    integer :: num_project, wann_plot_num, num_exclude_bands, fermi_n
     logical :: disentanglement
 
     if (mpirank(comm) == 0) on_root = .true.
@@ -2319,7 +2318,11 @@ contains
     !call comms_bcast(berry%kubo_smr_index, 1)
     !call comms_bcast(berry%kubo_eigval_max, 1)
     !call comms_bcast(berry%kubo_nfreq, 1)
-    call comms_bcast(fermi%n, 1, stdout, seedname, comm)
+    fermi_n = 0
+    if (on_root) then
+      if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
+    endif
+    call comms_bcast(fermi_n, 1, stdout, seedname, comm)
     !call comms_bcast(dos_data%energy_min, 1)
     !call comms_bcast(dos_data%energy_max, 1)
     !call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
@@ -2480,7 +2483,7 @@ contains
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if (.not. on_root) then
-      allocate (fermi%energy_list(fermi%n), stat=ierr)
+      allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating fermi_energy_read in postw90_param_dist', stdout, seedname)
       !allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
@@ -2507,7 +2510,7 @@ contains
       !  'Error allocating gyrotropic_freq_list in postw90_param_dist')
     end if
 
-    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n, stdout, seedname, comm)
+    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, comm)
     !if (berry%kubo_nfreq > 0) call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
     !call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
     !call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)

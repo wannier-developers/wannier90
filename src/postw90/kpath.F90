@@ -40,12 +40,12 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(berry, dis_window, fermi, kmesh_info, kpath, k_points, postw90_oper, pw90_ham, &
-                    pw90_spin, rs_region, spec_points, spin_hall, verbose, wann_data, ws_distance, &
-                    ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, v_matrix, u_matrix, &
-                    bohr, eigval, real_lattice, recip_lattice, scissors_shift, mp_grid, num_wann, &
-                    num_bands, num_kpts, num_valence_bands, effective_model, have_disentangled, &
-                    seedname, stdout, comm)
+  subroutine k_path(berry, dis_window, fermi_energy_list, kmesh_info, kpath, k_points, &
+                    postw90_oper, pw90_ham, pw90_spin, rs_region, spec_points, spin_hall, verbose, &
+                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
+                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, &
+                    scissors_shift, mp_grid, fermi_n, num_wann, num_bands, num_kpts, &
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
     !! Main routine
 
@@ -55,9 +55,8 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
-    use w90_param_types, only: kpoint_path_type, fermi_data_type, print_output_type, &
-      wannier_data_type, dis_manifold_type, k_points_type, kmesh_info_type, &
-      ws_region_type
+    use w90_param_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
+      dis_manifold_type, k_points_type, kmesh_info_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, pw90_kpath_mod_type, &
       pw90_spin_mod_type, pw90_band_deriv_degen_type, pw90_oper_read_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
@@ -70,7 +69,7 @@ contains
     ! arguments
     type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(pw90_kpath_mod_type), intent(in) :: kpath
     type(k_points_type), intent(in) :: k_points
@@ -102,7 +101,7 @@ contains
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
+    integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, fermi_n
     integer, intent(in) :: stdout
 
     character(len=50), intent(in)  :: seedname
@@ -114,10 +113,10 @@ contains
                          total_pts, loop_i, dataunit, gnuunit, pyunit, &
                          my_num_pts
     real(kind=dp)     :: ymin, ymax, kpt(3), spn_k(num_wann), &
-                         imf_k_list(3, 3, fermi%n), img_k_list(3, 3, fermi%n), &
-                         imh_k_list(3, 3, fermi%n), Morb_k(3, 3), &
+                         imf_k_list(3, 3, fermi_n), img_k_list(3, 3, fermi_n), &
+                         imh_k_list(3, 3, fermi_n), Morb_k(3, 3), &
                          range, zmin, zmax
-    real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(fermi%n)
+    real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(fermi_n)
     real(kind=dp), allocatable :: kpath_len(:)
     logical           :: plot_bands, plot_curv, plot_morb, plot_shc
     character(len=120) :: file_name
@@ -159,16 +158,16 @@ contains
           'Error: Must use fixed smearing when plotting spin Hall conductivity', stdout, seedname)
       end if
       if (plot_shc) then
-        if (fermi%n == 0) then
+        if (fermi_n == 0) then
           call io_error('Error: must specify Fermi energy', stdout, seedname)
-        else if (fermi%n /= 1) then
+        else if (fermi_n /= 1) then
           call io_error('Error: kpath plot only accept one Fermi energy, ' &
                         //'use fermi_energy instead of fermi_energy_min', stdout, seedname)
         end if
       end if
     end if
 
-    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi, kpath, &
+    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, kpath, &
                            berry%curv_unit, stdout, seedname, comm)
 
     ! Set up the needed Wannier matrix elements
@@ -288,26 +287,27 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(berry, dis_window, fermi, k_points, pw90_ham, rs_region, &
-                                   spin_hall, verbose, wann_data, ws_distance, ws_vec, AA_R, HH_R, &
-                                   SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, kpt, &
-                                   real_lattice, recip_lattice, scissors_shift, mp_grid, &
-                                   num_bands, num_kpts, num_wann, num_valence_bands, &
-                                   effective_model, have_disentangled, seedname, stdout, comm, &
-                                   shc_k_band=shc_k_band)
+          call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+                                   rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
+                                   AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, &
+                                   eigval, kpt, real_lattice, recip_lattice, scissors_shift, &
+                                   mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
+                                   num_valence_bands, effective_model, have_disentangled, &
+                                   seedname, stdout, comm, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
-                                   ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
-                                   v_matrix, eigval, kpt, real_lattice, recip_lattice, &
-                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                   num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm, imf_k_list, img_k_list, imh_k_list)
+        call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+                                   wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
+                                   u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                   scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
+                                   num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                   img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
-                 - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
+                 - 2.0_dp*fermi_energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
         my_morb(loop_kpt, 1) = sum(Morb_k(:, 1))
         my_morb(loop_kpt, 2) = sum(Morb_k(:, 2))
@@ -316,12 +316,12 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(dis_window, fermi, k_points, rs_region, verbose, wann_data, &
-                                   ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
-                                   v_matrix, eigval, kpt, real_lattice, recip_lattice, imf_k_list, &
-                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                   num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm)
+          call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+                                   wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
+                                   u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                   imf_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                   num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, comm)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -329,12 +329,13 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(berry, dis_window, fermi, k_points, pw90_ham, rs_region, &
-                                 spin_hall, verbose, wann_data, ws_distance, ws_vec, AA_R, HH_R, &
-                                 SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, kpt, &
-                                 real_lattice, recip_lattice, scissors_shift, mp_grid, num_bands, &
-                                 num_kpts, num_wann, num_valence_bands, effective_model, &
-                                 have_disentangled, seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+                                 rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
+                                 AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
+                                 kpt, real_lattice, recip_lattice, scissors_shift, mp_grid, &
+                                 fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                 effective_model, have_disentangled, seedname, stdout, comm, &
+                                 shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt
@@ -875,7 +876,7 @@ contains
         write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
           "-bands.dat')"
         write (pyunit, '(a)') "x=data[:,0]"
-        write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi%energy_list(1)
+        write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
         if (kpath%bands_colour == 'spin' .or. kpath%bands_colour == 'shc') &
           write (pyunit, '(a)') "z=data[:,2]"
         if (kpath%bands_colour == 'shc') &
@@ -993,7 +994,7 @@ contains
           write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
             "-bands.dat')"
           write (pyunit, '(a)') "x=data[:,0]"
-          write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi%energy_list(1)
+          write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
           if (kpath%bands_colour == 'spin') write (pyunit, '(a)') "z=data[:,2]"
           if (kpath%bands_colour == 'shc') then
             write (pyunit, '(a)') "z=data[:,2]"
@@ -1080,16 +1081,15 @@ contains
   !===========================================================!
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
-  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi, kpath, &
-                               berry_curv_unit, stdout, seedname, comm)
+  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, &
+                               kpath, berry_curv_unit, stdout, seedname, comm)
 
     use pw90_parameters, only: pw90_kpath_mod_type
     use w90_comms, only: w90commtype, mpirank
     use w90_io, only: io_error
-    use w90_param_types, only: fermi_data_type
 
     ! arguments
-    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_kpath_mod_type), intent(in) :: kpath
     type(w90commtype), intent(in) :: comm
     integer, intent(in) :: stdout
@@ -1098,6 +1098,7 @@ contains
     logical, intent(in) :: plot_bands, plot_curv, plot_morb, plot_shc
 
     ! local variables
+    integer :: fermi_n
     logical :: on_root = .false.
     if (mpirank(comm) == 0) on_root = .true.
 
@@ -1117,19 +1118,21 @@ contains
           write (stdout, '(/,3x,a)') '* Energy bands in eV, coloured by SHC'
         end select
       end if
+      fermi_n = 0
+      if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
       if (plot_curv) then
         if (berry_curv_unit == 'ang2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
         else if (berry_curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
-        if (fermi%n /= 1) call io_error( &
+        if (fermi_n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=curv', stdout, seedname)
       end if
       if (plot_morb) then
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
-        if (fermi%n /= 1) call io_error( &
+        if (fermi_n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=morb', stdout, seedname)
       end if
       if (plot_shc) then
@@ -1140,7 +1143,7 @@ contains
           write (stdout, '(/,3x,a)') '* Berry curvature-like term for' &
             //' spin Hall conductivity in Bohr^2'
         end if
-        if (fermi%n /= 1) call io_error( &
+        if (fermi_n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=shc', stdout, seedname)
       end if
     end if ! on_root
