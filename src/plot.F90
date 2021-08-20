@@ -22,9 +22,9 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, &
-                       kmesh_info, k_points, out_files, plot, rs_region, spec_points, &
-                       verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, &
+  subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, hmlg, kmesh_info, &
+                       k_points, output_file, wvfn_read, real_space_ham, kpoint_path, &
+                       print_output, wannier_data, wannier_plot, ws_region, w90_calculation, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
@@ -46,22 +46,21 @@ contains
     implicit none
 
 !   passed variables
-    type(w90_calculation_type), intent(in)       :: w90_calcs
-    type(output_file_type), intent(in)           :: out_files
+    type(w90_calculation_type), intent(in)       :: w90_calculation
+    type(output_file_type), intent(in)           :: output_file
     type(k_points_type), intent(in)              :: k_points
-    type(real_space_ham_type), intent(inout)     :: rs_region
+    type(real_space_ham_type), intent(inout)     :: real_space_ham
     type(ws_region_type), intent(in)             :: ws_region
-    type(print_output_type), intent(in)          :: verbose
-    type(wvfn_read_type), intent(in)             :: plot
+    type(print_output_type), intent(in)          :: print_output
+    type(wvfn_read_type), intent(in)             :: wvfn_read
     type(band_plot_type), intent(in)             :: band_plot
-    type(wannier_plot_type), intent(in)          :: wann_plot
+    type(wannier_plot_type), intent(in)          :: wannier_plot
     type(kmesh_info_type), intent(in)            :: kmesh_info
-    type(wannier_data_type), intent(in)          :: wann_data
-    type(atom_data_type), intent(in)             :: atoms
-    type(dis_manifold_type), intent(in)          :: dis_window
-    real(kind=dp), allocatable, intent(in)       :: fermi_energy_list(:)
-    type(fermi_surface_plot_type), intent(in)    :: fermi_surface_data
-    type(kpoint_path_type), intent(in)           :: spec_points
+    type(wannier_data_type), intent(in)          :: wannier_data
+    type(atom_data_type), intent(in)             :: atom_data
+    type(dis_manifold_type), intent(in)          :: dis_manifold
+    type(fermi_surface_plot_type), intent(in)    :: fermi_surface_plot
+    type(kpoint_path_type), intent(in)           :: kpoint_path
     type(ham_logical), intent(inout)             :: hmlg
 
     integer, intent(inout)              :: rpt_origin
@@ -80,6 +79,7 @@ contains
     real(kind=dp), intent(in)                 :: eigval(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: bohr
+    real(kind=dp), allocatable, intent(in)       :: fermi_energy_list(:)
 
     complex(kind=dp), intent(in)                 :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
@@ -99,19 +99,19 @@ contains
     logical :: have_gamma
     type(ws_distance_type) :: ws_distance
 
-    if (verbose%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
     ! Print the header only if there is something to plot
-    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr .or. &
-        w90_calcs%wannier_plot .or. out_files%write_u_matrices .or. out_files%write_tb) then
+    if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. output_file%write_hr .or. &
+        w90_calculation%wannier_plot .or. output_file%write_u_matrices .or. output_file%write_tb) then
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, *)
     end if
 
-    if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr .or. &
-        out_files%write_tb) then
+    if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. output_file%write_hr .or. &
+        output_file%write_tb) then
       ! Check if the kmesh includes the gamma point
       have_gamma = .false.
       do nkp = 1, num_kpts
@@ -122,67 +122,66 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
                              seedname, transport_mode)
       !
-      call hamiltonian_get_hr(atoms, dis_window, hmlg, rs_region, verbose, ham_k, ham_r, &
+      call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              recip_lattice, wannier_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
       bands_num_spec_points = 0
-      if (allocated(spec_points%labels)) bands_num_spec_points = size(spec_points%labels)
+      if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
       !
-      if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
-                                                            spec_points, rs_region, ws_region, &
-                                                            verbose, recip_lattice, num_wann, &
-                                                            wann_data, ham_r, irvec, ndegen, &
-                                                            nrpts, wannier_centres_translated, &
-                                                            ws_distance, bands_num_spec_points, &
-                                                            stdout, seedname)
+      if (w90_calculation%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
+                                                                  kpoint_path, real_space_ham, ws_region, &
+                                                                  print_output, recip_lattice, num_wann, &
+                                                                  wannier_data, ham_r, irvec, ndegen, &
+                                                                  nrpts, wannier_centres_translated, &
+                                                                  ws_distance, bands_num_spec_points, stdout, seedname)
       !
-      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, recip_lattice, &
-                                                                fermi_surface_data, num_wann, &
-                                                                ham_r, irvec, ndegen, nrpts, &
-                                                                verbose%timing_level, stdout, &
-                                                                seedname)
+      if (w90_calculation%fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, recip_lattice, &
+                                                                      fermi_surface_plot, num_wann, &
+                                                                      ham_r, irvec, ndegen, nrpts, &
+                                                                      print_output%timing_level, stdout, &
+                                                                      seedname)
       !
-      if (out_files%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                        num_wann, verbose%timing_level, seedname, &
-                                                        stdout)
+      if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                          num_wann, print_output%timing_level, seedname, &
+                                                          stdout)
       !
-      if (out_files%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
-                                                          k_points%kpt_latt, irvec, nrpts, &
-                                                          num_kpts, num_wann, stdout, seedname)
-      if (out_files%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
-                                                        k_points%kpt_latt, real_lattice, irvec, &
-                                                        ndegen, nrpts, num_kpts, num_wann, &
-                                                        stdout, verbose%timing_level, seedname)
-      if (out_files%write_hr .or. out_files%write_rmn .or. out_files%write_tb) then
+      if (output_file%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
+                                                            k_points%kpt_latt, irvec, nrpts, &
+                                                            num_kpts, num_wann, stdout, seedname)
+      if (output_file%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
+                                                          k_points%kpt_latt, real_lattice, irvec, &
+                                                          ndegen, nrpts, num_kpts, num_wann, &
+                                                          stdout, print_output%timing_level, seedname)
+      if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            ws_region, num_wann, &
-                                                           wann_data%centres, real_lattice, &
+                                                           wannier_data%centres, real_lattice, &
                                                            recip_lattice, mp_grid, nrpts, irvec)
         call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
                           stdout, seedname)
       end if
     end if
 
-    if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, wann_plot, plot, wann_data, &
-                                                  verbose, u_matrix_opt, dis_window, real_lattice, &
-                                                  atoms, k_points, u_matrix, num_kpts, num_bands, &
-                                                  num_wann, have_disentangled, spinors, bohr, &
-                                                  stdout, seedname)
+    if (w90_calculation%wannier_plot) call plot_wannier(recip_lattice, wannier_plot, wvfn_read, wannier_data, &
+                                                        print_output, u_matrix_opt, dis_manifold, real_lattice, &
+                                                        atom_data, k_points, u_matrix, num_kpts, num_bands, &
+                                                        num_wann, have_disentangled, spinors, bohr, &
+                                                        stdout, seedname)
 
-    if (out_files%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
+    if (output_file%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
-    if (out_files%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
-                                                         have_disentangled, num_wann, num_kpts, &
-                                                         num_bands, seedname)
+    if (output_file%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
+                                                           have_disentangled, num_wann, num_kpts, &
+                                                           num_bands, seedname)
 
-    if (verbose%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
 
   end subroutine plot_main
 
@@ -191,8 +190,8 @@ contains
   !-----------------------------------!
 
   !============================================!
-  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, spec_points, rs_region, &
-                                    ws_region, verbose, recip_lattice, num_wann, wann_data, &
+  subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, real_space_ham, &
+                                    ws_region, print_output, recip_lattice, num_wann, wannier_data, &
                                     ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
                                     ws_distance, bands_num_spec_points, stdout, seedname)
     !============================================!
@@ -212,12 +211,13 @@ contains
 
     implicit none
 
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: real_space_ham
     type(ws_region_type), intent(in) :: ws_region
-    type(print_output_type), intent(in) :: verbose
+    type(print_output_type), intent(in) :: print_output
     type(band_plot_type), intent(in)      :: band_plot
-    type(wannier_data_type), intent(in)    :: wann_data
-    type(kpoint_path_type), intent(in) :: spec_points
+    type(wannier_data_type), intent(in)    :: wannier_data
+    type(kpoint_path_type), intent(in) :: kpoint_path
+    type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -230,7 +230,6 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    type(ws_distance_type), intent(inout) :: ws_distance
     character(len=50), intent(in)  :: seedname
 
     integer, allocatable :: irvec_cut(:, :)
@@ -268,7 +267,7 @@ contains
     character(len=10), allocatable  :: ctemp(:)
 
     !
-    if (verbose%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
     !
     time0 = io_time()
     call utility_metric(recip_lattice, recip_metric)
@@ -311,10 +310,10 @@ contains
     do i = 2, num_paths
       ! If either the coordinates are different or the label is different, compute again the point
       ! (it will end up at the same x coordinate)
-      if ((SUM((spec_points%points(:, (i - 1)*2) - &
-                spec_points%points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
-          (TRIM(spec_points%labels((i - 1)*2)) .ne. &
-           TRIM(spec_points%labels((i - 1)*2 + 1)))) then
+      if ((SUM((kpoint_path%points(:, (i - 1)*2) - &
+                kpoint_path%points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
+          (TRIM(kpoint_path%labels((i - 1)*2)) .ne. &
+           TRIM(kpoint_path%labels((i - 1)*2 + 1)))) then
         kpath_print_first_point(i) = .true.
       end if
     enddo
@@ -326,13 +325,13 @@ contains
     end do
 
     do loop_spts = 1, num_paths
-      vec = spec_points%points(:, 2*loop_spts) - &
-            spec_points%points(:, 2*loop_spts - 1)
+      vec = kpoint_path%points(:, 2*loop_spts) - &
+            kpoint_path%points(:, 2*loop_spts - 1)
       kpath_len(loop_spts) = sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       if (loop_spts == 1) then
-        kpath_pts(loop_spts) = spec_points%num_points_first_segment
+        kpath_pts(loop_spts) = kpoint_path%num_points_first_segment
       else
-        kpath_pts(loop_spts) = nint(real(spec_points%num_points_first_segment, dp) &
+        kpath_pts(loop_spts) = nint(real(kpoint_path%num_points_first_segment, dp) &
                                     *kpath_len(loop_spts)/kpath_len(1))
         ! At least 1 point
         !if (kpath_pts(loop_spts) .eq. 0) kpath_pts(loop_spts) = 1
@@ -374,7 +373,7 @@ contains
           ! on the x axis, there was a jump in the path here.
           xval(counter) = xval(counter - 1)
         endif
-        plot_kpoint(:, counter) = spec_points%points(:, 2*loop_spts - 1)
+        plot_kpoint(:, counter) = kpoint_path%points(:, 2*loop_spts - 1)
 
         idx_special_points(2*loop_spts - 1) = counter
         xval_special_points(2*loop_spts - 1) = xval(counter)
@@ -391,16 +390,16 @@ contains
         else
           xval(counter) = xval(counter - 1) + kpath_len(loop_spts)/real(kpath_pts(loop_spts), dp)
         endif
-        plot_kpoint(:, counter) = spec_points%points(:, 2*loop_spts - 1) + &
-                                  (spec_points%points(:, 2*loop_spts) &
-                                   - spec_points%points(:, 2*loop_spts - 1))* &
+        plot_kpoint(:, counter) = kpoint_path%points(:, 2*loop_spts - 1) + &
+                                  (kpoint_path%points(:, 2*loop_spts) &
+                                   - kpoint_path%points(:, 2*loop_spts - 1))* &
                                   (real(loop_i, dp)/real(kpath_pts(loop_spts), dp))
       end do
       idx_special_points(2*loop_spts) = counter
       xval_special_points(2*loop_spts) = xval(counter)
     end do
     !xval(total_pts)=sum(kpath_len)
-    plot_kpoint(:, total_pts) = spec_points%points(:, bands_num_spec_points)
+    plot_kpoint(:, total_pts) = kpoint_path%points(:, bands_num_spec_points)
     !
     ! Write out the kpoints in the path
     !
@@ -420,7 +419,7 @@ contains
       if ((MOD(loop_spts, 2) .eq. 1) .and. &
           (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
       write (bndunit, '(a,3x,I10,3x,4f18.10)') &
-        spec_points%labels(loop_spts), &
+        kpoint_path%labels(loop_spts), &
         idx_special_points(loop_spts), &
         xval_special_points(loop_spts), &
         (plot_kpoint(loop_i, idx_special_points(loop_spts)), loop_i=1, 3)
@@ -430,7 +429,7 @@ contains
     ! Cut H matrix in real-space
     !
     if (index(band_plot%mode, 'cut') .ne. 0) then
-      call plot_cut_hr(band_plot, rs_region, real_lattice, mp_grid, num_wann, &
+      call plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
                        wannier_centres_translated, stdout)
     endif
     !
@@ -439,11 +438,11 @@ contains
     if (ws_region%use_ws_distance) then
       if (index(band_plot%mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
+                               wannier_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute=.true.)
       elseif (index(band_plot%mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wann_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
+                               wannier_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout, seedname)
@@ -539,13 +538,12 @@ contains
     emax = maxval(eig_int) + 1.0_dp
 
     if (index(band_plot%format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
-                                                                          spec_points, &
-                                                                          bands_num_spec_points, &
-                                                                          num_wann)
-    if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(spec_points, &
-                                                                           bands_num_spec_points, &
-                                                                           num_wann)
-
+                                                                               kpoint_path, &
+                                                                               bands_num_spec_points, &
+                                                                               num_wann)
+    if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(kpoint_path, &
+                                                                                bands_num_spec_points, &
+                                                                                num_wann)
     write (stdout, '(1x,a,f11.3,a)') &
       'Time to calculate interpolated band structure ', io_time() - time0, ' (sec)'
     write (stdout, *)
@@ -555,7 +553,7 @@ contains
     if (allocated(irvec_cut)) deallocate (irvec_cut, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands', stdout, seedname)
     !
-    if (verbose%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
     !
     if (allocated(idx_special_points)) deallocate (idx_special_points, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating idx_special_points in &
@@ -567,7 +565,7 @@ contains
   contains
 
     !============================================!
-    subroutine plot_cut_hr(band_plot, rs_region, real_lattice, mp_grid, num_wann, &
+    subroutine plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
                            wannier_centres_translated, stdout)
       !============================================!
       !
@@ -596,7 +594,7 @@ contains
 
       implicit none
 
-      type(real_space_ham_type), intent(in) :: rs_region
+      type(real_space_ham_type), intent(in) :: real_space_ham
       type(band_plot_type), intent(in) :: band_plot
 
       real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
@@ -620,13 +618,13 @@ contains
 
       irvec_max = maxval(irvec, DIM=2) + 1
 
-      if (rs_region%system_dim .ne. 3) then
+      if (real_space_ham%system_dim .ne. 3) then
         ! Find one_dim_vec which is parallel to one_dim_dir
         ! two_dim_vec - the other two lattice vectors
         ! Along the confined directions, take only irvec=0
         j = 0
         do i = 1, 3
-          if (abs(abs(real_lattice(rs_region%one_dim_dir, i)) &
+          if (abs(abs(real_lattice(real_space_ham%one_dim_dir, i)) &
                   - sqrt(dot_product(real_lattice(:, i), real_lattice(:, i)))) .lt. eps8) then
             one_dim_vec = i
             j = j + 1
@@ -640,11 +638,11 @@ contains
             two_dim_vec(j) = i
           end if
         end do
-        if (rs_region%system_dim .eq. 1) then
+        if (real_space_ham%system_dim .eq. 1) then
           irvec_max(two_dim_vec(1)) = 0
           irvec_max(two_dim_vec(2)) = 0
         end if
-        if (rs_region%system_dim .eq. 2) irvec_max(one_dim_vec) = 0
+        if (real_space_ham%system_dim .eq. 2) irvec_max(one_dim_vec) = 0
       end if
 
       nrpts_cut = (2*irvec_max(1) + 1)*(2*irvec_max(2) + 1)*(2*irvec_max(3) + 1)
@@ -692,30 +690,30 @@ contains
 
       ! note: dist_cutoff_mode does not necessarily follow bands_plot_dim
       ! e.g. for 1-d system (bands_plot_dim=1) we can still apply 3-d dist_cutoff (dist_cutoff_mode=three_dim)
-      if (index(rs_region%dist_cutoff_mode, 'one_dim') > 0) then
+      if (index(real_space_ham%dist_cutoff_mode, 'one_dim') > 0) then
         do i = 1, num_wann
           do j = 1, num_wann
-            dist_ij_vec(rs_region%one_dim_dir) = &
-              wannier_centres_translated(rs_region%one_dim_dir, i) - &
-              wannier_centres_translated(rs_region%one_dim_dir, j)
+            dist_ij_vec(real_space_ham%one_dim_dir) = &
+              wannier_centres_translated(real_space_ham%one_dim_dir, i) - &
+              wannier_centres_translated(real_space_ham%one_dim_dir, j)
             do irpt = 1, nrpts_cut
-              dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) + &
-                                                shift_vec(rs_region%one_dim_dir, irpt)
-              dist = abs(dist_vec(rs_region%one_dim_dir))
-              if (dist .gt. rs_region%dist_cutoff) &
+              dist_vec(real_space_ham%one_dim_dir) = dist_ij_vec(real_space_ham%one_dim_dir) + &
+                                                     shift_vec(real_space_ham%one_dim_dir, irpt)
+              dist = abs(dist_vec(real_space_ham%one_dim_dir))
+              if (dist .gt. real_space_ham%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
         end do
-      else if (index(rs_region%dist_cutoff_mode, 'two_dim') > 0) then
+      else if (index(real_space_ham%dist_cutoff_mode, 'two_dim') > 0) then
         do i = 1, num_wann
           do j = 1, num_wann
             dist_ij_vec(:) = wannier_centres_translated(:, i) - wannier_centres_translated(:, j)
             do irpt = 1, nrpts_cut
               dist_vec(:) = dist_ij_vec(:) + shift_vec(:, irpt)
-              dist_vec(rs_region%one_dim_dir) = 0.0_dp
+              dist_vec(real_space_ham%one_dim_dir) = 0.0_dp
               dist = sqrt(dot_product(dist_vec, dist_vec))
-              if (dist .gt. rs_region%dist_cutoff) &
+              if (dist .gt. real_space_ham%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
@@ -727,7 +725,7 @@ contains
             do irpt = 1, nrpts_cut
               dist_vec(:) = dist_ij_vec(:) + shift_vec(:, irpt)
               dist = sqrt(dot_product(dist_vec, dist_vec))
-              if (dist .gt. rs_region%dist_cutoff) &
+              if (dist .gt. real_space_ham%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
             end do
           end do
@@ -737,7 +735,7 @@ contains
       do irpt = 1, nrpts_cut
         do i = 1, num_wann
           do j = 1, num_wann
-            if (abs(ham_r_cut(j, i, irpt)) .lt. rs_region%hr_cutoff) &
+            if (abs(ham_r_cut(j, i, irpt)) .lt. real_space_ham%hr_cutoff) &
               ham_r_cut(j, i, irpt) = cmplx_0
           end do
         end do
@@ -759,7 +757,7 @@ contains
     end subroutine plot_cut_hr
 
     !============================================!
-    subroutine plot_interpolate_gnuplot(band_plot, spec_points, bands_num_spec_points, num_wann)
+    subroutine plot_interpolate_gnuplot(band_plot, kpoint_path, bands_num_spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in gnuplot format
@@ -774,7 +772,7 @@ contains
       implicit none
 
       type(band_plot_type), intent(in) :: band_plot
-      type(kpoint_path_type), intent(in) :: spec_points
+      type(kpoint_path_type), intent(in) :: kpoint_path
 
       integer, intent(in) :: num_wann, bands_num_spec_points
       !
@@ -797,16 +795,16 @@ contains
       enddo
       close (bndunit)
       ! Axis labels
-      glabel(1) = TRIM(spec_points%labels(1))
+      glabel(1) = TRIM(kpoint_path%labels(1))
       do i = 2, num_paths
-        if (spec_points%labels(2*(i - 1)) /= spec_points%labels(2*(i - 1) + 1)) then
-          glabel(i) = TRIM(spec_points%labels(2*(i - 1)))//'|'// &
-                      TRIM(spec_points%labels(2*(i - 1) + 1))
+        if (kpoint_path%labels(2*(i - 1)) /= kpoint_path%labels(2*(i - 1) + 1)) then
+          glabel(i) = TRIM(kpoint_path%labels(2*(i - 1)))//'|'// &
+                      TRIM(kpoint_path%labels(2*(i - 1) + 1))
         else
-          glabel(i) = TRIM(spec_points%labels(2*(i - 1)))
+          glabel(i) = TRIM(kpoint_path%labels(2*(i - 1)))
         end if
       end do
-      glabel(num_paths + 1) = TRIM(spec_points%labels(2*num_paths))
+      glabel(num_paths + 1) = TRIM(kpoint_path%labels(2*num_paths))
       ! gnu file
       write (gnuunit, 701) xval(total_pts), emin, emax
       do i = 1, num_paths - 1
@@ -851,7 +849,7 @@ contains
 
     end subroutine plot_interpolate_gnuplot
 
-    subroutine plot_interpolate_xmgrace(spec_points, bands_num_spec_points, num_wann)
+    subroutine plot_interpolate_xmgrace(kpoint_path, bands_num_spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in Xmgrace format
@@ -863,7 +861,7 @@ contains
 
       implicit none
 
-      type(kpoint_path_type), intent(in) :: spec_points
+      type(kpoint_path_type), intent(in) :: kpoint_path
 
       integer, intent(in) :: num_wann, bands_num_spec_points
 
@@ -876,10 +874,10 @@ contains
       ! Switch any G to Gamma
 
       do i = 1, bands_num_spec_points
-        if (spec_points%labels(i) == 'G') then
+        if (kpoint_path%labels(i) == 'G') then
           ctemp(i) = '\xG\0'
         else
-          ctemp(i) = spec_points%labels(i)
+          ctemp(i) = kpoint_path%labels(i)
         end if
       end do
 
@@ -949,7 +947,7 @@ contains
   end subroutine plot_interpolate_bands
 
   !===========================================================!
-  subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_data, num_wann, &
+  subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
     !===========================================================!
     !                                                           !
@@ -965,7 +963,7 @@ contains
     implicit none
 
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
-    type(fermi_surface_plot_type), intent(in)   :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -1018,23 +1016,23 @@ contains
     allocate (ifail(num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ifail in plot_fermi_surface', stdout, seedname)
     !
-    npts_plot = (fermi_surface_data%num_points + 1)**3
+    npts_plot = (fermi_surface_plot%num_points + 1)**3
     allocate (eig_int(num_wann, npts_plot), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating eig_int in plot_fermi_surface', stdout, seedname)
     eig_int = 0.0_dp
     U_int = (0.0_dp, 0.0_dp)
     !
     ikp = 0
-    do loop_x = 1, fermi_surface_data%num_points + 1
-      do loop_y = 1, fermi_surface_data%num_points + 1
-        do loop_z = 1, fermi_surface_data%num_points + 1
+    do loop_x = 1, fermi_surface_plot%num_points + 1
+      do loop_y = 1, fermi_surface_plot%num_points + 1
+        do loop_z = 1, fermi_surface_plot%num_points + 1
           ikp = ikp + 1
 
           ham_kprm = cmplx_0
           do irpt = 1, nrpts
             rdotk = twopi*real((loop_x - 1)*irvec(1, irpt) + &
                                (loop_y - 1)*irvec(2, irpt) + (loop_z - 1)* &
-                               irvec(3, irpt), dp)/real(fermi_surface_data%num_points, dp)
+                               irvec(3, irpt), dp)/real(fermi_surface_plot%num_points, dp)
             fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(irpt), dp)
             ham_kprm = ham_kprm + fac*ham_r(:, :, irpt)
           end do
@@ -1076,8 +1074,8 @@ contains
     write (bxsf_unit, *) 'from_wannier_code'
     write (bxsf_unit, *) ' BEGIN_BANDGRID_3D_fermi'
     write (bxsf_unit, *) num_wann
-    write (bxsf_unit, *) fermi_surface_data%num_points + 1, fermi_surface_data%num_points + 1, &
-      fermi_surface_data%num_points + 1
+    write (bxsf_unit, *) fermi_surface_plot%num_points + 1, fermi_surface_plot%num_points + 1, &
+      fermi_surface_plot%num_points + 1
     write (bxsf_unit, *) '0.0 0.0 0.0'
     write (bxsf_unit, *) (recip_lattice(1, i), i=1, 3)
     write (bxsf_unit, *) (recip_lattice(2, i), i=1, 3)
@@ -1103,8 +1101,8 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, wann_plot, plot, wann_data, verbose, &
-                          u_matrix_opt, dis_window, real_lattice, atoms, k_points, u_matrix, &
+  subroutine plot_wannier(recip_lattice, wannier_plot, wvfn_read, wannier_data, print_output, &
+                          u_matrix_opt, dis_manifold, real_lattice, atom_data, k_points, u_matrix, &
                           num_kpts, num_bands, num_wann, have_disentangled, spinors, bohr, &
                           stdout, seedname)
     !============================================!
@@ -1125,51 +1123,24 @@ contains
     implicit none
 
     type(k_points_type), intent(in) :: k_points
-    type(print_output_type), intent(in) :: verbose
-    type(wannier_plot_type), intent(in) :: wann_plot
-    type(wvfn_read_type), intent(in) :: plot
-    type(wannier_data_type), intent(in) :: wann_data
-    type(atom_data_type), intent(in) :: atoms
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(print_output_type), intent(in) :: print_output
+    type(wannier_plot_type), intent(in) :: wannier_plot
+    type(wvfn_read_type), intent(in) :: wvfn_read
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(atom_data_type), intent(in) :: atom_data
+    type(dis_manifold_type), intent(in) :: dis_manifold
     logical, intent(in) :: spinors
     logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: bohr
 
-!   from w90_parameters
-!   integer, intent(in) :: iprint
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: wannier_plot_list(:)
-!   integer, intent(in) :: num_wannier_plot
-!   integer, intent(in) :: ndimwin(:)
-!   integer, intent(in) :: num_atoms
-!   integer, intent(in) :: atoms_species_num(:)
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: spin
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-!   integer, intent(in) :: ngs(3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   real(kind=dp), intent(in) :: wannier_plot_radius
-!   real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: wannier_plot_scale
-!   real(kind=dp), intent(in) :: atoms_pos_frac(:, :, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(in) :: kpt_latt(:, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-!   logical, intent(in) :: wannier_plot_spinor_phase
-!   logical, intent(in) :: spinors
-!   logical, intent(in) :: wvfn_formatted
-!   logical, intent(in) :: lwindow(:, :)
-!   logical, intent(in) :: have_disentangled
-!   character(len=20), intent(in) :: wannier_plot_spinor_mode
-!   character(len=20), intent(in) :: wannier_plot_format
-!   character(len=20), intent(in) :: wannier_plot_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   end w90_parameters
     character(len=50), intent(in)  :: seedname
 
     real(kind=dp) :: scalfac, tmax, tmaxx, x_0ang, y_0ang, z_0ang
@@ -1194,12 +1165,12 @@ contains
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
     !
-    if (verbose%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
     !
-    associate (ngs=>wann_plot%supercell)
+    associate (ngs=>wannier_plot%supercell)
       !
       if (.not. spinors) then
-        write (wfnname, 200) 1, plot%spin_channel
+        write (wfnname, 200) 1, wvfn_read%spin_channel
       else
         write (wfnname, 199) 1
       endif
@@ -1207,7 +1178,7 @@ contains
       if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout, seedname)
 
       file_unit = io_file_unit()
-      if (plot%formatted) then
+      if (wvfn_read%formatted) then
         open (unit=file_unit, file=wfnname, form='formatted')
         read (file_unit, *) ngx, ngy, ngz, nk, nbnd
       else
@@ -1219,8 +1190,8 @@ contains
 200   format('UNK', i5.5, '.', i1)
 199   format('UNK', i5.5, '.', 'NC')
 
-      if (allocated(wann_plot%list)) then
-        wann_plot_num = size(wann_plot%list)
+      if (allocated(wannier_plot%list)) then
+        wann_plot_num = size(wannier_plot%list)
       else
         wann_plot_num = 0
       endif
@@ -1238,14 +1209,14 @@ contains
       endif
       if (.not. spinors) then
         if (have_disentangled) then
-          allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_window%ndimwin)), stat=ierr)
+          allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_manifold%ndimwin)), stat=ierr)
           if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout, seedname)
         end if
         allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating r_wvfn in plot_wannier', stdout, seedname)
       else
         if (have_disentangled) then
-          allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_window%ndimwin), 2), stat=ierr)
+          allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_manifold%ndimwin), 2), stat=ierr)
           if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier', stdout, seedname)
         end if
         allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
@@ -1258,17 +1229,17 @@ contains
         inc_band = .true.
         num_inc = num_wann
         if (have_disentangled) then
-          inc_band(:) = dis_window%lwindow(:, loop_kpt)
-          num_inc = dis_window%ndimwin(loop_kpt)
+          inc_band(:) = dis_manifold%lwindow(:, loop_kpt)
+          num_inc = dis_manifold%ndimwin(loop_kpt)
         end if
 
         if (.not. spinors) then
-          write (wfnname, 200) loop_kpt, plot%spin_channel
+          write (wfnname, 200) loop_kpt, wvfn_read%spin_channel
         else
           write (wfnname, 199) loop_kpt
         endif
         file_unit = io_file_unit()
-        if (plot%formatted) then
+        if (wvfn_read%formatted) then
           open (unit=file_unit, file=wfnname, form='formatted')
           read (file_unit, *) ix, iy, iz, ik, nbnd
         else
@@ -1287,7 +1258,7 @@ contains
           counter = 1
           do loop_b = 1, num_bands
             if (counter > num_inc) exit
-            if (plot%formatted) then
+            if (wvfn_read%formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1314,7 +1285,7 @@ contains
           end do
         else
           do loop_b = 1, num_bands
-            if (plot%formatted) then
+            if (wvfn_read%formatted) then
               do nx = 1, ngx*ngy*ngz
                 read (file_unit, *) w_real, w_imag
                 if (.not. spinors) then
@@ -1390,30 +1361,30 @@ contains
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
               catmp = exp(twopi*cmplx_i*scalfac)
               do loop_b = 1, num_wann
-                do loop_w = 1, wann_plot_num
+                do loop_w = 1, wann_plot_num         
                   if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = &
                       wann_func(nxx, nyy, nzz, loop_w) + &
-                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
+                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
                   else
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
+                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                      u_matrix(loop_b, wann_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
+                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
                     if (loop_b == num_wann) then ! last loop
                       upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
                                       conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
                       dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
                                       conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
-                      if (wann_plot%spinor_phase) then
+                      if (wannier_plot%spinor_phase) then
                         upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
                         dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
                       else
                         upphase = 1.0_dp; dnphase = 1.0_dp
                       endif
-                      select case (wann_plot%spinor_mode)
+                      select case (wannier_plot%spinor_mode)
                       case ('total')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
                       case ('up')
@@ -1422,7 +1393,7 @@ contains
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
                         call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wann_plot%spinor_mode), stdout, seedname)
+                            &//trim(wannier_plot%spinor_mode), stdout, seedname)
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = &
                         wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
@@ -1441,7 +1412,7 @@ contains
         ! fix the global phase by setting the wannier to
         ! be real at the point where it has max. modulus
 
-        do loop_w = 1, wann_plot_num
+        do loop_w = 1, wann_plot_num 
           tmaxx = 0.0
           wmod = cmplx_1
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
@@ -1463,7 +1434,7 @@ contains
         !
         ! Check the 'reality' of the WF
         !
-        do loop_w = 1, wann_plot_num
+        do loop_w = 1, wann_plot_num 
           ratmax = 0.0_dp
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
             do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
@@ -1476,21 +1447,21 @@ contains
               end do
             end do
           end do
-          write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wann_plot%list(loop_w), &
+          write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wannier_plot%list(loop_w), &
             'Maximum Im/Re Ratio = ', ratmax
         end do
       endif !!!!!
       write (stdout, *) ' '
-      if (wann_plot%format .eq. 'xcrysden') then
+      if (wannier_plot%format .eq. 'xcrysden') then
         call internal_xsf_format()
-      elseif (wann_plot%format .eq. 'cube') then
-        call internal_cube_format(atoms, wann_data, plot, have_disentangled, &
+      elseif (wannier_plot%format .eq. 'cube') then
+        call internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
                                   recip_lattice, bohr)
       else
         call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
       endif
 
-      if (verbose%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
 
     end associate
 
@@ -1499,7 +1470,7 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format(atoms, wann_data, plot, have_disentangled, &
+    subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
                                     recip_lattice, bohr)
       !============================================!
       !                                            !
@@ -1515,21 +1486,12 @@ contains
 
       implicit none
 
-      type(wvfn_read_type), intent(in) :: plot
-      type(wannier_data_type), intent(in) :: wann_data
-      type(atom_data_type), intent(in) :: atoms
+      type(wvfn_read_type), intent(in) :: wvfn_read
+      type(wannier_data_type), intent(in) :: wannier_data
+      type(atom_data_type), intent(in) :: atom_data
       real(kind=dp), intent(in) :: bohr
 
-!     from w90_parameters
-!     integer, intent(in) :: num_atoms
-!     integer, intent(in) :: iprint
-!     real(kind=dp), intent(in) :: atoms_pos_frac(:, :, :)
-!     real(kind=dp), intent(in) :: wannier_plot_scale
-!     real(kind=dp), intent(in) :: wannier_centres(:, :)
-!     real(kind=dp), intent(in) :: wannier_plot_radius
       real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!     character(len=2), intent(in) :: atoms_symbol(:)
-!     end w90_parameters
       logical, intent(in) :: have_disentangled
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
@@ -1557,23 +1519,23 @@ contains
            & 'Ac', 'Th', 'Pa', 'U ', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
            & 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt'/)
 
-      associate (ngs=>wann_plot%supercell)
+      associate (ngs=>wannier_plot%supercell)
 
-        allocate (atomic_Z(atoms%num_species), stat=ierr)
+        allocate (atomic_Z(atom_data%num_species), stat=ierr)
         if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout, seedname)
 
         lmol = .false.
         lcrys = .false.
-        if (index(wann_plot%mode, 'mol') > 0) lmol = .true.      ! molecule mode
-        if (index(wann_plot%mode, 'crys') > 0) lcrys = .true.    ! crystal mode
+        if (index(wannier_plot%mode, 'mol') > 0) lmol = .true.      ! molecule mode
+        if (index(wannier_plot%mode, 'crys') > 0) lcrys = .true.    ! crystal mode
 
         val_Q = 1.0_dp ! dummy value for cube file
 
         ! Assign atomic numbers to species
         max_elements = size(periodic_table)
-        do isp = 1, atoms%num_species
+        do isp = 1, atom_data%num_species
           do iname = 1, max_elements
-            if (atoms%symbol(isp) .eq. periodic_table(iname)) then
+            if (atom_data%symbol(isp) .eq. periodic_table(iname)) then
               atomic_Z(isp) = iname
               exit
             endif
@@ -1597,30 +1559,30 @@ contains
 
         ! Find "centre of mass" of atomic positions (in fractional coordinates)
         comf(:) = 0.0_dp
-        do isp = 1, atoms%num_species
-          do iat = 1, atoms%species_num(isp)
-            comf(:) = comf(:) + atoms%pos_frac(:, iat, isp)
+        do isp = 1, atom_data%num_species
+          do iat = 1, atom_data%species_num(isp)
+            comf(:) = comf(:) + atom_data%pos_frac(:, iat, isp)
           enddo
         enddo
-        comf(:) = comf(:)/atoms%num_atoms
+        comf(:) = comf(:)/atom_data%num_atoms
 
         ! Loop over WFs
         do loop_w = 1, wann_plot_num
 
-          wann_index = wann_plot%list(loop_w)
+          wann_index = wannier_plot%list(loop_w)
           write (wancube, 202) trim(seedname), wann_index
 
           ! Find start and end of cube wrt simulation (home) cell origin
           do i = 1, 3
             ! ... in terms of distance along each lattice vector direction i
-            rstart(i) = (wann_data%centres(1, wann_index)*recip_lattice(i, 1) &
-                         + wann_data%centres(2, wann_index)*recip_lattice(i, 2) &
-                         + wann_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
-                        - twopi*wann_plot%radius/(moda(i)*modb(i))
-            rend(i) = (wann_data%centres(1, wann_index)*recip_lattice(i, 1) &
-                       + wann_data%centres(2, wann_index)*recip_lattice(i, 2) &
-                       + wann_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
-                      + twopi*wann_plot%radius/(moda(i)*modb(i))
+            rstart(i) = (wannier_data%centres(1, wann_index)*recip_lattice(i, 1) &
+                         + wannier_data%centres(2, wann_index)*recip_lattice(i, 2) &
+                         + wannier_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
+                        - twopi*wannier_plot%radius/(moda(i)*modb(i))
+            rend(i) = (wannier_data%centres(1, wann_index)*recip_lattice(i, 1) &
+                       + wannier_data%centres(2, wann_index)*recip_lattice(i, 2) &
+                       + wannier_data%centres(3, wann_index)*recip_lattice(i, 3))*moda(i)/twopi &
+                      + twopi*wannier_plot%radius/(moda(i)*modb(i))
           enddo
 
           rlength(:) = rend(:) - rstart(:)
@@ -1638,7 +1600,7 @@ contains
           enddo
 
           ! Debugging
-          if (verbose%iprint > 3) then
+          if (print_output%iprint > 3) then
             write (stdout, '(a,i12)') 'loop_w  =', loop_w
             write (stdout, '(a,3f12.6)') 'comf    =', (comf(i), i=1, 3)
             write (stdout, '(a,3i12)') 'ngi     =', ngx, ngy, ngz
@@ -1650,7 +1612,7 @@ contains
             write (stdout, '(a,3i12)') 'iend    =', (iend(i), i=1, 3)
             write (stdout, '(a,3i12)') 'ilength =', (ilength(i), i=1, 3)
             write (stdout, '(a,3f12.6)') 'orig    =', (orig(i), i=1, 3)
-            write (stdout, '(a,3f12.6)') 'wann_cen=', (wann_data%centres(i, wann_index), i=1, 3)
+            write (stdout, '(a,3f12.6)') 'wann_cen=', (wannier_data%centres(i, wann_index), i=1, 3)
           endif
 
           allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
@@ -1704,7 +1666,7 @@ contains
           enddo
 
           ! WF centre in fractional coordinates
-          call utility_cart_to_frac(wann_data%centres(:, wann_index), wcf(:), recip_lattice)
+          call utility_cart_to_frac(wannier_data%centres(:, wann_index), wcf(:), recip_lattice)
 
           ! The vector (in fractional coordinates) from WF centre to "centre of mass"
           diff(:) = comf(:) - wcf(:)
@@ -1712,7 +1674,7 @@ contains
           ! Corresponding nearest cell vector
           irdiff(:) = nint(diff(:))
 
-          if (verbose%iprint > 3) then
+          if (print_output%iprint > 3) then
             write (stdout, '(a,3f12.6)') 'wcf     =', (wcf(i), i=1, 3)
             write (stdout, '(a,3f12.6)') 'diff    =', (diff(i), i=1, 3)
             write (stdout, '(a,3i12)') 'irdiff  =', (irdiff(i), i=1, 3)
@@ -1722,19 +1684,19 @@ contains
             orig(:) = orig(:) + real(irdiff(1), kind=dp)*real_lattice(1, :) &
                       + real(irdiff(2), kind=dp)*real_lattice(2, :) &
                       + real(irdiff(3), kind=dp)*real_lattice(3, :)
-            if (verbose%iprint > 3) write (stdout, '(a,3f12.6,/)') 'orig-new=', (orig(i), i=1, 3)
+            if (print_output%iprint > 3) write (stdout, '(a,3f12.6,/)') 'orig-new=', (orig(i), i=1, 3)
           else ! In "crystal mode" count number of atoms within a given radius of wannier centre
             icount = 0
-            do isp = 1, atoms%num_species
-              do iat = 1, atoms%species_num(isp)
+            do isp = 1, atom_data%num_species
+              do iat = 1, atom_data%species_num(isp)
                 do nzz = -ngs(3)/2, (ngs(3) + 1)/2
                   do nyy = -ngs(2)/2, (ngs(2) + 1)/2
                     do nxx = -ngs(1)/2, (ngs(1) + 1)/2
-                      diff(:) = atoms%pos_frac(:, iat, isp) - wcf(:) &
+                      diff(:) = atom_data%pos_frac(:, iat, isp) - wcf(:) &
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
-                      if (dist .le. (wann_plot%scale*wann_plot%radius)) then
+                      if (dist .le. (wannier_plot%scale*wannier_plot%radius)) then
                         icount = icount + 1
                       endif
                     enddo
@@ -1742,7 +1704,7 @@ contains
                 enddo
               enddo ! iat
             enddo ! isp
-            if (verbose%iprint > 3) write (stdout, '(a,i12)') 'icount  =', icount
+            if (print_output%iprint > 3) write (stdout, '(a,i12)') 'icount  =', icount
           endif
 
           ! Write cube file (everything in Bohr)
@@ -1753,7 +1715,7 @@ contains
           write (file_unit, *) '     On ', cdate, ' at ', ctime
           ! Number of atoms, origin of cube (Cartesians) wrt simulation (home) cell
           if (lmol) then
-            write (file_unit, '(i4,3f13.5)') atoms%num_atoms, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
+            write (file_unit, '(i4,3f13.5)') atom_data%num_atoms, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
           else
             write (file_unit, '(i4,3f13.5)') icount, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
           endif
@@ -1772,20 +1734,20 @@ contains
 !            end do
 !         end do
 
-          do isp = 1, atoms%num_species
-            do iat = 1, atoms%species_num(isp)
+          do isp = 1, atom_data%num_species
+            do iat = 1, atom_data%species_num(isp)
               if (lmol) then ! In "molecule mode", write atomic coordinates as they appear in input file
-                write (file_unit, '(i4,4f13.5)') atomic_Z(isp), val_Q, (atoms%pos_cart(i, iat, isp)/bohr, i=1, 3)
+                write (file_unit, '(i4,4f13.5)') atomic_Z(isp), val_Q, (atom_data%pos_cart(i, iat, isp)/bohr, i=1, 3)
               else           ! In "crystal mode", write atoms in supercell within a given radius of Wannier centre
                 do nzz = -ngs(3)/2, (ngs(3) + 1)/2
                   do nyy = -ngs(2)/2, (ngs(2) + 1)/2
                     do nxx = -ngs(1)/2, (ngs(1) + 1)/2
-                      diff(:) = atoms%pos_frac(:, iat, isp) - wcf(:) &
+                      diff(:) = atom_data%pos_frac(:, iat, isp) - wcf(:) &
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
-                      if (dist .le. (wann_plot%scale*wann_plot%radius)) then
-                        diff(:) = atoms%pos_frac(:, iat, isp) &
+                      if (dist .le. (wannier_plot%scale*wannier_plot%radius)) then
+                        diff(:) = atom_data%pos_frac(:, iat, isp) &
                                   + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                         call utility_frac_to_cart(diff, difc, real_lattice)
                         write (file_unit, '(i4,4f13.5)') atomic_Z(isp), val_Q, (difc(i)/bohr, i=1, 3)
@@ -1827,7 +1789,7 @@ contains
 
 201   format(a, '_', i5.5, '.xsf')
 
-      associate (ngs=>wann_plot%supercell)
+      associate (ngs=>wannier_plot%supercell)
 
         ! this is to create the WF...xsf output, to be read by XCrySDen
         ! (coordinates + isosurfaces)
@@ -1851,7 +1813,7 @@ contains
 
         do loop_b = 1, wann_plot_num
 
-          write (wanxsf, 201) trim(seedname), wann_plot%list(loop_b)
+          write (wanxsf, 201) trim(seedname), wannier_plot%list(loop_b)
 
           file_unit = io_file_unit()
           open (unit=file_unit, file=trim(wanxsf), form='formatted', status='unknown')
@@ -1860,7 +1822,7 @@ contains
           write (file_unit, *) '      # On ', cdate, ' at ', ctime
           write (file_unit, *) '      #'
           ! should pass this into the code
-          if (index(wann_plot%mode, 'mol') > 0) then
+          if (index(wannier_plot%mode, 'mol') > 0) then
             write (file_unit, '("ATOMS")')
           else
             write (file_unit, '("CRYSTAL")')
@@ -1873,11 +1835,11 @@ contains
             write (file_unit, '(3f12.7)') real_lattice(2, 1), real_lattice(2, 2), real_lattice(2, 3)
             write (file_unit, '(3f12.7)') real_lattice(3, 1), real_lattice(3, 2), real_lattice(3, 3)
             write (file_unit, '("PRIMCOORD")')
-            write (file_unit, '(i6,"  1")') atoms%num_atoms
+            write (file_unit, '(i6,"  1")') atom_data%num_atoms
           endif
-          do nsp = 1, atoms%num_species
-            do nat = 1, atoms%species_num(nsp)
-              write (file_unit, '(a2,3x,3f12.7)') atoms%symbol(nsp), (atoms%pos_cart(i, nat, nsp), i=1, 3)
+          do nsp = 1, atom_data%num_species
+            do nat = 1, atom_data%species_num(nsp)
+              write (file_unit, '(a2,3x,3f12.7)') atom_data%symbol(nsp), (atom_data%pos_cart(i, nat, nsp), i=1, 3)
             end do
           end do
 
@@ -1926,15 +1888,12 @@ contains
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
-!   real(kind=dp), intent(in) :: kpt_latt(:, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     logical, intent(in) :: have_disentangled
-!   end w90_parameters
     character(len=50), intent(in)  :: seedname
 
     call io_date(cdate, ctime)
@@ -1991,12 +1950,7 @@ contains
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
-!   from w90_parameters
-!   integer, intent(in) :: nntot
     integer, intent(in) :: num_kpts
-!   real(kind=dp), intent(in) :: wb(:)
-!   real(kind=dp), intent(in) :: bk(:, :, :)
-!   end w90_parameters
     character(len=50), intent(in)  :: seedname
     !
     file_unit = io_file_unit()

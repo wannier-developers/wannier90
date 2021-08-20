@@ -82,8 +82,8 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atoms, dis_window, fermi_energy_list, hmlg, k_points, out_files, &
-                       rs_region, tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, &
+  subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, hmlg, k_points, output_file, &
+                       real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
                        u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, &
@@ -103,15 +103,15 @@ contains
     implicit none
 
     ! arguments
-    type(transport_type), intent(inout)         :: tran
-    type(real_space_ham_type), intent(inout)    :: rs_region
+    type(transport_type), intent(inout)         :: transport
+    type(real_space_ham_type), intent(inout)    :: real_space_ham
     type(ws_region_type), intent(inout)         :: ws_region
-    type(print_output_type), intent(in)         :: verbose
-    type(w90_calculation_type), intent(in)      :: w90_calcs
-    type(output_file_type), intent(in)          :: out_files
-    type(wannier_data_type), intent(in)         :: wann_data
-    type(atom_data_type), intent(in)            :: atoms
-    type(dis_manifold_type), intent(in)         :: dis_window
+    type(print_output_type), intent(in)         :: print_output
+    type(w90_calculation_type), intent(in)      :: w90_calculation
+    type(output_file_type), intent(in)          :: output_file
+    type(wannier_data_type), intent(in)         :: wannier_data
+    type(atom_data_type), intent(in)            :: atom_data
+    type(dis_manifold_type), intent(in)         :: dis_manifold
     type(k_points_type), intent(in)             :: k_points
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(ham_logical), intent(inout)            :: hmlg
@@ -172,90 +172,90 @@ contains
 
     logical :: pl_warning
 
-    if (verbose%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, seedname)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, '(1x,a)') '|                              TRANSPORT                                    |'
     write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, *)
 
-    if (index(tran%mode, 'bulk') > 0) then
+    if (index(transport%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
-      if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      if (.not. transport%read_ht) then
+        call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                               seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, rs_region, verbose, ham_k, &
+                               seedname, transport%mode)
+        call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                                real_lattice, recip_lattice, wann_data%centres, &
+                                real_lattice, recip_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
-        if (out_files%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                          num_wann, verbose%timing_level, &
-                                                          seedname, stdout)
-        call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+        if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                            num_wann, print_output%timing_level, &
+                                                            seedname, stdout)
+        call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
                             seedname, stdout)
-        call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+        call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                  wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                  one_dim_vec, seedname, stdout)
-        call tran_get_ht(fermi_energy_list, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
-                         verbose%timing_level, seedname, stdout)
-        if (out_files%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
-                                                     tran_sorted_idx, num_wann, seedname, stdout)
+        call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
+                         print_output%timing_level, seedname, stdout)
+        if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
+                                                       tran_sorted_idx, num_wann, seedname, stdout)
       end if
-      call tran_bulk(tran, hB0, hB1, verbose%timing_level, stdout, seedname)
+      call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname)
     end if
 
-    if (index(tran%mode, 'lcr') > 0) then
+    if (index(transport%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
-      if (.not. tran%read_ht) then
-        call hamiltonian_setup(hmlg, verbose, ws_region, w90_calcs, ham_k, ham_r, &
+      if (.not. transport%read_ht) then
+        call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                               seedname, tran%mode)
-        call hamiltonian_get_hr(atoms, dis_window, hmlg, rs_region, verbose, ham_k, &
+                               seedname, transport%mode)
+        call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                                real_lattice, recip_lattice, wann_data%centres, &
+                                real_lattice, recip_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
-        if (out_files%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                          num_wann, verbose%timing_level, &
-                                                          seedname, stdout)
-        call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+        if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
+                                                            num_wann, print_output%timing_level, &
+                                                            seedname, stdout)
+        call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
                             seedname, stdout)
-        call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+        call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                  wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                  one_dim_vec, seedname, stdout)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
-        call tran_find_integral_signatures(signatures, num_G, verbose, real_lattice, u_matrix_opt, &
+        call tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, u_matrix_opt, &
                                            u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
-        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, rs_region, &
-                               verbose, real_lattice, num_wann, mp_grid, ham_r, irvec, &
+        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, real_space_ham, &
+                               print_output, real_lattice, num_wann, mp_grid, ham_r, irvec, &
                                nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, &
-                               out_files%write_xyz, stdout, seedname)
-        if (out_files%write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
-                                                     tran_sorted_idx, num_wann, seedname, stdout)
+                               output_file%write_xyz, stdout, seedname)
+        if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
+                                                       tran_sorted_idx, num_wann, seedname, stdout)
 
-        call tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
+        call tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
-        call tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi_energy_list, k_points, num_wann, tran, &
-                                    verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
+        call tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, k_points, num_wann, transport, &
+                                    print_output, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
                                     hR1, hr_one_dim, irvec_max, stdout, seedname)
       endif
-      call tran_lcr(tran, hC, hCR, hL0, hL1, hLC, hR0, hR1, verbose%timing_level, stdout, seedname)
+      call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, stdout, seedname)
     end if
 
-    if (verbose%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
 
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
@@ -285,7 +285,7 @@ contains
   end subroutine tran_main
 
   !==================================================================!
-  subroutine tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+  subroutine tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
                             nrpts, nrpts_one_dim, num_wann, one_dim_vec, timing_level, seedname, &
                             stdout)
     !==================================================================!
@@ -299,7 +299,7 @@ contains
     implicit none
 
     ! passed vars
-    type(real_space_ham_type), intent(in) :: rs_region
+    type(real_space_ham_type), intent(in) :: real_space_ham
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -330,7 +330,7 @@ contains
     ! two_dim_vec - the other two lattice vectors
     j = 0
     do i = 1, 3
-      if (abs(abs(real_lattice(rs_region%one_dim_dir, i)) &
+      if (abs(abs(real_lattice(real_space_ham%one_dim_dir, i)) &
               - sqrt(dot_product(real_lattice(:, i), real_lattice(:, i)))) .lt. eps8) then
         one_dim_vec = i
         j = j + 1
@@ -394,7 +394,7 @@ contains
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+  subroutine tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                  wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                  one_dim_vec, seedname, stdout)
     !==================================================================!
@@ -408,9 +408,9 @@ contains
     implicit none
 
     ! arguments
-    type(real_space_ham_type), intent(inout) :: rs_region
-    type(print_output_type), intent(in) :: verbose
-    type(transport_type), intent(inout) :: tran
+    type(real_space_ham_type), intent(inout) :: real_space_ham
+    type(print_output_type), intent(in) :: print_output
+    type(transport_type), intent(inout) :: transport
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: irvec_max
@@ -435,20 +435,20 @@ contains
     real(kind=dp) :: hr_tmp(num_wann, num_wann)
 
     !
-    if (verbose%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
     !
     !irvec_max = nrpts_one_dim/2 ! now passed as arg
     ! maximum possible dist_cutoff
-    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(rs_region%one_dim_dir, one_dim_vec)) &
+    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(real_space_ham%one_dim_dir, one_dim_vec)) &
            /2.0_dp
-    if (rs_region%dist_cutoff .gt. dist) then
-      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'dist_cutoff', rs_region%dist_cutoff, &
-        trim(verbose%length_unit), 'is too large'
-      rs_region%dist_cutoff = dist
+    if (real_space_ham%dist_cutoff .gt. dist) then
+      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'dist_cutoff', real_space_ham%dist_cutoff, &
+        trim(print_output%length_unit), 'is too large'
+      real_space_ham%dist_cutoff = dist
       ! aam_2012-04-13
-      rs_region%dist_cutoff_hc = dist
-      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', rs_region%dist_cutoff, &
-        trim(verbose%length_unit)
+      real_space_ham%dist_cutoff_hc = dist
+      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', real_space_ham%dist_cutoff, &
+        trim(print_output%length_unit)
     end if
 
     do n1 = -irvec_max, irvec_max
@@ -457,35 +457,35 @@ contains
     end do
 
     ! apply dist_cutoff first
-    if (index(rs_region%dist_cutoff_mode, 'one_dim') > 0) then
+    if (index(real_space_ham%dist_cutoff_mode, 'one_dim') > 0) then
       do i = 1, num_wann
         do j = 1, num_wann
-          dist_ij_vec(rs_region%one_dim_dir) = wannier_centres_translated(rs_region%one_dim_dir, i) &
-                                               - wannier_centres_translated(rs_region%one_dim_dir, j)
+          dist_ij_vec(real_space_ham%one_dim_dir) = wannier_centres_translated(real_space_ham%one_dim_dir, i) &
+                                                    - wannier_centres_translated(real_space_ham%one_dim_dir, j)
           do n1 = -irvec_max, irvec_max
-            dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
-                                              + shift_vec(rs_region%one_dim_dir, n1)
+            dist_vec(real_space_ham%one_dim_dir) = dist_ij_vec(real_space_ham%one_dim_dir) &
+                                                   + shift_vec(real_space_ham%one_dim_dir, n1)
             !
             !MS: Add special case for lcr: We must not cut the elements that are within
             !    dist_cutoff under PBC's (single kpt assumed) in order to build
             !    hamiltonians correctly in tran_2c2_build_hams
             !
-            if ((index(tran%mode, 'lcr') > 0) .and. &
-                !~                    (tran%num_cell_ll .eq. 1)        .and. &
-                (abs(dist_vec(rs_region%one_dim_dir)) .gt. rs_region%dist_cutoff)) then
+            if ((index(transport%mode, 'lcr') > 0) .and. &
+                !~                    (transport%num_cell_ll .eq. 1)        .and. &
+                (abs(dist_vec(real_space_ham%one_dim_dir)) .gt. real_space_ham%dist_cutoff)) then
               ! Move to right
-              dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
-                                                + real_lattice(rs_region%one_dim_dir, one_dim_vec)
+              dist_vec(real_space_ham%one_dim_dir) = dist_ij_vec(real_space_ham%one_dim_dir) &
+                                                     + real_lattice(real_space_ham%one_dim_dir, one_dim_vec)
               ! Move to left
-              if (abs(dist_vec(rs_region%one_dim_dir)) .gt. rs_region%dist_cutoff) &
-                dist_vec(rs_region%one_dim_dir) = dist_ij_vec(rs_region%one_dim_dir) &
-                                                  - real_lattice(rs_region%one_dim_dir, one_dim_vec)
+              if (abs(dist_vec(real_space_ham%one_dim_dir)) .gt. real_space_ham%dist_cutoff) &
+                dist_vec(real_space_ham%one_dim_dir) = dist_ij_vec(real_space_ham%one_dim_dir) &
+                                                       - real_lattice(real_space_ham%one_dim_dir, one_dim_vec)
             endif
             !
             !end MS
             !
-            dist = abs(dist_vec(rs_region%one_dim_dir))
-            if (dist .gt. rs_region%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+            dist = abs(dist_vec(real_space_ham%one_dim_dir))
+            if (dist .gt. real_space_ham%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
           end do
         end do
       end do
@@ -499,14 +499,14 @@ contains
             !
             ! MS: Special case (as above) equivalent for alternate definition of cut off
             !
-            if ((index(tran%mode, 'lcr') > 0) .and. &
-                !~                   (tran%num_cell_ll .eq. 1)         .and. &
-                (dist .gt. rs_region%dist_cutoff)) then
+            if ((index(transport%mode, 'lcr') > 0) .and. &
+                !~                   (transport%num_cell_ll .eq. 1)         .and. &
+                (dist .gt. real_space_ham%dist_cutoff)) then
               ! Move to right
               dist_vec(:) = dist_ij_vec(:) + real_lattice(:, one_dim_vec)
               dist = sqrt(dot_product(dist_vec, dist_vec))
               ! Move to left
-              if (dist .gt. rs_region%dist_cutoff) then
+              if (dist .gt. real_space_ham%dist_cutoff) then
                 dist_vec(:) = dist_ij_vec(:) - real_lattice(:, one_dim_vec)
                 dist = sqrt(dot_product(dist_vec, dist_vec))
               endif
@@ -514,7 +514,7 @@ contains
             !
             ! End MS
             !
-            if (dist .gt. rs_region%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+            if (dist .gt. real_space_ham%dist_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
           end do
         end do
       end do
@@ -531,7 +531,7 @@ contains
     do n1 = -irvec_max, irvec_max
       hr_tmp(:, :) = abs(hr_one_dim(:, :, n1))
       hr_max = maxval(hr_tmp)
-      if (hr_max .gt. rs_region%hr_cutoff) then
+      if (hr_max .gt. real_space_ham%hr_cutoff) then
         if (abs(n1) .gt. num_pl) num_pl = abs(n1)
       else
         hr_one_dim(:, :, n1) = 0.0_dp
@@ -539,12 +539,12 @@ contains
       write (stdout, '(1x,9x,5x,I5,5x,12x,F12.6)') n1, hr_max
     end do
     write (stdout, '(1x,8x,a62)') repeat('-', 62)
-    if (index(tran%mode, 'lcr') > 0) then
+    if (index(transport%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a,I6)') 'Number of unit cells inside the principal layer:', &
-        tran%num_cell_ll
+        transport%num_cell_ll
       write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', &
-        tran%num_ll
-    elseif (index(tran%mode, 'bulk') > 0) then
+        transport%num_ll
+    elseif (index(transport%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a,I6)') 'Number of unit cells inside the principal layer:', num_pl
       write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', &
         num_pl*num_wann
@@ -553,20 +553,20 @@ contains
     do n1 = -num_pl, num_pl
       do i = 1, num_wann
         do j = 1, num_wann
-          if (abs(hr_one_dim(j, i, n1)) .lt. rs_region%hr_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
+          if (abs(hr_one_dim(j, i, n1)) .lt. real_space_ham%hr_cutoff) hr_one_dim(j, i, n1) = 0.0_dp
         end do
       end do
     end do
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout, seedname)
 
     return
 
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi_energy_list, tran, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, timing_level, seedname, stdout)
+  subroutine tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
+                         timing_level, seedname, stdout)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
@@ -579,7 +579,7 @@ contains
 
     ! arguments
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(transport_type), intent(inout) :: tran
+    type(transport_type), intent(inout) :: transport
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
@@ -607,11 +607,11 @@ contains
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
     !
     !
-    tran%num_bb = num_pl*num_wann
+    transport%num_bb = num_pl*num_wann
     !
-    allocate (hB0(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hB0 in tran_get_ht', stdout, seedname)
-    allocate (hB1(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hB1 in tran_get_ht', stdout, seedname)
     !
     hB0 = 0.0_dp
@@ -638,11 +638,11 @@ contains
     end do
 
     ! shift by fermi_energy
-    do i = 1, tran%num_bb
+    do i = 1, transport%num_bb
       hB0(i, i) = hB0(i, i) - fermi_energy_list(1)
     end do
 
-    if (tran%write_ht) then
+    if (transport%write_ht) then
 
       file_unit = io_file_unit()
       open (file_unit, file=trim(seedname)//'_htB.dat', status='unknown', form='formatted', &
@@ -650,10 +650,10 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(I6)') tran%num_bb
-      write (file_unit, '(6F12.6)') ((hB0(j, i), j=1, tran%num_bb), i=1, tran%num_bb)
-      write (file_unit, '(I6)') tran%num_bb
-      write (file_unit, '(6F12.6)') ((hB1(j, i), j=1, tran%num_bb), i=1, tran%num_bb)
+      write (file_unit, '(I6)') transport%num_bb
+      write (file_unit, '(6F12.6)') ((hB0(j, i), j=1, transport%num_bb), i=1, transport%num_bb)
+      write (file_unit, '(I6)') transport%num_bb
+      write (file_unit, '(6F12.6)') ((hB1(j, i), j=1, transport%num_bb), i=1, transport%num_bb)
 
       close (file_unit)
 
@@ -666,7 +666,7 @@ contains
   end subroutine tran_get_ht
 
   !==================================================================!
-  subroutine tran_bulk(tran, hB0, hB1, timing_level, stdout, seedname)
+  subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -683,7 +683,7 @@ contains
     real(kind=dp), allocatable :: hB0(:, :)
     real(kind=dp), allocatable :: hB1(:, :)
 
-    type(transport_type), intent(in) :: tran
+    type(transport_type), intent(in) :: transport
 
     character(len=50), intent(in)  :: seedname
 
@@ -703,25 +703,25 @@ contains
 
     if (timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, seedname)
 
-    allocate (tot(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (tot(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tot in tran_bulk', stdout, seedname)
-    allocate (tott(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (tott(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tott in tran_bulk', stdout, seedname)
-    allocate (g_B(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (g_B(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_B in tran_bulk', stdout, seedname)
-    allocate (gL(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (gL(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating gL in tran_bulk', stdout, seedname)
-    allocate (gR(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (gR(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating gR in tran_bulk', stdout, seedname)
-    allocate (sLr(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (sLr(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating sLr in tran_bulk', stdout, seedname)
-    allocate (sRr(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (sRr(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating sRr in tran_bulk', stdout, seedname)
-    allocate (s1(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (s1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating s1 in tran_bulk', stdout, seedname)
-    allocate (s2(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (s2(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating s2 in tran_bulk', stdout, seedname)
-    allocate (c1(tran%num_bb, tran%num_bb), stat=ierr)
+    allocate (c1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating c1 in tran_bulk', stdout, seedname)
 
     call io_date(cdate, ctime)
@@ -738,24 +738,24 @@ contains
 
     !   set up the layer hamiltonians
 
-    if (tran%read_ht) then
-      allocate (hB0(tran%num_bb, tran%num_bb), stat=ierr)
+    if (transport%read_ht) then
+      allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hB0 in tran_bulk', stdout, seedname)
-      allocate (hB1(tran%num_bb, tran%num_bb), stat=ierr)
+      allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hB1 in tran_bulk', stdout, seedname)
       filename = trim(seedname)//'_htB.dat'
-      call tran_read_htX(tran%num_bb, hB0, hB1, filename, stdout, seedname)
+      call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, seedname)
     end if
 
     !   loop over the energies
 
-    n_e = floor((tran%win_max - tran%win_min)/tran%energy_step) + 1
+    n_e = floor((transport%win_max - transport%win_min)/transport%energy_step) + 1
 
     write (stdout, '(/1x,a)', advance='no') 'Calculating quantum&
         & conductance and density of states...'
 
     do n = 1, n_e
-      e_scan = tran%win_min + real(n - 1, dp)*tran%energy_step
+      e_scan = transport%win_min + real(n - 1, dp)*transport%energy_step
 
 !       if (mod(n,nint(0.1*n_e)).eq.0) write(stdout,'(a)',advance='no') '.'
 
@@ -763,8 +763,8 @@ contains
       ! retarded Green
 
       e_scan_cmp = e_scan + eta
-      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, tran%num_bb, stdout, seedname)
-      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, tran%num_bb, stdout, seedname)
+      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, seedname)
+      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, seedname)
 
       ! compute S_Lr and S_Rr
 
@@ -774,10 +774,10 @@ contains
       ! Self-energy (Sigma_R^r) : sRr = (hB1)   * tot
       sLr = cmplx_0
       sRr = cmplx_0
-      call ZGEMM('C', 'N', tran%num_bb, tran%num_bb, tran%num_bb, cmplx_1, c1, &
-                 tran%num_bb, tott, tran%num_bb, cmplx_0, sLr, tran%num_bb)
-      call ZGEMM('N', 'N', tran%num_bb, tran%num_bb, tran%num_bb, cmplx_1, c1, &
-                 tran%num_bb, tot, tran%num_bb, cmplx_0, sRr, tran%num_bb)
+      call ZGEMM('C', 'N', transport%num_bb, transport%num_bb, transport%num_bb, cmplx_1, c1, &
+                 transport%num_bb, tott, transport%num_bb, cmplx_0, sLr, transport%num_bb)
+      call ZGEMM('N', 'N', transport%num_bb, transport%num_bb, transport%num_bb, cmplx_1, c1, &
+                 transport%num_bb, tot, transport%num_bb, cmplx_0, sRr, transport%num_bb)
 
       ! Gamma_L = i(Sigma_L^r-Sigma_L^a)
       gL = cmplx_i*(sLr - conjg(transpose(sLr)))
@@ -788,24 +788,24 @@ contains
       s2 = cmplx_0
       c1 = cmplx_0
       ! s1 = Gamma_L * g_B^r
-      call ZGEMM('N', 'N', tran%num_bb, tran%num_bb, tran%num_bb, cmplx_1, gL, &
-                 tran%num_bb, g_B, tran%num_bb, cmplx_0, s1, tran%num_bb)
+      call ZGEMM('N', 'N', transport%num_bb, transport%num_bb, transport%num_bb, cmplx_1, gL, &
+                 transport%num_bb, g_B, transport%num_bb, cmplx_0, s1, transport%num_bb)
       ! s2 = Gamma_L * g_B^r * Gamma_R
-      call ZGEMM('N', 'N', tran%num_bb, tran%num_bb, tran%num_bb, cmplx_1, s1, &
-                 tran%num_bb, gR, tran%num_bb, cmplx_0, s2, tran%num_bb)
+      call ZGEMM('N', 'N', transport%num_bb, transport%num_bb, transport%num_bb, cmplx_1, s1, &
+                 transport%num_bb, gR, transport%num_bb, cmplx_0, s2, transport%num_bb)
       ! c1 = Gamma_L * g_B^r * Gamma_R * g_B^a
-      call ZGEMM('N', 'C', tran%num_bb, tran%num_bb, tran%num_bb, cmplx_1, s2, &
-                 tran%num_bb, g_B, tran%num_bb, cmplx_0, c1, tran%num_bb)
+      call ZGEMM('N', 'C', transport%num_bb, transport%num_bb, transport%num_bb, cmplx_1, s2, &
+                 transport%num_bb, g_B, transport%num_bb, cmplx_0, c1, transport%num_bb)
 
       qc = 0.0_dp
-      do i = 1, tran%num_bb
+      do i = 1, transport%num_bb
         qc = qc + real(c1(i, i), dp)
       end do
 !       write(qc_unit,'(f12.6,f15.6)') e_scan, qc
       write (qc_unit, '(f15.9,f18.9)') e_scan, qc
 
       dos = 0.0_dp
-      do i = 1, tran%num_bb
+      do i = 1, transport%num_bb
         dos = dos - aimag(g_B(i, i))
       end do
       dos = dos/pi
@@ -846,7 +846,7 @@ contains
   end subroutine tran_bulk
 
   !==================================================================!
-  subroutine tran_lcr(tran, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname)
+  subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -867,7 +867,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: hR0(:, :)
     real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
 
-    type(transport_type), intent(in) :: tran
+    type(transport_type), intent(in) :: transport
 
     character(len=50), intent(in)  :: seedname
 
@@ -905,53 +905,53 @@ contains
           form='formatted', action='write')
     write (dos_unit, *) '## written on '//cdate//' at '//ctime ! Date and time
 
-    KL = max(tran%num_lc, tran%num_cr, tran%num_bandc) - 1
+    KL = max(transport%num_lc, transport%num_cr, transport%num_bandc) - 1
     KU = KL
-    KC = max(tran%num_lc, tran%num_cr)
+    KC = max(transport%num_lc, transport%num_cr)
 
-    allocate (hCband(2*KL + KU + 1, tran%num_cc), stat=ierr)
+    allocate (hCband(2*KL + KU + 1, transport%num_cc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hCband in tran_lcr', stdout, seedname)
-    allocate (hLC_cmp(tran%num_ll, tran%num_lc), stat=ierr)
+    allocate (hLC_cmp(transport%num_ll, transport%num_lc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hLC_cmp in tran_lcr', stdout, seedname)
-    allocate (hCR_cmp(tran%num_cr, tran%num_rr), stat=ierr)
+    allocate (hCR_cmp(transport%num_cr, transport%num_rr), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hCR_cmp in tran_lcr', stdout, seedname)
 
     !If construct used only when reading matrices from file
-    if (tran%read_ht) then
-      allocate (hL0(tran%num_ll, tran%num_ll), stat=ierr)
+    if (transport%read_ht) then
+      allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr', stdout, seedname)
-      allocate (hL1(tran%num_ll, tran%num_ll), stat=ierr)
+      allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr', stdout, seedname)
-      allocate (hC(tran%num_cc, tran%num_cc), stat=ierr)
+      allocate (hC(transport%num_cc, transport%num_cc), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr', stdout, seedname)
-      allocate (hLC(tran%num_ll, tran%num_lc), stat=ierr)
+      allocate (hLC(transport%num_ll, transport%num_lc), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr', stdout, seedname)
-      allocate (hCR(tran%num_cr, tran%num_rr), stat=ierr)
+      allocate (hCR(transport%num_cr, transport%num_rr), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr', stdout, seedname)
 
       filename = trim(seedname)//'_htL.dat'
-      call tran_read_htX(tran%num_ll, hL0, hL1, filename, stdout, seedname)
+      call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, seedname)
 
-      if (.not. tran%use_same_lead) then
-        allocate (hR0(tran%num_rr, tran%num_rr), stat=ierr)
+      if (.not. transport%use_same_lead) then
+        allocate (hR0(transport%num_rr, transport%num_rr), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr', stdout, seedname)
-        allocate (hR1(tran%num_rr, tran%num_rr), stat=ierr)
+        allocate (hR1(transport%num_rr, transport%num_rr), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr', stdout, seedname)
         filename = trim(seedname)//'_htR.dat'
-        call tran_read_htX(tran%num_rr, hR0, hR1, filename, stdout, seedname)
+        call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, seedname)
       end if
 
       filename = trim(seedname)//'_htC.dat'
-      call tran_read_htC(tran%num_cc, hC, filename, stdout, seedname)
+      call tran_read_htC(transport%num_cc, hC, filename, stdout, seedname)
       filename = trim(seedname)//'_htLC.dat'
-      call tran_read_htXY(tran%num_ll, tran%num_lc, hLC, filename, stdout, seedname)
+      call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, seedname)
       filename = trim(seedname)//'_htCR.dat'
-      call tran_read_htXY(tran%num_cr, tran%num_rr, hCR, filename, stdout, seedname)
+      call tran_read_htXY(transport%num_cr, transport%num_rr, hCR, filename, stdout, seedname)
     endif
 
     !  Banded matrix H_C  :  save memory !
-    do j = 1, tran%num_cc
-      do i = max(1, j - KU), min(tran%num_cc, j + KL)
+    do j = 1, transport%num_cc
+      do i = max(1, j - KU), min(transport%num_cc, j + KL)
         hCband(KL + KU + 1 + i - j, j) = hC(i, j)
       end do
     end do
@@ -968,52 +968,52 @@ contains
     deallocate (hCR, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating hCR in tran_lcr', stdout, seedname)
 
-    allocate (totL(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (totL(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating totL in tran_lcr', stdout, seedname)
-    allocate (tottL(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (tottL(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tottL in tran_lcr', stdout, seedname)
-    if (.not. tran%use_same_lead) then
-      allocate (totR(tran%num_rr, tran%num_rr), stat=ierr)
+    if (.not. transport%use_same_lead) then
+      allocate (totR(transport%num_rr, transport%num_rr), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating totR in tran_lcr', stdout, seedname)
-      allocate (tottR(tran%num_rr, tran%num_rr), stat=ierr)
+      allocate (tottR(transport%num_rr, transport%num_rr), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating tottR in tran_lcr', stdout, seedname)
     end if
-    allocate (g_surf_L(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (g_surf_L(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_surf_L in tran_lcr', stdout, seedname)
-    allocate (g_surf_R(tran%num_rr, tran%num_rr), stat=ierr)
+    allocate (g_surf_R(transport%num_rr, transport%num_rr), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_surf_R in tran_lcr', stdout, seedname)
-    allocate (g_C_inv(2*KL + KU + 1, tran%num_cc), stat=ierr)
+    allocate (g_C_inv(2*KL + KU + 1, transport%num_cc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_C_inv in tran_lcr', stdout, seedname)
-    allocate (g_C(tran%num_cc, tran%num_cc), stat=ierr)
+    allocate (g_C(transport%num_cc, transport%num_cc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating g_C in tran_lcr', stdout, seedname)
-    allocate (sLr(tran%num_lc, tran%num_lc), stat=ierr)
+    allocate (sLr(transport%num_lc, transport%num_lc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating sLr in tran_lcr', stdout, seedname)
-    allocate (sRr(tran%num_cr, tran%num_cr), stat=ierr)
+    allocate (sRr(transport%num_cr, transport%num_cr), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating sRr in tran_lcr', stdout, seedname)
-    allocate (gL(tran%num_lc, tran%num_lc), stat=ierr)
+    allocate (gL(transport%num_lc, transport%num_lc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating gL in tran_lcr', stdout, seedname)
-    allocate (gR(tran%num_cr, tran%num_cr), stat=ierr)
+    allocate (gR(transport%num_cr, transport%num_cr), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating gR in tran_lcr', stdout, seedname)
-    allocate (c1(tran%num_lc, tran%num_ll), stat=ierr)
+    allocate (c1(transport%num_lc, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating c1 in tran_lcr', stdout, seedname)
-    allocate (c2(tran%num_cr, tran%num_rr), stat=ierr)
+    allocate (c2(transport%num_cr, transport%num_rr), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating c2 in tran_lcr', stdout, seedname)
     allocate (s1(KC, KC), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating s1 in tran_lcr', stdout, seedname)
     allocate (s2(KC, KC), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating s2 in tran_lcr', stdout, seedname)
-    allocate (ipiv(tran%num_cc), stat=ierr)
+    allocate (ipiv(transport%num_cc), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ipiv in tran_lcr', stdout, seedname)
 
     !  Loop over the energies
-    n_e = floor((tran%win_max - tran%win_min)/tran%energy_step) + 1
+    n_e = floor((transport%win_max - transport%win_min)/transport%energy_step) + 1
 
     write (stdout, '(/1x,a)', advance='no') 'Calculating quantum conductance and &
       &density of states...'
 
     do n = 1, n_e
 
-      e_scan = tran%win_min + real(n - 1, dp)*tran%energy_step
+      e_scan = transport%win_min + real(n - 1, dp)*transport%energy_step
 
       !    compute conductance according to Fisher and Lee
       !    compute self-energies following Datta
@@ -1021,65 +1021,65 @@ contains
       e_scan_cmp = e_scan + eta
 
       ! Surface green function for the left lead : g_surf_L
-      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, tran%num_ll, stdout, seedname)
-      call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, tran%num_ll, stdout, seedname)
+      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, seedname)
+      call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, seedname)
 
       ! Self-energy (Sigma_L) : sLr = (hLC_cmp)^+ * g_surf_L * hLC_cmp
       c1 = cmplx_0
       sLr = cmplx_0
-      call ZGEMM('C', 'N', tran%num_lc, tran%num_ll, tran%num_ll, cmplx_1, &
-                 hLC_cmp, tran%num_ll, g_surf_L, tran%num_ll, cmplx_0, c1, tran%num_lc)
-      call ZGEMM('N', 'N', tran%num_lc, tran%num_lc, tran%num_ll, cmplx_1, &
-                 c1, tran%num_lc, hLC_cmp, tran%num_ll, cmplx_0, sLr, tran%num_lc)
+      call ZGEMM('C', 'N', transport%num_lc, transport%num_ll, transport%num_ll, cmplx_1, &
+                 hLC_cmp, transport%num_ll, g_surf_L, transport%num_ll, cmplx_0, c1, transport%num_lc)
+      call ZGEMM('N', 'N', transport%num_lc, transport%num_lc, transport%num_ll, cmplx_1, &
+                 c1, transport%num_lc, hLC_cmp, transport%num_ll, cmplx_0, sLr, transport%num_lc)
 
       ! Surface green function for the right lead : g_surf_R
-      if (tran%use_same_lead) then
-        call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, tran%num_rr, stdout, seedname)
+      if (transport%use_same_lead) then
+        call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, seedname)
       else
-        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, tran%num_rr, stdout, seedname)
-        call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, tran%num_rr, stdout, seedname)
+        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, seedname)
+        call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, seedname)
       end if
 
       ! Self-energy (Sigma_R) : sRr = hCR_cmp * g_surf_R * (hCR_cmp)^+
       c2 = cmplx_0
       sRr = cmplx_0
-      call ZGEMM('N', 'N', tran%num_cr, tran%num_rr, tran%num_rr, cmplx_1, &
-                 hCR_cmp, tran%num_cr, g_surf_R, tran%num_rr, cmplx_0, c2, tran%num_cr)
-      call ZGEMM('N', 'C', tran%num_cr, tran%num_cr, tran%num_rr, cmplx_1, &
-                 c2, tran%num_cr, hCR_cmp, tran%num_cr, cmplx_0, sRr, tran%num_cr)
+      call ZGEMM('N', 'N', transport%num_cr, transport%num_rr, transport%num_rr, cmplx_1, &
+                 hCR_cmp, transport%num_cr, g_surf_R, transport%num_rr, cmplx_0, c2, transport%num_cr)
+      call ZGEMM('N', 'C', transport%num_cr, transport%num_cr, transport%num_rr, cmplx_1, &
+                 c2, transport%num_cr, hCR_cmp, transport%num_cr, cmplx_0, sRr, transport%num_cr)
 
       ! g_C^-1 = -H
       g_C_inv(:, :) = cmplx(-hCband(:, :), kind=dp)
 
       ! g_C^-1 = -H - Sigma_L^r
-      do j = 1, tran%num_lc
-        do i = max(1, j - KU), min(tran%num_lc, j + KL)
+      do j = 1, transport%num_lc
+        do i = max(1, j - KU), min(transport%num_lc, j + KL)
           g_C_inv(KL + KU + 1 + i - j, j) = g_C_inv(KL + KU + 1 + i - j, j) - sLr(i, j)
         end do
       end do
 
       ! g_C^-1 = -H - Sigma_L^r - Sigma_R^r
-      do j = (tran%num_cc - tran%num_cr) + 1, tran%num_cc
-        do i = max((tran%num_cc - tran%num_cr) + 1, j - (tran%num_cr - 1)), &
-          min(tran%num_cc, j + (tran%num_cr - 1))
+      do j = (transport%num_cc - transport%num_cr) + 1, transport%num_cc
+        do i = max((transport%num_cc - transport%num_cr) + 1, j - (transport%num_cr - 1)), &
+          min(transport%num_cc, j + (transport%num_cr - 1))
           g_C_inv(KL + KU + 1 + i - j, j) = &
             g_C_inv(KL + KU + 1 + i - j, j) - &
-            sRr(i - (tran%num_cc - tran%num_cr), j - (tran%num_cc - tran%num_cr))
+            sRr(i - (transport%num_cc - transport%num_cr), j - (transport%num_cc - transport%num_cr))
         end do
       end do
 
       ! g_C^-1 = eI - H - Sigma_L^r - Sigma_R^r
-      do i = 1, tran%num_cc
+      do i = 1, transport%num_cc
         g_C_inv(KL + KU + 1, i) = e_scan + g_C_inv(KL + KU + 1, i)
       end do
 
       ! invert g_C^-1 => g_C
       g_C = cmplx_0
-      do i = 1, tran%num_cc
+      do i = 1, transport%num_cc
         g_C(i, i) = cmplx_1
       end do
 
-      call ZGBSV(tran%num_cc, KL, KU, tran%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, tran%num_cc, &
+      call ZGBSV(transport%num_cc, KL, KU, transport%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, transport%num_cc, &
                  info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
@@ -1092,9 +1092,9 @@ contains
       ! s1 = Gamma_L * g_C^r
       s1 = cmplx_0
       do j = 1, KC
-        do i = 1, tran%num_lc
-          do k = 1, tran%num_lc
-            s1(i, j) = s1(i, j) + gL(i, k)*g_C(k, j + (tran%num_cc - KC))
+        do i = 1, transport%num_lc
+          do k = 1, transport%num_lc
+            s1(i, j) = s1(i, j) + gL(i, k)*g_C(k, j + (transport%num_cc - KC))
           end do
         end do
       end do
@@ -1105,11 +1105,11 @@ contains
       ! s2 = Gamma_R * g_C^a
       s2 = cmplx_0
       do j = 1, KC
-        do i = 1, tran%num_cr
-          do k = 1, tran%num_cr
-            s2(i + (KC - tran%num_cr), j) = s2(i + (KC - tran%num_cr), j) &
-                                            + gR(i, k)*conjg(g_C(j, k &
-                                                                 + (tran%num_cc - tran%num_cr)))
+        do i = 1, transport%num_cr
+          do k = 1, transport%num_cr
+            s2(i + (KC - transport%num_cr), j) = s2(i + (KC - transport%num_cr), j) &
+                                                 + gR(i, k)*conjg(g_C(j, k &
+                                                                      + (transport%num_cc - transport%num_cr)))
           end do
         end do
       end do
@@ -1125,7 +1125,7 @@ contains
       ! compute density of states for the conductor layer
 
       dos = 0.0_dp
-      do i = 1, tran%num_cc
+      do i = 1, transport%num_cc
         dos = dos - aimag(g_C(i, i))
       end do
       dos = dos/pi
@@ -1688,7 +1688,7 @@ contains
   end subroutine tran_read_htXY
 
 !========================================
-  subroutine tran_find_integral_signatures(signatures, num_G, verbose, real_lattice, u_matrix_opt, &
+  subroutine tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, u_matrix_opt, &
                                            u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
     !=========================================================================!
@@ -1705,7 +1705,7 @@ contains
 
     implicit none
 
-    type(print_output_type), intent(in) :: verbose
+    type(print_output_type), intent(in) :: print_output
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
@@ -1735,7 +1735,7 @@ contains
     integer                                                :: i, ibnd, file_unit, ierr, p, p_max, &
                                                               n, m, ig, a, b, c, ig_idx(32)
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, seedname)
     !
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
@@ -1820,7 +1820,7 @@ contains
       endif
     enddo
 
-    if (verbose%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each &
+    if (print_output%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each &
       &wannier function:'
     !
     ! Loop over all wannier functions
@@ -1921,7 +1921,7 @@ contains
       signatures(19, n) = aimag(2*signature_basis(3) - signature_basis(31) - signature_basis(30))/4                    ! yz^2
       signatures(20, n) = aimag(3*signature_basis(4) - signature_basis(32))/4                                        ! z^3
 
-      if (verbose%iprint .ge. 5) then
+      if (print_output%iprint .ge. 5) then
         write (stdout, *) ' '
         write (stdout, *) ' Wannier function: ', n
         do ig = 1, 20
@@ -1951,15 +1951,15 @@ contains
     deallocate (unkg, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating unkg in tran_find_signatures', stdout, seedname)
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, seedname)
 
     return
 
   end subroutine tran_find_integral_signatures
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, rs_region, &
-                               verbose, real_lattice, num_wann, mp_grid, ham_r, irvec, &
+  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, real_space_ham, &
+                               print_output, real_lattice, num_wann, mp_grid, ham_r, irvec, &
                                nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                num_pl, coord, tran_sorted_idx, hr_one_dim, irvec_max, write_xyz, &
                                stdout, seedname)
@@ -2003,11 +2003,11 @@ contains
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    type(atom_data_type), intent(in) :: atoms
-    type(real_space_ham_type), intent(inout) :: rs_region
-    type(print_output_type), intent(in) :: verbose
-    type(transport_type), intent(inout) :: tran
-    type(wannier_data_type), intent(in) :: wann_data
+    type(atom_data_type), intent(in) :: atom_data
+    type(real_space_ham_type), intent(inout) :: real_space_ham
+    type(print_output_type), intent(in) :: print_output
+    type(transport_type), intent(inout) :: transport
+    type(wannier_data_type), intent(in) :: wannier_data
 
     character(len=50), intent(in)  :: seedname
 
@@ -2017,8 +2017,8 @@ contains
     ! local variables
     real(dp), dimension(2, num_wann)                    :: centres_non_sorted, &
                                                            centres_initial_sorted
-    real(dp), dimension(2, tran%num_ll)                 :: PL1, PL2, PL3, PL4, PL
-    real(dp), dimension(2, num_wann - (4*tran%num_ll))    :: central_region
+    real(dp), dimension(2, transport%num_ll)                 :: PL1, PL2, PL3, PL4, PL
+    real(dp), dimension(2, num_wann - (4*transport%num_ll))    :: central_region
     real(dp)                                          :: reference_position, cell_length, &
                                                          distance, PL_max_val, PL_min_val
 
@@ -2039,9 +2039,9 @@ contains
     allocate (tran_sorted_idx(num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tran_sorted_idx in tran_lcr_2c2_sort', stdout, seedname)
 
-    num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
+    num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, seedname)
 
     sort_iterator = 0
     !
@@ -2056,15 +2056,15 @@ contains
     !conduction direction (coord(1)) and the two perpendicular directions
     !(coord(2),coord(3)), such that a right-handed set is formed
     !
-    if (rs_region%one_dim_dir .eq. 1) then
+    if (real_space_ham%one_dim_dir .eq. 1) then
       coord(1) = 1
       coord(2) = 2
       coord(3) = 3
-    elseif (rs_region%one_dim_dir .eq. 2) then
+    elseif (real_space_ham%one_dim_dir .eq. 2) then
       coord(1) = 2
       coord(2) = 3
       coord(3) = 1
-    elseif (rs_region%one_dim_dir .eq. 3) then
+    elseif (real_space_ham%one_dim_dir .eq. 3) then
       coord(1) = 3
       coord(2) = 1
       coord(3) = 2
@@ -2081,7 +2081,7 @@ contains
     !
     !Check
     !
-    if (num_wann .le. 4*tran%num_ll) then
+    if (num_wann .le. 4*transport%num_ll) then
       call io_error('Principle layers are too big.', stdout, seedname)
     endif
 
@@ -2102,10 +2102,10 @@ contains
     !Extract principal layers. WARNING: This extraction implies the structure of the supercell is
     !2 principal layers of lead on the left and on the right of a central conductor.
     !
-    PL1 = centres_initial_sorted(:, 1:tran%num_ll)
-    PL2 = centres_initial_sorted(:, tran%num_ll + 1:2*tran%num_ll)
-    PL3 = centres_initial_sorted(:, num_wann - (2*tran%num_ll - 1):num_wann - (tran%num_ll))
-    PL4 = centres_initial_sorted(:, num_wann - (tran%num_ll - 1):)
+    PL1 = centres_initial_sorted(:, 1:transport%num_ll)
+    PL2 = centres_initial_sorted(:, transport%num_ll + 1:2*transport%num_ll)
+    PL3 = centres_initial_sorted(:, num_wann - (2*transport%num_ll - 1):num_wann - (transport%num_ll))
+    PL4 = centres_initial_sorted(:, num_wann - (transport%num_ll - 1):)
     !
     if (sort_iterator .eq. 1) then
       temp_coord_2 = coord(2)
@@ -2114,7 +2114,7 @@ contains
       coord(3) = temp_coord_2
     endif
     !
-    if (verbose%iprint .ge. 4) then
+    if (print_output%iprint .ge. 4) then
       write (stdout, *) ' Group Breakdown of each principal layer'
     endif
     !
@@ -2138,9 +2138,9 @@ contains
       !
       !Grouping wannier functions with similar coord(1)
       !
-      call group(PL, PL_groups, tran%group_threshold, stdout, seedname)
+      call group(PL, PL_groups, transport%group_threshold, stdout, seedname)
 
-      if (verbose%iprint .ge. 4) then
+      if (print_output%iprint .ge. 4) then
         !
         !Print group breakdown
         !
@@ -2155,8 +2155,8 @@ contains
       !
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
-      call master_sort_and_group(PL, PL_groups, tran%num_ll, PL_subgroup_info, &
-                                 tran%group_threshold, verbose, wannier_centres_translated, &
+      call master_sort_and_group(PL, PL_groups, transport%num_ll, PL_subgroup_info, &
+                                 transport%group_threshold, print_output, wannier_centres_translated, &
                                  coord, stdout, seedname)
 
       select case (PL_selector)
@@ -2219,15 +2219,15 @@ contains
     !
     !Define central region
     !
-    central_region = centres_initial_sorted(:, 2*tran%num_ll + 1:num_wann - (2*tran%num_ll))
+    central_region = centres_initial_sorted(:, 2*transport%num_ll + 1:num_wann - (2*transport%num_ll))
     !
     !Group central region
     !
-    call group(central_region, central_region_groups, tran%group_threshold, stdout, seedname)
+    call group(central_region, central_region_groups, transport%group_threshold, stdout, seedname)
     !
     !Print central region group breakdown
     !
-    if (verbose%iprint .ge. 4) then
+    if (print_output%iprint .ge. 4) then
       write (stdout, *) ' Group Breakdown of central region'
       write (fmt_1, '(i5)') size(central_region_groups)
       fmt_1 = adjustl(fmt_1)
@@ -2240,8 +2240,8 @@ contains
     !
     allocate (central_subgroup_info(size(central_region_groups), maxval(central_region_groups)), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
-    call master_sort_and_group(central_region, central_region_groups, num_wann - (4*tran%num_ll), &
-                               central_subgroup_info, tran%group_threshold, verbose, &
+    call master_sort_and_group(central_region, central_region_groups, num_wann - (4*transport%num_ll), &
+                               central_subgroup_info, transport%group_threshold, print_output, &
                                wannier_centres_translated, coord, stdout, seedname)
     deallocate (central_subgroup_info, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
@@ -2250,11 +2250,11 @@ contains
     !Build the sorted index array
     !
     tran_sorted_idx = nint(centres_initial_sorted(1, :))
-    tran_sorted_idx(1:tran%num_ll) = nint(PL1(1, :))
-    tran_sorted_idx(tran%num_ll + 1:2*tran%num_ll) = nint(PL2(1, :))
-    tran_sorted_idx(2*tran%num_ll + 1:num_wann - (2*tran%num_ll)) = nint(central_region(1, :))
-    tran_sorted_idx(num_wann - (2*tran%num_ll - 1):num_wann - (tran%num_ll)) = nint(PL3(1, :))
-    tran_sorted_idx(num_wann - (tran%num_ll - 1):) = nint(PL4(1, :))
+    tran_sorted_idx(1:transport%num_ll) = nint(PL1(1, :))
+    tran_sorted_idx(transport%num_ll + 1:2*transport%num_ll) = nint(PL2(1, :))
+    tran_sorted_idx(2*transport%num_ll + 1:num_wann - (2*transport%num_ll)) = nint(central_region(1, :))
+    tran_sorted_idx(num_wann - (2*transport%num_ll - 1):num_wann - (transport%num_ll)) = nint(PL3(1, :))
+    tran_sorted_idx(num_wann - (transport%num_ll - 1):) = nint(PL4(1, :))
 
     sort_iterator = sort_iterator + 1
     !
@@ -2264,7 +2264,7 @@ contains
         (size(PL2_groups) .ne. size(PL3_groups)) .or. &
         (size(PL3_groups) .ne. size(PL4_groups))) then
       if (sort_iterator .ge. 2) then
-        if (write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+        if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                            tran_sorted_idx, num_wann, seedname, stdout)
         call io_error('Sorting techniques exhausted:&
           & Inconsistent number of groups among principal layers', stdout, seedname)
@@ -2294,7 +2294,7 @@ contains
           (PL2_groups(i) .ne. PL3_groups(i)) .or. &
           (PL3_groups(i) .ne. PL4_groups(i))) then
         if (sort_iterator .ge. 2) then
-          if (write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+          if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
           call io_error &
            ('Sorting techniques exhausted: Inconsitent number of wannier function among &
@@ -2329,10 +2329,10 @@ contains
     reference_position = wannier_centres_translated(coord(1), tran_sorted_idx(1))
     cell_length = real_lattice(coord(1), coord(1))
     sort_iterator2 = 1
-    do i = 1, tran%num_ll
+    do i = 1, transport%num_ll
       distance = abs(abs(reference_position - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1))) &
                      - cell_length)
-      if (distance .lt. tran%group_threshold) then
+      if (distance .lt. transport%group_threshold) then
         wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1)) = &
           wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1)) - cell_length
         sort_iterator2 = sort_iterator2 + 1
@@ -2347,10 +2347,10 @@ contains
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
                           seedname, stdout)
-      call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+      call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                one_dim_vec, seedname, stdout)
       write (stdout, *) ' '
@@ -2394,7 +2394,7 @@ contains
         do k = 1, size(temp_subgroup, 2)
           if (temp_subgroup(j, k) .ne. 0) then
             if (sort_iterator .ge. 2) then
-              if (write_xyz) call tran_write_xyz(atoms, tran, &
+              if (write_xyz) call tran_write_xyz(atom_data, transport, &
                                                  wannier_centres_translated, &
                                                  tran_sorted_idx, num_wann, seedname, &
                                                  stdout)
@@ -2429,7 +2429,7 @@ contains
     ! At this point, every check has been cleared, and we need to use
     ! the parity signatures of the WFs for the possibility of equal centres
     !
-    call check_and_sort_similar_centres(signatures, num_G, atoms, tran, verbose, &
+    call check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                         num_wann, wannier_centres_translated, coord, &
                                         tran_sorted_idx, write_xyz, stdout, seedname)
 
@@ -2442,27 +2442,27 @@ contains
       if (k .eq. 2) write (stdout, *) '==================================PL2========================================='
       if (k .eq. 3) then
         write (stdout, *) '===========================Central Region==================================='
-        do i = 1, num_wann - 4*tran%num_ll
+        do i = 1, num_wann - 4*transport%num_ll
           n = n + 1
           write (stdout, FMT='(2x,i6,10x,i6,6x,4F12.6)') n, tran_sorted_idx(n), &
             wannier_centres_translated(1, tran_sorted_idx(n)), &
             wannier_centres_translated(2, tran_sorted_idx(n)), &
             wannier_centres_translated(3, tran_sorted_idx(n)), &
-            wann_data%spreads(tran_sorted_idx(n))*verbose%lenconfac**2
+            wannier_data%spreads(tran_sorted_idx(n))*print_output%lenconfac**2
         enddo
         write (stdout, *) '==================================PL3========================================='
       endif
       if (k .eq. 4) write (stdout, *) '==================================PL4========================================='
-      do i = 1, tran%num_cell_ll
+      do i = 1, transport%num_cell_ll
         do j = 1, num_wann_cell_ll
           n = n + 1
           write (stdout, FMT='(2x,i6,10x,i6,6x,4F12.6)') n, tran_sorted_idx(n), &
             wannier_centres_translated(1, tran_sorted_idx(n)), &
             wannier_centres_translated(2, tran_sorted_idx(n)), &
             wannier_centres_translated(3, tran_sorted_idx(n)), &
-            wann_data%spreads(tran_sorted_idx(n))*verbose%lenconfac**2
+            wannier_data%spreads(tran_sorted_idx(n))*print_output%lenconfac**2
         enddo
-        if (i .ne. tran%num_cell_ll) write (stdout, *) '---------------------&
+        if (i .ne. transport%num_cell_ll) write (stdout, *) '---------------------&
           &---------------------------------------------------------'
 
       enddo
@@ -2485,11 +2485,11 @@ contains
       !
       num_wf_last_group = num_wann_cell_ll
     endif
-    PL_min_val = maxval(wannier_centres_translated(coord(1), tran_sorted_idx(tran%num_ll - num_wf_last_group + 1:tran%num_ll))) &
+    PL_min_val = maxval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll - num_wf_last_group + 1:transport%num_ll))) &
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
-    PL_max_val = minval(wannier_centres_translated(coord(1), tran_sorted_idx(tran%num_ll + 1:tran%num_ll + num_wf_group1))) &
+ PL_max_val = minval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll + 1:transport%num_ll + num_wf_group1))) &
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
-    if ((rs_region%dist_cutoff .lt. PL_min_val) .or. (rs_region%dist_cutoff .gt. PL_max_val)) then
+    if ((real_space_ham%dist_cutoff .lt. PL_min_val) .or. (real_space_ham%dist_cutoff .gt. PL_max_val)) then
       write (stdout, '(a)') ' WARNING: Expected dist_cutoff to be a PL length, I think this'
       write (stdout, '(2(a,f10.6),a)') ' WARNING: is somewhere between ', PL_min_val, ' and ', PL_max_val, ' Ang'
       pl_warning = .true.
@@ -2497,7 +2497,7 @@ contains
     !
     ! End MS.
     !
-    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, seedname)
 
     return
 
@@ -2505,7 +2505,7 @@ contains
 
   !========================================!
   subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
-                                   tran_group_threshold, verbose, wannier_centres_translated, &
+                                   tran_group_threshold, print_output, wannier_centres_translated, &
                                    coord, stdout, seedname)
     !=============================================================!
     ! General sorting and grouping subroutine which takes Array,  !
@@ -2522,7 +2522,7 @@ contains
 
     implicit none
 
-    type(print_output_type), intent(in) :: verbose
+    type(print_output_type), intent(in) :: print_output
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2546,7 +2546,7 @@ contains
                                                           subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating subgroup_info in master_sort_and_group', stdout, seedname)
@@ -2584,7 +2584,7 @@ contains
 
       group_num_subgroups = size(group_subgroups)
 
-      if (verbose%iprint .ge. 4) then
+      if (print_output%iprint .ge. 4) then
         !
         !Printing subgroup breakdown
         !
@@ -2652,7 +2652,7 @@ contains
       if (ierr /= 0) call io_error('Error deallocating group_subgroups in master_sort_and_group', stdout, seedname)
     enddo
 
-    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, seedname)
 
     return
 
@@ -2812,7 +2812,7 @@ contains
   end subroutine group
 
   !=========================================================
-  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, verbose, &
+  subroutine check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                             num_wann, wannier_centres_translated, &
                                             coord, tran_sorted_idx, write_xyz, stdout, seedname)
     !=======================================================!
@@ -2835,9 +2835,9 @@ contains
     use wannier_param_types, only: transport_type
 
     implicit none
-    type(transport_type), intent(inout) :: tran
-    type(print_output_type), intent(in) :: verbose
-    type(atom_data_type), intent(in) :: atoms
+    type(transport_type), intent(inout) :: transport
+    type(print_output_type), intent(in) :: print_output
+    type(atom_data_type), intent(in) :: atom_data
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2862,21 +2862,21 @@ contains
 
     logical, allocatable, dimension(:)                  :: has_similar_centres
 
-    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
 
-    num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
+    num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
-    allocate (wf_similar_centres(tran%num_cell_ll*4, num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
+    allocate (wf_similar_centres(transport%num_cell_ll*4, num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating wf_similar_centre in check_and_sort_similar_centres', stdout, seedname)
     allocate (idx_similar_wf(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating idx_similar_wf in check_and_sort_similar_centres', stdout, seedname)
     allocate (has_similar_centres(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating has_similar_centres in check_and_sort_similar_centres', stdout, seedname)
-    allocate (tmp_wf_verifier(4*tran%num_cell_ll, num_wann_cell_ll), stat=ierr)
+    allocate (tmp_wf_verifier(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating tmp_wf_verifier in check_and_sort_similar_centres', stdout, seedname)
-    allocate (group_verifier(4*tran%num_cell_ll), stat=ierr)
+    allocate (group_verifier(4*transport%num_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating group_verifier in check_and_sort_similar_centres', stdout, seedname)
-    allocate (first_group_element(4*tran%num_cell_ll, num_wann_cell_ll), stat=ierr)
+    allocate (first_group_element(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating first_group_element in check_and_sort_similar_centres', stdout, seedname)
     allocate (centre_id(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating centre_id in check_and_sort_similar_centres', stdout, seedname)
@@ -2891,7 +2891,7 @@ contains
     !
     ! Loop over unit cells in PL1,PL2,PL3 and PL4
     !
-    do i = 1, 4*tran%num_cell_ll
+    do i = 1, 4*transport%num_cell_ll
       group_iterator = 0
       has_similar_centres = .false.
       !
@@ -2910,20 +2910,20 @@ contains
             ! Loop over x,y,z to find similar centres
             !
             do l = 1, 3
-              if (i .le. 2*tran%num_cell_ll) then
+              if (i .le. 2*transport%num_cell_ll) then
                 if (abs(wannier_centres_translated(coord(l), tran_sorted_idx(j + (i - 1)*num_wann_cell_ll)) - &
                         wannier_centres_translated(coord(l), tran_sorted_idx(k + (i - 1)*num_wann_cell_ll))) &
-                    .le. tran%group_threshold) then
+                    .le. transport%group_threshold) then
                   coord_iterator = coord_iterator + 1
                 else
                   exit
                 endif
               else
-                if (abs(wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*tran%num_ll + &
-                                                                             j + (i - 2*tran%num_cell_ll - 1)*num_wann_cell_ll)) - &
-                        wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*tran%num_ll + &
-                                                                             k + (i - 2*tran%num_cell_ll - 1)*num_wann_cell_ll))) &
-                    .le. tran%group_threshold) then
+                if (abs(wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*transport%num_ll + &
+                                                                        j + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll)) - &
+                        wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*transport%num_ll + &
+                                                                         k + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll))) &
+                    .le. transport%group_threshold) then
                   coord_iterator = coord_iterator + 1
                 else
                   exit
@@ -2933,17 +2933,17 @@ contains
             if (coord_iterator .eq. 3) then
               if (.not. has_similar_centres(j)) then
                 num_wf_iterator = num_wf_iterator + 1
-                if (i .le. 2*tran%num_cell_ll) then
+                if (i .le. 2*transport%num_cell_ll) then
                   idx_similar_wf(num_wf_iterator) = tran_sorted_idx(j + (i - 1)*num_wann_cell_ll)
                 else
-                  idx_similar_wf(num_wf_iterator) = tran_sorted_idx(j + num_wann - 2*tran%num_ll + &
-                                                                    (i - 2*tran%num_cell_ll - 1)*num_wann_cell_ll)
+                  idx_similar_wf(num_wf_iterator) = tran_sorted_idx(j + num_wann - 2*transport%num_ll + &
+                                                                    (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll)
                 endif
-                if (i .le. 2*tran%num_cell_ll) then
+                if (i .le. 2*transport%num_cell_ll) then
                   first_group_element(i, j) = j + (i - 1)*num_wann_cell_ll
                 else
-                  first_group_element(i, j) = num_wann - 2*tran%num_ll + &
-                                              j + (i - 2*tran%num_cell_ll - 1)*num_wann_cell_ll
+                  first_group_element(i, j) = num_wann - 2*transport%num_ll + &
+                                              j + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll
                 endif
                 num_wf_cell_iter = num_wf_cell_iter + 1
                 centre_id(num_wf_cell_iter) = j
@@ -2951,11 +2951,11 @@ contains
               has_similar_centres(k) = .true.
               has_similar_centres(j) = .true.
               num_wf_iterator = num_wf_iterator + 1
-              if (i .le. 2*tran%num_cell_ll) then
+              if (i .le. 2*transport%num_cell_ll) then
                 idx_similar_wf(num_wf_iterator) = tran_sorted_idx(k + (i - 1)*num_wann_cell_ll)
               else
-                idx_similar_wf(num_wf_iterator) = tran_sorted_idx(k + num_wann - 2*tran%num_ll + &
-                                                                  (i - 2*tran%num_cell_ll - 1)*num_wann_cell_ll)
+                idx_similar_wf(num_wf_iterator) = tran_sorted_idx(k + num_wann - 2*transport%num_ll + &
+                                                                  (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll)
               endif
             endif
           endif
@@ -2980,13 +2980,13 @@ contains
       !Save number of group of WFs in each unit cell and compare to previous unit cell
       !
       group_verifier(i) = group_iterator
-      if (verbose%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
+      if (print_output%iprint .ge. 4) write (stdout, '(a11,i4,a13,i4)') ' Unit cell:', i, '  Num groups:', group_verifier(i)
       if (i .ne. 1) then
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
-          if (write_xyz) call tran_write_xyz(atoms, tran, wannier_centres_translated, &
+          if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
           call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells', stdout, seedname)
-        elseif (i .eq. 4*tran%num_cell_ll) then
+        elseif (i .eq. 4*transport%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
           write (stdout, *) ' unit cells found'
           write (stdout, *) ' '
@@ -2999,16 +2999,16 @@ contains
     if (any(has_similar_centres)) then
       !
       !
-      allocate (wf_verifier(4*tran%num_cell_ll, group_verifier(1)), stat=ierr)
+      allocate (wf_verifier(4*transport%num_cell_ll, group_verifier(1)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres', stdout, seedname)
       !
       !
-      if (verbose%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
+      if (print_output%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
       wf_verifier = 0
       wf_verifier = tmp_wf_verifier(:, 1:group_verifier(1))
-      do i = 1, 4*tran%num_cell_ll
+      do i = 1, 4*transport%num_cell_ll
         do j = 1, group_verifier(1)
-          if (verbose%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
+          if (print_output%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
             j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
@@ -3024,7 +3024,7 @@ contains
       !
       write (stdout, *) ' Fixing order of similar centred wannier functions using parity signatures'
       !
-      do i = 2, 4*tran%num_cell_ll
+      do i = 2, 4*transport%num_cell_ll
         do j = 1, group_verifier(1)
           !
           ! Make array of WF numbers which act as a reference to sort against
@@ -3126,14 +3126,14 @@ contains
     deallocate (wf_similar_centres, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres', stdout, seedname)
 
-    if (verbose%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, seedname)
 
     return
 
   end subroutine check_and_sort_similar_centres
 
   !=====================================!
-  subroutine tran_write_xyz(atoms, tran, wannier_centres_translated, tran_sorted_idx, num_wann, &
+  subroutine tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, num_wann, &
                             seedname, stdout)
     !=====================================!
     !                                     !
@@ -3148,8 +3148,8 @@ contains
 
     implicit none
 !   passed variables
-    type(transport_type), intent(inout) :: tran
-    type(atom_data_type), intent(in) :: atoms
+    type(transport_type), intent(inout) :: transport
+    type(atom_data_type), intent(in) :: atom_data
 
     integer, intent(in) :: tran_sorted_idx(:)
     integer, intent(in) :: num_wann
@@ -3164,8 +3164,8 @@ contains
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3, num_wann)
 
-    if (index(tran%mode, 'bulk') > 0) wc = wannier_centres_translated
-    if (index(tran%mode, 'lcr') > 0) then
+    if (index(transport%mode, 'bulk') > 0) wc = wannier_centres_translated
+    if (index(transport%mode, 'lcr') > 0) then
       do iw = 1, num_wann
         wc(:, iw) = wannier_centres_translated(:, tran_sorted_idx(iw))
       enddo
@@ -3174,7 +3174,7 @@ contains
     xyz_unit = io_file_unit()
     open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted')
     !
-    write (xyz_unit, '(i6)') num_wann + atoms%num_atoms
+    write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
     !
     call io_date(cdate, ctime)
     write (xyz_unit, '(a84)') 'Wannier centres and atomic positions, written by Wannier90 on '//cdate//' at '//ctime
@@ -3182,9 +3182,9 @@ contains
     do iw = 1, num_wann
       write (xyz_unit, '("X",6x,3(f14.8,3x))') (wc(ind, iw), ind=1, 3)
     end do
-    do nsp = 1, atoms%num_species
-      do nat = 1, atoms%species_num(nsp)
-        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atoms%symbol(nsp), atoms%pos_cart(:, nat, nsp)
+    do nsp = 1, atom_data%num_species
+      do nat = 1, atom_data%species_num(nsp)
+        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%symbol(nsp), atom_data%pos_cart(:, nat, nsp)
       end do
     end do
 
@@ -3195,7 +3195,7 @@ contains
   end subroutine tran_write_xyz
 
   !==============================================================!
-  subroutine tran_parity_enforce(signatures, verbose, tran, num_wann, tran_sorted_idx, &
+  subroutine tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
@@ -3220,8 +3220,8 @@ contains
     real(dp), intent(inout) :: signatures(:, :)
     real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
 
-    type(print_output_type), intent(in) :: verbose
-    type(transport_type), intent(in) :: tran
+    type(print_output_type), intent(in) :: print_output
+    type(transport_type), intent(in) :: transport
 
     character(len=50), intent(in)  :: seedname
 
@@ -3229,7 +3229,7 @@ contains
     integer                                             :: i, j, k, wf_idx, num_wann_cell_ll
     real(dp)                                            :: signature_dot_p
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
 
     !
     ! NP: special "easy" fix of the parities by switching the sign
@@ -3237,7 +3237,7 @@ contains
     ! is found negative. Then updating the signature and the Hamiltonian
     ! matrix element for the corresponding line and column
     !
-    if (tran%easy_fix) then
+    if (transport%easy_fix) then
       do i = 1, num_wann
         if (real(signatures(1, i)) .lt. 0.0_dp) then
           signatures(:, i) = -signatures(:, i)
@@ -3249,31 +3249,31 @@ contains
       enddo
     endif
 
-    num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
-    if (verbose%iprint .eq. 5) write (stdout, '(a101)') 'Unit cell    Sorted WF index    Unsort WF index  &
+    num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
+    if (print_output%iprint .eq. 5) write (stdout, '(a101)') 'Unit cell    Sorted WF index    Unsort WF index  &
          &Unsorted WF Equiv       Signature Dot Product'
     !
     ! Loop over unit cell in principal layers
     !
-    do i = 2, 4*tran%num_cell_ll
+    do i = 2, 4*transport%num_cell_ll
       !
       ! Loop over wannier functions in unit cell
       !
       do j = 1, num_wann_cell_ll
-        if (i .le. 2*tran%num_cell_ll) then
+        if (i .le. 2*transport%num_cell_ll) then
           wf_idx = j + (i - 1)*num_wann_cell_ll
         else
-          wf_idx = num_wann - 2*tran%num_ll + j + (i - 1 - 2*tran%num_cell_ll)*num_wann_cell_ll
+          wf_idx = num_wann - 2*transport%num_ll + j + (i - 1 - 2*transport%num_cell_ll)*num_wann_cell_ll
         endif
         signature_dot_p = dot_product(signatures(:, tran_sorted_idx(j)), signatures(:, tran_sorted_idx(wf_idx)))
-        if (verbose%iprint .eq. 5) then
+        if (print_output%iprint .eq. 5) then
           write (stdout, '(2x,i4,3(13x,i5),12x,f20.17)') &
             i, wf_idx, tran_sorted_idx(wf_idx), tran_sorted_idx(j), signature_dot_p
         endif
         if (abs(signature_dot_p) .le. 0.8_dp) then
           write (stdout, '(a28,i4,a64,i4,a20)') ' WARNING: Wannier function (', tran_sorted_idx(wf_idx), &
             ') seems to has poor resemblance to equivalent wannier function (', tran_sorted_idx(j), ') in first unit cell'
-          if (verbose%iprint .lt. 5) write (stdout, *) 'Dot product of signatures: ', signature_dot_p
+          if (print_output%iprint .lt. 5) write (stdout, *) 'Dot product of signatures: ', signature_dot_p
         endif
         if (signature_dot_p .lt. 0.0_dp) then
           do k = 1, num_wann
@@ -3284,15 +3284,15 @@ contains
       enddo
     enddo
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, seedname)
 
     return
 
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, rs_region, fermi_energy_list, k_points, num_wann, &
-                                    tran, verbose, real_lattice, mp_grid, ham_r, irvec, nrpts, &
+  subroutine tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, k_points, num_wann, transport, &
+                                    print_output, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
                                     hR1, hr_one_dim, irvec_max, stdout, seedname)
@@ -3340,9 +3340,9 @@ contains
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(k_points_type), intent(in) :: k_points
-    type(real_space_ham_type), intent(inout) :: rs_region
-    type(print_output_type), intent(in) :: verbose
-    type(transport_type), intent(inout) :: tran
+    type(real_space_ham_type), intent(inout) :: real_space_ham
+    type(print_output_type), intent(in) :: print_output
+    type(transport_type), intent(inout) :: transport
 
     character(len=50), intent(in)  :: seedname
 
@@ -3355,26 +3355,26 @@ contains
     real(dp)               :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
                                    //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
 
-    allocate (hL0(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hL1(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hR0(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hR0(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hR1(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hR1(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hLC(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hLC(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hCR(tran%num_ll, tran%num_ll), stat=ierr)
+    allocate (hCR(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham', stdout, seedname)
-    allocate (hC(num_wann - (2*tran%num_ll), num_wann - (2*tran%num_ll)), stat=ierr)
+    allocate (hC(num_wann - (2*transport%num_ll), num_wann - (2*transport%num_ll)), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham', stdout, seedname)
     !
     !This checks that only the gamma point is used in wannierisation
@@ -3387,7 +3387,7 @@ contains
       call io_error('Calculation must be performed at gamma only', stdout, seedname)
     endif
 
-    num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
+    num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
     allocate (sub_block(num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating sub_block in tran_lcr_2c2_build_ham', stdout, seedname)
@@ -3399,7 +3399,7 @@ contains
     !
     !Loop over the sub_blocks corresponding to distinct unit cells inside the principal layer
     !
-    do i = 1, tran%num_cell_ll
+    do i = 1, transport%num_cell_ll
       !
       !Each sub_block will be duplicated along the corresponding diagonal. This ensures the correct symmetry for the leads.
       !
@@ -3415,7 +3415,7 @@ contains
       !
       !Filling up hL0 sub_block by sub_block
       !
-      do j = 1, tran%num_cell_ll - i + 1
+      do j = 1, transport%num_cell_ll - i + 1
         !
         !Fill diagonal and upper diagonal sub_blocks
         !
@@ -3434,7 +3434,7 @@ contains
       !
       if (i .gt. 1) then
         do j = 1, i - 1
-          hL1((tran%num_cell_ll - (i - j))*num_wann_cell_ll + 1:(tran%num_cell_ll - (i - 1 - j))*num_wann_cell_ll, &
+          hL1((transport%num_cell_ll - (i - j))*num_wann_cell_ll + 1:(transport%num_cell_ll - (i - 1 - j))*num_wann_cell_ll, &
               (j - 1)*num_wann_cell_ll + 1:j*num_wann_cell_ll) = sub_block
         enddo
       endif
@@ -3447,14 +3447,14 @@ contains
         do j = 1, num_wann_cell_ll
           do k = 1, num_wann_cell_ll
             sub_block(j, k) = hr_one_dim( &
-                              tran_sorted_idx(num_wann - tran%num_ll + j), &
+                              tran_sorted_idx(num_wann - transport%num_ll + j), &
                               tran_sorted_idx((i - 1)*num_wann_cell_ll + k), 0)
           enddo
         enddo
         !
         ! MS: Now fill subblocks of hL1
         !
-        do j = 1, tran%num_cell_ll - i + 1
+        do j = 1, transport%num_cell_ll - i + 1
           hL1((j - 1)*num_wann_cell_ll + 1:j*num_wann_cell_ll, &
               (j - 1)*num_wann_cell_ll + 1 + (i - 1)*num_wann_cell_ll:j*num_wann_cell_ll + (i - 1)* &
               num_wann_cell_ll) = sub_block
@@ -3464,7 +3464,7 @@ contains
     !
     !Special case tran_num_cell_ll=1, the diagonal sub-block of hL1 is hL1, so cannot be left as zero
     !
-    if (tran%num_cell_ll .eq. 1) then
+    if (transport%num_cell_ll .eq. 1) then
       do j = num_wann - num_wann_cell_ll + 1, num_wann
         do k = 1, num_wann_cell_ll
           hL1(j - num_wann + num_wann_cell_ll, k) = hr_one_dim(tran_sorted_idx(j), tran_sorted_idx(k), 0)
@@ -3480,7 +3480,7 @@ contains
     !
     !Loop over the sub_blocks corresponding to distinct unit cells inside the principal layer
     !
-    do i = 1, tran%num_cell_ll
+    do i = 1, transport%num_cell_ll
       !
       !Each sub_block will be duplicated along the corresponding diagonal. This ensures the correct symmetry for the leads.
       !
@@ -3497,7 +3497,7 @@ contains
       !
       !Filling up hR0 sub_block by sub_block
       !
-      do j = 1, tran%num_cell_ll - i + 1
+      do j = 1, transport%num_cell_ll - i + 1
         !
         !Fill diagonal and upper diagonal sub_blocks
         !
@@ -3516,7 +3516,7 @@ contains
       !
       if (i .gt. 1) then
         do j = 1, i - 1
-          hR1((tran%num_cell_ll - (i - j))*num_wann_cell_ll + 1:(tran%num_cell_ll - (i - 1 - j))*num_wann_cell_ll, &
+          hR1((transport%num_cell_ll - (i - j))*num_wann_cell_ll + 1:(transport%num_cell_ll - (i - 1 - j))*num_wann_cell_ll, &
               (j - 1)*num_wann_cell_ll + 1:j*num_wann_cell_ll) = sub_block
         enddo
       endif
@@ -3529,13 +3529,13 @@ contains
         do j = 1, num_wann_cell_ll
           do k = 1, num_wann_cell_ll
             sub_block(j, k) = hr_one_dim(tran_sorted_idx((i - 1)*num_wann_cell_ll + k), &
-                                         tran_sorted_idx(num_wann - tran%num_ll + j), 0)
+                                         tran_sorted_idx(num_wann - transport%num_ll + j), 0)
           enddo
         enddo
         !
         ! MS: Now fill subblocks of hR1
         !
-        do j = 1, tran%num_cell_ll - i + 1
+        do j = 1, transport%num_cell_ll - i + 1
           hR1((j - 1)*num_wann_cell_ll + 1:j*num_wann_cell_ll, &
               (j - 1)*num_wann_cell_ll + 1 + (i - 1)*num_wann_cell_ll:j*num_wann_cell_ll + (i - 1)*num_wann_cell_ll) = sub_block
         enddo
@@ -3544,7 +3544,7 @@ contains
     !
     !Special case tran_num_cell_ll=1, the diagonal sub-block of hR1 is hR1, so cannot be left as zero
     !
-    if (tran%num_cell_ll .eq. 1) then
+    if (transport%num_cell_ll .eq. 1) then
       do j = 1, num_wann_cell_ll
         do k = num_wann - num_wann_cell_ll + 1, num_wann
           hR1(k - num_wann + num_wann_cell_ll, j) = hr_one_dim(tran_sorted_idx(j), tran_sorted_idx(k), 0)
@@ -3556,17 +3556,17 @@ contains
     !Building hLC
     !
     hLC = 0.0_dp
-    do i = 1, tran%num_ll
-      do j = tran%num_ll + 1, 2*tran%num_ll
-        hLC(i, j - tran%num_ll) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
+    do i = 1, transport%num_ll
+      do j = transport%num_ll + 1, 2*transport%num_ll
+        hLC(i, j - transport%num_ll) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
       enddo
     enddo
 !----!
 ! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
 !----!
-!    if (tran%num_cell_ll .gt. 1) then
-!        do j=1,tran%num_cell_ll
-!            do k=1,tran%num_cell_ll
+!    if (transport%num_cell_ll .gt. 1) then
+!        do j=1,transport%num_cell_ll
+!            do k=1,transport%num_cell_ll
 !                if (k .ge. j) then
 !                    hLC((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.0_dp
 !                endif
@@ -3583,27 +3583,27 @@ contains
     hC = 0.0_dp
     !
     band_size = 0
-    if (rs_region%dist_cutoff_hc .ne. rs_region%dist_cutoff) then
-      rs_region%dist_cutoff = rs_region%dist_cutoff_hc
+    if (real_space_ham%dist_cutoff_hc .ne. real_space_ham%dist_cutoff) then
+      real_space_ham%dist_cutoff = real_space_ham%dist_cutoff_hc
       write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(rs_region, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, verbose%timing_level, &
+      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
+                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
                           seedname, stdout)
-      call tran_cut_hr_one_dim(rs_region, tran, verbose, hr_one_dim, real_lattice, &
+      call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                one_dim_vec, seedname, stdout)
     endif
 
-    do i = tran%num_ll + 1, num_wann - tran%num_ll
-      do j = tran%num_ll + 1, num_wann - tran%num_ll
-        hC(i - tran%num_ll, j - tran%num_ll) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
+    do i = transport%num_ll + 1, num_wann - transport%num_ll
+      do j = transport%num_ll + 1, num_wann - transport%num_ll
+        hC(i - transport%num_ll, j - transport%num_ll) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
         !
         ! Impose a ham_cutoff of 1e-4 eV to reduce tran_num_bandc (and in turn hCband, and speed up transport)
         !
-        if (abs(hC(i - tran%num_ll, j - tran%num_ll)) .lt. 10.0_dp*eps5) then
-          hC(i - tran%num_ll, j - tran%num_ll) = 0.0_dp
+        if (abs(hC(i - transport%num_ll, j - transport%num_ll)) .lt. 10.0_dp*eps5) then
+          hC(i - transport%num_ll, j - transport%num_ll) = 0.0_dp
           band_size = max(band_size, abs(i - j))
         endif
       enddo
@@ -3612,17 +3612,17 @@ contains
     !Building hCR
     !
     hCR = 0.0_dp
-    do i = num_wann - 2*tran%num_ll + 1, num_wann - tran%num_ll
-      do j = num_wann - tran%num_ll + 1, num_wann
-        hCR(i - (num_wann - 2*tran%num_ll), j - (num_wann - tran%num_ll)) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
+    do i = num_wann - 2*transport%num_ll + 1, num_wann - transport%num_ll
+      do j = num_wann - transport%num_ll + 1, num_wann
+ hCR(i - (num_wann - 2*transport%num_ll), j - (num_wann - transport%num_ll)) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
       enddo
     enddo
 !----!
 ! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
 !----!
-!    if (tran%num_cell_ll .gt. 1) then
-!        do j=1,tran%num_cell_ll
-!            do k=1,tran%num_cell_ll
+!    if (transport%num_cell_ll .gt. 1) then
+!        do j=1,transport%num_cell_ll
+!            do k=1,transport%num_cell_ll
 !                if (k .ge. j) then
 !                    hCR((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.0_dp
 !                endif
@@ -3636,26 +3636,26 @@ contains
     !
     !Subtract the Fermi energy from the diagonal elements of hC,hL0,hR0
     !
-    do i = 1, tran%num_ll
+    do i = 1, transport%num_ll
       hL0(i, i) = hL0(i, i) - fermi_energy_list(1)
       hR0(i, i) = hR0(i, i) - fermi_energy_list(1)
     enddo
-    do i = 1, num_wann - (2*tran%num_ll)
+    do i = 1, num_wann - (2*transport%num_ll)
       hC(i, i) = hC(i, i) - fermi_energy_list(1)
     enddo
     !
     !Define tran_num_** parameters that are used later in tran_lcr
     !
-    tran%num_rr = tran%num_ll
-    tran%num_lc = tran%num_ll
-    tran%num_cr = tran%num_ll
-    tran%num_cc = num_wann - (2*tran%num_ll)
+    transport%num_rr = transport%num_ll
+    transport%num_lc = transport%num_ll
+    transport%num_cr = transport%num_ll
+    transport%num_cc = num_wann - (2*transport%num_ll)
 
     !
     ! Set appropriate tran_num_bandc if has not been set (0.0_dp is default value)
     !
-    if (tran%num_bandc .eq. 0.0_dp) then
-      tran%num_bandc = min(band_size + 1, (tran%num_cc + 1)/2 + 1)
+    if (transport%num_bandc .eq. 0.0_dp) then
+      transport%num_bandc = min(band_size + 1, (transport%num_cc + 1)/2 + 1)
     endif
 
     !
@@ -3663,26 +3663,26 @@ contains
     !
     if (.not. pl_warning) then
       PL_length = 0.0_dp
-      do i = 1, tran%num_ll
-        do j = 1, tran%num_ll
+      do i = 1, transport%num_ll
+        do j = 1, transport%num_ll
           if (abs(hL1(i, j)) .gt. 0.0_dp) then
-            if (index(rs_region%dist_cutoff_mode, 'one_dim') .gt. 0) then
+            if (index(real_space_ham%dist_cutoff_mode, 'one_dim') .gt. 0) then
               dist = abs(wannier_centres_translated(coord(1), tran_sorted_idx(i)) &
-                         - wannier_centres_translated(coord(1), tran_sorted_idx(j + tran%num_ll)))
+                         - wannier_centres_translated(coord(1), tran_sorted_idx(j + transport%num_ll)))
             else
               dist_vec(:) = wannier_centres_translated(:, tran_sorted_idx(i)) &
-                            - wannier_centres_translated(:, tran_sorted_idx(j + tran%num_ll))
+                            - wannier_centres_translated(:, tran_sorted_idx(j + transport%num_ll))
               dist = sqrt(dot_product(dist_vec, dist_vec))
             endif
             PL_length = max(PL_length, dist)
           endif
           if (abs(hR1(i, j)) .gt. 0.0_dp) then
-            if (index(rs_region%dist_cutoff_mode, 'one_dim') .gt. 0) then
-              dist = abs(wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - 2*tran%num_ll + i)) &
-                         - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - tran%num_ll + j)))
+            if (index(real_space_ham%dist_cutoff_mode, 'one_dim') .gt. 0) then
+              dist = abs(wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - 2*transport%num_ll + i)) &
+                         - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - transport%num_ll + j)))
             else
-              dist_vec(:) = wannier_centres_translated(:, tran_sorted_idx(num_wann - 2*tran%num_ll + i)) &
-                            - wannier_centres_translated(:, tran_sorted_idx(num_wann - tran%num_ll + j))
+              dist_vec(:) = wannier_centres_translated(:, tran_sorted_idx(num_wann - 2*transport%num_ll + i)) &
+                            - wannier_centres_translated(:, tran_sorted_idx(num_wann - transport%num_ll + j))
               dist = sqrt(dot_product(dist_vec, dist_vec))
             endif
             PL_length = max(PL_length, dist)
@@ -3695,7 +3695,7 @@ contains
     !
     !Writing to file:
     !
-    if (tran%write_ht) then
+    if (transport%write_ht) then
       write (stdout, *) '------------------------------- Writing ht files  ----------------------------'
       !
       file_unit = io_file_unit()
@@ -3703,10 +3703,10 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(I6)') tran%num_ll
-      write (file_unit, '(6F12.6)') ((hL0(j, i), j=1, tran%num_ll), i=1, tran%num_ll)
-      write (file_unit, '(I6)') tran%num_ll
-      write (file_unit, '(6F12.6)') ((hL1(j, i), j=1, tran%num_ll), i=1, tran%num_ll)
+      write (file_unit, '(I6)') transport%num_ll
+      write (file_unit, '(6F12.6)') ((hL0(j, i), j=1, transport%num_ll), i=1, transport%num_ll)
+      write (file_unit, '(I6)') transport%num_ll
+      write (file_unit, '(6F12.6)') ((hL1(j, i), j=1, transport%num_ll), i=1, transport%num_ll)
 
       close (file_unit)
       write (stdout, *) ' '//trim(seedname)//'_htL.dat  written'
@@ -3718,10 +3718,10 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(I6)') tran%num_rr
-      write (file_unit, '(6F12.6)') ((hR0(j, i), j=1, tran%num_rr), i=1, tran%num_rr)
-      write (file_unit, '(I6)') tran%num_rr
-      write (file_unit, '(6F12.6)') ((hR1(j, i), j=1, tran%num_rr), i=1, tran%num_rr)
+      write (file_unit, '(I6)') transport%num_rr
+      write (file_unit, '(6F12.6)') ((hR0(j, i), j=1, transport%num_rr), i=1, transport%num_rr)
+      write (file_unit, '(I6)') transport%num_rr
+      write (file_unit, '(6F12.6)') ((hR1(j, i), j=1, transport%num_rr), i=1, transport%num_rr)
 
       close (file_unit)
       write (stdout, *) ' '//trim(seedname)//'_htR.dat  written'
@@ -3733,8 +3733,8 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(2I6)') tran%num_ll, tran%num_lc
-      write (file_unit, '(6F12.6)') ((hLC(j, i), j=1, tran%num_lc), i=1, tran%num_lc)
+      write (file_unit, '(2I6)') transport%num_ll, transport%num_lc
+      write (file_unit, '(6F12.6)') ((hLC(j, i), j=1, transport%num_lc), i=1, transport%num_lc)
 
       close (file_unit)
       write (stdout, *) ' '//trim(seedname)//'_htLC.dat written'
@@ -3746,8 +3746,8 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(2I6)') tran%num_cr, tran%num_rr
-      write (file_unit, '(6F12.6)') ((hCR(j, i), j=1, tran%num_cr), i=1, tran%num_cr)
+      write (file_unit, '(2I6)') transport%num_cr, transport%num_rr
+      write (file_unit, '(6F12.6)') ((hCR(j, i), j=1, transport%num_cr), i=1, transport%num_cr)
 
       close (file_unit)
       write (stdout, *) ' '//trim(seedname)//'_htCR.dat written'
@@ -3759,8 +3759,8 @@ contains
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
-      write (file_unit, '(I6)') tran%num_cc
-      write (file_unit, '(6F12.6)') ((hC(j, i), j=1, tran%num_cc), i=1, tran%num_cc)
+      write (file_unit, '(I6)') transport%num_cc
+      write (file_unit, '(6F12.6)') ((hC(j, i), j=1, transport%num_cc), i=1, transport%num_cc)
 
       close (file_unit)
       write (stdout, *) ' '//trim(seedname)//'_htC.dat  written'
@@ -3771,7 +3771,7 @@ contains
     deallocate (sub_block, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham', stdout, seedname)
 
-    if (verbose%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, seedname)
 
     return
 

@@ -131,7 +131,7 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(kmesh_info, select_proj, sym, a_matrix, m_matrix, m_matrix_local, &
+  subroutine overlap_read(kmesh_info, select_projection, sym, a_matrix, m_matrix, m_matrix_local, &
                           m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                           num_kpts, num_proj, num_wann, timing_level, cp_pp, gamma_only, &
                           lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
@@ -148,7 +148,7 @@ contains
 
     ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(select_projection_type), intent(in) :: select_proj
+    type(select_projection_type), intent(in) :: select_projection
     type(sitesym_data), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
@@ -317,7 +317,7 @@ contains
         if (np_tmp .ne. num_proj) &
           call io_error(trim(seedname)//'.amn has not the right number of projections', stdout, seedname)
 
-        if (num_proj > num_wann .and. .not. select_proj%lselproj) &
+        if (num_proj > num_wann .and. .not. select_projection%lselproj) &
           call io_error(trim(seedname)//'.amn has too many projections to be used without selecting a subset', stdout, seedname)
 
         ! Read the projections
@@ -325,14 +325,14 @@ contains
         if (disentanglement) then
           do ncount = 1, num_amn
             read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            if (select_proj%proj2wann_map(n) < 0) cycle
-            a_matrix(m, select_proj%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
+            if (select_projection%proj2wann_map(n) < 0) cycle
+            a_matrix(m, select_projection%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
           end do
         else
           do ncount = 1, num_amn
             read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            if (select_proj%proj2wann_map(n) < 0) cycle
-            u_matrix(m, select_proj%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
+            if (select_projection%proj2wann_map(n) < 0) cycle
+            u_matrix(m, select_projection%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
           end do
         end if
         close (amn_in)
