@@ -2485,9 +2485,11 @@ contains
       !
       num_wf_last_group = num_wann_cell_ll
     endif
-    PL_min_val = maxval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll - num_wf_last_group + 1:transport%num_ll))) &
+    PL_min_val = maxval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll &
+                                                                             - num_wf_last_group + 1:transport%num_ll))) &
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
- PL_max_val = minval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll + 1:transport%num_ll + num_wf_group1))) &
+    PL_max_val = minval(wannier_centres_translated(coord(1), tran_sorted_idx(transport%num_ll + &
+                                                                             1:transport%num_ll + num_wf_group1))) &
                  - minval(wannier_centres_translated(coord(1), tran_sorted_idx(1:num_wf_group1)))
     if ((real_space_ham%dist_cutoff .lt. PL_min_val) .or. (real_space_ham%dist_cutoff .gt. PL_max_val)) then
       write (stdout, '(a)') ' WARNING: Expected dist_cutoff to be a PL length, I think this'
