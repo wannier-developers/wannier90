@@ -538,12 +538,12 @@ contains
     emax = maxval(eig_int) + 1.0_dp
 
     if (index(band_plot%format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
-                                                                               kpoint_path, &
-                                                                               bands_num_spec_points, &
-                                                                               num_wann)
+                                                                          kpoint_path, &
+                                                                          bands_num_spec_points, &
+                                                                          num_wann)
     if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(kpoint_path, &
-                                                                                bands_num_spec_points, &
-                                                                                num_wann)
+                                                                           bands_num_spec_points, &
+                                                                           num_wann)
     write (stdout, '(1x,a,f11.3,a)') &
       'Time to calculate interpolated band structure ', io_time() - time0, ' (sec)'
     write (stdout, *)
@@ -1361,7 +1361,7 @@ contains
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
               catmp = exp(twopi*cmplx_i*scalfac)
               do loop_b = 1, num_wann
-                do loop_w = 1, wann_plot_num         
+                do loop_w = 1, wann_plot_num
                   if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = &
                       wann_func(nxx, nyy, nzz, loop_w) + &
@@ -1412,7 +1412,7 @@ contains
         ! fix the global phase by setting the wannier to
         ! be real at the point where it has max. modulus
 
-        do loop_w = 1, wann_plot_num 
+        do loop_w = 1, wann_plot_num
           tmaxx = 0.0
           wmod = cmplx_1
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
@@ -1434,7 +1434,7 @@ contains
         !
         ! Check the 'reality' of the WF
         !
-        do loop_w = 1, wann_plot_num 
+        do loop_w = 1, wann_plot_num
           ratmax = 0.0_dp
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
             do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
