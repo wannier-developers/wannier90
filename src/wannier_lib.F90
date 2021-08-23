@@ -488,6 +488,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 !  endif
   call mpi_init(ierr)
   comm%comm = MPI_COMM_WORLD
+  num_nodes = 1
+  my_node_id = 0
 #else
   num_nodes = 1
   my_node_id = 0
