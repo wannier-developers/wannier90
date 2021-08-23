@@ -39,11 +39,24 @@ program test_library
   !! (even if there are some stubs that could make you think
   !! it works in parallel...)
 
-  ! JJ bypass explicitly any code conditionally exposed by MPI
-#ifdef MPI
-#undef MPI
-#endif
+!#ifdef MPI
+!#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+!#    error "You need to define which MPI interface you are using"
+!#  endif
+!#endif
+
+!#ifdef MPI08
+!  use mpi_f08 ! use f08 interface if possible
+!#endif
+!#ifdef MPI90
+!  use mpi ! next best, use fortran90 interface
+!#endif
+!
   implicit none
+
+!#ifdef MPIH
+!  include 'mpif.h' ! worst case, use legacy interface
+!#endif
 
   integer, parameter :: dp = kind(1.0d0)
   integer, parameter :: num_nnmax = 12
@@ -108,25 +121,23 @@ program test_library
 
   NAMELIST /PARAMS/ seed__name, mp_grid_loc, num_bands_tot, gamma_only_loc, spinors_loc, verbosity
 
-#ifdef MPI
-  include 'mpif.h'
-
-  call mpi_init(ierr)
-  if (ierr .ne. 0) then
-    write (0, '(/a/)') '# MPI initialisation error'
-    stop 1
-  end if
-
-  call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
-  call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
-  if (my_node_id == 0) then
-    print *, "# COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
-  end if
-#else
+!#ifdef MPI
+!  call mpi_init(ierr)
+!  if (ierr .ne. 0) then
+!    write (0, '(/a/)') '# MPI initialisation error'
+!    stop 1
+!  end if
+!
+!  call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
+!  call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+!  if (my_node_id == 0) then
+!    print *, "# COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
+!  end if
+!#else
   num_nodes = 1
   my_node_id = 0
   print *, "# COMPILED IN SERIAL"
-#endif
+!endif
 
   verbosity = 'low'
   OPEN (unit=100, file='PARAMS', status='old', action='read')
@@ -400,14 +411,14 @@ program test_library
   end if
 
   ! Broadcast
-#ifdef MPI
-  call MPI_bcast(m_matrix_loc(1, 1, 1, 1), num_bands_loc*num_bands_loc*nntot_loc*num_kpts_loc, &
-                 MPI_double_complex, root_id, mpi_comm_world, ierr)
-  if (ierr .ne. MPI_success) then
-    write (stdout, '(/a/)') '# Error in comms_bcast_cmplx'
-    stop 1
-  end if
-#endif
+!#ifdef MPI
+!  call MPI_bcast(m_matrix_loc(1, 1, 1, 1), num_bands_loc*num_bands_loc*nntot_loc*num_kpts_loc, &
+!                 MPI_double_complex, root_id, mpi_comm_world, ierr)
+!  if (ierr .ne. MPI_success) then
+!    write (stdout, '(/a/)') '# Error in comms_bcast_cmplx'
+!    stop 1
+!  end if
+!#endif
   if (my_node_id == root_id) then
     ! Read A_matrix from file wannier.amn
     amn_in = 100 ! Unit number
@@ -445,14 +456,14 @@ program test_library
     close (amn_in)
   end if
 
-#ifdef MPI
-  call MPI_bcast(a_matrix_loc(1, 1, 1), num_bands_loc*num_wann_loc*num_kpts_loc, &
-                 MPI_double_complex, root_id, mpi_comm_world, ierr)
-  if (ierr .ne. MPI_success) then
-    write (stdout, '(/a/)') '# Error in comms_bcast_cmplx'
-    stop 1
-  end if
-#endif
+!#ifdef MPI
+!  call MPI_bcast(a_matrix_loc(1, 1, 1), num_bands_loc*num_wann_loc*num_kpts_loc, &
+!                 MPI_double_complex, root_id, mpi_comm_world, ierr)
+!  if (ierr .ne. MPI_success) then
+!    write (stdout, '(/a/)') '# Error in comms_bcast_cmplx'
+!    stop 1
+!  end if
+!#endif
 
   allocate (eigenvalues_loc(num_bands_loc, num_kpts_loc), stat=ierr)
   if (ierr /= 0) then

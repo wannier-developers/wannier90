@@ -460,6 +460,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer :: num_nodes, my_node_id
   type(w90commtype) :: comm
   logical :: disentanglement
+  logical :: mpiinitalready
 
   ! CORRECT ONLY FOR SERIAL CASE!!!
   ! THESE LIBRARY ROUTINES ARE OBSOLETE
@@ -475,16 +476,18 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   ! use with more than one process is not supported/tested
   ! --JJ 13Aug21
   !
-#if (defined(MPI) || defined(MPI08) || defined(MPI90) || defined(MPIH))
+#if (defined(MPI))
   write (*, *) " warning: use of this (version 1) library interface with MPI is not recommended"
 #endif
 
 #ifdef MPI
-  comm%comm = MPI_COMM_WORLD
+!  call mpi_initialized(mpiinitalready,ierr)
+!  if ( .not. mpiinitalready ) then
+!    call io_error('mpi_init must be called before wannier_run() when libwannier is compiled with MPI support', &
+!                  stdout, seedname)
+!  endif
   call mpi_init(ierr)
-
-  num_nodes = mpisize(comm)
-  my_node_id = mpirank(comm)
+  comm%comm = MPI_COMM_WORLD
 #else
   num_nodes = 1
   my_node_id = 0

@@ -54,7 +54,8 @@ jobs:
           else
             cp ./.github/workflows/config/make.inc.gfort ./make.inc
           fi
-          make -j default w90chk2chk libs
+          #make -j default w90chk2chk libs
+          make all
       - name: run tests
         env:
           W90BINARYPARALLEL: ${{ matrix.w90-binary-parallel }}
