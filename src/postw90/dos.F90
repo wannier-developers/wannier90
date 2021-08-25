@@ -37,7 +37,7 @@ contains
 
   subroutine dos_main(berry, dis_window, dos_data, kdist, k_points, postw90_oper, pw90_ham, &
                       pw90_spin, rs_region, system, verbose, wann_data, ws_distance, ws_vec, HH_R, &
-                      SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+                      SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                       scissors_shift, mp_grid, num_bands, num_kpts, num_wann, effective_model, &
                       have_disentangled, spin_decomp, seedname, stdout, comm)
 
@@ -57,7 +57,7 @@ contains
       k_points_type, ws_region_type, w90_system_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_utility, only: utility_diagonalize
+    use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
 
@@ -84,7 +84,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
 
-    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
@@ -100,6 +100,7 @@ contains
     ! 'dos_k' contains contrib. from one k-point,
     ! 'dos_all' from all nodes/k-points (first summed on one node and
     ! then reduced (i.e. summed) over all nodes)
+    real(kind=dp) :: recip_lattice(3, 3), volume
 
     integer :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
     integer :: dos_unit, ndim, ierr
@@ -196,6 +197,7 @@ contains
 
     dos_all = 0.0_dp
 
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     if (berry%wanint_kpoint_file) then
       !
       ! Unlike for optical properties, this should always work for the DOS
@@ -210,25 +212,24 @@ contains
         if (dos_data%smearing%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
                                    ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                   del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                   del_eig, eig, eigval, kpt, real_lattice, &
                                    scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                    system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
-                         HH_R, SS_R, smr_index=dos_data%smearing%type_index, &
+                         num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
+                         pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
+                         smr_index=dos_data%smearing%type_index, &
                          adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
                          adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
-                                         kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
-                                         seedname, stdout)
+                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         num_wann, wann_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
                          SS_R, smr_index=dos_data%smearing%type_index, &
                          smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
@@ -253,25 +254,24 @@ contains
         if (dos_data%smearing%use_adaptive) then
           call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
                                    ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                   del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
+                                   del_eig, eig, eigval, kpt, real_lattice, &
                                    scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                    system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         num_wann, wann_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
                          SS_R, smr_index=dos_data%smearing%type_index, &
                          adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
                          adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, &
-                                         kpt, real_lattice, recip_lattice, mp_grid, 0, num_wann, &
-                                         seedname, stdout)
+                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, dos_data, &
+                         num_wann, wann_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, &
                          SS_R, smr_index=dos_data%smearing%type_index, &
                          smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
@@ -537,7 +537,7 @@ contains
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(num_elec_per_state, rs_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
-                       wann_data, real_lattice, recip_lattice, mp_grid, dos_data, spin_decomp, &
+                       wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
                        pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
 
@@ -568,7 +568,7 @@ contains
     real(kind=dp), intent(in) :: kpt(3)
     real(kind=dp), intent(in) :: eig_k(:)
     real(kind=dp), intent(in) :: EnergyArray(:)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(out) :: dos_k(:, :)
     real(kind=dp), intent(in), optional :: levelspacing_k(:)
     real(kind=dp), intent(in), optional :: adpt_smr_fac
@@ -621,7 +621,7 @@ contains
     !
     if (spin_decomp) then
       call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
-                       real_lattice, recip_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+                       real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)

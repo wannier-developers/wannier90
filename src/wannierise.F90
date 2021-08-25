@@ -51,7 +51,7 @@ contains
   subroutine wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, k_points, out_files, &
                        hamiltonian, wannierise, omega, sym, system, verbose, wann_data, &
                        ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
-                       eigval, real_lattice, recip_lattice, wannier_centres_translated, irvec, &
+                       eigval, real_lattice, wannier_centres_translated, irvec, &
                        mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
                        rpt_origin, bands_plot_mode, transport_mode, have_disentangled, &
                        lsitesymmetry, seedname, stdout, comm)
@@ -111,7 +111,6 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
@@ -137,6 +136,7 @@ contains
     real(kind=dp), allocatable  :: ln_tmp(:, :, :)
     real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
 
+    !real(kind=dp), intent(in) :: recip_lattice(3, 3), volume
     ! for MPI
     complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
     complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
@@ -712,8 +712,7 @@ contains
         if (on_root) call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                                             k_points, num_kpts, dis_window, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
-                                            real_lattice, recip_lattice, &
-                                            omega%invariant, have_disentangled, &
+                                            real_lattice, omega%invariant, have_disentangled, &
                                             stdout, seedname)
       endif
 
@@ -810,7 +809,7 @@ contains
 
     if (out_files%write_xyz .and. on_root) then
       call wann_write_xyz(out_files%translate_home_cell, num_wann, wann_data%centres, &
-                          real_lattice, recip_lattice, atoms, verbose, stdout, seedname)
+                          real_lattice, atoms, verbose, stdout, seedname)
     endif
 
     if (out_files%write_hr_diag) then
@@ -820,7 +819,7 @@ contains
                              seedname, transport_mode)
       call hamiltonian_get_hr(atoms, dis_window, hmlg, hamiltonian, verbose, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                              recip_lattice, wann_data%centres, wannier_centres_translated, irvec, &
+                              wann_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
       if (verbose%iprint > 0) then
@@ -867,7 +866,7 @@ contains
 
     ! aam: write data required for vdW utility
     if (out_files%write_vdw_data .and. on_root) then
-      call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
+      call wann_write_vdw_data(num_wann, wann_data, real_lattice, u_matrix, &
                                u_matrix_opt, have_disentangled, system, stdout, seedname)
     endif
 
@@ -2698,7 +2697,7 @@ contains
 
   !=====================================!
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
-                            recip_lattice, atoms, verbose, stdout, seedname)
+                            atoms, verbose, stdout, seedname)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -2720,7 +2719,6 @@ contains
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: wannier_centres(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 !   integer, intent(in) :: num_atoms
 !   character(len=2), intent(in) :: atoms_symbol(:)
 !   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
@@ -2740,7 +2738,7 @@ contains
 
     if (translate_home_cell) then
       do iw = 1, num_wann
-        call utility_translate_home(wc(:, iw), real_lattice, recip_lattice)
+        call utility_translate_home(wc(:, iw), real_lattice)
       enddo
     endif
 
@@ -2777,7 +2775,7 @@ contains
   end subroutine wann_write_xyz
 
   !=================================================================!
-  subroutine wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
+  subroutine wann_write_vdw_data(num_wann, wann_data, real_lattice, u_matrix, &
                                  u_matrix_opt, have_disentangled, system, stdout, seedname)
     !=================================================================!
     !                                                                 !
@@ -2804,7 +2802,6 @@ contains
     integer, intent(in) :: num_wann
 !   real(kind=dp), intent(in) :: wannier_centres(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     !character(len=2), intent(in) :: atoms_symbol(:)
     !real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
     !integer, intent(in) :: num_species
@@ -2831,7 +2828,7 @@ contains
 
     ! translate Wannier centres to the home unit cell
     do iw = 1, num_wann
-      call utility_translate_home(wc(:, iw), real_lattice, recip_lattice)
+      call utility_translate_home(wc(:, iw), real_lattice)
     enddo
 
     allocate (f_w(num_wann, num_wann), stat=ierr)
@@ -3183,7 +3180,7 @@ contains
   !==================================================================!
   subroutine wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, k_points, out_files, &
                              wannierise, omega, system, verbose, wann_data, m_matrix, &
-                             u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, mp_grid, &
+                             u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, seedname, &
                              stdout, comm)
     !==================================================================!
@@ -3225,7 +3222,6 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
 
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: eigval(:, :)
 
@@ -3512,8 +3508,8 @@ contains
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
         call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, k_points, &
                                num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
-                               m_matrix, mp_grid, real_lattice, recip_lattice, &
-                               omega%invariant, have_disentangled, stdout, seedname)
+                               m_matrix, mp_grid, real_lattice, omega%invariant, &
+                               have_disentangled, stdout, seedname)
       endif
 
       if (wannierise%conv_window .gt. 1) then
@@ -3562,7 +3558,7 @@ contains
 
     if (out_files%write_xyz) then
       call wann_write_xyz(out_files%translate_home_cell, num_wann, wann_data%centres, &
-                          real_lattice, recip_lattice, atoms, verbose, stdout, seedname)
+                          real_lattice, atoms, verbose, stdout, seedname)
     endif
 
     if (wannierise%guiding_centres%enable) then
@@ -3595,7 +3591,7 @@ contains
 
     ! aam: write data required for vdW utility
     if (out_files%write_vdw_data) then
-      call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
+      call wann_write_vdw_data(num_wann, wann_data, real_lattice, u_matrix, &
                                u_matrix_opt, have_disentangled, system, stdout, seedname)
     endif
 

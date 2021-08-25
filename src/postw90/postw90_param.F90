@@ -288,11 +288,10 @@ contains
   subroutine param_postw90_read(rs_region, system, exclude_bands, verbose, wann_data, &
                                 kmesh_data, k_points, num_kpts, dis_window, fermi_energy_list, &
                                 atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
-                                recip_lattice, spec_points, pw90_calcs, &
-                                postw90_oper, scissors_shift, effective_model, pw90_spin, pw90_ham, &
-                                kpath, kslice, dos_data, berry, spin_hall, &
-                                gyrotropic, geninterp, boltz, eig_found, write_data, &
-                                gamma_only, bohr, stdout, seedname)
+                                spec_points, pw90_calcs, postw90_oper, scissors_shift, &
+                                effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
+                                berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
+                                write_data, gamma_only, bohr, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -340,7 +339,6 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
 
     character(len=50), intent(in)  :: seedname
@@ -350,6 +348,7 @@ contains
     logical, intent(inout) :: effective_model
 
     ! local variables
+    real(kind=dp) :: recip_lattice(3, 3)
     integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
@@ -412,7 +411,7 @@ contains
     call param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, &
                                 boltz, recip_lattice, write_data%global_kmesh_set, &
                                 write_data%kmesh, write_data%kmesh_spacing, stdout, seedname)
-    call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname) !pw90_write
+    call param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname) !pw90_write
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(atoms, spec_points, verbose%length_unit)
@@ -1453,16 +1452,15 @@ contains
 
 !===================================================================
   subroutine param_postw90_write(param_input, system, fermi_energy_list, atoms, num_wann, &
-                                 real_lattice, recip_lattice, spec_points, &
-                                 pw90_calcs, postw90_oper, scissors_shift, &
-                                 pw90_spin, kpath, kslice, dos_data, berry, &
+                                 real_lattice, spec_points, pw90_calcs, postw90_oper, &
+                                 scissors_shift, pw90_spin, kpath, kslice, dos_data, berry, &
                                  gyrotropic, geninterp, boltz, write_data, stdout)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
     !                                                                  !
     !===================================================================
-
+    use w90_utility, only: utility_recip_lattice_base
     implicit none
 
     !data from parameters module
@@ -1473,7 +1471,6 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     type(kpoint_path_type), intent(in) :: spec_points
@@ -1489,6 +1486,7 @@ contains
     type(pw90_boltzwann_type), intent(in) :: boltz
     type(pw90_extra_io_type), intent(in) :: write_data
 
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: i, loop, nat, nsp
     real(kind=dp) :: cell_volume
 
@@ -1523,6 +1521,7 @@ contains
     else
       write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
     endif
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     write (stdout, 101) 'b_1', (recip_lattice(1, I)/param_input%lenconfac, i=1, 3)
     write (stdout, 101) 'b_2', (recip_lattice(2, I)/param_input%lenconfac, i=1, 3)
     write (stdout, 101) 'b_3', (recip_lattice(3, I)/param_input%lenconfac, i=1, 3)

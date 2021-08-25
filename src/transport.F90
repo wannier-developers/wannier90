@@ -84,7 +84,7 @@ contains
   !==================================================================!
   subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, hmlg, k_points, output_file, &
                        real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                       u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, &
                        have_disentangled, lsitesymmetry, seedname, stdout)
@@ -129,7 +129,6 @@ contains
 
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in)                 :: real_lattice(3, 3)
-    real(kind=dp), intent(in)                 :: recip_lattice(3, 3)
     real(kind=dp), intent(in)                 :: eigval(:, :)
 
     complex(kind=dp), intent(in)                 :: u_matrix(:, :, :)
@@ -188,7 +187,7 @@ contains
                                seedname, transport%mode)
         call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                                real_lattice, recip_lattice, wannier_data%centres, &
+                                real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
@@ -218,7 +217,7 @@ contains
                                seedname, transport%mode)
         call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
                                 ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
-                                real_lattice, recip_lattice, wannier_data%centres, &
+                                real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
@@ -3616,7 +3615,8 @@ contains
     hCR = 0.0_dp
     do i = num_wann - 2*transport%num_ll + 1, num_wann - transport%num_ll
       do j = num_wann - transport%num_ll + 1, num_wann
- hCR(i - (num_wann - 2*transport%num_ll), j - (num_wann - transport%num_ll)) = hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
+        hCR(i - (num_wann - 2*transport%num_ll), j - (num_wann - transport%num_ll)) = &
+          hr_one_dim(tran_sorted_idx(i), tran_sorted_idx(j), 0)
       enddo
     enddo
 !----!

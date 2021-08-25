@@ -60,7 +60,7 @@ contains
   subroutine gyrotropic_main(berry, dis_window, fermi_energy_list, gyrotropic, kmesh_info, &
                              k_points, physics, postw90_oper, pw90_ham, rs_region, system, &
                              verbose, wann_data, ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, &
-                             SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, &
+                             SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -115,7 +115,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
@@ -335,10 +335,11 @@ contains
                                  kweight, gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
                                  gyro_DOS, gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, &
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, verbose, &
-                                 fermi_energy_list, wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                                 fermi_energy_list, wann_data, eigval, real_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                 gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
-                                 seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
+                                 gyrotropic, scissors_shift, effective_model, pw90_ham, &
+                                 ws_distance, ws_vec, stdout, seedname, comm, HH_R, AA_R, &
+                                 BB_R, CC_R, SS_R)
 
     end do !loop_xyz
 
@@ -524,11 +525,12 @@ contains
   subroutine gyrotropic_get_k_list(rs_region, num_valence_bands, have_disentangled, kpt, kweight, &
                                    gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, gyro_DOS, &
                                    gyro_NOA_orb, gyro_NOA_spn, eval_K, eval_D, eval_Dw, eval_NOA, &
-                                   eval_spn, eval_C, eval_dos, num_wann, verbose, fermi_energy_list, &
-                                   wann_data, eigval, real_lattice, recip_lattice, mp_grid, &
+                                   eval_spn, eval_C, eval_dos, num_wann, verbose, &
+                                   fermi_energy_list, wann_data, eigval, real_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_window, k_points, &
-                                   gyrotropic, scissors_shift, effective_model, pw90_ham, ws_distance, ws_vec, stdout, &
-                                   seedname, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
+                                   gyrotropic, scissors_shift, effective_model, pw90_ham, &
+                                   ws_distance, ws_vec, stdout, seedname, comm, &
+                                   HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
     ! Contribution from point k to the GME tensor, Eq.(9) of ZMS16,        !
@@ -568,7 +570,8 @@ contains
     use w90_postw90_common, only: wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
-    use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, utility_w0gauss
+    use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, &
+      utility_w0gauss, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
     use w90_ws_distance, only: ws_distance_type
 
@@ -601,7 +604,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: gyro_C(:, :, :)
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt(3), kweight
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
@@ -644,16 +647,15 @@ contains
 
     call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
                              ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                             del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
-                             scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                             num_valence_bands, effective_model, have_disentangled, seedname, &
-                             stdout, comm)
+                             del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                             num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
+                             have_disentangled, seedname, stdout, comm)
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
       call pw90common_fourier_R_to_k_vec(rs_region, wann_data, ws_distance, ws_vec, AA_R, kpt, &
-                                         real_lattice, recip_lattice, mp_grid, num_wann, seedname, &
+                                         real_lattice, mp_grid, num_wann, seedname, &
                                          stdout, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
@@ -694,7 +696,7 @@ contains
         ! Spin is computed for all bands simultaneously
         !
         if (eval_spn .and. .not. got_spin) then
-          call spin_get_S(kpt, S, num_wann, rs_region, wann_data, real_lattice, recip_lattice, &
+          call spin_get_S(kpt, S, num_wann, rs_region, wann_data, real_lattice, &
                           mp_grid, ws_distance, HH_R, SS_R, ws_vec, stdout, seedname)
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
@@ -708,7 +710,7 @@ contains
             call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, &
                                        verbose, wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, &
                                        HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                       recip_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                       scissors_shift, mp_grid, fermi_n, num_bands, &
                                        num_kpts, num_wann, num_valence_bands, effective_model, &
                                        have_disentangled, seedname, stdout, comm, imf_k, img_k, &
                                        imh_k, occ)
@@ -722,7 +724,7 @@ contains
 
             call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                     u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                     u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                      imf_k, scissors_shift, mp_grid, num_bands, num_kpts, &
                                      num_wann, num_valence_bands, effective_model, &
                                      have_disentangled, seedname, stdout, comm, occ)
@@ -766,13 +768,12 @@ contains
       if (eval_spn) then
         call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
-                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
+                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
                                   seedname, SS_R, gyro_NOA_spn)
       else
         call gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
-                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
-                                  seedname, SS_R)
+                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, seedname, SS_R)
       endif
     endif
 
@@ -826,8 +827,8 @@ contains
 
   subroutine gyrotropic_get_NOA_k(rs_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, verbose, fermi_energy_list, wann_data, real_lattice, &
-                                  recip_lattice, mp_grid, gyrotropic, ws_distance, ws_vec, stdout, &
-                                  seedname, SS_R, gyro_NOA_spn)
+                                  mp_grid, gyrotropic, ws_distance, ws_vec, stdout, seedname, &
+                                  SS_R, gyro_NOA_spn)
     !====================================================================!
     !                                                                    !
     ! Contribution from point k to the real (antisymmetric) part         !
@@ -876,7 +877,7 @@ contains
     real(kind=dp), intent(inout) :: gyro_NOA_orb(:, :, :, :)
     real(kind=dp), intent(inout), optional :: gyro_NOA_spn(:, :, :, :)
     real(kind=dp), intent(in) :: kpt(3), kweight
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
@@ -901,7 +902,7 @@ contains
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
         call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, &
-                                           SS_R(:, :, :, j), kpt, real_lattice, recip_lattice, &
+                                           SS_R(:, :, :, j), kpt, real_lattice, &
                                            mp_grid, num_wann, seedname, stdout, OO=SS(:, :, j))
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
       enddo

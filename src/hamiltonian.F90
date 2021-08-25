@@ -197,9 +197,9 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
-                                u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
-                                recip_lattice, wannier_centres, wannier_centres_translated, irvec, &
+  subroutine hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, &
+                                ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
+                                real_lattice, wannier_centres, wannier_centres_translated, irvec, &
                                 shift_vec, nrpts, num_bands, num_kpts, num_wann, &
                                 have_disentangled, stdout, seedname, lsitesymmetry)
     !============================================!
@@ -232,7 +232,6 @@ contains
 
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in)    :: real_lattice(3, 3)
-    real(kind=dp), intent(in)    :: recip_lattice(3, 3)
     real(kind=dp), intent(in)    :: wannier_centres(:, :)
     real(kind=dp), intent(in)    :: kpt_latt(:, :)
     real(kind=dp), intent(in)    :: eigval(:, :)
@@ -379,7 +378,7 @@ contains
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout, &
                                    seedname)
-      call internal_translate_centres(atom_data, real_space_ham, real_lattice, recip_lattice, &
+      call internal_translate_centres(atom_data, real_space_ham, real_lattice, &
                                       wannier_centres, wannier_centres_translated, shift_vec, &
                                       print_output%iprint, num_wann, seedname, stdout)
       do irpt = 1, nrpts
@@ -430,14 +429,14 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(atom_data, real_space_ham, real_lattice, recip_lattice, &
+    subroutine internal_translate_centres(atom_data, real_space_ham, real_lattice, &
                                           wannier_centres, wannier_centres_translated, shift_vec, &
                                           iprint, num_wann, seedname, stdout)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
       use w90_io, only: io_error
-      use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
+      use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
       use w90_param_types, only: atom_data_type
       use wannier_param_types, only: real_space_ham_type
 
@@ -455,11 +454,11 @@ contains
       real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
       real(kind=dp), intent(in)    :: real_lattice(3, 3)
       real(kind=dp), intent(in)    :: wannier_centres(:, :)
-      real(kind=dp), intent(in)    :: recip_lattice(3, 3)
 
       character(len=50), intent(in)  :: seedname
 
       ! local variables
+      real(kind=dp)              :: inv_lattice(3, 3)
       integer :: iw, ierr, nat, nsp, ind
       real(kind=dp), allocatable :: r_home(:, :), r_frac(:, :)
       real(kind=dp)              :: c_pos_cart(3), c_pos_frac(3)
@@ -479,6 +478,7 @@ contains
                                    stdout, seedname)
       r_home = 0.0_dp; r_frac = 0.0_dp
 
+      call utility_inverse_mat(real_lattice, inv_lattice)
       if (real_space_ham%automatic_translation) then
         ! Calculate centre of atomic positions
         c_pos_cart = 0.0_dp; c_pos_frac = 0.0_dp
@@ -489,14 +489,14 @@ contains
         enddo
         c_pos_cart = c_pos_cart/atom_data%num_atoms
         ! Cartesian --> fractional
-        call utility_cart_to_frac(c_pos_cart, real_space_ham%translation_centre_frac, recip_lattice)
+        call utility_cart_to_frac(c_pos_cart, real_space_ham%translation_centre_frac, inv_lattice)
       end if
       ! Wannier function centres will be in [c_pos_frac-0.5,c_pos_frac+0.5]
       r_frac_min(:) = real_space_ham%translation_centre_frac(:) - 0.5_dp
 
       ! Cartesian --> fractional
       do iw = 1, num_wann
-        call utility_cart_to_frac(wannier_centres(:, iw), r_frac(:, iw), recip_lattice)
+        call utility_cart_to_frac(wannier_centres(:, iw), r_frac(:, iw), inv_lattice)
         ! Rationalise r_frac - r_frac_min to interval [0,1]
         !  by applying shift of -floor(r_frac - r_frac_min)
         shift_vec(:, iw) = -floor(r_frac(:, iw) - r_frac_min(:))

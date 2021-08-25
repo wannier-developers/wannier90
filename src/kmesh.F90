@@ -49,7 +49,7 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_cart, recip_lattice, &
+  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_cart, real_lattice, &
                        num_kpts, gamma_only, seedname, stdout)
     !=====================================================
     !
@@ -57,7 +57,7 @@ contains
     !
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_utility, only: utility_compar
+    use w90_utility, only: utility_compar, utility_recip_lattice
     use w90_param_types, only: kmesh_info_type, kmesh_input_type, print_output_type
 
     implicit none
@@ -68,12 +68,13 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
 
     integer, intent(in) :: num_kpts
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: gamma_only
 
     ! local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnsh, nn, nnx, loop, i, j
     integer :: stdout
@@ -94,6 +95,7 @@ contains
 
     if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
 
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
 
@@ -620,8 +622,8 @@ contains
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, real_lattice, &
-                         recip_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
+  subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
+                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -652,6 +654,7 @@ contains
     !===================================================================
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
+    use w90_utility, only: utility_recip_lattice_base
     use w90_param_types, only: kmesh_info_type, kmesh_input_type, &
       proj_input_type, print_output_type
 
@@ -665,13 +668,13 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     integer, intent(inout) :: num_proj
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     logical, intent(in) :: calc_only_A
     logical, intent(in) :: spinors
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer           :: i, nkp, nn, nnkpout, num_exclude_bands
     character(len=9) :: cdate, ctime
 
@@ -695,6 +698,7 @@ contains
     write (nnkpout, '(a/)') 'end real_lattice'
 
     ! Reciprocal lattice
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     write (nnkpout, '(a)') 'begin recip_lattice'
     write (nnkpout, '(3f12.7)') (recip_lattice(1, i), i=1, 3)
     write (nnkpout, '(3f12.7)') (recip_lattice(2, i), i=1, 3)

@@ -37,7 +37,7 @@ contains
 
   subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, k_points, sym, print_output, &
                       a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                      u_matrix, u_matrix_opt, eigval, recip_lattice, omega_invariant, num_bands, &
+                      u_matrix, u_matrix_opt, eigval, real_lattice, omega_invariant, num_bands, &
                       num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
@@ -46,6 +46,7 @@ contains
     !                                                                  !
     !==================================================================!
     use w90_io, only: io_file_unit
+    use w90_utility, only: utility_recip_lattice_base
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: stdout
@@ -54,7 +55,7 @@ contains
     logical, intent(in) :: gamma_only
 
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: omega_invariant
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
@@ -77,6 +78,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! internal variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nkp, nkp2, nn, j, ierr, page_unit, nkp_global
     logical :: linner                         !! Is there a frozen window
     logical :: lfrozen(num_bands, num_kpts)   !! true if the i-th band inside outer window is frozen
@@ -105,6 +107,7 @@ contains
 
     if (print_output%timing_level > 0) call io_stopwatch('dis: main', 1, stdout, seedname)
 
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     call comms_array_split(num_kpts, counts, displs, comm)
 
     if (on_root) write (stdout, '(/1x,a)') &

@@ -44,7 +44,7 @@ contains
                         fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
                         plot, wannierise, wann_omega, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
-                        write_data, ws_region, w90_calcs, eigval, real_lattice, recip_lattice, &
+                        write_data, ws_region, w90_calcs, eigval, real_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                         eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, library, &
                         library_param_read_first_pass, lsitesymmetry, use_bloch_phases, seedname, &
@@ -100,13 +100,13 @@ contains
     integer, intent(inout) :: num_kpts
 
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(inout) :: symmetrize_eps
     real(kind=dp), intent(in) :: bohr
 
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp) :: recip_lattice(3, 3)
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
@@ -188,7 +188,7 @@ contains
                                     seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
                                    stdout, seedname)
-      call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
+      call param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   wannierise%guiding_centres%enable, &
                                   proj_input, select_proj, num_proj, &
@@ -1184,10 +1184,10 @@ contains
   end subroutine param_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, &
-                         k_points, out_files, plot, wannierise, proj, &
+  subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, &
+                         fermi_surface_data, k_points, out_files, plot, wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
-                         wann_data, wann_plot, write_data, w90_calcs, real_lattice, recip_lattice, &
+                         wann_data, wann_plot, write_data, w90_calcs, real_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                          cp_pp, gamma_only, lsitesymmetry, spinors, use_bloch_phases, stdout)
     !==================================================================!
@@ -1195,6 +1195,7 @@ contains
     !! write wannier90 parameters to stdout
     !                                                                  !
     !===================================================================
+    use w90_utility, only: utility_recip_lattice_base
 
     implicit none
 
@@ -1229,7 +1230,6 @@ contains
     integer, intent(in) :: num_kpts
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: symmetrize_eps
 
     ! RS: symmetry-adapted Wannier functions
@@ -1239,6 +1239,7 @@ contains
     logical, intent(in) :: spinors
 
 !   local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     real(kind=dp) :: cell_volume
     logical :: disentanglement
@@ -1277,6 +1278,7 @@ contains
     else
       write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
     endif
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     write (stdout, 101) 'b_1', (recip_lattice(1, I)/verbose%lenconfac, i=1, 3)
     write (stdout, 101) 'b_2', (recip_lattice(2, I)/verbose%lenconfac, i=1, 3)
     write (stdout, 101) 'b_3', (recip_lattice(3, I)/verbose%lenconfac, i=1, 3)
@@ -1737,7 +1739,7 @@ contains
 !=================================================!
   subroutine param_write_chkpt(chkpt, exclude_bands, wann_data, kmesh_info, k_points, num_kpts, &
                                dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice, omega_invariant, &
+                               mp_grid, real_lattice, omega_invariant, &
                                have_disentangled, stdout, seedname)
     !=================================================!
     !! Write checkpoint file
@@ -1750,6 +1752,7 @@ contains
 
 !   use w90_io, only: io_file_unit, io_date, seedname
     use w90_io, only: io_file_unit, io_date
+    use w90_utility, only: utility_recip_lattice_base
 
     implicit none
 
@@ -1769,11 +1772,11 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     integer, intent(in) :: mp_grid(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: omega_invariant
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: have_disentangled
 
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: chk_unit, nkp, i, j, k, l, num_exclude_bands
     character(len=9) :: cdate, ctime
     character(len=33) :: header
@@ -1797,6 +1800,7 @@ contains
     write (chk_unit) num_exclude_bands         ! Number of excluded bands
     write (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
     write (chk_unit) (mp_grid(i), i=1, 3)                       ! M-P grid
@@ -2064,7 +2068,7 @@ contains
                         fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, &
                         out_files, plot, wannierise, wann_omega, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
-                        real_lattice, recip_lattice, symmetrize_eps, mp_grid, first_segment, &
+                        real_lattice, symmetrize_eps, mp_grid, first_segment, &
                         num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
                         have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
                         stdout, comm)
@@ -2115,7 +2119,7 @@ contains
     integer, intent(inout) :: num_kpts
 
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    !real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(inout) :: symmetrize_eps
 
@@ -2173,7 +2177,7 @@ contains
     call comms_bcast(atoms%num_atoms, 1, stdout, seedname, comm)   ! Ivo: not used in postw90, right?
     call comms_bcast(atoms%num_species, 1, stdout, seedname, comm) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, comm)
-    call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, comm)
+    !call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, comm)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1)

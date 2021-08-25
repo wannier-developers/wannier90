@@ -61,7 +61,7 @@ contains
 
   subroutine geninterp_main(dis_window, geninterp, k_points, pw90_ham, rs_region, verbose, &
                             wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
-                            real_lattice, recip_lattice, scissors_shift, mp_grid, num_bands, &
+                            real_lattice, scissors_shift, mp_grid, num_bands, &
                             num_kpts, num_wann, num_valence_bands, effective_model, &
                             have_disentangled, seedname, stdout, comm)
 
@@ -79,7 +79,7 @@ contains
       wannier_data_type, ws_region_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
-    use w90_utility, only: utility_diagonalize
+    use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
@@ -103,7 +103,6 @@ contains
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
@@ -114,6 +113,7 @@ contains
     logical, intent(in) :: effective_model
 
     ! local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: kpt_unit, outdat_unit, ierr, i, j, enidx
     integer :: nkinterp ! number of kpoints for which we perform the interpolation
     integer, allocatable :: counts(:), displs(:)
@@ -297,17 +297,17 @@ contains
         call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
                                  ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                  localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
-                                 recip_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
-                                 num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                 scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                 num_valence_bands, effective_model, have_disentangled, &
                                  seedname, stdout, comm)
       else
         call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
-                                       real_lattice, recip_lattice, mp_grid, 0, num_wann, &
-                                       seedname, stdout)
+                                       real_lattice, mp_grid, 0, num_wann, seedname, stdout)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do
 
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &

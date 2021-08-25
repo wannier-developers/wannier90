@@ -179,10 +179,6 @@ module w90_param_types
     ! REVIEW_2021-07-22: Keep only one of pos_frac and pos_cart to avoid possible inconsistency
     ! REVIEW_2021-07-22: on passing these variables in from the external code. We can generate
     ! REVIEW_2021-07-22: the other internally using a utility function.
-    ! REVIEW_2021-07-22: Shall we include unit cell data here too? Good arguments for and
-    ! REVIEW_2021-07-22: against -- if most subroutines only need cell and not atomic data,
-    ! REVIEW_2021-07-22: then keep separate. In any case, also only pass one of
-    ! REVIEW_2021-07-22: real_cell / recip_cell and generate the other internally.
     real(kind=dp), allocatable :: pos_frac(:, :, :)
     real(kind=dp), allocatable :: pos_cart(:, :, :)
     integer, allocatable :: species_num(:)
@@ -917,13 +913,13 @@ contains
     ! [GP-end]
   end subroutine param_read_global_kmesh
 
-  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout, seedname)
+  subroutine param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
     integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atoms
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -946,7 +942,7 @@ contains
         if (lunits) atoms%num_atoms = atoms%num_atoms - 1
       end if
       if (atoms%num_atoms > 0) then
-        call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr, stdout, seedname)
+        call param_get_atoms(atoms, library, lunits, real_lattice, bohr, stdout, seedname)
       end if
     endif
   end subroutine param_read_atoms
@@ -1775,7 +1771,7 @@ contains
 
 !=================================================!
   subroutine param_read_chkpt(dis_data, exclude_bands, kmesh_info, k_points, wann_data, m_matrix, &
-                              u_matrix, u_matrix_opt, real_lattice, recip_lattice, &
+                              u_matrix, u_matrix_opt, real_lattice, &
                               omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                               num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
     !=================================================!
@@ -1791,6 +1787,7 @@ contains
 
     use w90_constants, only: eps6
     use w90_io, only: io_file_unit, io_error
+    use w90_utility, only: utility_recip_lattice
 
     implicit none
 
@@ -1813,7 +1810,6 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: omega_invariant
 
     character(len=50), intent(in)  :: seedname
@@ -1823,6 +1819,7 @@ contains
     logical, intent(out) :: have_disentangled
 
 !   local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
@@ -1855,6 +1852,7 @@ contains
           call io_error('param_read_chk: Mismatch in real_lattice', stdout, seedname)
       enddo
     enddo
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
       do i = 1, 3
@@ -2594,7 +2592,7 @@ contains
   end subroutine param_get_block_length
 
 !===================================!
-  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr, stdout, seedname)
+  subroutine param_get_atoms(atoms, library, lunits, real_lattice, bohr, stdout, seedname)
     !===================================!
     !                                   !
     !!   Fills the atom data block
@@ -2602,7 +2600,7 @@ contains
     !===================================!
 
     !use w90_constants, only: bohr
-    use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac
+    use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac, utility_inverse_mat
     use w90_io, only: io_error
     implicit none
 
@@ -2611,10 +2609,11 @@ contains
     logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp)     :: inv_lattice(3, 3)
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3, atoms%num_atoms)
     character(len=20) :: keyword
@@ -2707,7 +2706,7 @@ contains
       end do
     else
       do loop = 1, atoms%num_atoms
-        call utility_cart_to_frac(atoms_pos_cart_tmp(:, loop), atoms_pos_frac_tmp(:, loop), recip_lattice)
+        call utility_cart_to_frac(atoms_pos_cart_tmp(:, loop), atoms_pos_frac_tmp(:, loop), inv_lattice)
       end do
     end if
 
@@ -2773,7 +2772,7 @@ contains
   end subroutine param_get_atoms
 
 !=====================================================!
-  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, recip_lattice, &
+  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
                                  stdout, seedname)
     !=====================================================!
     !                                                     !
@@ -2781,7 +2780,7 @@ contains
     !                                                     !
     !=====================================================!
 
-    use w90_utility, only: utility_cart_to_frac, utility_lowercase
+    use w90_utility, only: utility_cart_to_frac, utility_inverse_mat, utility_lowercase
     use w90_io, only: io_error
 
     implicit none
@@ -2792,17 +2791,19 @@ contains
     !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atoms%num_atoms)
     !! Atom positions
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
 
+    real(kind=dp)     :: inv_lattice(3, 3)
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
     integer           :: loop2, max_sites, ierr, ic, loop, counter
     character(len=maxlen) :: ctemp(atoms%num_atoms)
     character(len=maxlen) :: tmp_string
 
+    call utility_inverse_mat(real_lattice, inv_lattice)
     do loop = 1, atoms%num_atoms
       call utility_cart_to_frac(atoms_pos_cart_tmp(:, loop), &
-                                atoms_pos_frac_tmp(:, loop), recip_lattice)
+                                atoms_pos_frac_tmp(:, loop), inv_lattice)
     enddo
 
     ! Now we sort the data into the proper structures

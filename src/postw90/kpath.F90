@@ -43,7 +43,7 @@ contains
   subroutine k_path(berry, dis_window, fermi_energy_list, kmesh_info, kpath, k_points, &
                     postw90_oper, pw90_ham, pw90_spin, rs_region, spec_points, spin_hall, verbose, &
                     wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
-                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, recip_lattice, &
+                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, &
                     scissors_shift, mp_grid, fermi_n, num_wann, num_bands, num_kpts, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -62,7 +62,7 @@ contains
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_ws_distance, only: ws_distance_type
-    use w90_utility, only: utility_diagonalize
+    use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
 
     implicit none
 
@@ -97,7 +97,7 @@ contains
 
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
@@ -109,6 +109,7 @@ contains
     logical, intent(in) :: effective_model
 
     ! local variables
+    real(kind=dp)     :: recip_lattice(3, 3), volume
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
                          total_pts, loop_i, dataunit, gnuunit, pyunit, &
                          my_num_pts
@@ -213,6 +214,7 @@ contains
 
     num_paths = 0
     if (on_root) then
+      call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       ! Determine the number of k-points (total_pts) as well as
       ! their reciprocal-lattice coordinates long the path (plot_kpoint)
       ! and their associated horizontal coordinate for the plot (xval)
@@ -262,8 +264,7 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
-                                       real_lattice, recip_lattice, mp_grid, 0, num_wann, &
-                                       seedname, stdout)
+                                       real_lattice, mp_grid, 0, num_wann, seedname, stdout)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout, seedname)
         !
         ! Color-code energy bands with the spin projection along the
@@ -271,7 +272,7 @@ contains
         !
         if (kpath%bands_colour == 'spin') then
           call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, kpt, &
-                           real_lattice, recip_lattice, spn_k, mp_grid, num_wann, seedname, stdout)
+                           real_lattice, spn_k, mp_grid, num_wann, seedname, stdout)
 
           my_color(:, loop_kpt) = spn_k(:)
           !
@@ -290,10 +291,10 @@ contains
           call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
                                    rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
                                    AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, &
-                                   eigval, kpt, real_lattice, recip_lattice, scissors_shift, &
-                                   mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
-                                   num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm, shc_k_band=shc_k_band)
+                                   eigval, kpt, real_lattice, scissors_shift, mp_grid, fermi_n, &
+                                   num_bands, num_kpts, num_wann, num_valence_bands, &
+                                   effective_model, have_disentangled, seedname, stdout, comm, &
+                                   shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
@@ -301,7 +302,7 @@ contains
       if (plot_morb) then
         call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                   u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                   u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
                                    num_wann, num_valence_bands, effective_model, &
                                    have_disentangled, seedname, stdout, comm, imf_k_list, &
@@ -318,7 +319,7 @@ contains
         if (.not. plot_morb) then
           call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                   u_matrix, v_matrix, eigval, kpt, real_lattice, recip_lattice, &
+                                   u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    imf_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
                                    num_wann, num_valence_bands, effective_model, &
                                    have_disentangled, seedname, stdout, comm)
@@ -332,10 +333,9 @@ contains
         call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
                                  rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
                                  AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
-                                 kpt, real_lattice, recip_lattice, scissors_shift, mp_grid, &
-                                 fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                 effective_model, have_disentangled, seedname, stdout, comm, &
-                                 shc_k_fermi=shc_k_fermi)
+                                 kpt, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                 num_kpts, num_wann, num_valence_bands, effective_model, &
+                                 have_disentangled, seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt

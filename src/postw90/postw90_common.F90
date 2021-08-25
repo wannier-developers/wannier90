@@ -87,7 +87,7 @@ contains
     !! Setup data ready for interpolation
     use w90_constants, only: dp !, cmplx_0
     use w90_io, only: io_error, io_file_unit
-    use w90_utility, only: utility_cart_to_frac
+    !use w90_utility, only: utility_cart_to_frac
     use w90_param_types, only: print_output_type
     use w90_comms, only: mpirank, w90commtype, comms_bcast
 
@@ -252,7 +252,7 @@ contains
   !===========================================================!
   subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
                                           dis_window, system, fermi_energy_list, num_bands, &
-                                          num_wann, eigval, mp_grid, real_lattice, recip_lattice, &
+                                          num_wann, eigval, mp_grid, real_lattice, &
                                           pw90_calcs, scissors_shift, effective_model, pw90_spin, &
                                           pw90_ham, kpath, kslice, dos_data, berry, spin_hall, &
                                           gyrotropic, geninterp, boltz, eig_found, stdout, &
@@ -287,7 +287,6 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
@@ -337,7 +336,7 @@ contains
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, world)
-    call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, world)
+    !call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, world)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1, stdout, seedname, world)
@@ -795,8 +794,7 @@ contains
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, OO, OO_R, kpt, &
-                                       real_lattice, recip_lattice, mp_grid, alpha, num_wann, &
-                                       seedname, stdout)
+                                       real_lattice, mp_grid, alpha, num_wann, seedname, stdout)
     !=========================================================!
     !                                                         !
     !! For alpha=0:
@@ -827,7 +825,7 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: alpha
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
     complex(kind=dp), intent(out) :: OO(:, :)
@@ -845,9 +843,8 @@ contains
 !                               irvec, force_recompute)
 
     if (rs_region%use_ws_distance) then
-      CALL ws_translate_dist(ws_distance, stdout, seedname, rs_region, &
-                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             mp_grid, ws_vec%nrpts, ws_vec%irvec)
+      CALL ws_translate_dist(ws_distance, stdout, seedname, rs_region, num_wann, &
+                             wann_data%centres, real_lattice, mp_grid, ws_vec%nrpts, ws_vec%irvec)
     endif
 
     OO(:, :) = cmplx_0
@@ -893,8 +890,8 @@ contains
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, OO_R, kpt, &
-                                           real_lattice, recip_lattice, mp_grid, num_wann, &
-                                           seedname, stdout, OO, OO_dx, OO_dy, OO_dz)
+                                           real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                           OO, OO_dx, OO_dy, OO_dz)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -921,7 +918,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
     complex(kind=dp), optional, intent(out) :: OO(:, :)
@@ -939,8 +936,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -986,9 +982,8 @@ contains
 
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, rs_region, wann_data, &
-                                                    real_lattice, recip_lattice, mp_grid, &
-                                                    ws_distance, ws_vec, stdout, seedname, OO, &
-                                                    OO_da, OO_dadb)
+                                                    real_lattice, mp_grid, ws_distance, ws_vec, &
+                                                    stdout, seedname, OO, OO_da, OO_dadb)
     !=======================================================!
     !                                                       !
     !! For OO:
@@ -1018,7 +1013,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     character(len=50), intent(in)  :: seedname
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
@@ -1034,8 +1029,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -1096,9 +1090,8 @@ contains
 
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             rs_region, wann_data, real_lattice, &
-                                                            recip_lattice, mp_grid, ws_distance, &
-                                                            ws_vec, stdout, seedname, OO, OO_da, &
-                                                            OO_dadb)
+                                                            mp_grid, ws_distance, ws_vec, stdout, &
+                                                            seedname, OO, OO_da, OO_dadb)
     !=======================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1117,7 +1110,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
-    use w90_utility, only: utility_cart_to_frac
+    use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
 
     implicit none
 
@@ -1131,7 +1124,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: oo_a_R(:, :, :, :)
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
@@ -1142,6 +1135,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
+    real(kind=dp) :: inv_lattice(3, 3)
     integer :: ir, i, j, ideg, a, b
     real(kind=dp) :: rdotk
     real(kind=dp) :: local_wannier_centres(3, num_wann), wannier_centres_frac(3, num_wann)
@@ -1153,8 +1147,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1170,9 +1163,10 @@ contains
     enddo
     ! rotate wannier centres from cartesian to fractional coordinates
     wannier_centres_frac(:, :) = 0.d0
+    call utility_inverse_mat(real_lattice, inv_lattice)
     do ir = 1, num_wann
       call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), &
-                                recip_lattice)
+                                inv_lattice)
     enddo
 
     if (present(OO)) OO = cmplx_0
@@ -1253,8 +1247,8 @@ contains
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec(rs_region, wann_data, ws_distance, ws_vec, OO_R, kpt, &
-                                           real_lattice, recip_lattice, mp_grid, num_wann, &
-                                           seedname, stdout, OO_true, OO_pseudo)
+                                           real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                           OO_true, OO_pseudo)
     !====================================================================!
     !                                                                    !
     !! For OO_true (true vector):
@@ -1278,7 +1272,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in)  :: OO_R(:, :, :, :)
     complex(kind=dp), optional, intent(out) :: OO_true(:, :, :)
@@ -1294,8 +1288,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
@@ -1360,8 +1353,8 @@ contains
 
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(rs_region, wann_data, ws_distance, ws_vec, OO_R, &
-                                                kpt, real_lattice, recip_lattice, mp_grid, &
-                                                num_wann, seedname, stdout, OO_da, OO_dadb)
+                                                kpt, real_lattice, mp_grid, num_wann, seedname, &
+                                                stdout, OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1388,7 +1381,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in)  :: OO_R(:, :, :, :)
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
@@ -1404,8 +1397,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1462,8 +1454,8 @@ contains
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(rs_region, wann_data, ws_distance, &
                                                         ws_vec, OO_R, kpt, real_lattice, &
-                                                        recip_lattice, mp_grid, num_wann, &
-                                                        seedname, stdout, OO_da, OO_dadb)
+                                                        mp_grid, num_wann, seedname, stdout, &
+                                                        OO_da, OO_dadb)
     !====================================================================!
     !                                                                    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1481,7 +1473,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type
     use w90_ws_distance, only: ws_translate_dist, ws_distance_type
-    use w90_utility, only: utility_cart_to_frac
+    use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
 
     implicit none
 
@@ -1495,7 +1487,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: OO_R(:, :, :, :)
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
@@ -1504,6 +1496,7 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
+    real(kind=dp)    :: inv_lattice(3, 3)
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
@@ -1515,8 +1508,7 @@ contains
     if (rs_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
                                                           rs_region, num_wann, &
                                                           wann_data%centres, real_lattice, &
-                                                          recip_lattice, mp_grid, ws_vec%nrpts, &
-                                                          ws_vec%irvec)
+                                                          mp_grid, ws_vec%nrpts, ws_vec%irvec)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1535,9 +1527,10 @@ contains
     enddo
     ! rotate wannier centres from cartesian to fractional coordinates
     wannier_centres_frac(:, :) = 0.d0
+    call utility_inverse_mat(real_lattice, inv_lattice)
     do ir = 1, num_wann
       call utility_cart_to_frac(local_wannier_centres(:, ir), wannier_centres_frac(:, ir), &
-                                recip_lattice)
+                                inv_lattice)
     enddo
 
 !    print *, 'wannier_centres_frac'

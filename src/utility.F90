@@ -24,6 +24,8 @@ module w90_utility
   public :: utility_inv3
   public :: utility_inv2
   public :: utility_det3
+  public :: utility_inverse_mat
+  public :: utility_recip_lattice_base
   public :: utility_recip_lattice
   public :: utility_metric
   public :: utility_compar
@@ -227,7 +229,7 @@ contains
     !                                                                  !
     !! Return in b the adjoint of the 3x3 matrix a, and its
     !! determinant.
-    !! The inverse is defined as the adjoind divided by the
+    !! The inverse is defined as the adjoint divided by the
     !! determinant, so that inverse(a) = b/det
     !                                                                  !
     !===================================================================
@@ -237,36 +239,17 @@ contains
     real(kind=dp), intent(out) :: b(3, 3)
     real(kind=dp), intent(out) :: det
 
-    real(kind=dp):: work(6, 6)
-    integer :: i, j, k, l, ll, kk
+    b(1, 1) = a(2, 2)*a(3, 3) - a(3, 2)*a(2, 3)
+    b(1, 2) = a(2, 3)*a(3, 1) - a(3, 3)*a(2, 1)
+    b(1, 3) = a(2, 1)*a(3, 2) - a(3, 1)*a(2, 2)
+    b(2, 1) = a(3, 2)*a(1, 3) - a(1, 2)*a(3, 3)
+    b(2, 2) = a(3, 3)*a(1, 1) - a(1, 3)*a(3, 1)
+    b(2, 3) = a(3, 1)*a(1, 2) - a(1, 1)*a(3, 2)
+    b(3, 1) = a(1, 2)*a(2, 3) - a(2, 2)*a(1, 3)
+    b(3, 2) = a(1, 3)*a(2, 1) - a(2, 3)*a(1, 1)
+    b(3, 3) = a(1, 1)*a(2, 2) - a(2, 1)*a(1, 2)
 
-    do i = 1, 2
-      do j = 1, 2
-        do k = 1, 3
-          do l = 1, 3
-            kk = 3*(i - 1) + k
-            ll = 3*(j - 1) + l
-            work(kk, ll) = a(k, l)
-          end do
-        end do
-      end do
-    end do
-
-    det = 0.0_dp
-    do i = 1, 3
-      det = det + work(1, i)*work(2, i + 1)*work(3, i + 2)
-    end do
-
-    do i = 4, 6
-      det = det - work(1, i)*work(2, i - 1)*work(3, i - 2)
-    end do
-
-    do j = 1, 3
-      do i = 1, 3
-        b(j, i) = (work(i + 1, j + 1)*work(i + 2, j + 2) - work(i + 1, j + 2) &
-                   *work(i + 2, j + 1))
-      end do
-    end do
+    det = a(1, 1)*b(1, 1) + a(1, 2)*b(1, 2) + a(1, 3)*b(1, 3)
 
     return
 
@@ -300,7 +283,28 @@ contains
   end subroutine utility_inv2
 
   !===================================================================
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume, stdout, seedname)  !
+  subroutine utility_inverse_mat(a, b)                   !
+    !==================================================================!
+    !                                                                  !
+    !! Return in b int inverse of a. Uses utility_inv3
+    !                                                                  !
+    !===================================================================
+
+    implicit none
+    real(kind=dp), intent(in)  :: a(3, 3)
+    real(kind=dp), intent(out) :: b(3, 3)
+
+    real(kind=dp) :: det
+
+    call utility_inv3(a, b, det)
+    b = b/det
+
+    return
+
+  end subroutine utility_inverse_mat
+
+  !===================================================================
+  subroutine utility_recip_lattice_base(real_lat, recip_lat, volume)   !
     !==================================================================!
     !                                                                  !
     !!  Calculates the reciprical lattice vectors and the cell volume
@@ -311,32 +315,45 @@ contains
     use w90_io, only: io_error
 
     implicit none
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
+
+    call utility_inv3(real_lat, recip_lat, volume)
+
+    if (abs(volume) > eps5) then
+      recip_lat = twopi*recip_lat/volume
+      volume = abs(volume)
+    endif
+
+    return
+
+  end subroutine utility_recip_lattice_base
+
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, stdout, seedname)  !
+    !==================================================================!
+    !                                                                  !
+    !!  Calculates the reciprical lattice vectors and the cell volume
+    !!  Includes a check that the volume isn't almost 0
+    !!  Use the first time the lattice is read to check its sensible
+    !                                                                  !
+    !===================================================================
+
+    use w90_constants, only: dp, twopi, eps5
+    use w90_io, only: io_error
+
+    implicit none
+    real(kind=dp), intent(in)  :: real_lat(3, 3)
+    real(kind=dp), intent(out) :: recip_lat(3, 3)
+    real(kind=dp), intent(out) :: volume
+    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    recip_lat(1, 1) = real_lat(2, 2)*real_lat(3, 3) - real_lat(3, 2)*real_lat(2, 3)
-    recip_lat(1, 2) = real_lat(2, 3)*real_lat(3, 1) - real_lat(3, 3)*real_lat(2, 1)
-    recip_lat(1, 3) = real_lat(2, 1)*real_lat(3, 2) - real_lat(3, 1)*real_lat(2, 2)
-    recip_lat(2, 1) = real_lat(3, 2)*real_lat(1, 3) - real_lat(1, 2)*real_lat(3, 3)
-    recip_lat(2, 2) = real_lat(3, 3)*real_lat(1, 1) - real_lat(1, 3)*real_lat(3, 1)
-    recip_lat(2, 3) = real_lat(3, 1)*real_lat(1, 2) - real_lat(1, 1)*real_lat(3, 2)
-    recip_lat(3, 1) = real_lat(1, 2)*real_lat(2, 3) - real_lat(2, 2)*real_lat(1, 3)
-    recip_lat(3, 2) = real_lat(1, 3)*real_lat(2, 1) - real_lat(2, 3)*real_lat(1, 1)
-    recip_lat(3, 3) = real_lat(1, 1)*real_lat(2, 2) - real_lat(2, 1)*real_lat(1, 2)
-
-    volume = real_lat(1, 1)*recip_lat(1, 1) + &
-             real_lat(1, 2)*recip_lat(1, 2) + &
-             real_lat(1, 3)*recip_lat(1, 3)
+    call utility_recip_lattice_base(real_lat, recip_lat, volume)
 
     if (abs(volume) < eps5) then
       call io_error(' Found almost zero Volume in utility_recip_lattice', stdout, seedname)
     end if
-
-    recip_lat = twopi*recip_lat/volume
-    volume = abs(volume)
 
     return
 
@@ -423,7 +440,7 @@ contains
   end subroutine utility_frac_to_cart
 
   !===================================================================
-  subroutine utility_cart_to_frac(cart, frac, recip_lat)
+  subroutine utility_cart_to_frac(cart, frac, inv_lat)
     !==================================================================!
     !                                                                  !
     !!  Convert from Cartesian to fractional coordinates
@@ -432,17 +449,15 @@ contains
     use w90_constants, only: twopi
     implicit none
 
-    real(kind=dp), intent(in)  :: recip_lat(3, 3)
+    real(kind=dp), intent(in)  :: inv_lat(3, 3)
     real(kind=dp), intent(out)  :: frac(3)
     real(kind=dp), intent(in)  :: cart(3)
 
     integer :: i
 
     do i = 1, 3
-      frac(i) = recip_lat(i, 1)*cart(1) + recip_lat(i, 2)*cart(2) + recip_lat(i, 3)*cart(3)
+      frac(i) = inv_lat(i, 1)*cart(1) + inv_lat(i, 2)*cart(2) + inv_lat(i, 3)*cart(3)
     end do
-
-    frac = frac/twopi
 
     return
 
@@ -543,7 +558,8 @@ contains
 
     ctemp = string_tmp
     pos = index(ctemp, ',')
-if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout, seedname)
+    if (pos <= 0) &
+      call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout, seedname)
     ctemp2 = ctemp(1:pos - 1)
     read (ctemp2, *, err=100, end=100) outvec(1)
     ctemp = ctemp(pos + 1:)
@@ -592,7 +608,7 @@ if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string int
 !~  end function utility_string_to_coord
 
   !========================================================!
-  subroutine utility_translate_home(vec, real_lat, recip_lat)
+  subroutine utility_translate_home(vec, real_lat)
     !========================================================!
     !                                                        !
     !! Translate a vector to the home unit cell
@@ -603,9 +619,9 @@ if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string int
 
     real(kind=dp), intent(inout) :: vec(3)
     real(kind=dp), intent(in)    :: real_lat(3, 3)
-    real(kind=dp), intent(in)    :: recip_lat(3, 3)
 
     ! <<<local variables>>>
+    real(kind=dp) :: recip_lat(3, 3), volume
     integer       :: ind
     real(kind=dp) :: r_home(3), r_frac(3)
     real(kind=dp) :: shift
@@ -613,6 +629,7 @@ if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string int
     r_home = 0.0_dp; r_frac = 0.0_dp
 
     ! Cartesian --> fractional
+    call utility_recip_lattice_base(real_lat, recip_lat, volume)
     call utility_cart_to_frac(vec, r_frac, recip_lat)
     ! Rationalise to interval [0,1]
     do ind = 1, 3

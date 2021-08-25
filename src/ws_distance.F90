@@ -67,8 +67,8 @@ contains
 !    probably think to do the math on node 0, and then broadcast results.
 
   subroutine ws_translate_dist(ws_distance, stdout, seedname, cutoff, num_wann, &
-                               wannier_centres, real_lattice, recip_lattice, mp_grid, nrpts, &
-                               irvec, force_recompute)
+                               wannier_centres, real_lattice, mp_grid, nrpts, irvec, &
+                               force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
     !! minimizes the distance between two given Wannier functions, i and j,
@@ -79,7 +79,7 @@ contains
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
 
     use w90_io, only: io_error
-    use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
+    use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
     use w90_param_types, only: ws_region_type
 
     implicit none
@@ -92,7 +92,6 @@ contains
     !integer, intent(in) :: iprint
     integer, intent(in) :: num_wann
 !   integer, intent(in) :: ws_search_size(3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)
 !   real(kind=dp), intent(in) :: ws_distance_tol
@@ -103,6 +102,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! <<<local variables>>>
+    real(kind=dp) :: inv_lattice(3, 3)
     integer  :: iw, jw, ideg, ir, ierr
     integer :: shifts(3, ndegenx)
     real(DP) :: irvec_cart(3), tmp(3), tmp_frac(3), R_out(3, ndegenx)
@@ -133,6 +133,7 @@ contains
     ws_distance%irdist = 0
     ws_distance%crdist = 0
 
+    call utility_inverse_mat(real_lattice, inv_lattice)
     do ir = 1, nrpts
       do jw = 1, num_wann
         do iw = 1, num_wann
@@ -148,8 +149,8 @@ contains
           ! later for interpolation etc.
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
-                       ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
-                       real_lattice, cutoff%ws_search_size, cutoff%ws_distance_tol, &
+                       ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, real_lattice, &
+                       inv_lattice, cutoff%ws_search_size, cutoff%ws_distance_tol, &
                        stdout, seedname)
           do ideg = 1, ws_distance%ndeg(iw, jw, ir)
             ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
@@ -162,8 +163,8 @@ contains
     enddo
   end subroutine ws_translate_dist
 
-  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, recip_lattice, &
-                     real_lattice, ws_search_size, ws_distance_tol, stdout, seedname)
+  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, real_lattice, inv_lattice, &
+                     ws_search_size, ws_distance_tol, stdout, seedname)
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer
@@ -178,8 +179,8 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     integer, intent(in) :: ws_search_size(3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: inv_lattice(3, 3)
     real(kind=dp), intent(in) :: ws_distance_tol
     real(DP), intent(in) :: R_in(3)
     real(DP), intent(in) :: R0(3)
@@ -200,7 +201,7 @@ contains
     mod2_R_bz = SUM((R_bz - R0)**2)
     !
     ! take R_bz to cryst(frac) coord for translating
-    call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
+    call utility_cart_to_frac(R_bz, R_in_f, inv_lattice)
 
     ! In this first loop, I just look for the shortest vector that I obtain
     ! by trying to displace the second Wannier function by all
@@ -253,7 +254,7 @@ contains
     endif
     !
     ! take R_bz to cryst(frac) coord for translating
-    call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
+    call utility_cart_to_frac(R_bz, R_in_f, inv_lattice)
 
     do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
       do j = -ws_search_size(2) - 1, ws_search_size(2) + 1

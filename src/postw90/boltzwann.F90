@@ -68,7 +68,7 @@ contains
   subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_ham, postw90_oper, &
                             pw90_spin, physics, rs_region, system, wann_data, ws_distance, ws_vec, &
                             verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
-                            recip_lattice, scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
+                            scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                             effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
 
     !! This is the main routine of the BoltzWann module.
@@ -119,7 +119,7 @@ contains
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
 
     integer, intent(in) :: mp_grid(3)
@@ -261,7 +261,7 @@ contains
     ! I call the subroutine that calculates the Transport Distribution Function
     call calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, pw90_spin, &
                        rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, SS_R, u_matrix, &
-                       v_matrix, eigval, real_lattice, recip_lattice, TDF, TDFEnergyArray, &
+                       v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                        cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                        system%num_valence_bands, system%num_elec_per_state, effective_model, &
                        have_disentangled, spin_decomp, seedname, stdout, comm)
@@ -657,8 +657,8 @@ contains
 
   subroutine calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, &
                            pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
-                           SS_R, u_matrix, v_matrix, eigval, real_lattice, recip_lattice, TDF, &
-                           TDFEnergyArray, cell_volume, scissors_shift, mp_grid, num_bands, &
+                           SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
+                           cell_volume, scissors_shift, mp_grid, num_bands, &
                            num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
                            effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
@@ -685,6 +685,7 @@ contains
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
       dis_manifold_type, ws_region_type
@@ -734,7 +735,7 @@ contains
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
     real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: cell_volume
     real(kind=dp), intent(in) :: scissors_shift
 
@@ -748,6 +749,7 @@ contains
     logical, intent(in) :: effective_model
 
     ! local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
     real(kind=dp) :: kpt(3), orig_kpt(3)
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
@@ -886,6 +888,7 @@ contains
         boltz%bandshift_energyshift, " eV."
     end if
 
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     NumPtsRefined = 0
     min_spacing = 1.e10_dp ! very large initial value
     max_spacing = 0.e0_dp
@@ -908,10 +911,9 @@ contains
       ! Here I get the band energies and the velocities
       call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
                                ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                               del_eig, eig, eigval, kpt, real_lattice, recip_lattice, &
-                               scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                               num_valence_bands, effective_model, have_disentangled, seedname, &
-                               stdout, comm)
+                               del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                               num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
+                               have_disentangled, seedname, stdout, comm)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -920,7 +922,7 @@ contains
       end if
 
       call TDF_kpt(boltz, rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
-                   del_eig, eig, TDFEnergyArray, kpt, real_lattice, recip_lattice, TDF_k, mp_grid, &
+                   del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
                    num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
@@ -951,16 +953,15 @@ contains
                   call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, &
                                            wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                            u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
-                                           real_lattice, recip_lattice, scissors_shift, mp_grid, &
-                                           num_bands, num_kpts, num_wann, num_valence_bands, &
-                                           effective_model, have_disentangled, seedname, stdout, &
-                                           comm)
+                                           real_lattice, scissors_shift, mp_grid, num_bands, &
+                                           num_kpts, num_wann, num_valence_bands, effective_model, &
+                                           have_disentangled, seedname, stdout, comm)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                                 num_wann, wann_data, real_lattice, recip_lattice, &
-                                 mp_grid, dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, &
-                                 stdout, seedname, HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
+                                 num_wann, wann_data, real_lattice, mp_grid, dos_data, &
+                                 spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
+                                 HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
                                  adpt_smr_fac=boltz%dos_smearing%adaptive_prefactor, &
                                  adpt_smr_max=boltz%dos_smearing%adaptive_max_width, &
                                  levelspacing_k=levelspacing_k)
@@ -971,18 +972,19 @@ contains
             end do
           else
             call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                           num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
+                           num_wann, wann_data, real_lattice, mp_grid, &
                            dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, &
                            seedname, HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
                            adpt_smr_fac=boltz%dos_smearing%adaptive_prefactor, &
-                           adpt_smr_max=boltz%dos_smearing%adaptive_max_width, levelspacing_k=levelspacing_k)
+                           adpt_smr_max=boltz%dos_smearing%adaptive_max_width, &
+                           levelspacing_k=levelspacing_k)
             dos_all = dos_all + dos_k*kweight
           end if
         else
           call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, recip_lattice, mp_grid, &
-                         dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
-                         HH_R, SS_R, smr_index=boltz%dos_smearing%type_index, &
+                         num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
+                         pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
+                         smr_index=boltz%dos_smearing%type_index, &
                          smr_fixed_en_width=boltz%dos_smearing%fixed_width)
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
@@ -1103,7 +1105,7 @@ contains
   end function MinusFermiDerivative
 
   subroutine TDF_kpt(boltz, rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
-                     deleig_k, eig_k, EnergyArray, kpt, real_lattice, recip_lattice, TDF_k, &
+                     deleig_k, eig_k, EnergyArray, kpt, real_lattice, TDF_k, &
                      mp_grid, num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
@@ -1173,7 +1175,7 @@ contains
     !!   of the EnergyArray array;
     !!  - spinidx=1 contains the total dos; if if spin_decomp==.true., then
     !!  spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
-    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -1200,7 +1202,7 @@ contains
     ! Get spin projections for every band
     !
     if (spin_decomp) call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, &
-                                      HH_R, SS_R, kpt, real_lattice, recip_lattice, spn_nk, &
+                                      HH_R, SS_R, kpt, real_lattice, spn_nk, &
                                       mp_grid, num_wann, seedname, stdout)
 
     binwidth = EnergyArray(2) - EnergyArray(1)

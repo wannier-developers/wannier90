@@ -25,7 +25,7 @@ contains
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, hmlg, kmesh_info, &
                        k_points, output_file, wvfn_read, real_space_ham, kpoint_path, &
                        print_output, wannier_data, wannier_plot, ws_region, w90_calculation, ham_k, ham_r, &
-                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, recip_lattice, &
+                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
                        have_disentangled, lsitesymmetry, spinors, seedname, stdout)
@@ -34,6 +34,7 @@ contains
 
     use w90_constants, only: eps6, dp
     use w90_io, only: io_stopwatch
+    use w90_utility, only: utility_recip_lattice_base
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
@@ -75,7 +76,6 @@ contains
     integer, intent(inout), allocatable :: irvec(:, :)
 
     real(kind=dp), intent(in)                 :: real_lattice(3, 3)
-    real(kind=dp), intent(in)                 :: recip_lattice(3, 3)
     real(kind=dp), intent(in)                 :: eigval(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: bohr
@@ -94,6 +94,7 @@ contains
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: spinors
 !   local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
 
     integer :: nkp, bands_num_spec_points
     logical :: have_gamma
@@ -101,6 +102,7 @@ contains
 
     if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     ! Print the header only if there is something to plot
     if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. output_file%write_hr .or. &
         w90_calculation%wannier_plot .or. output_file%write_u_matrices .or. output_file%write_tb) then
@@ -129,7 +131,7 @@ contains
       !
       call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
                               u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
-                              recip_lattice, wannier_data%centres, wannier_centres_translated, irvec, &
+                              wannier_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
       bands_num_spec_points = 0
@@ -163,16 +165,17 @@ contains
         if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                            ws_region, num_wann, &
                                                            wannier_data%centres, real_lattice, &
-                                                           recip_lattice, mp_grid, nrpts, irvec)
+                                                           mp_grid, nrpts, irvec)
         call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
                           stdout, seedname)
       end if
     end if
 
-    if (w90_calculation%wannier_plot) call plot_wannier(recip_lattice, wannier_plot, wvfn_read, wannier_data, &
-                                                        print_output, u_matrix_opt, dis_manifold, real_lattice, &
-                                                        atom_data, k_points, u_matrix, num_kpts, num_bands, &
-                                                        num_wann, have_disentangled, spinors, bohr, &
+    if (w90_calculation%wannier_plot) call plot_wannier(wannier_plot, wvfn_read, wannier_data, &
+                                                        print_output, u_matrix_opt, dis_manifold, &
+                                                        real_lattice, atom_data, k_points, &
+                                                        u_matrix, num_kpts, num_bands, num_wann, &
+                                                        have_disentangled, spinors, bohr, &
                                                         stdout, seedname)
 
     if (output_file%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
@@ -438,11 +441,11 @@ contains
     if (ws_region%use_ws_distance) then
       if (index(band_plot%mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wannier_data%centres, real_lattice, recip_lattice, mp_grid, nrpts, &
+                               wannier_data%centres, real_lattice, mp_grid, nrpts, &
                                irvec, force_recompute=.true.)
       elseif (index(band_plot%mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wannier_data%centres, real_lattice, recip_lattice, mp_grid, nrpts_cut, &
+                               wannier_data%centres, real_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout, seedname)
@@ -1101,10 +1104,9 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, wannier_plot, wvfn_read, wannier_data, print_output, &
-                          u_matrix_opt, dis_manifold, real_lattice, atom_data, k_points, u_matrix, &
-                          num_kpts, num_bands, num_wann, have_disentangled, spinors, bohr, &
-                          stdout, seedname)
+  subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                          dis_manifold, real_lattice, atom_data, k_points, u_matrix, num_kpts, &
+                          num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1137,7 +1139,6 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -1456,7 +1457,7 @@ contains
         call internal_xsf_format()
       elseif (wannier_plot%format .eq. 'cube') then
         call internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                  recip_lattice, bohr)
+                                  real_lattice, bohr)
       else
         call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
       endif
@@ -1471,7 +1472,7 @@ contains
 
     !============================================!
     subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                    recip_lattice, bohr)
+                                    real_lattice, bohr)
       !============================================!
       !                                            !
       !! Write WFs in Gaussian cube format.
@@ -1479,8 +1480,8 @@ contains
       !============================================!
 
       !use w90_constants, only: bohr
-      use w90_utility, only: utility_translate_home, &
-        utility_cart_to_frac, utility_frac_to_cart
+      use w90_utility, only: utility_translate_home, utility_cart_to_frac, utility_frac_to_cart, &
+        utility_inverse_mat, utility_recip_lattice_base
       use w90_param_types, only: wannier_data_type, atom_data_type
       use wannier_param_types, only: wvfn_read_type
 
@@ -1491,10 +1492,11 @@ contains
       type(atom_data_type), intent(in) :: atom_data
       real(kind=dp), intent(in) :: bohr
 
-      real(kind=dp), intent(in) :: recip_lattice(3, 3)
+      real(kind=dp), intent(in) :: real_lattice(3, 3)
       logical, intent(in) :: have_disentangled
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
+      real(kind=dp) :: inv_lattice(3, 3), recip_lattice(3, 3), volume
       real(kind=dp) :: rstart(3), rend(3), rlength(3), orig(3), dgrid(3)
       real(kind=dp) :: moda(3), modb(3)
       real(kind=dp) :: val_Q
@@ -1524,6 +1526,7 @@ contains
         allocate (atomic_Z(atom_data%num_species), stat=ierr)
         if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout, seedname)
 
+        call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
         lmol = .false.
         lcrys = .false.
         if (index(wannier_plot%mode, 'mol') > 0) lmol = .true.      ! molecule mode
@@ -1666,7 +1669,8 @@ contains
           enddo
 
           ! WF centre in fractional coordinates
-          call utility_cart_to_frac(wannier_data%centres(:, wann_index), wcf(:), recip_lattice)
+          call utility_inverse_mat(real_lattice, inv_lattice)
+          call utility_cart_to_frac(wannier_data%centres(:, wann_index), wcf(:), inv_lattice)
 
           ! The vector (in fractional coordinates) from WF centre to "centre of mass"
           diff(:) = comf(:) - wcf(:)
