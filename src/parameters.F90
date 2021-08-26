@@ -835,14 +835,13 @@ contains
 
   end subroutine param_read_kpoints
 
-  subroutine param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
+  subroutine param_read_lattice(library, real_lattice, bohr, stdout, seedname)
     use w90_io, only: io_error
-    use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
     integer, intent(in) :: stdout
-    real(kind=dp), intent(out) :: real_lattice(3, 3), recip_lattice(3, 3)
-    real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    real(kind=dp), intent(out) :: real_lattice(3, 3)
+    real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
 
@@ -854,10 +853,6 @@ contains
       real_lattice = transpose(real_lattice_tmp)
       if (.not. found) call io_error('Error: Did not find the cell information in the input file', stdout, seedname)
     end if
-
-    if (.not. library) &
-      call utility_recip_lattice(real_lattice, recip_lattice, cell_volume, stdout, seedname)
-    !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
   end subroutine param_read_lattice
 
   subroutine param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)

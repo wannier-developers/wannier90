@@ -59,6 +59,7 @@ contains
     !                                                                  !
     !===================================================================
     use w90_constants, only: w90_physical_constants
+    use w90_utility, only: utility_recip_lattice
     implicit none
 
     !data from parameters module
@@ -106,7 +107,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-    real(kind=dp) :: recip_lattice(3, 3)
+    real(kind=dp) :: recip_lattice(3, 3), volume
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
@@ -144,7 +145,7 @@ contains
       call param_read_num_bands(.false., library, num_exclude_bands, num_bands, &
                                 num_wann, library_param_read_first_pass, stdout, seedname)
       disentanglement = (num_bands > num_wann)
-      call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
+      call param_read_lattice(library, real_lattice, bohr, stdout, seedname)
       call param_read_wannierise(wannierise, num_wann, write_data%ccentres_frac, &
                                  stdout, seedname)
       !call param_read_devel(verbose%devel_flag, stdout, seedname)
@@ -183,7 +184,9 @@ contains
       call param_read_hamil(rs_region, stdout, seedname)
       call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
-      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout, seedname)
+      call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
+      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, &
+                              stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
                                     seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &

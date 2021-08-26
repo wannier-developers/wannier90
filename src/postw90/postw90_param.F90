@@ -301,7 +301,7 @@ contains
     !!
     !                                                                  !
     !===================================================================
-
+    use w90_utility, only: utility_recip_lattice
     implicit none
 
     ! arguments
@@ -348,7 +348,7 @@ contains
     logical, intent(inout) :: effective_model
 
     ! local variables
-    real(kind=dp) :: recip_lattice(3, 3)
+    real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
@@ -400,10 +400,11 @@ contains
     call param_read_geninterp(geninterp, stdout, seedname)
     call param_read_boltzwann(boltz, eigval, write_data%smear, pw90_calcs%boltzwann, &
                               write_data%boltz_2d_dir, stdout, seedname)
-    call param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi_energy_list, eigval, write_data, &
-                                 stdout, seedname)
-    call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout, seedname)
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_window, fermi_energy_list, &
+                                 eigval, write_data, stdout, seedname)
+    call param_read_lattice(library, real_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call param_read_kpoints(effective_model, library, k_points, num_kpts, &
                             recip_lattice, bohr, stdout, seedname)
     call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
@@ -415,7 +416,8 @@ contains
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(atoms, spec_points, verbose%length_unit)
-    call param_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, num_bands, num_kpts, stdout, seedname)
+    call param_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, num_bands, &
+                                num_kpts, stdout, seedname)
   end subroutine param_postw90_read
 
   subroutine param_read_pw90_calcs(pw90_calcs, stdout, seedname)
