@@ -310,14 +310,13 @@ contains
     !! Abort the code giving an error message
     !========================================
 
-    use comms_abort_mod, only: comms_abort
     implicit none
 
     character(len=*), intent(in) :: error_msg
     character(len=50), intent(in)  :: seedname
     integer           :: stderr, ierr, stdout
 
-    ! calls mpi_abort on mpi_comm_world if compiled with MPI support
+    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
     call comms_abort(seedname, error_msg, stdout)
     close (stdout)
 

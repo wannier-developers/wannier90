@@ -720,6 +720,10 @@ program w90chk2chk
 
   implicit none
 
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
+
   ! Export mode:
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')

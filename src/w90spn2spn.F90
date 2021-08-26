@@ -362,6 +362,10 @@ program w90spn2spn
 
   implicit none
 
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
+
   ! Export mode:
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')

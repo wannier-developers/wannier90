@@ -181,7 +181,24 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use wannier_methods, only: param_read, param_write, param_w90_dealloc, w90_extra_io_type
   use wannlib_param_data
 
+#ifdef MPI
+#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#    error "You need to define which MPI interface you are using"
+#  endif
+#endif
+
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90
+  use mpi ! next best, use fortran90 interface
+#endif
+
   implicit none
+
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
 
   type(w90_physical_constants) :: physics
   character(len=*), intent(in) :: seed__name
@@ -225,6 +242,16 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   character(len=50)  :: seedname
   logical :: wout_found
   logical :: disentanglement
+  logical :: mpiinitalready
+
+#ifdef MPI
+  ! in wannier_setup, mpi is *exclusively* used by potential calls to io_error
+  call mpi_initialized(mpiinitalready, ierr)
+  if (.not. mpiinitalready) then
+    call io_error('mpi_init must be called before wannier_setup() when libwannier is compiled with MPI support', &
+                  stdout, seedname)
+  endif
+#endif
 
   time0 = io_time()
 
@@ -395,6 +422,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   use w90_param_methods, only: param_lib_set_atoms
 
+#ifdef MPI
+#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#    error "You need to define which MPI interface you are using"
+#  endif
+#endif
+
 #ifdef MPI08
   use mpi_f08 ! use f08 interface if possible
 #endif
@@ -403,6 +436,10 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 #endif
 
   implicit none
+
+#ifdef MPIH
+  include 'mpif.h' ! worst case, use legacy interface
+#endif
 
   type(w90_physical_constants) :: physics
   character(len=*), intent(in) :: seed__name
@@ -476,17 +513,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   ! use with more than one process is not supported/tested
   ! --JJ 13Aug21
   !
-#if (defined(MPI))
-  write (*, *) " warning: use of this (version 1) library interface with MPI is not recommended"
-#endif
-
 #ifdef MPI
-!  call mpi_initialized(mpiinitalready,ierr)
-!  if ( .not. mpiinitalready ) then
-!    call io_error('mpi_init must be called before wannier_run() when libwannier is compiled with MPI support', &
-!                  stdout, seedname)
-!  endif
-  call mpi_init(ierr)
+  call mpi_initialized(mpiinitalready, ierr)
+  if (.not. mpiinitalready) then
+    call io_error('mpi_init must be called before wannier_run() when libwannier is compiled with MPI support', &
+                  stdout, seedname)
+  endif
   comm%comm = MPI_COMM_WORLD
   num_nodes = 1
   my_node_id = 0
