@@ -1496,7 +1496,7 @@ contains
       logical, intent(in) :: have_disentangled
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
-      real(kind=dp) :: inv_lattice(3, 3), recip_lattice(3, 3), volume
+      real(kind=dp) :: inv_lattice(3, 3), recip_lattice(3, 3), pos_frac(3), volume
       real(kind=dp) :: rstart(3), rend(3), rlength(3), orig(3), dgrid(3)
       real(kind=dp) :: moda(3), modb(3)
       real(kind=dp) :: val_Q
@@ -1561,10 +1561,12 @@ contains
         dgrid(1) = moda(1)/ngx; dgrid(2) = moda(2)/ngy; dgrid(3) = moda(3)/ngz
 
         ! Find "centre of mass" of atomic positions (in fractional coordinates)
+        call utility_inverse_mat(real_lattice, inv_lattice)
         comf(:) = 0.0_dp
         do isp = 1, atom_data%num_species
           do iat = 1, atom_data%species_num(isp)
-            comf(:) = comf(:) + atom_data%pos_frac(:, iat, isp)
+            call utility_cart_to_frac(atom_data%pos_cart(:, iat, isp), pos_frac, inv_lattice)
+            comf(:) = comf(:) + pos_frac(:)
           enddo
         enddo
         comf(:) = comf(:)/atom_data%num_atoms
@@ -1669,7 +1671,6 @@ contains
           enddo
 
           ! WF centre in fractional coordinates
-          call utility_inverse_mat(real_lattice, inv_lattice)
           call utility_cart_to_frac(wannier_data%centres(:, wann_index), wcf(:), inv_lattice)
 
           ! The vector (in fractional coordinates) from WF centre to "centre of mass"
@@ -1693,10 +1694,11 @@ contains
             icount = 0
             do isp = 1, atom_data%num_species
               do iat = 1, atom_data%species_num(isp)
+                call utility_cart_to_frac(atom_data%pos_cart(:, iat, isp), pos_frac, inv_lattice)
                 do nzz = -ngs(3)/2, (ngs(3) + 1)/2
                   do nyy = -ngs(2)/2, (ngs(2) + 1)/2
                     do nxx = -ngs(1)/2, (ngs(1) + 1)/2
-                      diff(:) = atom_data%pos_frac(:, iat, isp) - wcf(:) &
+                      diff(:) = pos_frac(:) - wcf(:) &
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
@@ -1743,15 +1745,16 @@ contains
               if (lmol) then ! In "molecule mode", write atomic coordinates as they appear in input file
                 write (file_unit, '(i4,4f13.5)') atomic_Z(isp), val_Q, (atom_data%pos_cart(i, iat, isp)/bohr, i=1, 3)
               else           ! In "crystal mode", write atoms in supercell within a given radius of Wannier centre
+                call utility_cart_to_frac(atom_data%pos_cart(:, iat, isp), pos_frac, inv_lattice)
                 do nzz = -ngs(3)/2, (ngs(3) + 1)/2
                   do nyy = -ngs(2)/2, (ngs(2) + 1)/2
                     do nxx = -ngs(1)/2, (ngs(1) + 1)/2
-                      diff(:) = atom_data%pos_frac(:, iat, isp) - wcf(:) &
+                      diff(:) = pos_frac(:) - wcf(:) &
                                 + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                       call utility_frac_to_cart(diff, difc, real_lattice)
                       dist = sqrt(difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3))
                       if (dist .le. (wannier_plot%scale*wannier_plot%radius)) then
-                        diff(:) = atom_data%pos_frac(:, iat, isp) &
+                        diff(:) = pos_frac(:) &
                                   + (/real(nxx, kind=dp), real(nyy, kind=dp), real(nzz, kind=dp)/)
                         call utility_frac_to_cart(diff, difc, real_lattice)
                         write (file_unit, '(i4,4f13.5)') atomic_Z(isp), val_Q, (difc(i)/bohr, i=1, 3)

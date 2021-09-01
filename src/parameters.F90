@@ -176,10 +176,6 @@ module w90_param_types
     !! =======================
     !! Contains information about the atoms (and maybe the cell...) of the system being calculated.
     !! =======================
-    ! REVIEW_2021-07-22: Keep only one of pos_frac and pos_cart to avoid possible inconsistency
-    ! REVIEW_2021-07-22: on passing these variables in from the external code. We can generate
-    ! REVIEW_2021-07-22: the other internally using a utility function.
-    real(kind=dp), allocatable :: pos_frac(:, :, :)
     real(kind=dp), allocatable :: pos_cart(:, :, :)
     integer, allocatable :: species_num(:)
     character(len=maxlen), allocatable :: label(:)
@@ -1621,10 +1617,6 @@ contains
       deallocate (atoms%symbol, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc', stdout, seedname)
     end if
-    if (allocated(atoms%pos_frac)) then
-      deallocate (atoms%pos_frac, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atom_pos_frac in param_dealloc', stdout, seedname)
-    end if
     if (allocated(atoms%pos_cart)) then
       deallocate (atoms%pos_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc', stdout, seedname)
@@ -2736,8 +2728,6 @@ contains
     end do
 
     max_sites = maxval(atoms%species_num)
-    allocate (atoms%pos_frac(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_get_atoms', stdout, seedname)
     allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms', stdout, seedname)
 
@@ -2746,7 +2736,7 @@ contains
       do loop2 = 1, atoms%num_atoms
         if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
-          atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
+          !atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
           atoms%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
         end if
       end do
@@ -2832,8 +2822,6 @@ contains
     end do
 
     max_sites = maxval(atoms%species_num)
-    allocate (atoms%pos_frac(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms', stdout, seedname)
     allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms', stdout, seedname)
 
@@ -2842,7 +2830,7 @@ contains
       do loop2 = 1, atoms%num_atoms
         if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
-          atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
+          !atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
           atoms%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
         end if
       end do
@@ -3609,7 +3597,9 @@ contains
                   do loop_s = 1, spn_counter
                     counter = counter + 1
                     if (lcount) cycle
-                    input_proj%site(:, counter) = atoms%pos_frac(:, loop_sites, species)
+                    call utility_cart_to_frac(atoms%pos_cart(:, loop_sites, species), pos_frac, &
+                                              inv_lattice)
+                    input_proj%site(:, counter) = pos_frac(:)
                     input_proj%l(counter) = loop_l
                     input_proj%m(counter) = loop_m
                     input_proj%z(:, counter) = proj_z_tmp

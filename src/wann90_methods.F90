@@ -1199,7 +1199,7 @@ contains
     !! write wannier90 parameters to stdout
     !                                                                  !
     !===================================================================
-    use w90_utility, only: utility_recip_lattice_base
+    use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac
 
     implicit none
 
@@ -1243,7 +1243,7 @@ contains
     logical, intent(in) :: spinors
 
 !   local variables
-    real(kind=dp) :: recip_lattice(3, 3), volume
+    real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), volume
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     real(kind=dp) :: cell_volume
     logical :: disentanglement
@@ -1296,10 +1296,12 @@ contains
         write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
       endif
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+      call utility_inverse_mat(real_lattice, inv_lattice)
       do nsp = 1, atoms%num_species
         do nat = 1, atoms%species_num(nsp)
+          call utility_cart_to_frac(atoms%pos_cart(:, nat, nsp), pos_frac, inv_lattice)
           write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-  &                 '|', atoms%symbol(nsp), nat, atoms%pos_frac(:, nat, nsp),&
+  &                 '|', atoms%symbol(nsp), nat, pos_frac(:),&
   &                 '|', atoms%pos_cart(:, nat, nsp)*verbose%lenconfac, '|'
         end do
       end do
