@@ -3081,7 +3081,7 @@ contains
 
 !===================================!
   subroutine param_get_projections(num_proj, atoms, num_wann, input_proj, proj, &
-                                   recip_lattice, lcount, spinors, bohr, stdout, seedname)
+                                   inv_lattice, lcount, spinors, bohr, stdout, seedname)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -3106,7 +3106,7 @@ contains
     !type(select_projection_type), intent(inout) :: select_proj
     type(proj_input_type), intent(inout) :: proj ! intent(out)?
     type(proj_input_type), intent(inout) :: input_proj
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: inv_lattice(3, 3)
     logical, intent(in)    :: lcount
     logical, intent(in) :: spinors
     real(kind=dp), intent(in) :: bohr
@@ -3289,7 +3289,7 @@ contains
           ctemp = ctemp(3:)
           call utility_string_to_coord(ctemp, pos_cart, stdout, seedname)
           if (lconvert) pos_cart = pos_cart*bohr
-          call utility_cart_to_frac(pos_cart(:), pos_frac(:), recip_lattice)
+          call utility_cart_to_frac(pos_cart(:), pos_frac(:), inv_lattice)
         elseif (index(ctemp, 'f=') > 0) then
           sites = -1
           ctemp = ctemp(3:)

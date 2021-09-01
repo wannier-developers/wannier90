@@ -59,7 +59,7 @@ contains
     !                                                                  !
     !===================================================================
     use w90_constants, only: w90_physical_constants
-    use w90_utility, only: utility_recip_lattice
+    use w90_utility, only: utility_recip_lattice, utility_inverse_mat
     implicit none
 
     !data from parameters module
@@ -107,7 +107,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-    real(kind=dp) :: recip_lattice(3, 3), volume
+    real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
@@ -185,6 +185,7 @@ contains
       call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
+      call utility_inverse_mat(real_lattice, inv_lattice)
       call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, &
                               stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
@@ -195,7 +196,7 @@ contains
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   wannierise%guiding_centres%enable, &
                                   proj_input, select_proj, num_proj, &
-                                  atoms, recip_lattice, num_wann, gamma_only, &
+                                  atoms, inv_lattice, num_wann, gamma_only, &
                                   system%spinors, library, bohr, stdout, seedname)
       if (allocated(proj%site)) then
         if (allocated(wannierise%guiding_centres%centres)) &
