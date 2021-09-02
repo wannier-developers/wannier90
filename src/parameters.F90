@@ -147,7 +147,7 @@ module w90_param_types
     ! REVIEW_2021-07-22: we need it (usage is very localised in the code).
     ! REVIEW_2021-07-22: We have a utility that does the conversion already.
     ! REVIEW_2021-07-22: Then it doesn't make sense to have a type for just kpt_latt.
-    real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
+    !real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
   end type k_points_type
 
   ! this contains data which described the disentangled manifold, also used in postw90
@@ -793,7 +793,7 @@ contains
   end subroutine param_read_kmesh_data
 
   subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, &
-                                recip_lattice, bohr, stdout, seedname)
+                                bohr, stdout, seedname)
     use w90_io, only: io_error
 !   use w90_utility, only: utility_recip_lattice
     implicit none
@@ -801,33 +801,37 @@ contains
     type(k_points_type), intent(inout) :: k_points
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    !real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
-    integer :: nkp, ierr
+    real(kind=dp), allocatable :: kpt_cart(:, :)
+    integer :: ierr
     logical :: found
 
-    if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
+    if (.not. pw90_effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read', stdout, seedname)
     if (.not. library) then
       allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read', stdout, seedname)
     end if
 
-    call param_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, r_value=k_points%kpt_cart)
+    call param_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, &
+                                 r_value=kpt_cart)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
-      k_points%kpt_latt = k_points%kpt_cart
+      k_points%kpt_latt = kpt_cart
       if (.not. found) call io_error('Error: Did not find the kpoint information in the input file', stdout, seedname)
     end if
 
     ! Calculate the kpoints in cartesian coordinates
-    if (.not. pw90_effective_model) then
-      do nkp = 1, num_kpts
-        k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
-      end do
-    endif
+    !if (.not. pw90_effective_model) then
+    !  do nkp = 1, num_kpts
+    !    k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
+    !  end do
+    !endif
+    deallocate (kpt_cart, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating kpt_cart in param_read', stdout, seedname)
 
   end subroutine param_read_kpoints
 
@@ -1596,10 +1600,6 @@ contains
     if (allocated(k_points%kpt_latt)) then
       deallocate (k_points%kpt_latt, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating kpt_latt in param_dealloc', stdout, seedname)
-    endif
-    if (allocated(k_points%kpt_cart)) then
-      deallocate (k_points%kpt_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kpt_cart in param_dealloc', stdout, seedname)
     endif
     if (allocated(spec_points%labels)) then
       deallocate (spec_points%labels, stat=ierr)

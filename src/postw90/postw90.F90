@@ -278,7 +278,7 @@ program postw90
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
       !
-      call kmesh_get(kmesh_data, kmesh_info, verbose, k_points%kpt_cart, real_lattice, &
+      call kmesh_get(kmesh_data, kmesh_info, verbose, k_points%kpt_latt, real_lattice, &
                      num_kpts, gamma_only, seedname, stdout)
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &

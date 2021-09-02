@@ -186,8 +186,7 @@ contains
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
       call utility_inverse_mat(real_lattice, inv_lattice)
-      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, &
-                              stdout, seedname)
+      call param_read_kpoints(.false., library, k_points, num_kpts, bohr, stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
                                     seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
@@ -1199,7 +1198,8 @@ contains
     !! write wannier90 parameters to stdout
     !                                                                  !
     !===================================================================
-    use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac
+    use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac, &
+      utility_frac_to_cart
 
     implicit none
 
@@ -1243,7 +1243,7 @@ contains
     logical, intent(in) :: spinors
 
 !   local variables
-    real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), volume
+    real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), kpt_cart(3), volume
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     real(kind=dp) :: cell_volume
     logical :: disentanglement
@@ -1385,8 +1385,9 @@ contains
       endif
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nkp = 1, num_kpts
+        call utility_frac_to_cart(k_points%kpt_latt(:, nkp), kpt_cart, recip_lattice)
         write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, k_points%kpt_latt(:, nkp), '|', &
-          k_points%kpt_cart(:, nkp)/verbose%lenconfac, '|'
+          kpt_cart(:)/verbose%lenconfac, '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, *) ' '
@@ -1901,7 +1902,7 @@ contains
       mem_param = mem_param + (atoms%num_species)*size_int                               !atoms_species_num
       mem_param = mem_param + (atoms%num_species)*size_real                              !atoms_label
       mem_param = mem_param + (atoms%num_species)*size_real                              !atoms_symbol
-      mem_param = mem_param + (3*maxval(atoms%species_num)*atoms%num_species)*size_real  !atoms_pos_frac
+      !mem_param = mem_param + (3*maxval(atoms%species_num)*atoms%num_species)*size_real  !atoms_pos_frac
       mem_param = mem_param + (3*maxval(atoms%species_num)*atoms%num_species)*size_real  !atoms_pos_cart
     endif
 
@@ -1933,7 +1934,7 @@ contains
     mem_param = mem_param + 3*kmesh_info%nntot*num_kpts*size_real !bk
 
     mem_param = mem_param + num_bands*num_kpts*size_real             !eigval
-    mem_param = mem_param + 3*num_kpts*size_real                     !kpt_cart
+    !mem_param = mem_param + 3*num_kpts*size_real                     !kpt_cart
     mem_param = mem_param + 3*num_kpts*size_real                     !kpt_latt
     if (disentanglement) then
       mem_param = mem_param + num_kpts*size_int                     !ndimwin

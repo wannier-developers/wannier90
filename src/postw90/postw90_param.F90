@@ -406,7 +406,7 @@ contains
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call param_read_kpoints(effective_model, library, k_points, num_kpts, &
-                            recip_lattice, bohr, stdout, seedname)
+                            bohr, stdout, seedname)
     call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
                                  write_data%kmesh, recip_lattice, stdout, seedname)
     call param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, &

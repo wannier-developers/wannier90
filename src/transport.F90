@@ -2920,10 +2920,12 @@ contains
                   exit
                 endif
               else
-                if (abs(wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*transport%num_ll + &
-                                                                        j + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll)) - &
-                        wannier_centres_translated(coord(l), tran_sorted_idx(num_wann - 2*transport%num_ll + &
-                                                                         k + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll))) &
+                if (abs(wannier_centres_translated(coord(l), &
+                                                   tran_sorted_idx(num_wann - 2*transport%num_ll &
+                                                                   + j + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll)) &
+                        - wannier_centres_translated(coord(l), &
+                                                     tran_sorted_idx(num_wann - 2*transport%num_ll &
+                                                                     + k + (i - 2*transport%num_cell_ll - 1)*num_wann_cell_ll))) &
                     .le. transport%group_threshold) then
                   coord_iterator = coord_iterator + 1
                 else
@@ -3381,10 +3383,10 @@ contains
     !This checks that only the gamma point is used in wannierisation
     !This is necessary since this calculation only makes sense if we
     !have periodicity over the supercell.
-    !
-    if ((size(k_points%kpt_cart, 2) .ne. 1) .and. (k_points%kpt_cart(1, 1) .eq. 0.0_dp) &
-        .and. (k_points%kpt_cart(2, 1) .eq. 0.0_dp) &
-        .and. (k_points%kpt_cart(3, 1) .eq. 0.0_dp)) then
+    !BGS, I think (0, 0, 0) in kpt_latt should work as well as in kpt_cart
+    if ((size(k_points%kpt_latt, 2) .ne. 1) .and. (k_points%kpt_latt(1, 1) .eq. 0.0_dp) &
+        .and. (k_points%kpt_latt(2, 1) .eq. 0.0_dp) &
+        .and. (k_points%kpt_latt(3, 1) .eq. 0.0_dp)) then
       call io_error('Calculation must be performed at gamma only', stdout, seedname)
     endif
 

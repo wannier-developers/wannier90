@@ -49,7 +49,7 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_cart, real_lattice, &
+  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, &
                        num_kpts, gamma_only, seedname, stdout)
     !=====================================================
     !
@@ -57,7 +57,7 @@ contains
     !
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_utility, only: utility_compar, utility_recip_lattice
+    use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart
     use w90_param_types, only: kmesh_info_type, kmesh_input_type, print_output_type
 
     implicit none
@@ -69,11 +69,12 @@ contains
 
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) ::kpt_cart(:, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: gamma_only
 
     ! local variables
+    real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnsh, nn, nnx, loop, i, j
@@ -101,6 +102,12 @@ contains
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
     call kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout)
+
+    allocate (kpt_cart(3, num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpt_cart in kmesh_get', stdout, seedname)
+    do nkp = 1, num_kpts
+      call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart(:, nkp), recip_lattice)
+    enddo
 
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
@@ -614,6 +621,9 @@ contains
 
     endif
 ![ysl-e]
+
+    deallocate (kpt_cart, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating kpt_cart in kmesh_get', stdout, seedname)
 
     if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 2, stdout, seedname)
 
