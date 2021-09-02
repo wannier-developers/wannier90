@@ -27,7 +27,7 @@ module w90chk_parameters
   type(wannier_data_type), save :: wann_data
   type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
-  type(k_points_type), save :: k_points
+  real(kind=dp), allocatable, save :: kpt_latt(:, :)
   integer, save :: num_kpts
   type(dis_manifold_type), save :: dis_window
   type(atom_data_type), save :: atoms
@@ -241,11 +241,11 @@ contains
     write (stdout, '(a,I0)') "Num kpts:", num_kpts
     read (chk_unit) (mp_grid(i), i=1, 3)         ! M-P grid
     write (stdout, '(a)') "mp_grid: read."
-    if (.not. allocated(k_points%kpt_latt)) then
-      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+    if (.not. allocated(kpt_latt)) then
+      allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt', stdout, seedname)
     endif
-    read (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
+    read (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     write (stdout, '(a)') "kpt_latt: read."
     read (chk_unit) kmesh_info%nntot                ! nntot
     write (stdout, '(a,I0)') "nntot:", kmesh_info%nntot
@@ -400,12 +400,12 @@ contains
     write (stdout, '(a,I0)') "Num kpts:", num_kpts
     read (chk_unit, *) (mp_grid(i), i=1, 3)         ! M-P grid
     write (stdout, '(a)') "mp_grid: read."
-    if (.not. allocated(k_points%kpt_latt)) then
-      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+    if (.not. allocated(kpt_latt)) then
+      allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt_fmt', stdout, seedname)
     endif
     do nkp = 1, num_kpts
-      read (chk_unit, *, err=115) (k_points%kpt_latt(i, nkp), i=1, 3)
+      read (chk_unit, *, err=115) (kpt_latt(i, nkp), i=1, 3)
     end do
     write (stdout, '(a)') "kpt_latt: read."
     read (chk_unit, *) kmesh_info%nntot                ! nntot
@@ -583,7 +583,7 @@ contains
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
     write (chk_unit) (mp_grid(i), i=1, 3)                       ! M-P grid
-    write (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
+    write (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
     write (chk_unit) kmesh_info%nntot                                    ! Number of nearest k-point neighbours
     write (chk_unit) num_wann                                 ! Number of wannier functions
     ! Next is correct: it always print out 20 characters
@@ -640,7 +640,7 @@ contains
     write (chk_unit, '(I0)') num_kpts                                 ! Number of k-points
     write (chk_unit, '(I0," ",I0," ",I0)') (mp_grid(i), i=1, 3)                       ! M-P grid
     do nkp = 1, num_kpts
-      write (chk_unit, '(3G25.17)') (k_points%kpt_latt(i, nkp), i=1, 3) ! K-points
+      write (chk_unit, '(3G25.17)') (kpt_latt(i, nkp), i=1, 3) ! K-points
     end do
     write (chk_unit, '(I0)') kmesh_info%nntot                                    ! Number of nearest k-point neighbours
     write (chk_unit, '(I0)') num_wann                                 ! Number of wannier functions

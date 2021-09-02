@@ -35,7 +35,7 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+  subroutine get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                       real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                       num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
     !======================================================
@@ -48,14 +48,14 @@ contains
     use w90_comms, only: w90commtype, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, print_output_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: ws_vec
@@ -205,7 +205,7 @@ contains
       enddo
     enddo
 
-    call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, k_points, HH_q, HH_R)
+    call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, kpt_latt, HH_q, HH_R)
 
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
@@ -226,7 +226,7 @@ contains
         enddo
       enddo
 
-      call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, k_points, sciss_q, sciss_R)
+      call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, kpt_latt, sciss_q, sciss_R)
       do n = 1, num_wann
         sciss_R(n, n, ws_vec%rpt_origin) = sciss_R(n, n, ws_vec%rpt_origin) + 1.0_dp
       end do
@@ -244,7 +244,7 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+  subroutine get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                       eigval, irvec, nrpts, num_bands, num_kpts, num_wann, effective_model, &
                       have_disentangled, seedname, stdout, comm)
     !==================================================
@@ -260,8 +260,7 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
-      print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -269,7 +268,7 @@ contains
     type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -504,9 +503,9 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 1), AA_R(:, :, :, 1))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 2), AA_R(:, :, :, 2))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, AA_q(:, :, :, 3), AA_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, AA_q(:, :, :, 1), AA_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, AA_q(:, :, :, 2), AA_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, AA_q(:, :, :, 3), AA_R(:, :, :, 3))
 
     endif !on_root
 
@@ -526,7 +525,7 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
+  subroutine get_BB_R(dis_window, kmesh_info, kpt_latt, verbose, BB_R, v_matrix, eigval, &
                       scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
     !=====================================================
@@ -539,15 +538,14 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
-      print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -680,9 +678,9 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 1), BB_R(:, :, :, 1))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 2), BB_R(:, :, :, 2))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, BB_q(:, :, :, 3), BB_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, BB_q(:, :, :, 1), BB_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, BB_q(:, :, :, 2), BB_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, BB_q(:, :, :, 3), BB_R(:, :, :, 3))
 
     endif !on_root
 
@@ -699,7 +697,7 @@ contains
 
   !=============================================================
 
-  subroutine get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
+  subroutine get_CC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, CC_R, v_matrix, &
                       eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
     !=============================================================
@@ -713,15 +711,14 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
-      print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
@@ -867,7 +864,7 @@ contains
       do b = 1, 3
         do a = 1, 3
 
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
         enddo
       enddo
 
@@ -888,7 +885,7 @@ contains
 
   !===========================================================
   subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_window, &
-                      kmesh_info, k_points, verbose, have_disentangled, stdout, seedname, comm)
+                      kmesh_info, kpt_latt, verbose, have_disentangled, stdout, seedname, comm)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -899,14 +896,14 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
 
@@ -1035,7 +1032,7 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, FF_q(:, :, :, a, b), FF_R(:, :, :, a, b))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, FF_q(:, :, :, a, b), FF_R(:, :, :, a, b))
         enddo
       enddo
 
@@ -1054,7 +1051,7 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, irvec, &
+  subroutine get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, irvec, &
                       nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
                       comm)
     !================================================================
@@ -1068,13 +1065,13 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, print_output_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(w90commtype), intent(in) :: comm
@@ -1201,9 +1198,9 @@ contains
         enddo !is
       enddo !ik
 
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 1), SS_R(:, :, :, 1))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 2), SS_R(:, :, :, 2))
-      call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SS_q(:, :, :, 3), SS_R(:, :, :, 3))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SS_q(:, :, :, 1), SS_R(:, :, :, 1))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SS_q(:, :, :, 2), SS_R(:, :, :, 2))
+      call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SS_q(:, :, :, 3), SS_R(:, :, :, 3))
 
     endif !on_root
 
@@ -1220,7 +1217,7 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, spin_hall, SH_R, &
+  subroutine get_SHC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, spin_hall, SH_R, &
                        SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, &
                        num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
                        comm)
@@ -1237,14 +1234,14 @@ contains
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, print_output_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(print_output_type), intent(in) :: verbose
     type(pw90_spin_hall_type), intent(in) :: spin_hall
@@ -1569,13 +1566,13 @@ contains
 
       do is = 1, 3
         ! QZYZ18 Eq.(46)
-        call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SH_q(:, :, :, is), SH_R(:, :, :, is))
+        call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SH_q(:, :, :, is), SH_R(:, :, :, is))
         do idir = 1, 3
           ! QZYZ18 Eq.(44)
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SR_q(:, :, :, is, idir), &
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SR_q(:, :, :, is, idir), &
                               SR_R(:, :, :, is, idir))
           ! QZYZ18 Eq.(45)
-          call fourier_q_to_R(num_kpts, nrpts, irvec, k_points, SHR_q(:, :, :, is, idir), &
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SHR_q(:, :, :, is, idir), &
                               SHR_R(:, :, :, is, idir))
         end do
       end do
@@ -1606,7 +1603,7 @@ contains
   !=========================================================!
 
   !=========================================================!
-  subroutine fourier_q_to_R(num_kpts, nrpts, irvec, k_points, op_q, op_R)
+  subroutine fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, op_q, op_R)
     !==========================================================
     !
     !! Fourier transforms Wannier-gauge representation
@@ -1617,12 +1614,11 @@ contains
     !==========================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: k_points_type
 
     implicit none
 
     ! Arguments
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     integer, intent(in) :: num_kpts, nrpts, irvec(:, :)
     complex(kind=dp), intent(in) :: op_q(:, :, :) !! Operator in q-space
     complex(kind=dp), intent(out) :: op_R(:, :, :) !! Operator in R-space
@@ -1635,7 +1631,7 @@ contains
     op_R = cmplx_0
     do ir = 1, nrpts
       do ik = 1, num_kpts
-        rdotq = twopi*dot_product(k_points%kpt_latt(:, ik), irvec(:, ir))
+        rdotq = twopi*dot_product(kpt_latt(:, ik), irvec(:, ir))
         phase_fac = exp(-cmplx_i*rdotq)
         op_R(:, :, ir) = op_R(:, :, ir) + phase_fac*op_q(:, :, ik)
       enddo

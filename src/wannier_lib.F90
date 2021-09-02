@@ -64,7 +64,7 @@ module w90lib_parameters
   type(wannier_data_type), save :: wann_data
   type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
-  type(k_points_type), save :: k_points
+  real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
   integer, save :: num_kpts
   type(dis_manifold_type), save :: dis_window
   real(kind=dp), allocatable, save :: fermi_energy_list(:)
@@ -280,9 +280,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   num_kpts = num_kpts_loc
   real_lattice = real_lattice_loc
   !recip_lattice = recip_lattice_loc
-  allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+  allocate (kpt_latt(3, num_kpts), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout, seedname)
-  k_points%kpt_latt = kpt_latt_loc
+  kpt_latt = kpt_latt_loc
   atoms%num_atoms = num_atoms_loc
   call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, stdout, seedname)
   gamma_only = gamma_only_loc
@@ -292,7 +292,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   num_bands = num_bands_tot
   !library_param_read_first_pass = .true.
   call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
-                  fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+                  fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, out_files, &
                   plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
                   spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
                   w90_calcs, eigval, real_lattice, physics%bohr, symmetrize_eps, &
@@ -305,8 +305,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
 
-  call param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, k_points, &
-                   out_files, plot, wannierise, proj, input_proj, rs_region, &
+  call param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, &
+                   kpt_latt, out_files, plot, wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, symmetrize_eps, mp_grid, num_bands, &
                    num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -315,7 +315,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
   if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_data, kmesh_info, verbose, &
-                                                       k_points%kpt_latt, real_lattice, num_kpts, &
+                                                       kpt_latt, real_lattice, num_kpts, &
                                                        gamma_only, seedname, stdout)
   ! Now we zero all of the local output data, then copy in the data
   ! from the parameters module
@@ -355,7 +355,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   end if
 
   if (w90_calcs%postproc_setup) then
-    call kmesh_write(exclude_bands, kmesh_info, input_proj, verbose, k_points%kpt_latt, &
+    call kmesh_write(exclude_bands, kmesh_info, input_proj, verbose, kpt_latt, &
                      real_lattice, num_kpts, num_proj, calc_only_A, &
                      system%spinors, seedname, stdout)
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
@@ -365,7 +365,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   call kmesh_dealloc(kmesh_info, stdout, seedname)
 
   call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
-                         k_points, wannierise, proj, input_proj, spec_points, wann_data, &
+                         kpt_latt, wannierise, proj, input_proj, spec_points, wann_data, &
                          wann_plot, write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
@@ -560,9 +560,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   num_kpts = num_kpts_loc
   real_lattice = real_lattice_loc
   !recip_lattice = recip_lattice_loc
-  allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+  allocate (kpt_latt(3, num_kpts), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout, seedname)
-  k_points%kpt_latt = kpt_latt_loc
+  kpt_latt = kpt_latt_loc
   allocate (eigval(num_bands, num_kpts), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating eigval in wannier_setup', stdout, seedname)
   eigval = eigenvalues_loc
@@ -571,18 +571,18 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, stdout, seedname)
 
-  call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
-                  fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
-                  plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
-                  spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
-                  w90_calcs, eigval, real_lattice, physics%bohr, symmetrize_eps, &
-                  mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, calc_only_A, cp_pp, &
-                  gamma_only, lhasproj, .true., .false., lsitesymmetry, use_bloch_phases, &
-                  seedname, stdout)
+  call param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
+                  fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
+                  out_files, plot, wannierise, wann_omega, proj, input_proj, rs_region, &
+                  select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
+                  write_data, ws_region, w90_calcs, eigval, real_lattice, physics%bohr, &
+                  symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
+                  calc_only_A, cp_pp, gamma_only, lhasproj, .true., .false., lsitesymmetry, &
+                  use_bloch_phases, seedname, stdout)
   have_disentangled = .false.
   disentanglement = (num_bands > num_wann)
-  call param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, k_points, &
-                   out_files, plot, wannierise, proj, input_proj, rs_region, &
+  call param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, fermi_surface_data, &
+                   kpt_latt, out_files, plot, wannierise, proj, input_proj, rs_region, &
                    select_proj, spec_points, tran, verbose, wann_data, wann_plot, write_data, &
                    w90_calcs, real_lattice, symmetrize_eps, mp_grid, num_bands, &
                    num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
@@ -590,7 +590,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   time1 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-  call kmesh_get(kmesh_data, kmesh_info, verbose, k_points%kpt_latt, real_lattice, &
+  call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
                  num_kpts, gamma_only, seedname, stdout)
 
   time2 = io_time()
@@ -629,14 +629,14 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (disentanglement) then
     have_disentangled = .false.
 
-    call dis_main(dis_data, dis_spheres, dis_window, kmesh_info, k_points, sym, verbose, a_matrix, &
+    call dis_main(dis_data, dis_spheres, dis_window, kmesh_info, kpt_latt, sym, verbose, a_matrix, &
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
                   num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
                   stdout, seedname, comm)
     have_disentangled = .true.
     call param_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
-                           k_points, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
+                           kpt_latt, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
                            u_matrix_opt, m_matrix, mp_grid, real_lattice, &
                            wann_omega%invariant, have_disentangled, stdout, seedname)
 
@@ -656,12 +656,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   end if
 
   if (gamma_only) then
-    call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, k_points, out_files, &
+    call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
   else
-    call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, k_points, out_files, &
+    call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
                    ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, wannier_centres_translated, irvec, mp_grid, &
@@ -670,7 +670,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    seedname, stdout, comm)
   endif
 
-  call param_write_chkpt('postwann', exclude_bands, wann_data, kmesh_info, k_points, &
+  call param_write_chkpt('postwann', exclude_bands, wann_data, kmesh_info, kpt_latt, &
                          num_kpts, dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, &
                          m_matrix, mp_grid, real_lattice, &
                          wann_omega%invariant, have_disentangled, stdout, seedname)
@@ -679,8 +679,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr) then
-    call plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, kmesh_info, &
-                   k_points, out_files, plot, rs_region, spec_points, &
+    call plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, &
+                   kmesh_info, kpt_latt, out_files, plot, rs_region, spec_points, &
                    verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, &
                    u_matrix, u_matrix_opt, eigval, real_lattice, &
                    wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, shift_vec, &
@@ -692,7 +692,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   time2 = io_time()
   if (w90_calcs%transport) then
-    call tran_main(atoms, dis_window, fermi_energy_list, hmlg, k_points, out_files, rs_region, &
+    call tran_main(atoms, dis_window, fermi_energy_list, hmlg, kpt_latt, out_files, rs_region, &
                    tran, verbose, wann_data, ws_region, w90_calcs, ham_k, ham_r, u_matrix, &
                    u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
@@ -735,7 +735,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                        u_matrix, u_matrix_opt, seedname, stdout, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
-                         k_points, wannierise, proj, input_proj, spec_points, wann_data, &
+                         kpt_latt, wannierise, proj, input_proj, spec_points, wann_data, &
                          wann_plot, write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 

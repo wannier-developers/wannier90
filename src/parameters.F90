@@ -137,19 +137,6 @@ module w90_param_types
     !! nnkpts block is in the input file (allowed only for post-proc setup)
   end type kmesh_info_type
 
-  ! used in wannierise, hamiltonian, plot and others (postw90 also)
-  type k_points_type
-    !! =====================
-    !! Contains information about the kpoints used in the calculation.
-    !! =====================
-    real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
-    ! REVIEW_2021-07-22: we can generate kpt_cart from kpt_latt as and when
-    ! REVIEW_2021-07-22: we need it (usage is very localised in the code).
-    ! REVIEW_2021-07-22: We have a utility that does the conversion already.
-    ! REVIEW_2021-07-22: Then it doesn't make sense to have a type for just kpt_latt.
-    !real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
-  end type k_points_type
-
   ! this contains data which described the disentangled manifold, also used in postw90
   type dis_manifold_type
     !! ===========================
@@ -792,13 +779,13 @@ contains
 
   end subroutine param_read_kmesh_data
 
-  subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, &
+  subroutine param_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
                                 bohr, stdout, seedname)
     use w90_io, only: io_error
 !   use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: pw90_effective_model, library
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     !real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -812,7 +799,7 @@ contains
     if (.not. pw90_effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read', stdout, seedname)
     if (.not. library) then
-      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+      allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read', stdout, seedname)
     end if
 
@@ -820,7 +807,7 @@ contains
                                  r_value=kpt_cart)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
-      k_points%kpt_latt = kpt_cart
+      kpt_latt = kpt_cart
       if (.not. found) call io_error('Error: Did not find the kpoint information in the input file', stdout, seedname)
     end if
 
@@ -1555,7 +1542,7 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_data, k_points, &
+  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_data, kpt_latt, &
                            dis_window, atoms, eigval, spec_points, stdout, seedname)
     !==================================================================!
     !                                                                  !
@@ -1571,7 +1558,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(proj_input_type), intent(inout) :: input_proj
     type(kmesh_input_type), intent(inout) :: kmesh_data
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -1597,8 +1584,8 @@ contains
       deallocate (kmesh_data%shell_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating shell_list in param_dealloc', stdout, seedname)
     endif
-    if (allocated(k_points%kpt_latt)) then
-      deallocate (k_points%kpt_latt, stat=ierr)
+    if (allocated(kpt_latt)) then
+      deallocate (kpt_latt, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating kpt_latt in param_dealloc', stdout, seedname)
     endif
     if (allocated(spec_points%labels)) then
@@ -1757,7 +1744,7 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(dis_data, exclude_bands, kmesh_info, k_points, wann_data, m_matrix, &
+  subroutine param_read_chkpt(dis_data, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
                               u_matrix, u_matrix_opt, real_lattice, &
                               omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                               num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
@@ -1782,7 +1769,7 @@ contains
     integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_data
 
     integer, intent(in) :: num_kpts
@@ -1858,7 +1845,7 @@ contains
     read (chk_unit) ((tmp_kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     do nkp = 1, num_kpts
       do i = 1, 3
-        if (abs(tmp_kpt_latt(i, nkp) - k_points%kpt_latt(i, nkp)) .gt. eps6) &
+        if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) &
           call io_error('param_read_chk: Mismatch in kpt_latt', stdout, seedname)
       enddo
     enddo

@@ -40,7 +40,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_slice(berry, dis_window, fermi_energy_list, kmesh_info, k_points, kslice, &
+  subroutine k_slice(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, kslice, &
                      postw90_oper, pw90_ham, pw90_spin, rs_region, spin_hall, verbose, wann_data, &
                      ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
                      v_matrix, u_matrix, bohr, eigval, real_lattice, &
@@ -56,8 +56,8 @@ contains
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
-      print_output_type, wannier_data_type, ws_region_type
+    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type, &
+      wannier_data_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice, utility_recip_lattice_base
@@ -71,7 +71,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_kslice_mod_type), intent(in) :: kslice
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
@@ -172,31 +172,31 @@ contains
                              stdout, seedname, berry, fermi_energy_list)
     end if
 
-    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_Valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
     if (plot_curv .or. plot_morb) then
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
     endif
     if (plot_morb) then
-      call get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
+      call get_BB_R(dis_window, kmesh_info, kpt_latt, verbose, BB_R, v_matrix, eigval, &
                     scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
-      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
+      call get_CC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, CC_R, v_matrix, &
                     eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
     endif
 
     if (plot_shc) then
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
-      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                     ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                     seedname, stdout, comm)
-      call get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, spin_hall, SH_R, &
+      call get_SHC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, spin_hall, SH_R, &
                      SHR_R, SR_R, v_matrix, eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, &
                      num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
                      seedname, stdout, comm)
@@ -204,7 +204,7 @@ contains
     end if
 
     if (fermi_lines_color) then
-      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                     ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                     seedname, stdout, comm)
     endif
@@ -308,7 +308,7 @@ contains
             endif
           enddo
 
-          call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+          call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                    ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                    del_eig, eig, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -337,7 +337,7 @@ contains
 
       if (plot_curv) then
 
-        call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+        call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                  wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
                                  v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
                                  mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -349,7 +349,7 @@ contains
         ! Print _minus_ the Berry curvature
         my_zdata(:, iloc) = -curv(:)
       else if (plot_morb) then
-        call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+        call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
@@ -363,7 +363,7 @@ contains
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
       else if (plot_shc) then
-        call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+        call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                  rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
                                  AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
                                  kpt, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &

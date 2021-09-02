@@ -23,7 +23,7 @@ contains
 
   !============================================!
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, hmlg, kmesh_info, &
-                       k_points, output_file, wvfn_read, real_space_ham, kpoint_path, &
+                       kpt_latt, output_file, wvfn_read, real_space_ham, kpoint_path, &
                        print_output, wannier_data, wannier_plot, ws_region, w90_calculation, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -39,7 +39,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
-    use w90_param_types, only: k_points_type, kmesh_info_type, wannier_data_type, atom_data_type, &
+    use w90_param_types, only: kmesh_info_type, wannier_data_type, atom_data_type, &
       dis_manifold_type, kpoint_path_type, print_output_type, ws_region_type
     use wannier_param_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
       fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type
@@ -49,7 +49,7 @@ contains
 !   passed variables
     type(w90_calculation_type), intent(in)       :: w90_calculation
     type(output_file_type), intent(in)           :: output_file
-    type(k_points_type), intent(in)              :: k_points
+    real(kind=dp), intent(in)                    :: kpt_latt(:, :)
     type(real_space_ham_type), intent(inout)     :: real_space_ham
     type(ws_region_type), intent(in)             :: ws_region
     type(print_output_type), intent(in)          :: print_output
@@ -117,7 +117,7 @@ contains
       ! Check if the kmesh includes the gamma point
       have_gamma = .false.
       do nkp = 1, num_kpts
-        if (all(abs(k_points%kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
+        if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
       end do
       if (.not. have_gamma) &
            write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
@@ -130,7 +130,7 @@ contains
                              seedname, transport_mode)
       !
       call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
-                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                               wannier_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
@@ -155,10 +155,10 @@ contains
                                                           stdout)
       !
       if (output_file%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
-                                                            k_points%kpt_latt, irvec, nrpts, &
+                                                            kpt_latt, irvec, nrpts, &
                                                             num_kpts, num_wann, stdout, seedname)
       if (output_file%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
-                                                          k_points%kpt_latt, real_lattice, irvec, &
+                                                          kpt_latt, real_lattice, irvec, &
                                                           ndegen, nrpts, num_kpts, num_wann, &
                                                           stdout, print_output%timing_level, seedname)
       if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
@@ -173,14 +173,14 @@ contains
 
     if (w90_calculation%wannier_plot) call plot_wannier(wannier_plot, wvfn_read, wannier_data, &
                                                         print_output, u_matrix_opt, dis_manifold, &
-                                                        real_lattice, atom_data, k_points, &
+                                                        real_lattice, atom_data, kpt_latt, &
                                                         u_matrix, num_kpts, num_bands, num_wann, &
                                                         have_disentangled, spinors, bohr, &
                                                         stdout, seedname)
 
     if (output_file%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
-    if (output_file%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
+    if (output_file%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
                                                            have_disentangled, num_wann, num_kpts, &
                                                            num_bands, seedname)
 
@@ -1105,7 +1105,7 @@ contains
 
   !============================================!
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
-                          dis_manifold, real_lattice, atom_data, k_points, u_matrix, num_kpts, &
+                          dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname)
     !============================================!
     !                                            !
@@ -1117,14 +1117,14 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_points_type, wannier_data_type, &
-      atom_data_type, dis_manifold_type, print_output_type
+    use w90_param_types, only: wannier_data_type, atom_data_type, dis_manifold_type, &
+      print_output_type
     use wannier_param_types, only: wvfn_read_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
     implicit none
 
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: print_output
     type(wannier_plot_type), intent(in) :: wannier_plot
     type(wvfn_read_type), intent(in) :: wvfn_read
@@ -1356,9 +1356,9 @@ contains
               nx = mod(nxx, ngx)
               if (nx .lt. 1) nx = nx + ngx
 
-              scalfac = k_points%kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp) + &
-                        k_points%kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp) + &
-                        k_points%kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp)
+              scalfac = kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp) + &
+                        kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp) + &
+                        kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp)
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
               catmp = exp(twopi*cmplx_i*scalfac)
               do loop_b = 1, num_wann
@@ -1872,7 +1872,7 @@ contains
   end subroutine plot_wannier
 
   !============================================!
-  subroutine plot_u_matrices(u_matrix_opt, u_matrix, k_points, have_disentangled, &
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, &
                              num_wann, num_kpts, num_bands, seedname)
     !============================================!
     !                                            !
@@ -1884,11 +1884,10 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_time, io_stopwatch, io_date
     use w90_constants, only: dp  !lp
-    use w90_param_types, only: k_points_type
 
     implicit none
 
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     integer             :: matunit
     integer             :: i, j, nkp
@@ -1914,7 +1913,7 @@ contains
 
     do nkp = 1, num_kpts
       write (matunit, *)
-      write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') k_points%kpt_latt(:, nkp)
+      write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
       write (matunit, '(f15.10,sp,f15.10)') ((u_matrix(i, j, nkp), i=1, num_wann), j=1, num_wann)
     end do
     close (matunit)
@@ -1926,7 +1925,7 @@ contains
       write (matunit, *) num_kpts, num_wann, num_bands
       do nkp = 1, num_kpts
         write (matunit, *)
-        write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') k_points%kpt_latt(:, nkp)
+        write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
         write (matunit, '(f15.10,sp,f15.10)') ((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann)
       end do
       close (matunit)

@@ -29,7 +29,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment(dis_window, fermi_energy_list, kdist, k_points, postw90_oper, &
+  subroutine spin_get_moment(dis_window, fermi_energy_list, kdist, kpt_latt, postw90_oper, &
                              pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                              SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
@@ -47,7 +47,7 @@ contains
     use w90_io, only: io_error
     use pw90_parameters, only: pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, k_points_type, ws_region_type
+      dis_manifold_type, ws_region_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
@@ -58,7 +58,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kpoint_dist_type), intent(in) :: kdist
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
@@ -100,11 +100,11 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
 
-    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
 
-    call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+    call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                   ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                   seedname, stdout, comm)
 

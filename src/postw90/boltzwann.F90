@@ -65,7 +65,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(boltz, dis_window, dos_data, k_points, pw90_ham, postw90_oper, &
+  subroutine boltzwann_main(boltz, dis_window, dos_data, kpt_latt, pw90_ham, postw90_oper, &
                             pw90_spin, physics, rs_region, system, wann_data, ws_distance, ws_vec, &
                             verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
                             scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
@@ -89,7 +89,7 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: comms_bcast, w90commtype, mpirank
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      k_points_type, ws_region_type, w90_system_type
+      ws_region_type, w90_system_type
     use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
@@ -101,7 +101,7 @@ contains
     type(pw90_boltzwann_type), intent(in) :: boltz
     type(dis_manifold_type), intent(in) :: dis_window
     type(pw90_dos_mod_type), intent(in) :: dos_data
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -259,7 +259,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, pw90_spin, &
+    call calcTDFandDOS(boltz, dis_window, dos_data, kpt_latt, postw90_oper, pw90_ham, pw90_spin, &
                        rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, SS_R, u_matrix, &
                        v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                        cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
@@ -655,7 +655,7 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(boltz, dis_window, dos_data, k_points, postw90_oper, pw90_ham, &
+  subroutine calcTDFandDOS(boltz, dis_window, dos_data, kpt_latt, postw90_oper, pw90_ham, &
                            pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                            cell_volume, scissors_shift, mp_grid, num_bands, &
@@ -687,10 +687,10 @@ contains
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_param_types, only: print_output_type, wannier_data_type, k_points_type, &
-      dis_manifold_type, ws_region_type
-    use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, pw90_band_deriv_degen_type, &
-      pw90_dos_mod_type, pw90_oper_read_type
+    use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
+      ws_region_type
+    use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, &
+      pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type
     use w90_param_methods, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_ws_distance, only: ws_distance_type
@@ -702,7 +702,7 @@ contains
     type(pw90_boltzwann_type), intent(in) :: boltz
     type(dis_manifold_type), intent(in) :: dis_window
     type(pw90_dos_mod_type), intent(in) :: dos_data
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -789,13 +789,13 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
     if (spin_decomp) then
       ndim = 3
 
-      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                     ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
                     comm)
     else
@@ -909,7 +909,7 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+      call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
@@ -950,7 +950,7 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, &
+                  call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, &
                                            wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                            u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                            real_lattice, scissors_shift, mp_grid, num_bands, &

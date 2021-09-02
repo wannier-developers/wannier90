@@ -48,7 +48,7 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main(atom_data, dis_manifold, exclude_bands, hmlg, kmesh_info, k_points, output_file, &
+  subroutine wann_main(atom_data, dis_manifold, exclude_bands, hmlg, kmesh_info, kpt_latt, output_file, &
                        real_space_ham, wann_control, omega, sym, w90_system, print_output, wannier_data, &
                        ws_region, w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
                        eigval, real_lattice, wannier_centres_translated, irvec, &
@@ -65,7 +65,7 @@ contains
     use wannier_param_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
-      atom_data_type, k_points_type, dis_manifold_type, w90_system_type, ws_region_type
+      atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -82,7 +82,7 @@ contains
     type(dis_manifold_type), intent(in)      :: dis_manifold
     type(ham_logical), intent(inout)         :: hmlg
     type(kmesh_info_type), intent(in)        :: kmesh_info
-    type(k_points_type), intent(in)          :: k_points
+    real(kind=dp), intent(in)                :: kpt_latt(:, :)
     type(w90_system_type), intent(in)        :: w90_system
     type(ws_region_type), intent(in)         :: ws_region
     type(print_output_type), intent(in)      :: print_output
@@ -264,7 +264,7 @@ contains
 
         do irpt = 1, nrpts
           do loop_kpt = 1, num_kpts
-            rdotk = twopi*dot_product(k_points%kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
+            rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
             k_to_r(loop_kpt, irpt) = exp(-cmplx_i*rdotk)
           enddo
         enddo
@@ -515,7 +515,7 @@ contains
       if (wann_control%precond) then
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                       k_to_r, wann_spread, num_wann, num_kpts, &
-                                      k_points%kpt_latt, real_lattice, nrpts, irvec, ndegen, &
+                                      kpt_latt, real_lattice, nrpts, irvec, ndegen, &
                                       counts, displs, stdout)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
@@ -710,7 +710,7 @@ contains
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
         if (on_root) call param_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
-                                            k_points, num_kpts, dis_manifold, num_bands, num_wann, &
+                                            kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, omega%invariant, have_disentangled, &
                                             stdout, seedname)
@@ -818,7 +818,7 @@ contains
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
       call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
-                              u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, real_lattice, &
+                              u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
                               wannier_data%centres, wannier_centres_translated, irvec, &
                               shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
                               stdout, seedname, lsitesymmetry)
@@ -3149,7 +3149,7 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, k_points, output_file, &
+  subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, output_file, &
                              wann_control, omega, w90_system, print_output, wannier_data, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, seedname, &
@@ -3164,7 +3164,7 @@ contains
     use w90_io, only: io_error, io_time, io_stopwatch
     use wannier_param_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, k_points_type, dis_manifold_type, w90_system_type
+      wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90commtype
@@ -3181,7 +3181,7 @@ contains
     integer, allocatable, intent(in) :: exclude_bands(:)
     type(w90_system_type), intent(in) :: w90_system
     type(print_output_type), intent(in) :: print_output
-    type(k_points_type), intent(in) :: k_points ! needed for write_chkpt
+    real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(output_file_type), intent(in) :: output_file
     type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
@@ -3477,7 +3477,7 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, k_points, &
+        call param_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, kpt_latt, &
                                num_kpts, dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, &
                                m_matrix, mp_grid, real_lattice, omega%invariant, &
                                have_disentangled, stdout, seedname)

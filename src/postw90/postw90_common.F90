@@ -250,7 +250,7 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, k_points, num_kpts, &
+  subroutine pw90common_wanint_param_dist(verbose, rs_region, kmesh_info, kpt_latt, num_kpts, &
                                           dis_window, system, fermi_energy_list, num_bands, &
                                           num_wann, eigval, mp_grid, real_lattice, &
                                           pw90_calcs, scissors_shift, effective_model, pw90_spin, &
@@ -278,7 +278,7 @@ contains
     type(ws_region_type), intent(inout) :: rs_region
     type(w90_system_type), intent(inout) :: system
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     integer, intent(inout) :: num_kpts
     type(dis_manifold_type), intent(inout) :: dis_window
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
@@ -507,7 +507,7 @@ contains
           if (ierr /= 0) &
             call io_error('Error allocating eigval in postw90_param_dist', stdout, seedname)
         end if
-        allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+        allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error allocating kpt_latt in postw90_param_dist', stdout, seedname)
       endif
@@ -522,7 +522,7 @@ contains
       if (eig_found) then
         call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, world)
       end if
-      call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts, stdout, seedname, world)
+      call comms_bcast(kpt_latt(1, 1), 3*num_kpts, stdout, seedname, world)
     endif
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix

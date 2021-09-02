@@ -41,7 +41,7 @@ contains
 
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, out_files, &
+                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, out_files, &
                         plot, wannierise, wann_omega, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, &
@@ -77,7 +77,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_control_type), intent(inout) :: dis_data
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
@@ -186,7 +186,7 @@ contains
       call param_read_kmesh_data(kmesh_data, stdout, seedname)
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
       call utility_inverse_mat(real_lattice, inv_lattice)
-      call param_read_kpoints(.false., library, k_points, num_kpts, bohr, stdout, seedname)
+      call param_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
                                     seedname)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
@@ -1188,7 +1188,7 @@ contains
 
 !===================================================================
   subroutine param_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, &
-                         fermi_surface_data, k_points, out_files, plot, wannierise, proj, &
+                         fermi_surface_data, kpt_latt, out_files, plot, wannierise, proj, &
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
@@ -1212,7 +1212,7 @@ contains
     type(band_plot_type), intent(in) :: band_plot
     type(wann_control_type), intent(in) :: wannierise
     type(wannier_data_type), intent(in) :: wann_data
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_control_type), intent(in) :: dis_data
     type(dis_spheres_type), intent(in) :: dis_spheres
     type(fermi_surface_plot_type), intent(in) :: fermi_surface_data
@@ -1385,8 +1385,8 @@ contains
       endif
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nkp = 1, num_kpts
-        call utility_frac_to_cart(k_points%kpt_latt(:, nkp), kpt_cart, recip_lattice)
-        write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, k_points%kpt_latt(:, nkp), '|', &
+        call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart, recip_lattice)
+        write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, kpt_latt(:, nkp), '|', &
           kpt_cart(:)/verbose%lenconfac, '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
@@ -1647,7 +1647,7 @@ contains
   end subroutine param_write
 
   subroutine param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, &
-                               kmesh_data, k_points, wannierise, proj, proj_input, spec_points, &
+                               kmesh_data, kpt_latt, wannierise, proj, proj_input, spec_points, &
                                wann_data, wann_plot, write_data, eigval, seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
@@ -1658,7 +1658,7 @@ contains
     type(wann_control_type), intent(inout) :: wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
@@ -1679,7 +1679,7 @@ contains
 !   passed variables
     integer :: ierr
 
-    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, kpt_latt, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
@@ -1744,7 +1744,7 @@ contains
   end subroutine param_w90_dealloc
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt, exclude_bands, wann_data, kmesh_info, k_points, num_kpts, &
+  subroutine param_write_chkpt(chkpt, exclude_bands, wann_data, kmesh_info, kpt_latt, num_kpts, &
                                dis_window, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                mp_grid, real_lattice, omega_invariant, &
                                have_disentangled, stdout, seedname)
@@ -1768,7 +1768,7 @@ contains
     integer, allocatable, intent(in) :: exclude_bands(:)
     type(wannier_data_type), intent(in) :: wann_data
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     integer, intent(in) :: num_kpts
     type(dis_manifold_type), intent(in) :: dis_window
     integer, intent(in) :: num_bands
@@ -1811,7 +1811,7 @@ contains
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
     write (chk_unit) (mp_grid(i), i=1, 3)                       ! M-P grid
-    write (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
+    write (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
     write (chk_unit) kmesh_info%nntot                  ! Number of nearest k-point neighbours
     write (chk_unit) num_wann               ! Number of wannier functions
     chkpt1 = adjustl(trim(chkpt))
@@ -2072,7 +2072,7 @@ contains
 
 !===========================================================!
   subroutine param_dist(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, k_points, &
+                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
                         out_files, plot, wannierise, wann_omega, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
                         real_lattice, symmetrize_eps, mp_grid, first_segment, &
@@ -2106,7 +2106,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_control_type), intent(inout) :: dis_data
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
@@ -2509,7 +2509,7 @@ contains
         if (ierr /= 0) &
           call io_error('Error allocating eigval in postw90_param_dist', stdout, seedname)
       end if
-      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+      allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) &
         call io_error('Error allocating kpt_latt in postw90_param_dist', stdout, seedname)
       !endif
@@ -2531,7 +2531,7 @@ contains
     if (eig_found) then
       call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, comm)
     end if
-    call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts, stdout, seedname, comm)
+    call comms_bcast(kpt_latt(1, 1), 3*num_kpts, stdout, seedname, comm)
     !endif
 
     !if (.not. pw90_common%effective_model .and. .not. driver%explicit_nnkpts) then

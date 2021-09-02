@@ -82,7 +82,7 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, hmlg, k_points, output_file, &
+  subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, hmlg, kpt_latt, output_file, &
                        real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
                        u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
-      atom_data_type, dis_manifold_type, k_points_type
+      atom_data_type, dis_manifold_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
       real_space_ham_type
 
@@ -112,7 +112,7 @@ contains
     type(wannier_data_type), intent(in)         :: wannier_data
     type(atom_data_type), intent(in)            :: atom_data
     type(dis_manifold_type), intent(in)         :: dis_manifold
-    type(k_points_type), intent(in)             :: k_points
+    real(kind=dp), intent(in)                   :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(ham_logical), intent(inout)            :: hmlg
 
@@ -186,7 +186,7 @@ contains
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, transport%mode)
         call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
-                                ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
+                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
@@ -216,7 +216,7 @@ contains
                                num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                                seedname, transport%mode)
         call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
-                                ham_r, u_matrix, u_matrix_opt, eigval, k_points%kpt_latt, &
+                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
@@ -245,7 +245,7 @@ contains
 
         call tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
-        call tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, k_points, num_wann, transport, &
+        call tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, kpt_latt, num_wann, transport, &
                                     print_output, real_lattice, mp_grid, ham_r, irvec, nrpts, &
                                     wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
@@ -3294,11 +3294,11 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, k_points, num_wann, transport, &
-                                    print_output, real_lattice, mp_grid, ham_r, irvec, nrpts, &
-                                    wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
-                                    num_pl, coord, tran_sorted_idx, hC, hCR, hL0, hL1, hLC, hR0, &
-                                    hR1, hr_one_dim, irvec_max, stdout, seedname)
+  subroutine tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, kpt_latt, &
+                                    num_wann, transport, print_output, real_lattice, mp_grid, &
+                                    ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
+                                    nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
+                                    hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
@@ -3310,7 +3310,7 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: k_points_type, print_output_type
+    use w90_param_types, only: print_output_type
     use wannier_param_types, only: transport_type, real_space_ham_type
 
     implicit none
@@ -3342,7 +3342,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
@@ -3384,9 +3384,8 @@ contains
     !This is necessary since this calculation only makes sense if we
     !have periodicity over the supercell.
     !BGS, I think (0, 0, 0) in kpt_latt should work as well as in kpt_cart
-    if ((size(k_points%kpt_latt, 2) .ne. 1) .and. (k_points%kpt_latt(1, 1) .eq. 0.0_dp) &
-        .and. (k_points%kpt_latt(2, 1) .eq. 0.0_dp) &
-        .and. (k_points%kpt_latt(3, 1) .eq. 0.0_dp)) then
+    if ((size(kpt_latt, 2) .ne. 1) .and. (kpt_latt(1, 1) .eq. 0.0_dp) &
+        .and. (kpt_latt(2, 1) .eq. 0.0_dp) .and. (kpt_latt(3, 1) .eq. 0.0_dp)) then
       call io_error('Calculation must be performed at gamma only', stdout, seedname)
     endif
 

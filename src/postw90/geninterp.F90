@@ -59,7 +59,7 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_window, geninterp, k_points, pw90_ham, rs_region, verbose, &
+  subroutine geninterp_main(dis_window, geninterp, kpt_latt, pw90_ham, rs_region, verbose, &
                             wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
                             real_lattice, scissors_shift, mp_grid, num_bands, &
                             num_kpts, num_wann, num_valence_bands, effective_model, &
@@ -75,7 +75,7 @@ contains
     use w90_constants, only: dp, pi
     use pw90_parameters, only: pw90_geninterp_mod_type, &
       pw90_band_deriv_degen_type
-    use w90_param_types, only: dis_manifold_type, k_points_type, print_output_type, &
+    use w90_param_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
@@ -89,7 +89,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in)          :: dis_window
     type(pw90_geninterp_mod_type), intent(in)    :: geninterp
-    type(k_points_type), intent(in)              :: k_points
+    real(kind=dp), intent(in)                    :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(ws_region_type), intent(in)             :: rs_region
     type(print_output_type), intent(in)          :: verbose
@@ -186,7 +186,7 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -294,7 +294,7 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+        call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                  ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                  localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &

@@ -71,7 +71,7 @@ contains
   !===========================================================!
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
-  subroutine berry_main(berry, dis_window, fermi_energy_list, kmesh_info, kdist, k_points, &
+  subroutine berry_main(berry, dis_window, fermi_energy_list, kmesh_info, kdist, kpt_latt, &
                         pw90_ham, postw90_oper, pw90_spin, physics, rs_region, spin_hall, &
                         wann_data, ws_distance, ws_vec, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, &
                         SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, real_lattice, &
@@ -96,7 +96,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type
     use w90_ws_distance, only: ws_distance_type
@@ -109,7 +109,7 @@ contains
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(kpoint_dist_type), intent(in) :: kdist
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -237,10 +237,10 @@ contains
     ! Wannier matrix elements, allocations and initializations
     !
     if (eval_ahc) then
-      call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+      call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                     real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
       imf_list = 0.0_dp
@@ -248,17 +248,17 @@ contains
     endif
 
     if (eval_morb) then
-      call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+      call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                     real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
-      call get_BB_R(dis_window, kmesh_info, k_points, verbose, BB_R, v_matrix, eigval, &
+      call get_BB_R(dis_window, kmesh_info, kpt_latt, verbose, BB_R, v_matrix, eigval, &
                     scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
 
-      call get_CC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, CC_R, v_matrix, &
+      call get_CC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, CC_R, v_matrix, &
                     eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
 
@@ -275,10 +275,10 @@ contains
       //'Fermi energy: scanning the Fermi energy is not implemented', stdout, seedname)
 
     if (eval_kubo) then
-      call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+      call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                     real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
       allocate (kubo_H_k(3, 3, berry%kubo_nfreq))
@@ -292,7 +292,7 @@ contains
       jdos = 0.0_dp
       if (spin_decomp) then
 
-        call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+        call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                       ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
         allocate (kubo_H_k_spn(3, 3, 3, berry%kubo_nfreq))
@@ -308,10 +308,10 @@ contains
     endif
 
     if (eval_sc) then
-      call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+      call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                     real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
       allocate (sc_k_list(3, 6, berry%kubo_nfreq))
@@ -321,16 +321,16 @@ contains
     endif
 
     if (eval_shc) then
-      call get_HH_R(dis_window, k_points, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+      call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
                     real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-      call get_AA_R(berry, dis_window, kmesh_info, k_points, verbose, AA_R, HH_R, v_matrix, &
+      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
                     eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     effective_model, have_disentangled, seedname, stdout, comm)
-      call get_SS_R(dis_window, k_points, verbose, postw90_oper, SS_R, v_matrix, eigval, &
+      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
                     ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
                     have_disentangled, seedname, stdout, comm)
-      call get_SHC_R(dis_window, kmesh_info, k_points, verbose, postw90_oper, spin_hall, SH_R, &
+      call get_SHC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, spin_hall, SH_R, &
                      SHR_R, SR_R, v_matrix, eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, &
                      num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
                      seedname, stdout, comm)
@@ -460,7 +460,7 @@ contains
         ! ***BEGIN COPY OF CODE BLOCK 1***
         !
         if (eval_ahc) then
-          call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+          call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    imf_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -484,7 +484,7 @@ contains
             do loop_adpt = 1, berry%curv_adpt_kmesh**3
               ! Using imf_k_list here would corrupt values for other
               ! frequencies, hence dummy. Only if-th element is used
-              call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, &
+              call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, &
                                        verbose, wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, &
                                        HH_R, u_matrix, v_matrix, eigval, &
                                        kpt(:) + adkpt(:, loop_adpt), real_lattice, &
@@ -502,7 +502,7 @@ contains
         end if
 
         if (eval_morb) then
-          call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+          call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                      u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                      scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
@@ -516,7 +516,7 @@ contains
 
         if (eval_kubo) then
           if (spin_decomp) then
-            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                   pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, &
                                   eigval, kpt, real_lattice, jdos_k, scissors_shift, mp_grid, &
@@ -524,7 +524,7 @@ contains
                                   effective_model, have_disentangled, spin_decomp, seedname, &
                                   stdout, comm, kubo_AH_k_spn, kubo_H_k_spn, jdos_k_spn)
           else
-            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                   pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, &
                                   eigval, kpt, real_lattice, jdos_k, scissors_shift, mp_grid, &
@@ -543,7 +543,7 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, k_points, &
+          call berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, &
                                   rs_region, verbose, pw90_ham, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   sc_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -565,7 +565,7 @@ contains
             call berry_print_progress(kdist%num_int_kpts_on_node(my_node_id), loop_xyz, 1, 1, stdout)
           endif
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                      rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                      ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -599,7 +599,7 @@ contains
               do loop_adpt = 1, berry%curv_adpt_kmesh**3
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
-                call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+                call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                          rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                          ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                          v_matrix, eigval, kpt(:) + adkpt(:, loop_adpt), &
@@ -613,7 +613,7 @@ contains
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                      rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                      ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -645,7 +645,7 @@ contains
         !
         if (eval_ahc) then
 
-          call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+          call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    imf_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -669,7 +669,7 @@ contains
             do loop_adpt = 1, berry%curv_adpt_kmesh**3
               ! Using imf_k_list here would corrupt values for other
               ! frequencies, hence dummy. Only if-th element is used
-              call berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, &
+              call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, &
                                        verbose, wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, &
                                        HH_R, u_matrix, v_matrix, eigval, &
                                        kpt(:) + adkpt(:, loop_adpt), real_lattice, &
@@ -687,7 +687,7 @@ contains
         end if
 
         if (eval_morb) then
-          call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+          call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                      u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                      scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
@@ -701,7 +701,7 @@ contains
 
         if (eval_kubo) then
           if (spin_decomp) then
-            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                   pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, &
                                   eigval, kpt, real_lattice, jdos_k, scissors_shift, mp_grid, &
@@ -709,7 +709,7 @@ contains
                                   effective_model, have_disentangled, spin_decomp, seedname, &
                                   stdout, comm, kubo_AH_k_spn, kubo_H_k_spn, jdos_k_spn)
           else
-            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_kubo_k(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                   pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, &
                                   eigval, kpt, real_lattice, jdos_k, scissors_shift, mp_grid, &
@@ -728,7 +728,7 @@ contains
         endif
 
         if (eval_sc) then
-          call berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, k_points, &
+          call berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, &
                                   rs_region, verbose, pw90_ham, wann_data, ws_distance, ws_vec, &
                                   AA_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   sc_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -751,7 +751,7 @@ contains
                                       stdout)
           endif
           if (.not. spin_hall%freq_scan) then
-            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                      rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                      ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -785,7 +785,7 @@ contains
               do loop_adpt = 1, berry%curv_adpt_kmesh**3
                 !Using shc_k here would corrupt values for other
                 !kpt, hence dummy. Only if-th element is used.
-                call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+                call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                          rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                          ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                          v_matrix, eigval, kpt(:) + adkpt(:, loop_adpt), &
@@ -799,7 +799,7 @@ contains
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+            call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                      rs_region, spin_hall, verbose, wann_data, ws_distance, &
                                      ws_vec, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -1351,7 +1351,7 @@ contains
 
   end subroutine berry_main
 
-  subroutine berry_get_imf_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+  subroutine berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                  wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
                                  v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
                                  mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -1365,7 +1365,7 @@ contains
     !                                                            !
     !============================================================!
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, k_points_type, ws_region_type
+      dis_manifold_type, ws_region_type
     use w90_comms, only: w90commtype
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
@@ -1375,7 +1375,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -1411,7 +1411,7 @@ contains
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (present(occ)) then
-      call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+      call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                  wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
                                  v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                  fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -1419,14 +1419,14 @@ contains
                                  stdout, comm, imf_k_list, occ=occ)
     else
       if (present(ladpt)) then
-        call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+        call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                                    num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm, imf_k_list, ladpt=ladpt)
       else
-        call berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+        call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
@@ -1437,7 +1437,7 @@ contains
 
   end subroutine berry_get_imf_klist
 
-  subroutine berry_get_imfgh_klist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+  subroutine berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                    wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
@@ -1465,7 +1465,7 @@ contains
     use w90_comms, only: w90commtype, mpirank
     use w90_constants, only: dp, cmplx_i
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k, &
       wigner_seitz_type
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod, utility_zgemm_new
@@ -1477,7 +1477,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
     type(w90commtype), intent(in) :: comm
@@ -1556,7 +1556,7 @@ contains
     !
 
     if (present(occ)) then
-      call wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+      call wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                      scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -1566,7 +1566,7 @@ contains
                                  stdout, occ=occ)
 
     else
-      call wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, k_points, rs_region, verbose, &
+      call wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
                                      wann_data, ws_distance, ws_vec, HH, HH_R, JJm_list, JJp_list, &
                                      u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
                                      scissors_shift, mp_grid, num_bands, num_kpts, &
@@ -1695,7 +1695,7 @@ contains
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine berry_get_kubo_k(berry, dis_window, fermi_energy_list, k_points, pw90_ham, pw90_spin, &
+  subroutine berry_get_kubo_k(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, pw90_spin, &
                               rs_region, verbose, wann_data, ws_distance, ws_vec, AA_R, HH_R, &
                               kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, &
                               real_lattice, jdos_k, scissors_shift, mp_grid, &
@@ -1715,7 +1715,7 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss, &
       utility_recip_lattice_base
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, k_points_type, ws_region_type
+      dis_manifold_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
@@ -1730,7 +1730,7 @@ contains
     type(pw90_berry_mod_type), intent(inout) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
@@ -1790,7 +1790,7 @@ contains
     allocate (AA(num_wann, num_wann, 3))
 
     if (berry%kubo_smearing%use_adaptive) then
-      call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+      call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
@@ -1905,7 +1905,7 @@ contains
 
   end subroutine berry_get_kubo_k
 
-  subroutine berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, k_points, &
+  subroutine berry_get_sc_klist(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, &
                                 rs_region, verbose, pw90_ham, wann_data, ws_distance, ws_vec, &
                                 AA_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                 sc_k_list, scissors_shift, mp_grid, num_bands, &
@@ -1931,7 +1931,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
@@ -1950,7 +1950,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -2021,7 +2021,7 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, k_points, rs_region, &
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, kpt_latt, rs_region, &
                                             verbose, wann_data, ws_distance, ws_vec, AA_R, HH, &
                                             HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, &
                                             eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -2038,7 +2038,7 @@ contains
                                        stdout)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
-      call wham_get_eig_UU_HH_AA_sc(dis_window, k_points, rs_region, verbose, wann_data, &
+      call wham_get_eig_UU_HH_AA_sc(dis_window, kpt_latt, rs_region, verbose, wann_data, &
                                     ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
                                     v_matrix, eig, eigval, kpt, real_lattice, scissors_shift, &
                                     mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
@@ -2046,7 +2046,7 @@ contains
       call pw90common_fourier_R_to_k_vec_dadb(rs_region, wann_data, ws_distance, ws_vec, AA_R, &
                                               kpt, real_lattice, mp_grid, num_wann, &
                                               seedname, stdout, OO_da=AA, OO_dadb=AA_da)
-      call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+      call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                ws_distance, ws_vec, HH_da, HH, HH_R, u_matrix, UU, v_matrix, &
                                eig_da, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
@@ -2182,7 +2182,7 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  subroutine berry_get_shc_klist(berry, dis_window, fermi_energy_list, k_points, pw90_ham, &
+  subroutine berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
                                  rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
                                  AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
                                  kpt, real_lattice, scissors_shift, mp_grid, &
@@ -2215,7 +2215,7 @@ contains
     use w90_utility, only: utility_rotate, utility_recip_lattice_base
     use w90_comms, only: w90commtype
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, k_points_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, &
       pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
@@ -2229,7 +2229,7 @@ contains
     type(pw90_berry_mod_type), intent(in) :: berry
     type(dis_manifold_type), intent(in) :: dis_window
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    type(k_points_type), intent(in) :: k_points
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
@@ -2308,7 +2308,7 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(dis_window, k_points, pw90_ham, rs_region, verbose, wann_data, &
+    call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                              ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                              del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                              num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &

@@ -246,8 +246,8 @@ module pw90_param_methods
   use w90_constants, only: dp
   use w90_io, only: maxlen
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, k_points_type, dis_manifold_type, &
-    atom_data_type, kpoint_path_type, proj_input_type, w90_system_type, ws_region_type
+    kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
+    proj_input_type, w90_system_type, ws_region_type
   use w90_param_methods
   use pw90_parameters
 
@@ -286,7 +286,7 @@ module pw90_param_methods
 contains
 
   subroutine param_postw90_read(rs_region, system, exclude_bands, verbose, wann_data, &
-                                kmesh_data, k_points, num_kpts, dis_window, fermi_energy_list, &
+                                kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
                                 atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                 spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                                 effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
@@ -315,7 +315,7 @@ contains
     type(pw90_geninterp_mod_type), intent(inout) :: geninterp
     type(pw90_gyrotropic_type), intent(inout) :: gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: kpath
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(pw90_kslice_mod_type), intent(inout) :: kslice
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_ham
@@ -405,7 +405,7 @@ contains
     call param_read_lattice(library, real_lattice, bohr, stdout, seedname)
     call param_read_kmesh_data(kmesh_data, stdout, seedname)
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
-    call param_read_kpoints(effective_model, library, k_points, num_kpts, &
+    call param_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
                             bohr, stdout, seedname)
     call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
                                  write_data%kmesh, recip_lattice, stdout, seedname)
@@ -1966,7 +1966,7 @@ contains
 
   end subroutine param_postw90_write
 
-  subroutine param_pw90_dealloc(exclude_bands, wann_data, kmesh_data, k_points, dis_window, &
+  subroutine param_pw90_dealloc(exclude_bands, wann_data, kmesh_data, kpt_latt, dis_window, &
                                 fermi_energy_list, atoms, eigval, spec_points, dos_data, berry, &
                                 proj_input, stdout, seedname)
     use w90_io, only: io_error
@@ -1977,7 +1977,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     type(kmesh_input_type), intent(inout) :: kmesh_data
     type(proj_input_type), intent(inout) :: proj_input
-    type(k_points_type), intent(inout) :: k_points
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_window
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     type(atom_data_type), intent(inout) :: atoms
@@ -1989,7 +1989,7 @@ contains
 
     integer :: ierr
 
-    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, k_points, &
+    call param_dealloc(exclude_bands, wann_data, proj_input, kmesh_data, kpt_latt, &
                        dis_window, atoms, eigval, spec_points, stdout, seedname)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)

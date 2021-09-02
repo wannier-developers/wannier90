@@ -20,8 +20,7 @@ module w90_disentangle
     w90commtype, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
-  use w90_param_types, only: dis_manifold_type, kmesh_info_type, k_points_type, &
-    print_output_type
+  use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
   use wannier_param_types, only: dis_control_type, dis_spheres_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
@@ -35,7 +34,7 @@ contains
 
   !==================================================================!
 
-  subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, k_points, sym, print_output, &
+  subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sym, print_output, &
                       a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                       u_matrix, u_matrix_opt, eigval, real_lattice, omega_invariant, num_bands, &
                       num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
@@ -70,7 +69,7 @@ contains
     type(dis_spheres_type), intent(in)     :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(kmesh_info_type), intent(in)      :: kmesh_info
-    type(k_points_type), intent(in)        :: k_points
+    real(kind=dp), intent(in)        :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
     type(sitesym_data), intent(inout)      :: sym
     type(w90commtype), intent(in)          :: comm
@@ -119,7 +118,7 @@ contains
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(dis_spheres, dis_manifold, eigval_opt, k_points%kpt_latt, recip_lattice, indxfroz, &
+    call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
                      indxnfroz, ndimfroz, nfirstwin, print_output%iprint, num_bands, num_kpts, &
                      num_wann, print_output%timing_level, lfrozen, linner, on_root, seedname, stdout)
 
