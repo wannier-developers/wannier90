@@ -644,10 +644,6 @@ contains
     out_files%write_xyz = .false.
     call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=out_files%write_xyz)
 
-    out_files%translate_home_cell = .false.
-    call param_get_keyword(stdout, seedname, 'translate_home_cell', found, &
-                           l_value=out_files%translate_home_cell)
-
     out_files%write_r2mn = .false.
     call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=out_files%write_r2mn)
 
@@ -927,11 +923,15 @@ contains
   subroutine param_read_hamil(hamiltonian, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
-    type(real_space_ham_type), intent(out) :: hamiltonian
+    type(real_space_ham_type), intent(inout) :: hamiltonian
     real(kind=dp) :: rv_temp(3)
     character(len=50), intent(in)  :: seedname
 
     logical :: found
+
+    hamiltonian%translate_home_cell = .false.
+    call param_get_keyword(stdout, seedname, 'translate_home_cell', found, &
+                           l_value=hamiltonian%translate_home_cell)
 
     hamiltonian%automatic_translation = .true.
     hamiltonian%translation_centre_frac = 0.0_dp
@@ -1516,9 +1516,9 @@ contains
           '|   Size of supercell for plotting           :', &
           wann_plot%supercell(1), 'x', wann_plot%supercell(2), 'x', wann_plot%supercell(3), '|'
 
-        if (out_files%translate_home_cell) then
+        if (rs_region%translate_home_cell) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') &
-            '|  Translating WFs to home cell              :', out_files%translate_home_cell, '|'
+            '|  Translating WFs to home cell              :', rs_region%translate_home_cell, '|'
         end if
 
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
@@ -2442,7 +2442,7 @@ contains
     call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
     call comms_bcast(system%spinors, 1, stdout, seedname, comm)
     call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, comm)
-    call comms_bcast(out_files%translate_home_cell, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%translate_home_cell, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_xyz, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_hr_diag, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%conv_noise_amp, 1, stdout, seedname, comm)

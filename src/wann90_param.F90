@@ -47,12 +47,6 @@ module wannier_param_types
     logical :: write_rmn
     logical :: write_tb
     logical :: write_xyz !wannierise and transport
-    ! REVIEW_2021-07-22: There's been some discussion in the past about generalising
-    ! REVIEW_2021-07-22: the use of translate_home_cell to also take into account of
-    ! REVIEW_2021-07-22: changes in H(R) when WFs are translated. As this is something
-    ! REVIEW_2021-07-22: we plan to do, translate_home_cell probably should not be in
-    ! REVIEW_2021-07-22: this type as it will end up being more general.
-    logical :: translate_home_cell ! MAYBE used by wann_write_xyz when write_xyz=.true.
   end type output_file_type
 
   type real_space_ham_type
@@ -71,6 +65,11 @@ module wannier_param_types
     ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
     ! REVIEW_2021-07-22: to put it here.
     integer :: system_dim
+    ! REVIEW_2021-07-22: There's been some discussion in the past about generalising
+    ! REVIEW_2021-07-22: the use of translate_home_cell to also take into account of
+    ! REVIEW_2021-07-22: changes in H(R) when WFs are translated. As this is something
+    ! REVIEW_2021-07-22: we plan to do, translate_home_cell should probably be here
+    logical :: translate_home_cell ! currently used by wann_write_xyz when write_xyz=.true.
     ! REVIEW_2021-08-09: future plan is that these variables (translation_centre_frac and
     ! REVIEW_2021-08-09: automatic_translation will also result in the hamiltonian being
     ! REVIEW_2021-08-09: modified to be consistent with the translated Wannier centres.

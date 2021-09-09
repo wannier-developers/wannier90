@@ -808,7 +808,7 @@ contains
     endif
 
     if (output_file%write_xyz .and. on_root) then
-      call wann_write_xyz(output_file%translate_home_cell, num_wann, wannier_data%centres, &
+      call wann_write_xyz(real_space_ham%translate_home_cell, num_wann, wannier_data%centres, &
                           real_lattice, atom_data, print_output, stdout, seedname)
     endif
 
@@ -3152,8 +3152,8 @@ contains
   subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, output_file, &
                              wann_control, omega, w90_system, print_output, wannier_data, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
-                             num_bands, num_kpts, num_wann, have_disentangled, seedname, &
-                             stdout, comm)
+                             num_bands, num_kpts, num_wann, have_disentangled, translate_home_cell, &
+                             seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3200,7 +3200,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
-    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: have_disentangled, translate_home_cell
     character(len=50), intent(in) :: seedname
 
     ! local variables
@@ -3528,7 +3528,7 @@ contains
     write (stdout, '(1x,a78)') repeat('-', 78)
 
     if (output_file%write_xyz) then
-      call wann_write_xyz(output_file%translate_home_cell, num_wann, wannier_data%centres, &
+      call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
                           real_lattice, atom_data, print_output, stdout, seedname)
     endif
 

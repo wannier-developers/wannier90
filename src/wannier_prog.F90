@@ -444,8 +444,8 @@ program wannier
     call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
-                         num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
-                         w90comm)
+                         num_bands, num_kpts, num_wann, have_disentangled, &
+                         rs_region%translate_home_cell, seedname, stdout, w90comm)
   end if
 
   time1 = io_time()

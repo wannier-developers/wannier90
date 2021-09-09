@@ -659,7 +659,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
-                         num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
+                         num_bands, num_kpts, num_wann, have_disentangled, &
+                         rs_region%translate_home_cell, seedname, stdout, comm)
   else
     call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
