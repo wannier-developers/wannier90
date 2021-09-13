@@ -142,15 +142,15 @@ contains
 
       if (verbose%iprint > 0) &
         write (stdout, '(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
-      kweight = 1.0_dp/real(PRODUCT(pw90_spin%kmesh), kind=dp)
-      do loop_tot = my_node_id, PRODUCT(pw90_spin%kmesh) - 1, num_nodes
-        loop_x = loop_tot/(pw90_spin%kmesh(2)*pw90_spin%kmesh(3))
-        loop_y = (loop_tot - loop_x*(pw90_spin%kmesh(2)*pw90_spin%kmesh(3)))/pw90_spin%kmesh(3)
-        loop_z = loop_tot - loop_x*(pw90_spin%kmesh(2)*pw90_spin%kmesh(3)) &
-                 - loop_y*pw90_spin%kmesh(3)
-        kpt(1) = (real(loop_x, dp)/real(pw90_spin%kmesh(1), dp))
-        kpt(2) = (real(loop_y, dp)/real(pw90_spin%kmesh(2), dp))
-        kpt(3) = (real(loop_z, dp)/real(pw90_spin%kmesh(3), dp))
+      kweight = 1.0_dp/real(PRODUCT(pw90_spin%kmesh%mesh), kind=dp)
+      do loop_tot = my_node_id, PRODUCT(pw90_spin%kmesh%mesh) - 1, num_nodes
+        loop_x = loop_tot/(pw90_spin%kmesh%mesh(2)*pw90_spin%kmesh%mesh(3))
+        loop_y = (loop_tot - loop_x*(pw90_spin%kmesh%mesh(2)*pw90_spin%kmesh%mesh(3)))/pw90_spin%kmesh%mesh(3)
+        loop_z = loop_tot - loop_x*(pw90_spin%kmesh%mesh(2)*pw90_spin%kmesh%mesh(3)) &
+                 - loop_y*pw90_spin%kmesh%mesh(3)
+        kpt(1) = (real(loop_x, dp)/real(pw90_spin%kmesh%mesh(1), dp))
+        kpt(2) = (real(loop_y, dp)/real(pw90_spin%kmesh%mesh(2), dp))
+        kpt(3) = (real(loop_z, dp)/real(pw90_spin%kmesh%mesh(3), dp))
         call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, rs_region, wann_data, &
                                real_lattice, mp_grid, ws_distance, HH_R, SS_R, &
                                ws_vec, stdout, seedname)

@@ -59,8 +59,7 @@ module pw90_parameters
     !! ===============
     real(kind=dp) :: axis_polar
     real(kind=dp) :: axis_azimuth
-    real(kind=dp) :: kmesh_spacing
-    integer :: kmesh(3)
+    type(kmesh_spacing_type) :: kmesh
   end type pw90_spin_mod_type
 
   ! REVIEW_2021-08-09: A general comment, which we record here so we don't forget.
@@ -1357,8 +1356,8 @@ contains
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
-                          module_kmesh=pw90_spin%kmesh, &
-                          module_kmesh_spacing=pw90_spin%kmesh_spacing)
+                          module_kmesh=pw90_spin%kmesh%mesh, &
+                          module_kmesh_spacing=pw90_spin%kmesh%spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
