@@ -47,17 +47,10 @@ module pw90_parameters
     !! Read the uHu from fortran formatted file
   end type pw90_oper_read_type
 
-  ! consider removing this
-  ! REVIEW_2021-08-09: See Issue 34 in the main repo for a discussion about scissors_shift
-  ! REVIEW_2021-08-09: which has been deprecated and should be removed in a future version of
-  ! REVIEW_2021-08-09: the code. For now, please keep it as a standalone variable.
-  ! REVIEW_2021-08-09: effective_model should also be a standalone variable.
-! type postw90_common_type
-!   real(kind=dp) :: scissors_shift ! get_oper and berry
-  ! IVO
-  ! Are we running postw90 starting from an effective model?
-!   logical :: effective_model = .false.
-! end type postw90_common_type
+  type kmesh_spacing_type
+    real(kind=dp) :: spacing
+    integer :: mesh(3)
+  end type kmesh_spacing_type
 
   ! Module  s p i n
   type pw90_spin_mod_type
@@ -272,8 +265,7 @@ module pw90_param_methods
     ! Global interpolation k mesh variables
     ! These don't need to be public, since their values are copied in the variables of the
     ! local interpolation meshes. JRY: added save attribute
-    real(kind=dp)             :: kmesh_spacing
-    integer                   :: kmesh(3)
+    type(kmesh_spacing_type)  :: global_kmesh
     logical                   :: global_kmesh_set
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
@@ -407,11 +399,11 @@ contains
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call param_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
                             bohr, stdout, seedname)
-    call param_read_global_kmesh(write_data%global_kmesh_set, write_data%kmesh_spacing, &
-                                 write_data%kmesh, recip_lattice, stdout, seedname)
+    call param_read_global_kmesh(write_data%global_kmesh_set, write_data%global_kmesh%spacing, &
+                                 write_data%global_kmesh%mesh, recip_lattice, stdout, seedname)
     call param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, &
                                 boltz, recip_lattice, write_data%global_kmesh_set, &
-                                write_data%kmesh, write_data%kmesh_spacing, stdout, seedname)
+                                write_data%global_kmesh, stdout, seedname)
     call param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname) !pw90_write
     call param_clean_infile(stdout, seedname)
     ! For aesthetic purposes, convert some things to uppercase
@@ -1331,9 +1323,9 @@ contains
     call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_read_energy_range
 
-  subroutine param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, &
-                                    gyrotropic, boltz, recip_lattice, global_kmesh_set, kmesh, &
-                                    kmesh_spacing, stdout, seedname)
+  subroutine param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, boltz, &
+                                    recip_lattice, global_kmesh_set, global_kmesh, &
+                                    stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calcs
@@ -1344,39 +1336,38 @@ contains
     type(pw90_boltzwann_type), intent(inout) :: boltz
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: global_kmesh_set
-    real(kind=dp), intent(in) :: kmesh_spacing
-    integer, intent(in) :: kmesh(3)
+    type(kmesh_spacing_type), intent(in) :: global_kmesh
     character(len=50), intent(in)  :: seedname
 
     ! To be called after having read the global flag
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='boltz', should_be_defined=pw90_calcs%boltzwann, &
                           module_kmesh=boltz%kmesh, &
                           module_kmesh_spacing=boltz%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
                           module_kmesh=berry%kmesh, &
                           module_kmesh_spacing=berry%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='gyrotropic', should_be_defined=pw90_calcs%gyrotropic, &
                           module_kmesh=gyrotropic%kmesh, &
                           module_kmesh_spacing=gyrotropic%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
                           module_kmesh=pw90_spin%kmesh, &
                           module_kmesh_spacing=pw90_spin%kmesh_spacing)
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, kmesh_spacing, &
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
                           module_kmesh=dos_data%kmesh, &
                           module_kmesh_spacing=dos_data%kmesh_spacing)
   end subroutine param_read_local_kmesh
 
-  subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, kmesh, &
-                              kmesh_spacing, moduleprefix, should_be_defined, module_kmesh, &
+  subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
+                              moduleprefix, should_be_defined, module_kmesh, &
                               module_kmesh_spacing)
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
@@ -1402,8 +1393,7 @@ contains
     !! the real number on which the min mesh spacing is saved. -1 if it the
     !!user specifies in input the mesh and not the mesh_spacing
     logical, intent(in) :: global_kmesh_set
-    real(kind=dp), intent(in) :: kmesh_spacing
-    integer, intent(in) :: kmesh(3)
+    type(kmesh_spacing_type), intent(in) :: global_kmesh
     character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
@@ -1441,10 +1431,10 @@ contains
     if ((found .eqv. .false.) .and. (found2 .eqv. .false.)) then
       ! This is the case where no  "local" interpolation k-mesh is provided in the input
       if (global_kmesh_set) then
-        module_kmesh = kmesh
+        module_kmesh = global_kmesh%mesh
         ! I set also boltz_kmesh_spacing so that I can check if it is < 0 or not, and if it is
         ! > 0 I can print on output the mesh spacing that was chosen
-        module_kmesh_spacing = kmesh_spacing
+        module_kmesh_spacing = global_kmesh%spacing
       else
         if (should_be_defined) &
           call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', stdout, seedname)
@@ -1616,13 +1606,14 @@ contains
       trim(param_get_smearing_type(write_data%smear%type_index)), '|'
     if (write_data%global_kmesh_set) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       T', '|'
-      if (write_data%kmesh_spacing > 0.0_dp) then
+      if (write_data%global_kmesh%spacing > 0.0_dp) then
         write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-          write_data%kmesh(1), 'x', write_data%kmesh(2), 'x', write_data%kmesh(3), ' Spacing = ', &
-          write_data%kmesh_spacing, '|'
+          write_data%global_kmesh%mesh(1), 'x', write_data%global_kmesh%mesh(2), 'x', &
+          write_data%global_kmesh%mesh(3), ' Spacing = ', write_data%global_kmesh%spacing, '|'
       else
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
-          , write_data%kmesh(1), 'x', write_data%kmesh(2), 'x', write_data%kmesh(3), '|'
+          , write_data%global_kmesh%mesh(1), 'x', write_data%global_kmesh%mesh(2), 'x', &
+          write_data%global_kmesh%mesh(3), '|'
       endif
     else
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       F', '|'
@@ -1662,9 +1653,9 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(dos_data%smearing%type_index)), '|'
       endif
-      if (write_data%kmesh(1) == dos_data%kmesh(1) .and. &
-          write_data%kmesh(2) == dos_data%kmesh(2) .and. &
-          write_data%kmesh(3) == dos_data%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == dos_data%kmesh(1) .and. &
+          write_data%global_kmesh%mesh(2) == dos_data%kmesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == dos_data%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (dos_data%kmesh_spacing > 0.0_dp) then
@@ -1817,8 +1808,8 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(berry%kubo_smearing%type_index)), '|'
       endif
-      if (write_data%kmesh(1) == berry%kmesh(1) .and. write_data%kmesh(2) == berry%kmesh(2) .and. &
-          write_data%kmesh(3) == berry%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == berry%kmesh(1) .and. write_data%global_kmesh%mesh(2) == berry%kmesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == berry%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (berry%kmesh_spacing > 0.0_dp) then
@@ -1871,9 +1862,9 @@ contains
         trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
 
-      if (write_data%kmesh(1) == gyrotropic%kmesh(1) .and. &
-          write_data%kmesh(2) == gyrotropic%kmesh(2) .and. &
-          write_data%kmesh(3) == gyrotropic%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == gyrotropic%kmesh(1) .and. &
+          write_data%global_kmesh%mesh(2) == gyrotropic%kmesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == gyrotropic%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       elseif (gyrotropic%kmesh_spacing > 0.0_dp) then
         write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
@@ -1904,8 +1895,8 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', boltz%temp_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature (K)             :', boltz%temp_step, '|'
 
-      if (write_data%kmesh(1) == boltz%kmesh(1) .and. write_data%kmesh(2) == boltz%kmesh(2) &
-          .and. write_data%kmesh(3) == boltz%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == boltz%kmesh(1) .and. write_data%global_kmesh%mesh(2) == boltz%kmesh(2) &
+          .and. write_data%global_kmesh%mesh(3) == boltz%kmesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (boltz%kmesh_spacing > 0.0_dp) then
