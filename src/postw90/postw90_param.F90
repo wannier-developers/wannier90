@@ -1337,33 +1337,27 @@ contains
     ! To be called after having read the global flag
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='boltz', should_be_defined=pw90_calcs%boltzwann, &
-                          module_kmesh=boltz%kmesh%mesh, &
-                          module_kmesh_spacing=boltz%kmesh%spacing)
+                          module_kmesh=boltz%kmesh)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
-                          module_kmesh=berry%kmesh%mesh, &
-                          module_kmesh_spacing=berry%kmesh%spacing)
+                          module_kmesh=berry%kmesh)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='gyrotropic', should_be_defined=pw90_calcs%gyrotropic, &
-                          module_kmesh=gyrotropic%kmesh%mesh, &
-                          module_kmesh_spacing=gyrotropic%kmesh%spacing)
+                          module_kmesh=gyrotropic%kmesh)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
-                          module_kmesh=pw90_spin%kmesh%mesh, &
-                          module_kmesh_spacing=pw90_spin%kmesh%spacing)
+                          module_kmesh=pw90_spin%kmesh)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
-                          module_kmesh=dos_data%kmesh%mesh, &
-                          module_kmesh_spacing=dos_data%kmesh%spacing)
+                          module_kmesh=dos_data%kmesh)
   end subroutine param_read_local_kmesh
 
   subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
-                              moduleprefix, should_be_defined, module_kmesh, &
-                              module_kmesh_spacing)
+                              moduleprefix, should_be_defined, module_kmesh)
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
     !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
@@ -1382,9 +1376,8 @@ contains
     !! A logical flag: if it is true, at the end the code stops if no value is specified.
     !! Define it to .false. if no check should be performed.
     !! Often, you can simply pass the flag that activates the module itself.
-    integer, dimension(3), intent(out) :: module_kmesh
-    !! the integer array (length 3) where the interpolation mesh will be saved
-    real(kind=dp), intent(out)         :: module_kmesh_spacing
+    type(kmesh_spacing_type), intent(out) :: module_kmesh
+    !! the integer array (length 3) where the interpolation mesh will be saved, and
     !! the real number on which the min mesh spacing is saved. -1 if it the
     !!user specifies in input the mesh and not the mesh_spacing
     logical, intent(in) :: global_kmesh_set
@@ -1395,14 +1388,15 @@ contains
     integer :: i
 
     ! Default values
-    module_kmesh_spacing = -1._dp
-    module_kmesh = 0
-    call param_get_keyword(stdout, seedname, trim(moduleprefix)//'_kmesh_spacing', found, r_value=module_kmesh_spacing)
+    module_kmesh%spacing = -1._dp
+    module_kmesh%mesh = 0
+    call param_get_keyword(stdout, seedname, trim(moduleprefix)//'_kmesh_spacing', found, &
+                           r_value=module_kmesh%spacing)
     if (found) then
-      if (module_kmesh_spacing .le. 0._dp) &
+      if (module_kmesh%spacing .le. 0._dp) &
         call io_error('Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero', stdout, seedname)
 
-      call internal_set_kmesh(module_kmesh_spacing, recip_lattice, module_kmesh)
+      call internal_set_kmesh(module_kmesh%spacing, recip_lattice, module_kmesh%mesh)
     end if
     call param_get_vector_length(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, length=i)
     if (found2) then
@@ -1410,26 +1404,28 @@ contains
         call io_error('Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
                       //trim(moduleprefix)//'_kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
-        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, 1, i_value=module_kmesh)
-        module_kmesh(2) = module_kmesh(1)
-        module_kmesh(3) = module_kmesh(1)
+        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
+                                      1, i_value=module_kmesh%mesh)
+        module_kmesh%mesh(2) = module_kmesh%mesh(1)
+        module_kmesh%mesh(3) = module_kmesh%mesh(1)
       elseif (i .eq. 3) then
-        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, 3, i_value=module_kmesh)
+        call param_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
+                                      3, i_value=module_kmesh%mesh)
       else
         call io_error('Error: '//trim(moduleprefix)// &
                       '_kmesh must be provided as either one integer or a vector of 3 integers', stdout, seedname)
       end if
-      if (any(module_kmesh <= 0)) &
+      if (any(module_kmesh%mesh <= 0)) &
         call io_error('Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero', stdout, seedname)
     end if
 
     if ((found .eqv. .false.) .and. (found2 .eqv. .false.)) then
       ! This is the case where no  "local" interpolation k-mesh is provided in the input
       if (global_kmesh_set) then
-        module_kmesh = global_kmesh%mesh
+        module_kmesh%mesh = global_kmesh%mesh
         ! I set also boltz_kmesh_spacing so that I can check if it is < 0 or not, and if it is
         ! > 0 I can print on output the mesh spacing that was chosen
-        module_kmesh_spacing = global_kmesh%spacing
+        module_kmesh%spacing = global_kmesh%spacing
       else
         if (should_be_defined) &
           call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', stdout, seedname)
