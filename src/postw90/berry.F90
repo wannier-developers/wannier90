@@ -219,9 +219,9 @@ contains
 
     ! Mesh spacing in reduced coordinates
     !
-    db1 = 1.0_dp/real(berry%kmesh(1), dp)
-    db2 = 1.0_dp/real(berry%kmesh(2), dp)
-    db3 = 1.0_dp/real(berry%kmesh(3), dp)
+    db1 = 1.0_dp/real(berry%kmesh%mesh(1), dp)
+    db2 = 1.0_dp/real(berry%kmesh%mesh(2), dp)
+    db3 = 1.0_dp/real(berry%kmesh%mesh(3), dp)
 
     eval_ahc = .false.
     eval_morb = .false.
@@ -631,12 +631,12 @@ contains
       kweight = db1*db2*db3
       kweight_adpt = kweight/berry%curv_adpt_kmesh**3
 
-      do loop_xyz = my_node_id, PRODUCT(berry%kmesh) - 1, num_nodes
-        loop_x = loop_xyz/(berry%kmesh(2)*berry%kmesh(3))
-        loop_y = (loop_xyz - loop_x*(berry%kmesh(2) &
-                                     *berry%kmesh(3)))/berry%kmesh(3)
-        loop_z = loop_xyz - loop_x*(berry%kmesh(2)*berry%kmesh(3)) &
-                 - loop_y*berry%kmesh(3)
+      do loop_xyz = my_node_id, PRODUCT(berry%kmesh%mesh) - 1, num_nodes
+        loop_x = loop_xyz/(berry%kmesh%mesh(2)*berry%kmesh%mesh(3))
+        loop_y = (loop_xyz - loop_x*(berry%kmesh%mesh(2) &
+                                     *berry%kmesh%mesh(3)))/berry%kmesh%mesh(3)
+        loop_z = loop_xyz - loop_x*(berry%kmesh%mesh(2)*berry%kmesh%mesh(3)) &
+                 - loop_y*berry%kmesh%mesh(3)
         kpt(1) = loop_x*db1
         kpt(2) = loop_y*db2
         kpt(3) = loop_z*db3
@@ -747,8 +747,8 @@ contains
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           if (verbose%iprint > 0) then
-            call berry_print_progress(PRODUCT(berry%kmesh) - 1, loop_xyz, my_node_id, num_nodes, &
-                                      stdout)
+            call berry_print_progress(PRODUCT(berry%kmesh%mesh) - 1, loop_xyz, my_node_id, &
+                                      num_nodes, stdout)
           endif
           if (.not. spin_hall%freq_scan) then
             call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
@@ -857,7 +857,7 @@ contains
       write (stdout, '(1x,a)') ' '
       if (eval_ahc .and. berry%curv_adpt_kmesh .ne. 1) then
         if (.not. berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
-          'Regular interpolation grid: ', berry%kmesh
+          'Regular interpolation grid: ', berry%kmesh%mesh
         write (stdout, '(1x,a28,3(i0,1x))') 'Adaptive refinement grid: ', &
           berry%curv_adpt_kmesh, berry%curv_adpt_kmesh, berry%curv_adpt_kmesh
         if (berry%curv_unit == 'ang2') then
@@ -880,13 +880,13 @@ contains
             write (stdout, '(1x,a30,i5,a,f5.2,a)') &
               ' Points triggering refinement: ', &
               adpt_counter_list(1), '(', &
-              100*real(adpt_counter_list(1), dp)/product(berry%kmesh), '%)'
+              100*real(adpt_counter_list(1), dp)/product(berry%kmesh%mesh), '%)'
           endif
         endif
       elseif (eval_shc) then
         if (berry%curv_adpt_kmesh .ne. 1) then
           if (.not. berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
-            'Regular interpolation grid: ', berry%kmesh
+            'Regular interpolation grid: ', berry%kmesh%mesh
           if (.not. spin_hall%freq_scan) then
             write (stdout, '(1x,a28,3(i0,1x))') &
               'Adaptive refinement grid: ', &
@@ -907,12 +907,12 @@ contains
             else
               write (stdout, '(1x,a30,i8,a,f6.2,a)') &
                 ' Points triggering refinement: ', adpt_counter_list(1), '(', &
-                100*real(adpt_counter_list(1), dp)/product(berry%kmesh), '%)'
+                100*real(adpt_counter_list(1), dp)/product(berry%kmesh%mesh), '%)'
             endif
           endif
         else
           if (.not. berry%wanint_kpoint_file) write (stdout, &
-                                                     '(1x,a20,3(i0,1x))') 'Interpolation grid: ', berry%kmesh(1:3)
+                                                     '(1x,a20,3(i0,1x))') 'Interpolation grid: ', berry%kmesh%mesh(1:3)
         endif
         write (stdout, '(a)') ''
         if (berry%kubo_smearing%use_adaptive) then
@@ -935,7 +935,7 @@ contains
         endif
       else
         if (.not. berry%wanint_kpoint_file) write (stdout, &
-                                                   '(1x,a20,3(i0,1x))') 'Interpolation grid: ', berry%kmesh(1:3)
+                                                   '(1x,a20,3(i0,1x))') 'Interpolation grid: ', berry%kmesh%mesh(1:3)
       endif
 
       if (eval_ahc) then
@@ -1001,7 +1001,7 @@ contains
                 ' Points triggering refinement: ', &
                 adpt_counter_list(if), '(', &
                 100*real(adpt_counter_list(if), dp) &
-                /product(berry%kmesh), '%)'
+                /product(berry%kmesh%mesh), '%)'
             endif
           endif
           write (stdout, '(/,1x,a)') &
@@ -1797,7 +1797,7 @@ contains
                                have_disentangled, seedname, stdout, comm)
 
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-      Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
+      Delta_k = pw90common_kmesh_spacing(berry%kmesh%mesh, recip_lattice)
     else
       call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, HH_R, kpt, &
                                          real_lattice, mp_grid, num_wann, seedname, stdout, &
@@ -2062,7 +2062,7 @@ contains
     ! calculate k-spacing in case of adaptive smearing
     if (berry%kubo_smearing%use_adaptive) then
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-      Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
+      Delta_k = pw90common_kmesh_spacing(berry%kmesh%mesh, recip_lattice)
     endif
 
     ! rotate quantities from W to H gauge (we follow wham_get_D_h for delHH_bar_i)
@@ -2337,7 +2337,7 @@ contains
     ! adpt_smr in kpath or kslice plots.
     if (berry%kubo_smearing%use_adaptive) then
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-      Delta_k = pw90common_kmesh_spacing(berry%kmesh, recip_lattice)
+      Delta_k = pw90common_kmesh_spacing(berry%kmesh%mesh, recip_lattice)
     endif
     if (lfreq) then
       call pw90common_get_occ(fermi_energy_list(1), eig, occ_freq, num_wann)

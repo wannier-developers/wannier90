@@ -352,8 +352,8 @@ contains
 
     call comms_bcast(pw90_calcs%berry, 1, stdout, seedname, world)
     call comms_bcast(berry%task, len(berry%task), stdout, seedname, world)
-    call comms_bcast(berry%kmesh_spacing, 1, stdout, seedname, world)
-    call comms_bcast(berry%kmesh(1), 3, stdout, seedname, world)
+    call comms_bcast(berry%kmesh%spacing, 1, stdout, seedname, world)
+    call comms_bcast(berry%kmesh%mesh(1), 3, stdout, seedname, world)
     call comms_bcast(berry%curv_adpt_kmesh, 1, stdout, seedname, world)
     call comms_bcast(berry%curv_adpt_kmesh_thresh, 1, stdout, seedname, world)
     call comms_bcast(berry%curv_unit, len(berry%curv_unit), stdout, seedname, world)

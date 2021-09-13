@@ -135,8 +135,7 @@ module pw90_parameters
     !! Contains variables for the berry module of postw90
     !! =============
     character(len=120) :: task
-    real(kind=dp) :: kmesh_spacing
-    integer :: kmesh(3)
+    type(kmesh_spacing_type) :: kmesh
     integer :: curv_adpt_kmesh
     real(kind=dp) :: curv_adpt_kmesh_thresh
     character(len=20) :: curv_unit ! postw90/kpath, kslice as well
@@ -1345,8 +1344,8 @@ contains
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
-                          module_kmesh=berry%kmesh, &
-                          module_kmesh_spacing=berry%kmesh_spacing)
+                          module_kmesh=berry%kmesh%mesh%mesh, &
+                          module_kmesh_spacing=berry%kmesh%spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='gyrotropic', should_be_defined=pw90_calcs%gyrotropic, &
@@ -1806,16 +1805,17 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(berry%kubo_smearing%type_index)), '|'
       endif
-      if (write_data%global_kmesh%mesh(1) == berry%kmesh(1) .and. write_data%global_kmesh%mesh(2) == berry%kmesh(2) .and. &
-          write_data%global_kmesh%mesh(3) == berry%kmesh(3)) then
+     if (write_data%global_kmesh%mesh(1) == berry%kmesh%mesh(1) .and. write_data%global_kmesh%mesh(2) == berry%kmesh%mesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == berry%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
-        if (berry%kmesh_spacing > 0.0_dp) then
+        if (berry%kmesh%spacing > 0.0_dp) then
           write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-            berry%kmesh(1), 'x', berry%kmesh(2), 'x', berry%kmesh(3), ' Spacing = ', berry%kmesh_spacing, '|'
+            berry%kmesh%mesh(1), 'x', berry%kmesh%mesh(2), 'x', berry%kmesh%mesh(3), &
+            ' Spacing = ', berry%kmesh%spacing, '|'
         else
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
-            , berry%kmesh(1), 'x', berry%kmesh(2), 'x', berry%kmesh(3), '|'
+            , berry%kmesh%mesh(1), 'x', berry%kmesh%mesh(2), 'x', berry%kmesh%mesh(3), '|'
         endif
       endif
       if (berry%curv_adpt_kmesh > 1) then
