@@ -169,8 +169,7 @@ module pw90_parameters
     !! Contains variables for the gyrotropic module of postw90
     !! =============
     character(len=120) :: task
-    integer :: kmesh(3)
-    real(kind=dp) :: kmesh_spacing
+    type(kmesh_spacing_type) :: kmesh
     ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
     integer :: smr_index
     real(kind=dp) :: smr_fixed_en_width
@@ -1344,13 +1343,13 @@ contains
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
-                          module_kmesh=berry%kmesh%mesh%mesh, &
+                          module_kmesh=berry%kmesh%mesh, &
                           module_kmesh_spacing=berry%kmesh%spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='gyrotropic', should_be_defined=pw90_calcs%gyrotropic, &
-                          module_kmesh=gyrotropic%kmesh, &
-                          module_kmesh_spacing=gyrotropic%kmesh_spacing)
+                          module_kmesh=gyrotropic%kmesh%mesh, &
+                          module_kmesh_spacing=gyrotropic%kmesh%spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='spin', should_be_defined=pw90_calcs%spin_moment, &
@@ -1860,16 +1859,17 @@ contains
         trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
 
-      if (write_data%global_kmesh%mesh(1) == gyrotropic%kmesh(1) .and. &
-          write_data%global_kmesh%mesh(2) == gyrotropic%kmesh(2) .and. &
-          write_data%global_kmesh%mesh(3) == gyrotropic%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == gyrotropic%kmesh%mesh(1) .and. &
+          write_data%global_kmesh%mesh(2) == gyrotropic%kmesh%mesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == gyrotropic%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
-      elseif (gyrotropic%kmesh_spacing > 0.0_dp) then
+      elseif (gyrotropic%kmesh%spacing > 0.0_dp) then
         write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-          gyrotropic%kmesh(1), 'x', gyrotropic%kmesh(2), 'x', gyrotropic%kmesh(3), ' Spacing = ', gyrotropic%kmesh_spacing, '|'
+          gyrotropic%kmesh%mesh(1), 'x', gyrotropic%kmesh%mesh(2), 'x', gyrotropic%kmesh%mesh(3), &
+          ' Spacing = ', gyrotropic%kmesh%spacing, '|'
       else
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
-          , gyrotropic%kmesh(1), 'x', gyrotropic%kmesh(2), 'x', gyrotropic%kmesh(3), '|'
+          , gyrotropic%kmesh%mesh(1), 'x', gyrotropic%kmesh%mesh(2), 'x', gyrotropic%kmesh%mesh(3), '|'
       endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :', '    not implemented', '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'

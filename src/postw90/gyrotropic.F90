@@ -163,9 +163,9 @@ contains
 
     ! Mesh spacing in reduced coordinates
     !
-    db1 = 1.0_dp/real(gyrotropic%kmesh(1), dp)
-    db2 = 1.0_dp/real(gyrotropic%kmesh(2), dp)
-    db3 = 1.0_dp/real(gyrotropic%kmesh(3), dp)
+    db1 = 1.0_dp/real(gyrotropic%kmesh%mesh(1), dp)
+    db2 = 1.0_dp/real(gyrotropic%kmesh%mesh(2), dp)
+    db3 = 1.0_dp/real(gyrotropic%kmesh%mesh(3), dp)
 
     eval_K = .false.
     eval_C = .false.
@@ -310,7 +310,7 @@ contains
         call io_stopwatch('gyrotropic: k-interpolation', 1, stdout, seedname)
       endif
 
-      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic%kmesh(1:3)
+      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic%kmesh%mesh(1:3)
 
       flush(stdout)
 
@@ -320,12 +320,12 @@ contains
 
     kweight = db1*db2*db3*utility_det3(gyrotropic%box)
 
-    do loop_xyz = my_node_id, PRODUCT(gyrotropic%kmesh) - 1, num_nodes
-      loop_x = loop_xyz/(gyrotropic%kmesh(2)*gyrotropic%kmesh(3))
-      loop_y = (loop_xyz - loop_x*(gyrotropic%kmesh(2) &
-                                   *gyrotropic%kmesh(3)))/gyrotropic%kmesh(3)
-      loop_z = loop_xyz - loop_x*(gyrotropic%kmesh(2)*gyrotropic%kmesh(3)) &
-               - loop_y*gyrotropic%kmesh(3)
+    do loop_xyz = my_node_id, PRODUCT(gyrotropic%kmesh%mesh) - 1, num_nodes
+      loop_x = loop_xyz/(gyrotropic%kmesh%mesh(2)*gyrotropic%kmesh%mesh(3))
+      loop_y = (loop_xyz - loop_x*(gyrotropic%kmesh%mesh(2) &
+                                   *gyrotropic%kmesh%mesh(3)))/gyrotropic%kmesh%mesh(3)
+      loop_z = loop_xyz - loop_x*(gyrotropic%kmesh%mesh(2)*gyrotropic%kmesh%mesh(3)) &
+               - loop_y*gyrotropic%kmesh%mesh(3)
       kpt(1) = loop_x*db1
       kpt(2) = loop_y*db2
       kpt(3) = loop_z*db3

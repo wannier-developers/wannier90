@@ -361,8 +361,8 @@ contains
 ! Tsirkin
     call comms_bcast(pw90_calcs%gyrotropic, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%task, len(gyrotropic%task), stdout, seedname, world)
-    call comms_bcast(gyrotropic%kmesh_spacing, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%kmesh(1), 3, stdout, seedname, world)
+    call comms_bcast(gyrotropic%kmesh%spacing, 1, stdout, seedname, world)
+    call comms_bcast(gyrotropic%kmesh%mesh(1), 3, stdout, seedname, world)
     call comms_bcast(gyrotropic%smr_fixed_en_width, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%smr_index, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%eigval_max, 1, stdout, seedname, world)
