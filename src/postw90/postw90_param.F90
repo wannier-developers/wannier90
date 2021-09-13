@@ -214,8 +214,7 @@ module pw90_parameters
     real(kind=dp) :: temp_min
     real(kind=dp) :: temp_max
     real(kind=dp) :: temp_step
-    real(kind=dp) :: kmesh_spacing
-    integer :: kmesh(3)
+    type(kmesh_spacing_type) :: kmesh
     real(kind=dp) :: tdf_energy_step
     ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
     ! REVIEW_2021-08-09: If we use the smearing type, then rename tdf_smearing
@@ -1338,8 +1337,8 @@ contains
     ! To be called after having read the global flag
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='boltz', should_be_defined=pw90_calcs%boltzwann, &
-                          module_kmesh=boltz%kmesh, &
-                          module_kmesh_spacing=boltz%kmesh_spacing)
+                          module_kmesh=boltz%kmesh%mesh, &
+                          module_kmesh_spacing=boltz%kmesh%spacing)
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calcs%berry, &
@@ -1804,7 +1803,8 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(berry%kubo_smearing%type_index)), '|'
       endif
-     if (write_data%global_kmesh%mesh(1) == berry%kmesh%mesh(1) .and. write_data%global_kmesh%mesh(2) == berry%kmesh%mesh(2) .and. &
+      if (write_data%global_kmesh%mesh(1) == berry%kmesh%mesh(1) .and. &
+          write_data%global_kmesh%mesh(2) == berry%kmesh%mesh(2) .and. &
           write_data%global_kmesh%mesh(3) == berry%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
@@ -1893,16 +1893,17 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', boltz%temp_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature (K)             :', boltz%temp_step, '|'
 
-      if (write_data%global_kmesh%mesh(1) == boltz%kmesh(1) .and. write_data%global_kmesh%mesh(2) == boltz%kmesh(2) &
-          .and. write_data%global_kmesh%mesh(3) == boltz%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == boltz%kmesh%mesh(1) .and. write_data%global_kmesh%mesh(2) == boltz%kmesh%mesh(2) &
+          .and. write_data%global_kmesh%mesh(3) == boltz%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
-        if (boltz%kmesh_spacing > 0.0_dp) then
+        if (boltz%kmesh%spacing > 0.0_dp) then
           write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-            boltz%kmesh(1), 'x', boltz%kmesh(2), 'x', boltz%kmesh(3), ' Spacing = ', boltz%kmesh_spacing, '|'
+            boltz%kmesh%mesh(1), 'x', boltz%kmesh%mesh(2), 'x', boltz%kmesh%mesh(3), &
+            ' Spacing = ', boltz%kmesh%spacing, '|'
         else
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
-            , boltz%kmesh(1), 'x', boltz%kmesh(2), 'x', boltz%kmesh(3), '|'
+            , boltz%kmesh%mesh(1), 'x', boltz%kmesh%mesh(2), 'x', boltz%kmesh%mesh(3), '|'
         endif
       endif
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', boltz%tdf_energy_step, '|'

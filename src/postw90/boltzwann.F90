@@ -874,14 +874,14 @@ contains
 
     if (on_root) then
       write (stdout, '(5X,A,I0,A,I0,A,I0)') "k-grid used for band interpolation in BoltzWann: ", &
-        boltz%kmesh(1), 'x', boltz%kmesh(2), 'x', boltz%kmesh(3)
+        boltz%kmesh%mesh(1), 'x', boltz%kmesh%mesh(2), 'x', boltz%kmesh%mesh(3)
       write (stdout, '(5X,A,I1)') "Number of electrons per state: ", num_elec_per_state
       write (stdout, '(5X,A,G18.10)') "Relaxation time (fs): ", boltz%relax_time
       if (verbose%iprint > 1) then
         write (stdout, '(5X,A,G18.10)') "Energy step for TDF (eV): ", boltz%tdf_energy_step
       end if
     end if
-    kweight = 1.0_dp/real(PRODUCT(boltz%kmesh), kind=dp)
+    kweight = 1.0_dp/real(PRODUCT(boltz%kmesh%mesh), kind=dp)
 
     if (boltz%bandshift .and. on_root) then
       write (stdout, '(5X,A,I0,A,G18.10,A)') "Shifting energy bands with index >= ", boltz%bandshift_firstband, " by ", &
@@ -893,20 +893,20 @@ contains
     min_spacing = 1.e10_dp ! very large initial value
     max_spacing = 0.e0_dp
     ! I loop over all kpoints
-    do loop_tot = my_node_id, PRODUCT(boltz%kmesh) - 1, num_nodes
+    do loop_tot = my_node_id, PRODUCT(boltz%kmesh%mesh) - 1, num_nodes
 
       ! I get the coordinates for the x,y,z components starting from a single loop variable
       ! (which is better for parallelization purposes)
       ! Important! This works only if loop_tot starts from ZERO and ends with
       !            PRODUCT(boltz_kmesh)-1, so be careful when parallelizing
-      loop_x = loop_tot/(boltz%kmesh(2)*boltz%kmesh(3))
-      loop_y = (loop_tot - loop_x*(boltz%kmesh(2)*boltz%kmesh(3)))/boltz%kmesh(3)
-      loop_z = loop_tot - loop_x*(boltz%kmesh(2)*boltz%kmesh(3)) - loop_y*boltz%kmesh(3)
+      loop_x = loop_tot/(boltz%kmesh%mesh(2)*boltz%kmesh%mesh(3))
+      loop_y = (loop_tot - loop_x*(boltz%kmesh%mesh(2)*boltz%kmesh%mesh(3)))/boltz%kmesh%mesh(3)
+      loop_z = loop_tot - loop_x*(boltz%kmesh%mesh(2)*boltz%kmesh%mesh(3)) - loop_y*boltz%kmesh%mesh(3)
 
       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_kmesh(i)
-      kpt(1) = (real(loop_x, dp)/real(boltz%kmesh(1), dp))
-      kpt(2) = (real(loop_y, dp)/real(boltz%kmesh(2), dp))
-      kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
+      kpt(1) = (real(loop_x, dp)/real(boltz%kmesh%mesh(1), dp))
+      kpt(2) = (real(loop_y, dp)/real(boltz%kmesh%mesh(2), dp))
+      kpt(3) = (real(loop_z, dp)/real(boltz%kmesh%mesh(3), dp))
 
       ! Here I get the band energies and the velocities
       call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
@@ -914,7 +914,7 @@ contains
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
                                have_disentangled, seedname, stdout, comm)
-      call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, recip_lattice)
+      call dos_get_levelspacing(del_eig, boltz%kmesh%mesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
       if (boltz%bandshift) then
@@ -947,16 +947,16 @@ contains
               do j = -1, 1, 2
                 do k = -1, 1, 2
                   kpt = orig_kpt + &
-                        (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
-                          real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
-                          real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
+                        (/real(i, kind=dp)/real(boltz%kmesh%mesh(1), dp)/4._dp, &
+                          real(j, kind=dp)/real(boltz%kmesh%mesh(2), dp)/4._dp, &
+                          real(k, kind=dp)/real(boltz%kmesh%mesh(3), dp)/4._dp/)
                   call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, &
                                            wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
                                            u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                            real_lattice, scissors_shift, mp_grid, num_bands, &
                                            num_kpts, num_wann, num_valence_bands, effective_model, &
                                            have_disentangled, seedname, stdout, comm)
-                  call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k, num_wann, &
+                  call dos_get_levelspacing(del_eig, boltz%kmesh%mesh, levelspacing_k, num_wann, &
                                             recip_lattice)
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wann_data, real_lattice, mp_grid, dos_data, &
@@ -1021,7 +1021,7 @@ contains
         end if
         write (boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz%dos_smearing%adaptive_prefactor
         write (boltzdos_unit, '(A,I0,A,I0)') '# Number of points refined: ', NumPtsRefined, &
-          ' out of ', product(boltz%kmesh)
+          ' out of ', product(boltz%kmesh%mesh)
         write (boltzdos_unit, '(A,G18.10,A,G18.10,A)') '# (Min spacing: ', min_spacing, &
           ', max spacing: ', max_spacing, ')'
       else
