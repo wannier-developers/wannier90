@@ -125,8 +125,7 @@ module pw90_parameters
     integer    :: num_project
     integer, allocatable :: project(:)
     !  character(len=20)    :: plot_format
-    real(kind=dp)    :: kmesh_spacing
-    integer    :: kmesh(3)
+    type(kmesh_spacing_type) :: kmesh
     !  real(kind=dp) :: gaussian_width
   end type pw90_dos_mod_type
 
@@ -1361,8 +1360,8 @@ contains
 
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='dos', should_be_defined=pw90_calcs%dos, &
-                          module_kmesh=dos_data%kmesh, &
-                          module_kmesh_spacing=dos_data%kmesh_spacing)
+                          module_kmesh=dos_data%kmesh%mesh, &
+                          module_kmesh_spacing=dos_data%kmesh%spacing)
   end subroutine param_read_local_kmesh
 
   subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
@@ -1652,19 +1651,19 @@ contains
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(param_get_smearing_type(dos_data%smearing%type_index)), '|'
       endif
-      if (write_data%global_kmesh%mesh(1) == dos_data%kmesh(1) .and. &
-          write_data%global_kmesh%mesh(2) == dos_data%kmesh(2) .and. &
-          write_data%global_kmesh%mesh(3) == dos_data%kmesh(3)) then
+      if (write_data%global_kmesh%mesh(1) == dos_data%kmesh%mesh(1) .and. &
+          write_data%global_kmesh%mesh(2) == dos_data%kmesh%mesh(2) .and. &
+          write_data%global_kmesh%mesh(3) == dos_data%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
-        if (dos_data%kmesh_spacing > 0.0_dp) then
+        if (dos_data%kmesh%spacing > 0.0_dp) then
           write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
-            dos_data%kmesh(1), 'x', dos_data%kmesh(2), 'x', &
-            dos_data%kmesh(3), ' Spacing = ', dos_data%kmesh_spacing, '|'
+            dos_data%kmesh%mesh(1), 'x', dos_data%kmesh%mesh(2), 'x', &
+            dos_data%kmesh%mesh(3), ' Spacing = ', dos_data%kmesh%spacing, '|'
         else
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :', &
-            dos_data%kmesh(1), 'x', dos_data%kmesh(2), 'x', &
-            dos_data%kmesh(3), '|'
+            dos_data%kmesh%mesh(1), 'x', dos_data%kmesh%mesh(2), 'x', &
+            dos_data%kmesh%mesh(3), '|'
         endif
       endif
     endif

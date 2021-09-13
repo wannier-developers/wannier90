@@ -191,7 +191,7 @@ contains
         dos_data%smearing%adaptive_prefactor
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
-        dos_data%kmesh(1:3)
+        dos_data%kmesh%mesh(1:3)
 
     end if
 
@@ -216,7 +216,7 @@ contains
                                    scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                    system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
-          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
+          call dos_get_levelspacing(del_eig, dos_data%kmesh%mesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
@@ -241,16 +241,16 @@ contains
 
       if (verbose%iprint > 0) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
 
-      kweight = 1.0_dp/real(PRODUCT(dos_data%kmesh), kind=dp)
-      do loop_tot = my_node_id, PRODUCT(dos_data%kmesh) - 1, num_nodes
-        loop_x = loop_tot/(dos_data%kmesh(2)*dos_data%kmesh(3))
-        loop_y = (loop_tot - loop_x*(dos_data%kmesh(2) &
-                                     *dos_data%kmesh(3)))/dos_data%kmesh(3)
-        loop_z = loop_tot - loop_x*(dos_data%kmesh(2)*dos_data%kmesh(3)) &
-                 - loop_y*dos_data%kmesh(3)
-        kpt(1) = real(loop_x, dp)/real(dos_data%kmesh(1), dp)
-        kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
-        kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
+      kweight = 1.0_dp/real(PRODUCT(dos_data%kmesh%mesh), kind=dp)
+      do loop_tot = my_node_id, PRODUCT(dos_data%kmesh%mesh) - 1, num_nodes
+        loop_x = loop_tot/(dos_data%kmesh%mesh(2)*dos_data%kmesh%mesh(3))
+        loop_y = (loop_tot - loop_x*(dos_data%kmesh%mesh(2) &
+                                     *dos_data%kmesh%mesh(3)))/dos_data%kmesh%mesh(3)
+        loop_z = loop_tot - loop_x*(dos_data%kmesh%mesh(2)*dos_data%kmesh%mesh(3)) &
+                 - loop_y*dos_data%kmesh%mesh(3)
+        kpt(1) = real(loop_x, dp)/real(dos_data%kmesh%mesh(1), dp)
+        kpt(2) = real(loop_y, dp)/real(dos_data%kmesh%mesh(2), dp)
+        kpt(3) = real(loop_z, dp)/real(dos_data%kmesh%mesh(3), dp)
         if (dos_data%smearing%use_adaptive) then
           call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
                                    ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
@@ -258,7 +258,7 @@ contains
                                    scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                    system%num_valence_bands, effective_model, have_disentangled, &
                                    seedname, stdout, comm)
-          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k, num_wann, &
+          call dos_get_levelspacing(del_eig, dos_data%kmesh%mesh, levelspacing_k, num_wann, &
                                     recip_lattice)
           call dos_get_k(system%num_elec_per_state, rs_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, mp_grid, dos_data, &
