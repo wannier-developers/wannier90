@@ -239,7 +239,6 @@ module w90_param_methods
   public :: param_read_eigvals
   public :: param_read_kmesh_data
   public :: param_read_kpoints
-  public :: param_read_global_kmesh
   public :: param_clean_infile
   public :: param_read_final_alloc
   public :: get_all_keywords
@@ -841,59 +840,6 @@ contains
       if (.not. found) call io_error('Error: Did not find the cell information in the input file', stdout, seedname)
     end if
   end subroutine param_read_lattice
-
-  subroutine param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout, seedname)
-    use w90_io, only: io_error
-    !use w90_utility, only: utility_recip_lattice
-    implicit none
-    integer, intent(in) :: stdout
-    logical, intent(out) :: global_kmesh_set
-    real(kind=dp), intent(out) :: kmesh_spacing
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    integer, intent(out) :: kmesh(3)
-    character(len=50), intent(in)  :: seedname
-
-    integer :: i
-    logical :: found
-
-    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
-    ! k meshes                                                                                 !
-    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
-    ! [GP-begin, Apr13, 2012]
-    ! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
-    ! This bit of code must appear *before* all other codes for the local interpolation meshes,
-    ! BUT *after* having calculated the reciprocal-space vectors.
-    global_kmesh_set = .false.
-    kmesh_spacing = -1._dp
-    kmesh = 0
-    call param_get_keyword(stdout, seedname, 'kmesh_spacing', found, r_value=kmesh_spacing)
-    if (found) then
-      if (kmesh_spacing .le. 0._dp) &
-        call io_error('Error: kmesh_spacing must be greater than zero', stdout, seedname)
-      global_kmesh_set = .true.
-
-      call internal_set_kmesh(kmesh_spacing, recip_lattice, kmesh)
-    end if
-    call param_get_vector_length(stdout, seedname, 'kmesh', found, length=i)
-    if (found) then
-      if (global_kmesh_set) &
-        call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout, seedname)
-      if (i .eq. 1) then
-        global_kmesh_set = .true.
-        call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 1, i_value=kmesh)
-        kmesh(2) = kmesh(1)
-        kmesh(3) = kmesh(1)
-      elseif (i .eq. 3) then
-        global_kmesh_set = .true.
-        call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 3, i_value=kmesh)
-      else
-        call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', stdout, seedname)
-      end if
-      if (any(kmesh <= 0)) &
-        call io_error('Error: kmesh elements must be greater than zero', stdout, seedname)
-    end if
-    ! [GP-end]
-  end subroutine param_read_global_kmesh
 
   subroutine param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname)
     use w90_io, only: io_error

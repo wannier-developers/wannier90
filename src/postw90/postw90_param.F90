@@ -394,8 +394,8 @@ contains
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call param_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
                             bohr, stdout, seedname)
-    call param_read_global_kmesh(write_data%global_kmesh_set, write_data%global_kmesh%spacing, &
-                                 write_data%global_kmesh%mesh, recip_lattice, stdout, seedname)
+    call param_read_global_kmesh(write_data%global_kmesh_set, write_data%global_kmesh, &
+                                 recip_lattice, stdout, seedname)
     call param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, &
                                 boltz, recip_lattice, write_data%global_kmesh_set, &
                                 write_data%global_kmesh, stdout, seedname)
@@ -1317,6 +1317,58 @@ contains
     call param_get_keyword(stdout, seedname, 'kubo_eigval_max', found, r_value=berry%kubo_eigval_max)
     call param_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_read_energy_range
+
+  subroutine param_read_global_kmesh(global_kmesh_set, kmesh, recip_lattice, stdout, seedname)
+    use w90_io, only: io_error
+    !use w90_utility, only: utility_recip_lattice
+    implicit none
+    integer, intent(in) :: stdout
+    logical, intent(out) :: global_kmesh_set
+    type(kmesh_spacing_type), intent(out) :: kmesh
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    character(len=50), intent(in)  :: seedname
+
+    integer :: i
+    logical :: found
+
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+    ! k meshes                                                                                 !
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+    ! [GP-begin, Apr13, 2012]
+    ! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
+    ! This bit of code must appear *before* all other codes for the local interpolation meshes,
+    ! BUT *after* having calculated the reciprocal-space vectors.
+    global_kmesh_set = .false.
+    kmesh%spacing = -1._dp
+    kmesh%mesh = 0
+    call param_get_keyword(stdout, seedname, 'kmesh_spacing', found, r_value=kmesh%spacing)
+    if (found) then
+      if (kmesh%spacing .le. 0._dp) &
+        call io_error('Error: kmesh_spacing must be greater than zero', stdout, seedname)
+      global_kmesh_set = .true.
+
+      call internal_set_kmesh(kmesh%spacing, recip_lattice, kmesh%mesh)
+    end if
+    call param_get_vector_length(stdout, seedname, 'kmesh', found, length=i)
+    if (found) then
+      if (global_kmesh_set) &
+        call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout, seedname)
+      if (i .eq. 1) then
+        global_kmesh_set = .true.
+        call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 1, i_value=kmesh%mesh)
+        kmesh%mesh(2) = kmesh%mesh(1)
+        kmesh%mesh(3) = kmesh%mesh(1)
+      elseif (i .eq. 3) then
+        global_kmesh_set = .true.
+        call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 3, i_value=kmesh%mesh)
+      else
+        call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', stdout, seedname)
+      end if
+      if (any(kmesh%mesh <= 0)) &
+        call io_error('Error: kmesh elements must be greater than zero', stdout, seedname)
+    end if
+    ! [GP-end]
+  end subroutine param_read_global_kmesh
 
   subroutine param_read_local_kmesh(pw90_calcs, berry, dos_data, pw90_spin, gyrotropic, boltz, &
                                     recip_lattice, global_kmesh_set, global_kmesh, &

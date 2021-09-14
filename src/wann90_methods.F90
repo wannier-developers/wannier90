@@ -123,9 +123,9 @@ contains
     character(len=20) :: energy_unit
     !! Units for energy
     logical                   :: found_fermi_energy
-    real(kind=dp)             :: kmesh_spacing
-    integer                   :: kmesh(3)
-    logical                   :: global_kmesh_set
+    !real(kind=dp)             :: kmesh_spacing
+    !integer                   :: kmesh(3)
+    !logical                   :: global_kmesh_set
     logical :: has_kpath
     logical :: disentanglement
 
@@ -189,8 +189,8 @@ contains
       call param_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, seedname)
       call param_read_explicit_kpts(library, w90_calcs, kmesh_info, num_kpts, bohr, stdout, &
                                     seedname)
-      call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
-                                   stdout, seedname)
+      !call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
+      !                             stdout, seedname)
       call param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname)
       call param_read_projections(proj, use_bloch_phases, lhasproj, &
                                   wannierise%guiding_centres%enable, &
