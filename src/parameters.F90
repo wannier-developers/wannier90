@@ -246,24 +246,24 @@ module w90_param_methods
 
 contains
 
-  subroutine param_read_verbosity(verbose, stdout, seedname)
+  subroutine param_read_verbosity(print_output, stdout, seedname)
     !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
     implicit none
-    type(print_output_type), intent(inout) :: verbose
+    type(print_output_type), intent(inout) :: print_output
     logical :: found
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    verbose%timing_level = 1             ! Verbosity of timing output info
-    call param_get_keyword(stdout, seedname, 'timing_level', found, i_value=verbose%timing_level)
+    print_output%timing_level = 1             ! Verbosity of timing output info
+    call param_get_keyword(stdout, seedname, 'timing_level', found, i_value=print_output%timing_level)
 
-    verbose%iprint = 1             ! Verbosity
-    call param_get_keyword(stdout, seedname, 'iprint', found, i_value=verbose%iprint)
+    print_output%iprint = 1             ! Verbosity
+    call param_get_keyword(stdout, seedname, 'iprint', found, i_value=print_output%iprint)
 
-    verbose%optimisation = 3             ! Verbosity
-    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=verbose%optimisation)
+    print_output%optimisation = 3             ! Verbosity
+    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=print_output%optimisation)
 
   end subroutine param_read_verbosity
 
@@ -427,12 +427,12 @@ contains
     end if
   end subroutine param_read_mp_grid
 
-  subroutine param_read_system(library, system, stdout, seedname)
+  subroutine param_read_system(library, w90_system, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
-    type(w90_system_type), intent(inout) :: system
+    type(w90_system_type), intent(inout) :: w90_system
     character(len=50), intent(in)  :: seedname
 
     logical :: found, ltmp
@@ -440,7 +440,7 @@ contains
     ltmp = .false.  ! by default our WF are not spinors
     call param_get_keyword(stdout, seedname, 'spinors', found, l_value=ltmp)
     if (.not. library) then
-      system%spinors = ltmp
+      w90_system%spinors = ltmp
     else
       if (found) write (stdout, '(a)') ' Ignoring <spinors> in input file'
     endif
@@ -449,32 +449,32 @@ contains
 
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
-    if (system%spinors) then
-      system%num_elec_per_state = 1
+    if (w90_system%spinors) then
+      w90_system%num_elec_per_state = 1
     else
-      system%num_elec_per_state = 2
+      w90_system%num_elec_per_state = 2
     endif
     call param_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
-                           i_value=system%num_elec_per_state)
-    if ((system%num_elec_per_state /= 1) .and. (system%num_elec_per_state /= 2)) &
+                           i_value=w90_system%num_elec_per_state)
+    if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) &
       call io_error('Error: num_elec_per_state can be only 1 or 2', stdout, seedname)
-    if (system%spinors .and. system%num_elec_per_state /= 1) &
+    if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) &
       call io_error('Error: when spinors = T num_elec_per_state must be 1', stdout, seedname)
 
     ! set to a negative default value
-    system%num_valence_bands = -99
-    call param_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=system%num_valence_bands)
-    if (found .and. (system%num_valence_bands .le. 0)) &
+    w90_system%num_valence_bands = -99
+    call param_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=w90_system%num_valence_bands)
+    if (found .and. (w90_system%num_valence_bands .le. 0)) &
       call io_error('Error: num_valence_bands should be greater than zero', stdout, seedname)
     ! there is a check on this parameter later
 
   end subroutine param_read_system
 
-  subroutine param_read_kpath(library, spec_points, ok, bands_plot, stdout, seedname)
+  subroutine param_read_kpath(library, kpoint_path, ok, bands_plot, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library, bands_plot
-    type(kpoint_path_type), intent(out) :: spec_points
+    type(kpoint_path_type), intent(out) :: kpoint_path
     integer, intent(in) :: stdout
     logical, intent(out) :: ok
     character(len=50), intent(in)  :: seedname
@@ -487,22 +487,22 @@ contains
     if (found) then
       ok = .true.
       bands_num_spec_points = i_temp*2
-      if (allocated(spec_points%labels)) deallocate (spec_points%labels)
-      allocate (spec_points%labels(bands_num_spec_points), stat=ierr)
+      if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
+      allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating labels in param_read', stdout, seedname)
-      if (allocated(spec_points%points)) deallocate (spec_points%points)
-      allocate (spec_points%points(3, bands_num_spec_points), stat=ierr)
+      if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
+      allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating points in param_read', stdout, seedname)
-      call param_get_keyword_kpath(spec_points, stdout, seedname)
+      call param_get_keyword_kpath(kpoint_path, stdout, seedname)
     else
       ok = .false.
     end if
-    spec_points%num_points_first_segment = 100
+    kpoint_path%num_points_first_segment = 100
     call param_get_keyword(stdout, seedname, 'bands_num_points', found, &
-                           i_value=spec_points%num_points_first_segment)
+                           i_value=kpoint_path%num_points_first_segment)
     ! checks
     if (bands_plot) then
-      if (spec_points%num_points_first_segment < 0) &
+      if (kpoint_path%num_points_first_segment < 0) &
         call io_error('Error: bands_num_points must be positive', stdout, seedname)
     endif
   end subroutine param_read_kpath
@@ -582,39 +582,39 @@ contains
       'Error allocating fermi_energy_list in param_read', stdout, seedname)
   end subroutine param_read_fermi_energy
 
-  subroutine param_read_ws_data(param_input, stdout, seedname)
+  subroutine param_read_ws_data(ws_region, stdout, seedname)
     use w90_io, only: io_error
     implicit none
-    type(ws_region_type), intent(inout) :: param_input
+    type(ws_region_type), intent(inout) :: ws_region
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     integer :: i
     logical :: found
 
-    param_input%use_ws_distance = .true.
-    call param_get_keyword(stdout, seedname, 'use_ws_distance', found, l_value=param_input%use_ws_distance)
+    ws_region%use_ws_distance = .true.
+    call param_get_keyword(stdout, seedname, 'use_ws_distance', found, l_value=ws_region%use_ws_distance)
 
-    param_input%ws_distance_tol = 1.e-5_dp
-    call param_get_keyword(stdout, seedname, 'ws_distance_tol', found, r_value=param_input%ws_distance_tol)
+    ws_region%ws_distance_tol = 1.e-5_dp
+    call param_get_keyword(stdout, seedname, 'ws_distance_tol', found, r_value=ws_region%ws_distance_tol)
 
-    param_input%ws_search_size = 2
+    ws_region%ws_search_size = 2
 
     call param_get_vector_length(stdout, seedname, 'ws_search_size', found, length=i)
     if (found) then
       if (i .eq. 1) then
         call param_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 1, &
-                                      i_value=param_input%ws_search_size)
-        param_input%ws_search_size(2) = param_input%ws_search_size(1)
-        param_input%ws_search_size(3) = param_input%ws_search_size(1)
+                                      i_value=ws_region%ws_search_size)
+        ws_region%ws_search_size(2) = ws_region%ws_search_size(1)
+        ws_region%ws_search_size(3) = ws_region%ws_search_size(1)
       elseif (i .eq. 3) then
         call param_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
-                                      i_value=param_input%ws_search_size)
+                                      i_value=ws_region%ws_search_size)
       else
         call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
       end if
-      if (any(param_input%ws_search_size <= 0)) &
+      if (any(ws_region%ws_search_size <= 0)) &
         call io_error('Error: ws_search_size elements must be greater than zero', stdout, seedname)
     end if
   end subroutine param_read_ws_data
@@ -689,38 +689,38 @@ contains
 
   end subroutine param_read_eigvals
 
-  subroutine param_read_dis_manifold(eig_found, dis_window, stdout, seedname)
+  subroutine param_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
-    type(dis_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_manifold
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     !integer, intent(in) :: num_bands, num_wann
     !integer :: nkp, ierr
     logical :: found, found2
 
-    !dis_window%win_min = -1.0_dp; dis_window%win_max = 0.0_dp
-    !if (eig_found) dis_window%win_min = minval(eigval)
-    call param_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_window%win_min)
+    !dis_manifold%win_min = -1.0_dp; dis_manifold%win_max = 0.0_dp
+    !if (eig_found) dis_manifold%win_min = minval(eigval)
+    call param_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_manifold%win_min)
 
-    !if (eig_found) dis_window%win_max = maxval(eigval)
-    call param_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_window%win_max)
-    if (eig_found .and. (dis_window%win_max .lt. dis_window%win_min)) &
+    !if (eig_found) dis_manifold%win_max = maxval(eigval)
+    call param_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_manifold%win_max)
+    if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) &
       call io_error('Error: param_read: check disentanglement windows', stdout, seedname)
 
-    dis_window%froz_min = -1.0_dp; dis_window%froz_max = 0.0_dp
+    dis_manifold%froz_min = -1.0_dp; dis_manifold%froz_max = 0.0_dp
     ! no default for dis_froz_max
-    dis_window%frozen_states = .false.
-    call param_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_window%froz_max)
+    dis_manifold%frozen_states = .false.
+    call param_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_manifold%froz_max)
     if (found) then
-      dis_window%frozen_states = .true.
-      dis_window%froz_min = dis_window%win_min ! default value for the bottom of frozen window
+      dis_manifold%frozen_states = .true.
+      dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
-    call param_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_window%froz_min)
+    call param_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_manifold%froz_min)
     if (eig_found) then
-      if (dis_window%froz_max .lt. dis_window%froz_min) &
+      if (dis_manifold%froz_max .lt. dis_manifold%froz_min) &
         call io_error('Error: param_read: check disentanglement frozen windows', stdout, seedname)
       if (found2 .and. .not. found) &
         call io_error('Error: param_read: found dis_froz_min but not dis_froz_max', stdout, seedname)
@@ -728,44 +728,44 @@ contains
     ! ndimwin/lwindow are not read
   end subroutine param_read_dis_manifold
 
-  subroutine param_read_kmesh_data(kmesh_data, stdout, seedname)
+  subroutine param_read_kmesh_data(kmesh_input, stdout, seedname)
     use w90_io, only: io_error
 !   use w90_utility, only: utility_recip_lattice
     implicit none
-    type(kmesh_input_type), intent(out) :: kmesh_data
+    type(kmesh_input_type), intent(out) :: kmesh_input
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     integer :: itmp, ierr
     logical :: found
 
-    kmesh_data%search_shells = 36
-    call param_get_keyword(stdout, seedname, 'search_shells', found, i_value=kmesh_data%search_shells)
-    if (kmesh_data%search_shells < 0) call io_error('Error: search_shells must be positive', stdout, seedname)
+    kmesh_input%search_shells = 36
+    call param_get_keyword(stdout, seedname, 'search_shells', found, i_value=kmesh_input%search_shells)
+    if (kmesh_input%search_shells < 0) call io_error('Error: search_shells must be positive', stdout, seedname)
 
-    kmesh_data%tol = 0.000001_dp
-    call param_get_keyword(stdout, seedname, 'kmesh_tol', found, r_value=kmesh_data%tol)
-    if (kmesh_data%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive', stdout, seedname)
+    kmesh_input%tol = 0.000001_dp
+    call param_get_keyword(stdout, seedname, 'kmesh_tol', found, r_value=kmesh_input%tol)
+    if (kmesh_input%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive', stdout, seedname)
 
-    kmesh_data%num_shells = 0
-    call param_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_data%num_shells, lcount=.true.)
+    kmesh_input%num_shells = 0
+    call param_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, lcount=.true.)
     if (found) then
-      if (kmesh_data%num_shells < 0 .or. kmesh_data%num_shells > max_shells) &
+      if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) &
         call io_error('Error: number of shell in shell_list must be between zero and six', stdout, seedname)
-      if (allocated(kmesh_data%shell_list)) deallocate (kmesh_data%shell_list)
-      allocate (kmesh_data%shell_list(kmesh_data%num_shells), stat=ierr)
+      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating shell_list in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_data%num_shells, .false., kmesh_data%shell_list)
-      if (any(kmesh_data%shell_list < 1)) &
+      call param_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, .false., kmesh_input%shell_list)
+      if (any(kmesh_input%shell_list < 1)) &
         call io_error('Error: shell_list must contain positive numbers', stdout, seedname)
     else
-      if (allocated(kmesh_data%shell_list)) deallocate (kmesh_data%shell_list)
-      allocate (kmesh_data%shell_list(max_shells), stat=ierr)
+      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      allocate (kmesh_input%shell_list(max_shells), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating shell_list in param_read', stdout, seedname)
     end if
 
     call param_get_keyword(stdout, seedname, 'num_shells', found, i_value=itmp)
-    if (found .and. (itmp /= kmesh_data%num_shells)) &
+    if (found .and. (itmp /= kmesh_input%num_shells)) &
       call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', stdout, seedname)
 
     ! If .true., does not perform the check of B1 of
@@ -773,8 +773,8 @@ contains
     ! in kmesh.F90
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
-    kmesh_data%skip_B1_tests = .false.
-    call param_get_keyword(stdout, seedname, 'skip_b1_tests', found, l_value=kmesh_data%skip_B1_tests)
+    kmesh_input%skip_B1_tests = .false.
+    call param_get_keyword(stdout, seedname, 'skip_b1_tests', found, l_value=kmesh_input%skip_B1_tests)
 
   end subroutine param_read_kmesh_data
 
@@ -896,7 +896,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
-    !type(kpoint_path_type) :: spec_points ! for the special case of param_get_keyword_kpath
+    !type(kpoint_path_type) :: kpoint_path ! for the special case of param_get_keyword_kpath
     logical :: found
 
     ! keywords for wannier.x
@@ -1171,7 +1171,7 @@ contains
 
   end subroutine param_clean_infile
 
-  subroutine param_read_final_alloc(disentanglement, dis_window, wann_data, &
+  subroutine param_read_final_alloc(disentanglement, dis_manifold, wann_data, &
                                     num_wann, num_bands, num_kpts, stdout, seedname)
     ! =============================== !
     ! Some checks and initialisations !
@@ -1180,8 +1180,8 @@ contains
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
-    !type(parameter_input_type), intent(inout) :: param_input
-    type(dis_manifold_type), intent(inout) :: dis_window
+    !type(parameter_input_type), intent(inout) :: parameter_input
+    type(dis_manifold_type), intent(inout) :: dis_manifold
     !type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -1192,11 +1192,11 @@ contains
 !    if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then
-      if (allocated(dis_window%ndimwin)) deallocate (dis_window%ndimwin)
-      allocate (dis_window%ndimwin(num_kpts), stat=ierr)
+      if (allocated(dis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
+      allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating ndimwin in param_read', stdout, seedname)
-      if (allocated(dis_window%lwindow)) deallocate (dis_window%lwindow)
-      allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
+      if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
+      allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating lwindow in param_read', stdout, seedname)
     endif
 
@@ -1344,7 +1344,7 @@ contains
   end function get_smearing_index
 
 !===================================================================
-  subroutine param_uppercase(atoms, spec_points, length_unit)
+  subroutine param_uppercase(atoms, kpoint_path, length_unit)
     !===================================================================
     !                                                                  !
     !! Convert a few things to uppercase to look nice in the output
@@ -1354,7 +1354,7 @@ contains
     implicit none
 
     type(atom_data_type), intent(inout) :: atoms
-    type(kpoint_path_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     character(len=*), intent(inout) :: length_unit
     integer :: nsp, ic, loop, inner_loop
 
@@ -1372,12 +1372,12 @@ contains
     enddo
 
     ! Bands labels (eg, x --> X)
-    if (allocated(spec_points%labels)) then
-      do loop = 1, size(spec_points%labels)
-        do inner_loop = 1, len(spec_points%labels(loop))
-          ic = ichar(spec_points%labels(loop) (inner_loop:inner_loop))
+    if (allocated(kpoint_path%labels)) then
+      do loop = 1, size(kpoint_path%labels)
+        do inner_loop = 1, len(kpoint_path%labels(loop))
+          ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
           if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-            spec_points%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+            kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
         enddo
       enddo
     endif
@@ -1488,8 +1488,8 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_data, kpt_latt, &
-                           dis_window, atoms, eigval, spec_points, stdout, seedname)
+  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_input, kpt_latt, &
+                           dis_manifold, atoms, eigval, kpoint_path, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -1503,43 +1503,43 @@ contains
     integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wann_data
     type(proj_input_type), intent(inout) :: input_proj
-    type(kmesh_input_type), intent(inout) :: kmesh_data
+    type(kmesh_input_type), intent(inout) :: kmesh_input
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    type(dis_manifold_type), intent(inout) :: dis_window
+    type(dis_manifold_type), intent(inout) :: dis_manifold
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    type(kpoint_path_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     character(len=50), intent(in)  :: seedname
     integer, intent(in) :: stdout
 
     integer :: ierr
 
-    if (allocated(dis_window%ndimwin)) then
-      deallocate (dis_window%ndimwin, stat=ierr)
+    if (allocated(dis_manifold%ndimwin)) then
+      deallocate (dis_manifold%ndimwin, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating ndimwin in param_dealloc', stdout, seedname)
     end if
-    if (allocated(dis_window%lwindow)) then
-      deallocate (dis_window%lwindow, stat=ierr)
+    if (allocated(dis_manifold%lwindow)) then
+      deallocate (dis_manifold%lwindow, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating lwindow in param_dealloc', stdout, seedname)
     end if
     if (allocated(eigval)) then
       deallocate (eigval, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating eigval in param_dealloc', stdout, seedname)
     endif
-    if (allocated(kmesh_data%shell_list)) then
-      deallocate (kmesh_data%shell_list, stat=ierr)
+    if (allocated(kmesh_input%shell_list)) then
+      deallocate (kmesh_input%shell_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating shell_list in param_dealloc', stdout, seedname)
     endif
     if (allocated(kpt_latt)) then
       deallocate (kpt_latt, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating kpt_latt in param_dealloc', stdout, seedname)
     endif
-    if (allocated(spec_points%labels)) then
-      deallocate (spec_points%labels, stat=ierr)
+    if (allocated(kpoint_path%labels)) then
+      deallocate (kpoint_path%labels, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating labels in param_dealloc', stdout, seedname)
     end if
-    if (allocated(spec_points%points)) then
-      deallocate (spec_points%points, stat=ierr)
+    if (allocated(kpoint_path%points)) then
+      deallocate (kpoint_path%points, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating points in param_dealloc', stdout, seedname)
     end if
     if (allocated(atoms%label)) then
@@ -3675,7 +3675,7 @@ contains
   end subroutine param_get_projections
 
 !===================================!
-  subroutine param_get_keyword_kpath(spec_points, stdout, seedname)
+  subroutine param_get_keyword_kpath(kpoint_path, stdout, seedname)
     !===================================!
     !                                   !
     !!  Fills the kpath data block
@@ -3685,7 +3685,7 @@ contains
 
     implicit none
 
-    type(kpoint_path_type), intent(inout) :: spec_points
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
@@ -3739,9 +3739,9 @@ contains
 
       counter = counter + 2
       dummy = in_data(loop)
-      read (dummy, *, err=240, end=240) spec_points%labels(counter - 1), &
-        (spec_points%points(i, counter - 1), i=1, 3), &
-        spec_points%labels(counter), (spec_points%points(i, counter), i=1, 3)
+      read (dummy, *, err=240, end=240) kpoint_path%labels(counter - 1), &
+        (kpoint_path%points(i, counter - 1), i=1, 3), &
+        kpoint_path%labels(counter), (kpoint_path%points(i, counter), i=1, 3)
     end do
 
     in_data(line_s:line_e) (1:maxlen) = ' '
