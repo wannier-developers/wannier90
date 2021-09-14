@@ -216,10 +216,7 @@ module pw90_parameters
     real(kind=dp) :: temp_step
     type(kmesh_spacing_type) :: kmesh
     real(kind=dp) :: tdf_energy_step
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    ! REVIEW_2021-08-09: If we use the smearing type, then rename tdf_smearing
-    integer :: TDF_smr_index
-    real(kind=dp) :: TDF_smr_fixed_en_width
+    type(pw90_smearing_type) :: tdf_smearing ! TDF_smr_index and TDF_smr_fixed_en_width
     real(kind=dp) :: relax_time
     logical :: bandshift
     integer :: bandshift_firstband
@@ -1056,6 +1053,7 @@ contains
     ! Boltzmann transport
     !%%%%%%%%%%%%%%%%%%%%
     ! Note: to be put AFTER the disentanglement routines!
+    boltz%TDF_smearing%use_adaptive = .false.
 
     boltz%calc_also_dos = .false.
     call param_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found, l_value=boltz%calc_also_dos)
@@ -1170,15 +1168,16 @@ contains
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
-    boltz%TDF_smr_fixed_en_width = smearing%fixed_width
-    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, r_value=boltz%TDF_smr_fixed_en_width)
-    if (found .and. (boltz%TDF_smr_fixed_en_width < 0._dp)) &
+    boltz%tdf_smearing%fixed_width = smearing%fixed_width
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, &
+                           r_value=boltz%tdf_smearing%fixed_width)
+    if (found .and. (boltz%tdf_smearing%fixed_width < 0._dp)) &
       call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    boltz%TDF_smr_index = smearing%type_index
+    boltz%tdf_smearing%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found, c_value=ctmp)
-    if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
+    if (found) boltz%tdf_smearing%type_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
 
     ! By default: use the "global" smearing index
     boltz%dos_smearing%type_index = smearing%type_index
@@ -1954,11 +1953,13 @@ contains
             , boltz%kmesh%mesh(1), 'x', boltz%kmesh%mesh(2), 'x', boltz%kmesh%mesh(3), '|'
         endif
       endif
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', boltz%tdf_energy_step, '|'
-      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', trim(param_get_smearing_type(boltz%tdf_smr_index)), '|'
-      if (boltz%tdf_smr_fixed_en_width > 0.0_dp) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', &
+        boltz%tdf_energy_step, '|'
+      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', &
+        trim(param_get_smearing_type(boltz%tdf_smearing%type_index)), '|'
+      if (boltz%tdf_smearing%fixed_width > 0.0_dp) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-          '|  TDF fixed Smearing width (eV)             :', boltz%tdf_smr_fixed_en_width, '|'
+          '|  TDF fixed Smearing width (eV)             :', boltz%tdf_smearing%fixed_width, '|'
       else
         write (stdout, '(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
       endif

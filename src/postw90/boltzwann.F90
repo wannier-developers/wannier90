@@ -230,13 +230,16 @@ contains
       MuArray(i) = pw90_boltzwann%mu_min + real(i - 1, dp)*pw90_boltzwann%mu_step
     end do
 
+    if (pw90_boltzwann%tdf_smearing%use_adaptive) then
+      call io_error('Adaptive smearing not allowed in Boltzwann TDF', stdout, seedname)
+    endif
     ! I precalculate the TDFEnergyArray
     ! I assume that dis_win_min and dis_win_max are set to sensible values, related to the max and min energy
     ! This is true if the .eig file is present. I can assume its presence since we need it to interpolate the
     ! bands.
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
-    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*pw90_boltzwann%TDF_smr_fixed_en_width, 0.2_dp)
+    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*pw90_boltzwann%tdf_smearing%fixed_width, 0.2_dp)
     TDFEnergyNumPoints = int(floor((dis_window%win_max - dis_window%win_min &
                                     + 2._dp*TDF_exceeding_energy)/pw90_boltzwann%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
@@ -861,14 +864,15 @@ contains
     end if
 
     if (on_root .and. (verbose%iprint > 1)) then
-      if (pw90_boltzwann%TDF_smr_fixed_en_width/(TDFEnergyArray(2) - TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
+      if (pw90_boltzwann%tdf_smearing%fixed_width/(TDFEnergyArray(2) - TDFEnergyArray(1)) &
+          < min_smearing_binwidth_ratio) then
         write (stdout, '(5X,A)') "Smearing for TDF: "
         write (stdout, '(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
       else
         write (stdout, '(5X,A)') "Smearing for TDF: "
         write (stdout, '(7X,A,G18.10)') &
-          trim(param_get_smearing_type(pw90_boltzwann%TDF_smr_index))//", non-adaptive, width (eV) =", &
-          pw90_boltzwann%TDF_smr_fixed_en_width
+          trim(param_get_smearing_type(pw90_boltzwann%tdf_smearing%type_index))//", non-adaptive, width (eV) =", &
+          pw90_boltzwann%tdf_smearing%fixed_width
       end if
     end if
 
@@ -1222,7 +1226,7 @@ contains
 
       ! Faster optimization: I precalculate the indices
       ! Value of the smearing in eV; default = 0 eV, i.e. no smearing
-      smear = pw90_boltzwann%TDF_smr_fixed_en_width
+      smear = pw90_boltzwann%tdf_smearing%fixed_width
       if (smear/binwidth < min_smearing_binwidth_ratio) then
         min_f = max(nint((eig_k(BandIdx) - EnergyArray(1))/ &
                          (EnergyArray(size(EnergyArray)) - EnergyArray(1)) &
@@ -1244,7 +1248,7 @@ contains
       do loop_f = min_f, max_f
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(BandIdx))/smear
-          rdum = utility_w0gauss(arg, pw90_boltzwann%TDF_smr_index, stdout, seedname)/smear
+          rdum = utility_w0gauss(arg, pw90_boltzwann%tdf_smearing%type_index, stdout, seedname)/smear
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if
