@@ -170,15 +170,13 @@ module pw90_parameters
     !! =============
     character(len=120) :: task
     type(kmesh_spacing_type) :: kmesh
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    integer :: smr_index
-    real(kind=dp) :: smr_fixed_en_width
     integer :: nfreq
     complex(kind=dp), allocatable :: freq_list(:)
     real(kind=dp) :: box_corner(3), box(3, 3)
     real(kind=dp) :: degen_thresh
     integer, allocatable :: band_list(:)
     integer :: num_bands
+    type(pw90_smearing_type) :: smearing
     ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
     ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
     real(kind=dp) :: smr_max_arg
@@ -675,6 +673,7 @@ contains
       end do
     end if
 
+    gyrotropic%smearing%use_adaptive = .false.
     smr_max_arg = 5.0
     call param_get_keyword(stdout, seedname, 'smr_max_arg', found, r_value=smr_max_arg)
     if (found .and. (smr_max_arg <= 0._dp)) &
@@ -686,16 +685,17 @@ contains
     if (found .and. (gyrotropic%smr_max_arg <= 0._dp)) call io_error &
       ('Error: gyrotropic_smr_max_arg must be greater than zero', stdout, seedname)
 
-    gyrotropic%smr_fixed_en_width = smr_fixed_en_width
+    gyrotropic%smearing%fixed_width = smr_fixed_en_width
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found, &
-                           r_value=gyrotropic%smr_fixed_en_width)
-    if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
+                           r_value=gyrotropic%smearing%fixed_width)
+    if (found .and. (gyrotropic%smearing%fixed_width < 0._dp)) call io_error &
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    gyrotropic%smr_index = smr_index
+    gyrotropic%smearing%type_index = smr_index
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found, c_value=ctmp)
-    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type', stdout, seedname)
+    if (found) gyrotropic%smearing%type_index = get_smearing_index(ctmp, 'gyrotropic_smr_type', &
+                                                                   stdout, seedname)
 
   end subroutine param_read_gyrotropic
 
@@ -1301,7 +1301,7 @@ contains
       gyrotropic%freq_list(i) = write_data%gyrotropic_freq_min &
                                 + (i - 1)*(write_data%gyrotropic_freq_max &
                                            - write_data%gyrotropic_freq_min)/(gyrotropic%nfreq - 1) &
-                                + cmplx_i*gyrotropic%smr_fixed_en_width
+                                + cmplx_i*gyrotropic%smearing%fixed_width
     enddo
 
     if (dis_window%frozen_states) then
@@ -1893,18 +1893,19 @@ contains
         write_data%gyrotropic_freq_step, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', &
         gyrotropic%eigval_max, '|'
-      if (gyrotropic%smr_fixed_en_width == write_data%smear%fixed_width &
-          .and. write_data%smear%type_index == gyrotropic%smr_index) then
+      if (gyrotropic%smearing%fixed_width == write_data%smear%fixed_width &
+          .and. write_data%smear%type_index == gyrotropic%smearing%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
       endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-        gyrotropic%smr_fixed_en_width, '|'
+        gyrotropic%smearing%fixed_width, '|'
       write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function                         :', &
-        trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
+        trim(param_get_smearing_type(gyrotropic%smearing%type_index)), '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', &
+        gyrotropic%degen_thresh, '|'
 
       if (write_data%global_kmesh%mesh(1) == gyrotropic%kmesh%mesh(1) .and. &
           write_data%global_kmesh%mesh(2) == gyrotropic%kmesh%mesh(2) .and. &
