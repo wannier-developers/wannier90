@@ -35,9 +35,10 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                      real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                      num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+  subroutine get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, &
+                      v_matrix, eigval, real_lattice, scissors_shift, num_bands, num_kpts, &
+                      num_wann, num_valence_bands, effective_model, have_disentangled, seedname, &
+                      stdout, comm)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -54,21 +55,22 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(print_output_type), intent(in) :: print_output
     type(w90commtype), intent(in) :: comm
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
 
     real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
 
     character(len=50), intent(in) :: seedname
+
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
@@ -86,13 +88,13 @@ contains
     logical :: on_root = .false.
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
-      allocate (HH_R(num_wann, num_wann, ws_vec%nrpts))
+      allocate (HH_R(num_wann, num_wann, wigner_seitz%nrpts))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     end if
@@ -139,20 +141,20 @@ contains
           ! implemented.)
           HH_R(j, i, ir) = HH_R(j, i, ir) + cmplx(rdum_real, rdum_imag, kind=dp)
           if (new_ir) then
-            ws_vec%irvec(:, ir) = ivdum(:)
-            if (ivdum(1) == 0 .and. ivdum(2) == 0 .and. ivdum(3) == 0) ws_vec%rpt_origin = ir
+            wigner_seitz%irvec(:, ir) = ivdum(:)
+            if (ivdum(1) == 0 .and. ivdum(2) == 0 .and. ivdum(3) == 0) wigner_seitz%rpt_origin = ir
           endif
           n = n + 1
         enddo
         close (file_unit)
-        if (ir /= ws_vec%nrpts) then
-          write (stdout, *) 'ir=', ir, '  nrpts=', ws_vec%nrpts
+        if (ir /= wigner_seitz%nrpts) then
+          write (stdout, *) 'ir=', ir, '  nrpts=', wigner_seitz%nrpts
           call io_error('Error in get_HH_R: inconsistent nrpts values', stdout, seedname)
         endif
-        do ir = 1, ws_vec%nrpts
-          ws_vec%crvec(:, ir) = matmul(transpose(real_lattice), ws_vec%irvec(:, ir))
+        do ir = 1, wigner_seitz%nrpts
+          wigner_seitz%crvec(:, ir) = matmul(transpose(real_lattice), wigner_seitz%irvec(:, ir))
         end do
-        ws_vec%ndegen(:) = 1 ! This is assumed when reading HH_R from file
+        wigner_seitz%ndegen(:) = 1 ! This is assumed when reading HH_R from file
         !
         ! TODO: Implement scissors in this case? Need to choose a
         ! uniform k-mesh (the scissors correction is applied in
@@ -166,11 +168,11 @@ contains
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T', stdout, seedname)
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*ws_vec%nrpts, stdout, seedname, comm)
-      call comms_bcast(ws_vec%ndegen(1), ws_vec%nrpts, stdout, seedname, comm)
-      call comms_bcast(ws_vec%irvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
-      call comms_bcast(ws_vec%crvec(1, 1), 3*ws_vec%nrpts, stdout, seedname, comm)
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*wigner_seitz%nrpts, stdout, seedname, comm)
+      call comms_bcast(wigner_seitz%ndegen(1), wigner_seitz%nrpts, stdout, seedname, comm)
+      call comms_bcast(wigner_seitz%irvec(1, 1), 3*wigner_seitz%nrpts, stdout, seedname, comm)
+      call comms_bcast(wigner_seitz%crvec(1, 1), 3*wigner_seitz%nrpts, stdout, seedname, comm)
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     endif
@@ -186,12 +188,12 @@ contains
     HH_q = cmplx_0
     do ik = 1, num_kpts
       if (have_disentangled) then
-        num_states(ik) = dis_window%ndimwin(ik)
+        num_states(ik) = dis_manifold%ndimwin(ik)
       else
         num_states(ik) = num_wann
       endif
 
-      call get_win_min(num_bands, dis_window, ik, winmin_q, have_disentangled)
+      call get_win_min(num_bands, dis_manifold, ik, winmin_q, have_disentangled)
       do m = 1, num_wann
         do n = 1, m
           do i = 1, num_states(ik)
@@ -205,13 +207,13 @@ contains
       enddo
     enddo
 
-    call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, kpt_latt, HH_q, HH_R)
+    call fourier_q_to_R(num_kpts, wigner_seitz%nrpts, wigner_seitz%irvec, kpt_latt, HH_q, HH_R)
 
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
     !
     if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
-      allocate (sciss_R(num_wann, num_wann, ws_vec%nrpts))
+      allocate (sciss_R(num_wann, num_wann, wigner_seitz%nrpts))
       allocate (sciss_q(num_wann, num_wann, num_kpts))
       sciss_q = cmplx_0
       do ik = 1, num_kpts
@@ -226,15 +228,16 @@ contains
         enddo
       enddo
 
-      call fourier_q_to_R(num_kpts, ws_vec%nrpts, ws_vec%irvec, kpt_latt, sciss_q, sciss_R)
+      call fourier_q_to_R(num_kpts, wigner_seitz%nrpts, wigner_seitz%irvec, kpt_latt, sciss_q, &
+                          sciss_R)
       do n = 1, num_wann
-        sciss_R(n, n, ws_vec%rpt_origin) = sciss_R(n, n, ws_vec%rpt_origin) + 1.0_dp
+        sciss_R(n, n, wigner_seitz%rpt_origin) = sciss_R(n, n, wigner_seitz%rpt_origin) + 1.0_dp
       end do
       sciss_R = sciss_R*scissors_shift
       HH_R = HH_R + sciss_R
     endif
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
     return
 
@@ -244,9 +247,9 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
-                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, effective_model, &
-                      have_disentangled, seedname, stdout, comm)
+  subroutine get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                      v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                      effective_model, have_disentangled, seedname, stdout, comm)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -265,16 +268,16 @@ contains
     implicit none
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in) :: berry
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(w90commtype), intent(in) :: comm
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
+    type(dis_manifold_type), intent(in)   :: dis_manifold
+    type(kmesh_info_type), intent(in)     :: kmesh_info
+    type(print_output_type), intent(in)   :: print_output
+    type(w90commtype), intent(in)         :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -303,13 +306,13 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     end if
@@ -359,7 +362,7 @@ contains
         endif
       endif
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     endif
@@ -380,7 +383,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -455,7 +458,7 @@ contains
 
         ! Wannier-gauge overlap matrix S in the projected subspace
         !
-        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                       ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, &
                                       have_disentangled, S)
@@ -463,24 +466,25 @@ contains
         ! Berry connection matrix
         ! Assuming all neighbors of a given point are read in sequence!
         !
-        if (berry%transl_inv .and. ik .ne. ik_prev) AA_q_diag(:, :) = cmplx_0
+        if (pw90_berry%transl_inv .and. ik .ne. ik_prev) AA_q_diag(:, :) = cmplx_0
         do idir = 1, 3
           AA_q(:, :, ik, idir) = AA_q(:, :, ik, idir) &
                                  + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*S(:, :)
-          if (berry%transl_inv) then
+          if (pw90_berry%transl_inv) then
             !
             ! Rewrite band-diagonal elements a la Eq.(31) of MV97
             !
             do i = 1, num_wann
               AA_q_diag(i, idir) = AA_q_diag(i, idir) &
-                                   - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*aimag(log(S(i, i)))
+                                   - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                   *aimag(log(S(i, i)))
             enddo
           endif
         end do
         ! Assuming all neighbors of a given point are read in sequence!
         if (nn_count == kmesh_info%nntot) then !looped over all neighbors
           do idir = 1, 3
-            if (berry%transl_inv) then
+            if (pw90_berry%transl_inv) then
               do n = 1, num_wann
                 AA_q(n, n, ik, idir) = AA_q_diag(n, idir)
               enddo
@@ -511,7 +515,7 @@ contains
 
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
     return
 
@@ -525,7 +529,7 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(dis_window, kmesh_info, kpt_latt, verbose, BB_R, v_matrix, eigval, &
+  subroutine get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                       scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                       have_disentangled, seedname, stdout, comm)
     !=====================================================
@@ -543,16 +547,16 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(w90commtype), intent(in) :: comm
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in)   :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(w90commtype), intent(in)       :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
@@ -578,12 +582,12 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
       return
     end if
@@ -600,7 +604,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -662,17 +666,18 @@ contains
           call io_error('Neighbour not found', stdout, seedname)
         end if
 
-        call get_win_min(num_bands, dis_window, ik, winmin_q, have_disentangled)
-        call get_win_min(num_bands, dis_window, kmesh_info%nnlist(ik, nn), winmin_qb, &
+        call get_win_min(num_bands, dis_manifold, ik, winmin_q, have_disentangled)
+        call get_win_min(num_bands, dis_manifold, kmesh_info%nnlist(ik, nn), winmin_qb, &
                          have_disentangled)
 
-        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+        call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                       ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                       num_states(kmesh_info%nnlist(ik, nn)), S_o, &
                                       have_disentangled, H=H_q_qb)
         do idir = 1, 3
           BB_q(:, :, ik, idir) = BB_q(:, :, ik, idir) &
-                                 + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*H_q_qb(:, :)
+                                 + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                 *H_q_qb(:, :)
         enddo
       enddo !ncount
 
@@ -686,7 +691,7 @@ contains
 
     call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
     return
 
@@ -697,9 +702,9 @@ contains
 
   !=============================================================
 
-  subroutine get_CC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, CC_R, v_matrix, &
-                      eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                      have_disentangled, seedname, stdout, comm)
+  subroutine get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
+                      v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, &
+                      num_wann, have_disentangled, seedname, stdout, comm)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -716,17 +721,17 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(print_output_type), intent(in) :: verbose
-    type(w90commtype), intent(in) :: comm
+    type(dis_manifold_type), intent(in)   :: dis_manifold
+    type(kmesh_info_type), intent(in)     :: kmesh_info
+    type(pw90_oper_read_type), intent(in) :: pw90_oper_read
+    type(print_output_type), intent(in)   :: print_output
+    type(w90commtype), intent(in)         :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
@@ -748,13 +753,13 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
       return
     end if
@@ -771,14 +776,14 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
       enddo
 
       uHu_in = io_file_unit()
-      if (postw90_oper%uHu_formatted) then
+      if (pw90_oper_read%uHu_formatted) then
         open (unit=uHu_in, file=trim(seedname)//".uHu", form='formatted', &
               status='old', action='read', err=105)
         write (stdout, '(/a)', advance='no') &
@@ -810,15 +815,15 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_window, qb2, winmin_qb2, have_disentangled)
+          call get_win_min(num_bands, dis_manifold, qb2, winmin_qb2, have_disentangled)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_window, qb1, winmin_qb1, have_disentangled)
+            call get_win_min(num_bands, dis_manifold, qb1, winmin_qb1, have_disentangled)
             !
             ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}>
             ! between the original ab initio eigenstates
             !
-            if (postw90_oper%uHu_formatted) then
+            if (pw90_oper_read%uHu_formatted) then
               do m = 1, num_bands
                 do n = 1, num_bands
                   read (uHu_in, *, err=106, end=106) c_real, c_img
@@ -841,7 +846,7 @@ contains
             ! Transform to projected subspace, Wannier gauge
             !
 
-            call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+            call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                           qb1, num_states(qb1), qb2, num_states(qb2), &
                                           Ho_qb1_q_qb2, have_disentangled, H_qb1_q_qb2)
             do b = 1, 3
@@ -872,7 +877,7 @@ contains
 
     call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
     return
 
@@ -884,8 +889,8 @@ contains
   end subroutine get_CC_R
 
   !===========================================================
-  subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_window, &
-                      kmesh_info, kpt_latt, verbose, have_disentangled, stdout, seedname, comm)
+  subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_manifold, &
+                      kmesh_info, kpt_latt, print_output, have_disentangled, stdout, seedname, comm)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -901,18 +906,20 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(w90commtype), intent(in) :: comm
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in)   :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(w90commtype), intent(in)       :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
 
     character(len=50), intent(in) :: seedname
+
     logical, intent(in) :: have_disentangled
 
     ! local variable
@@ -928,12 +935,12 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
       return
     end if
 
@@ -946,7 +953,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -975,10 +982,10 @@ contains
         do nn2 = 1, kmesh_info%nntot
           qb2 = kmesh_info%nnlist(ik, nn2)
 
-          call get_win_min(num_bands, dis_window, qb2, winmin_qb2, have_disentangled)
+          call get_win_min(num_bands, dis_manifold, qb2, winmin_qb2, have_disentangled)
           do nn1 = 1, kmesh_info%nntot
             qb1 = kmesh_info%nnlist(ik, nn1)
-            call get_win_min(num_bands, dis_window, qb1, winmin_qb1, have_disentangled)
+            call get_win_min(num_bands, dis_manifold, qb1, winmin_qb1, have_disentangled)
             !
             ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}>
             ! between the original ab initio eigenstates
@@ -1015,7 +1022,8 @@ contains
             enddo
             do b = 1, 3
               do a = 1, b
-                FF_q(:, :, ik, a, b) = FF_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
+                FF_q(:, :, ik, a, b) = FF_q(:, :, ik, a, b) &
+                                       + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
                                        *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*L_qb1_q_qb2(:, :)
               enddo
             enddo
@@ -1040,7 +1048,7 @@ contains
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
 
 107 call io_error &
@@ -1051,7 +1059,7 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, irvec, &
+  subroutine get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, irvec, &
                       nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
                       comm)
     !================================================================
@@ -1070,15 +1078,15 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(print_output_type), intent(in) :: verbose
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(pw90_oper_read_type), intent(in) :: pw90_oper_read
+    type(print_output_type), intent(in) :: print_output
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
 
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -1097,7 +1105,7 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
 
     if (.not. allocated(SS_R)) then
@@ -1114,7 +1122,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1124,7 +1132,7 @@ contains
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
       spn_in = io_file_unit()
-      if (postw90_oper%spn_formatted) then
+      if (pw90_oper_read%spn_formatted) then
         open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
@@ -1145,7 +1153,7 @@ contains
         call io_error(trim(seedname)//'.spn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout, seedname)
-      if (postw90_oper%spn_formatted) then
+      if (pw90_oper_read%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
             do n = 1, m
@@ -1192,7 +1200,7 @@ contains
       do ik = 1, num_kpts
         do is = 1, 3
 
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                         ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, ik, is))
         enddo !is
@@ -1206,7 +1214,7 @@ contains
 
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
     return
 
 109 call io_error &
@@ -1217,7 +1225,7 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, spin_hall, SH_R, &
+  subroutine get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, pw90_spin_hall, SH_R, &
                        SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, &
                        num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
                        comm)
@@ -1239,12 +1247,11 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_oper_read_type), intent(in) :: postw90_oper
-    type(print_output_type), intent(in) :: verbose
-    type(pw90_spin_hall_type), intent(in) :: spin_hall
+    type(pw90_oper_read_type), intent(in) :: pw90_oper_read
+    type(print_output_type), intent(in) :: print_output
+    type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, num_valence_bands
@@ -1252,6 +1259,7 @@ contains
 
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     complex(kind=dp), intent(in) :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
@@ -1292,27 +1300,27 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
@@ -1326,7 +1334,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = dis_window%ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1336,7 +1344,7 @@ contains
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
       spn_in = io_file_unit()
-      if (postw90_oper%spn_formatted) then
+      if (pw90_oper_read%spn_formatted) then
         open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
@@ -1357,7 +1365,7 @@ contains
         call io_error(trim(seedname)//'.spn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout, seedname)
-      if (postw90_oper%spn_formatted) then
+      if (pw90_oper_read%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
             do n = 1, m
@@ -1416,9 +1424,9 @@ contains
           do m = num_valence_bands + 1, num_bands
             H_o(m, m, ik) = H_o(m, m, ik) + scissors_shift
           end do
-        else if (spin_hall%bandshift) then
-          do m = spin_hall%bandshift_firstband, num_bands
-            H_o(m, m, ik) = H_o(m, m, ik) + spin_hall%bandshift_energyshift
+        else if (pw90_spin_hall%bandshift) then
+          do m = pw90_spin_hall%bandshift_firstband, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + pw90_spin_hall%bandshift_energyshift
           end do
         end if
       enddo
@@ -1466,7 +1474,7 @@ contains
         do is = 1, 3
           SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
 
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                         ik, num_states(ik), ik, num_states(ik), &
                                         SH_o(:, :, ik, is), have_disentangled, SH_q(:, :, ik, is))
         end do
@@ -1531,16 +1539,16 @@ contains
           ! Transform to projected subspace, Wannier gauge
           !
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                         ik, num_states(ik), ik, num_states(ik), &
                                         spn_o(:, :, ik, is), have_disentangled, SS_q(:, :, is))
           ! QZYZ18 Eq.(50)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                         ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SM_o(:, :, is), &
                                         have_disentangled, SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
-          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+          call get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                         ik, num_states(ik), kmesh_info%nnlist(ik, nn), &
                                         num_states(kmesh_info%nnlist(ik, nn)), SHM_o(:, :, is), &
                                         have_disentangled, SHM_q(:, :, is))
@@ -1587,7 +1595,7 @@ contains
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (verbose%timing_level > 1 .and. verbose%iprint > 0) &
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
     return
 
@@ -1641,7 +1649,7 @@ contains
   end subroutine fourier_q_to_R
 
   !===============================================
-  subroutine get_win_min(num_bands, dis_window, ik, win_min, have_disentangled)
+  subroutine get_win_min(num_bands, dis_manifold, ik, win_min, have_disentangled)
     !===============================================
     !
     !! Find the lower bound (band index) of the
@@ -1657,7 +1665,7 @@ contains
     ! Arguments
     integer, intent(in) :: num_bands, ik !! Index of the required k-point
     integer, intent(out) :: win_min !! Index of the lower band of the outer energy window
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_manifold
     logical, intent(in) :: have_disentangled
 
     ! local variables
@@ -1669,7 +1677,7 @@ contains
     endif
 
     do j = 1, num_bands
-      if (dis_window%lwindow(j, ik)) then
+      if (dis_manifold%lwindow(j, ik)) then
         win_min = j
         exit
       end if
@@ -1678,7 +1686,7 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_window, &
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
                                       ik_a, ns_a, ik_b, ns_b, S_o, have_disentangled, S, H)
     !==========================================================
     !
@@ -1697,8 +1705,8 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
-    !type(print_output_type), intent(in) :: verbose
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    !type(print_output_type), intent(in) :: print_output
     integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
@@ -1708,8 +1716,8 @@ contains
     ! local variables
     integer :: wm_a, wm_b
 
-    call get_win_min(num_bands, dis_window, ik_a, wm_a, have_disentangled)
-    call get_win_min(num_bands, dis_window, ik_b, wm_b, have_disentangled)
+    call get_win_min(num_bands, dis_manifold, ik_a, wm_a, have_disentangled)
+    call get_win_min(num_bands, dis_manifold, ik_b, wm_b, have_disentangled)
 
     call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a), 'C', &
                         S_o(wm_a:wm_a + ns_a - 1, wm_b:wm_b + ns_b - 1), 'N', &
