@@ -68,7 +68,7 @@ contains
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type
     use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
       comms_scatterv, comms_array_split, w90commtype
 
@@ -90,7 +90,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(wann_control_type), intent(inout)   :: wann_control
     type(wann_omega_type), intent(inout)     :: omega
-    type(sitesym_data), intent(in)           :: sym
+    type(sitesym_data_type), intent(in)      :: sym
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90commtype), intent(in)            :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
@@ -1481,7 +1481,7 @@ contains
       !                                               !
       !===============================================!
       use w90_constants, only: cmplx_i
-      use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
+      use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data_type
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: comms_bcast, comms_gatherv, w90commtype
       use w90_utility, only: utility_zgemm
@@ -1491,7 +1491,7 @@ contains
 
       type(kmesh_info_type), intent(in) :: kmesh_info
 
-      type(sitesym_data), intent(in) :: sym
+      type(sitesym_data_type), intent(in) :: sym
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -2352,7 +2352,7 @@ contains
     !===================================================================
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type
@@ -2362,7 +2362,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(wann_slwf_type), intent(inout) :: wann_constrain
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_wann

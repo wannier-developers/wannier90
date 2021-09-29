@@ -123,7 +123,7 @@ program wannier
   type(select_projection_type) :: select_projection
   type(kpoint_path_type) :: kpoint_path
 
-  type(sitesym_data) :: sym
+  type(sitesym_data_type) :: sym
   type(ham_logical_type) :: hmlg
   type(w90commtype) :: w90comm
 
