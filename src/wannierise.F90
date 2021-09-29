@@ -24,7 +24,7 @@ module w90_wannierise
   public :: wann_main
   public :: wann_main_gamma  ![ysl]
 
-  type localisation_vars
+  type localisation_vars_type
     !! Contributions to the spread
     real(kind=dp) :: om_i
     !! Gauge Invarient
@@ -43,7 +43,7 @@ module w90_wannierise
 !~     real(kind=dp) :: om_1
 !~     real(kind=dp) :: om_2
 !~     real(kind=dp) :: om_3
-  end type localisation_vars
+  end type localisation_vars_type
 
 contains
 
@@ -126,9 +126,9 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    type(localisation_vars) :: old_spread
-    type(localisation_vars) :: wann_spread
-    type(localisation_vars) :: trial_spread
+    type(localisation_vars_type) :: old_spread
+    type(localisation_vars_type) :: wann_spread
+    type(localisation_vars_type) :: trial_spread
 
     ! Data to avoid large allocation within iteration loop
     real(kind=dp), allocatable  :: rnkb(:, :, :)
@@ -988,8 +988,8 @@ contains
 
       type(wann_control_type), intent(in) :: wann_control
 
-      type(localisation_vars), intent(in) :: old_spread
-      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: old_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
       integer, intent(in) :: iter
@@ -1155,7 +1155,7 @@ contains
       !complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
       ! k_to_r depends on optimisation flag
       complex(kind=dp), allocatable, intent(in) :: k_to_r(:, :)
-      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
       !integer, intent(in) :: iter
       !logical, intent(in) :: lprint
       !logical, intent(inout) :: lrandom
@@ -1417,8 +1417,8 @@ contains
 
       implicit none
 
-      type(localisation_vars), intent(in) :: wann_spread
-      type(localisation_vars), intent(in) :: trial_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: trial_spread
       real(kind=dp), intent(in) :: doda0
       real(kind=dp), intent(out) :: alphamin, falphamin
       logical, intent(out) :: lquad
@@ -2067,7 +2067,7 @@ contains
     real(kind=dp), intent(out) :: rave(:, :)
     real(kind=dp), intent(out) :: r2ave(:)
     real(kind=dp), intent(out) :: rave2(:)
-    type(localisation_vars), intent(out)  :: wann_spread
+    type(localisation_vars_type), intent(out)  :: wann_spread
 
     ! from w90_parameters
     integer, intent(in) :: num_wann
@@ -2607,8 +2607,8 @@ contains
 
     implicit none
 
-    type(localisation_vars), intent(in)  :: orig
-    type(localisation_vars), intent(out) :: copy
+    type(localisation_vars_type), intent(in)  :: orig
+    type(localisation_vars_type), intent(out) :: copy
 
     copy%om_i = orig%om_i
     copy%om_d = orig%om_d
@@ -3204,8 +3204,8 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    type(localisation_vars) :: old_spread
-    type(localisation_vars) :: wann_spread
+    type(localisation_vars_type) :: old_spread
+    type(localisation_vars_type) :: wann_spread
 
     integer :: counts(0:0)
     integer :: displs(0:0)
@@ -3703,8 +3703,8 @@ contains
       use w90_io, only: io_error
 
       implicit none
-      type(localisation_vars), intent(in) :: wann_spread
-      type(localisation_vars), intent(in) :: old_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: old_spread
       real(kind=dp), intent(inout) :: history(:)
       integer, intent(in) :: iter
       logical, intent(out) :: lconverged
@@ -3942,7 +3942,7 @@ contains
     implicit none
 
     ! passed variables
-    type(localisation_vars), intent(out)  :: wann_spread
+    type(localisation_vars_type), intent(out)  :: wann_spread
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
