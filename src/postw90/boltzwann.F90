@@ -239,13 +239,8 @@ contains
     ! bands.
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
-<<<<<<< HEAD
-    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*pw90_boltzwann%TDF_smr_fixed_en_width, 0.2_dp)
-    TDFEnergyNumPoints = int(floor((dis_manifold%win_max - dis_manifold%win_min &
-=======
     TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*pw90_boltzwann%tdf_smearing%fixed_width, 0.2_dp)
-    TDFEnergyNumPoints = int(floor((dis_window%win_max - dis_window%win_min &
->>>>>>> dcb125c191d9996a5e171f3189708c33af0ddcf2
+    TDFEnergyNumPoints = int(floor((dis_manifold%win_max - dis_manifold%win_min &
                                     + 2._dp*TDF_exceeding_energy)/pw90_boltzwann%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
@@ -868,14 +863,9 @@ contains
       write (stdout, '(5X,A)') "             an adaptive smearing."
     end if
 
-<<<<<<< HEAD
     if (on_root .and. (print_output%iprint > 1)) then
-      if (pw90_boltzwann%TDF_smr_fixed_en_width/(TDFEnergyArray(2) - TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
-=======
-    if (on_root .and. (verbose%iprint > 1)) then
       if (pw90_boltzwann%tdf_smearing%fixed_width/(TDFEnergyArray(2) - TDFEnergyArray(1)) &
           < min_smearing_binwidth_ratio) then
->>>>>>> dcb125c191d9996a5e171f3189708c33af0ddcf2
         write (stdout, '(5X,A)') "Smearing for TDF: "
         write (stdout, '(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
       else
@@ -972,19 +962,10 @@ contains
                                            have_disentangled, seedname, stdout, comm)
                   call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, num_wann, &
                                             recip_lattice)
-<<<<<<< HEAD
                   call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                                  spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, &
-                                 HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                                 adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
-                                 adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
-=======
-                  call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                                 num_wann, wann_data, real_lattice, mp_grid, dos_data, &
-                                 spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
                                  HH_R, SS_R, pw90_boltzwann%dos_smearing, &
->>>>>>> dcb125c191d9996a5e171f3189708c33af0ddcf2
                                  levelspacing_k=levelspacing_k)
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
                   dos_all = dos_all + dos_k*kweight/8.
@@ -992,35 +973,18 @@ contains
               end do
             end do
           else
-<<<<<<< HEAD
             call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wannier_data, real_lattice, mp_grid, &
                            pw90_dos, spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, &
-                           seedname, HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                           adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
-                           adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
-=======
-            call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                           num_wann, wann_data, real_lattice, mp_grid, &
-                           dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, &
                            seedname, HH_R, SS_R, pw90_boltzwann%dos_smearing, &
->>>>>>> dcb125c191d9996a5e171f3189708c33af0ddcf2
                            levelspacing_k=levelspacing_k)
             dos_all = dos_all + dos_k*kweight
           end if
         else
-<<<<<<< HEAD
           call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
                          pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
-                         smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                         smr_fixed_en_width=pw90_boltzwann%dos_smearing%fixed_width)
-=======
-          call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
-                         pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
                          pw90_boltzwann%dos_smearing)
->>>>>>> dcb125c191d9996a5e171f3189708c33af0ddcf2
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
           ! So that the DOS will be in units of 1/eV, normalized so that
