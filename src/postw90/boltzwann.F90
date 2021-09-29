@@ -65,9 +65,9 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(pw90_boltzwann, dis_window, dos_data, kpt_latt, pw90_ham, postw90_oper, &
-                            pw90_spin, physics, rs_region, system, wann_data, ws_distance, ws_vec, &
-                            verbose, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
+  subroutine boltzwann_main(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, pw90_band_deriv_degen, postw90_oper, &
+                            pw90_spin, physics, ws_region, w90_system, wannier_data, ws_distance, wigner_seitz, &
+                            print_output, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
                             scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                             effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
 
@@ -99,19 +99,18 @@ contains
 
     ! arguments
     type(pw90_boltzwann_type), intent(in) :: pw90_boltzwann
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(pw90_dos_mod_type), intent(in) :: dos_data
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(pw90_dos_mod_type), intent(in) :: pw90_dos
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(print_output_type), intent(in) :: verbose
+    type(print_output_type), intent(in) :: print_output
     type(pw90_physical_constants), intent(in) :: physics
-    type(ws_region_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: ws_region
     type(w90commtype), intent(in) :: comm
-    type(w90_system_type), intent(in) :: system
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(w90_system_type), intent(in) :: w90_system
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -121,6 +120,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann, num_bands, num_kpts
@@ -173,9 +173,9 @@ contains
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
-    if (verbose%iprint > 0 .and. verbose%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
+    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
 
-    if (verbose%iprint > 0) then
+    if (print_output%iprint > 0) then
       write (stdout, *)
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                   Boltzmann Transport (BoltzWann module)                  |'
@@ -188,7 +188,7 @@ contains
       write (stdout, *)
     end if
 
-    if (verbose%iprint > 0) then
+    if (print_output%iprint > 0) then
       if (pw90_boltzwann%dir_num_2d /= 0) then
         write (stdout, '(1x,a)') '>                                                                           <'
         write (stdout, '(1x,a)') '> NOTE! Using the 2D version for the calculation of the Seebeck             <'
@@ -237,14 +237,14 @@ contains
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
     TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr*pw90_boltzwann%TDF_smr_fixed_en_width, 0.2_dp)
-    TDFEnergyNumPoints = int(floor((dis_window%win_max - dis_window%win_min &
+    TDFEnergyNumPoints = int(floor((dis_manifold%win_max - dis_manifold%win_min &
                                     + 2._dp*TDF_exceeding_energy)/pw90_boltzwann%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main', &
                                  stdout, seedname)
     do i = 1, TDFEnergyNumPoints
-      TDFEnergyArray(i) = dis_window%win_min - TDF_exceeding_energy &
+      TDFEnergyArray(i) = dis_manifold%win_min - TDF_exceeding_energy &
                           + real(i - 1, dp)*pw90_boltzwann%tdf_energy_step
     end do
 
@@ -259,11 +259,11 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(pw90_boltzwann, dis_window, dos_data, kpt_latt, postw90_oper, pw90_ham, pw90_spin, &
-                       rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, SS_R, u_matrix, &
+    call calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, pw90_band_deriv_degen, pw90_spin, &
+                       ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, &
                        v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                        cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                       system%num_valence_bands, system%num_elec_per_state, effective_model, &
+                       w90_system%num_valence_bands, w90_system%num_elec_per_state, effective_model, &
                        have_disentangled, spin_decomp, seedname, stdout, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
@@ -287,14 +287,14 @@ contains
         end if
       end do
       close (tdf_unit)
-      if (verbose%iprint > 1) &
+      if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Transport distribution function written on the "//trim(seedname)//"_tdf.dat file."
     end if
 
     ! *********************************************************************************
     ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
-    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout, seedname)
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
@@ -541,7 +541,7 @@ contains
     call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout, &
                        seedname, comm)
 
-    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
 
     ! Open files and print
     if (on_root) then
@@ -556,7 +556,7 @@ contains
         end do
       end do
       close (elcond_unit)
-      if (verbose%iprint > 1) &
+      if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Electrical conductivity written on the "//trim(seedname)//"_elcond.dat file."
 
       sigmas_unit = io_file_unit()
@@ -570,7 +570,7 @@ contains
         end do
       end do
       close (sigmas_unit)
-      if (verbose%iprint > 1) write (stdout, '(3X,A)') &
+      if (print_output%iprint > 1) write (stdout, '(3X,A)') &
         "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the "//trim(seedname)//"_sigmas.dat file."
 
       seebeck_unit = io_file_unit()
@@ -585,7 +585,7 @@ contains
         end do
       end do
       close (seebeck_unit)
-      if (verbose%iprint > 1) &
+      if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Seebeck coefficient written on the "//trim(seedname)//"_seebeck.dat file."
 
       kappa_unit = io_file_unit()
@@ -601,7 +601,7 @@ contains
         end do
       end do
       close (kappa_unit)
-      if (verbose%iprint > 1) &
+      if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "K coefficient written on the "//trim(seedname)//"_kappa.dat file."
     end if
 
@@ -646,7 +646,7 @@ contains
     deallocate (IntegrandArray, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating IntegrandArray in boltzwann_main', stdout, seedname)
 
-    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout, seedname)
 
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
@@ -655,8 +655,8 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(pw90_boltzwann, dis_window, dos_data, kpt_latt, postw90_oper, pw90_ham, &
-                           pw90_spin, rs_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
+  subroutine calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, pw90_band_deriv_degen, &
+                           pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                            cell_volume, scissors_shift, mp_grid, num_bands, &
                            num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
@@ -700,17 +700,17 @@ contains
 
     ! arguments
     type(pw90_boltzwann_type), intent(in) :: pw90_boltzwann
-    type(dis_manifold_type), intent(in) :: dis_window
-    type(pw90_dos_mod_type), intent(in) :: dos_data
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(pw90_dos_mod_type), intent(in) :: pw90_dos
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
     type(w90commtype), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, num_elec_per_state
@@ -778,8 +778,8 @@ contains
     num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
-    if (verbose%iprint > 0 .and. (verbose%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
-    if (verbose%iprint > 0) then
+    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
+    if (print_output%iprint > 0) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
       else
@@ -789,14 +789,14 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
     if (spin_decomp) then
       ndim = 3
 
-      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
+      call get_SS_R(dis_manifold, kpt_latt, print_output, postw90_oper, SS_R, v_matrix, eigval, &
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
                     comm)
     else
       ndim = 1
@@ -840,7 +840,7 @@ contains
       open (unit=boltzdos_unit, file=trim(seedname)//'_boltzdos.dat')
     end if
 
-    if (pw90_boltzwann%calc_also_dos .and. on_root .and. (verbose%iprint > 1)) then
+    if (pw90_boltzwann%calc_also_dos .and. on_root .and. (print_output%iprint > 1)) then
       write (stdout, '(5X,A)') "Smearing for DOS: "
       if (pw90_boltzwann%dos_smearing%use_adaptive) then
         write (stdout, '(7X,A)') trim(param_get_smearing_type(pw90_boltzwann%dos_smearing%type_index))//", adaptive"
@@ -860,7 +860,7 @@ contains
       write (stdout, '(5X,A)') "             an adaptive smearing."
     end if
 
-    if (on_root .and. (verbose%iprint > 1)) then
+    if (on_root .and. (print_output%iprint > 1)) then
       if (pw90_boltzwann%TDF_smr_fixed_en_width/(TDFEnergyArray(2) - TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
         write (stdout, '(5X,A)') "Smearing for TDF: "
         write (stdout, '(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
@@ -877,7 +877,7 @@ contains
         pw90_boltzwann%kmesh%mesh(1), 'x', pw90_boltzwann%kmesh%mesh(2), 'x', pw90_boltzwann%kmesh%mesh(3)
       write (stdout, '(5X,A,I1)') "Number of electrons per state: ", num_elec_per_state
       write (stdout, '(5X,A,G18.10)') "Relaxation time (fs): ", pw90_boltzwann%relax_time
-      if (verbose%iprint > 1) then
+      if (print_output%iprint > 1) then
         write (stdout, '(5X,A,G18.10)') "Energy step for TDF (eV): ", pw90_boltzwann%tdf_energy_step
       end if
     end if
@@ -909,8 +909,8 @@ contains
       kpt(3) = (real(loop_z, dp)/real(pw90_boltzwann%kmesh%mesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
-                               ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+      call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
+                               ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
                                have_disentangled, seedname, stdout, comm)
@@ -921,7 +921,7 @@ contains
         eig(pw90_boltzwann%bandshift_firstband:) = eig(pw90_boltzwann%bandshift_firstband:) + pw90_boltzwann%bandshift_energyshift
       end if
 
-      call TDF_kpt(pw90_boltzwann, rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+      call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
                    del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
                    num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
       ! As above, the sum of TDF_k * kweight amounts to calculate
@@ -950,17 +950,17 @@ contains
                         (/real(i, kind=dp)/real(pw90_boltzwann%kmesh%mesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(pw90_boltzwann%kmesh%mesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(pw90_boltzwann%kmesh%mesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, &
-                                           wann_data, ws_distance, ws_vec, delHH, HH, HH_R, &
+                  call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, &
+                                           wannier_data, ws_distance, wigner_seitz, delHH, HH, HH_R, &
                                            u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                            real_lattice, scissors_shift, mp_grid, num_bands, &
                                            num_kpts, num_wann, num_valence_bands, effective_model, &
                                            have_disentangled, seedname, stdout, comm)
                   call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, num_wann, &
                                             recip_lattice)
-                  call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                                 num_wann, wann_data, real_lattice, mp_grid, dos_data, &
-                                 spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
+                  call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
+                                 num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                                 spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, &
                                  HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
                                  adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
                                  adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
@@ -971,9 +971,9 @@ contains
               end do
             end do
           else
-            call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                           num_wann, wann_data, real_lattice, mp_grid, &
-                           dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, &
+            call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
+                           num_wann, wannier_data, real_lattice, mp_grid, &
+                           pw90_dos, spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, &
                            seedname, HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
                            adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
                            adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
@@ -981,9 +981,9 @@ contains
             dos_all = dos_all + dos_k*kweight
           end if
         else
-          call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                         num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
-                         pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
+          call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
+                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
+                         pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
                          smr_index=pw90_boltzwann%dos_smearing%type_index, &
                          smr_fixed_en_width=pw90_boltzwann%dos_smearing%fixed_width)
           ! This sum multiplied by kweight amounts to calculate
@@ -1044,7 +1044,7 @@ contains
       end do
     end if
 
-    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout, seedname)
     if (on_root) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "TDF and DOS calculated."
@@ -1056,7 +1056,7 @@ contains
 
     if (on_root .and. pw90_boltzwann%calc_also_dos) then
       close (boltzdos_unit)
-      if (verbose%iprint > 1) write (stdout, '(3X,A)') "DOS written on the "//trim(seedname)//"_boltzdos.dat file."
+      if (print_output%iprint > 1) write (stdout, '(3X,A)') "DOS written on the "//trim(seedname)//"_boltzdos.dat file."
     end if
 
     deallocate (HH, stat=ierr)
@@ -1104,7 +1104,7 @@ contains
 
   end function MinusFermiDerivative
 
-  subroutine TDF_kpt(pw90_boltzwann, rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
+  subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
                      deleig_k, eig_k, EnergyArray, kpt, real_lattice, TDF_k, &
                      mp_grid, num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
     !! This subroutine calculates the contribution to the TDF of a single k point
@@ -1143,11 +1143,11 @@ contains
 
     ! arguments
     type(pw90_boltzwann_type), intent(in) :: pw90_boltzwann
-    type(ws_region_type), intent(in) :: rs_region
+    type(ws_region_type), intent(in) :: ws_region
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(wannier_data_type), intent(in) :: wann_data
+    type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
-    type(wigner_seitz_type), intent(in) :: ws_vec
+    type(wigner_seitz_type), intent(in) :: wigner_seitz
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1201,7 +1201,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, &
+    if (spin_decomp) call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, &
                                       HH_R, SS_R, kpt, real_lattice, spn_nk, &
                                       mp_grid, num_wann, seedname, stdout)
 
