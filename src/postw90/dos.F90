@@ -221,9 +221,7 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, dos_data, spin_decomp, &
                          pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
-                         smr_index=dos_data%smearing%type_index, &
-                         adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
-                         adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
+                         dos_data%smearing, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
                                          kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
@@ -231,8 +229,7 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, smr_index=dos_data%smearing%type_index, &
-                         smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
+                         SS_R, dos_data%smearing, UU=UU)
         end if
         dos_all = dos_all + dos_k*kpoint_dist%weight(loop_tot)
       end do
@@ -263,9 +260,7 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, smr_index=dos_data%smearing%type_index, &
-                         adpt_smr_fac=dos_data%smearing%adaptive_prefactor, &
-                         adpt_smr_max=dos_data%smearing%adaptive_max_width, levelspacing_k=levelspacing_k, UU=UU)
+                         SS_R, dos_data%smearing, levelspacing_k=levelspacing_k, UU=UU)
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
                                          kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
@@ -273,8 +268,7 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, dos_data, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, smr_index=dos_data%smearing%type_index, &
-                         smr_fixed_en_width=dos_data%smearing%fixed_width, UU=UU)
+                         SS_R, dos_data%smearing, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
       end do
@@ -538,13 +532,13 @@ contains
   !>                    If not present: fixed-energy-width smearing
   subroutine dos_get_k(num_elec_per_state, ws_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
                        wannier_data, real_lattice, mp_grid, dos_data, spin_decomp, &
-                       pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, smr_index, &
-                       smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
+                       pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
+                       smearing, levelspacing_k, UU)
 
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use pw90_parameters, only: pw90_spin_mod_type, pw90_dos_mod_type
+    use pw90_parameters, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type
     use w90_param_types, only: wannier_data_type, ws_region_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
@@ -558,11 +552,12 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(pw90_smearing_type), intent(in) :: smearing
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_elec_per_state
     integer, intent(in) :: num_wann
-    integer, intent(in) :: smr_index
+    !integer, intent(in) :: smr_index
     integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3)
@@ -571,9 +566,9 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(out) :: dos_k(:, :)
     real(kind=dp), intent(in), optional :: levelspacing_k(:)
-    real(kind=dp), intent(in), optional :: adpt_smr_fac
-    real(kind=dp), intent(in), optional :: adpt_smr_max
-    real(kind=dp), intent(in), optional :: smr_fixed_en_width
+    !real(kind=dp), intent(in), optional :: adpt_smr_fac
+    !real(kind=dp), intent(in), optional :: adpt_smr_max
+    !real(kind=dp), intent(in), optional :: smr_fixed_en_width
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
@@ -594,25 +589,13 @@ contains
     logical :: DoSmearing
 
     if (present(levelspacing_k)) then
-      if (present(smr_fixed_en_width)) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'with smr_fixed_en_width parameters together', stdout, seedname)
-      if (.not. (present(adpt_smr_fac))) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_fac parameter', stdout, seedname)
-      if (.not. (present(adpt_smr_max))) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_max parameter', stdout, seedname)
+      if (.not. smearing%use_adaptive) &
+        call io_error('Cannot call doskpt without levelspacing_k and ' &
+                      //'without adptative smearing', stdout, seedname)
     else
-      if (present(adpt_smr_fac)) &
+      if (smearing%use_adaptive) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_fac parameter', stdout, seedname)
-      if (present(adpt_smr_max)) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_max parameter', stdout, seedname)
-      if (.not. (present(smr_fixed_en_width))) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'without smr_fixed_en_width parameter', stdout, seedname)
+                      //'with adptative smearing', stdout, seedname)
     end if
 
     r_num_elec_per_state = real(num_elec_per_state, kind=dp)
@@ -620,8 +603,8 @@ contains
     ! Get spin projections for every band
     !
     if (spin_decomp) then
-      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
-                       real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)
@@ -637,10 +620,10 @@ contains
       end if
 
       if (.not. present(levelspacing_k)) then
-        eta_smr = smr_fixed_en_width
+        eta_smr = smearing%fixed_width
       else
         ! Eq.(35) YWVS07
-        eta_smr = min(levelspacing_k(i)*adpt_smr_fac, adpt_smr_max)
+        eta_smr = min(levelspacing_k(i)*smearing%adaptive_prefactor, smearing%adaptive_max_width)
 !          eta_smr=max(eta_smr,min_smearing_binwidth_ratio) !! No: it would render the next if always false
       end if
 
@@ -667,7 +650,7 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smr_index, stdout, seedname)/eta_smr
+          rdum = utility_w0gauss(arg, smearing%type_index, stdout, seedname)/eta_smr
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if

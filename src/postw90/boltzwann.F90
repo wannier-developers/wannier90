@@ -965,9 +965,7 @@ contains
                   call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wann_data, real_lattice, mp_grid, dos_data, &
                                  spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, seedname, &
-                                 HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                                 adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
-                                 adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
+                                 HH_R, SS_R, pw90_boltzwann%dos_smearing, &
                                  levelspacing_k=levelspacing_k)
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
                   dos_all = dos_all + dos_k*kweight/8.
@@ -978,9 +976,7 @@ contains
             call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wann_data, real_lattice, mp_grid, &
                            dos_data, spin_decomp, pw90_spin, ws_distance, ws_vec, stdout, &
-                           seedname, HH_R, SS_R, smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                           adpt_smr_fac=pw90_boltzwann%dos_smearing%adaptive_prefactor, &
-                           adpt_smr_max=pw90_boltzwann%dos_smearing%adaptive_max_width, &
+                           seedname, HH_R, SS_R, pw90_boltzwann%dos_smearing, &
                            levelspacing_k=levelspacing_k)
             dos_all = dos_all + dos_k*kweight
           end if
@@ -988,8 +984,7 @@ contains
           call dos_get_k(num_elec_per_state, rs_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wann_data, real_lattice, mp_grid, dos_data, spin_decomp, &
                          pw90_spin, ws_distance, ws_vec, stdout, seedname, HH_R, SS_R, &
-                         smr_index=pw90_boltzwann%dos_smearing%type_index, &
-                         smr_fixed_en_width=pw90_boltzwann%dos_smearing%fixed_width)
+                         pw90_boltzwann%dos_smearing)
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
           ! So that the DOS will be in units of 1/eV, normalized so that
