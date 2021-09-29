@@ -376,9 +376,10 @@ program wannier
                                   kpt_latt, real_lattice, num_kpts, &
                                   num_proj, calc_only_A, w90_system%spinors, seedname, stdout)
     call kmesh_dealloc(kmesh_info, stdout, seedname)
-    call param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, kmesh_input, &
-                           kpt_latt, wann_control, proj_input, input_proj, kpoint_path, &
-                           wannier_data, wannier_plot, w90_extra_io, eigval, seedname, stdout)
+    call param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
+                           kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
+                           select_projection, kpoint_path, wannier_data, wannier_plot, &
+                           w90_extra_io, eigval, seedname, stdout)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -495,9 +496,10 @@ program wannier
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, seedname, stdout, w90comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, kmesh_input, &
-                         kpt_latt, wann_control, proj_input, input_proj, kpoint_path, &
-                         wannier_data, wannier_plot, w90_extra_io, eigval, seedname, stdout)
+  call param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
+                         kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
+                         select_projection, kpoint_path, wannier_data, wannier_plot, &
+                         w90_extra_io, eigval, seedname, stdout)
   if (lsitesymmetry) call sitesym_dealloc(sym, stdout, seedname) !YN:
 
 4004 continue

@@ -1647,8 +1647,9 @@ contains
   end subroutine param_write
 
   subroutine param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, &
-                               kmesh_data, kpt_latt, wannierise, proj, proj_input, spec_points, &
-                               wann_data, wann_plot, write_data, eigval, seedname, stdout)
+                               kmesh_data, kpt_latt, wannierise, proj, proj_input, select_proj, &
+                               spec_points, wann_data, wann_plot, write_data, eigval, &
+                               seedname, stdout)
     use w90_io, only: io_error
 !   passed variables
     implicit none
@@ -1663,6 +1664,7 @@ contains
     type(dis_manifold_type), intent(inout) :: dis_window
     type(atom_data_type), intent(inout) :: atoms
     type(kpoint_path_type), intent(inout) :: spec_points
+    type(select_projection_type), intent(inout) :: select_proj
     type(w90_extra_io_type), intent(inout) :: write_data
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(proj_input_type), intent(inout) :: proj
@@ -1740,6 +1742,11 @@ contains
     if (allocated(dis_spheres%spheres)) then
       deallocate (dis_spheres%spheres, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout, seedname)
+    endif
+    if (allocated(select_proj%proj2wann_map)) then
+      deallocate (select_proj%proj2wann_map, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating select_projections in param_dealloc', &
+                                   stdout, seedname)
     endif
   end subroutine param_w90_dealloc
 

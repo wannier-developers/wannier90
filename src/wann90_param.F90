@@ -230,7 +230,6 @@ module wannier_param_types
   end type transport_type
 
   ! projections selection - overlap.F90
-  ! REVIEW_2021-08-09: Check that select_projections(:) is deallocated
   ! REVIEW_2021-08-09: At first sight it might appear that select_projections should go in
   ! REVIEW_2021-08-09: the proj_input_type container; but the way the code is structured
   ! REVIEW_2021-08-09: makes this less appealing because there are two proj_input_type variables
