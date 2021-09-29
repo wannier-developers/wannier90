@@ -94,7 +94,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
-      ham_logical
+      ham_logical_type
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, dis_manifold_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
@@ -114,7 +114,7 @@ contains
     type(dis_manifold_type), intent(in)         :: dis_manifold
     real(kind=dp), intent(in)                   :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
-    type(ham_logical), intent(inout)            :: hmlg
+    type(ham_logical_type), intent(inout)       :: hmlg
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts

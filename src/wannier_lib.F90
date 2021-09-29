@@ -365,8 +365,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   call kmesh_dealloc(kmesh_info, stdout, seedname)
 
   call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
-                         kpt_latt, wannierise, proj, input_proj, spec_points, wann_data, &
-                         wann_plot, write_data, eigval, seedname, stdout)
+                         kpt_latt, wannierise, proj, input_proj, select_proj, spec_points, &
+                         wann_data, wann_plot, write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
   write (stdout, '(/a/)') ' Finished setting up k-point neighbours.'
@@ -483,8 +483,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   complex(kind=dp), allocatable :: ham_k(:, :, :)
   integer :: nrpts
 
-  type(sitesym_data) :: sym
-  type(ham_logical) :: hmlg
+  type(sitesym_data_type) :: sym
+  type(ham_logical_type) :: hmlg
 
   type(w90_extra_io_type) :: write_data
   type(proj_input_type) :: proj
@@ -736,8 +736,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                        u_matrix, u_matrix_opt, seedname, stdout, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
-                         kpt_latt, wannierise, proj, input_proj, spec_points, wann_data, &
-                         wann_plot, write_data, eigval, seedname, stdout)
+                         kpt_latt, wannierise, proj, input_proj, select_proj, spec_points, &
+                         wann_data, wann_plot, write_data, eigval, seedname, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
   if (verbose%timing_level > 0) call io_print_timings(stdout)

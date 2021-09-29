@@ -41,7 +41,7 @@ module w90_sitesym
   public  :: sitesym_read
   public  :: sitesym_dealloc
 
-  type sitesym_data
+  type sitesym_data_type
     ! Variables and parameters needed by other modules
     integer :: nkptirr = 9999
     integer :: nsymmetry = 9999
@@ -49,7 +49,7 @@ module w90_sitesym
     real(kind=dp) :: symmetrize_eps = 1.d-3
     complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
     complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
-  end type sitesym_data
+  end type sitesym_data_type
 
 contains
 
@@ -64,7 +64,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
 !   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_data_type), intent(inout) :: sym
 
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
@@ -103,7 +103,7 @@ contains
 !   from w90_parameters
     integer, intent(in) :: num_wann
 !   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_data_type), intent(inout) :: sym
 
     !write(stdout,"(a)") '-- sitesym_replace_sym%d_matrix_band --'
     !write(stdout,"(a)") 'sym%d_matrix_band is replaced by sym%d_matrix_wann'
@@ -132,7 +132,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -197,7 +197,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
 
@@ -272,7 +272,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
 
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
@@ -320,7 +320,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
@@ -387,7 +387,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
     integer, optional, intent(in) :: n
@@ -523,7 +523,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -608,7 +608,7 @@ contains
     implicit none
 
 !   passed variables
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_data_type), intent(inout) :: sym
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -654,7 +654,7 @@ contains
 
     implicit none
 
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_data_type), intent(inout) :: sym
     integer :: ierr
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname

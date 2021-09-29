@@ -111,6 +111,9 @@ module pw90_parameters
     integer    :: type_index
     real(kind=dp)    :: fixed_width
     real(kind=dp)    :: adaptive_max_width
+    ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
+    ! BGS currently only implemented in gyrotropic
+    real(kind=dp) :: max_arg
   end type pw90_smearing_type
 
   type pw90_dos_mod_type
@@ -170,18 +173,13 @@ module pw90_parameters
     !! =============
     character(len=120) :: task
     type(kmesh_spacing_type) :: kmesh
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    integer :: smr_index
-    real(kind=dp) :: smr_fixed_en_width
     integer :: nfreq
     complex(kind=dp), allocatable :: freq_list(:)
     real(kind=dp) :: box_corner(3), box(3, 3)
     real(kind=dp) :: degen_thresh
     integer, allocatable :: band_list(:)
     integer :: num_bands
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
-    real(kind=dp) :: smr_max_arg
+    type(pw90_smearing_type) :: smearing
     real(kind=dp) :: eigval_max
   end type pw90_gyrotropic_type
 
@@ -216,10 +214,7 @@ module pw90_parameters
     real(kind=dp) :: temp_step
     type(kmesh_spacing_type) :: kmesh
     real(kind=dp) :: tdf_energy_step
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    ! REVIEW_2021-08-09: If we use the smearing type, then rename tdf_smearing
-    integer :: TDF_smr_index
-    real(kind=dp) :: TDF_smr_fixed_en_width
+    type(pw90_smearing_type) :: tdf_smearing ! TDF_smr_index and TDF_smr_fixed_en_width
     real(kind=dp) :: relax_time
     logical :: bandshift
     integer :: bandshift_firstband
@@ -678,27 +673,29 @@ contains
       end do
     end if
 
+    gyrotropic%smearing%use_adaptive = .false.
     smr_max_arg = 5.0
     call param_get_keyword(stdout, seedname, 'smr_max_arg', found, r_value=smr_max_arg)
     if (found .and. (smr_max_arg <= 0._dp)) &
       call io_error('Error: smr_max_arg must be greater than zero', stdout, seedname)
 
-    gyrotropic%smr_max_arg = smr_max_arg
+    gyrotropic%smearing%max_arg = smr_max_arg
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found, &
-                           r_value=gyrotropic%smr_max_arg)
-    if (found .and. (gyrotropic%smr_max_arg <= 0._dp)) call io_error &
+                           r_value=gyrotropic%smearing%max_arg)
+    if (found .and. (gyrotropic%smearing%max_arg <= 0._dp)) call io_error &
       ('Error: gyrotropic_smr_max_arg must be greater than zero', stdout, seedname)
 
-    gyrotropic%smr_fixed_en_width = smr_fixed_en_width
+    gyrotropic%smearing%fixed_width = smr_fixed_en_width
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found, &
-                           r_value=gyrotropic%smr_fixed_en_width)
-    if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
+                           r_value=gyrotropic%smearing%fixed_width)
+    if (found .and. (gyrotropic%smearing%fixed_width < 0._dp)) call io_error &
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    gyrotropic%smr_index = smr_index
+    gyrotropic%smearing%type_index = smr_index
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found, c_value=ctmp)
-    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type', stdout, seedname)
+    if (found) gyrotropic%smearing%type_index = get_smearing_index(ctmp, 'gyrotropic_smr_type', &
+                                                                   stdout, seedname)
 
   end subroutine param_read_gyrotropic
 
@@ -1056,6 +1053,7 @@ contains
     ! Boltzmann transport
     !%%%%%%%%%%%%%%%%%%%%
     ! Note: to be put AFTER the disentanglement routines!
+    boltz%TDF_smearing%use_adaptive = .false.
 
     boltz%calc_also_dos = .false.
     call param_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found, l_value=boltz%calc_also_dos)
@@ -1170,15 +1168,16 @@ contains
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
-    boltz%TDF_smr_fixed_en_width = smearing%fixed_width
-    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, r_value=boltz%TDF_smr_fixed_en_width)
-    if (found .and. (boltz%TDF_smr_fixed_en_width < 0._dp)) &
+    boltz%tdf_smearing%fixed_width = smearing%fixed_width
+    call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, &
+                           r_value=boltz%tdf_smearing%fixed_width)
+    if (found .and. (boltz%tdf_smearing%fixed_width < 0._dp)) &
       call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     ! By default: use the "global" smearing index
-    boltz%TDF_smr_index = smearing%type_index
+    boltz%tdf_smearing%type_index = smearing%type_index
     call param_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found, c_value=ctmp)
-    if (found) boltz%TDF_smr_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
+    if (found) boltz%tdf_smearing%type_index = get_smearing_index(ctmp, 'boltz_tdf_smr_type', stdout, seedname)
 
     ! By default: use the "global" smearing index
     boltz%dos_smearing%type_index = smearing%type_index
@@ -1302,7 +1301,7 @@ contains
       gyrotropic%freq_list(i) = write_data%gyrotropic_freq_min &
                                 + (i - 1)*(write_data%gyrotropic_freq_max &
                                            - write_data%gyrotropic_freq_min)/(gyrotropic%nfreq - 1) &
-                                + cmplx_i*gyrotropic%smr_fixed_en_width
+                                + cmplx_i*gyrotropic%smearing%fixed_width
     enddo
 
     if (dis_window%frozen_states) then
@@ -1894,18 +1893,19 @@ contains
         write_data%gyrotropic_freq_step, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', &
         gyrotropic%eigval_max, '|'
-      if (gyrotropic%smr_fixed_en_width == write_data%smear%fixed_width &
-          .and. write_data%smear%type_index == gyrotropic%smr_index) then
+      if (gyrotropic%smearing%fixed_width == write_data%smear%fixed_width &
+          .and. write_data%smear%type_index == gyrotropic%smearing%type_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
       endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
-        gyrotropic%smr_fixed_en_width, '|'
+        gyrotropic%smearing%fixed_width, '|'
       write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function                         :', &
-        trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
+        trim(param_get_smearing_type(gyrotropic%smearing%type_index)), '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', &
+        gyrotropic%degen_thresh, '|'
 
       if (write_data%global_kmesh%mesh(1) == gyrotropic%kmesh%mesh(1) .and. &
           write_data%global_kmesh%mesh(2) == gyrotropic%kmesh%mesh(2) .and. &
@@ -1954,11 +1954,13 @@ contains
             , boltz%kmesh%mesh(1), 'x', boltz%kmesh%mesh(2), 'x', boltz%kmesh%mesh(3), '|'
         endif
       endif
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', boltz%tdf_energy_step, '|'
-      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', trim(param_get_smearing_type(boltz%tdf_smr_index)), '|'
-      if (boltz%tdf_smr_fixed_en_width > 0.0_dp) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', &
+        boltz%tdf_energy_step, '|'
+      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', &
+        trim(param_get_smearing_type(boltz%tdf_smearing%type_index)), '|'
+      if (boltz%tdf_smearing%fixed_width > 0.0_dp) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
-          '|  TDF fixed Smearing width (eV)             :', boltz%tdf_smr_fixed_en_width, '|'
+          '|  TDF fixed Smearing width (eV)             :', boltz%tdf_smearing%fixed_width, '|'
       else
         write (stdout, '(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
       endif

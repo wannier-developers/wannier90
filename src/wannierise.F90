@@ -24,7 +24,7 @@ module w90_wannierise
   public :: wann_main
   public :: wann_main_gamma  ![ysl]
 
-  type localisation_vars
+  type localisation_vars_type
     !! Contributions to the spread
     real(kind=dp) :: om_i
     !! Gauge Invarient
@@ -43,7 +43,7 @@ module w90_wannierise
 !~     real(kind=dp) :: om_1
 !~     real(kind=dp) :: om_2
 !~     real(kind=dp) :: om_3
-  end type localisation_vars
+  end type localisation_vars_type
 
 contains
 
@@ -68,19 +68,19 @@ contains
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type
     use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
       comms_scatterv, comms_array_split, w90commtype
 
     !ivo
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical
+    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical_type
 
     implicit none
 
     ! passed variables
     type(atom_data_type), intent(in)         :: atom_data
     type(dis_manifold_type), intent(in)      :: dis_manifold
-    type(ham_logical), intent(inout)         :: hmlg
+    type(ham_logical_type), intent(inout)    :: hmlg
     type(kmesh_info_type), intent(in)        :: kmesh_info
     real(kind=dp), intent(in)                :: kpt_latt(:, :)
     type(w90_system_type), intent(in)        :: w90_system
@@ -90,7 +90,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(wann_control_type), intent(inout)   :: wann_control
     type(wann_omega_type), intent(inout)     :: omega
-    type(sitesym_data), intent(in)           :: sym
+    type(sitesym_data_type), intent(in)      :: sym
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90commtype), intent(in)            :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
@@ -126,9 +126,9 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    type(localisation_vars) :: old_spread
-    type(localisation_vars) :: wann_spread
-    type(localisation_vars) :: trial_spread
+    type(localisation_vars_type) :: old_spread
+    type(localisation_vars_type) :: wann_spread
+    type(localisation_vars_type) :: trial_spread
 
     ! Data to avoid large allocation within iteration loop
     real(kind=dp), allocatable  :: rnkb(:, :, :)
@@ -988,8 +988,8 @@ contains
 
       type(wann_control_type), intent(in) :: wann_control
 
-      type(localisation_vars), intent(in) :: old_spread
-      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: old_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
       integer, intent(in) :: iter
@@ -1155,7 +1155,7 @@ contains
       !complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
       ! k_to_r depends on optimisation flag
       complex(kind=dp), allocatable, intent(in) :: k_to_r(:, :)
-      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
       !integer, intent(in) :: iter
       !logical, intent(in) :: lprint
       !logical, intent(inout) :: lrandom
@@ -1417,8 +1417,8 @@ contains
 
       implicit none
 
-      type(localisation_vars), intent(in) :: wann_spread
-      type(localisation_vars), intent(in) :: trial_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: trial_spread
       real(kind=dp), intent(in) :: doda0
       real(kind=dp), intent(out) :: alphamin, falphamin
       logical, intent(out) :: lquad
@@ -1481,7 +1481,7 @@ contains
       !                                               !
       !===============================================!
       use w90_constants, only: cmplx_i
-      use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
+      use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data_type
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: comms_bcast, comms_gatherv, w90commtype
       use w90_utility, only: utility_zgemm
@@ -1491,7 +1491,7 @@ contains
 
       type(kmesh_info_type), intent(in) :: kmesh_info
 
-      type(sitesym_data), intent(in) :: sym
+      type(sitesym_data_type), intent(in) :: sym
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -2067,7 +2067,7 @@ contains
     real(kind=dp), intent(out) :: rave(:, :)
     real(kind=dp), intent(out) :: r2ave(:)
     real(kind=dp), intent(out) :: rave2(:)
-    type(localisation_vars), intent(out)  :: wann_spread
+    type(localisation_vars_type), intent(out)  :: wann_spread
 
     ! from w90_parameters
     integer, intent(in) :: num_wann
@@ -2352,7 +2352,7 @@ contains
     !===================================================================
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90commtype, mpirank
     use w90_param_types, only: kmesh_info_type
@@ -2362,7 +2362,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(wann_slwf_type), intent(inout) :: wann_constrain
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_wann
@@ -2607,8 +2607,8 @@ contains
 
     implicit none
 
-    type(localisation_vars), intent(in)  :: orig
-    type(localisation_vars), intent(out) :: copy
+    type(localisation_vars_type), intent(in)  :: orig
+    type(localisation_vars_type), intent(out) :: copy
 
     copy%om_i = orig%om_i
     copy%om_d = orig%om_d
@@ -3204,8 +3204,8 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    type(localisation_vars) :: old_spread
-    type(localisation_vars) :: wann_spread
+    type(localisation_vars_type) :: old_spread
+    type(localisation_vars_type) :: wann_spread
 
     integer :: counts(0:0)
     integer :: displs(0:0)
@@ -3703,8 +3703,8 @@ contains
       use w90_io, only: io_error
 
       implicit none
-      type(localisation_vars), intent(in) :: wann_spread
-      type(localisation_vars), intent(in) :: old_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
+      type(localisation_vars_type), intent(in) :: old_spread
       real(kind=dp), intent(inout) :: history(:)
       integer, intent(in) :: iter
       logical, intent(out) :: lconverged
@@ -3942,7 +3942,7 @@ contains
     implicit none
 
     ! passed variables
-    type(localisation_vars), intent(out)  :: wann_spread
+    type(localisation_vars_type), intent(out)  :: wann_spread
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout

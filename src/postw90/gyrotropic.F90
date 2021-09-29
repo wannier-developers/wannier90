@@ -638,6 +638,10 @@ contains
                         imf_k(3, 3, 1), img_k(3, 3, 1), imh_k(3, 3, 1)
     logical          :: got_spin, got_orb_n
 
+    if (gyrotropic%smearing%use_adaptive) then
+      call io_error('Adaptive smearing not allowed in Gyrotropic', stdout, seedname)
+    endif
+
     allocate (UU(num_wann, num_wann))
     allocate (HH(num_wann, num_wann))
     allocate (delHH(num_wann, num_wann, 3))
@@ -665,7 +669,7 @@ contains
 
     if (eval_Dw) allocate (curv_w_nk(num_wann, gyrotropic%nfreq, 3))
 
-    eta_smr = gyrotropic%smr_fixed_en_width
+    eta_smr = gyrotropic%smearing%fixed_width
 
     got_spin = .false.
 
@@ -690,7 +694,7 @@ contains
         ! To save time: far from the Fermi surface, negligible contribution
         !
         !-------------------------
-        if (abs(arg) > gyrotropic%smr_max_arg) cycle
+        if (abs(arg) > gyrotropic%smearing%max_arg) cycle
         !-------------------------
         !
         ! Spin is computed for all bands simultaneously
@@ -739,7 +743,7 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, gyrotropic%smr_index, stdout, seedname)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        delta = utility_w0gauss(arg, gyrotropic%smearing%type_index, stdout, seedname)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
         !
         ! Loop over Cartesian tensor components
         !

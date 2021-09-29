@@ -24,7 +24,7 @@ module w90_disentangle
   use wannier_param_types, only: dis_control_type, dis_spheres_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
-    sitesym_dis_extract_symmetry, sitesym_data
+    sitesym_dis_extract_symmetry, sitesym_data_type
 
   implicit none
 
@@ -69,9 +69,9 @@ contains
     type(dis_spheres_type), intent(in)     :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(kmesh_info_type), intent(in)      :: kmesh_info
-    real(kind=dp), intent(in)        :: kpt_latt(:, :)
+    real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
-    type(sitesym_data), intent(inout)      :: sym
+    type(sitesym_data_type), intent(inout) :: sym
     type(w90commtype), intent(in)          :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -502,7 +502,7 @@ contains
     !                                                                !
     !================================================================!
 
-    use w90_sitesym, only: sitesym_data
+    use w90_sitesym, only: sitesym_data_type
     implicit none
 
     ! passed variables
@@ -517,7 +517,7 @@ contains
 
     logical, intent(in) :: on_root, lsitesymmetry
 
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_data_type), intent(inout) :: sym
     type(w90commtype), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -1667,7 +1667,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_wallclocktime
-    use w90_sitesym, only: sitesym_data
+    use w90_sitesym, only: sitesym_data_type
 
     implicit none
 
@@ -1691,7 +1691,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
     ! MODIFIED:
@@ -2617,7 +2617,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
 
     integer, intent(in) :: num_nodes, my_node_id
     integer, intent(in) :: stdout

@@ -140,7 +140,7 @@ contains
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_sitesym, only: sitesym_data
+    use w90_sitesym, only: sitesym_data_type
     use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: select_projection_type
 
@@ -149,7 +149,7 @@ contains
     ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: num_bands
@@ -720,11 +720,11 @@ contains
     use w90_constants
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
+    use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data_type !RS:
 
     implicit none
 
-    type(sitesym_data), intent(in) :: sym
+    type(sitesym_data_type), intent(in) :: sym
     type(w90commtype), intent(in) :: comm
 
     integer, intent(in) :: nnlist(:, :)
