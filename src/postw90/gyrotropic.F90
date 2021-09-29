@@ -694,7 +694,7 @@ contains
         ! To save time: far from the Fermi surface, negligible contribution
         !
         !-------------------------
-        if (abs(arg) > gyrotropic%smr_max_arg) cycle
+        if (abs(arg) > gyrotropic%smearing%max_arg) cycle
         !-------------------------
         !
         ! Spin is computed for all bands simultaneously

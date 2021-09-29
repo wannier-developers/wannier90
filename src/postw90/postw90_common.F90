@@ -372,7 +372,7 @@ contains
     call comms_bcast(gyrotropic%smearing%use_adaptive, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%smearing%fixed_width, 1, stdout, seedname, world)
     call comms_bcast(gyrotropic%smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%smr_max_arg, 1, stdout, seedname, world)
+    call comms_bcast(gyrotropic%smearing%max_arg, 1, stdout, seedname, world)
 
     call comms_bcast(system%spinors, 1, stdout, seedname, world)
 

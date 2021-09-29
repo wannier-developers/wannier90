@@ -111,6 +111,9 @@ module pw90_parameters
     integer    :: type_index
     real(kind=dp)    :: fixed_width
     real(kind=dp)    :: adaptive_max_width
+    ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
+    ! BGS currently only implemented in gyrotropic
+    real(kind=dp) :: max_arg
   end type pw90_smearing_type
 
   type pw90_dos_mod_type
@@ -177,9 +180,6 @@ module pw90_parameters
     integer, allocatable :: band_list(:)
     integer :: num_bands
     type(pw90_smearing_type) :: smearing
-    ! REVIEW_2021-08-09: Should this use pw90_smearing_type?
-    ! REVIEW_2021-08-09: Is this a speed-up that could be applied more generally?
-    real(kind=dp) :: smr_max_arg
     real(kind=dp) :: eigval_max
   end type pw90_gyrotropic_type
 
@@ -679,10 +679,10 @@ contains
     if (found .and. (smr_max_arg <= 0._dp)) &
       call io_error('Error: smr_max_arg must be greater than zero', stdout, seedname)
 
-    gyrotropic%smr_max_arg = smr_max_arg
+    gyrotropic%smearing%max_arg = smr_max_arg
     call param_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found, &
-                           r_value=gyrotropic%smr_max_arg)
-    if (found .and. (gyrotropic%smr_max_arg <= 0._dp)) call io_error &
+                           r_value=gyrotropic%smearing%max_arg)
+    if (found .and. (gyrotropic%smearing%max_arg <= 0._dp)) call io_error &
       ('Error: gyrotropic_smr_max_arg must be greater than zero', stdout, seedname)
 
     gyrotropic%smearing%fixed_width = smr_fixed_en_width
