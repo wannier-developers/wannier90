@@ -73,14 +73,14 @@ contains
       comms_scatterv, comms_array_split, w90commtype
 
     !ivo
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical
+    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical_type
 
     implicit none
 
     ! passed variables
     type(atom_data_type), intent(in)         :: atom_data
     type(dis_manifold_type), intent(in)      :: dis_manifold
-    type(ham_logical), intent(inout)         :: hmlg
+    type(ham_logical_type), intent(inout)    :: hmlg
     type(kmesh_info_type), intent(in)        :: kmesh_info
     real(kind=dp), intent(in)                :: kpt_latt(:, :)
     type(w90_system_type), intent(in)        :: w90_system

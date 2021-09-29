@@ -28,7 +28,7 @@ module w90_hamiltonian
   public :: hamiltonian_write_rmn
   public :: hamiltonian_write_tb
 
-  type ham_logical
+  type ham_logical_type
     logical :: ham_have_setup = .false.
     logical :: have_translated = .false.
     logical :: use_translation = .false.
@@ -36,7 +36,7 @@ module w90_hamiltonian
     logical :: have_ham_k = .false.
     logical :: hr_written = .false.
     logical :: tb_written = .false.
-  end type ham_logical
+  end type ham_logical_type
 
 contains
 
@@ -59,7 +59,7 @@ contains
     type(ws_region_type), intent(in) :: ws_region
     type(print_output_type), intent(in)   :: print_output
     type(w90_calculation_type), intent(in) :: w90_calculation
-    type(ham_logical), intent(inout)       :: hmlg
+    type(ham_logical_type), intent(inout)       :: hmlg
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -142,7 +142,7 @@ contains
     implicit none
 
     ! passed variables
-    type(ham_logical), intent(inout) :: hmlg
+    type(ham_logical_type), intent(inout) :: hmlg
 
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -216,7 +216,7 @@ contains
     implicit none
 
     ! passed variables
-    type(ham_logical), intent(inout)         :: hmlg
+    type(ham_logical_type), intent(inout)         :: hmlg
     type(atom_data_type), intent(in)         :: atom_data
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(print_output_type), intent(in)      :: print_output
@@ -545,7 +545,7 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
 
 !   passed variables
-    type(ham_logical), intent(inout) :: hmlg
+    type(ham_logical_type), intent(inout) :: hmlg
 
     integer, intent(inout) :: nrpts
     integer, intent(in)    :: ndegen(:)
@@ -862,7 +862,7 @@ contains
 
 !   passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(ham_logical), intent(inout)  :: hmlg
+    type(ham_logical_type), intent(inout)  :: hmlg
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
     integer, intent(in)    :: num_wann

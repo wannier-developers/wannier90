@@ -37,7 +37,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
-      hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
+      hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical_type
     use w90_ws_distance, only: ws_distance_type, ws_translate_dist, ws_write_vec
     use w90_param_types, only: kmesh_info_type, wannier_data_type, atom_data_type, &
       dis_manifold_type, kpoint_path_type, print_output_type, ws_region_type
@@ -62,7 +62,7 @@ contains
     type(dis_manifold_type), intent(in)          :: dis_manifold
     type(fermi_surface_plot_type), intent(in)    :: fermi_surface_plot
     type(kpoint_path_type), intent(in)           :: kpoint_path
-    type(ham_logical), intent(inout)             :: hmlg
+    type(ham_logical_type), intent(inout)        :: hmlg
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts

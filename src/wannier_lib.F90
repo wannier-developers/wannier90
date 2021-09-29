@@ -484,7 +484,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer :: nrpts
 
   type(sitesym_data) :: sym
-  type(ham_logical) :: hmlg
+  type(ham_logical_type) :: hmlg
 
   type(w90_extra_io_type) :: write_data
   type(proj_input_type) :: proj

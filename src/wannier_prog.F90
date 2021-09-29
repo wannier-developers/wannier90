@@ -124,7 +124,7 @@ program wannier
   type(kpoint_path_type) :: kpoint_path
 
   type(sitesym_data) :: sym
-  type(ham_logical) :: hmlg
+  type(ham_logical_type) :: hmlg
   type(w90commtype) :: w90comm
 
   integer :: num_bands   !! Number of bands
