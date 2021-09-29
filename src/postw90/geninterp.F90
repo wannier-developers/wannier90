@@ -30,14 +30,14 @@ module w90_geninterp
 
 contains
 
-  subroutine internal_write_header(outdat_unit, commentline, geninterp)
+  subroutine internal_write_header(outdat_unit, commentline, pw90_geninterp)
     !! Writes a header for the output file(s).
 
     use pw90_parameters, only: pw90_geninterp_mod_type
     use w90_io, only: io_date
 
     ! arguments
-    type(pw90_geninterp_mod_type), intent(in) :: geninterp
+    type(pw90_geninterp_mod_type), intent(in) :: pw90_geninterp
     integer, intent(in) :: outdat_unit
     !! Integer with the output file unit. The file must be already open.
     character(len=*) :: commentline !! no intent?
@@ -51,7 +51,7 @@ contains
     ! I rewrite the comment line on the output
     write (outdat_unit, '(A)') "# Input file comment: "//trim(commentline)
 
-    if (geninterp%alsofirstder) then
+    if (pw90_geninterp%alsofirstder) then
       write (outdat_unit, '(A)') "#  Kpt_idx  K_x (1/ang)       K_y (1/ang)        K_z (1/ang)       Energy (eV)"// &
         "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
     else
@@ -59,8 +59,8 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(dis_window, geninterp, kpt_latt, pw90_ham, rs_region, verbose, &
-                            wann_data, ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, &
+  subroutine geninterp_main(dis_manifold, pw90_geninterp, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, &
+                            wannier_data, ws_distance, wigner_seitz, HH_R, v_matrix, u_matrix, eigval, &
                             real_lattice, scissors_shift, mp_grid, num_bands, &
                             num_kpts, num_wann, num_valence_bands, effective_model, &
                             have_disentangled, seedname, stdout, comm)
@@ -87,15 +87,14 @@ contains
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
-    type(dis_manifold_type), intent(in)          :: dis_window
-    type(pw90_geninterp_mod_type), intent(in)    :: geninterp
-    real(kind=dp), intent(in)                    :: kpt_latt(:, :)
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
-    type(ws_region_type), intent(in)             :: rs_region
-    type(print_output_type), intent(in)          :: verbose
-    type(wannier_data_type), intent(in)          :: wann_data
+    type(dis_manifold_type), intent(in)          :: dis_manifold
+    type(pw90_geninterp_mod_type), intent(in)    :: pw90_geninterp
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(ws_region_type), intent(in)             :: ws_region
+    type(print_output_type), intent(in)          :: print_output
+    type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
-    type(wigner_seitz_type), intent(inout)       :: ws_vec
+    type(wigner_seitz_type), intent(inout)       :: wigner_seitz
     type(w90commtype), intent(in)                :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
@@ -104,6 +103,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
@@ -140,7 +140,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (verbose%iprint > 0 .and. (verbose%timing_level > 0)) &
+    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) &
       call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
     if (on_root) then
@@ -180,13 +180,13 @@ contains
     if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout, seedname)
-    if (geninterp%alsofirstder) then
+    if (pw90_geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout, seedname)
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
                   effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -195,7 +195,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
       allocate (kpoints(3, nkinterp), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
-      if (geninterp%single_file) then
+      if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, nkinterp), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
                                      seedname)
@@ -210,7 +210,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
       allocate (kpoints(1, 1), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
-      if (geninterp%single_file) then
+      if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
                                      seedname)
@@ -257,7 +257,7 @@ contains
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
     call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout, &
                         seedname, comm)
-    if (.not. geninterp%single_file) then
+    if (.not. pw90_geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, &
@@ -267,13 +267,13 @@ contains
     end if
 
     ! I open the output file(s)
-    if (geninterp%single_file) then
+    if (pw90_geninterp%single_file) then
       if (on_root) then
         outdat_filename = trim(seedname)//'_geninterp.dat'
         outdat_unit = io_file_unit()
         open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-        call internal_write_header(outdat_unit, commentline, geninterp)
+        call internal_write_header(outdat_unit, commentline, pw90_geninterp)
       end if
     else
       if (num_nodes > 99999) then
@@ -286,34 +286,34 @@ contains
 
       call comms_bcast(commentline, len(commentline), stdout, seedname, comm)
 
-      call internal_write_header(outdat_unit, commentline, geninterp)
+      call internal_write_header(outdat_unit, commentline, pw90_geninterp)
     end if
 
     ! And now, each node calculates its own k points
     do i = 1, counts(my_node_id)
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
-      if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
-                                 ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+      if (pw90_geninterp%alsofirstder) then
+        call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
+                                 ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                  localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, &
                                  seedname, stdout, comm)
       else
-        call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
+        call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                        real_lattice, mp_grid, 0, num_wann, seedname, stdout)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-    if (geninterp%single_file) then
+    if (pw90_geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
                          num_wann*counts, num_wann*displs, stdout, seedname, comm)
 
-      if (geninterp%alsofirstder) then
+      if (pw90_geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
                            3*num_wann*counts, 3*num_wann*displs, stdout, seedname, comm)
       end if
@@ -330,7 +330,7 @@ contains
           end do
 
           ! I print each line
-          if (geninterp%alsofirstder) then
+          if (pw90_geninterp%alsofirstder) then
             do enidx = 1, num_wann
               write (outdat_unit, '(I10,7G18.10)') kpointidx(i), frac, &
                 globaleig(enidx, i), globaldeleig(enidx, :, i)
@@ -355,7 +355,7 @@ contains
         end do
 
         ! I print each line
-        if (geninterp%alsofirstder) then
+        if (pw90_geninterp%alsofirstder) then
           do enidx = 1, num_wann
             write (outdat_unit, '(I10,7G18.10)') localkpointidx(i), frac, &
               localeig(enidx, i), localdeleig(enidx, :, i)
@@ -388,8 +388,8 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (verbose%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
-                                                                    stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
+                                                                         stdout, seedname)
 
     return
 

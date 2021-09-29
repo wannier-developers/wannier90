@@ -35,7 +35,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(berry, dis_manifold, dos_data, kpoint_dist, kpt_latt, pw90_oper_read, pw90_band_deriv_degen, &
+  subroutine dos_main(pw90_berry, dis_manifold, dos_data, kpoint_dist, kpt_latt, pw90_oper_read, pw90_band_deriv_degen, &
                       pw90_spin, ws_region, w90_system, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
                       SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                       scissors_shift, mp_grid, num_bands, num_kpts, num_wann, effective_model, &
@@ -64,7 +64,7 @@ contains
     implicit none
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in)        :: berry
+    type(pw90_berry_mod_type), intent(in)        :: pw90_berry
     type(dis_manifold_type), intent(in)          :: dis_manifold
     type(pw90_dos_mod_type), intent(in)          :: dos_data
     type(kpoint_dist_type), intent(in)           :: kpoint_dist
@@ -198,7 +198,7 @@ contains
     dos_all = 0.0_dp
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-    if (berry%wanint_kpoint_file) then
+    if (pw90_berry%wanint_kpoint_file) then
       !
       ! Unlike for optical properties, this should always work for the DOS
       !
