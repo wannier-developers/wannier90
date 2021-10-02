@@ -25,8 +25,8 @@ module w90_kslice
   !!
   !! The slice is defined in reduced coordinates by three input variables:
   !!
-  !!    kslice_corner(1:3) is the lower left corner
-  !!    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
+  !!    pw90_kslice_corner(1:3) is the lower left corner
+  !!    pw90_kslice_b1(1:3) and pw90_kslice_b2(1:3) are the vectors subtending the slice
 
   implicit none
 
@@ -40,9 +40,9 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_slice(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, kslice, &
-                     postw90_oper, pw90_ham, pw90_spin, rs_region, spin_hall, verbose, wann_data, &
-                     ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
+  subroutine k_slice(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, pw90_kslice, &
+                     pw90_oper_read, pw90_band_deriv_degen, pw90_spin, ws_region, pw90_spin_hall, print_output, wannier_data, &
+                     ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
                      v_matrix, u_matrix, bohr, eigval, real_lattice, &
                      scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                      num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
@@ -67,21 +67,21 @@ contains
     implicit none
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in) :: berry
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
+    type(dis_manifold_type), intent(in) :: dis_manifold
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_kslice_mod_type), intent(in) :: kslice
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
-    type(pw90_oper_read_type), intent(in) :: postw90_oper
+    type(pw90_kslice_mod_type), intent(in) :: pw90_kslice
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
-    type(pw90_spin_hall_type), intent(in) :: spin_hall
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
+    type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
     type(w90commtype), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
@@ -144,18 +144,18 @@ contains
     allocate (displs(0:num_nodes - 1))
     if (my_node_id == 0) on_root = .true.
 
-    plot_fermi_lines = index(kslice%task, 'fermi_lines') > 0
-    plot_curv = index(kslice%task, 'curv') > 0
-    plot_morb = index(kslice%task, 'morb') > 0
-    plot_shc = index(kslice%task, 'shc') > 0
-    fermi_lines_color = kslice%fermi_lines_colour /= 'none'
+    plot_fermi_lines = index(pw90_kslice%task, 'fermi_lines') > 0
+    plot_curv = index(pw90_kslice%task, 'curv') > 0
+    plot_morb = index(pw90_kslice%task, 'morb') > 0
+    plot_shc = index(pw90_kslice%task, 'shc') > 0
+    fermi_lines_color = pw90_kslice%fermi_lines_colour /= 'none'
     heatmap = plot_curv .or. plot_morb .or. plot_shc
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
                     //'curv/morb/shc heatmap plots', stdout, seedname)
     end if
     if (plot_shc) then
-      if (berry%kubo_smearing%use_adaptive) then
+      if (pw90_berry%kubo_smearing%use_adaptive) then
         call io_error('Error: Must use fixed smearing when plotting ' &
                       //'spin Hall conductivity', stdout, seedname)
       end if
@@ -169,50 +169,50 @@ contains
 
     if (on_root) then
       call kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, &
-                             stdout, seedname, berry, fermi_energy_list)
+                             stdout, seedname, pw90_berry, fermi_energy_list)
     end if
 
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_Valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_Valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
     if (plot_curv .or. plot_morb) then
-      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
-                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
-                    effective_model, have_disentangled, seedname, stdout, comm)
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
     endif
     if (plot_morb) then
-      call get_BB_R(dis_window, kmesh_info, kpt_latt, verbose, BB_R, v_matrix, eigval, &
-                    scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, comm)
-      call get_CC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, CC_R, v_matrix, &
-                    eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, &
+      call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
+                    scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, comm)
+      call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
+                    v_matrix, eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, &
+                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
     endif
 
     if (plot_shc) then
-      call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
-                    eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
-                    effective_model, have_disentangled, seedname, stdout, comm)
-      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, comm)
-      call get_SHC_R(dis_window, kmesh_info, kpt_latt, verbose, postw90_oper, spin_hall, SH_R, &
-                     SHR_R, SR_R, v_matrix, eigval, scissors_shift, ws_vec%irvec, ws_vec%nrpts, &
-                     num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
-                     seedname, stdout, comm)
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+      call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
+      call get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
+                     pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, &
+                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                     num_valence_bands, have_disentangled, seedname, stdout, comm)
 
     end if
 
     if (fermi_lines_color) then
-      call get_SS_R(dis_window, kpt_latt, verbose, postw90_oper, SS_R, v_matrix, eigval, &
-                    ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, comm)
+      call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
     endif
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
     !
-    bvec(1, :) = matmul(kslice%b1(:), recip_lattice(:, :))
-    bvec(2, :) = matmul(kslice%b2(:), recip_lattice(:, :))
+    bvec(1, :) = matmul(pw90_kslice%b1(:), recip_lattice(:, :))
+    bvec(2, :) = matmul(pw90_kslice%b2(:), recip_lattice(:, :))
     ! z_vec (orthogonal to the slice)
     zvec(1) = bvec(1, 2)*bvec(2, 3) - bvec(1, 3)*bvec(2, 2)
     zvec(2) = bvec(1, 3)*bvec(2, 1) - bvec(1, 1)*bvec(2, 3)
@@ -224,7 +224,7 @@ contains
     ! Area (modulus b1 x b2 = z_vec)
     areab1b2 = sqrt(zvec(1)**2 + zvec(2)**2 + zvec(3)**2)
     if (areab1b2 < eps8) call io_error( &
-      'Error in kslice: Vectors kslice_b1 and kslice_b2 ' &
+      'Error in kslice: Vectors pw90_kslice_b1 and pw90_kslice_b2 ' &
       //'not linearly independent', stdout, seedname)
     ! This is the unit vector zvec/|zvec| which completes the triad
     ! in the 2D case
@@ -248,7 +248,7 @@ contains
       square = 'False'
     end if
 
-    nkpts = (kslice%kmesh2d(1) + 1)*(kslice%kmesh2d(2) + 1)
+    nkpts = (pw90_kslice%kmesh2d(1) + 1)*(pw90_kslice%kmesh2d(2) + 1)
 
     ! Partition set of k-points into junks
     call comms_array_split(nkpts, counts, displs, comm); 
@@ -276,17 +276,17 @@ contains
     !
     do iloc = 1, my_nkpts
       itot = iloc - 1 + displs(my_node_id)
-      i2 = itot/(kslice%kmesh2d(1) + 1) ! slow
-      i1 = itot - i2*(kslice%kmesh2d(1) + 1) !fast
+      i2 = itot/(pw90_kslice%kmesh2d(1) + 1) ! slow
+      i1 = itot - i2*(pw90_kslice%kmesh2d(1) + 1) !fast
       ! k1 and k2 are the coefficients of the k-point in the basis
-      ! (kslice_b1,kslice_b2)
-      k1 = i1/real(kslice%kmesh2d(1), dp)
-      k2 = i2/real(kslice%kmesh2d(2), dp)
-      kpt = kslice%corner + k1*kslice%b1 + k2*kslice%b2
-      ! Add to (k1,k2) the projection of kslice_corner on the
-      ! (kslice_b1,kslice_b2) plane, expressed as a linear
-      ! combination of kslice_b1 and kslice_b2
-      kcorner_cart(:) = matmul(kslice%corner(:), recip_lattice(:, :))
+      ! (pw90_kslice_b1,pw90_kslice_b2)
+      k1 = i1/real(pw90_kslice%kmesh2d(1), dp)
+      k2 = i2/real(pw90_kslice%kmesh2d(2), dp)
+      kpt = pw90_kslice%corner + k1*pw90_kslice%b1 + k2*pw90_kslice%b2
+      ! Add to (k1,k2) the projection of pw90_kslice_corner on the
+      ! (pw90_kslice_b1,pw90_kslice_b2) plane, expressed as a linear
+      ! combination of pw90_kslice_b1 and pw90_kslice_b2
+      kcorner_cart(:) = matmul(pw90_kslice%corner(:), recip_lattice(:, :))
       k1 = k1 + dot_product(kcorner_cart, avec_2d(1, :))/twopi
       k2 = k2 + dot_product(kcorner_cart, avec_2d(2, :))/twopi
       ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
@@ -298,8 +298,8 @@ contains
 
       if (plot_fermi_lines) then
         if (fermi_lines_color) then
-          call spin_get_nk(rs_region, pw90_spin, wann_data, ws_distance, ws_vec, HH_R, SS_R, &
-                           kpt, real_lattice, spn_k, mp_grid, num_wann, seedname, stdout)
+          call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, seedname, stdout)
           do n = 1, num_wann
             if (spn_k(n) > 1.0_dp - eps8) then
               spn_k(n) = 1.0_dp - eps8
@@ -308,15 +308,17 @@ contains
             endif
           enddo
 
-          call wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
-                                   ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                   del_eig, eig, eigval, kpt, real_lattice, scissors_shift, &
-                                   mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                   effective_model, have_disentangled, seedname, stdout, comm)
-          Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
+          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, delHH, &
+                                   HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                   real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                   num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, comm)
+          Delta_k = max(b1mod/pw90_kslice%kmesh2d(1), b2mod/pw90_kslice%kmesh2d(2))
         else
-          call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
-                                         real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, seedname, &
+                                         stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
         endif
 
@@ -337,24 +339,26 @@ contains
 
       if (plot_curv) then
 
-        call berry_get_imf_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
-                                 wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, u_matrix, &
-                                 v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
-                                 mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                 effective_model, have_disentangled, seedname, stdout, comm)
+        call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
+                                 wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
+                                 u_matrix, v_matrix, eigval, kpt, real_lattice, imf_k_list, &
+                                 scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                 num_valence_bands, effective_model, have_disentangled, seedname, &
+                                 stdout, comm)
         curv(1) = sum(imf_k_list(:, 1, 1))
         curv(2) = sum(imf_k_list(:, 2, 1))
         curv(3) = sum(imf_k_list(:, 3, 1))
-        if (berry%curv_unit == 'bohr2') curv = curv/bohr**2
+        if (pw90_berry%curv_unit == 'bohr2') curv = curv/bohr**2
         ! Print _minus_ the Berry curvature
         my_zdata(:, iloc) = -curv(:)
       else if (plot_morb) then
-        call berry_get_imfgh_klist(dis_window, fermi_energy_list, kpt_latt, rs_region, verbose, &
-                                   wann_data, ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, &
-                                   u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
-                                   mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
-                                   num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm, imf_k_list, img_k_list, imh_k_list)
+        call berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                   BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                   real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                   num_kpts, num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                   img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi_energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -363,12 +367,13 @@ contains
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
       else if (plot_shc) then
-        call berry_get_shc_klist(berry, dis_window, fermi_energy_list, kpt_latt, pw90_ham, &
-                                 rs_region, spin_hall, verbose, wann_data, ws_distance, ws_vec, &
-                                 AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
-                                 kpt, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
-                                 num_kpts, num_wann, num_valence_bands, effective_model, &
-                                 have_disentangled, seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                                 pw90_band_deriv_degen, ws_region, pw90_spin_hall, print_output, &
+                                 wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, SH_R, SHR_R, &
+                                 SR_R, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
+                                 scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
+                                 num_valence_bands, effective_model, have_disentangled, seedname, &
+                                 stdout, comm, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 
@@ -454,7 +459,7 @@ contains
 
             call write_coords_file(stdout, filename, '(3E16.8)', coords, &
                                    reshape(bandsdata(n, :), [1, 1, nkpts]), &
-                                   blocklen=kslice%kmesh2d(1) + 1)
+                                   blocklen=pw90_kslice%kmesh2d(1) + 1)
           enddo
         endif
       end if
@@ -479,7 +484,7 @@ contains
           write (stdout, '(/,3x,a)') filename
           open (dataunit, file=filename, form='formatted')
           if (plot_shc) then
-            if (berry%curv_unit == 'bohr2') zdata = zdata/bohr**2
+            if (pw90_berry%curv_unit == 'bohr2') zdata = zdata/bohr**2
             do loop_kpt = 1, nkpts
               write (dataunit, '(1E16.8)') zdata(1, loop_kpt)
             end do
@@ -898,12 +903,12 @@ contains
   !===========================================================!
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
-                               plot_shc, stdout, seedname, berry, fermi_energy_list)
+                               plot_shc, stdout, seedname, pw90_berry, fermi_energy_list)
     use w90_constants, only: dp
     use pw90_parameters, only: pw90_berry_mod_type
     use w90_io, only: io_error
 
-    type(pw90_berry_mod_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     integer, intent(in) :: stdout
     logical, intent(in) :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
@@ -932,9 +937,9 @@ contains
     endif
 
     if (plot_curv) then
-      if (berry%curv_unit == 'ang2') then
+      if (pw90_berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
-      elseif (berry%curv_unit == 'bohr2') then
+      elseif (pw90_berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
       endif
       if (fermi_n /= 1) call io_error( &
@@ -945,10 +950,10 @@ contains
       if (fermi_n /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=morb', stdout, seedname)
     elseif (plot_shc) then
-      if (berry%curv_unit == 'ang2') then
+      if (pw90_berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
           //'of spin Hall conductivity in Ang^2'
-      elseif (berry%curv_unit == 'bohr2') then
+      elseif (pw90_berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
           //'of spin Hall conductivity in Bohr^2'
       endif
