@@ -72,7 +72,7 @@ contains
     real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
     type(sitesym_data_type), intent(inout) :: sym
-    type(w90comm_type), intent(in)          :: comm
+    type(w90comm_type), intent(in)         :: comm
 
     character(len=50), intent(in)  :: seedname
 

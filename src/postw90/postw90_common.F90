@@ -83,7 +83,7 @@ contains
   ! Public procedures have names starting with wanint_
 
   subroutine pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
-                                     ws_vec, stdout, seedname, world)
+                                     ws_vec, stdout, seedname, comm)
     !! Setup data ready for interpolation
     use w90_constants, only: dp !, cmplx_0
     use w90_io, only: io_error, io_file_unit
@@ -99,12 +99,12 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: effective_model
     character(len=50), intent(in)  :: seedname
-    type(w90comm_type), intent(in) :: world
+    type(w90comm_type), intent(in) :: comm
 
     integer :: ierr, ir, file_unit, num_wann_loc
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
     !
@@ -122,9 +122,9 @@ contains
         read (file_unit, *) ws_vec%nrpts
         close (file_unit)
       endif
-      call comms_bcast(ws_vec%nrpts, 1, stdout, seedname, world)
+      call comms_bcast(ws_vec%nrpts, 1, stdout, seedname, comm)
     else
-      call wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, .true., world)
+      call wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, .true., comm)
     endif
 
     ! Now can allocate several arrays
@@ -150,7 +150,7 @@ contains
       ! where the Wannier functions live
       !
       call wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, &
-                        .false., world)
+                        .false., comm)
       !
       ! Convert from reduced to Cartesian coordinates
       !
@@ -168,7 +168,7 @@ contains
   end subroutine pw90common_wanint_setup
 
   !===========================================================!
-  subroutine pw90common_wanint_get_kpoint_file(kpoints, stdout, seedname, world)
+  subroutine pw90common_wanint_get_kpoint_file(kpoints, stdout, seedname, comm)
     !===========================================================!
     !                                                           !
     !! read kpoints from kpoint.dat and distribute
@@ -183,15 +183,15 @@ contains
     type(kpoint_dist_type), intent(inout) :: kpoints
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90comm_type), intent(in) :: world
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
     real(kind=dp) :: sum
     logical :: on_root = .false.
 
-    my_node_id = mpirank(world)
-    num_nodes = mpisize(world)
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
 
     if (my_node_id == 0) on_root = .true.
 
@@ -200,7 +200,7 @@ contains
       open (unit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
       read (k_unit, *) kpoints%num_int_kpts
     end if
-    call comms_bcast(kpoints%num_int_kpts, 1, stdout, seedname, world)
+    call comms_bcast(kpoints%num_int_kpts, 1, stdout, seedname, comm)
 
     allocate (kpoints%num_int_kpts_on_node(0:num_nodes - 1))
     kpoints%num_int_kpts_on_node(:) = kpoints%num_int_kpts/num_nodes
@@ -225,9 +225,9 @@ contains
         end do
 
         call comms_send(kpoints%int_kpts(1, 1), 3*kpoints%num_int_kpts_on_node(loop_nodes), &
-                        loop_nodes, stdout, seedname, world)
+                        loop_nodes, stdout, seedname, comm)
         call comms_send(kpoints%weight(1), kpoints%num_int_kpts_on_node(loop_nodes), loop_nodes, &
-                        stdout, seedname, world)
+                        stdout, seedname, comm)
       end do
       do loop_kpt = 1, kpoints%num_int_kpts_on_node(0)
         read (k_unit, *) (kpoints%int_kpts(i, loop_kpt), i=1, 3), kpoints%weight(loop_kpt)
@@ -238,9 +238,9 @@ contains
 
     if (.not. on_root) then
       call comms_recv(kpoints%int_kpts(1, 1), 3*kpoints%num_int_kpts_on_node(my_node_id), 0, &
-                      stdout, seedname, world)
+                      stdout, seedname, comm)
       call comms_recv(kpoints%weight(1), kpoints%num_int_kpts_on_node(my_node_id), 0, &
-                      stdout, seedname, world)
+                      stdout, seedname, comm)
     end if
 
     return
@@ -256,7 +256,7 @@ contains
                                           pw90_calcs, scissors_shift, effective_model, pw90_spin, &
                                           pw90_ham, kpath, kslice, dos_data, berry, spin_hall, &
                                           gyrotropic, geninterp, boltz, eig_found, stdout, &
-                                          seedname, world)
+                                          seedname, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors
@@ -303,137 +303,137 @@ contains
     logical, intent(inout) :: effective_model
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90comm_type), intent(in) :: world
+    type(w90comm_type), intent(in) :: comm
 
     integer :: ierr
     integer :: iprintroot
     integer :: fermi_n
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
-    call comms_bcast(effective_model, 1, stdout, seedname, world)
-    call comms_bcast(eig_found, 1, stdout, seedname, world)
+    call comms_bcast(effective_model, 1, stdout, seedname, comm)
+    call comms_bcast(eig_found, 1, stdout, seedname, comm)
 
     if (.not. effective_model) then
-      call comms_bcast(mp_grid(1), 3, stdout, seedname, world)
-      call comms_bcast(num_kpts, 1, stdout, seedname, world)
-      call comms_bcast(num_bands, 1, stdout, seedname, world)
+      call comms_bcast(mp_grid(1), 3, stdout, seedname, comm)
+      call comms_bcast(num_kpts, 1, stdout, seedname, comm)
+      call comms_bcast(num_bands, 1, stdout, seedname, comm)
     endif
-    call comms_bcast(num_wann, 1, stdout, seedname, world)
-    call comms_bcast(verbose%timing_level, 1, stdout, seedname, world)
+    call comms_bcast(num_wann, 1, stdout, seedname, comm)
+    call comms_bcast(verbose%timing_level, 1, stdout, seedname, comm)
 
     !______________________________________
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
     iprintroot = verbose%iprint
     verbose%iprint = 0
-    call comms_bcast(verbose%iprint, 1, stdout, seedname, world)
+    call comms_bcast(verbose%iprint, 1, stdout, seedname, comm)
     if (on_root) verbose%iprint = iprintroot
     !______________________________________
 
-    call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, world)
-    call comms_bcast(rs_region%ws_search_size(1), 3, stdout, seedname, world)
+    call comms_bcast(rs_region%ws_distance_tol, 1, stdout, seedname, comm)
+    call comms_bcast(rs_region%ws_search_size(1), 3, stdout, seedname, comm)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
-    call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, world)
-    !call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, world)
+    call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, comm)
+    !call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, comm)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
-    !call comms_bcast(cell_volume, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%energy_step, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smearing%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%kmesh%spacing, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%kmesh%mesh(1), 3, stdout, seedname, world)
-    call comms_bcast(dos_data%smearing%adaptive_max_width, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smearing%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%smearing%adaptive_prefactor, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%num_project, 1, stdout, seedname, world)
+    !call comms_bcast(cell_volume, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%energy_step, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(dos_data%smearing%adaptive_max_width, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%smearing%adaptive_prefactor, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%num_project, 1, stdout, seedname, comm)
 
-    call comms_bcast(pw90_calcs%berry, 1, stdout, seedname, world)
-    call comms_bcast(berry%task, len(berry%task), stdout, seedname, world)
-    call comms_bcast(berry%kmesh%spacing, 1, stdout, seedname, world)
-    call comms_bcast(berry%kmesh%mesh(1), 3, stdout, seedname, world)
-    call comms_bcast(berry%curv_adpt_kmesh, 1, stdout, seedname, world)
-    call comms_bcast(berry%curv_adpt_kmesh_thresh, 1, stdout, seedname, world)
-    call comms_bcast(berry%curv_unit, len(berry%curv_unit), stdout, seedname, world)
+    call comms_bcast(pw90_calcs%berry, 1, stdout, seedname, comm)
+    call comms_bcast(berry%task, len(berry%task), stdout, seedname, comm)
+    call comms_bcast(berry%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(berry%curv_adpt_kmesh, 1, stdout, seedname, comm)
+    call comms_bcast(berry%curv_adpt_kmesh_thresh, 1, stdout, seedname, comm)
+    call comms_bcast(berry%curv_unit, len(berry%curv_unit), stdout, seedname, comm)
 
 ! Tsirkin
-    call comms_bcast(pw90_calcs%gyrotropic, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%task, len(gyrotropic%task), stdout, seedname, world)
-    call comms_bcast(gyrotropic%kmesh%spacing, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%kmesh%mesh(1), 3, stdout, seedname, world)
-    call comms_bcast(gyrotropic%eigval_max, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%nfreq, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%degen_thresh, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%num_bands, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%box(1, 1), 9, stdout, seedname, world)
-    call comms_bcast(gyrotropic%box_corner(1), 3, stdout, seedname, world)
-    call comms_bcast(gyrotropic%smearing%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%smearing%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(gyrotropic%smearing%max_arg, 1, stdout, seedname, world)
+    call comms_bcast(pw90_calcs%gyrotropic, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%task, len(gyrotropic%task), stdout, seedname, comm)
+    call comms_bcast(gyrotropic%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%eigval_max, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%nfreq, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%degen_thresh, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%num_bands, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%box(1, 1), 9, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%box_corner(1), 3, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%smearing%max_arg, 1, stdout, seedname, comm)
 
-    call comms_bcast(system%spinors, 1, stdout, seedname, world)
+    call comms_bcast(system%spinors, 1, stdout, seedname, comm)
 
-    call comms_bcast(spin_hall%freq_scan, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%alpha, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%beta, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%gamma, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%bandshift, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%bandshift_firstband, 1, stdout, seedname, world)
-    call comms_bcast(spin_hall%bandshift_energyshift, 1, stdout, seedname, world)
+    call comms_bcast(spin_hall%freq_scan, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%alpha, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%beta, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%gamma, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%bandshift, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%bandshift_firstband, 1, stdout, seedname, comm)
+    call comms_bcast(spin_hall%bandshift_energyshift, 1, stdout, seedname, comm)
 
-    call comms_bcast(berry%kubo_smearing%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_smearing%adaptive_prefactor, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_smearing%adaptive_max_width, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_smearing%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_eigval_max, 1, stdout, seedname, world)
-    call comms_bcast(berry%kubo_nfreq, 1, stdout, seedname, world)
+    call comms_bcast(berry%kubo_smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_smearing%adaptive_prefactor, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_smearing%adaptive_max_width, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_eigval_max, 1, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_nfreq, 1, stdout, seedname, comm)
     fermi_n = 0
     if (on_root) then
       if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     endif
-    call comms_bcast(fermi_n, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%energy_min, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%energy_max, 1, stdout, seedname, world)
-    call comms_bcast(pw90_spin%kmesh%spacing, 1, stdout, seedname, world)
-    call comms_bcast(pw90_spin%kmesh%mesh(1), 3, stdout, seedname, world)
-    call comms_bcast(berry%wanint_kpoint_file, 1, stdout, seedname, world)
-    call comms_bcast(dis_window%win_min, 1, stdout, seedname, world)
-    call comms_bcast(dis_window%win_max, 1, stdout, seedname, world)
-    call comms_bcast(berry%sc_eta, 1, stdout, seedname, world)
-    call comms_bcast(berry%sc_w_thr, 1, stdout, seedname, world)
-    call comms_bcast(berry%sc_phase_conv, 1, stdout, seedname, world)
+    call comms_bcast(fermi_n, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%energy_min, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%energy_max, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_spin%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_spin%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(berry%wanint_kpoint_file, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%win_min, 1, stdout, seedname, comm)
+    call comms_bcast(dis_window%win_max, 1, stdout, seedname, comm)
+    call comms_bcast(berry%sc_eta, 1, stdout, seedname, comm)
+    call comms_bcast(berry%sc_w_thr, 1, stdout, seedname, comm)
+    call comms_bcast(berry%sc_phase_conv, 1, stdout, seedname, comm)
 ! ----------------------------------------------
 !
 ! New input variables in development
 !
-    !call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, world)
-    call comms_bcast(pw90_calcs%spin_moment, 1, stdout, seedname, world)
-    call comms_bcast(pw90_spin%axis_polar, 1, stdout, seedname, world)
-    call comms_bcast(pw90_spin%axis_azimuth, 1, stdout, seedname, world)
-    call comms_bcast(pw90_calcs%spin_decomp, 1, stdout, seedname, world)
-    call comms_bcast(pw90_ham%use_degen_pert, 1, stdout, seedname, world)
-    call comms_bcast(pw90_ham%degen_thr, 1, stdout, seedname, world)
-    call comms_bcast(system%num_valence_bands, 1, stdout, seedname, world)
-    call comms_bcast(pw90_calcs%dos, 1, stdout, seedname, world)
-    call comms_bcast(dos_data%task, len(dos_data%task), stdout, seedname, world)
-    call comms_bcast(pw90_calcs%kpath, 1, stdout, seedname, world)
-    call comms_bcast(kpath%task, len(kpath%task), stdout, seedname, world)
-    call comms_bcast(kpath%bands_colour, len(kpath%bands_colour), stdout, seedname, world)
-    call comms_bcast(pw90_calcs%kslice, 1, stdout, seedname, world)
-    call comms_bcast(kslice%task, len(kslice%task), stdout, seedname, world)
-    call comms_bcast(kslice%corner(1), 3, stdout, seedname, world)
-    call comms_bcast(kslice%b1(1), 3, stdout, seedname, world)
-    call comms_bcast(kslice%b2(1), 3, stdout, seedname, world)
-    call comms_bcast(kslice%kmesh2d(1), 2, stdout, seedname, world)
+    !call comms_bcast(verbose%devel_flag, len(verbose%devel_flag), stdout, seedname, comm)
+    call comms_bcast(pw90_calcs%spin_moment, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_spin%axis_polar, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_spin%axis_azimuth, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_calcs%spin_decomp, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_ham%use_degen_pert, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_ham%degen_thr, 1, stdout, seedname, comm)
+    call comms_bcast(system%num_valence_bands, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_calcs%dos, 1, stdout, seedname, comm)
+    call comms_bcast(dos_data%task, len(dos_data%task), stdout, seedname, comm)
+    call comms_bcast(pw90_calcs%kpath, 1, stdout, seedname, comm)
+    call comms_bcast(kpath%task, len(kpath%task), stdout, seedname, comm)
+    call comms_bcast(kpath%bands_colour, len(kpath%bands_colour), stdout, seedname, comm)
+    call comms_bcast(pw90_calcs%kslice, 1, stdout, seedname, comm)
+    call comms_bcast(kslice%task, len(kslice%task), stdout, seedname, comm)
+    call comms_bcast(kslice%corner(1), 3, stdout, seedname, comm)
+    call comms_bcast(kslice%b1(1), 3, stdout, seedname, comm)
+    call comms_bcast(kslice%b2(1), 3, stdout, seedname, comm)
+    call comms_bcast(kslice%kmesh2d(1), 2, stdout, seedname, comm)
     call comms_bcast(kslice%fermi_lines_colour, len(kslice%fermi_lines_colour), stdout, seedname, &
-                     world)
-    call comms_bcast(berry%transl_inv, 1, stdout, seedname, world)
-    call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, world)
-    call comms_bcast(scissors_shift, 1, stdout, seedname, world)
+                     comm)
+    call comms_bcast(berry%transl_inv, 1, stdout, seedname, comm)
+    call comms_bcast(system%num_elec_per_state, 1, stdout, seedname, comm)
+    call comms_bcast(scissors_shift, 1, stdout, seedname, comm)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -444,40 +444,40 @@ contains
 !    if(allocated(bands_label)) &
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points)
 ! ----------------------------------------------
-    call comms_bcast(pw90_calcs%geninterp, 1, stdout, seedname, world)
-    call comms_bcast(geninterp%alsofirstder, 1, stdout, seedname, world)
-    call comms_bcast(geninterp%single_file, 1, stdout, seedname, world)
+    call comms_bcast(pw90_calcs%geninterp, 1, stdout, seedname, comm)
+    call comms_bcast(geninterp%alsofirstder, 1, stdout, seedname, comm)
+    call comms_bcast(geninterp%single_file, 1, stdout, seedname, comm)
     ! [gp-begin, Apr 12, 2012]
     ! BoltzWann variables
-    call comms_bcast(pw90_calcs%boltzwann, 1, stdout, seedname, world)
-    call comms_bcast(boltz%calc_also_dos, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dir_num_2d, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_energy_step, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_energy_min, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_energy_max, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smearing%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smearing%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smearing%adaptive_prefactor, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smearing%adaptive_max_width, 1, stdout, seedname, world)
-    call comms_bcast(boltz%mu_min, 1, stdout, seedname, world)
-    call comms_bcast(boltz%mu_max, 1, stdout, seedname, world)
-    call comms_bcast(boltz%mu_step, 1, stdout, seedname, world)
-    call comms_bcast(boltz%temp_min, 1, stdout, seedname, world)
-    call comms_bcast(boltz%temp_max, 1, stdout, seedname, world)
-    call comms_bcast(boltz%temp_step, 1, stdout, seedname, world)
-    call comms_bcast(boltz%kmesh%spacing, 1, stdout, seedname, world)
-    call comms_bcast(boltz%kmesh%mesh(1), 3, stdout, seedname, world)
-    call comms_bcast(boltz%tdf_energy_step, 1, stdout, seedname, world)
-    call comms_bcast(boltz%relax_time, 1, stdout, seedname, world)
-    call comms_bcast(boltz%tdf_smearing%use_adaptive, 1, stdout, seedname, world)
-    call comms_bcast(boltz%tdf_smearing%fixed_width, 1, stdout, seedname, world)
-    call comms_bcast(boltz%tdf_smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(boltz%dos_smearing%type_index, 1, stdout, seedname, world)
-    call comms_bcast(boltz%bandshift, 1, stdout, seedname, world)
-    call comms_bcast(boltz%bandshift_firstband, 1, stdout, seedname, world)
-    call comms_bcast(boltz%bandshift_energyshift, 1, stdout, seedname, world)
+    call comms_bcast(pw90_calcs%boltzwann, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%calc_also_dos, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dir_num_2d, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_energy_step, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_energy_min, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_energy_max, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_smearing%adaptive_prefactor, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_smearing%adaptive_max_width, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%mu_min, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%mu_max, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%mu_step, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%temp_min, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%temp_max, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%temp_step, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(boltz%tdf_energy_step, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%relax_time, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%tdf_smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%tdf_smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%tdf_smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%dos_smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%bandshift, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%bandshift_firstband, 1, stdout, seedname, comm)
+    call comms_bcast(boltz%bandshift_energyshift, 1, stdout, seedname, comm)
     ! [gp-end]
-    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, world)
+    call comms_bcast(rs_region%use_ws_distance, 1, stdout, seedname, comm)
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in param_read they were allocated on the root node only
@@ -513,16 +513,16 @@ contains
       endif
     end if
 
-    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, world)
-    call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq, stdout, seedname, world)
-    call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands, stdout, seedname, world)
-    call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq, stdout, seedname, world)
-    call comms_bcast(dos_data%project(1), dos_data%num_project, stdout, seedname, world)
+    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq, stdout, seedname, comm)
+    call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands, stdout, seedname, comm)
+    call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq, stdout, seedname, comm)
+    call comms_bcast(dos_data%project(1), dos_data%num_project, stdout, seedname, comm)
     if (.not. effective_model) then
       if (eig_found) then
-        call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, world)
+        call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, comm)
       end if
-      call comms_bcast(kpt_latt(1, 1), 3*num_kpts, stdout, seedname, world)
+      call comms_bcast(kpt_latt(1, 1), 3*num_kpts, stdout, seedname, comm)
     endif
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix
@@ -532,8 +532,8 @@ contains
 
     if (.not. effective_model) then
 
-      call comms_bcast(kmesh_info%nnh, 1, stdout, seedname, world)
-      call comms_bcast(kmesh_info%nntot, 1, stdout, seedname, world)
+      call comms_bcast(kmesh_info%nnh, 1, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%nntot, 1, stdout, seedname, comm)
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -556,12 +556,12 @@ contains
           call io_error('Error in allocating bk in pw90common_wanint_param_dist', stdout, seedname)
       end if
 
-      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, stdout, seedname, world)
-      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, stdout, seedname, world)
-      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, stdout, seedname, world)
-      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, stdout, seedname, world)
-      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, stdout, seedname, world)
-      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, stdout, seedname, world)
+      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, stdout, seedname, comm)
 
     endif
 
@@ -571,7 +571,7 @@ contains
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                          dis_window, wann_data, scissors_shift, v_matrix, &
                                          num_valence_bands, have_disentangled, stdout, seedname, &
-                                         world)
+                                         comm)
     !===========================================================!
     !                                                           !
     !! Distribute the um and chk files
@@ -596,12 +596,12 @@ contains
     real(kind=dp), intent(in) :: scissors_shift
 
     character(len=50), intent(in)  :: seedname
-    type(w90comm_type), intent(in) :: world
+    type(w90comm_type), intent(in) :: comm
 
     integer :: ierr, loop_kpt, m, i, j
     logical :: on_root = .false.
 
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
     if (.not. on_root) then
       ! wannier_centres is allocated in param_read, so only on root node
@@ -610,7 +610,7 @@ contains
       allocate (wann_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in pw90common_wanint_data_dist', stdout, seedname)
     end if
-    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, stdout, seedname, world)
+    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
 
     ! -------------------
     ! Ivo: added 8april11
@@ -646,7 +646,7 @@ contains
         if (allocated(u_matrix)) deallocate (u_matrix)
       endif
     endif
-    call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, world)
+    call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
 
     if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
@@ -654,7 +654,7 @@ contains
       if (ierr /= 0) &
         call io_error('Error allocating u_matrix in pw90common_wanint_data_dist', stdout, seedname)
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, world)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
     endif
 
 !    if (.not.on_root .and. .not.allocated(m_matrix)) then
@@ -664,7 +664,7 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(have_disentangled, 1, stdout, seedname, world)
+    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
 
     if (have_disentangled) then
       if (.not. on_root) then
@@ -693,8 +693,8 @@ contains
       end if
 
 !       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
-      call comms_bcast(dis_window%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, world)
-      call comms_bcast(dis_window%ndimwin(1), num_kpts, stdout, seedname, world)
+      call comms_bcast(dis_window%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
+      call comms_bcast(dis_window%ndimwin(1), num_kpts, stdout, seedname, comm)
     end if
 
   end subroutine pw90common_wanint_data_dist
@@ -1661,7 +1661,7 @@ contains
 
   !================================!
   subroutine wigner_seitz(verbose, real_lattice, mp_grid, ws_vec, stdout, seedname, &
-                          count_pts, world)
+                          count_pts, comm)
     !================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1682,7 +1682,7 @@ contains
 
     ! arguments
     type(print_output_type), intent(in) :: verbose
-    type(w90comm_type), intent(in) :: world
+    type(w90comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
@@ -1696,7 +1696,7 @@ contains
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
     real(kind=dp) :: real_metric(3, 3)
     logical :: on_root = .false.
-    if (mpirank(world) == 0) on_root = .true.
+    if (mpirank(comm) == 0) on_root = .true.
 
     if (verbose%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 1, stdout, seedname)

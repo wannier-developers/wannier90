@@ -77,7 +77,7 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
-    type(w90comm_type), intent(in)                :: comm
+    type(w90comm_type), intent(in)               :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)

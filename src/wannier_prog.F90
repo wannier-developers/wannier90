@@ -125,7 +125,7 @@ program wannier
 
   type(sitesym_data_type) :: sym
   type(ham_logical_type) :: hmlg
-  type(w90comm_type) :: w90comm
+  type(w90comm_type) :: comm
 
   integer :: num_bands   !! Number of bands
 
@@ -217,13 +217,13 @@ program wannier
   logical :: have_disentangled, disentanglement
 
 #ifdef MPI
-  w90comm%comm = MPI_COMM_WORLD
+  comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
   if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)  ! JJ, fixme, what are stdout, seedname here?  unassigned!
 #endif
 
-  num_nodes = mpisize(w90comm)
-  my_node_id = mpirank(w90comm)
+  num_nodes = mpisize(comm)
+  my_node_id = mpirank(comm)
   if (my_node_id == 0) on_root = .true.
 
   time0 = io_time()
@@ -233,9 +233,9 @@ program wannier
     call io_commandline(prog, dryrun, seedname)
     len_seedname = len(seedname)
   end if
-  call comms_bcast(len_seedname, 1, stdout, seedname, w90comm)
-  call comms_bcast(seedname, len_seedname, stdout, seedname, w90comm)
-  call comms_bcast(dryrun, 1, stdout, seedname, w90comm)
+  call comms_bcast(len_seedname, 1, stdout, seedname, comm)
+  call comms_bcast(seedname, len_seedname, stdout, seedname, comm)
+  call comms_bcast(dryrun, 1, stdout, seedname, comm)
 
   if (on_root) then
     stdout = io_file_unit()
@@ -317,7 +317,7 @@ program wannier
                   wannier_data, wannier_plot, ws_region, w90_calculation, eigval, real_lattice, &
                   symmetrize_eps, mp_grid, kpoint_path%num_points_first_segment, num_bands, &
                   num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, have_disentangled, &
-                  lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
+                  lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
   disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
@@ -339,7 +339,7 @@ program wannier
     endif
     call param_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                           omega%invariant, num_bands, num_kpts, num_wann, &
-                          checkpoint, have_disentangled, seedname, stdout, w90comm)
+                          checkpoint, have_disentangled, seedname, stdout, comm)
     if (lsitesymmetry) call sitesym_read(sym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
@@ -391,11 +391,11 @@ program wannier
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        print_output%timing_level, seedname, stdout, w90comm)
+                        print_output%timing_level, seedname, stdout, comm)
   call overlap_read(kmesh_info, select_projection, sym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
-                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, w90comm)
+                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
     ' (sec)'
@@ -407,7 +407,7 @@ program wannier
     call dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sym, print_output, a_matrix, &
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, omega%invariant, num_bands, &
-                  num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, w90comm)
+                  num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
     have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &
@@ -435,13 +435,13 @@ program wannier
                    real_lattice, wannier_centres_translated, irvec, mp_grid, &
                    ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, rpt_origin, &
                    band_plot%mode, transport%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout, w90comm)
+                   stdout, comm)
   else
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, output_file, &
                          wann_control, omega, w90_system, print_output, wannier_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
-                         real_space_ham%translate_home_cell, seedname, stdout, w90comm)
+                         real_space_ham%translate_home_cell, seedname, stdout, comm)
   end if
 
   time1 = io_time()
@@ -494,7 +494,7 @@ program wannier
   call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                       u_matrix, u_matrix_opt, seedname, stdout, w90comm)
+                       u_matrix, u_matrix_opt, seedname, stdout, comm)
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                          kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
