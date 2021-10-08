@@ -172,7 +172,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_comms, only: w90comm_type
-  use w90_constants, only: w90_physical_constants, dp
+  use w90_constants, only: w90_physical_constants_type, dp
   use w90_io
   use w90_kmesh
   use w90lib_parameters
@@ -200,7 +200,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(w90_physical_constants) :: physics
+  type(w90_physical_constants_type) :: physics
   character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc
@@ -404,7 +404,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
 
-  use w90_constants, only: w90_physical_constants, dp
+  use w90_constants, only: w90_physical_constants_type, dp
   use w90lib_parameters
   use wannlib_param_data
   use wannier_methods, only: param_read, param_write, param_write_chkpt, &
@@ -441,7 +441,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(w90_physical_constants) :: physics
+  type(w90_physical_constants_type) :: physics
   character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc

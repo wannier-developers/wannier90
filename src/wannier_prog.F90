@@ -52,7 +52,7 @@
 program wannier
   !! The main Wannier90 program
 
-  use w90_constants, only: w90_physical_constants, dp
+  use w90_constants, only: w90_physical_constants_type, dp
   use w90_param_types
   use w90_io
   use w90_hamiltonian
@@ -89,7 +89,7 @@ program wannier
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(w90_physical_constants) :: physics ! data from parameters module
+  type(w90_physical_constants_type) :: physics ! data from parameters module
   type(w90_calculation_type) :: w90_calculation
   type(output_file_type) :: output_file
   ! Are we running postw90?

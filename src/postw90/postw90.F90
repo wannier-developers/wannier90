@@ -14,7 +14,7 @@
 
 program postw90
   !! The postw90 program
-  use w90_constants, only: dp, eps6, pw90_physical_constants
+  use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_param_types
   use pw90_parameters
   use w90_param_methods, only: param_read_chkpt, param_write_header
@@ -58,7 +58,7 @@ program postw90
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(pw90_physical_constants) :: physics
+  type(pw90_physical_constants_type) :: physics
   integer       :: nkp, len_seedname
   integer       :: stdout
   character(len=50) :: seedname

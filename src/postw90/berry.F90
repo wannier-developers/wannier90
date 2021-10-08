@@ -90,7 +90,7 @@ contains
     !============================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
-    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
+    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants_type
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
@@ -112,7 +112,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: print_output
-    type(pw90_physical_constants), intent(in) :: physics
+    type(pw90_physical_constants_type), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
     type(w90comm_type), intent(in) :: comm

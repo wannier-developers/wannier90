@@ -58,7 +58,7 @@ contains
     !!
     !                                                                  !
     !===================================================================
-    use w90_constants, only: w90_physical_constants
+    use w90_constants, only: w90_physical_constants_type
     use w90_utility, only: utility_recip_lattice, utility_inverse_mat
     implicit none
 

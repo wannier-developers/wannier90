@@ -31,7 +31,7 @@ module w90_io
   character(len=10), public, parameter:: w90_version = '3.1.0 '
   !! Label for this version of wannier90
 
-  type timing_data
+  type timing_data_type
     !! Data about each stopwatch - for timing routines
     integer :: ncalls
     !! Number of times stopwatch has been called
@@ -41,11 +41,11 @@ module w90_io
     !! Temporary record of time when watch is started
     character(len=60) :: label
     !! What is this stopwatch timing
-  end type timing_data
+  end type timing_data_type
 
   integer, parameter :: nmax = 100
   !! Maximum number of stopwatches
-  type(timing_data) :: clocks(nmax)
+  type(timing_data_type) :: clocks(nmax)
   !! Data for the stopwatches
   integer, save     :: nnames = 0
   !! Number of active stopwatches

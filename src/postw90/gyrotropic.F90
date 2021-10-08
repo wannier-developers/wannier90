@@ -76,7 +76,7 @@ contains
     !============================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
-    use w90_constants, only: dp, twopi, pw90_physical_constants
+    use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
@@ -97,7 +97,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
-    type(pw90_physical_constants), intent(in) :: physics
+    type(pw90_physical_constants_type), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
     type(w90_system_type), intent(in) :: w90_system

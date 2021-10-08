@@ -149,7 +149,7 @@ module w90_constants
   character(len=75), parameter :: bohr_version_str = "-> Using Bohr value from CODATA"
 #endif
 
-  type w90_physical_constants
+  type w90_physical_constants_type
     !real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
     !real(kind=dp) :: elec_mass_SI = elc_mass_SI      ! electron mass
     !real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
@@ -163,9 +163,9 @@ module w90_constants
     character(len=75) :: bohr_version_str = bohr_version_str
     character(len=75) :: constants_version_str1 = constants_version_str1
     character(len=75) :: constants_version_str2 = constants_version_str2
-  end type w90_physical_constants
+  end type w90_physical_constants_type
 
-  type pw90_physical_constants
+  type pw90_physical_constants_type
     real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
     real(kind=dp) :: elec_mass_SI = elec_mass_SI      ! electron mass
     real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
@@ -179,8 +179,8 @@ module w90_constants
     character(len=75) :: bohr_version_str = bohr_version_str
     character(len=75) :: constants_version_str1 = constants_version_str1
     character(len=75) :: constants_version_str2 = constants_version_str2
-  end type pw90_physical_constants
+  end type pw90_physical_constants_type
 
-  public :: w90_physical_constants, pw90_physical_constants
+  public :: w90_physical_constants_type, pw90_physical_constants_type
 
 end module w90_constants

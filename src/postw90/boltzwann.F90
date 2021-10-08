@@ -36,7 +36,7 @@ module w90_boltzwann
 
   use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
     comms_allreduce, w90comm_type
-  use w90_constants, only: dp, pw90_physical_constants, min_smearing_binwidth_ratio
+  use w90_constants, only: dp, pw90_physical_constants_type, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
@@ -105,7 +105,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: postw90_oper
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: print_output
-    type(pw90_physical_constants), intent(in) :: physics
+    type(pw90_physical_constants_type), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
     type(w90_system_type), intent(in) :: w90_system
