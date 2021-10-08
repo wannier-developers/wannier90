@@ -52,7 +52,7 @@ contains
     use pw90_parameters, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
-    use w90_comms, only: comms_bcast, w90commtype, mpirank, mpisize, comms_gatherv, comms_array_split
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
@@ -79,7 +79,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance

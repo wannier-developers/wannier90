@@ -43,7 +43,7 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, pi
-    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_io, only: io_error
     use pw90_parameters, only: pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
@@ -63,7 +63,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance

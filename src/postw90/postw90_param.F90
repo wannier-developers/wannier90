@@ -15,7 +15,7 @@
 module pw90_parameters
 
   use w90_constants, only: dp
-  use w90_comms, only: w90commtype
+  use w90_comms, only: w90comm_type
 
   implicit none
 

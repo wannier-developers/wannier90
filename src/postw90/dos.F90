@@ -49,7 +49,7 @@ contains
     !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
-    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type, kpoint_dist_type
     use pw90_parameters, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type
@@ -77,7 +77,7 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
-    type(w90commtype), intent(in)                :: comm
+    type(w90comm_type), intent(in)                :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)

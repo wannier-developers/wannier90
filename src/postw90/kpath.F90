@@ -49,7 +49,7 @@ contains
 
     !! Main routine
 
-    use w90_comms, only: w90commtype, mpirank, mpisize, comms_array_split, comms_scatterv, &
+    use w90_comms, only: w90comm_type, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
     use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
@@ -78,7 +78,7 @@ contains
     type(ws_region_type), intent(in) :: ws_region
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1085,13 +1085,13 @@ contains
                                pw90_kpath, berry_curv_unit, stdout, seedname, comm)
 
     use pw90_parameters, only: pw90_kpath_mod_type
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_io, only: io_error
 
     ! arguments
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(pw90_kpath_mod_type), intent(in) :: pw90_kpath
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(in) :: berry_curv_unit

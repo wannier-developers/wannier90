@@ -70,7 +70,7 @@ contains
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type
     use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
-      comms_scatterv, comms_array_split, w90commtype
+      comms_scatterv, comms_array_split, w90comm_type
 
     !ivo
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical_type
@@ -92,7 +92,7 @@ contains
     type(wann_omega_type), intent(inout)     :: omega
     type(sitesym_data_type), intent(in)      :: sym
     type(w90_calculation_type), intent(in)   :: w90_calculation
-    type(w90commtype), intent(in)            :: comm
+    type(w90comm_type), intent(in)            :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
 
     integer, intent(in) :: mp_grid(3)
@@ -1069,7 +1069,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
-      use w90_comms, only: w90commtype
+      use w90_comms, only: w90comm_type
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
@@ -1144,7 +1144,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      !use w90_comms, only: comms_allreduce, w90commtype
+      !use w90_comms, only: comms_allreduce, w90comm_type
 
       implicit none
 
@@ -1168,7 +1168,7 @@ contains
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
       integer, intent(in) :: stdout
-      !type(w90commtype), intent(in) :: comm
+      !type(w90comm_type), intent(in) :: comm
 
       ! local
       complex(kind=dp), external :: zdotc
@@ -1265,7 +1265,7 @@ contains
       !===============================================!
       !use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: comms_allreduce, w90commtype
+      use w90_comms, only: comms_allreduce, w90comm_type
       use wannier_param_types, only: wann_control_type
 
       implicit none
@@ -1413,7 +1413,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch
-      use w90_comms, only: w90commtype
+      use w90_comms, only: w90comm_type
 
       implicit none
 
@@ -1483,7 +1483,7 @@ contains
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data_type
       use w90_io, only: io_stopwatch, io_error
-      use w90_comms, only: comms_bcast, comms_gatherv, w90commtype
+      use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
       use w90_param_types, only: kmesh_info_type
 
@@ -1509,7 +1509,7 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
-      type(w90commtype), intent(in) :: comm
+      type(w90comm_type), intent(in) :: comm
 
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
@@ -1813,13 +1813,13 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
-    use w90_comms, only: comms_allreduce, w90commtype, mpirank
+    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type
 
     implicit none
 
     ! passed variables
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
 
     integer, intent(in) :: timing_level
@@ -2050,7 +2050,7 @@ contains
     ! Radu Miron at Implerial College London
     !===================================================================
     use w90_io, only: io_stopwatch
-    use w90_comms, only: comms_allreduce, w90commtype, mpirank
+    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type, print_output_type
     use wannier_param_types, only: wann_slwf_type
 
@@ -2079,7 +2079,7 @@ contains
     real(kind=dp), intent(in) :: lambda_loc
     logical, intent(inout) :: first_pass
     integer, intent(in) :: stdout
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     character(len=50), intent(in)  :: seedname
 
     !local variables
@@ -2354,7 +2354,7 @@ contains
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data_type !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
-      w90commtype, mpirank
+      w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: wann_slwf_type
 
@@ -2363,7 +2363,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(wann_slwf_type), intent(inout) :: wann_constrain
     type(sitesym_data_type), intent(in) :: sym
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
@@ -2636,7 +2636,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_stopwatch
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -2926,7 +2926,7 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -3046,7 +3046,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
     use w90_param_types, only: kmesh_info_type, print_output_type
 
     implicit none
@@ -3167,7 +3167,7 @@ contains
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -3175,7 +3175,7 @@ contains
 
     ! passed variables
     type(wannier_data_type), intent(inout) :: wannier_data
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
     type(wann_omega_type), intent(inout) :: omega
     integer, allocatable, intent(in) :: exclude_bands(:)

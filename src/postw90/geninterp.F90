@@ -83,7 +83,7 @@ contains
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
-      comms_gatherv, w90commtype
+      comms_gatherv, w90comm_type
     use w90_ws_distance, only: ws_distance_type
 
     ! arguments
@@ -95,7 +95,7 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
-    type(w90commtype), intent(in)                :: comm
+    type(w90comm_type), intent(in)                :: comm
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)

@@ -21,7 +21,7 @@ program postw90
   use pw90_param_methods
   use w90_io
   use w90_kmesh
-  use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90commtype, mpirank, mpisize
+  use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, kpoint_dist_type, wigner_seitz_type
 
@@ -182,7 +182,7 @@ program postw90
   ! local vars
   integer :: my_node_id, num_nodes, ierr
   logical :: on_root = .false.
-  type(w90commtype) :: comm
+  type(w90comm_type) :: comm
   type(ws_distance_type) :: ws_distance
   type(pw90_extra_io_type) :: write_data
   real(kind=dp) :: omega_invariant

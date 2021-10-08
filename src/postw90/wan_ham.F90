@@ -414,7 +414,7 @@ contains
     !
     use w90_constants, only: dp
     use pw90_parameters, only: pw90_band_deriv_degen_type
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -433,7 +433,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -543,7 +543,7 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
@@ -554,7 +554,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -628,7 +628,7 @@ contains
       kmesh_info_type, ws_region_type
     use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: pw90_berry_mod_type
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_ws_distance, only: ws_distance_type
 
     implicit none
@@ -640,7 +640,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -699,7 +699,7 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type
     use w90_utility, only: utility_diagonalize
@@ -712,7 +712,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: verbose
     type(ws_region_type), intent(in) :: rs_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wann_data
     type(wigner_seitz_type), intent(inout) :: ws_vec
     type(ws_distance_type), intent(inout) :: ws_distance

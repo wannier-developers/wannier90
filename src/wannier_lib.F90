@@ -171,7 +171,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
 
-  use w90_comms, only: w90commtype
+  use w90_comms, only: w90comm_type
   use w90_constants, only: w90_physical_constants, dp
   use w90_io
   use w90_kmesh
@@ -417,7 +417,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: comms_array_split, comms_scatterv, w90commtype, &
+  use w90_comms, only: comms_array_split, comms_scatterv, w90comm_type, &
     mpisize, mpirank
 
   use w90_param_methods, only: param_lib_set_atoms
@@ -495,7 +495,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer, allocatable :: counts(:)
   integer, allocatable :: displs(:)
   integer :: num_nodes, my_node_id
-  type(w90commtype) :: comm
+  type(w90comm_type) :: comm
   logical :: disentanglement
   logical :: mpiinitalready
 

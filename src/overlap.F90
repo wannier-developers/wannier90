@@ -57,7 +57,7 @@ contains
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -150,7 +150,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_data_type), intent(in) :: sym
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
@@ -660,7 +660,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig_local(:, :, :, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     integer :: ierr
@@ -725,7 +725,7 @@ contains
     implicit none
 
     type(sitesym_data_type), intent(in) :: sym
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: nnlist(:, :)
     integer, intent(in) :: nntot

@@ -17,7 +17,7 @@ module w90_disentangle
   !! subspace from a set of entangled bands.
 
   use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce, &
-    w90commtype, mpisize, mpirank
+    w90comm_type, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -72,7 +72,7 @@ contains
     real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
     type(sitesym_data_type), intent(inout) :: sym
-    type(w90commtype), intent(in)          :: comm
+    type(w90comm_type), intent(in)          :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -414,7 +414,7 @@ contains
     implicit none
 
     ! passed variables
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts
@@ -518,7 +518,7 @@ contains
     logical, intent(in) :: on_root, lsitesymmetry
 
     type(sitesym_data_type), intent(inout) :: sym
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -1692,7 +1692,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(sitesym_data_type), intent(in) :: sym
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima

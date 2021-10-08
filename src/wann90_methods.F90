@@ -2094,7 +2094,7 @@ contains
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
 
     implicit none
     !passed variables
@@ -2122,7 +2122,7 @@ contains
     type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     type(dis_manifold_type), intent(inout) :: dis_window
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(inout) :: first_segment
     integer, intent(inout) :: num_bands

@@ -63,7 +63,7 @@ module w90_comms
   public :: mpirank
   public :: mpisize
 
-  type, public :: w90commtype
+  type, public :: w90comm_type
 #ifdef MPI08
     type(mpi_comm) :: comm ! f08 mpi interface
 #else
@@ -148,7 +148,7 @@ contains
 
   ! mpi rank function for convenience
   integer function mpirank(w90comm)
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
     integer :: ierr
 #ifdef MPI
     call mpi_comm_rank(w90comm%comm, mpirank, ierr)
@@ -159,7 +159,7 @@ contains
 
   ! mpi size function for convenience
   integer function mpisize(w90comm)
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
     integer :: ierr
 #ifdef MPI
     call mpi_comm_size(w90comm%comm, mpisize, ierr)
@@ -187,7 +187,7 @@ contains
     integer, intent(in) :: numpoints  !! Number of elements of the array to be scattered
     integer, intent(inout) :: counts(0:) !! Array (of size num_nodes) with the number of elements of the array on each node
     integer, intent(inout) :: displs(0:) !! Array (of size num_nodes) with the displacement relative to the global array
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer :: ratio, remainder, i
     integer :: num_nodes
@@ -224,7 +224,7 @@ contains
   subroutine comms_barrier(w90comm)
     !! A barrier to synchronise all nodes
     implicit none
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -242,7 +242,7 @@ contains
     integer, intent(in) :: size
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -263,7 +263,7 @@ contains
     integer, intent(in) :: size
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -285,7 +285,7 @@ contains
     integer, intent(in) :: size
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -307,7 +307,7 @@ contains
     integer, intent(in) :: size
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -330,7 +330,7 @@ contains
     integer, intent(in) :: size
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -356,7 +356,7 @@ contains
     integer, intent(in) :: to
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -379,7 +379,7 @@ contains
     integer, intent(in) :: to
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -402,7 +402,7 @@ contains
     integer, intent(in) :: to
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -425,7 +425,7 @@ contains
     integer, intent(in) :: to
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -448,7 +448,7 @@ contains
     integer, intent(in) :: to
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -473,7 +473,7 @@ contains
     integer, intent(in) :: from
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     type(w90statustype) :: status
@@ -497,7 +497,7 @@ contains
     integer, intent(in) :: from
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     type(w90statustype) :: status
@@ -521,7 +521,7 @@ contains
     integer, intent(in) :: from
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     type(w90statustype) :: status
@@ -545,7 +545,7 @@ contains
     integer, intent(in) :: from
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     type(w90statustype) :: status
@@ -570,7 +570,7 @@ contains
     integer, intent(in) :: from
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     type(w90statustype) :: status
@@ -593,7 +593,7 @@ contains
     integer, intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
@@ -645,7 +645,7 @@ contains
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
@@ -708,7 +708,7 @@ contains
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
@@ -758,7 +758,7 @@ contains
     character(len=*), intent(in) :: op
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -798,7 +798,7 @@ contains
     character(len=*), intent(in) :: op
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -835,7 +835,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -865,7 +865,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -895,7 +895,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -926,7 +926,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -963,7 +963,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -994,7 +994,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1025,7 +1025,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1056,7 +1056,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1087,7 +1087,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1118,7 +1118,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1147,7 +1147,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1178,7 +1178,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1209,7 +1209,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1239,7 +1239,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1270,7 +1270,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1302,7 +1302,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
@@ -1334,7 +1334,7 @@ contains
     integer, intent(in) :: displs(0:)
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
-    type(w90commtype), intent(in) :: w90comm
+    type(w90comm_type), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr

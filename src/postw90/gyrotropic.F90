@@ -75,7 +75,7 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
@@ -99,7 +99,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(pw90_physical_constants), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(w90_system_type), intent(in) :: w90_system
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
@@ -561,7 +561,7 @@ contains
     !                                                                      !
     !======================================================================!
 
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type
@@ -585,7 +585,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance

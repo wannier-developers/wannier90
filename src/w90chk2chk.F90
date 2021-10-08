@@ -709,7 +709,7 @@ program w90chk2chk
   use w90_constants, only: dp
   use w90_io, only: io_file_unit, io_error
   use w90_conv
-  use w90_comms, only: comms_end, w90commtype, mpisize
+  use w90_comms, only: comms_end, w90comm_type, mpisize
 
 #ifdef MPI08
   use mpi_f08 ! use f08 interface if possible
@@ -734,7 +734,7 @@ program w90chk2chk
   character(len=50) :: seedname
   integer :: num_nodes, ierr
 
-  type(w90commtype) :: comm
+  type(w90comm_type) :: comm
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD

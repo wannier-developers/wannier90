@@ -46,7 +46,7 @@ contains
     !
     !======================================================
 
-    use w90_comms, only: w90commtype, mpirank, comms_bcast
+    use w90_comms, only: w90comm_type, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, print_output_type
@@ -57,7 +57,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(print_output_type), intent(in) :: print_output
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
@@ -260,7 +260,7 @@ contains
 
     use pw90_parameters, only: pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_spin_hall_type
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -272,7 +272,7 @@ contains
     type(dis_manifold_type), intent(in)   :: dis_manifold
     type(kmesh_info_type), intent(in)     :: kmesh_info
     type(print_output_type), intent(in)   :: print_output
-    type(w90commtype), intent(in)         :: comm
+    type(w90comm_type), intent(in)         :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -539,7 +539,7 @@ contains
     !
     !=====================================================
 
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -550,7 +550,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(w90commtype), intent(in)       :: comm
+    type(w90comm_type), intent(in)       :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -713,7 +713,7 @@ contains
     !=============================================================
 
     use pw90_parameters, only: pw90_oper_read_type
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -725,7 +725,7 @@ contains
     type(kmesh_info_type), intent(in)     :: kmesh_info
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in)   :: print_output
-    type(w90commtype), intent(in)         :: comm
+    type(w90comm_type), intent(in)         :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -898,7 +898,7 @@ contains
     !
     !===========================================================
 
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -909,7 +909,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(w90commtype), intent(in)       :: comm
+    type(w90comm_type), intent(in)       :: comm
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
@@ -1070,7 +1070,7 @@ contains
     !================================================================
 
     use pw90_parameters, only: pw90_oper_read_type
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, print_output_type
@@ -1081,7 +1081,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
 
@@ -1239,7 +1239,7 @@ contains
     !==================================================
 
     use pw90_parameters, only: pw90_oper_read_type, pw90_spin_hall_type
-    use w90_comms, only: comms_bcast, w90commtype, mpirank
+    use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
@@ -1252,7 +1252,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, num_valence_bands
     integer, intent(in) :: irvec(:, :)

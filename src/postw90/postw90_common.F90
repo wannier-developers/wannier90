@@ -89,7 +89,7 @@ contains
     use w90_io, only: io_error, io_file_unit
     !use w90_utility, only: utility_cart_to_frac
     use w90_param_types, only: print_output_type
-    use w90_comms, only: mpirank, w90commtype, comms_bcast
+    use w90_comms, only: mpirank, w90comm_type, comms_bcast
 
     integer, intent(in) :: num_wann
     type(print_output_type), intent(in) :: verbose
@@ -99,7 +99,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: effective_model
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90comm_type), intent(in) :: world
 
     integer :: ierr, ir, file_unit, num_wann_loc
     logical :: on_root = .false.
@@ -177,13 +177,13 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
-    use w90_comms, only: mpirank, mpisize, w90commtype, comms_send, comms_recv, comms_bcast
+    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_send, comms_recv, comms_bcast
 
     ! arguments
     type(kpoint_dist_type), intent(inout) :: kpoints
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90comm_type), intent(in) :: world
 
     ! local variables
     integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
@@ -267,7 +267,7 @@ contains
     use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
-    use w90_comms, only: mpirank, w90commtype, comms_bcast
+    use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_param_types
     use pw90_parameters, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
@@ -303,7 +303,7 @@ contains
     logical, intent(inout) :: effective_model
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90comm_type), intent(in) :: world
 
     integer :: ierr
     integer :: iprintroot
@@ -582,7 +582,7 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_param_types, only: dis_manifold_type, wannier_data_type
-    use w90_comms, only: w90commtype, mpirank, comms_bcast
+    use w90_comms, only: w90comm_type, mpirank, comms_bcast
 
     implicit none
     integer, intent(in) :: num_wann, num_kpts, num_bands
@@ -596,7 +596,7 @@ contains
     real(kind=dp), intent(in) :: scissors_shift
 
     character(len=50), intent(in)  :: seedname
-    type(w90commtype), intent(in) :: world
+    type(w90comm_type), intent(in) :: world
 
     integer :: ierr, loop_kpt, m, i, j
     logical :: on_root = .false.
@@ -1673,7 +1673,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: print_output_type
     use w90_utility, only: utility_metric
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -1682,7 +1682,7 @@ contains
 
     ! arguments
     type(print_output_type), intent(in) :: verbose
-    type(w90commtype), intent(in) :: world
+    type(w90comm_type), intent(in) :: world
     type(wigner_seitz_type), intent(inout) :: ws_vec
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout

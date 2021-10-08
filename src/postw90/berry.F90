@@ -89,7 +89,7 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_comms, only: comms_reduce, w90commtype, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
@@ -115,7 +115,7 @@ contains
     type(pw90_physical_constants), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1366,7 +1366,7 @@ contains
     !============================================================!
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
     use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
 
@@ -1378,7 +1378,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1462,7 +1462,7 @@ contains
     !
     !=========================================================!
 
-    use w90_comms, only: w90commtype, mpirank
+    use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_i
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type
@@ -1480,7 +1480,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1711,7 +1711,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss, &
       utility_recip_lattice_base
     use w90_param_types, only: print_output_type, wannier_data_type, &
@@ -1735,7 +1735,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1939,7 +1939,7 @@ contains
     use w90_wan_ham, only: wham_get_D_h, &
       wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, wham_get_D_h_P_value, &
       wham_get_eig_deleig_TB_conv, wham_get_eig_UU_HH_AA_sc_TB_conv
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
     use w90_utility, only: utility_rotate, utility_zdotu, utility_recip_lattice_base
     use w90_ws_distance, only: ws_distance_type
 
@@ -1952,7 +1952,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -2213,7 +2213,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate, utility_recip_lattice_base
-    use w90_comms, only: w90commtype
+    use w90_comms, only: w90comm_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, &
@@ -2234,7 +2234,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
-    type(w90commtype), intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance

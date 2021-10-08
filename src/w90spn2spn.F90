@@ -351,7 +351,7 @@ program w90spn2spn
   use w90_constants, only: dp
   use w90_io, only: io_file_unit, io_error
   use w90_conv_spn
-  use w90_comms, only: comms_end, mpisize, w90commtype
+  use w90_comms, only: comms_end, mpisize, w90comm_type
 
 #ifdef MPI08
   use mpi_f08 ! use f08 interface if possible
@@ -370,7 +370,7 @@ program w90spn2spn
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
 
-  type(w90commtype) :: comm
+  type(w90comm_type) :: comm
   logical :: file_found
   integer :: file_unit
   integer :: stdout, ierr, num_nodes

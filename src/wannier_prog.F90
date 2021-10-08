@@ -125,7 +125,7 @@ program wannier
 
   type(sitesym_data_type) :: sym
   type(ham_logical_type) :: hmlg
-  type(w90commtype) :: w90comm
+  type(w90comm_type) :: w90comm
 
   integer :: num_bands   !! Number of bands
 
