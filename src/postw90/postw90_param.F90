@@ -1461,8 +1461,8 @@ contains
         global_kmesh_set = .true.
         call param_get_keyword_vector(stdout, seedname, 'kmesh', found, 3, i_value=kmesh%mesh)
       else
-        call io_error('Error: kmesh must be provided as either one integer or a vector of three &
-                      integers', stdout, seedname)
+        call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', &
+                      stdout, seedname)
       end if
       if (any(kmesh%mesh <= 0)) &
         call io_error('Error: kmesh elements must be greater than zero', stdout, seedname)
@@ -1587,8 +1587,8 @@ contains
         module_kmesh%spacing = global_kmesh%spacing
       else
         if (should_be_defined) &
-          call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation &
-                        mesh given.', stdout, seedname)
+          call io_error('Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', &
+                        stdout, seedname)
       end if
     end if
   end subroutine get_module_kmesh
@@ -2053,8 +2053,9 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', pw90_boltzwann%temp_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature (K)             :', pw90_boltzwann%temp_step, '|'
 
-      if (pw90_extra_io%global_kmesh%mesh(1) == pw90_boltzwann%kmesh%mesh(1) .and. pw90_extra_io%global_kmesh%mesh(2) == pw90_boltzwann%kmesh%mesh(2) &
-          .and. pw90_extra_io%global_kmesh%mesh(3) == pw90_boltzwann%kmesh%mesh(3)) then
+      if (pw90_extra_io%global_kmesh%mesh(1) == pw90_boltzwann%kmesh%mesh(1) .and. &
+          pw90_extra_io%global_kmesh%mesh(2) == pw90_boltzwann%kmesh%mesh(2) .and. &
+          pw90_extra_io%global_kmesh%mesh(3) == pw90_boltzwann%kmesh%mesh(3)) then
         write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
       else
         if (pw90_boltzwann%kmesh%spacing > 0.0_dp) then
