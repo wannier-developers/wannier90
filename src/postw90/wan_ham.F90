@@ -113,7 +113,7 @@ contains
 
   end subroutine wham_get_D_h
 
-  subroutine wham_get_D_h_P_value(berry, delHH, D_h, UU, eig, num_wann)
+  subroutine wham_get_D_h_P_value(pw90_berry, delHH, D_h, UU, eig, num_wann)
     !=========================================!
     !                                         !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
@@ -132,7 +132,7 @@ contains
     use w90_utility, only: utility_rotate
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in) :: berry
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
 
     integer, intent(in) :: num_wann
 
@@ -156,7 +156,7 @@ contains
         do n = 1, num_wann
           if (n == m) cycle
           deltaE = eig(m) - eig(n)
-          D_h(n, m, i) = delHH_bar_i(n, m)*(deltaE/(deltaE**(2) + berry%sc_eta**(2)))
+          D_h(n, m, i) = delHH_bar_i(n, m)*(deltaE/(deltaE**(2) + pw90_berry%sc_eta**(2)))
         end do
       end do
     enddo
@@ -306,7 +306,8 @@ contains
 
   end subroutine wham_get_occ_mat_list
 
-  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_ham, stdout, seedname)
+  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_band_deriv_degen, &
+                               stdout, seedname)
     !==========================!
     !                          !
     !! Band derivatives dE/dk_a
@@ -318,7 +319,7 @@ contains
     use pw90_parameters, only: pw90_band_deriv_degen_type
 
     ! arguments
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: eig(num_wann)
@@ -335,7 +336,7 @@ contains
     allocate (delHH_bar_a(num_wann, num_wann))
     allocate (U_deg(num_wann, num_wann))
 
-    if (pw90_ham%use_degen_pert) then
+    if (pw90_band_deriv_degen%use_degen_pert) then
 
       delHH_bar_a = utility_rotate(delHH_a, UU, num_wann)
 
@@ -352,9 +353,9 @@ contains
           !
           ! i-th is the highest band, and it is non-degenerate
           !
-          diff = pw90_ham%degen_thr + 1.0_dp
+          diff = pw90_band_deriv_degen%degen_thr + 1.0_dp
         end if
-        if (diff < pw90_ham%degen_thr) then
+        if (diff < pw90_band_deriv_degen%degen_thr) then
           !
           ! Bands i and i+1 are degenerate
           !
@@ -366,7 +367,7 @@ contains
           do
             if (degen_max + 1 > num_wann) exit
             diff = eig(degen_max + 1) - eig(degen_max)
-            if (diff < pw90_ham%degen_thr) then
+            if (diff < pw90_band_deriv_degen%degen_thr) then
               degen_max = degen_max + 1
             else
               exit
@@ -381,7 +382,8 @@ contains
           dim = degen_max - degen_min + 1
           call utility_diagonalize(delHH_bar_a(degen_min:degen_max, &
                                                degen_min:degen_max), dim, &
-                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), stdout, seedname)
+                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), &
+                                   stdout, seedname)
           !
           ! Scanned bands up to degen_max
           !
@@ -404,11 +406,12 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(dis_window, kpt_latt, pw90_ham, rs_region, verbose, wann_data, &
-                                 ws_distance, ws_vec, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                 del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
-                                 num_bands, num_kpts, num_wann, num_valence_bands, &
-                                 effective_model, have_disentangled, seedname, stdout, comm)
+  subroutine wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                 print_output, wannier_data, ws_distance, wigner_seitz, delHH, HH, &
+                                 HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                 real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                 seedname, stdout, comm)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
@@ -427,14 +430,14 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_manifold
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -466,30 +469,33 @@ contains
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
+                                   kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 1), &
-                                   HH_R, kpt, real_lattice, mp_grid, 1, num_wann, seedname, stdout)
-    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 2), &
-                                   HH_R, kpt, real_lattice, mp_grid, 2, num_wann, seedname, stdout)
-    call pw90common_fourier_R_to_k(rs_region, wann_data, ws_distance, ws_vec, delHH(:, :, 3), &
-                                   HH_R, kpt, real_lattice, mp_grid, 3, num_wann, seedname, stdout)
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
+    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                   delHH(:, :, 1), HH_R, kpt, real_lattice, mp_grid, 1, num_wann, &
+                                   seedname, stdout)
+    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                   delHH(:, :, 2), HH_R, kpt, real_lattice, mp_grid, 2, num_wann, &
+                                   seedname, stdout)
+    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                   delHH(:, :, 3), HH_R, kpt, real_lattice, mp_grid, 3, num_wann, &
+                                   seedname, stdout)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_ham, &
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_ham, &
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
 
   end subroutine wham_get_eig_deleig
 
-  subroutine wham_get_eig_deleig_TB_conv(pw90_ham, delHH, UU, eig, del_eig, num_wann, seedname, &
-                                         stdout)
+  subroutine wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, delHH, UU, eig, del_eig, num_wann, &
+                                         seedname, stdout)
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
 
@@ -499,7 +505,7 @@ contains
     use pw90_parameters, only: pw90_band_deriv_degen_type
 
     ! arguments
-    type(pw90_band_deriv_degen_type), intent(in) :: pw90_ham
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -514,21 +520,22 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_ham, &
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_ham, &
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_ham, &
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname)
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(dis_window, fermi_energy_list, kpt_latt, rs_region, &
-                                       verbose, wann_data, ws_distance, ws_vec, HH, HH_R, &
-                                       JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, eigval, &
-                                       kpt, real_lattice, scissors_shift, mp_grid, num_bands, &
-                                       num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, comm, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                       print_output, wannier_data, ws_distance, wigner_seitz, HH, &
+                                       HH_R, JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, &
+                                       eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                                       num_bands, num_kpts, num_wann, num_valence_bands, &
+                                       effective_model, have_disentangled, seedname, stdout, &
+                                       comm, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -548,14 +555,14 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_manifold
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -583,13 +590,13 @@ contains
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(rs_region, wann_data, ws_distance, ws_vec, HH_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, &
+    call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                                       kpt, real_lattice, mp_grid, num_wann, seedname, &
                                        stdout, OO=HH, OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
 
@@ -606,10 +613,11 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(berry, dis_window, kmesh_info, kpt_latt, rs_region, &
-                                              verbose, wann_data, ws_distance, ws_vec, AA_R, HH, &
-                                              HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, &
-                                              eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, &
+                                              ws_region, print_output, wannier_data, ws_distance, &
+                                              wigner_seitz, AA_R, HH, HH_da, HH_dadb, HH_R, &
+                                              u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                              real_lattice, scissors_shift, mp_grid, &
                                               num_bands, num_kpts, num_wann, num_valence_bands, &
                                               effective_model, have_disentangled, seedname, &
                                               stdout, comm)
@@ -632,15 +640,15 @@ contains
     implicit none
 
     ! arguments
-    type(pw90_berry_mod_type), intent(in) :: berry
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
+    type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -664,29 +672,29 @@ contains
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
-    call get_AA_R(berry, dis_window, kmesh_info, kpt_latt, verbose, AA_R, HH_R, v_matrix, &
-                  eigval, ws_vec%irvec, ws_vec%nrpts, num_bands, num_kpts, num_wann, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                  v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                  num_wann, effective_model, have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, rs_region, &
-                                                        wann_data, real_lattice, mp_grid, &
-                                                        ws_distance, ws_vec, stdout, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, ws_region, &
+                                                        wannier_data, real_lattice, mp_grid, &
+                                                        ws_distance, wigner_seitz, stdout, &
                                                         seedname, OO=HH, OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(dis_window, kpt_latt, rs_region, verbose, wann_data, &
-                                      ws_distance, ws_vec, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
-                                      v_matrix, eig, eigval, kpt, real_lattice, &
-                                      scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                      num_valence_bands, effective_model, have_disentangled, &
-                                      seedname, stdout, comm)
+  subroutine wham_get_eig_UU_HH_AA_sc(dis_manifold, kpt_latt, ws_region, print_output, &
+                                      wannier_data, ws_distance, wigner_seitz, HH, HH_da, HH_dadb, &
+                                      HH_R, u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                      real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                      num_wann, num_valence_bands, effective_model, &
+                                      have_disentangled, seedname, stdout, comm)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -706,13 +714,13 @@ contains
     implicit none
 
     ! arguments
-    type(dis_manifold_type), intent(in) :: dis_window
+    type(dis_manifold_type), intent(in) :: dis_manifold
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(print_output_type), intent(in) :: verbose
-    type(ws_region_type), intent(in) :: rs_region
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
     type(w90comm_type), intent(in) :: comm
-    type(wannier_data_type), intent(in) :: wann_data
-    type(wigner_seitz_type), intent(inout) :: ws_vec
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -735,12 +743,12 @@ contains
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
-    call get_HH_R(dis_window, kpt_latt, verbose, ws_vec, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
-    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, rs_region, wann_data, &
-                                                real_lattice, mp_grid, ws_distance, ws_vec, &
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
+                                                real_lattice, mp_grid, ws_distance, wigner_seitz, &
                                                 stdout, seedname, OO=HH, OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
