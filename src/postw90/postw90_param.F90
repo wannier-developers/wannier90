@@ -222,6 +222,24 @@ module pw90_parameters
   end type pw90_boltzwann_type
   ! [gp-end, Apr 12, 2012]
 
+  ! Parameters describing the direct lattice points R on a
+  ! Wigner-Seitz supercell
+  ! these were in postw90_common
+  !
+  type wigner_seitz_type
+    integer, allocatable       :: irvec(:, :)
+    real(kind=dp), allocatable :: crvec(:, :)
+    integer, allocatable       :: ndegen(:)
+    integer                    :: nrpts
+    integer                    :: rpt_origin
+  end type wigner_seitz_type
+
+  type kpoint_dist_type ! kpoints from file
+    integer                       :: max_int_kpts_on_node, num_int_kpts
+    integer, allocatable          :: num_int_kpts_on_node(:)
+    real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
+  end type kpoint_dist_type
+
 end module pw90_parameters
 
 module pw90_param_methods

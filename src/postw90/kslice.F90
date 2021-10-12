@@ -50,7 +50,7 @@ contains
     !! Main routine
 
     use pw90_parameters, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type
+      pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type, wigner_seitz_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
@@ -58,7 +58,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig

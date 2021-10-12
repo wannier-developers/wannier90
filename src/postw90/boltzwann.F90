@@ -91,8 +91,7 @@ contains
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       ws_region_type, w90_system_type, ws_distance_type
     use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type
-    use w90_postw90_common, only: wigner_seitz_type
+      pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
 
     implicit none
 
@@ -692,10 +691,9 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, ws_distance_type
     use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type
+      pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
     use w90_param_methods, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
-    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 
@@ -1131,10 +1129,9 @@ contains
     use w90_utility, only: utility_w0gauss
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
-    use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type
+    use pw90_parameters, only: pw90_boltzwann_type, pw90_spin_mod_type, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
-    use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
 

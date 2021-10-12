@@ -74,11 +74,11 @@ contains
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
     use pw90_parameters, only: pw90_geninterp_mod_type, &
-      pw90_band_deriv_degen_type
+      pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R

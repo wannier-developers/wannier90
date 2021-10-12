@@ -45,11 +45,11 @@ contains
     use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_io, only: io_error
-    use pw90_parameters, only: pw90_spin_mod_type, pw90_oper_read_type
+    use pw90_parameters, only: pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
+      kpoint_dist_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type, ws_distance_type
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
 
     implicit none
 
@@ -204,8 +204,8 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
-    use pw90_parameters, only: pw90_spin_mod_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
+    use pw90_parameters, only: pw90_spin_mod_type, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
 
     ! arguments
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -282,7 +282,8 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
+    use pw90_parameters, only: wigner_seitz_type
 
     ! arguments
     type(ws_region_type), intent(in) :: rs_region
@@ -352,7 +353,8 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use pw90_parameters, only: wigner_seitz_type
 
     ! arguments
     type(ws_region_type), intent(in) :: rs_region

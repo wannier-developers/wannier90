@@ -32,7 +32,6 @@ module w90_postw90_common
   public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist
   public :: pw90common_wanint_data_dist, pw90common_get_occ
   public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
-  public :: kpoint_dist_type, wigner_seitz_type
   public :: pw90common_kmesh_spacing
   public :: pw90common_fourier_R_to_k_new_second_d, &
             pw90common_fourier_R_to_k_new_second_d_TB_conv, pw90common_fourier_R_to_k_vec_dadb, &
@@ -56,25 +55,6 @@ module w90_postw90_common
     module procedure kmesh_spacing_mesh
   end interface pw90common_kmesh_spacing
 
-  ! Parameters describing the direct lattice points R on a
-  ! Wigner-Seitz supercell
-  !
-  type wigner_seitz_type
-    integer, allocatable       :: irvec(:, :)
-    real(kind=dp), allocatable :: crvec(:, :)
-    integer, allocatable       :: ndegen(:)
-    integer                    :: nrpts
-    integer                    :: rpt_origin
-  end type wigner_seitz_type
-
-  type kpoint_dist_type ! kpoints from file
-    integer                       :: max_int_kpts_on_node, num_int_kpts
-    integer, allocatable          :: num_int_kpts_on_node(:)
-    real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
-  end type kpoint_dist_type
-  !complex(kind=dp), allocatable :: v_matrix(:, :, :)
-  !real(kind=dp), public :: cell_volume
-
 contains
 
   !===========================================================!
@@ -91,6 +71,7 @@ contains
     !use w90_utility, only: utility_cart_to_frac
     use w90_param_types, only: print_output_type
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
+    use pw90_parameters, only: wigner_seitz_type
 
     type(print_output_type), intent(in) :: print_output
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
@@ -185,6 +166,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_comms, only: mpirank, mpisize, w90comm_type, comms_send, comms_recv, comms_bcast
+    use pw90_parameters, only: kpoint_dist_type
 
     ! arguments
     type(kpoint_dist_type), intent(inout) :: kpoint_dist
@@ -836,6 +818,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -931,6 +914,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1028,6 +1012,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1142,6 +1127,7 @@ contains
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1292,6 +1278,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1402,6 +1389,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1509,6 +1497,7 @@ contains
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -1714,6 +1703,7 @@ contains
     use w90_param_types, only: print_output_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90comm_type, mpirank
+    use pw90_parameters, only: wigner_seitz_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors

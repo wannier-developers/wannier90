@@ -23,7 +23,7 @@ program postw90
   use w90_kmesh
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_param_dist, pw90common_wanint_data_dist, kpoint_dist_type, wigner_seitz_type
+    pw90common_wanint_param_dist, pw90common_wanint_data_dist
 
   ! These modules deal with the interpolation of specific physical properties
   !

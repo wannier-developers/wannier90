@@ -50,7 +50,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, print_output_type
-    use w90_postw90_common, only: wigner_seitz_type
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 

@@ -413,7 +413,7 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_constants, only: dp
-    use pw90_parameters, only: pw90_band_deriv_degen_type
+    use pw90_parameters, only: pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
@@ -421,7 +421,7 @@ contains
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       ws_region_type, ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
-      pw90common_fourier_R_to_k, wigner_seitz_type
+      pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize
 
     implicit none
@@ -537,12 +537,13 @@ contains
 
     use w90_constants, only: dp
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
-      pw90common_fourier_R_to_k_new, wigner_seitz_type
+      pw90common_fourier_R_to_k_new
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type, mpirank
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
@@ -621,11 +622,11 @@ contains
 
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R, get_AA_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       kmesh_info_type, ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: pw90_berry_mod_type
+    use pw90_parameters, only: pw90_berry_mod_type, wigner_seitz_type
     use w90_comms, only: w90comm_type, mpirank
 
     implicit none
@@ -694,12 +695,13 @@ contains
 
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
     use w90_comms, only: w90comm_type, mpirank
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
+    use pw90_parameters, only: wigner_seitz_type
 
     implicit none
 
