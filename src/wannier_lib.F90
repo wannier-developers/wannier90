@@ -483,7 +483,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   complex(kind=dp), allocatable :: ham_k(:, :, :)
   integer :: nrpts
 
-  type(sitesym_data_type) :: sym
+  type(sitesym_type) :: sym
   type(ham_logical_type) :: hmlg
 
   type(w90_extra_io_type) :: write_data

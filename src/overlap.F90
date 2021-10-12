@@ -131,24 +131,25 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(kmesh_info, select_projection, sym, a_matrix, m_matrix, m_matrix_local, &
-                          m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
-                          num_kpts, num_proj, num_wann, timing_level, cp_pp, gamma_only, &
-                          lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+  subroutine overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, &
+                          m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
+                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
+                          cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                          comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: select_projection_type, sitesym_data_type
+    use wannier_param_types, only: select_projection_type, sitesym_type
 
     implicit none
 
     ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
-    type(sitesym_data_type), intent(in) :: sym
+    type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
@@ -381,7 +382,7 @@ contains
 !~[aam]
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
-        call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
+        call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, &
                              timing_level, lsitesymmetry, seedname, stdout, comm)
       else
@@ -557,7 +558,8 @@ contains
 !~![ysl-e]
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, seedname, stdout)
+  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, seedname, &
+                            stdout)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
@@ -705,9 +707,9 @@ contains
   end subroutine overlap_dealloc
 
   !==================================================================!
-  subroutine overlap_project(sym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, num_bands, &
-                             num_kpts, num_wann, timing_level, lsitesymmetry, seedname, stdout, &
-                             comm)
+  subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
+                             num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, &
+                             seedname, stdout, comm)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -720,11 +722,11 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
-    use wannier_param_types, only: sitesym_data_type
+    use wannier_param_types, only: sitesym_type
 
     implicit none
 
-    type(sitesym_data_type), intent(in) :: sym
+    type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: nnlist(:, :)
@@ -831,8 +833,8 @@ contains
     enddo
     ! NKP
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix, num_bands, num_wann, num_kpts, &
-                                                        num_wann, seedname, stdout) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, &
+                                                        num_kpts, num_wann, seedname, stdout) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
@@ -840,7 +842,8 @@ contains
       do nn = 1, nntot
         nkp2 = nnlist(nkp + displs(my_node_id), nn)
         ! cvdag = U^{dagger} . M   (use as workspace)
-        call utility_zgemm(cvdag, u_matrix(:, :, nkp + displs(my_node_id)), 'C', m_matrix_local(:, :, nn, nkp), 'N', num_wann)
+        call utility_zgemm(cvdag, u_matrix(:, :, nkp + displs(my_node_id)), 'C', &
+                           m_matrix_local(:, :, nn, nkp), 'N', num_wann)
         ! cz = cvdag . U
         call utility_zgemm(cz, cvdag, 'N', u_matrix(:, :, nkp2), 'N', num_wann)
         m_matrix_local(:, :, nn, nkp) = cz(:, :)

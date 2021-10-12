@@ -82,12 +82,12 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, hmlg, kpt_latt, output_file, &
-                       real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                       u_matrix, u_matrix_opt, eigval, real_lattice, &
-                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_wann, rpt_origin, bands_plot_mode, &
-                       have_disentangled, lsitesymmetry, seedname, stdout)
+  subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, &
+                       output_file, real_space_ham, transport, print_output, wannier_data, &
+                       ws_region, w90_calculation, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                       real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                       shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
+                       bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
     !! Main transport subroutine
     !==================================================================!
 
@@ -113,7 +113,7 @@ contains
     type(dis_manifold_type), intent(in)         :: dis_manifold
     real(kind=dp), intent(in)                   :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
-    type(ham_logical_type), intent(inout)       :: hmlg
+    type(ham_logical_type), intent(inout)       :: ham_logical
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -180,28 +180,30 @@ contains
     if (index(transport%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. transport%read_ht) then
-        call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
-                               real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                               num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                               seedname, transport%mode)
-        call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
-                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
-                                real_lattice, wannier_data%centres, &
+        call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
+                               ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
+                               ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
+                               stdout, seedname, transport%mode)
+        call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
+                                print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                                kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
-        if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                            num_wann, print_output%timing_level, &
+        if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
+                                                            nrpts, num_wann, &
+                                                            print_output%timing_level, &
                                                             seedname, stdout)
-        call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                            nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
-                            seedname, stdout)
-        call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
-                                 wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
-                                 one_dim_vec, seedname, stdout)
-        call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, num_wann, &
-                         print_output%timing_level, seedname, stdout)
-        if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
+        call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
+                            irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
+                            print_output%timing_level, seedname, stdout)
+        call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
+                                 real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
+                                 num_pl, num_wann, one_dim_vec, seedname, stdout)
+        call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
+                         num_wann, print_output%timing_level, seedname, stdout)
+        if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
+                                                       wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
       end if
       call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname)
@@ -210,18 +212,19 @@ contains
     if (index(transport%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. transport%read_ht) then
-        call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
-                               real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                               num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                               seedname, transport%mode)
-        call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, &
-                                ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
-                                real_lattice, wannier_data%centres, &
+        call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
+                               ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
+                               ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
+                               stdout, seedname, transport%mode)
+        call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
+                                print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                                kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
-        if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                            num_wann, print_output%timing_level, &
+        if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
+                                                            nrpts, num_wann, &
+                                                            print_output%timing_level, &
                                                             seedname, stdout)
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
                             nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &

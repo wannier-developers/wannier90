@@ -246,7 +246,7 @@ module wannier_param_types
   end type select_projection_type
 
   ! from sitesym
-  type sitesym_data_type
+  type sitesym_type
     ! Variables and parameters needed by other modules
     integer :: nkptirr = 9999
     integer :: nsymmetry = 9999
@@ -254,7 +254,7 @@ module wannier_param_types
     real(kind=dp) :: symmetrize_eps = 1.d-3
     complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
     complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
-  end type sitesym_data_type
+  end type sitesym_type
 
   ! from hamiltonian
   type ham_logical_type

@@ -48,13 +48,13 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main(atom_data, dis_manifold, exclude_bands, hmlg, kmesh_info, kpt_latt, output_file, &
-                       real_space_ham, wann_control, omega, sym, w90_system, print_output, wannier_data, &
-                       ws_region, w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, &
-                       eigval, real_lattice, wannier_centres_translated, irvec, &
-                       mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, num_wann, &
-                       rpt_origin, bands_plot_mode, transport_mode, have_disentangled, &
-                       lsitesymmetry, seedname, stdout, comm)
+  subroutine wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
+                       output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
+                       print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
+                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
+                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, bands_plot_mode, &
+                       transport_mode, have_disentangled, lsitesymmetry, seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -63,7 +63,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use wannier_param_types, only: wann_control_type, output_file_type, &
-      w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_data_type, &
+      w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
       ham_logical_type
     use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
@@ -81,7 +81,7 @@ contains
     ! passed variables
     type(atom_data_type), intent(in)         :: atom_data
     type(dis_manifold_type), intent(in)      :: dis_manifold
-    type(ham_logical_type), intent(inout)    :: hmlg
+    type(ham_logical_type), intent(inout)    :: ham_logical
     type(kmesh_info_type), intent(in)        :: kmesh_info
     real(kind=dp), intent(in)                :: kpt_latt(:, :)
     type(w90_system_type), intent(in)        :: w90_system
@@ -91,7 +91,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(wann_control_type), intent(inout)   :: wann_control
     type(wann_omega_type), intent(inout)     :: omega
-    type(sitesym_data_type), intent(in)      :: sym
+    type(sitesym_type), intent(in)           :: sitesym
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90comm_type), intent(in)            :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
@@ -249,7 +249,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
     if (wann_control%precond) then
-      call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
+      call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
@@ -501,12 +501,12 @@ contains
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
                          m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         stdout, seedname, sym, comm, print_output%iprint, cdodq)
+                         stdout, seedname, sitesym, comm, print_output%iprint, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
                          m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         stdout, seedname, sym, comm, print_output%iprint)
+                         stdout, seedname, sitesym, comm, print_output%iprint)
       endif
 
       if (lprint .and. print_output%iprint > 2) &
@@ -523,7 +523,7 @@ contains
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, &
                                      kmesh_info%wbtot, cdq_loc, cdodq_loc, counts, stdout)
-      if (lsitesymmetry) call sitesym_symmetrize_gradient(sym, cdq, 2, num_kpts, num_wann) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann) !RS:
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -554,7 +554,7 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sym, comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, comm)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
@@ -613,7 +613,7 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sym, comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, comm)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -814,15 +814,15 @@ contains
     endif
 
     if (output_file%write_hr_diag) then
-      call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
+      call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
                              seedname, transport_mode)
-      call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
-                              u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
-                              wannier_data%centres, wannier_centres_translated, irvec, &
-                              shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                              stdout, seedname, lsitesymmetry)
+      call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
+                              ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
+                              real_lattice, wannier_data%centres, wannier_centres_translated, &
+                              irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                              have_disentangled, stdout, seedname, lsitesymmetry)
       if (print_output%iprint > 0) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
@@ -862,8 +862,8 @@ contains
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. output_file%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_manifold%lwindow, print_output%timing_level, print_output%iprint, &
-                                stdout, seedname)
+                                dis_manifold%lwindow, print_output%timing_level, &
+                                print_output%iprint, stdout, seedname)
 
     ! aam: write data required for vdW utility
     if (output_file%write_vdw_data .and. on_root) then
@@ -1475,7 +1475,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                    m_matrix_loc, timing_level, stdout, sym, comm)
+                                    m_matrix_loc, timing_level, stdout, sitesym, comm)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1483,7 +1483,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation
-      use wannier_param_types, only: sitesym_data_type
+      use wannier_param_types, only: sitesym_type
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
@@ -1493,7 +1493,7 @@ contains
 
       type(kmesh_info_type), intent(in) :: kmesh_info
 
-      type(sitesym_data_type), intent(in) :: sym
+      type(sitesym_type), intent(in) :: sitesym
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -1525,7 +1525,7 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (lsitesymmetry) then                !YN: RS:
-          if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
+          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
         end if                                 !YN: RS:
         ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
         tmp_cdq(:, :) = cmplx_i*cdq_loc(:, :, nkp_loc)
@@ -1583,7 +1583,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(sym, cdq, num_kpts, num_wann, seedname, stdout) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, seedname, stdout) !RS: calculate cdq(Rk) from k
 
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
                                                   + counts(my_node_id))
@@ -2342,8 +2342,8 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_constrain, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, stdout, seedname, sym, comm, iprint, &
-                         cdodq)
+                         cdodq_loc, lambda_loc, timing_level, stdout, seedname, sitesym, comm, &
+                         iprint, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2358,13 +2358,13 @@ contains
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: wann_slwf_type, sitesym_data_type
+    use wannier_param_types, only: wann_slwf_type, sitesym_type
 
     implicit none
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(wann_slwf_type), intent(inout) :: wann_constrain
-    type(sitesym_data_type), intent(in) :: sym
+    type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
@@ -2584,7 +2584,7 @@ contains
                          seedname, comm)
       call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
       if (lsitesymmetry) then
-        call sitesym_symmetrize_gradient(sym, cdodq, 1, num_kpts, num_wann) !RS:
+        call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) &
                                                       + 1:displs(my_node_id) + counts(my_node_id))
       endif

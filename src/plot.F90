@@ -22,13 +22,13 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, hmlg, kmesh_info, &
-                       kpt_latt, output_file, wvfn_read, real_space_ham, kpoint_path, &
-                       print_output, wannier_data, wannier_plot, ws_region, w90_calculation, ham_k, ham_r, &
-                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                       wannier_centres_translated, bohr, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_wann, rpt_origin, transport_mode, &
-                       have_disentangled, lsitesymmetry, spinors, seedname, stdout)
+  subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
+                       ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
+                       kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
+                       w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                       real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
+                       shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
+                       transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, stdout)
     !! Main plotting routine
     !============================================!
 
@@ -63,7 +63,7 @@ contains
     type(dis_manifold_type), intent(in)          :: dis_manifold
     type(fermi_surface_plot_type), intent(in)    :: fermi_surface_plot
     type(kpoint_path_type), intent(in)           :: kpoint_path
-    type(ham_logical_type), intent(inout)        :: hmlg
+    type(ham_logical_type), intent(inout)        :: ham_logical
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -105,8 +105,9 @@ contains
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     ! Print the header only if there is something to plot
-    if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. output_file%write_hr .or. &
-        w90_calculation%wannier_plot .or. output_file%write_u_matrices .or. output_file%write_tb) then
+    if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
+        output_file%write_hr .or. w90_calculation%wannier_plot .or. output_file%write_u_matrices &
+        .or. output_file%write_tb) then
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
@@ -125,41 +126,43 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
+      call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
                              seedname, transport_mode)
       !
-      call hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, ham_k, ham_r, &
-                              u_matrix, u_matrix_opt, eigval, kpt_latt, real_lattice, &
-                              wannier_data%centres, wannier_centres_translated, irvec, &
-                              shift_vec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                              stdout, seedname, lsitesymmetry)
+      call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
+                              ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
+                              real_lattice, wannier_data%centres, wannier_centres_translated, &
+                              irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                              have_disentangled, stdout, seedname, lsitesymmetry)
       bands_num_spec_points = 0
       if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
       !
-      if (w90_calculation%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, band_plot, &
-                                                                  kpoint_path, real_space_ham, ws_region, &
-                                                                  print_output, recip_lattice, num_wann, &
-                                                                  wannier_data, ham_r, irvec, ndegen, &
-                                                                  nrpts, wannier_centres_translated, &
-                                                                  ws_distance, bands_num_spec_points, stdout, seedname)
+      if (w90_calculation%bands_plot) then
+        call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, real_space_ham, &
+                                    ws_region, print_output, recip_lattice, num_wann, &
+                                    wannier_data, ham_r, irvec, ndegen, nrpts, &
+                                    wannier_centres_translated, ws_distance, &
+                                    bands_num_spec_points, stdout, seedname)
+      endif
       !
-      if (w90_calculation%fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, recip_lattice, &
-                                                                      fermi_surface_plot, num_wann, &
-                                                                      ham_r, irvec, ndegen, nrpts, &
-                                                                      print_output%timing_level, stdout, &
-                                                                      seedname)
+      if (w90_calculation%fermi_surface_plot) then
+        call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
+                                ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
+                                seedname)
+      endif
       !
-      if (output_file%write_hr) call hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, &
-                                                          num_wann, print_output%timing_level, seedname, &
+      if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
+                                                          nrpts, num_wann, &
+                                                          print_output%timing_level, seedname, &
                                                           stdout)
       !
       if (output_file%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, &
                                                             kpt_latt, irvec, nrpts, &
                                                             num_kpts, num_wann, stdout, seedname)
-      if (output_file%write_tb) call hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, &
-                                                          kpt_latt, real_lattice, irvec, &
+      if (output_file%write_tb) call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, &
+                                                          m_matrix, kpt_latt, real_lattice, irvec, &
                                                           ndegen, nrpts, num_kpts, num_wann, &
                                                           stdout, print_output%timing_level, seedname)
       if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then

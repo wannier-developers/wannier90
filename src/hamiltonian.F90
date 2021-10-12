@@ -31,10 +31,10 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(hmlg, print_output, ws_region, w90_calculation, ham_k, ham_r, &
-                               real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                               num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                               seedname, transport_mode)
+  subroutine hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
+                               ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
+                               ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
+                               stdout, seedname, transport_mode)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -47,9 +47,9 @@ contains
 
     ! passed variables
     type(ws_region_type), intent(in) :: ws_region
-    type(print_output_type), intent(in)   :: print_output
+    type(print_output_type), intent(in)    :: print_output
     type(w90_calculation_type), intent(in) :: w90_calculation
-    type(ham_logical_type), intent(inout)       :: hmlg
+    type(ham_logical_type), intent(inout)  :: ham_logical
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -73,16 +73,16 @@ contains
     ! local variables
     integer :: ierr
 
-    if (hmlg%ham_have_setup) return
+    if (ham_logical%ham_have_setup) return
     !
     ! Determine whether to use translation
     !
     if (w90_calculation%bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) &
-      hmlg%use_translation = .true.
+      ham_logical%use_translation = .true.
     if (w90_calculation%transport .and. (index(transport_mode, 'bulk') .ne. 0)) &
-      hmlg%use_translation = .true.
+      ham_logical%use_translation = .true.
     if (w90_calculation%transport .and. (index(transport_mode, 'lcr') .ne. 0)) &
-      hmlg%use_translation = .true.
+      ham_logical%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
@@ -116,14 +116,14 @@ contains
       ('Error allocating wannier_centres_translated in hamiltonian_setup', stdout, seedname)
     wannier_centres_translated = 0.0_dp
 
-    hmlg%ham_have_setup = .true.
+    ham_logical%ham_have_setup = .true.
 
     return
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
-                                 stdout, seedname)
+  subroutine hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, &
+                                 ndegen, stdout, seedname)
     !! Deallocate module data
     !============================================!
 
@@ -133,7 +133,7 @@ contains
     implicit none
 
     ! passed variables
-    type(ham_logical_type), intent(inout) :: hmlg
+    type(ham_logical_type), intent(inout) :: ham_logical
 
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -176,23 +176,24 @@ contains
                       seedname)
     end if
 
-    hmlg%ham_have_setup = .false.
-    hmlg%have_translated = .false.
-    hmlg%use_translation = .false.
-    hmlg%have_ham_r = .false.
-    hmlg%have_ham_k = .false.
-    hmlg%hr_written = .false.
-    hmlg%tb_written = .false.
+    ham_logical%ham_have_setup = .false.
+    ham_logical%have_translated = .false.
+    ham_logical%use_translation = .false.
+    ham_logical%have_ham_r = .false.
+    ham_logical%have_ham_k = .false.
+    ham_logical%hr_written = .false.
+    ham_logical%tb_written = .false.
 
     return
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(atom_data, dis_manifold, hmlg, real_space_ham, print_output, &
-                                ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
-                                real_lattice, wannier_centres, wannier_centres_translated, irvec, &
-                                shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                                have_disentangled, stdout, seedname, lsitesymmetry)
+  subroutine hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
+                                print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                                kpt_latt, real_lattice, wannier_centres, &
+                                wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
+                                num_kpts, num_wann, have_disentangled, stdout, seedname, &
+                                lsitesymmetry)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -207,7 +208,7 @@ contains
     implicit none
 
     ! passed variables
-    type(ham_logical_type), intent(inout)         :: hmlg
+    type(ham_logical_type), intent(inout)    :: ham_logical
     type(atom_data_type), intent(in)         :: atom_data
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(print_output_type), intent(in)      :: print_output
@@ -248,15 +249,15 @@ contains
 
     if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, stdout, seedname)
 
-    if (hmlg%have_ham_r) then
-      if (hmlg%have_translated .eqv. hmlg%use_translation) then
+    if (ham_logical%have_ham_r) then
+      if (ham_logical%have_translated .eqv. ham_logical%use_translation) then
         goto 200
       else
         goto 100
       endif
     end if
 
-    if (hmlg%have_ham_k) go to 100
+    if (ham_logical%have_ham_k) go to 100
 
 !~    if (.not. allocated(ham_k)) then
 !~       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
@@ -297,22 +298,22 @@ contains
           enddo
         enddo
       else                                                                                               !YN:
-        ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                              !RS:
-        ! so we have to calculate ham_k in the following way                                             !RS:
-        do loop_kpt = 1, num_kpts                                                                        !RS:
-          utmp(1:dis_manifold%ndimwin(loop_kpt), :) = &                                                      !RS:
+        ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                    !RS:
+        ! so we have to calculate ham_k in the following way                                   !RS:
+        do loop_kpt = 1, num_kpts                                                              !RS:
+          utmp(1:dis_manifold%ndimwin(loop_kpt), :) = &                                        !RS:
             matmul(u_matrix_opt(1:dis_manifold%ndimwin(loop_kpt), :, loop_kpt), &
-                   u_matrix(:, :, loop_kpt))                                                             !RS:
-          do j = 1, num_wann                                                                             !RS:
-            do i = 1, j                                                                                  !RS:
-              do m = 1, dis_manifold%ndimwin(loop_kpt)                                                       !RS:
+                   u_matrix(:, :, loop_kpt))                                                   !RS:
+          do j = 1, num_wann                                                                   !RS:
+            do i = 1, j                                                                        !RS:
+              do m = 1, dis_manifold%ndimwin(loop_kpt)                                         !RS:
                 ham_k(i, j, loop_kpt) = ham_k(i, j, loop_kpt) + eigval_opt(m, loop_kpt)* &
-                                        conjg(utmp(m, i))*utmp(m, j)                                     !RS:
-              enddo                                                                                      !RS:
-              if (i .lt. j) ham_k(j, i, loop_kpt) = conjg(ham_k(i, j, loop_kpt))                         !RS:
-            enddo                                                                                        !RS:
-          enddo                                                                                          !RS:
-        enddo                                                                                            !RS:
+                                        conjg(utmp(m, i))*utmp(m, j)                           !RS:
+              enddo                                                                            !RS:
+              if (i .lt. j) ham_k(j, i, loop_kpt) = conjg(ham_k(i, j, loop_kpt))               !RS:
+            enddo                                                                              !RS:
+          enddo                                                                                !RS:
+        enddo                                                                                  !RS:
       endif                                                                                              !YN:
 
     else
@@ -339,7 +340,7 @@ contains
       enddo
     endif                                                                                                !YN:
 
-    hmlg%have_ham_k = .true.
+    ham_logical%have_ham_k = .true.
 
 100 continue
 
@@ -352,7 +353,7 @@ contains
 
     ham_r = cmplx_0
 
-    if (.not. hmlg%use_translation) then
+    if (.not. ham_logical%use_translation) then
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -362,7 +363,7 @@ contains
         enddo
       enddo
 
-      hmlg%have_translated = .false.
+      ham_logical%have_translated = .false.
 
     else
 
@@ -387,7 +388,7 @@ contains
         enddo
       enddo
 
-      hmlg%have_translated = .true.
+      ham_logical%have_translated = .true.
 
     end if
 
@@ -401,7 +402,7 @@ contains
 !         call ws_translate_dist(nrpts, irvec)
 !     endif
 
-    hmlg%have_ham_r = .true.
+    ham_logical%have_ham_r = .true.
 
 200 continue
 
@@ -527,8 +528,8 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(hmlg, ham_r, irvec, ndegen, nrpts, num_wann, timing_level, &
-                                  seedname, stdout)
+  subroutine hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
+                                  timing_level, seedname, stdout)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -537,7 +538,7 @@ contains
     use wannier_param_types, only: ham_logical_type
 
 !   passed variables
-    type(ham_logical_type), intent(inout) :: hmlg
+    type(ham_logical_type), intent(inout) :: ham_logical
 
     integer, intent(inout) :: nrpts
     integer, intent(in)    :: ndegen(:)
@@ -553,7 +554,7 @@ contains
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
-    if (hmlg%hr_written) return
+    if (ham_logical%hr_written) return
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1, stdout, seedname)
 
@@ -581,7 +582,7 @@ contains
 
     close (file_unit)
 
-    hmlg%hr_written = .true.
+    ham_logical%hr_written = .true.
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2, stdout, seedname)
 
@@ -614,7 +615,7 @@ contains
     implicit none
 
     ! passed variables
-    type(ws_region_type), intent(in) :: ws_region
+    type(ws_region_type), intent(in)    :: ws_region
     type(print_output_type), intent(in) :: print_output
 
     integer, intent(inout)              :: nrpts
@@ -836,9 +837,9 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb(hmlg, kmesh_info, ham_r, m_matrix, kpt_latt, real_lattice, &
-                                  irvec, ndegen, nrpts, num_kpts, num_wann, stdout, timing_level, &
-                                  seedname)
+  subroutine hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
+                                  real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, stdout, &
+                                  timing_level, seedname)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -855,7 +856,7 @@ contains
 
 !   passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(ham_logical_type), intent(inout)  :: hmlg
+    type(ham_logical_type), intent(inout)  :: ham_logical
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
     integer, intent(in)    :: num_wann
@@ -877,7 +878,7 @@ contains
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
 
-    if (hmlg%tb_written) return
+    if (ham_logical%tb_written) return
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1, stdout, seedname)
 
@@ -946,7 +947,7 @@ contains
     end do
     close (file_unit)
 
-    hmlg%tb_written = .true.
+    ham_logical%tb_written = .true.
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2, stdout, seedname)
 

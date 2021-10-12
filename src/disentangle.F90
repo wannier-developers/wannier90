@@ -21,7 +21,7 @@ module w90_disentangle
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
-  use wannier_param_types, only: dis_control_type, dis_spheres_type, sitesym_data_type
+  use wannier_param_types, only: dis_control_type, dis_spheres_type, sitesym_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
     sitesym_dis_extract_symmetry
@@ -34,10 +34,11 @@ contains
 
   !==================================================================!
 
-  subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sym, print_output, &
-                      a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                      u_matrix, u_matrix_opt, eigval, real_lattice, omega_invariant, num_bands, &
-                      num_kpts, num_wann, gamma_only, lsitesymmetry, stdout, seedname, comm)
+  subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
+                      print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                      m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                      omega_invariant, num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
+                      stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -71,7 +72,7 @@ contains
     type(kmesh_info_type), intent(in)      :: kmesh_info
     real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
-    type(sitesym_data_type), intent(inout) :: sym
+    type(sitesym_type), intent(inout) :: sitesym
     type(w90comm_type), intent(in)         :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -134,9 +135,9 @@ contains
                       seedname) !YN: RS:
       endif
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
-      call dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, dis_manifold%ndimwin, print_output%iprint, &
-                         num_bands, num_kpts, num_wann, print_output%timing_level, &
-                         lfrozen, on_root, seedname, stdout)
+      call dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, dis_manifold%ndimwin, &
+                         print_output%iprint, num_bands, num_kpts, num_wann, &
+                         print_output%timing_level, lfrozen, on_root, seedname, stdout)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
@@ -147,8 +148,8 @@ contains
 
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
-                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, seedname, &
-                         stdout, comm)
+                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, &
+                         seedname, stdout, comm)
 
     dis_manifold%lwindow = .false.
     do nkp = 1, num_kpts
@@ -158,23 +159,23 @@ contains
     end do
 
     if (lsitesymmetry) then
-      call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, num_wann, &
-                                       seedname, stdout, dis_manifold%lwindow)
+      call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
+                                       num_wann, seedname, stdout, dis_manifold%lwindow)
     endif
 
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     ! Extract the optimally-connected num_wann-dimensional subspaces
 
     if (gamma_only) then
-      call dis_extract_gamma(dis_control, kmesh_info, sym, print_output, dis_manifold, m_matrix_orig, &
-                             u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, ndimfroz, &
-                             my_node_id, num_bands, num_kpts, num_nodes, num_wann, lsitesymmetry, &
-                             on_root, seedname, stdout)
+      call dis_extract_gamma(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
+                             m_matrix_orig, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
+                             ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
+                             lsitesymmetry, on_root, seedname, stdout)
     else
-      call dis_extract(dis_control, kmesh_info, sym, print_output, dis_manifold, m_matrix_orig_local, &
-                       u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, ndimfroz, my_node_id, &
-                       num_bands, num_kpts, num_nodes, num_wann, lsitesymmetry, on_root, seedname, &
-                       stdout, comm)
+      call dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
+                       m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
+                       ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
+                       lsitesymmetry, on_root, seedname, stdout, comm)
     end if
 
     ! Allocate workspace
@@ -192,22 +193,22 @@ contains
         call zgemm('C', 'N', num_wann, dis_manifold%ndimwin(nkp2), dis_manifold%ndimwin(nkp_global), &
                    cmplx_1, u_matrix_opt(:, :, nkp_global), num_bands, &
                    m_matrix_orig_local(:, :, nn, nkp), num_bands, cmplx_0, cwb, num_wann)
-        call zgemm('N', 'N', num_wann, num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, cwb, num_wann, &
-                   u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
+        call zgemm('N', 'N', num_wann, num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, cwb, &
+                   num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
         m_matrix_orig_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
       enddo
     enddo
 
     ! Find the initial u_matrix
-    if (lsitesymmetry) call sitesym_replace_d_matrix_band(sym, num_wann) !RS: replace d_matrix_band here
+    if (lsitesymmetry) call sitesym_replace_d_matrix_band(sitesym, num_wann) !RS: replace d_matrix_band here
 ![ysl-b]
     if (gamma_only) then
       call internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, num_wann, &
                                  print_output%timing_level, seedname, stdout)
     else
-      call internal_find_u(sym, a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, num_bands, &
-                           num_kpts, num_wann, print_output%timing_level, lsitesymmetry, on_root, &
-                           seedname, stdout, comm)
+      call internal_find_u(sitesym, a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, &
+                           num_bands, num_kpts, num_wann, print_output%timing_level, &
+                           lsitesymmetry, on_root, seedname, stdout, comm)
     end if
 ![ysl-e]
 
@@ -480,8 +481,9 @@ contains
     !================================================================!
   end subroutine internal_slim_m
 
-  subroutine internal_find_u(sym, a_matrix, u_matrix, u_matrix_opt, ndimwin, num_bands, num_kpts, &
-                             num_wann, timing_level, lsitesymmetry, on_root, seedname, stdout, comm)
+  subroutine internal_find_u(sitesym, a_matrix, u_matrix, u_matrix_opt, ndimwin, num_bands, &
+                             num_kpts, num_wann, timing_level, lsitesymmetry, on_root, seedname, &
+                             stdout, comm)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -502,7 +504,7 @@ contains
     !                                                                !
     !================================================================!
 
-    use wannier_param_types, only: sitesym_data_type
+    use wannier_param_types, only: sitesym_type
     implicit none
 
     ! passed variables
@@ -517,7 +519,7 @@ contains
 
     logical, intent(in) :: on_root, lsitesymmetry
 
-    type(sitesym_data_type), intent(inout) :: sym
+    type(sitesym_type), intent(inout) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -553,7 +555,7 @@ contains
 
       do nkp = 1, num_kpts
         if (lsitesymmetry) then                 !YN: RS:
-          if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle  !YN: RS:
+          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle  !YN: RS:
         endif                                   !YN: RS:
         call zgemm('C', 'N', num_wann, num_wann, ndimwin(nkp), cmplx_1, u_matrix_opt(:, :, nkp), &
                    num_bands, a_matrix(:, :, nkp), num_bands, cmplx_0, caa(:, :, nkp), num_wann)
@@ -594,7 +596,7 @@ contains
     endif
 
     if (lsitesymmetry) then
-      call sitesym_symmetrize_u_matrix(sym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
+      call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
                                        seedname, stdout)
     endif
 
@@ -941,8 +943,8 @@ contains
 
       if (i .ne. dis_manifold%ndimwin(nkp) - ndimfroz(nkp)) then
         if (on_root) write (stdout, *) ' Error at k-point: ', nkp
-        if (on_root) write (stdout, '(3(a,i5))') ' i: ', i, ' ndimwin: ', dis_manifold%ndimwin(nkp), &
-          ' ndimfroz: ', ndimfroz(nkp)
+        if (on_root) write (stdout, '(3(a,i5))') ' i: ', i, ' ndimwin: ', &
+          dis_manifold%ndimwin(nkp), ' ndimfroz: ', ndimfroz(nkp)
         call io_error('dis_windows: i .ne. (ndimwin-ndimfroz) at k-point', stdout, seedname)
       endif
 
@@ -1654,10 +1656,10 @@ contains
     !==================================================================!
   end subroutine dis_proj_froz
 
-  subroutine dis_extract(dis_control, kmesh_info, sym, print_output, dis_manifold, m_matrix_orig_local, &
-                         u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, ndimfroz, &
-                         my_node_id, num_bands, num_kpts, num_nodes, num_wann, lsitesymmetry, &
-                         on_root, seedname, stdout, comm)
+  subroutine dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
+                         m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, &
+                         indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
+                         num_wann, lsitesymmetry, on_root, seedname, stdout, comm)
 
     !==================================================================!
     !                                                                  !
@@ -1667,7 +1669,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_wallclocktime
-    use wannier_param_types, only: sitesym_data_type
+    use wannier_param_types, only: sitesym_type
 
     implicit none
 
@@ -1691,7 +1693,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(sitesym_data_type), intent(in) :: sym
+    type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
     ! MODIFIED:
@@ -1906,7 +1908,8 @@ contains
                              num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
                              seedname, comm)
           call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
-          call sitesym_symmetrize_zmatrix(sym, czmat_in, num_bands, num_kpts, dis_manifold%lwindow) !RS:
+          call sitesym_symmetrize_zmatrix(sitesym, czmat_in, num_bands, num_kpts, &
+                                          dis_manifold%lwindow) !RS:
           do nkp_loc = 1, counts(my_node_id)
             nkp = nkp_loc + displs(my_node_id)
             czmat_in_loc(:, :, nkp_loc) = czmat_in(:, :, nkp)
@@ -1919,7 +1922,7 @@ contains
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           if (lsitesymmetry) then                !YN: RS:
-            if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
+            if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
           endif                                  !YN: RS:
           if (num_wann .gt. ndimfroz(nkp)) then
             ndimk = dis_manifold%ndimwin(nkp) - ndimfroz(nkp)
@@ -1948,9 +1951,9 @@ contains
 
       wkomegai1 = real(num_wann, dp)*kmesh_info%wbtot
       if (lsitesymmetry) then                                                                        !RS:
-        do nkp = 1, sym%nkptirr                                                                            !RS:
-          wkomegai1(sym%ir2ik(nkp)) = wkomegai1(sym%ir2ik(nkp))* &
-                                      sym%nsymmetry/count(sym%kptsym(:, nkp) .eq. sym%ir2ik(nkp)) !RS:
+        do nkp = 1, sitesym%nkptirr                                                                            !RS:
+          wkomegai1(sitesym%ir2ik(nkp)) = wkomegai1(sitesym%ir2ik(nkp))* &
+                                          sitesym%nsymmetry/count(sitesym%kptsym(:, nkp) .eq. sitesym%ir2ik(nkp)) !RS:
         enddo                                                                                       !RS:
       endif                                                                                          !RS:
       do nkp_loc = 1, counts(my_node_id)
@@ -1992,16 +1995,16 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (lsitesymmetry) then                                                     !RS:
-          if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle                                      !RS:
+          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle                     !RS:
         end if                                                                      !RS:
         if (lsitesymmetry) then                                                     !RS:
 
-          call sitesym_dis_extract_symmetry(sym, lambda, u_matrix_opt_loc(:, :, nkp_loc), &
+          call sitesym_dis_extract_symmetry(sitesym, lambda, u_matrix_opt_loc(:, :, nkp_loc), &
                                             czmat_in_loc(:, :, nkp_loc), nkp, &
                                             dis_manifold%ndimwin(nkp), num_bands, num_wann, &
                                             seedname, stdout) !RS:
           do j = 1, num_wann                                                          !RS:
-            wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)               !RS:
+            wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)   !RS:
           enddo                                                                    !RS:
         else                                                                        !RS:
           if (num_wann .gt. ndimfroz(nkp)) then
@@ -2095,9 +2098,9 @@ contains
                          num_bands*num_wann*counts, num_bands*num_wann*displs, stdout, seedname, &
                          comm)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sym, u_matrix_opt, num_bands, num_bands, num_kpts, &
-                                                          num_wann, seedname, stdout, &
-                                                          dis_manifold%lwindow) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, &
+                                                          num_bands, num_kpts, num_wann, seedname, &
+                                                          stdout, dis_manifold%lwindow) !RS:
       !if (index(print_output%devel_flag, 'compspace') > 0) then
       !  if (iter .eq. dis_control%num_iter) then
       !    call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
@@ -2205,7 +2208,7 @@ contains
                            num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
                            seedname, comm)
         call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, stdout, seedname, comm)
-        call sitesym_symmetrize_zmatrix(sym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow) !RS:
+        call sitesym_symmetrize_zmatrix(sitesym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow) !RS:
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           czmat_out_loc(:, :, nkp_loc) = czmat_out(:, :, nkp)
@@ -2596,10 +2599,10 @@ contains
   end subroutine internal_zmatrix
 ![ysl-b]
 
-  subroutine dis_extract_gamma(dis_control, kmesh_info, sym, print_output, dis_manifold, m_matrix_orig, &
-                               u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, ndimfroz, &
-                               my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
-                               lsitesymmetry, on_root, seedname, stdout)
+  subroutine dis_extract_gamma(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
+                               m_matrix_orig, u_matrix_opt, eigval_opt, omega_invariant, &
+                               indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
+                               num_wann, lsitesymmetry, on_root, seedname, stdout)
 
     !==================================================================!
     !                                                                  !
@@ -2609,7 +2612,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_time
-    use wannier_param_types, only: sitesym_data_type
+    use wannier_param_types, only: sitesym_type
 
     implicit none
 
@@ -2618,7 +2621,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
-    type(sitesym_data_type), intent(in) :: sym
+    type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_nodes, my_node_id
     integer, intent(in) :: stdout
@@ -2845,8 +2848,8 @@ contains
             call zgemm('C', 'N', ndimfroz(nkp), dis_manifold%ndimwin(nkp2), dis_manifold%ndimwin(nkp), &
                        cmplx_1, u_matrix_opt(:, :, nkp), num_bands, m_matrix_orig(:, :, nn, nkp), &
                        num_bands, cmplx_0, cwb, num_wann)
-            call zgemm('N', 'N', ndimfroz(nkp), num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, cwb, &
-                       num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
+            call zgemm('N', 'N', ndimfroz(nkp), num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, &
+                       cwb, num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
             rsum = 0.0_dp
             do n = 1, num_wann
               do m = 1, ndimfroz(nkp)
@@ -2978,11 +2981,11 @@ contains
         wkomegai = 0.0_dp
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
-          call zgemm('C', 'N', num_wann, dis_manifold%ndimwin(nkp2), dis_manifold%ndimwin(nkp), cmplx_1, &
-                     u_matrix_opt(:, :, nkp), num_bands, m_matrix_orig(:, :, nn, nkp), num_bands, &
-                     cmplx_0, cwb, num_wann)
-          call zgemm('N', 'N', num_wann, num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, cwb, num_wann, &
-                     u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
+          call zgemm('C', 'N', num_wann, dis_manifold%ndimwin(nkp2), dis_manifold%ndimwin(nkp), &
+                     cmplx_1, u_matrix_opt(:, :, nkp), num_bands, m_matrix_orig(:, :, nn, nkp), &
+                     num_bands, cmplx_0, cwb, num_wann)
+          call zgemm('N', 'N', num_wann, num_wann, dis_manifold%ndimwin(nkp2), cmplx_1, cwb, &
+                     num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
           rsum = 0.0_dp
           do n = 1, num_wann
             do m = 1, num_wann
