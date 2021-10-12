@@ -245,4 +245,26 @@ module wannier_param_types
     integer, allocatable :: proj2wann_map(:)
   end type select_projection_type
 
+  ! from sitesym
+  type sitesym_data_type
+    ! Variables and parameters needed by other modules
+    integer :: nkptirr = 9999
+    integer :: nsymmetry = 9999
+    integer, allocatable :: kptsym(:, :), ir2ik(:), ik2ir(:)
+    real(kind=dp) :: symmetrize_eps = 1.d-3
+    complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
+    complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
+  end type sitesym_data_type
+
+  ! from hamiltonian
+  type ham_logical_type
+    logical :: ham_have_setup = .false.
+    logical :: have_translated = .false.
+    logical :: use_translation = .false.
+    logical :: have_ham_r = .false.
+    logical :: have_ham_k = .false.
+    logical :: hr_written = .false.
+    logical :: tb_written = .false.
+  end type ham_logical_type
+
 end module wannier_param_types

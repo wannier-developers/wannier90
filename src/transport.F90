@@ -93,12 +93,11 @@ contains
 
     use w90_io, only: io_error, io_stopwatch
 
-    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
-      ham_logical_type
+    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, dis_manifold_type
     use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
-      real_space_ham_type
+      real_space_ham_type, ham_logical_type
 
     implicit none
 
@@ -3781,16 +3780,16 @@ contains
   end subroutine tran_lcr_2c2_build_ham
 
   !======================================!
-  subroutine tran_dealloc(stdout, seedname)
+  subroutine tran_dealloc !(stdout, seedname)
     !! Dellocate module data
     !====================================!
 
-    use w90_io, only: io_error
+    !use w90_io, only: io_error
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    !integer, intent(in) :: stdout
+    !character(len=50), intent(in)  :: seedname
 
 !    integer :: ierr
 

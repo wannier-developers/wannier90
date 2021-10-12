@@ -96,10 +96,9 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use w90_postw90_common, only: wigner_seitz_type, kpoint_dist_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -1365,9 +1364,8 @@ contains
     !                                                            !
     !============================================================!
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, ws_region_type
+      dis_manifold_type, ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type
-    use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
@@ -1465,12 +1463,11 @@ contains
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_i
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k, &
       wigner_seitz_type
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod, utility_zgemm_new
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -1715,14 +1712,13 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss, &
       utility_recip_lattice_base
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, ws_region_type
+      dis_manifold_type, ws_region_type, ws_distance_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -1931,7 +1927,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
@@ -1941,7 +1937,6 @@ contains
       wham_get_eig_deleig_TB_conv, wham_get_eig_UU_HH_AA_sc_TB_conv
     use w90_comms, only: w90comm_type
     use w90_utility, only: utility_rotate, utility_zdotu, utility_recip_lattice_base
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -2099,15 +2094,18 @@ contains
         if (pw90_berry%kubo_smearing%use_adaptive) then
           vdum(:) = eig_da(m, :) - eig_da(n, :)
           joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
-         eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, pw90_berry%kubo_smearing%adaptive_max_width)
+          eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, &
+                        pw90_berry%kubo_smearing%adaptive_max_width)
         else
           eta_smr = pw90_berry%kubo_smearing%fixed_width
         endif
 
         ! restrict to energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr]
         ! outside this range, the two delta functions are virtually zero
-    if (((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. (eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr > wmax)) .and. &
-         ((eig(m) - eig(n) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. (eig(m) - eig(n) - pw90_berry%sc_w_thr*eta_smr > wmax))) cycle
+        if (((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+             (eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr > wmax)) .and. &
+            ((eig(m) - eig(n) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+             (eig(m) - eig(n) - pw90_berry%sc_w_thr*eta_smr > wmax))) cycle
 
         ! first compute the two sums over intermediate states between AA_bar and HH_da_bar with D_h
         ! appearing in Eqs. (30) and (32) of IATS18
@@ -2215,13 +2213,12 @@ contains
     use w90_utility, only: utility_rotate, utility_recip_lattice_base
     use w90_comms, only: w90comm_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, &
       pw90_band_deriv_degen_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
       pw90common_kmesh_spacing, wigner_seitz_type
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -2423,11 +2420,11 @@ contains
       !====================================================================!
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
+      use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
+        ws_distance_type
       use pw90_parameters, only: pw90_spin_hall_type
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec, &
         wigner_seitz_type
-      use w90_ws_distance, only: ws_distance_type
 
       implicit none
 

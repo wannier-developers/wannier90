@@ -27,27 +27,8 @@ module w90_ws_distance
 
   private
 
-  type ws_distance_type
-    !
-    integer, allocatable :: irdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    !! The integer number of unit cells to shift Wannier function j to put its centre
-    !! inside the Wigner-Seitz of wannier function i. If several shifts are
-    !! equivalent (i.e. they take the function on the edge of the WS) they are
-    !! all listed. First index: xyz, second index: number of degenerate shifts,
-    !! third and fourth indices: i,j; fifth index: index on the R vector.
-    real(DP), allocatable :: crdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-    !! Cartesian version of irdist_ws, in angstrom
-    integer, allocatable :: ndeg(:, :, :)!(num_wann,num_wann,nrpts)
-    !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
-    !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
-    !
-    logical :: done = .false.
-    !! Global variable to know if the properties were already calculated, and avoid
-    !! recalculating them when the [[ws_translate_dist]] function is called multiple times
-  end type ws_distance_type
-
   !
-  public :: ws_translate_dist, clean_ws_translate, ws_write_vec, ws_distance_type
+  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
 
   integer, parameter :: ndegenx = 8
   !! max number of unit cells that can touch
@@ -80,7 +61,7 @@ contains
 
     use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
-    use w90_param_types, only: ws_region_type
+    use w90_param_types, only: ws_region_type, ws_distance_type
 
     implicit none
 
@@ -295,6 +276,7 @@ contains
 
 !   use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_date
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
+    use w90_param_types, only: ws_distance_type
 
     implicit none
 
@@ -358,6 +340,7 @@ contains
   !====================================================!
   subroutine clean_ws_translate(ws_distance)
     !====================================================!
+    use w90_param_types, only: ws_distance_type
     implicit none
     type(ws_distance_type), intent(inout) :: ws_distance
     ws_distance%done = .false.

@@ -628,8 +628,9 @@ contains
       ! It is then read in param_read_chpkt
       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in &
-                                   pw90common_wanint_data_dist', stdout, seedname)
+      if (ierr /= 0) &
+        call io_error('Error allocating wannier_centres in pw90common_wanint_data_dist', &
+                      stdout, seedname)
     end if
     call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
 
@@ -833,8 +834,8 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: wannier_data_type, ws_region_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -928,8 +929,8 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -1025,8 +1026,8 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -1138,8 +1139,8 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
 
     implicit none
@@ -1289,8 +1290,8 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -1399,8 +1400,8 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
 
     implicit none
 
@@ -1505,8 +1506,8 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type
-    use w90_ws_distance, only: ws_translate_dist, ws_distance_type
+    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
 
     implicit none

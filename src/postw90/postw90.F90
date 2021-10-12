@@ -37,8 +37,6 @@ program postw90
   use w90_boltzwann
   use w90_geninterp
 
-  use w90_ws_distance, only: ws_distance_type
-
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
 #    error "You need to define which MPI interface you are using"

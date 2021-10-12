@@ -490,7 +490,7 @@ program wannier
     end if
   endif
 
-  call tran_dealloc(stdout, seedname)
+  call tran_dealloc() !(stdout, seedname)
   call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &

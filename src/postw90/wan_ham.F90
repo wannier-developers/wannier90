@@ -419,11 +419,10 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      ws_region_type
+      ws_region_type, ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k, wigner_seitz_type
     use w90_utility, only: utility_diagonalize
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -542,9 +541,8 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type
+      ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type, mpirank
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -625,11 +623,10 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv, wigner_seitz_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      kmesh_info_type, ws_region_type
+      kmesh_info_type, ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
     use pw90_parameters, only: pw90_berry_mod_type
     use w90_comms, only: w90comm_type, mpirank
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -701,9 +698,8 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_comms, only: w90comm_type, mpirank
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type
+      ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 

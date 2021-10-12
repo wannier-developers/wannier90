@@ -58,6 +58,25 @@ module w90_param_types
     !! to search for points inside the Wigner-Seitz cell
   end type ws_region_type
 
+  ! used by ws_distance
+  type ws_distance_type
+    integer, allocatable :: irdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    !! The integer number of unit cells to shift Wannier function j to put its centre
+    !! inside the Wigner-Seitz of wannier function i. If several shifts are
+    !! equivalent (i.e. they take the function on the edge of the WS) they are
+    !! all listed. First index: xyz, second index: number of degenerate shifts,
+    !! third and fourth indices: i,j; fifth index: index on the R vector.
+    real(DP), allocatable :: crdist(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
+    !! Cartesian version of irdist_ws, in angstrom
+    integer, allocatable :: ndeg(:, :, :)!(num_wann,num_wann,nrpts)
+    !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
+    !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
+    !
+    logical :: done = .false.
+    !! Global variable to know if the properties were already calculated, and avoid
+    !! recalculating them when the [[ws_translate_dist]] function is called multiple times
+  end type ws_distance_type
+
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
     !! =========================================

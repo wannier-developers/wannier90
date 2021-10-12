@@ -54,12 +54,11 @@ contains
     use pw90_parameters, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, w90_system_type
+      ws_region_type, w90_system_type, ws_distance_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -539,10 +538,9 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use pw90_parameters, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type
-    use w90_param_types, only: wannier_data_type, ws_region_type
+    use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
-    use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
 
     ! Arguments

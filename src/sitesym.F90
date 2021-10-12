@@ -41,23 +41,13 @@ module w90_sitesym
   public  :: sitesym_read
   public  :: sitesym_dealloc
 
-  type sitesym_data_type
-    ! Variables and parameters needed by other modules
-    integer :: nkptirr = 9999
-    integer :: nsymmetry = 9999
-    integer, allocatable :: kptsym(:, :), ir2ik(:), ik2ir(:)
-    real(kind=dp) :: symmetrize_eps = 1.d-3
-    complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
-    complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
-  end type sitesym_data_type
-
 contains
 
   !==================================================================!
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow_in)
     !==================================================================!
 !   not called !
-
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   from w90_parameters
@@ -97,7 +87,7 @@ contains
   !==================================================================!
   subroutine sitesym_replace_d_matrix_band(sym, num_wann)
     !==================================================================!
-
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   from w90_parameters
@@ -129,6 +119,7 @@ contains
     !                                                                          !
     !==========================================================================!
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   passed variables
@@ -193,6 +184,7 @@ contains
   subroutine sitesym_symmetrize_gradient(sym, grad, imode, num_kpts, num_wann)
     !==================================================================!
     use w90_utility, only: utility_zgemm
+    use wannier_param_types, only: sitesym_data_type
 
     implicit none
 
@@ -268,6 +260,7 @@ contains
   subroutine sitesym_symmetrize_rotation(sym, urot, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
     use w90_utility, only: utility_zgemm
+    use wannier_param_types, only: sitesym_data_type
 
     implicit none
 
@@ -317,6 +310,7 @@ contains
     !                                                                  !
     !==================================================================!
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   passed variables
@@ -382,6 +376,7 @@ contains
     !                                                                  !
     !==================================================================!
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
     integer, intent(in) :: num_bands
@@ -520,6 +515,7 @@ contains
     !                                                                  !
     !==================================================================!
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   passed variables
@@ -605,6 +601,7 @@ contains
     !==================================================================!
     use w90_io, only: io_file_unit, io_error
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
 !   passed variables
@@ -652,6 +649,7 @@ contains
     !==================================================================!
     use w90_io, only: io_error
 
+    use wannier_param_types, only: sitesym_data_type
     implicit none
 
     type(sitesym_data_type), intent(inout) :: sym

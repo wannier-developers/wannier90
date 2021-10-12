@@ -28,16 +28,6 @@ module w90_hamiltonian
   public :: hamiltonian_write_rmn
   public :: hamiltonian_write_tb
 
-  type ham_logical_type
-    logical :: ham_have_setup = .false.
-    logical :: have_translated = .false.
-    logical :: use_translation = .false.
-    logical :: have_ham_r = .false.
-    logical :: have_ham_k = .false.
-    logical :: hr_written = .false.
-    logical :: tb_written = .false.
-  end type ham_logical_type
-
 contains
 
   !============================================!
@@ -51,7 +41,7 @@ contains
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
     use w90_param_types, only: print_output_type, ws_region_type
-    use wannier_param_types, only: w90_calculation_type
+    use wannier_param_types, only: w90_calculation_type, ham_logical_type
 
     implicit none
 
@@ -138,6 +128,7 @@ contains
     !============================================!
 
     use w90_io, only: io_error
+    use wannier_param_types, only: ham_logical_type
 
     implicit none
 
@@ -211,7 +202,7 @@ contains
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: atom_data_type, dis_manifold_type, print_output_type
-    use wannier_param_types, only: real_space_ham_type
+    use wannier_param_types, only: real_space_ham_type, ham_logical_type
 
     implicit none
 
@@ -543,6 +534,7 @@ contains
     !============================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
+    use wannier_param_types, only: ham_logical_type
 
 !   passed variables
     type(ham_logical_type), intent(inout) :: hmlg
@@ -859,6 +851,7 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_constants, only: twopi, cmplx_i
     use w90_param_types, only: kmesh_info_type
+    use wannier_param_types, only: ham_logical_type
 
 !   passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info

@@ -82,9 +82,8 @@ contains
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
-      kmesh_info_type, wannier_data_type, ws_region_type, w90_system_type
+      kmesh_info_type, wannier_data_type, ws_region_type, w90_system_type, ws_distance_type
     use w90_utility, only: utility_det3
-    use w90_ws_distance, only: ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type
 
     implicit none
@@ -566,14 +565,13 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use pw90_parameters, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
-      wannier_data_type, ws_region_type
+      wannier_data_type, ws_region_type, ws_distance_type
     use w90_postw90_common, only: wigner_seitz_type, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag, &
       utility_w0gauss, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
@@ -743,7 +741,8 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, stdout, seedname)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, stdout, seedname) &
+                /eta_smr*kweight ! Broadened delta(E_nk-E_f)
         !
         ! Loop over Cartesian tensor components
         !
@@ -855,11 +854,11 @@ contains
     use pw90_parameters, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
-    use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type
+    use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
+      ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, wigner_seitz_type
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
-    use w90_ws_distance, only: ws_distance_type
 
     implicit none
 
