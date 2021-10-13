@@ -67,7 +67,7 @@ contains
       ham_logical_type
     use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
-    use wannier_methods, only: param_write_chkpt
+    use w90_wannier90_readwrite, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
     use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
@@ -3167,7 +3167,7 @@ contains
     use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
-    use wannier_methods, only: param_write_chkpt
+    use w90_wannier90_readwrite, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90comm_type
 

@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module wannier_methods
+module w90_wannier90_readwrite
 
   use w90_constants, only: dp
   use w90_param_types
@@ -2601,4 +2601,4 @@ contains
 
   end subroutine param_dist
 
-end module wannier_methods
+end module w90_wannier90_readwrite
