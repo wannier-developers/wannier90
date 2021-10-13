@@ -49,7 +49,8 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90lib_parameters
+module w90_libv1_types
+  ! global type instances (of w90_types) to allow legacy library
 
   use w90_types
 
@@ -112,9 +113,10 @@ module w90lib_parameters
 
   type(kpoint_path_type), save :: spec_points
 
-end module w90lib_parameters
+end module w90_libv1_types
 
-module wannlib_param_data
+module w90_wannier90_libv1_types
+  ! global type instances (of w90_wannier90_types) to allow legacy library
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -154,7 +156,7 @@ module wannlib_param_data
   ! in disentangle and overlap
   complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
-end module wannlib_param_data
+end module w90_wannier90_libv1_types
 
 subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                          real_lattice_loc, recip_lattice_loc, kpt_latt_loc, num_bands_tot, &
@@ -175,11 +177,11 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_constants, only: w90_physical_constants_type, dp
   use w90_io
   use w90_kmesh
-  use w90lib_parameters
+  use w90_libv1_types
   use w90_readwrite, only: param_write_header, param_lib_set_atoms
   use w90_sitesym
   use w90_wannier90_readwrite, only: param_read, param_write, param_w90_dealloc, w90_extra_io_type
-  use wannlib_param_data
+  use w90_wannier90_libv1_types
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -405,8 +407,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants, only: w90_physical_constants_type, dp
-  use w90lib_parameters
-  use wannlib_param_data
+  use w90_libv1_types
+  use w90_wannier90_libv1_types
   use w90_wannier90_readwrite, only: param_read, param_write, param_write_chkpt, &
     param_w90_dealloc, w90_extra_io_type
   use w90_io
