@@ -17,7 +17,7 @@ program postw90
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_param_types
   use w90_postw90_types
-  use w90_param_methods, only: param_read_chkpt, param_write_header
+  use w90_readwrite, only: param_read_chkpt, param_write_header
   use w90_postw90_readwrite
   use w90_io
   use w90_kmesh

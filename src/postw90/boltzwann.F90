@@ -692,7 +692,7 @@ contains
       ws_region_type, ws_distance_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
-    use w90_param_methods, only: param_get_smearing_type
+    use w90_readwrite, only: param_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
 
     implicit none

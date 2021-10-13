@@ -176,7 +176,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_io
   use w90_kmesh
   use w90lib_parameters
-  use w90_param_methods, only: param_write_header, param_lib_set_atoms
+  use w90_readwrite, only: param_write_header, param_lib_set_atoms
   use w90_sitesym
   use w90_wannier90_readwrite, only: param_read, param_write, param_w90_dealloc, w90_extra_io_type
   use wannlib_param_data
@@ -420,7 +420,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_comms, only: comms_array_split, comms_scatterv, w90comm_type, &
     mpisize, mpirank
 
-  use w90_param_methods, only: param_lib_set_atoms
+  use w90_readwrite, only: param_lib_set_atoms
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))

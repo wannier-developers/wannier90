@@ -19,7 +19,7 @@ module w90_postw90_readwrite
   use w90_param_types, only: print_output_type, print_output_type, wannier_data_type, &
     kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
     proj_input_type, w90_system_type, ws_region_type
-  use w90_param_methods
+  use w90_readwrite
   use w90_postw90_types
 
   implicit none

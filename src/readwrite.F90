@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_param_methods
+module w90_readwrite
   ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
@@ -3644,4 +3644,4 @@ contains
     end if ! found tags
   end subroutine param_clear_block
 
-end module w90_param_methods
+end module w90_readwrite

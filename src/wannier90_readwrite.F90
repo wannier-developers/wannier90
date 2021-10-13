@@ -16,7 +16,7 @@ module w90_wannier90_readwrite
 
   use w90_constants, only: dp
   use w90_param_types
-  use w90_param_methods
+  use w90_readwrite
   use w90_wannier90_types
 
   implicit none
