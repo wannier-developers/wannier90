@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module wannier_param_types
+module w90_wannier90_types
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 
@@ -267,4 +267,4 @@ module wannier_param_types
     logical :: tb_written = .false.
   end type ham_logical_type
 
-end module wannier_param_types
+end module w90_wannier90_types

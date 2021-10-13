@@ -96,7 +96,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
     use w90_param_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, dis_manifold_type
-    use wannier_param_types, only: w90_calculation_type, transport_type, output_file_type, &
+    use w90_wannier90_types, only: w90_calculation_type, transport_type, output_file_type, &
       real_space_ham_type, ham_logical_type
 
     implicit none
@@ -295,7 +295,7 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch
-    use wannier_param_types, only: real_space_ham_type
+    use w90_wannier90_types, only: real_space_ham_type
 
     implicit none
 
@@ -404,7 +404,7 @@ contains
 !   use w90_io, only: io_stopwatch, stdout
     use w90_io, only: io_stopwatch
     use w90_param_types, only: print_output_type
-    use wannier_param_types, only: transport_type, real_space_ham_type
+    use w90_wannier90_types, only: transport_type, real_space_ham_type
 
     implicit none
 
@@ -574,7 +574,7 @@ contains
     !
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
 
@@ -673,7 +673,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
 !   use w90_io, only: io_error, io_stopwatch, seedname, io_date, io_file_unit, stdout
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
 
@@ -852,7 +852,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
 
@@ -1979,7 +1979,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: wannier_data_type, atom_data_type, print_output_type
-    use wannier_param_types, only: transport_type, real_space_ham_type
+    use w90_wannier90_types, only: transport_type, real_space_ham_type
 
     implicit none
 
@@ -2835,7 +2835,7 @@ contains
 !   use w90_io, only: stdout, io_stopwatch, io_error
     use w90_io, only: io_stopwatch, io_error
     use w90_param_types, only: atom_data_type, print_output_type
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
     type(transport_type), intent(inout) :: transport
@@ -3149,7 +3149,7 @@ contains
 
     use w90_io, only: io_file_unit, io_date
     use w90_param_types, only: atom_data_type
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
 !   passed variables
@@ -3212,7 +3212,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch
     use w90_param_types, only: print_output_type
-    use wannier_param_types, only: transport_type
+    use w90_wannier90_types, only: transport_type
 
     implicit none
 
@@ -3313,7 +3313,7 @@ contains
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: print_output_type
-    use wannier_param_types, only: transport_type, real_space_ham_type
+    use w90_wannier90_types, only: transport_type, real_space_ham_type
 
     implicit none
 

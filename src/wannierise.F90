@@ -62,7 +62,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
-    use wannier_param_types, only: wann_control_type, output_file_type, &
+    use w90_wannier90_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
       ham_logical_type
     use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
@@ -983,7 +983,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use wannier_param_types, only: wann_control_type
+      use w90_wannier90_types, only: wann_control_type
 
       implicit none
 
@@ -1267,7 +1267,7 @@ contains
       !use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
       use w90_comms, only: comms_allreduce, w90comm_type
-      use wannier_param_types, only: wann_control_type
+      use w90_wannier90_types, only: wann_control_type
 
       implicit none
 
@@ -1483,7 +1483,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation
-      use wannier_param_types, only: sitesym_type
+      use w90_wannier90_types, only: sitesym_type
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
@@ -2054,7 +2054,7 @@ contains
     use w90_io, only: io_stopwatch
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type, print_output_type
-    use wannier_param_types, only: wann_slwf_type
+    use w90_wannier90_types, only: wann_slwf_type
 
     implicit none
 
@@ -2358,7 +2358,7 @@ contains
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90comm_type, mpirank
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: wann_slwf_type, sitesym_type
+    use w90_wannier90_types, only: wann_slwf_type, sitesym_type
 
     implicit none
 
@@ -3164,7 +3164,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use wannier_param_types, only: wann_control_type, output_file_type, wann_omega_type
+    use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_param_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
     use wannier_methods, only: param_write_chkpt

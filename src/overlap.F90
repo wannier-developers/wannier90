@@ -142,7 +142,7 @@ contains
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_param_types, only: kmesh_info_type
-    use wannier_param_types, only: select_projection_type, sitesym_type
+    use w90_wannier90_types, only: select_projection_type, sitesym_type
 
     implicit none
 
@@ -722,7 +722,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
-    use wannier_param_types, only: sitesym_type
+    use w90_wannier90_types, only: sitesym_type
 
     implicit none
 

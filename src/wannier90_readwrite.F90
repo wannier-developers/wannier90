@@ -17,7 +17,7 @@ module wannier_methods
   use w90_constants, only: dp
   use w90_param_types
   use w90_param_methods
-  use wannier_param_types
+  use w90_wannier90_types
 
   implicit none
 

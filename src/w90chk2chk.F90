@@ -77,7 +77,7 @@ module wannchk_param_data
   use w90_constants, only: dp
   use w90_io, only: maxlen
 
-  use wannier_param_types
+  use w90_wannier90_types
 
   implicit none
 

@@ -66,7 +66,7 @@ program wannier
   use w90_sitesym !YN:
 
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
-  use wannier_param_types
+  use w90_wannier90_types
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
     param_dist, param_memory_estimate, param_write_chkpt, w90_extra_io_type
 
