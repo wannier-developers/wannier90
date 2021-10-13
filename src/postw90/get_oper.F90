@@ -49,7 +49,7 @@ contains
     use w90_comms, only: w90comm_type, mpirank, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, print_output_type
+    use w90_types, only: dis_manifold_type, print_output_type
     use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
@@ -263,7 +263,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -542,7 +542,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -716,7 +716,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -901,7 +901,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -1073,7 +1073,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_param_types, only: dis_manifold_type, print_output_type
+    use w90_types, only: dis_manifold_type, print_output_type
 
     implicit none
 
@@ -1242,7 +1242,7 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
 
@@ -1658,7 +1658,7 @@ contains
     !===============================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: dis_manifold_type, print_output_type
+    use w90_types, only: dis_manifold_type, print_output_type
 
     implicit none
 
@@ -1699,7 +1699,7 @@ contains
     !==========================================================
 
     use w90_constants, only: dp
-    use w90_param_types, only: dis_manifold_type
+    use w90_types, only: dis_manifold_type
     use w90_utility, only: utility_zgemmm
 
     implicit none

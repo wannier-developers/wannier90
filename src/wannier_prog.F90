@@ -53,7 +53,7 @@ program wannier
   !! The main Wannier90 program
 
   use w90_constants, only: w90_physical_constants_type, dp
-  use w90_param_types
+  use w90_types
   use w90_io
   use w90_hamiltonian
   use w90_kmesh

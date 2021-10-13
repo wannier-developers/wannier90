@@ -15,7 +15,7 @@
 program postw90
   !! The postw90 program
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
-  use w90_param_types
+  use w90_types
   use w90_postw90_types
   use w90_readwrite, only: param_read_chkpt, param_write_header
   use w90_postw90_readwrite

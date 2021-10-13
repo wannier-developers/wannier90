@@ -22,7 +22,7 @@ module w90_kmesh
   !!  Vanderbilt  PRB 56 12847 (1997)
 
   use w90_constants, only: dp
-  use w90_param_types, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
+  use w90_types, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
 
   implicit none
 
@@ -58,7 +58,7 @@ contains
     !=====================================================
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart
-    use w90_param_types, only: kmesh_info_type, kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_info_type, kmesh_input_type, print_output_type
 
     implicit none
 
@@ -665,7 +665,7 @@ contains
 !   use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_recip_lattice_base
-    use w90_param_types, only: kmesh_info_type, kmesh_input_type, &
+    use w90_types, only: kmesh_info_type, kmesh_input_type, &
       proj_input_type, print_output_type
 
     implicit none
@@ -817,7 +817,7 @@ contains
     !   paths that will not allocate on all nodes
     !========================================
     use w90_io, only: io_error
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
 
     implicit none
 
@@ -872,7 +872,7 @@ contains
     !
     !==================================================================
     use w90_io, only: io_stopwatch
-    use w90_param_types, only: print_output_type
+    use w90_types, only: print_output_type
 
     implicit none
 
@@ -932,7 +932,7 @@ contains
     !
     !=============================================================
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_input_type, print_output_type
 
     implicit none
 
@@ -1000,7 +1000,7 @@ contains
 
     use w90_constants, only: eps5, eps6
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_input_type, print_output_type
 
     implicit none
 !   passed variables
@@ -1256,7 +1256,7 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_input_type, print_output_type
 
     implicit none
 !   passed variables
@@ -1405,7 +1405,7 @@ contains
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch, io_file_unit, maxlen
-    use w90_param_types, only: kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_input_type, print_output_type
 
     implicit none
 

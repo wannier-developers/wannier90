@@ -54,7 +54,7 @@ contains
     use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
-    use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
+    use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, w90_system_type, ws_distance_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
@@ -540,7 +540,7 @@ contains
     use w90_utility, only: utility_w0gauss
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
       wigner_seitz_type
-    use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
+    use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
 

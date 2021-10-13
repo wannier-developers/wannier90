@@ -39,7 +39,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb
     use w90_ws_distance, only: ws_translate_dist, ws_write_vec
-    use w90_param_types, only: kmesh_info_type, wannier_data_type, atom_data_type, &
+    use w90_types, only: kmesh_info_type, wannier_data_type, atom_data_type, &
       dis_manifold_type, kpoint_path_type, print_output_type, ws_region_type, ws_distance_type
     use w90_wannier90_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
       fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
@@ -212,7 +212,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_metric
-    use w90_param_types, only: wannier_data_type, kpoint_path_type, print_output_type, &
+    use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, &
       ws_region_type, ws_distance_type
     use w90_wannier90_types, only: band_plot_type, real_space_ham_type
 
@@ -773,7 +773,7 @@ contains
       use w90_constants, only: dp
 !     use w90_io, only: io_file_unit, seedname
       use w90_io, only: io_file_unit
-      use w90_param_types, only: kpoint_path_type
+      use w90_types, only: kpoint_path_type
       use w90_wannier90_types, only: band_plot_type
 
       implicit none
@@ -864,7 +864,7 @@ contains
 
 !     use w90_io, only: io_file_unit, seedname, io_date
       use w90_io, only: io_file_unit, io_date
-      use w90_param_types, only: kpoint_path_type
+      use w90_types, only: kpoint_path_type
 
       implicit none
 
@@ -1121,7 +1121,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
-    use w90_param_types, only: wannier_data_type, atom_data_type, dis_manifold_type, &
+    use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, &
       print_output_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
@@ -1486,7 +1486,7 @@ contains
       !use w90_constants, only: bohr
       use w90_utility, only: utility_translate_home, utility_cart_to_frac, utility_frac_to_cart, &
         utility_inverse_mat, utility_recip_lattice_base
-      use w90_param_types, only: wannier_data_type, atom_data_type
+      use w90_types, only: wannier_data_type, atom_data_type
       use w90_wannier90_types, only: wvfn_read_type
 
       implicit none
@@ -1950,7 +1950,7 @@ contains
 !   use w90_io, only: io_error, io_file_unit, seedname, io_date
     use w90_io, only: io_error, io_file_unit, io_date
     use w90_constants, only: dp  !lp
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
 
     implicit none
 

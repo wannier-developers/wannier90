@@ -17,7 +17,7 @@ module w90_readwrite
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
-  use w90_param_types
+  use w90_types
 
   implicit none
 

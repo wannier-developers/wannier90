@@ -51,7 +51,7 @@
 
 module w90lib_parameters
 
-  use w90_param_types
+  use w90_types
 
   implicit none
 

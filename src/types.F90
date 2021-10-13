@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_param_types
+module w90_types
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 
@@ -202,4 +202,4 @@ module w90_param_types
     real(kind=dp), allocatable :: points(:, :)
   end type kpoint_path_type
 
-end module w90_param_types
+end module w90_types

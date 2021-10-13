@@ -20,7 +20,7 @@ module w90_disentangle
     w90comm_type, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
-  use w90_param_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+  use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
   use w90_wannier90_types, only: dis_control_type, dis_spheres_type, sitesym_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &

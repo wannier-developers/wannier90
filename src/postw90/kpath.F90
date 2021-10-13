@@ -55,7 +55,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_param_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
+    use w90_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, pw90_kpath_mod_type, &
       pw90_spin_mod_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type
@@ -1159,7 +1159,7 @@ contains
     !===================================================================!
 
     use w90_postw90_types, only: pw90_kpath_mod_type
-    use w90_param_types, only: kpoint_path_type
+    use w90_types, only: kpoint_path_type
     use w90_utility, only: utility_metric
 
     ! arguments

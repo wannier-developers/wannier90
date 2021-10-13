@@ -65,7 +65,7 @@ contains
     use w90_wannier90_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
       ham_logical_type
-    use w90_param_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
+    use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
     use w90_wannier90_readwrite, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
@@ -1487,7 +1487,7 @@ contains
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
-      use w90_param_types, only: kmesh_info_type
+      use w90_types, only: kmesh_info_type
 
       implicit none
 
@@ -1816,7 +1816,7 @@ contains
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
 
     implicit none
 
@@ -2053,7 +2053,7 @@ contains
     !===================================================================
     use w90_io, only: io_stopwatch
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
-    use w90_param_types, only: kmesh_info_type, print_output_type
+    use w90_types, only: kmesh_info_type, print_output_type
     use w90_wannier90_types, only: wann_slwf_type
 
     implicit none
@@ -2357,7 +2357,7 @@ contains
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90comm_type, mpirank
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: wann_slwf_type, sitesym_type
 
     implicit none
@@ -2702,7 +2702,7 @@ contains
 !   use w90_io, only: seedname, io_file_unit, io_date
     use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_translate_home
-    use w90_param_types, only: atom_data_type, print_output_type
+    use w90_types, only: atom_data_type, print_output_type
 
     implicit none
 
@@ -2775,7 +2775,7 @@ contains
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0
-    use w90_param_types, only: wannier_data_type, w90_system_type
+    use w90_types, only: wannier_data_type, w90_system_type
 !~    use w90_disentangle, only : ndimfroz
 
     implicit none
@@ -2995,7 +2995,7 @@ contains
     use w90_constants, only: dp
 !   use w90_io, only: seedname, io_file_unit, io_error
     use w90_io, only: io_file_unit, io_error
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
 
     implicit none
 
@@ -3049,7 +3049,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error
     use w90_comms, only: w90comm_type
-    use w90_param_types, only: kmesh_info_type, print_output_type
+    use w90_types, only: kmesh_info_type, print_output_type
 
     implicit none
 
@@ -3165,7 +3165,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
     use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
-    use w90_param_types, only: kmesh_info_type, print_output_type, &
+    use w90_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
     use w90_wannier90_readwrite, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm

@@ -61,7 +61,7 @@ contains
 
     use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
-    use w90_param_types, only: ws_region_type, ws_distance_type
+    use w90_types, only: ws_region_type, ws_distance_type
 
     implicit none
 
@@ -276,7 +276,7 @@ contains
 
 !   use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_date
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
-    use w90_param_types, only: ws_distance_type
+    use w90_types, only: ws_distance_type
 
     implicit none
 
@@ -340,7 +340,7 @@ contains
   !====================================================!
   subroutine clean_ws_translate(ws_distance)
     !====================================================!
-    use w90_param_types, only: ws_distance_type
+    use w90_types, only: ws_distance_type
     implicit none
     type(ws_distance_type), intent(inout) :: ws_distance
     ws_distance%done = .false.

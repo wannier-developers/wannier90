@@ -17,7 +17,7 @@ module w90_hamiltonian
   !! This is a simplified routine, more sophisticated properties
   !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only: dp
-  use w90_param_types
+  use w90_types
 
   implicit none
 
@@ -40,7 +40,7 @@ contains
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_param_types, only: print_output_type, ws_region_type
+    use w90_types, only: print_output_type, ws_region_type
     use w90_wannier90_types, only: w90_calculation_type, ham_logical_type
 
     implicit none
@@ -202,7 +202,7 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, dis_manifold_type, print_output_type
+    use w90_types, only: atom_data_type, dis_manifold_type, print_output_type
     use w90_wannier90_types, only: real_space_ham_type, ham_logical_type
 
     implicit none
@@ -429,7 +429,7 @@ contains
 
       use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
-      use w90_param_types, only: atom_data_type
+      use w90_types, only: atom_data_type
       use w90_wannier90_types, only: real_space_ham_type
 
       implicit none
@@ -605,7 +605,7 @@ contains
     use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
-    use w90_param_types, only: print_output_type, ws_region_type
+    use w90_types, only: print_output_type, ws_region_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -763,7 +763,7 @@ contains
 
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, io_date
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
 
     implicit none
 
@@ -851,7 +851,7 @@ contains
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_constants, only: twopi, cmplx_i
-    use w90_param_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: ham_logical_type
 
 !   passed variables

@@ -69,7 +69,7 @@ contains
     use w90_constants, only: dp !, cmplx_0
     use w90_io, only: io_error, io_file_unit
     !use w90_utility, only: utility_cart_to_frac
-    use w90_param_types, only: print_output_type
+    use w90_types, only: print_output_type
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -262,7 +262,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
-    use w90_param_types
+    use w90_types
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
@@ -581,7 +581,7 @@ contains
     use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_param_types, only: dis_manifold_type, wannier_data_type
+    use w90_types, only: dis_manifold_type, wannier_data_type
     use w90_comms, only: w90comm_type, mpirank, comms_bcast
 
     implicit none
@@ -816,7 +816,7 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
+    use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -912,7 +912,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -1010,7 +1010,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -1124,7 +1124,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
@@ -1276,7 +1276,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -1387,7 +1387,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -1494,7 +1494,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
+    use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
@@ -1700,7 +1700,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: print_output_type
+    use w90_types, only: print_output_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
