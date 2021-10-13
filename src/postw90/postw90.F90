@@ -18,7 +18,7 @@ program postw90
   use w90_param_types
   use pw90_parameters
   use w90_param_methods, only: param_read_chkpt, param_write_header
-  use pw90_param_methods
+  use w90_postw90_readwrite
   use w90_io
   use w90_kmesh
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize

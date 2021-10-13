@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module pw90_param_methods
+module w90_postw90_readwrite
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -2025,4 +2025,4 @@ contains
     endif
   end subroutine parameters_gyro_write_task
 
-end module pw90_param_methods
+end module w90_postw90_readwrite
