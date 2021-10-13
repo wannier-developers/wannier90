@@ -51,7 +51,7 @@ contains
     !=======================================================!
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use pw90_parameters, only: pw90_dos_mod_type, pw90_berry_mod_type, &
+    use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
@@ -538,7 +538,7 @@ contains
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use pw90_parameters, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
+    use w90_postw90_types, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
       wigner_seitz_type
     use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk

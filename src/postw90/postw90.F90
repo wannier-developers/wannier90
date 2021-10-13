@@ -16,7 +16,7 @@ program postw90
   !! The postw90 program
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_param_types
-  use pw90_parameters
+  use w90_postw90_types
   use w90_param_methods, only: param_read_chkpt, param_write_header
   use w90_postw90_readwrite
   use w90_io
@@ -147,7 +147,7 @@ program postw90
 
   type(kpoint_path_type) :: spec_points
   ! end w90_parameters
-  ! data from pw90_parameters
+  ! data from w90_postw90_types
   type(pw90_calculation_type) :: pw90_calcs
 
   logical :: eig_found ! used to control broadcast of eigval
@@ -168,7 +168,7 @@ program postw90
   type(pw90_gyrotropic_type) :: gyrotropic
   type(pw90_geninterp_mod_type) :: geninterp
   type(pw90_boltzwann_type) :: boltz
-  ! end pw90_parameters
+  ! end w90_postw90_types
   ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
   type(wigner_seitz_type) :: ws_vec

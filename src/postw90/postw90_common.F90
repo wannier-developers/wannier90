@@ -71,7 +71,7 @@ contains
     !use w90_utility, only: utility_cart_to_frac
     use w90_param_types, only: print_output_type
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     type(print_output_type), intent(in) :: print_output
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
@@ -166,7 +166,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_comms, only: mpirank, mpisize, w90comm_type, comms_send, comms_recv, comms_bcast
-    use pw90_parameters, only: kpoint_dist_type
+    use w90_postw90_types, only: kpoint_dist_type
 
     ! arguments
     type(kpoint_dist_type), intent(inout) :: kpoint_dist
@@ -263,7 +263,7 @@ contains
       io_stopwatch
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_param_types
-    use pw90_parameters, only: pw90_calculation_type, pw90_spin_mod_type, &
+    use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
       pw90_boltzwann_type
@@ -818,7 +818,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -914,7 +914,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1012,7 +1012,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1127,7 +1127,7 @@ contains
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1278,7 +1278,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1389,7 +1389,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1497,7 +1497,7 @@ contains
     use w90_param_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1703,7 +1703,7 @@ contains
     use w90_param_types, only: print_output_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90comm_type, mpirank
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors

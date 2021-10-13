@@ -50,7 +50,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_param_types, only: dis_manifold_type, print_output_type
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -258,7 +258,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: pw90_berry_mod_type, pw90_oper_read_type, &
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -712,7 +712,7 @@ contains
     !
     !=============================================================
 
-    use pw90_parameters, only: pw90_oper_read_type
+    use w90_postw90_types, only: pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -1069,7 +1069,7 @@ contains
     !
     !================================================================
 
-    use pw90_parameters, only: pw90_oper_read_type
+    use w90_postw90_types, only: pw90_oper_read_type
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_stopwatch, io_file_unit
@@ -1238,7 +1238,7 @@ contains
     !
     !==================================================
 
-    use pw90_parameters, only: pw90_oper_read_type, pw90_spin_hall_type
+    use w90_postw90_types, only: pw90_oper_read_type, pw90_spin_hall_type
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_file_unit, io_error, io_stopwatch

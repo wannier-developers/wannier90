@@ -96,7 +96,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
-    use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
 
@@ -1380,7 +1380,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -1479,7 +1479,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod, utility_zgemm_new
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
 
@@ -1727,7 +1727,7 @@ contains
       utility_recip_lattice_base
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type, ws_distance_type
-    use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_mod_type, &
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
@@ -1942,7 +1942,7 @@ contains
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
-    use pw90_parameters, only: pw90_berry_mod_type, pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
       pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -2228,7 +2228,7 @@ contains
     use w90_comms, only: w90comm_type
     use w90_param_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
-    use pw90_parameters, only: pw90_berry_mod_type, pw90_spin_hall_type, &
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_vec, &
       pw90common_kmesh_spacing
@@ -2436,7 +2436,7 @@ contains
       use w90_utility, only: utility_rotate
       use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
         ws_distance_type
-      use pw90_parameters, only: pw90_spin_hall_type, wigner_seitz_type
+      use w90_postw90_types, only: pw90_spin_hall_type, wigner_seitz_type
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
 
       implicit none

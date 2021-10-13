@@ -20,7 +20,7 @@ module w90_postw90_readwrite
     kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
     proj_input_type, w90_system_type, ws_region_type
   use w90_param_methods
-  use pw90_parameters
+  use w90_postw90_types
 
   implicit none
 

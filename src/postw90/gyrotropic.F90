@@ -79,7 +79,7 @@ contains
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
-    use pw90_parameters, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
+    use w90_postw90_types, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
       kmesh_info_type, wannier_data_type, ws_region_type, w90_system_type, ws_distance_type
@@ -562,7 +562,7 @@ contains
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use pw90_parameters, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_postw90_types, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
@@ -792,7 +792,7 @@ contains
     !                                        !
     !======================================================================!
 
-    use pw90_parameters, only: pw90_gyrotropic_type
+    use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_constants, only: dp
 
     implicit none
@@ -850,7 +850,7 @@ contains
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
     !====================================================================!
 
-    use pw90_parameters, only: pw90_gyrotropic_type, wigner_seitz_type
+    use w90_postw90_types, only: pw90_gyrotropic_type, wigner_seitz_type
     use w90_constants, only: dp, cmplx_1
     use w90_io, only: io_time, io_error
     use w90_param_types, only: print_output_type, wannier_data_type, ws_region_type, &
@@ -994,7 +994,7 @@ contains
     !   in units eV*Ang^2                                                !
     !====================================================================!
 
-    use pw90_parameters, only: pw90_gyrotropic_type
+    use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_i, cmplx_0
 
     implicit none
@@ -1075,7 +1075,7 @@ contains
   subroutine gyrotropic_outprint_tensor(stdout, seedname, pw90_gyrotropic, fermi_energy_list, &
                                         f_out_name, arrEf, arrEF1D, arrEfW, units, comment, &
                                         symmetrize)
-    use pw90_parameters, only: pw90_gyrotropic_type
+    use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_io, only: io_file_unit
 
     implicit none

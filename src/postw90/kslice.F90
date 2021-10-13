@@ -49,7 +49,7 @@ contains
 
     !! Main routine
 
-    use pw90_parameters, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
+    use w90_postw90_types, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type, wigner_seitz_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
@@ -904,7 +904,7 @@ contains
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
                                plot_shc, stdout, seedname, pw90_berry, fermi_energy_list)
     use w90_constants, only: dp
-    use pw90_parameters, only: pw90_berry_mod_type
+    use w90_postw90_types, only: pw90_berry_mod_type
     use w90_io, only: io_error
 
     type(pw90_berry_mod_type), intent(in) :: pw90_berry

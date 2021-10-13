@@ -33,7 +33,7 @@ contains
   subroutine internal_write_header(outdat_unit, commentline, pw90_geninterp)
     !! Writes a header for the output file(s).
 
-    use pw90_parameters, only: pw90_geninterp_mod_type
+    use w90_postw90_types, only: pw90_geninterp_mod_type
     use w90_io, only: io_date
 
     ! arguments
@@ -73,7 +73,7 @@ contains
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
     use w90_constants, only: dp, pi
-    use pw90_parameters, only: pw90_geninterp_mod_type, &
+    use w90_postw90_types, only: pw90_geninterp_mod_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_param_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type

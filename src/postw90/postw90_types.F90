@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module pw90_parameters
+module w90_postw90_types
 
   use w90_constants, only: dp
   use w90_comms, only: w90comm_type
@@ -240,4 +240,4 @@ module pw90_parameters
     real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
   end type kpoint_dist_type
 
-end module pw90_parameters
+end module w90_postw90_types

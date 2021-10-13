@@ -128,7 +128,7 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use pw90_parameters, only: pw90_berry_mod_type !sc_eta
+    use w90_postw90_types, only: pw90_berry_mod_type !sc_eta
     use w90_utility, only: utility_rotate
 
     ! arguments
@@ -316,7 +316,7 @@ contains
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag
-    use pw90_parameters, only: pw90_band_deriv_degen_type
+    use w90_postw90_types, only: pw90_band_deriv_degen_type
 
     ! arguments
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
@@ -416,7 +416,7 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_constants, only: dp
-    use pw90_parameters, only: pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_postw90_types, only: pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
@@ -502,7 +502,7 @@ contains
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    use pw90_parameters, only: pw90_band_deriv_degen_type
+    use w90_postw90_types, only: pw90_band_deriv_degen_type
 
     ! arguments
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
@@ -550,7 +550,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type, mpirank
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
@@ -634,7 +634,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       kmesh_info_type, ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: pw90_berry_mod_type, wigner_seitz_type
+    use w90_postw90_types, only: pw90_berry_mod_type, wigner_seitz_type
     use w90_comms, only: w90comm_type, mpirank
 
     implicit none
@@ -709,7 +709,7 @@ contains
     use w90_param_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, ws_distance_type
     use w90_utility, only: utility_diagonalize
-    use pw90_parameters, only: wigner_seitz_type
+    use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
 
