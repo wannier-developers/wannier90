@@ -31,8 +31,6 @@ module w90_types
     integer :: iprint
     ! Controls the verbosity of the output
     integer :: timing_level
-    ! REVIEW_2021-07-22: optimisation doesn't fit in this type (TO FINISH)
-    integer :: optimisation !wannierise and disentangle
     ! REVIEW_2021-07-22: we agree that we don't need both length_unit and lenconfac;
     ! REVIEW_2021-07-22: instead could have a utility function.
     character(len=20) :: length_unit ! MAYBE, just have a separate variable?

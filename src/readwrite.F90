@@ -50,6 +50,7 @@ module w90_readwrite
   ! common read routines
   public :: param_read_gamma_only
   public :: param_read_verbosity
+  public :: param_read_algorithm_control
   public :: param_read_num_wann
   public :: param_read_exclude_bands
   public :: param_read_lattice
@@ -89,10 +90,22 @@ contains
     print_output%iprint = 1             ! Verbosity
     call param_get_keyword(stdout, seedname, 'iprint', found, i_value=print_output%iprint)
 
-    print_output%optimisation = 3             ! Verbosity
-    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=print_output%optimisation)
-
   end subroutine param_read_verbosity
+
+  subroutine param_read_algorithm_control(optimisation, stdout, seedname)
+    !%%%%%%%%%%%%%%%%
+    !System variables
+    !%%%%%%%%%%%%%%%%
+    implicit none
+    integer, intent(inout) :: optimisation
+    logical :: found
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
+    optimisation = 3             ! Verbosity
+    call param_get_keyword(stdout, seedname, 'optimisation', found, i_value=optimisation)
+
+  end subroutine param_read_algorithm_control
 
   subroutine param_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname)
     !use w90_constants, only: bohr

@@ -95,6 +95,7 @@ program wannier
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
   type(print_output_type) :: print_output
+  integer :: optimisation
   type(w90_system_type) :: w90_system
   type(real_space_ham_type) :: real_space_ham
   type(ws_region_type) :: ws_region
@@ -241,9 +242,9 @@ program wannier
                     fermi_energy_list, fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
                     output_file, wvfn_read, wann_control, omega, proj_input, input_proj, &
                     real_space_ham, select_projection, kpoint_path, w90_system, transport, &
-                    print_output, wannier_data, wannier_plot, w90_extra_io, &
-                    ws_region, w90_calculation, eigval, real_lattice, physics%bohr, &
-                    symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, eig_found, &
+                    print_output, wannier_data, wannier_plot, w90_extra_io, ws_region, &
+                    w90_calculation, eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                    num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
                     calc_only_A, cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
                     use_bloch_phases, seedname, stdout)
     have_disentangled = .false.
@@ -278,9 +279,9 @@ program wannier
     call param_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
                      fermi_surface_plot, kpt_latt, output_file, wvfn_read, wann_control, &
                      proj_input, input_proj, real_space_ham, select_projection, kpoint_path, &
-                     transport, print_output, wannier_data, wannier_plot, &
-                     w90_extra_io, w90_calculation, real_lattice, symmetrize_eps, mp_grid, &
-                     num_bands, num_kpts, num_proj, num_wann, cp_pp, gamma_only, lsitesymmetry, &
+                     transport, print_output, wannier_data, wannier_plot, w90_extra_io, &
+                     w90_calculation, real_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                     num_proj, num_wann, optimisation, cp_pp, gamma_only, lsitesymmetry, &
                      w90_system%spinors, use_bloch_phases, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -292,7 +293,8 @@ program wannier
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     call param_memory_estimate(atom_data, kmesh_info, wann_control, input_proj, print_output, &
-                               num_bands, num_kpts, num_proj, num_wann, gamma_only, stdout)
+                               num_bands, num_kpts, num_proj, num_wann, optimisation, gamma_only, &
+                               stdout)
   end if !on_root
 
   if (dryrun) then
@@ -313,7 +315,7 @@ program wannier
                   w90_system, transport, print_output, wannier_data, wannier_plot, ws_region, &
                   w90_calculation, eigval, real_lattice, symmetrize_eps, mp_grid, &
                   kpoint_path%num_points_first_segment, num_bands, num_kpts, num_proj, num_wann, &
-                  eig_found, cp_pp, gamma_only, have_disentangled, &
+                  optimisation, eig_found, cp_pp, gamma_only, have_disentangled, &
                   lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
   disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) &
@@ -404,8 +406,8 @@ program wannier
     call dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
                   print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                   m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                  omega%invariant, num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
-                  stdout, seedname, comm)
+                  omega%invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
+                  lsitesymmetry, stdout, seedname, comm)
     have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &
@@ -432,8 +434,8 @@ program wannier
                    print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, m_matrix, &
                    u_matrix, u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, &
-                   num_wann, rpt_origin, band_plot%mode, transport%mode, have_disentangled, &
-                   lsitesymmetry, seedname, stdout, comm)
+                   num_wann, optimisation, rpt_origin, band_plot%mode, transport%mode, &
+                   have_disentangled, lsitesymmetry, seedname, stdout, comm)
   else
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &

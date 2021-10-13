@@ -99,6 +99,7 @@ program postw90
 !
   ! w90_parameters stuff
   type(print_output_type) :: verbose
+  integer :: optimisation
   type(w90_system_type) :: system
   integer, allocatable :: exclude_bands(:)
   integer :: num_exclude_bands
@@ -251,12 +252,12 @@ program postw90
                             pw90_calcs, postw90_oper, scissors_shift, effective_model, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, spin_hall, gyrotropic, &
                             geninterp, boltz, eig_found, write_data, gamma_only, physics%bohr, &
-                            stdout, seedname)
+                            optimisation, stdout, seedname)
 
     call param_postw90_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                              real_lattice, spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                              pw90_spin, kpath, kslice, dos_data, berry, &
-                             gyrotropic, geninterp, boltz, write_data, stdout)
+                             gyrotropic, geninterp, boltz, write_data, optimisation, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'

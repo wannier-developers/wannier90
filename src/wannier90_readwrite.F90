@@ -41,14 +41,14 @@ contains
 
   !==================================================================!
   subroutine param_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, out_files, &
-                        plot, wannierise, wann_omega, proj, proj_input, rs_region, &
+                        fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
+                        out_files, plot, wannierise, wann_omega, proj, proj_input, rs_region, &
                         select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
                         write_data, ws_region, w90_calcs, eigval, real_lattice, &
                         bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                        eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, library, &
-                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, seedname, &
-                        stdout)
+                        optimisation, eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                        library, library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
+                        seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -99,6 +99,7 @@ contains
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_proj
     integer, intent(inout) :: num_kpts
+    integer, intent(inout) :: optimisation
 
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
@@ -134,6 +135,7 @@ contains
     call param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
 
     call param_read_verbosity(verbose, stdout, seedname)
+    call param_read_algorithm_control(optimisation, stdout, seedname)
     call param_read_w90_calcs(w90_calcs, stdout, seedname)
     call param_read_transport(w90_calcs%transport, tran, w90_calcs%restart, stdout, seedname)
     call param_read_dist_cutoff(rs_region, stdout, seedname)
@@ -1192,7 +1194,8 @@ contains
                          proj_input, rs_region, select_proj, spec_points, tran, verbose, &
                          wann_data, wann_plot, write_data, w90_calcs, real_lattice, &
                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                         cp_pp, gamma_only, lsitesymmetry, spinors, use_bloch_phases, stdout)
+                         optimisation, cp_pp, gamma_only, lsitesymmetry, spinors, &
+                         use_bloch_phases, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1232,6 +1235,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: optimisation
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: symmetrize_eps
@@ -1401,7 +1405,7 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :', num_bands, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', verbose%iprint, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', verbose%timing_level, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', verbose%optimisation, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', optimisation, '|'
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(verbose%length_unit), '|'
     write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', &
       w90_calcs%postproc_setup, '|'
@@ -1844,9 +1848,8 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atoms, kmesh_info, wannierise, proj_input, &
-                                   verbose, num_bands, num_kpts, num_proj, num_wann, &
-                                   gamma_only, stdout)
+  subroutine param_memory_estimate(atoms, kmesh_info, wannierise, proj_input, verbose, num_bands, &
+                                   num_kpts, num_proj, num_wann, optimisation, gamma_only, stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1870,6 +1873,7 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: optimisation
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
     !type(postw90_common_type), intent(in) :: pw90_common
     !type(boltzwann_type), intent(in) :: boltz
@@ -1982,7 +1986,7 @@ contains
       mem_dis1 = mem_dis1 + num_bands*num_bands*num_kpts*size_cmplx    !cham
       mem_dis2 = mem_dis2 + num_wann*num_wann*kmesh_info%nntot*num_kpts*size_cmplx!m_matrix
 
-      if (verbose%optimisation <= 0) then
+      if (optimisation <= 0) then
         mem_dis = mem_dis + mem_dis1
       else
         mem_dis = mem_dis + max(mem_dis1, mem_dis2)
@@ -1996,7 +2000,7 @@ contains
     !Wannierise
 
     mem_wan1 = mem_wan1 + (num_wann*num_wann*kmesh_info%nntot*num_kpts)*size_cmplx     !  'm0'
-    if (verbose%optimisation > 0) then
+    if (optimisation > 0) then
       mem_wan = mem_wan + mem_wan1
     endif
     mem_wan = mem_wan + (num_wann*num_wann*num_kpts)*size_cmplx           !  'u0'
@@ -2048,7 +2052,7 @@ contains
       if (disentanglement) &
         write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', (mem_param + mem_dis)/(1024**2), ' Mb'
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan)/(1024**2), ' Mb'
-      if (verbose%optimisation > 0 .and. verbose%iprint > 1) then
+      if (optimisation > 0 .and. verbose%iprint > 1) then
         write (stdout, '(1x,a)') '|                                                                            |'
         write (stdout, '(1x,a)') '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
         if (disentanglement) &
@@ -2082,8 +2086,8 @@ contains
                         fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
                         out_files, plot, wannierise, wann_omega, proj_input, rs_region, system, &
                         tran, verbose, wann_data, wann_plot, ws_region, w90_calcs, eigval, &
-                        real_lattice, symmetrize_eps, mp_grid, first_segment, &
-                        num_bands, num_kpts, num_proj, num_wann, eig_found, cp_pp, gamma_only, &
+                        real_lattice, symmetrize_eps, mp_grid, first_segment, num_bands, num_kpts, &
+                        num_proj, num_wann, optimisation, eig_found, cp_pp, gamma_only, &
                         have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
                         stdout, comm)
     !===========================================================!
@@ -2131,6 +2135,7 @@ contains
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_proj
     integer, intent(inout) :: num_kpts
+    integer, intent(inout) :: optimisation
 
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     !real(kind=dp), intent(inout) :: recip_lattice(3, 3)
@@ -2457,7 +2462,7 @@ contains
     call comms_bcast(wann_plot%radius, 1, stdout, seedname, comm)
     call comms_bcast(wann_plot%scale, 1, stdout, seedname, comm)
     call comms_bcast(kmesh_data%tol, 1, stdout, seedname, comm)
-    call comms_bcast(verbose%optimisation, 1, stdout, seedname, comm)
+    call comms_bcast(optimisation, 1, stdout, seedname, comm)
     call comms_bcast(out_files%write_vdw_data, 1, stdout, seedname, comm)
     call comms_bcast(verbose%lenconfac, 1, stdout, seedname, comm)
     call comms_bcast(wannierise%lfixstep, 1, stdout, seedname, comm)

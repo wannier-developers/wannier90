@@ -37,8 +37,8 @@ contains
   subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
                       print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                       m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                      omega_invariant, num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
-                      stdout, seedname, comm)
+                      omega_invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
+                      lsitesymmetry, stdout, seedname, comm)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -49,6 +49,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: optimisation
     integer, intent(in) :: stdout
 
     logical, intent(in) :: lsitesymmetry
@@ -212,7 +213,7 @@ contains
     end if
 ![ysl-e]
 
-    if (print_output%optimisation <= 0) then
+    if (optimisation <= 0) then
       page_unit = io_file_unit()
       open (unit=page_unit, form='unformatted', status='scratch')
       ! Update the m_matrix accordingly

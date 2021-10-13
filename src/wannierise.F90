@@ -53,8 +53,9 @@ contains
                        print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
                        m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_proj, num_wann, rpt_origin, bands_plot_mode, &
-                       transport_mode, have_disentangled, lsitesymmetry, seedname, stdout, comm)
+                       num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
+                       bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
+                       seedname, stdout, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -101,6 +102,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
+    integer, intent(in) :: optimisation
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -259,7 +261,7 @@ contains
       if (ierr /= 0) call io_error('Error in allocating cdodq_precond in wann_main', stdout, seedname)
 
       ! this method of computing the preconditioning is much more efficient, but requires more RAM
-      if (print_output%optimisation >= 3) then
+      if (optimisation >= 3) then
         allocate (k_to_r(num_kpts, nrpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating k_to_r in wann_main', stdout, seedname)
 
@@ -330,7 +332,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating cdodq_loc in wann_main', stdout, seedname)
     allocate (cdqkeep_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating cdqkeep_loc in wann_main', stdout, seedname)
-    if (print_output%optimisation > 0) then
+    if (optimisation > 0) then
       allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     end if
     if (ierr /= 0) call io_error('Error in allocating m0_loc in wann_main', stdout, seedname)
@@ -468,7 +470,7 @@ contains
     lconverged = .false.; lfirst = .true.; lrandom = .false.
     conv_count = 0; noise_count = 0
 
-    if (.not. wann_control%lfixstep .and. print_output%optimisation <= 0) then
+    if (.not. wann_control%lfixstep .and. optimisation <= 0) then
       page_unit = io_file_unit()
       open (unit=page_unit, status='scratch', form='unformatted')
     endif
@@ -517,7 +519,7 @@ contains
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                       k_to_r, wann_spread, num_wann, num_kpts, &
                                       kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                      counts, displs, stdout)
+                                      counts, displs, optimisation, stdout)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
@@ -542,7 +544,7 @@ contains
         ! store original U and M before rotating
         u0_loc = u_matrix_loc
 
-        if (print_output%optimisation <= 0) then
+        if (optimisation <= 0) then
 !             write(page_unit)   m_matrix
           write (page_unit) m_matrix_loc
           rewind (page_unit)
@@ -600,7 +602,7 @@ contains
         ! if doing a line search then restore original U and M before rotating
         if (.not. wann_control%lfixstep) then
           u_matrix_loc = u0_loc
-          if (print_output%optimisation <= 0) then
+          if (optimisation <= 0) then
 !                read(page_unit)  m_matrix
             read (page_unit) m_matrix_loc
             rewind (page_unit)
@@ -912,7 +914,7 @@ contains
     deallocate (cwschur1, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating cwschur1 in wann_main', stdout, seedname)
     if (wann_control%precond) then
-      if (print_output%optimisation >= 3) then
+      if (optimisation >= 3) then
         deallocate (k_to_r, stat=ierr)
         if (ierr /= 0) call io_error('Error in deallocating k_to_r in wann_main', stdout, seedname)
       end if
@@ -949,7 +951,7 @@ contains
 
     deallocate (u0_loc, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating u0_loc in wann_main', stdout, seedname)
-    if (print_output%optimisation > 0) then
+    if (optimisation > 0) then
       deallocate (m0_loc, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating m0_loc in wann_main', stdout, seedname)
     end if
@@ -1134,7 +1136,7 @@ contains
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                         k_to_r, wann_spread, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                        counts, displs, stdout)
+                                        counts, displs, optimisation, stdout)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1168,6 +1170,7 @@ contains
       integer, intent(in) :: ndegen(:)
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
+      integer, intent(in) :: optimisation
       integer, intent(in) :: stdout
       !type(w90comm_type), intent(in) :: comm
 
@@ -1195,7 +1198,7 @@ contains
       ! convert to real space in cdodq_r
       ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
       ! Ideally, we should implement FFT-based filtering here
-      if (print_output%optimisation >= 3) then
+      if (optimisation >= 3) then
         call zgemm('N', 'N', num_wann*num_wann, nrpts, num_kpts, cmplx_1, cdodq, &
                    num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
         cdodq_r = cdodq_r/real(num_kpts, dp)
@@ -1227,7 +1230,7 @@ contains
       end do
 
       ! go back to k space
-      if (print_output%optimisation >= 3) then
+      if (optimisation >= 3) then
         do irpt = 1, nrpts
           cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)/real(ndegen(irpt), dp)
         end do

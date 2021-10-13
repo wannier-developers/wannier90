@@ -62,7 +62,7 @@ contains
                                 effective_model, pw90_spin, pw90_band_deriv_degen, pw90_kpath, &
                                 pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
                                 pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, eig_found, &
-                                pw90_extra_io, gamma_only, bohr, stdout, seedname)
+                                pw90_extra_io, gamma_only, bohr, optimisation, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -102,6 +102,7 @@ contains
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_kpts
     integer, intent(inout) :: num_wann
+    integer, intent(inout) :: optimisation
     integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
 
@@ -129,6 +130,7 @@ contains
     library = .false.
     call param_in_file(seedname, stdout)
     call param_read_verbosity(print_output, stdout, seedname)
+    call param_read_algorithm_control(optimisation, stdout, seedname)
     call param_read_pw90_calcs(pw90_calculation, stdout, seedname)
     call param_read_effective_model(effective_model, stdout, seedname)
     call param_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
@@ -1368,7 +1370,7 @@ contains
                                  real_lattice, kpoint_path, pw90_calculation, pw90_oper_read, &
                                  scissors_shift, pw90_spin, pw90_kpath, pw90_kslice, pw90_dos, &
                                  pw90_berry, pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
-                                 pw90_extra_io, stdout)
+                                 pw90_extra_io, optimisation, stdout)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
@@ -1400,6 +1402,7 @@ contains
     real(kind=dp), intent(in) :: scissors_shift
     integer :: i, loop, nat, nsp
     integer, intent(in) :: num_wann
+    integer, intent(in) :: optimisation
     integer, intent(in) :: stdout
     real(kind=dp) :: cell_volume
 
@@ -1510,7 +1513,7 @@ contains
 
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', print_output%iprint, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', print_output%timing_level, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', print_output%optimisation, '|'
+    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', optimisation, '|'
     write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(print_output%length_unit), '|'
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     write (stdout, '(1x,a78)') '*------------------------ Global Smearing Parameters ------------------------*'
