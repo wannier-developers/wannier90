@@ -1554,6 +1554,7 @@ contains
           do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
             do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
               do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+
                 wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                 tmax = real(wann_func(nxx, nyy, nzz, loop_w)* &
                             conjg(wann_func(nxx, nyy, nzz, loop_w)), dp)
@@ -1576,6 +1577,7 @@ contains
           end do
           wmod = wmod/sqrt(real(wmod)**2 + aimag(wmod)**2)
           wann_func(:, :, :, loop_w) = wann_func(:, :, :, loop_w)/wmod
+          ratmax = ratmax/wmod
           write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wannier_plot_list(loop_w), &
             'Maximum Im/Re Ratio = ', ratmax
         end do
