@@ -72,3 +72,7 @@ example29: Platinum - Berry curvature-like term and spin Hall conductivity
 example30: Gallium Arsenide - ac spin Hall conductivity
 
 example31: Platinum - Selected columns of density matrix algorithm for spinor wavefunctions
+
+example32: Tungsten - SCDM parameters from projectability 
+
+example33: BC2N - Expansion coefficients for kdotp bands 

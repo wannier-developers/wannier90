@@ -15,6 +15,9 @@
 module w90_plot
   !! This module handles various plots
 
+  use w90_comms, only: on_root, my_node_id, num_nodes, &
+    comms_reduce, comms_array_split
+
   implicit none
   private
   public :: plot_main
@@ -153,17 +156,19 @@ contains
     integer :: nkp
     logical :: have_gamma
 
-    if (timing_level > 0) call io_stopwatch('plot: main', 1)
+    if (on_root) then
+      if (timing_level > 0) call io_stopwatch('plot: main', 1)
 
-    ! Print the header only if there is something to plot
-    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
-        wannier_plot .or. write_u_matrices .or. write_tb) then
-      write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
-      write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
-      write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
-      write (stdout, *)
-    end if
+      ! Print the header only if there is something to plot
+      if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+          wannier_plot .or. write_u_matrices .or. write_tb) then
+        write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
+        write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
+        write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
+        write (stdout, *)
+      end if
 
+<<<<<<< HEAD
     if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
         write_tb) then
       ! Check if the kmesh includes the gamma point
@@ -217,6 +222,38 @@ contains
                                                            wannier_centres, real_lattice, recip_lattice, &
                                                            iprint, mp_grid, nrpts, irvec)
         call ws_write_vec(nrpts, irvec, num_wann, use_ws_distance)
+=======
+      if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+          write_tb) then
+        ! Check if the kmesh includes the gamma point
+        have_gamma = .false.
+        do nkp = 1, num_kpts
+          if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
+        end do
+        if (.not. have_gamma) &
+             write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
+             & ' Interpolation may be incorrect. !!!!'
+        ! Transform Hamiltonian to WF basis
+        !
+        call hamiltonian_setup()
+        !
+        call hamiltonian_get_hr()
+        !
+        if (bands_plot) call plot_interpolate_bands
+        !
+        if (fermi_surface_plot) call plot_fermi_surface
+        !
+        if (write_hr) call hamiltonian_write_hr()
+        !
+        if (write_rmn) call hamiltonian_write_rmn()
+        !
+        if (write_tb) call hamiltonian_write_tb()
+        !
+        if (write_hr .or. write_rmn .or. write_tb) then
+          if (.not. done_ws_distance) call ws_translate_dist(nrpts, irvec)
+          call ws_write_vec(nrpts, irvec)
+        end if
+>>>>>>> w90main/develop
       end if
     end if
 
@@ -228,12 +265,20 @@ contains
                                         atoms_pos_cart, atoms_symbol, atoms_species_num, num_species, kpt_latt, &
                                         spin, u_matrix, num_kpts, num_bands, num_wann, wannier_plot_supercell)
 
+<<<<<<< HEAD
     if (write_bvec) call plot_bvec(wb, bk, num_kpts, nntot)
 
     if (write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
                                                have_disentangled, num_wann, num_kpts, num_bands)
+=======
+    if (on_root) then
+      if (write_bvec) call plot_bvec
 
-    if (timing_level > 0) call io_stopwatch('plot: main', 2)
+      if (write_u_matrices) call plot_u_matrices
+>>>>>>> w90main/develop
+
+      if (timing_level > 0) call io_stopwatch('plot: main', 2)
+    end if
 
   end subroutine plot_main
 
@@ -1211,6 +1256,9 @@ contains
     integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
     integer :: ispinor
+    ! Needed to split an array on different nodes
+    integer, dimension(0:num_nodes - 1) :: counts
+    integer, dimension(0:num_nodes - 1) :: displs
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
     character(len=9)  :: cdate, ctime
@@ -1267,8 +1315,9 @@ contains
       if (ierr /= 0) call io_error('Error in allocating r_wvfn_nc in plot_wannier')
     endif
 
+    call comms_array_split(num_kpts, counts, displs) ! for MPI on kpoints
     call io_date(cdate, ctime)
-    do loop_kpt = 1, num_kpts
+    do loop_kpt = displs(my_node_id) + 1, displs(my_node_id) + counts(my_node_id)
 
       inc_band = .true.
       num_inc = num_wann
@@ -1450,61 +1499,90 @@ contains
 
     end do !loop over kpoints
 
-    if (.not. spinors) then !!!!! For spinor Wannier functions, the steps below are not necessary.
-      ! fix the global phase by setting the wannier to
-      ! be real at the point where it has max. modulus
-
-      do loop_w = 1, num_wannier_plot
-        tmaxx = 0.0
-        wmod = cmplx_1
-        do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-          do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-            do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
-              wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
-              tmax = real(wann_func(nxx, nyy, nzz, loop_w)* &
-                          conjg(wann_func(nxx, nyy, nzz, loop_w)), dp)
-              if (tmax > tmaxx) then
-                tmaxx = tmax
-                wmod = wann_func(nxx, nyy, nzz, loop_w)
-              end if
-            end do
-          end do
-        end do
-        wmod = wmod/sqrt(real(wmod)**2 + aimag(wmod)**2)
-        wann_func(:, :, :, loop_w) = wann_func(:, :, :, loop_w)/wmod
-      end do
-      !
-      ! Check the 'reality' of the WF
-      !
-      do loop_w = 1, num_wannier_plot
-        ratmax = 0.0_dp
-        do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-          do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-            do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
-              if (abs(real(wann_func(nxx, nyy, nzz, loop_w), dp)) >= 0.01_dp) then
-                ratio = abs(aimag(wann_func(nxx, nyy, nzz, loop_w)))/ &
-                        abs(real(wann_func(nxx, nyy, nzz, loop_w), dp))
-                ratmax = max(ratmax, ratio)
-              end if
-            end do
-          end do
-        end do
-        write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wannier_plot_list(loop_w), &
-          'Maximum Im/Re Ratio = ', ratmax
-      end do
-    endif !!!!!
-    write (stdout, *) ' '
-    if (wannier_plot_format .eq. 'xcrysden') then
-      call internal_xsf_format()
-    elseif (wannier_plot_format .eq. 'cube') then
-      call internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
-                                atoms_symbol, wannier_centres, wannier_plot_radius, &
-                                iprint, recip_lattice)
+    if (spinors) then
+      call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1, 1), &
+                        size(wann_func_nc), 'SUM')
     else
-      call io_error('wannier_plot_format not recognised in wannier_plot')
+      call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
+                        size(wann_func), 'SUM')
     endif
 
-    if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
+    if (on_root) then
+      if (spinors) then
+        do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
+          do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
+            do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+              do loop_w = 1, num_wannier_plot
+                upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
+                                conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
+                dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
+                                conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
+                if (wannier_plot_spinor_phase) then
+                  upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
+                  dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
+                else
+                  upphase = 1.0_dp; dnphase = 1.0_dp
+                endif
+                select case (wannier_plot_spinor_mode)
+                case ('total')
+                  wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
+                case ('up')
+                  wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
+                case ('down')
+                  wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
+                case default
+                  call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(wannier_plot_spinor_mode))
+                end select
+                wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
+              end do
+            end do
+          end do
+        end do
+      endif
+    endif
+
+    if (on_root) then
+      if (.not. spinors) then !!!!! For spinor Wannier functions, the steps below are not necessary.
+        ! fix the global phase by setting the wannier to
+        ! be real at the point where it has max. modulus
+
+        do loop_w = 1, num_wannier_plot
+          tmaxx = 0.0
+          wmod = cmplx_1
+          ratmax = 0.0_dp
+
+          do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
+            do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
+              do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+                wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
+                tmax = real(wann_func(nxx, nyy, nzz, loop_w)* &
+                            conjg(wann_func(nxx, nyy, nzz, loop_w)), dp)
+                if (tmax > tmaxx) then
+                  tmaxx = tmax
+                  wmod = wann_func(nxx, nyy, nzz, loop_w)
+                end if
+
+                !
+                ! Check the 'reality' of the WF
+                !
+                if (abs(real(wann_func(nxx, nyy, nzz, loop_w), dp)) >= 0.01_dp) then
+                  ratio = abs(aimag(wann_func(nxx, nyy, nzz, loop_w)))/ &
+                          abs(real(wann_func(nxx, nyy, nzz, loop_w), dp))
+                  ratmax = max(ratmax, ratio)
+                end if
+
+              end do
+            end do
+          end do
+          wmod = wmod/sqrt(real(wmod)**2 + aimag(wmod)**2)
+          wann_func(:, :, :, loop_w) = wann_func(:, :, :, loop_w)/wmod
+          write (stdout, '(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ', wannier_plot_list(loop_w), &
+            'Maximum Im/Re Ratio = ', ratmax
+        end do
+      endif !!!!!
+
+      if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
+    end if
 
     return
 
