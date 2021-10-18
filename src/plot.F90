@@ -1546,9 +1546,19 @@ contains
             'Maximum Im/Re Ratio = ', ratmax
         end do
       endif !!!!!
-
-      if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
     end if
+    write (stdout, *) ' '
+    if (wannier_plot_format .eq. 'xcrysden') then
+      call internal_xsf_format()
+    elseif (wannier_plot_format .eq. 'cube') then
+      call internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
+                                atoms_symbol, wannier_centres, wannier_plot_radius, &
+                                iprint, recip_lattice)
+    else
+      call io_error('wannier_plot_format not recognised in wannier_plot')
+    endif
+
+    if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
 
     return
 
