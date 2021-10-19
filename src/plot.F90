@@ -15,8 +15,7 @@
 module w90_plot
   !! This module handles various plots
 
-  use w90_comms, only: on_root, my_node_id, num_nodes, &
-    comms_reduce, comms_array_split
+  use w90_comms, only: my_node_id, num_nodes, comms_array_split, on_root, comms_reduce
 
   implicit none
   private
@@ -224,15 +223,17 @@ contains
           call ws_write_vec(nrpts, irvec, num_wann, use_ws_distance)
         end if
       end if
+    end if
 
-      if (wannier_plot) call plot_wannier(recip_lattice, iprint, wannier_plot_radius, &
-                                          wannier_centres, wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase, &
-                                          wannier_plot_spinor_mode, spinors, wannier_plot_format, timing_level, &
-                                          wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
-                                          u_matrix_opt, lwindow, ndimwin, have_disentangled, real_lattice, num_atoms, &
-                                          atoms_pos_cart, atoms_symbol, atoms_species_num, num_species, kpt_latt, &
-                                          spin, u_matrix, num_kpts, num_bands, num_wann, wannier_plot_supercell)
+    if (wannier_plot) call plot_wannier(recip_lattice, iprint, wannier_plot_radius, &
+                                        wannier_centres, wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase, &
+                                        wannier_plot_spinor_mode, spinors, wannier_plot_format, timing_level, &
+                                        wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
+                                        u_matrix_opt, lwindow, ndimwin, have_disentangled, real_lattice, num_atoms, &
+                                        atoms_pos_cart, atoms_symbol, atoms_species_num, num_species, kpt_latt, &
+                                        spin, u_matrix, num_kpts, num_bands, num_wann, wannier_plot_supercell)
 
+    if (on_root) then
       if (write_bvec) call plot_bvec(wb, bk, num_kpts, nntot)
 
       if (write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
@@ -1546,19 +1547,19 @@ contains
             'Maximum Im/Re Ratio = ', ratmax
         end do
       endif !!!!!
-    end if
-    write (stdout, *) ' '
-    if (wannier_plot_format .eq. 'xcrysden') then
-      call internal_xsf_format()
-    elseif (wannier_plot_format .eq. 'cube') then
-      call internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
-                                atoms_symbol, wannier_centres, wannier_plot_radius, &
-                                iprint, recip_lattice)
-    else
-      call io_error('wannier_plot_format not recognised in wannier_plot')
-    endif
+      write (stdout, *) ' '
+      if (wannier_plot_format .eq. 'xcrysden') then
+        call internal_xsf_format()
+      elseif (wannier_plot_format .eq. 'cube') then
+        call internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
+                                  atoms_symbol, wannier_centres, wannier_plot_radius, &
+                                  iprint, recip_lattice)
+      else
+        call io_error('wannier_plot_format not recognised in wannier_plot')
+      endif
 
-    if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
+      if (timing_level > 1) call io_stopwatch('plot: wannier', 2)
+    end if
 
     return
 
