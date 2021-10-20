@@ -23,16 +23,17 @@ module w90chk_parameters
   public
 
   !type(parameter_input_type), save :: param_input
-  integer, allocatable, save :: exclude_bands(:)
-  type(wannier_data_type), save :: wann_data
-  type(kmesh_input_type), save :: kmesh_data
+  type(wannier_data_type), save :: wannier_data
+! type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
+  type(dis_manifold_type), save :: dis_manifold
+! type(atom_data_type), save :: atoms
+
+  integer, allocatable, save :: exclude_bands(:)
   real(kind=dp), allocatable, save :: kpt_latt(:, :)
-  integer, save :: num_kpts
-  type(dis_manifold_type), save :: dis_window
-  type(atom_data_type), save :: atoms
   logical, save :: have_disentangled
   integer, save :: num_exclude_bands
+  integer, save :: num_kpts
 
   integer, save :: num_bands
   !! Number of bands
@@ -265,19 +266,19 @@ contains
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
-      if (.not. allocated(dis_window%lwindow)) then
-        allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%lwindow)) then
+        allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt', stdout, seedname)
       endif
-      read (chk_unit, err=122) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (stdout, '(a)') "lwindow: read."
 
       ! ndimwin
-      if (.not. allocated(dis_window%ndimwin)) then
-        allocate (dis_window%ndimwin(num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%ndimwin)) then
+        allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt', stdout, seedname)
       endif
-      read (chk_unit, err=123) (dis_window%ndimwin(nkp), nkp=1, num_kpts)
+      read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
       write (stdout, '(a)') "ndimwin: read."
 
       ! U_matrix_opt
@@ -309,19 +310,19 @@ contains
     write (stdout, '(a)') "M_matrix: read."
 
     ! wannier_centres
-    if (.not. allocated(wann_data%centres)) then
-      allocate (wann_data%centres(3, num_wann), stat=ierr)
+    if (.not. allocated(wannier_data%centres)) then
+      allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout, seedname)
     end if
-    read (chk_unit, err=127) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
+    read (chk_unit, err=127) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
     write (stdout, '(a)') "wannier_centres: read."
 
     ! wannier spreads
-    if (.not. allocated(wann_data%spreads)) then
-      allocate (wann_data%spreads(num_wann), stat=ierr)
+    if (.not. allocated(wannier_data%spreads)) then
+      allocate (wannier_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout, seedname)
     end if
-    read (chk_unit, err=128) (wann_data%spreads(i), i=1, num_wann)
+    read (chk_unit, err=128) (wannier_data%spreads(i), i=1, num_wann)
     write (stdout, '(a)') "wannier_spreads: read."
 
     close (chk_unit)
@@ -434,17 +435,17 @@ contains
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
-      if (.not. allocated(dis_window%lwindow)) then
-        allocate (dis_window%lwindow(num_bands, num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%lwindow)) then
+        allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt_fmt', stdout, seedname)
       endif
       do nkp = 1, num_kpts
         do i = 1, num_bands
           read (chk_unit, *) idum
           if (idum == 1) then
-            dis_window%lwindow(i, nkp) = .true.
+            dis_manifold%lwindow(i, nkp) = .true.
           elseif (idum == 0) then
-            dis_window%lwindow(i, nkp) = .false.
+            dis_manifold%lwindow(i, nkp) = .false.
           else
             write (cdum, '(I0)') idum
             call io_error('Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum, stdout, seedname)
@@ -454,12 +455,12 @@ contains
       write (stdout, '(a)') "lwindow: read."
 
       ! ndimwin
-      if (.not. allocated(dis_window%ndimwin)) then
-        allocate (dis_window%ndimwin(num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%ndimwin)) then
+        allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt_fmt', stdout, seedname)
       endif
       do nkp = 1, num_kpts
-        read (chk_unit, *, err=123) dis_window%ndimwin(nkp)
+        read (chk_unit, *, err=123) dis_manifold%ndimwin(nkp)
       end do
       write (stdout, '(a)') "ndimwin: read."
 
@@ -515,22 +516,22 @@ contains
     write (stdout, '(a)') "M_matrix: read."
 
     ! wannier_centres
-    if (.not. allocated(wann_data%centres)) then
-      allocate (wann_data%centres(3, num_wann), stat=ierr)
+    if (.not. allocated(wannier_data%centres)) then
+      allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout, seedname)
     end if
     do j = 1, num_wann
-      read (chk_unit, *, err=127) (wann_data%centres(i, j), i=1, 3)
+      read (chk_unit, *, err=127) (wannier_data%centres(i, j), i=1, 3)
     end do
     write (stdout, '(a)') "wannier_centres: read."
 
     ! wannier spreads
-    if (.not. allocated(wann_data%spreads)) then
-      allocate (wann_data%spreads(num_wann), stat=ierr)
+    if (.not. allocated(wannier_data%spreads)) then
+      allocate (wannier_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout, seedname)
     end if
     do i = 1, num_wann
-      read (chk_unit, *, err=128) wann_data%spreads(i)
+      read (chk_unit, *, err=128) wannier_data%spreads(i)
     end do
     write (stdout, '(a)') "wannier_spreads: read."
 
@@ -592,14 +593,14 @@ contains
     if (have_disentangled) then
       write (chk_unit) omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
-      write (chk_unit) ((dis_window%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
-      write (chk_unit) (dis_window%ndimwin(nkp), nkp=1, num_kpts)
+      write (chk_unit) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      write (chk_unit) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
       write (chk_unit) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
     endif
     write (chk_unit) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)               ! U_matrix
     write (chk_unit) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts) ! M_matrix
-    write (chk_unit) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
-    write (chk_unit) (wann_data%spreads(i), i=1, num_wann)
+    write (chk_unit) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
+    write (chk_unit) (wannier_data%spreads(i), i=1, num_wann)
     close (chk_unit)
 
     write (stdout, '(a/)') ' done'
@@ -655,7 +656,7 @@ contains
       ! lwindow, ndimwin and U_matrix_opt
       do nkp = 1, num_kpts
         do i = 1, num_bands
-          if (dis_window%lwindow(i, nkp)) then
+          if (dis_manifold%lwindow(i, nkp)) then
             write (chk_unit, '(I1)') 1
           else
             write (chk_unit, '(I1)') 0
@@ -663,7 +664,7 @@ contains
         end do
       end do
       do nkp = 1, num_kpts
-        write (chk_unit, '(I0)') dis_window%ndimwin(nkp)
+        write (chk_unit, '(I0)') dis_manifold%ndimwin(nkp)
       end do
       do nkp = 1, num_kpts
         do j = 1, num_wann
@@ -690,10 +691,10 @@ contains
       end do
     end do
     do j = 1, num_wann
-      write (chk_unit, '(3G25.17)') (wann_data%centres(i, j), i=1, 3)
+      write (chk_unit, '(3G25.17)') (wannier_data%centres(i, j), i=1, 3)
     end do
     do i = 1, num_wann
-      write (chk_unit, '(G25.17)') wann_data%spreads(i)
+      write (chk_unit, '(G25.17)') wannier_data%spreads(i)
     end do
     close (chk_unit)
 

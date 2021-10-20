@@ -40,14 +40,15 @@ module w90_wannier90_readwrite
 contains
 
   !==================================================================!
-  subroutine param_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, exclude_bands, &
-                        fermi_energy_list, fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
-                        output_file, wvfn_read, wann_control, wann_omega, proj, proj_input, real_space_ham, &
-                        select_proj, kpoint_path, w90_system, tran, print_output, wannier_data, wann_plot, &
-                        w90_extra_io, ws_region, w90_calculation, eigval, real_lattice, &
-                        bohr, symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                        optimisation, eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
-                        library, library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
+  subroutine param_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
+                        exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
+                        kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
+                        proj, proj_input, real_space_ham, select_proj, kpoint_path, w90_system, &
+                        tran, print_output, wannier_data, wann_plot, w90_extra_io, ws_region, &
+                        w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, mp_grid, &
+                        num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
+                        calc_only_A, cp_pp, gamma_only, lhasproj, library, &
+                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
                         seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -137,7 +138,8 @@ contains
     call param_read_verbosity(print_output, stdout, seedname)
     call param_read_algorithm_control(optimisation, stdout, seedname)
     call param_read_w90_calcs(w90_calculation, stdout, seedname)
-    call param_read_transport(w90_calculation%transport, tran, w90_calculation%restart, stdout, seedname)
+    call param_read_transport(w90_calculation%transport, tran, w90_calculation%restart, stdout, &
+                              seedname)
     call param_read_dist_cutoff(real_space_ham, stdout, seedname)
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call param_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
@@ -153,15 +155,18 @@ contains
       !call param_read_devel(print_output%devel_flag, stdout, seedname)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
       call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-      call param_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, seedname)
+      call param_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, &
+                                seedname)
       call param_read_restart(w90_calculation, stdout, seedname)
       call param_read_system(library, w90_system, stdout, seedname)
-      call param_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, stdout, seedname)
+      call param_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, stdout, &
+                            seedname)
       call param_read_plot_info(wvfn_read, stdout, seedname)
       call param_read_band_plot(band_plot, num_wann, has_kpath, w90_calculation%bands_plot, &
                                 stdout, seedname)
       call param_read_wann_plot(wann_plot, num_wann, w90_calculation%wannier_plot, stdout, seedname)
-      call param_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, stdout, seedname)
+      call param_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, &
+                                    stdout, seedname)
       call param_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
       call param_read_outfiles(output_file, num_kpts, w90_system%num_valence_bands, &
                                disentanglement, gamma_only, stdout, seedname)
@@ -220,8 +225,8 @@ contains
       wann_omega%tilde = -999.0_dp
       wann_omega%invariant = -999.0_dp
       !param_input%have_disentangled = .false.
-      call param_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, num_bands, &
-                                  num_kpts, stdout, seedname)
+      call param_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                  num_bands, num_kpts, stdout, seedname)
     endif
   end subroutine param_read
 
@@ -258,16 +263,20 @@ contains
     logical :: found
 
     w90_calculation%transport = .false.
-    call param_get_keyword(stdout, seedname, 'transport', found, l_value=w90_calculation%transport)
+    call param_get_keyword(stdout, seedname, 'transport', found, &
+                           l_value=w90_calculation%transport)
 
     w90_calculation%wannier_plot = .false.
-    call param_get_keyword(stdout, seedname, 'wannier_plot', found, l_value=w90_calculation%wannier_plot)
+    call param_get_keyword(stdout, seedname, 'wannier_plot', found, &
+                           l_value=w90_calculation%wannier_plot)
 
     w90_calculation%bands_plot = .false.
-    call param_get_keyword(stdout, seedname, 'bands_plot', found, l_value=w90_calculation%bands_plot)
+    call param_get_keyword(stdout, seedname, 'bands_plot', found, &
+                           l_value=w90_calculation%bands_plot)
 
     w90_calculation%fermi_surface_plot = .false.
-    call param_get_keyword(stdout, seedname, 'fermi_surface_plot', found, l_value=w90_calculation%fermi_surface_plot)
+    call param_get_keyword(stdout, seedname, 'fermi_surface_plot', found, &
+                           l_value=w90_calculation%fermi_surface_plot)
 
   end subroutine param_read_w90_calcs
 
@@ -342,7 +351,8 @@ contains
     call param_get_keyword(stdout, seedname, 'tran_num_cell_rr', found, i_value=tran%num_cell_rr)
 
     tran%group_threshold = 0.15_dp
-    call param_get_keyword(stdout, seedname, 'tran_group_threshold', found, r_value=tran%group_threshold)
+    call param_get_keyword(stdout, seedname, 'tran_group_threshold', found, &
+                           r_value=tran%group_threshold)
 
     ! checks
     if (transport) then
@@ -372,23 +382,27 @@ contains
     logical :: found
 
     real_space_ham%dist_cutoff_mode = 'three_dim'
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, c_value=real_space_ham%dist_cutoff_mode)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, &
+                           c_value=real_space_ham%dist_cutoff_mode)
     if ((index(real_space_ham%dist_cutoff_mode, 'three_dim') .eq. 0) &
         .and. (index(real_space_ham%dist_cutoff_mode, 'two_dim') .eq. 0) &
         .and. (index(real_space_ham%dist_cutoff_mode, 'one_dim') .eq. 0)) &
       call io_error('Error: dist_cutoff_mode not recognised', stdout, seedname)
 
     real_space_ham%dist_cutoff = 1000.0_dp
-    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, r_value=real_space_ham%dist_cutoff)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, &
+                           r_value=real_space_ham%dist_cutoff)
 
     real_space_ham%dist_cutoff_hc = real_space_ham%dist_cutoff
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, r_value=real_space_ham%dist_cutoff_hc)
+    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, &
+                           r_value=real_space_ham%dist_cutoff_hc)
 
     real_space_ham%hr_cutoff = 0.0_dp
     call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=real_space_ham%hr_cutoff)
 
     real_space_ham%system_dim = 3
-    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, i_value=real_space_ham%system_dim)
+    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, &
+                           i_value=real_space_ham%system_dim)
 
   end subroutine param_read_dist_cutoff
 
@@ -526,8 +540,8 @@ contains
     endif
   end subroutine param_read_wannierise
 
-  subroutine param_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, stdout, &
-                                        seedname)
+  subroutine param_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
+                                        stdout, seedname)
     use w90_io, only: io_error
     implicit none
     !logical, intent(in) :: eig_found
@@ -571,8 +585,8 @@ contains
     if (dis_spheres%num > 0) then
       allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dis_spheres in param_read', stdout, seedname)
-      call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, bohr, &
-                                   r_value=dis_spheres%spheres)
+      call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, &
+                                   bohr, r_value=dis_spheres%spheres)
       if (.not. found) call io_error('Error: Did not find dis_spheres in the input file', stdout, seedname)
       do nkp = 1, dis_spheres%num
         if (dis_spheres%spheres(4, nkp) < 1.0e-15_dp) &
@@ -815,9 +829,11 @@ contains
     call param_get_keyword(stdout, seedname, 'wannier_plot_mode', found, c_value=wann_plot%mode)
 
     wann_plot%spinor_mode = 'total'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, c_value=wann_plot%spinor_mode)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, &
+                           c_value=wann_plot%spinor_mode)
     wann_plot%spinor_phase = .true.
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, l_value=wann_plot%spinor_phase)
+    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, &
+                           l_value=wann_plot%spinor_phase)
 
     wann_plot_num = 0
     call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
@@ -878,7 +894,8 @@ contains
     logical :: found
 
     fermi_surface_data%num_points = 50
-    call param_get_keyword(stdout, seedname, 'fermi_surface_num_points', found, i_value=fermi_surface_data%num_points)
+    call param_get_keyword(stdout, seedname, 'fermi_surface_num_points', found, &
+                           i_value=fermi_surface_data%num_points)
 
     fermi_surface_data%plot_format = 'xcrysden'
     call param_get_keyword(stdout, seedname, 'fermi_surface_plot_format', &
@@ -892,8 +909,8 @@ contains
     endif
   end subroutine param_read_fermi_surface
 
-  subroutine param_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, tran_read_ht, &
-                                stdout, seedname)
+  subroutine param_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
+                                tran_read_ht, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -937,7 +954,8 @@ contains
 
     hamiltonian%automatic_translation = .true.
     hamiltonian%translation_centre_frac = 0.0_dp
-    call param_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, r_value=rv_temp)
+    call param_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, &
+                                  r_value=rv_temp)
     if (found) then
       hamiltonian%translation_centre_frac = rv_temp
       hamiltonian%automatic_translation = .false.
@@ -960,7 +978,8 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
   end subroutine param_read_bloch_phase
 
-  subroutine param_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, seedname)
+  subroutine param_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, &
+                                      stdout, seedname)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -1074,7 +1093,8 @@ contains
 
     select_proj%lselproj = .false.
     num_select_projections = 0
-    call param_get_range_vector(stdout, seedname, 'select_projections', found, num_select_projections, lcount=.true.)
+    call param_get_range_vector(stdout, seedname, 'select_projections', found, &
+                                num_select_projections, lcount=.true.)
     if (found) then
       if (num_select_projections < 1) call io_error('Error: problem reading select_projections', stdout, seedname)
       if (allocated(select_projections)) deallocate (select_projections)
@@ -1849,8 +1869,9 @@ contains
   end subroutine param_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, num_bands, &
-                                   num_kpts, num_proj, num_wann, optimisation, gamma_only, stdout)
+  subroutine param_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, &
+                                   num_bands, num_kpts, num_proj, num_wann, optimisation, &
+                                   gamma_only, stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -2083,14 +2104,14 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, exclude_bands, &
-                        fermi_energy_list, fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
-                        output_file, wvfn_read, wann_control, wann_omega, proj_input, real_space_ham, w90_system, &
-                        tran, print_output, wannier_data, wann_plot, ws_region, w90_calculation, eigval, &
-                        real_lattice, symmetrize_eps, mp_grid, first_segment, num_bands, num_kpts, &
-                        num_proj, num_wann, optimisation, eig_found, cp_pp, gamma_only, &
-                        have_disentangled, lhasproj, lsitesymmetry, use_bloch_phases, seedname, &
-                        stdout, comm)
+  subroutine param_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
+                        exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
+                        kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
+                        proj_input, real_space_ham, w90_system, tran, print_output, wannier_data, &
+                        wann_plot, ws_region, w90_calculation, eigval, real_lattice, &
+                        symmetrize_eps, mp_grid, first_segment, num_bands, num_kpts, num_proj, &
+                        num_wann, optimisation, eig_found, cp_pp, gamma_only, have_disentangled, &
+                        lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -2298,8 +2319,8 @@ contains
     call comms_bcast(output_file%write_tb, 1, stdout, seedname, comm)
     call comms_bcast(real_space_ham%hr_cutoff, 1, stdout, seedname, comm)
     call comms_bcast(real_space_ham%dist_cutoff, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), stdout, &
-                     seedname, comm)
+    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), &
+                     stdout, seedname, comm)
     call comms_bcast(real_space_ham%dist_cutoff_hc, 1, stdout, seedname, comm)
     !call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
     call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)

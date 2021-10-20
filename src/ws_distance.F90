@@ -47,7 +47,7 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(ws_distance, stdout, seedname, cutoff, num_wann, &
+  subroutine ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wannier_centres, real_lattice, mp_grid, nrpts, irvec, &
                                force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
@@ -66,20 +66,19 @@ contains
     implicit none
 
     type(ws_distance_type), intent(inout) :: ws_distance
-!   from w90_parameters
-    type(ws_region_type), intent(in) :: cutoff
+    type(ws_region_type), intent(in) :: ws_region
+
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
-    !integer, intent(in) :: iprint
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: ws_search_size(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: ws_distance_tol
-!   end w90_parameters
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
+
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+
     logical, optional, intent(in):: force_recompute ! set to true to force recomputing everything
+
     character(len=50), intent(in)  :: seedname
 
     ! <<<local variables>>>
@@ -131,7 +130,7 @@ contains
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
                        ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, real_lattice, &
-                       inv_lattice, cutoff%ws_search_size, cutoff%ws_distance_tol, &
+                       inv_lattice, ws_region%ws_search_size, ws_region%ws_distance_tol, &
                        stdout, seedname)
           do ideg = 1, ws_distance%ndeg(iw, jw, ir)
             ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)

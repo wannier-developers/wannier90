@@ -2044,7 +2044,7 @@ contains
 
   !==================================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
-                        num_kpts, print_output, wann_constrain, omega_invariant, counts, displs, &
+                        num_kpts, print_output, wann_slwf, omega_invariant, counts, displs, &
                         ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, stdout, seedname, comm)
     !==================================================================!
     !                                                                  !
@@ -2061,7 +2061,7 @@ contains
 
     implicit none
 
-    type(wann_slwf_type), intent(in) :: wann_constrain
+    type(wann_slwf_type), intent(in) :: wann_slwf
     real(kind=dp), intent(in) :: omega_invariant
 
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -2206,22 +2206,22 @@ contains
     !jry: Either the above (om1,2,3) or the following is redundant
     !     keep it in the code base for testing
 
-    if (wann_constrain%selective_loc) then
+    if (wann_slwf%selective_loc) then
       wann_spread%om_iod = 0.0_dp
       do nkp_loc = 1, counts(my_node_id)
         do nn = 1, kmesh_info%nntot
           summ = 0.0_dp
-          do n = 1, wann_constrain%slwf_num
+          do n = 1, wann_slwf%slwf_num
             summ = summ &
                    + real(m_matrix_loc(n, n, nn, nkp_loc) &
                           *conjg(m_matrix_loc(n, n, nn, nkp_loc)), kind=dp)
-            if (wann_constrain%constrain) then
+            if (wann_slwf%constrain) then
               !! Centre constraint contribution. Zero if slwf_constrain=false
               summ = summ - lambda_loc*ln_tmp_loc(n, nn, nkp_loc)**2
             end if
           enddo
           wann_spread%om_iod = wann_spread%om_iod &
-                               + kmesh_info%wb(nn)*(real(wann_constrain%slwf_num, dp) - summ)
+                               + kmesh_info%wb(nn)*(real(wann_slwf%slwf_num, dp) - summ)
         enddo
       enddo
 
@@ -2233,7 +2233,7 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
-          do n = 1, wann_constrain%slwf_num
+          do n = 1, wann_slwf%slwf_num
             brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
             wann_spread%om_d = wann_spread%om_d + (1.0_dp - lambda_loc)*kmesh_info%wb(nn) &
                                *(ln_tmp_loc(n, nn, nkp_loc) + brn)**2
@@ -2247,14 +2247,14 @@ contains
 
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
-      if (wann_constrain%constrain) then
+      if (wann_slwf%constrain) then
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           do nn = 1, kmesh_info%nntot
-            do n = 1, wann_constrain%slwf_num
+            do n = 1, wann_slwf%slwf_num
               wann_spread%om_nu = wann_spread%om_nu + 2.0_dp*kmesh_info%wb(nn)* &
                                   ln_tmp_loc(n, nn, nkp_loc)*lambda_loc* &
-                                  sum(kmesh_info%bk(:, nn, nkp)*wann_constrain%centres(n, :))
+                                  sum(kmesh_info%bk(:, nn, nkp)*wann_slwf%centres(n, :))
             enddo
           enddo
         enddo
@@ -2263,9 +2263,9 @@ contains
 
         wann_spread%om_nu = wann_spread%om_nu/real(num_kpts, dp)
 
-        do n = 1, wann_constrain%slwf_num
+        do n = 1, wann_slwf%slwf_num
           wann_spread%om_nu = wann_spread%om_nu &
-                              + lambda_loc*sum(wann_constrain%centres(n, :)**2)
+                              + lambda_loc*sum(wann_slwf%centres(n, :)**2)
         end do
 
       end if
@@ -2343,7 +2343,7 @@ contains
   end subroutine wann_omega
 
   !==================================================================!
-  subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_constrain, &
+  subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
                          cdodq_loc, lambda_loc, timing_level, stdout, seedname, sitesym, comm, &
                          iprint, cdodq)
@@ -2366,7 +2366,7 @@ contains
     implicit none
 
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(wann_slwf_type), intent(inout) :: wann_constrain
+    type(wann_slwf_type), intent(inout) :: wann_slwf
     type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
 
@@ -2409,7 +2409,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating cr in wann_domega', stdout, seedname)
     allocate (crt(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating crt in wann_domega', stdout, seedname)
-    if (wann_constrain%selective_loc .and. wann_constrain%constrain) then
+    if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       allocate (r0kb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating r0kb in wann_domega', stdout, seedname)
     end if
@@ -2443,14 +2443,14 @@ contains
     call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout, seedname, comm)
 
     ! b.r_0n are calculated
-    if (wann_constrain%selective_loc .and. wann_constrain%constrain) then
+    if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       r0kb = 0.0_dp
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             r0kb(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp) &
-                                       *wann_constrain%centres(n, :))
+                                       *wann_slwf%centres(n, :))
           enddo
         enddo
       enddo
@@ -2478,11 +2478,11 @@ contains
           crt(:, n) = m_matrix_loc(:, n, nn, nkp_loc)/mnn
           cr(:, n) = m_matrix_loc(:, n, nn, nkp_loc)*conjg(mnn)
         enddo
-        if (wann_constrain%selective_loc) then
+        if (wann_slwf%selective_loc) then
           do n = 1, num_wann
             do m = 1, num_wann
-              if (m <= wann_constrain%slwf_num) then
-                if (n <= wann_constrain%slwf_num) then
+              if (m <= wann_slwf%slwf_num) then
+                if (n <= wann_slwf%slwf_num) then
                   ! A[R^{k,b}]=(R-Rdag)/2
                   cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) &
                                              + kmesh_info%wb(nn)*0.5_dp*(cr(m, n) - conjg(cr(n, m)))
@@ -2494,7 +2494,7 @@ contains
                                              - (crt(m, n)*rnkb_loc(n, nn, nkp_loc) &
                                                 + conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc))) &
                                              *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                  if (wann_constrain%constrain) then
+                  if (wann_slwf%constrain) then
                     cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                                *(crt(m, n)*ln_tmp_loc(n, nn, nkp_loc) &
                                                  + conjg(crt(n, m)*ln_tmp_loc(m, nn, nkp_loc))) &
@@ -2520,7 +2520,7 @@ contains
                                              - conjg(crt(n, m)*(ln_tmp_loc(m, nn, nkp_loc) &
                                                                 + kmesh_info%wb(nn)*rnkb_loc(m, nn, nkp_loc))) &
                                              *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                  if (wann_constrain%constrain) then
+                  if (wann_slwf%constrain) then
                     cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                                *conjg(crt(n, m)*(ln_tmp_loc(m, nn, nkp_loc) &
                                                                  + kmesh_info%wb(nn)*rnkb_loc(m, nn, nkp_loc))) &
@@ -2534,13 +2534,13 @@ contains
                                                *cmplx(0.0_dp, -0.5_dp, kind=dp)
                   end if
                 end if
-              else if (n <= wann_constrain%slwf_num) then
+              else if (n <= wann_slwf%slwf_num) then
                 cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) &
                                            + kmesh_info%wb(nn)*cr(m, n)*0.5_dp &
                                            - crt(m, n)*(ln_tmp_loc(n, nn, nkp_loc) &
                                                         + kmesh_info%wb(nn)*rnkb_loc(n, nn, nkp_loc)) &
                                            *cmplx(0.0_dp, -0.5_dp, kind=dp)
-                if (wann_constrain%constrain) then
+                if (wann_slwf%constrain) then
                   cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + lambda_loc &
                                              *crt(m, n)*(ln_tmp_loc(n, nn, nkp_loc) &
                                                          + kmesh_info%wb(nn)*rnkb_loc(n, nn, nkp_loc)) &
@@ -3183,10 +3183,8 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
     type(wann_omega_type), intent(inout) :: omega
-    integer, allocatable, intent(in) :: exclude_bands(:)
     type(w90_system_type), intent(in) :: w90_system
     type(print_output_type), intent(in) :: print_output
-    real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(output_file_type), intent(in) :: output_file
     type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
@@ -3197,9 +3195,11 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
+    integer, allocatable, intent(in) :: exclude_bands(:)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
 
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
