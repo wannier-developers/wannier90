@@ -681,12 +681,12 @@ contains
     end if
   end subroutine param_read_lattice
 
-  subroutine param_read_atoms(library, atoms, real_lattice, bohr, stdout, seedname)
+  subroutine param_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
     integer, intent(in) :: stdout
-    type(atom_data_type), intent(inout) :: atoms
+    type(atom_data_type), intent(inout) :: atom_data
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
@@ -695,7 +695,7 @@ contains
     logical :: found, found2, lunits
 
     ! Atoms
-    if (.not. library) atoms%num_atoms = 0
+    if (.not. library) atom_data%num_atoms = 0
     call param_get_block_length(stdout, seedname, 'atoms_frac', found, i_temp, library)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
     call param_get_block_length(stdout, seedname, 'atoms_cart', found2, i_temp2, library, lunits)
@@ -704,13 +704,13 @@ contains
       if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart', stdout, seedname)
       if (found .and. i_temp > 0) then
         lunits = .false.
-        atoms%num_atoms = i_temp
+        atom_data%num_atoms = i_temp
       elseif (found2 .and. i_temp2 > 0) then
-        atoms%num_atoms = i_temp2
-        if (lunits) atoms%num_atoms = atoms%num_atoms - 1
+        atom_data%num_atoms = i_temp2
+        if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
       end if
-      if (atoms%num_atoms > 0) then
-        call param_get_atoms(atoms, library, lunits, real_lattice, bohr, stdout, seedname)
+      if (atom_data%num_atoms > 0) then
+        call param_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
       end if
     endif
   end subroutine param_read_atoms
@@ -1011,7 +1011,7 @@ contains
 
   end subroutine param_clean_infile
 
-  subroutine param_read_final_alloc(disentanglement, dis_manifold, wann_data, &
+  subroutine param_read_final_alloc(disentanglement, dis_manifold, wannier_data, &
                                     num_wann, num_bands, num_kpts, stdout, seedname)
     ! =============================== !
     ! Some checks and initialisations !
@@ -1020,10 +1020,8 @@ contains
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
-    !type(parameter_input_type), intent(inout) :: parameter_input
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    !type(param_wannierise_type), intent(inout) :: param_wannierise
-    type(wannier_data_type), intent(inout) :: wann_data
+    type(wannier_data_type), intent(inout) :: wannier_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
     character(len=50), intent(in)  :: seedname
 
@@ -1049,14 +1047,14 @@ contains
 !            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
 !    endif
 
-    if (allocated(wann_data%centres)) deallocate (wann_data%centres)
-    allocate (wann_data%centres(3, num_wann), stat=ierr)
+    if (allocated(wannier_data%centres)) deallocate (wannier_data%centres)
+    allocate (wannier_data%centres(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read', stdout, seedname)
-    wann_data%centres = 0.0_dp
-    if (allocated(wann_data%spreads)) deallocate (wann_data%spreads)
-    allocate (wann_data%spreads(num_wann), stat=ierr)
+    wannier_data%centres = 0.0_dp
+    if (allocated(wannier_data%spreads)) deallocate (wannier_data%spreads)
+    allocate (wannier_data%spreads(num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read', stdout, seedname)
-    wann_data%spreads = 0.0_dp
+    wannier_data%spreads = 0.0_dp
   end subroutine param_read_final_alloc
 
   subroutine internal_set_kmesh(spacing, reclat, mesh)
@@ -1184,7 +1182,7 @@ contains
   end function get_smearing_index
 
 !===================================================================
-  subroutine param_uppercase(atoms, kpoint_path, length_unit)
+  subroutine param_uppercase(atom_data, kpoint_path, length_unit)
     !===================================================================
     !                                                                  !
     !! Convert a few things to uppercase to look nice in the output
@@ -1193,22 +1191,22 @@ contains
 
     implicit none
 
-    type(atom_data_type), intent(inout) :: atoms
+    type(atom_data_type), intent(inout) :: atom_data
     type(kpoint_path_type), intent(inout) :: kpoint_path
     character(len=*), intent(inout) :: length_unit
     integer :: nsp, ic, loop, inner_loop
 
     ! Atom labels (eg, si --> Si)
-    do nsp = 1, atoms%num_species
-      ic = ichar(atoms%label(nsp) (1:1))
+    do nsp = 1, atom_data%num_species
+      ic = ichar(atom_data%label(nsp) (1:1))
       if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atoms%label(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
+        atom_data%label(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
     enddo
 
-    do nsp = 1, atoms%num_species
-      ic = ichar(atoms%symbol(nsp) (1:1))
+    do nsp = 1, atom_data%num_species
+      ic = ichar(atom_data%symbol(nsp) (1:1))
       if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atoms%symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
+        atom_data%symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
     enddo
 
     ! Bands labels (eg, x --> X)
@@ -1328,8 +1326,8 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc(exclude_bands, wann_data, input_proj, kmesh_input, kpt_latt, &
-                           dis_manifold, atoms, eigval, kpoint_path, stdout, seedname)
+  subroutine param_dealloc(exclude_bands, wannier_data, input_proj, kmesh_input, kpt_latt, &
+                           dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -1341,12 +1339,12 @@ contains
     !data from parameters module
     !type(param_driver_type), intent(inout) :: driver
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(wannier_data_type), intent(inout) :: wann_data
+    type(wannier_data_type), intent(inout) :: wannier_data
     type(proj_input_type), intent(inout) :: input_proj
     type(kmesh_input_type), intent(inout) :: kmesh_input
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    type(atom_data_type), intent(inout) :: atoms
+    type(atom_data_type), intent(inout) :: atom_data
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(kpoint_path_type), intent(inout) :: kpoint_path
     character(len=50), intent(in)  :: seedname
@@ -1382,20 +1380,20 @@ contains
       deallocate (kpoint_path%points, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating points in param_dealloc', stdout, seedname)
     end if
-    if (allocated(atoms%label)) then
-      deallocate (atoms%label, stat=ierr)
+    if (allocated(atom_data%label)) then
+      deallocate (atom_data%label, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_label in param_dealloc', stdout, seedname)
     end if
-    if (allocated(atoms%symbol)) then
-      deallocate (atoms%symbol, stat=ierr)
+    if (allocated(atom_data%symbol)) then
+      deallocate (atom_data%symbol, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc', stdout, seedname)
     end if
-    if (allocated(atoms%pos_cart)) then
-      deallocate (atoms%pos_cart, stat=ierr)
+    if (allocated(atom_data%pos_cart)) then
+      deallocate (atom_data%pos_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc', stdout, seedname)
     end if
-    if (allocated(atoms%species_num)) then
-      deallocate (atoms%species_num, stat=ierr)
+    if (allocated(atom_data%species_num)) then
+      deallocate (atom_data%species_num, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc', stdout, seedname)
     end if
     if (allocated(input_proj%site)) then
@@ -1438,12 +1436,12 @@ contains
       deallocate (exclude_bands, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating exclude_bands in param_dealloc', stdout, seedname)
     end if
-    if (allocated(wann_data%centres)) then
-      deallocate (wann_data%centres, stat=ierr)
+    if (allocated(wannier_data%centres)) then
+      deallocate (wannier_data%centres, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_centres in param_dealloc', stdout, seedname)
     end if
-    if (allocated(wann_data%spreads)) then
-      deallocate (wann_data%spreads, stat=ierr)
+    if (allocated(wannier_data%spreads)) then
+      deallocate (wannier_data%spreads, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in param_dealloc', stdout, seedname)
     endif
     return
@@ -1530,7 +1528,7 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_read_chkpt(dis_data, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
+  subroutine param_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, m_matrix, &
                               u_matrix, u_matrix_opt, real_lattice, &
                               omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                               num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
@@ -1553,10 +1551,10 @@ contains
 
     !data from parameters module
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(wannier_data_type), intent(inout) :: wann_data
+    type(wannier_data_type), intent(inout) :: wannier_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(dis_manifold_type), intent(inout) :: dis_data
+    type(dis_manifold_type), intent(inout) :: dis_manifold
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -1653,18 +1651,18 @@ contains
       read (chk_unit) omega_invariant     ! omega invariant
 
       ! lwindow
-      if (.not. allocated(dis_data%lwindow)) then
-        allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%lwindow)) then
+        allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in param_read_chkpt', stdout, seedname)
       endif
-      read (chk_unit, err=122) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
-      if (.not. allocated(dis_data%ndimwin)) then
-        allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+      if (.not. allocated(dis_manifold%ndimwin)) then
+        allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in param_read_chkpt', stdout, seedname)
       endif
-      read (chk_unit, err=123) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
+      read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
       if (.not. allocated(u_matrix_opt)) then
@@ -1690,10 +1688,10 @@ contains
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
-    read (chk_unit, err=127) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
+    read (chk_unit, err=127) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
 
     ! wannier spreads
-    read (chk_unit, err=128) (wann_data%spreads(i), i=1, num_wann)
+    read (chk_unit, err=128) (wannier_data%spreads(i), i=1, num_wann)
 
     close (chk_unit)
 
@@ -1717,7 +1715,7 @@ contains
   end subroutine param_read_chkpt
 
 !===========================================================!
-  subroutine param_chkpt_dist(dis_data, wann_data, u_matrix, u_matrix_opt, omega_invariant, &
+  subroutine param_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, omega_invariant, &
                               num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
                               seedname, stdout, comm)
     !===========================================================!
@@ -1733,8 +1731,8 @@ contains
     implicit none
 
     !data from parameters module
-    type(wannier_data_type), intent(inout) :: wann_data
-    type(dis_manifold_type), intent(inout) :: dis_data
+    type(wannier_data_type), intent(inout) :: wannier_data
+    type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout
@@ -1784,14 +1782,14 @@ contains
             call io_error('Error allocating u_matrix_opt in param_chkpt_dist', stdout, seedname)
         endif
 
-        if (.not. allocated(dis_data%lwindow)) then
-          allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+        if (.not. allocated(dis_manifold%lwindow)) then
+          allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating lwindow in param_chkpt_dist', stdout, seedname)
         endif
 
-        if (.not. allocated(dis_data%ndimwin)) then
-          allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+        if (.not. allocated(dis_manifold%ndimwin)) then
+          allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating ndimwin in param_chkpt_dist', stdout, seedname)
         endif
@@ -1799,12 +1797,12 @@ contains
       end if
 
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_data%ndimwin(1), num_kpts, stdout, seedname, comm)
+      call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
+      call comms_bcast(dis_manifold%ndimwin(1), num_kpts, stdout, seedname, comm)
       call comms_bcast(omega_invariant, 1, stdout, seedname, comm)
     end if
-    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
-    call comms_bcast(wann_data%spreads(1), num_wann, stdout, seedname, comm)
+    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
+    call comms_bcast(wannier_data%spreads(1), num_wann, stdout, seedname, comm)
 
   end subroutine param_chkpt_dist
 
@@ -2352,7 +2350,7 @@ contains
   end subroutine param_get_block_length
 
 !===================================!
-  subroutine param_get_atoms(atoms, library, lunits, real_lattice, bohr, stdout, seedname)
+  subroutine param_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
     !===================================!
     !                                   !
     !!   Fills the atom data block
@@ -2364,7 +2362,7 @@ contains
     use w90_io, only: io_error
     implicit none
 
-    type(atom_data_type), intent(inout) :: atoms
+    type(atom_data_type), intent(inout) :: atom_data
     integer, intent(in) :: stdout
     logical, intent(in) :: library
     logical, intent(in) :: lunits
@@ -2374,15 +2372,15 @@ contains
     character(len=50), intent(in)  :: seedname
 
     real(kind=dp)     :: inv_lattice(3, 3)
-    real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
-    real(kind=dp)     :: atoms_pos_cart_tmp(3, atoms%num_atoms)
+    real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
+    real(kind=dp)     :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
     integer           :: i_temp, loop2, max_sites, ierr, ic
     logical           :: found_e, found_s, found, frac
     character(len=maxlen) :: dummy, end_st, start_st
-    character(len=maxlen) :: ctemp(atoms%num_atoms)
-    character(len=maxlen) :: atoms_label_tmp(atoms%num_atoms)
+    character(len=maxlen) :: ctemp(atom_data%num_atoms)
+    character(len=maxlen) :: atoms_label_tmp(atom_data%num_atoms)
     logical           :: lconvert
 
     keyword = "atoms_cart"
@@ -2461,66 +2459,66 @@ contains
     in_data(line_s:line_e) (1:maxlen) = ' '
 
     if (frac) then
-      do loop = 1, atoms%num_atoms
+      do loop = 1, atom_data%num_atoms
         call utility_frac_to_cart(atoms_pos_frac_tmp(:, loop), atoms_pos_cart_tmp(:, loop), real_lattice)
       end do
     else
-      do loop = 1, atoms%num_atoms
+      do loop = 1, atom_data%num_atoms
         call utility_cart_to_frac(atoms_pos_cart_tmp(:, loop), atoms_pos_frac_tmp(:, loop), inv_lattice)
       end do
     end if
 
     ! Now we sort the data into the proper structures
-    atoms%num_species = 1
+    atom_data%num_species = 1
     ctemp(1) = atoms_label_tmp(1)
-    do loop = 2, atoms%num_atoms
+    do loop = 2, atom_data%num_atoms
       do loop2 = 1, loop - 1
         if (trim(atoms_label_tmp(loop)) == trim(atoms_label_tmp(loop2))) exit
         if (loop2 == loop - 1) then
-          atoms%num_species = atoms%num_species + 1
-          ctemp(atoms%num_species) = atoms_label_tmp(loop)
+          atom_data%num_species = atom_data%num_species + 1
+          ctemp(atom_data%num_species) = atoms_label_tmp(loop)
         end if
       end do
     end do
 
-    allocate (atoms%species_num(atoms%num_species), stat=ierr)
+    allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_get_atoms', stdout, seedname)
-    allocate (atoms%label(atoms%num_species), stat=ierr)
+    allocate (atom_data%label(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_label in param_get_atoms', stdout, seedname)
-    allocate (atoms%symbol(atoms%num_species), stat=ierr)
+    allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_get_atoms', stdout, seedname)
-    atoms%species_num(:) = 0
+    atom_data%species_num(:) = 0
 
-    do loop = 1, atoms%num_species
-      atoms%label(loop) = ctemp(loop)
-      do loop2 = 1, atoms%num_atoms
-        if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
-          atoms%species_num(loop) = atoms%species_num(loop) + 1
+    do loop = 1, atom_data%num_species
+      atom_data%label(loop) = ctemp(loop)
+      do loop2 = 1, atom_data%num_atoms
+        if (trim(atom_data%label(loop)) == trim(atoms_label_tmp(loop2))) then
+          atom_data%species_num(loop) = atom_data%species_num(loop) + 1
         end if
       end do
     end do
 
-    max_sites = maxval(atoms%species_num)
-    allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
+    max_sites = maxval(atom_data%species_num)
+    allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms', stdout, seedname)
 
-    do loop = 1, atoms%num_species
+    do loop = 1, atom_data%num_species
       counter = 0
-      do loop2 = 1, atoms%num_atoms
-        if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
+      do loop2 = 1, atom_data%num_atoms
+        if (trim(atom_data%label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
-          !atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
-          atoms%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+          !atom_data%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
+          atom_data%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
         end if
       end do
     end do
 
     ! Strip any numeric characters from atoms_label to get atoms_symbol
-    do loop = 1, atoms%num_species
-      atoms%symbol(loop) (1:2) = atoms%label(loop) (1:2)
-      ic = ichar(atoms%symbol(loop) (2:2))
+    do loop = 1, atom_data%num_species
+      atom_data%symbol(loop) (1:2) = atom_data%label(loop) (1:2)
+      ic = ichar(atom_data%symbol(loop) (2:2))
       if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
-        atoms%symbol(loop) (2:2) = ' '
+        atom_data%symbol(loop) (2:2) = ' '
     end do
 
     return
@@ -2530,7 +2528,7 @@ contains
   end subroutine param_get_atoms
 
 !=====================================================!
-  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
+  subroutine param_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
                                  stdout, seedname)
     !=====================================================!
     !                                                     !
@@ -2544,81 +2542,81 @@ contains
     implicit none
 
     integer, intent(in) :: stdout
-    type(atom_data_type), intent(inout) :: atoms
-    character(len=*), intent(in) :: atoms_label_tmp(atoms%num_atoms)
+    type(atom_data_type), intent(inout) :: atom_data
+    character(len=*), intent(in) :: atoms_label_tmp(atom_data%num_atoms)
     !! Atom labels
-    real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atoms%num_atoms)
+    real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     !! Atom positions
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
 
     real(kind=dp)     :: inv_lattice(3, 3)
-    real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
+    real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
     integer           :: loop2, max_sites, ierr, ic, loop, counter
-    character(len=maxlen) :: ctemp(atoms%num_atoms)
+    character(len=maxlen) :: ctemp(atom_data%num_atoms)
     character(len=maxlen) :: tmp_string
 
     call utility_inverse_mat(real_lattice, inv_lattice)
-    do loop = 1, atoms%num_atoms
+    do loop = 1, atom_data%num_atoms
       call utility_cart_to_frac(atoms_pos_cart_tmp(:, loop), &
                                 atoms_pos_frac_tmp(:, loop), inv_lattice)
     enddo
 
     ! Now we sort the data into the proper structures
-    atoms%num_species = 1
+    atom_data%num_species = 1
     ctemp(1) = atoms_label_tmp(1)
-    do loop = 2, atoms%num_atoms
+    do loop = 2, atom_data%num_atoms
       do loop2 = 1, loop - 1
         if (trim(atoms_label_tmp(loop)) == trim(atoms_label_tmp(loop2))) exit
         if (loop2 == loop - 1) then
-          atoms%num_species = atoms%num_species + 1
-          ctemp(atoms%num_species) = atoms_label_tmp(loop)
+          atom_data%num_species = atom_data%num_species + 1
+          ctemp(atom_data%num_species) = atoms_label_tmp(loop)
         end if
       end do
     end do
 
-    allocate (atoms%species_num(atoms%num_species), stat=ierr)
+    allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms', stdout, seedname)
-    allocate (atoms%label(atoms%num_species), stat=ierr)
+    allocate (atom_data%label(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_label in param_lib_set_atoms', stdout, seedname)
-    allocate (atoms%symbol(atoms%num_species), stat=ierr)
+    allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms', stdout, seedname)
-    atoms%species_num(:) = 0
+    atom_data%species_num(:) = 0
 
-    do loop = 1, atoms%num_species
-      atoms%label(loop) = ctemp(loop)
-      do loop2 = 1, atoms%num_atoms
-        if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
-          atoms%species_num(loop) = atoms%species_num(loop) + 1
+    do loop = 1, atom_data%num_species
+      atom_data%label(loop) = ctemp(loop)
+      do loop2 = 1, atom_data%num_atoms
+        if (trim(atom_data%label(loop)) == trim(atoms_label_tmp(loop2))) then
+          atom_data%species_num(loop) = atom_data%species_num(loop) + 1
         end if
       end do
     end do
 
-    max_sites = maxval(atoms%species_num)
-    allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
+    max_sites = maxval(atom_data%species_num)
+    allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms', stdout, seedname)
 
-    do loop = 1, atoms%num_species
+    do loop = 1, atom_data%num_species
       counter = 0
-      do loop2 = 1, atoms%num_atoms
-        if (trim(atoms%label(loop)) == trim(atoms_label_tmp(loop2))) then
+      do loop2 = 1, atom_data%num_atoms
+        if (trim(atom_data%label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
-          !atoms%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
-          atoms%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+          !atom_data%pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
+          atom_data%pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
         end if
       end do
     end do
 
     ! Strip any numeric characters from atoms_label to get atoms_symbol
-    do loop = 1, atoms%num_species
-      atoms%symbol(loop) (1:2) = atoms%label(loop) (1:2)
-      ic = ichar(atoms%symbol(loop) (2:2))
+    do loop = 1, atom_data%num_species
+      atom_data%symbol(loop) (1:2) = atom_data%label(loop) (1:2)
+      ic = ichar(atom_data%symbol(loop) (2:2))
       if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
-        atoms%symbol(loop) (2:2) = ' '
-      tmp_string = trim(adjustl(utility_lowercase(atoms%symbol(loop))))
-      atoms%symbol(loop) (1:2) = tmp_string(1:2)
-      tmp_string = trim(adjustl(utility_lowercase(atoms%label(loop))))
-      atoms%label(loop) (1:2) = tmp_string(1:2)
+        atom_data%symbol(loop) (2:2) = ' '
+      tmp_string = trim(adjustl(utility_lowercase(atom_data%symbol(loop))))
+      atom_data%symbol(loop) (1:2) = tmp_string(1:2)
+      tmp_string = trim(adjustl(utility_lowercase(atom_data%label(loop))))
+      atom_data%label(loop) (1:2) = tmp_string(1:2)
     end do
 
     return
@@ -2841,7 +2839,7 @@ contains
   end subroutine param_get_centre_constraint_from_column
 
 !===================================!
-  subroutine param_get_projections(num_proj, atoms, num_wann, input_proj, proj, &
+  subroutine param_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
                                    inv_lattice, lcount, spinors, bohr, stdout, seedname)
     !===================================!
     !                                   !
@@ -2859,7 +2857,7 @@ contains
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    type(atom_data_type), intent(in) :: atoms
+    type(atom_data_type), intent(in) :: atom_data
     ! projection data
     !type(param_driver_type), intent(inout) :: driver
     !type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -3056,15 +3054,15 @@ contains
           ctemp = ctemp(3:)
           call utility_string_to_coord(ctemp, pos_frac, stdout, seedname)
         else
-          if (atoms%num_species == 0) &
+          if (atom_data%num_species == 0) &
             call io_error('param_get_projection: Atom centred projection requested but no atoms defined', stdout, seedname)
-          do loop = 1, atoms%num_species
-            if (trim(ctemp) == atoms%label(loop)) then
+          do loop = 1, atom_data%num_species
+            if (trim(ctemp) == atom_data%label(loop)) then
               species = loop
-              sites = atoms%species_num(loop)
+              sites = atom_data%species_num(loop)
               exit
             end if
-            if (loop == atoms%num_species) then
+            if (loop == atom_data%num_species) then
               call io_error('param_get_projection: Atom site not recognised '//trim(ctemp), &
                             stdout, seedname)
             endif
@@ -3370,7 +3368,7 @@ contains
                   do loop_s = 1, spn_counter
                     counter = counter + 1
                     if (lcount) cycle
-                    call utility_cart_to_frac(atoms%pos_cart(:, loop_sites, species), pos_frac, &
+                    call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), pos_frac, &
                                               inv_lattice)
                     input_proj%site(:, counter) = pos_frac(:)
                     input_proj%l(counter) = loop_l
