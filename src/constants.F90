@@ -84,69 +84,103 @@ module w90_constants
 #ifdef CODATA2006
 ! ##### CODATA 2006 ##### !
 !#warning "WANNIER90 INFO: Using CODATA 2006 constant values"
-  real(kind=dp), parameter, public :: elem_charge_SI = 1.602176487e-19_dp   ! C
+  real(kind=dp), parameter :: elem_charge_SI = 1.602176487e-19_dp   ! C
   !! e
-  real(kind=dp), parameter, public :: elec_mass_SI = 9.10938215e-31_dp      ! kg
+  real(kind=dp), parameter :: elec_mass_SI = 9.10938215e-31_dp      ! kg
   !! $$m_e$$
-  real(kind=dp), parameter, public :: hbar_SI = 1.054571628e-34_dp          ! J * s
+  real(kind=dp), parameter :: hbar_SI = 1.054571628e-34_dp          ! J * s
   !! $$\hbar$$
-  real(kind=dp), parameter, public :: k_B_SI = 1.3806504e-23_dp             ! J / K
+  real(kind=dp), parameter :: k_B_SI = 1.3806504e-23_dp             ! J / K
   !! $$k_B$$
-  real(kind=dp), parameter, public :: bohr_magn_SI = 927.400915e-26_dp      ! J / T
+  real(kind=dp), parameter :: bohr_magn_SI = 927.400915e-26_dp      ! J / T
   !! $$\mu_B$$
-  real(kind=dp), parameter, public :: eps0_SI = 8.854187817e-12_dp          ! F / m
+  real(kind=dp), parameter :: eps0_SI = 8.854187817e-12_dp          ! F / m
   !! $$\epsilon_0$$
-  real(kind=dp), parameter, public :: speedlight_SI = 299792458.0_dp        ! m / s
+  real(kind=dp), parameter :: speedlight_SI = 299792458.0_dp        ! m / s
   !! $$c$$
-  real(kind=dp), parameter, public :: eV_au = 3.674932540e-2_dp              ! (see table of Conv. Factors)
+  real(kind=dp), parameter :: eV_au = 3.674932540e-2_dp              ! (see table of Conv. Factors)
   !! eV in atomic units
-  real(kind=dp), parameter, public :: eV_seconds = 6.582119e-16_dp
+  real(kind=dp), parameter :: eV_seconds = 6.582119e-16_dp
   !! Electron Volt in seconds
-  real(kind=dp), parameter, public :: bohr_angstrom_internal = 0.52917720859_dp
+  real(kind=dp), parameter :: bohr_angstrom_internal = 0.52917720859_dp
   !! Bohr to $$\AA$$
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)
-  character(len=75), parameter, public :: constants_version_str1 = "-> Using CODATA 2006 constant values"
-  character(len=75), parameter, public :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
+  character(len=75), parameter :: constants_version_str1 = "-> Using CODATA 2006 constant values"
+  character(len=75), parameter :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
 #endif
 
 #ifdef CODATA2010
 ! ##### CODATA 2010 ##### !
 !#warning "WANNIER90 INFO: Using CODATA 2010 constant values"
-  real(kind=dp), parameter, public :: elem_charge_SI = 1.602176565e-19_dp
+  real(kind=dp), parameter :: elem_charge_SI = 1.602176565e-19_dp
   !! elemental charge
-  real(kind=dp), parameter, public :: elec_mass_SI = 9.10938291e-31_dp
+  real(kind=dp), parameter :: elec_mass_SI = 9.10938291e-31_dp
   !! electron mass
-  real(kind=dp), parameter, public :: hbar_SI = 1.054571726e-34_dp
+  real(kind=dp), parameter :: hbar_SI = 1.054571726e-34_dp
   !! hbar
-  real(kind=dp), parameter, public :: k_B_SI = 1.3806488e-23_dp
+  real(kind=dp), parameter :: k_B_SI = 1.3806488e-23_dp
   !! Boltzman Constant
-  real(kind=dp), parameter, public :: bohr_magn_SI = 927.400968e-26_dp
+  real(kind=dp), parameter :: bohr_magn_SI = 927.400968e-26_dp
   !! Bohr magneton
-  real(kind=dp), parameter, public :: eps0_SI = 8.854187817e-12_dp
+  real(kind=dp), parameter :: eps0_SI = 8.854187817e-12_dp
   !! Vacuum Dielectric Constant
-  real(kind=dp), parameter, public :: speedlight_SI = 299792458.0_dp
+  real(kind=dp), parameter :: speedlight_SI = 299792458.0_dp
   !! Speed of light
-  real(kind=dp), parameter, public :: eV_au = 3.674932379e-2_dp
+  real(kind=dp), parameter :: eV_au = 3.674932379e-2_dp
   !! Electron Volt in atomic units
-  real(kind=dp), parameter, public :: eV_seconds = 6.582119e-16_dp
+  real(kind=dp), parameter :: eV_seconds = 6.582119e-16_dp
   !! Electron Volt in seconds
-  real(kind=dp), parameter, public :: bohr_angstrom_internal = 0.52917721092_dp
+  real(kind=dp), parameter :: bohr_angstrom_internal = 0.52917721092_dp
   !! Bohr to Anstrom Conversion factor
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)
-  character(len=75), parameter, public :: constants_version_str1 = "-> Using CODATA 2010 constant values"
-  character(len=75), parameter, public :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
+  character(len=75), parameter :: constants_version_str1 = "-> Using CODATA 2010 constant values"
+  character(len=75), parameter :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
 #endif
 
 #ifdef USE_WANNIER90_V1_BOHR
 !#warning "WANNIER90 INFO: Using WANNIER ver. 1 version of bohr"
-  real(kind=dp), parameter, public :: bohr = 0.5291772108_dp
+  real(kind=dp), parameter :: bohr = 0.5291772108_dp
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)
-  character(len=75), parameter, public :: bohr_version_str = "-> Using Bohr value from Wannier90 ver. 1.x (DEPRECATED!)"
+  character(len=75), parameter :: bohr_version_str = "-> Using Bohr value from Wannier90 ver. 1.x (DEPRECATED!)"
 #else
 !#warning "WANNIER90 INFO: Using CODATA version of bohr"
-  real(kind=dp), parameter, public :: bohr = bohr_angstrom_internal
+  real(kind=dp), parameter :: bohr = bohr_angstrom_internal
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)
-  character(len=75), parameter, public :: bohr_version_str = "-> Using Bohr value from CODATA"
+  character(len=75), parameter :: bohr_version_str = "-> Using Bohr value from CODATA"
 #endif
+
+  type w90_physical_constants_type
+    !real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
+    !real(kind=dp) :: elec_mass_SI = elc_mass_SI      ! electron mass
+    !real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
+    !real(kind=dp) :: k_B_SI = k_B_SI                 ! Boltzman Constant
+    !real(kind=dp) :: bohr_magn_SI = bohr_magn_SI     ! Bohr magneton
+    !real(kind=dp) :: eps0_SI = eps0_SI               ! Vacuum Dielectric Constant
+    !real(kind=dp) :: speedlight_SI = speedlight_SI   ! Speed of light
+    !real(kind=dp) :: eV_au = eV_au                   ! Electron Volt in atomic units
+    !real(kind=dp) :: eV_seconds = eV_seconds         ! Electron Volt in seconds
+    real(kind=dp) :: bohr = bohr
+    character(len=75) :: bohr_version_str = bohr_version_str
+    character(len=75) :: constants_version_str1 = constants_version_str1
+    character(len=75) :: constants_version_str2 = constants_version_str2
+  end type w90_physical_constants_type
+
+  type pw90_physical_constants_type
+    real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
+    real(kind=dp) :: elec_mass_SI = elec_mass_SI      ! electron mass
+    real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
+    real(kind=dp) :: k_B_SI = k_B_SI                 ! Boltzman Constant
+    !real(kind=dp) :: bohr_magn_SI = bohr_magn_SI     ! Bohr magneton
+    real(kind=dp) :: eps0_SI = eps0_SI               ! Vacuum Dielectric Constant
+    !real(kind=dp) :: speedlight_SI = speedlight_SI   ! Speed of light
+    real(kind=dp) :: eV_au = eV_au                   ! Electron Volt in atomic units
+    real(kind=dp) :: eV_seconds = eV_seconds         ! Electron Volt in seconds
+    real(kind=dp) :: bohr = bohr
+    character(len=75) :: bohr_version_str = bohr_version_str
+    character(len=75) :: constants_version_str1 = constants_version_str1
+    character(len=75) :: constants_version_str2 = constants_version_str2
+  end type pw90_physical_constants_type
+
+  public :: w90_physical_constants_type, pw90_physical_constants_type
 
 end module w90_constants

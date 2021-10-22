@@ -20,9 +20,11 @@ module w90_dos
 
   private
 
-  public :: dos_main, dos_get_levelspacing, dos_get_k
+  public :: dos_main
+  public :: dos_get_levelspacing
+  public :: dos_get_k
 
-  integer       :: num_freq
+! integer :: num_freq
   !! Number of sampling points
   real(kind=dp) :: d_omega
   !! Step between energies
@@ -33,7 +35,12 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main
+  subroutine dos_main(pw90_berry, dis_manifold, pw90_dos, kpoint_dist, kpt_latt, pw90_oper_read, pw90_band_deriv_degen, &
+                      pw90_spin, ws_region, w90_system, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                      SS_R, u_matrix, v_matrix, eigval, real_lattice, &
+                      scissors_shift, mp_grid, num_bands, num_kpts, num_wann, effective_model, &
+                      have_disentangled, spin_decomp, seedname, stdout, comm)
+
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -42,63 +49,109 @@ contains
     !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
-
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, &
-      seedname, stdout
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
-    use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
-      pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, dos_energy_min, dos_energy_max, &
-      dos_energy_step, timing_level, &
-      wanint_kpoint_file, dos_kmesh, &
-      dos_smr_index, dos_adpt_smr, dos_adpt_smr_fac, &
-      dos_adpt_smr_max, spin_decomp, &
-      dos_smr_fixed_en_width, &
-      dos_project, num_dos_project
-    use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
+    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
+    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
+      pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
+      kpoint_dist_type
+    use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
+      ws_region_type, w90_system_type, ws_distance_type
+    use w90_get_oper, only: get_HH_R, get_SS_R
+    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
+    use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
-    use w90_utility, only: utility_diagonalize
 
+    implicit none
+
+    ! arguments
+    type(pw90_berry_mod_type), intent(in)        :: pw90_berry
+    type(dis_manifold_type), intent(in)          :: dis_manifold
+    type(pw90_dos_mod_type), intent(in)          :: pw90_dos
+    type(kpoint_dist_type), intent(in)           :: kpoint_dist
+    type(pw90_oper_read_type), intent(in)        :: pw90_oper_read
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(pw90_spin_mod_type), intent(in)         :: pw90_spin
+    type(ws_region_type), intent(in)             :: ws_region
+    type(w90_system_type), intent(in)            :: w90_system
+    type(print_output_type), intent(in)          :: print_output
+    type(wannier_data_type), intent(in)          :: wannier_data
+    type(ws_distance_type), intent(inout)        :: ws_distance
+    type(wigner_seitz_type), intent(inout)       :: wigner_seitz
+    type(w90comm_type), intent(in)               :: comm
+
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :), real_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: stdout
+
+    character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spin_decomp
+    logical, intent(in) :: effective_model
+
+    ! local variables
     ! 'dos_k' contains contrib. from one k-point,
     ! 'dos_all' from all nodes/k-points (first summed on one node and
     ! then reduced (i.e. summed) over all nodes)
-    !
+    real(kind=dp) :: recip_lattice(3, 3), volume
+
+    integer :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
+    integer :: dos_unit, ndim, ierr
+    integer :: my_node_id, num_nodes
+    integer :: num_freq !! Number of sampling points
+
     real(kind=dp), allocatable :: dos_k(:, :)
     real(kind=dp), allocatable :: dos_all(:, :)
-
-    real(kind=dp)    :: kweight, kpt(3), omega
-    integer          :: i, loop_x, loop_y, loop_z, loop_tot, ifreq
-    integer          :: dos_unit, ndim, ierr
-    real(kind=dp), dimension(:), allocatable :: dos_energyarray
+    real(kind=dp) :: kweight, kpt(3), omega
+    real(kind=dp), allocatable :: dos_energyarray(:)
+    real(kind=dp) :: del_eig(num_wann, 3)
+    real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
+    real(kind=dp) :: d_omega !! Step between energies
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
-    real(kind=dp) :: del_eig(num_wann, 3)
-    real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
+    logical :: on_root = .false.
 
-    num_freq = nint((dos_energy_max - dos_energy_min)/dos_energy_step) + 1
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
+    if (my_node_id == 0) on_root = .true.
+
+    num_freq = nint((pw90_dos%energy_max - pw90_dos%energy_min)/pw90_dos%energy_step) + 1
     if (num_freq == 1) num_freq = 2
-    d_omega = (dos_energy_max - dos_energy_min)/(num_freq - 1)
+    d_omega = (pw90_dos%energy_max - pw90_dos%energy_min)/(num_freq - 1)
 
     allocate (dos_energyarray(num_freq), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating dos_energyarray in ' &
-                                 //'dos subroutine')
+                                 //'dos subroutine', stdout, seedname)
     do ifreq = 1, num_freq
-      dos_energyarray(ifreq) = dos_energy_min + real(ifreq - 1, dp)*d_omega
+      dos_energyarray(ifreq) = pw90_dos%energy_min + real(ifreq - 1, dp)*d_omega
     end do
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in dos')
+    if (ierr /= 0) call io_error('Error in allocating HH in dos', stdout, seedname)
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in dos')
+    if (ierr /= 0) call io_error('Error in allocating delHH in dos', stdout, seedname)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in dos')
+    if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
 
-    call get_HH_R
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
+                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  w90_system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                  comm)
+
     if (spin_decomp) then
       ndim = 3
-      call get_SS_R
+      call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, comm)
     else
       ndim = 1
     end if
@@ -106,9 +159,9 @@ contains
     allocate (dos_k(num_freq, ndim))
     allocate (dos_all(num_freq, ndim))
 
-    if (on_root) then
+    if (print_output%iprint > 0) then
 
-      if (timing_level > 1) call io_stopwatch('dos', 1)
+      if (print_output%timing_level > 1) call io_stopwatch('dos', 1, stdout, seedname)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -119,92 +172,103 @@ contains
       write (stdout, '(1x,a)') &
         '--------------------------------------'
 
-      if (num_dos_project == num_wann) then
+      if (pw90_dos%num_project == num_wann) then
         write (stdout, '(/,3x,a)') '* Total density of states (_dos)'
       else
         write (stdout, '(/,3x,a)') &
           '* Density of states projected onto selected WFs (_dos)'
         write (stdout, '(3x,a)') 'Selected WFs |Rn> are:'
-        do i = 1, num_dos_project
-          write (stdout, '(5x,a,2x,i3)') 'n =', dos_project(i)
+        do i = 1, pw90_dos%num_project
+          write (stdout, '(5x,a,2x,i3)') 'n =', pw90_dos%project(i)
         enddo
       endif
 
       write (stdout, '(/,5x,a,f9.4,a,f9.4,a)') &
-        'Energy range: [', dos_energy_min, ',', dos_energy_max, '] eV'
+        'Energy range: [', pw90_dos%energy_min, ',', pw90_dos%energy_max, '] eV'
 
       write (stdout, '(/,5x,a,(f6.3,1x))') &
         'Adaptive smearing width prefactor: ', &
-        dos_adpt_smr_fac
+        pw90_dos%smearing%adaptive_prefactor
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
-        dos_kmesh(1:3)
+        pw90_dos%kmesh%mesh(1:3)
 
     end if
 
     dos_all = 0.0_dp
 
-    if (wanint_kpoint_file) then
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+    if (pw90_berry%wanint_kpoint_file) then
       !
       ! Unlike for optical properties, this should always work for the DOS
       !
-      if (on_root) write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
+      if (print_output%iprint > 0) write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
 
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
       ! read from file 'kpoint.dat'
       !
-      do loop_tot = 1, num_int_kpts_on_node(my_node_id)
-        kpt(:) = int_kpts(:, loop_tot)
-        if (dos_adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-          call dos_get_levelspacing(del_eig, dos_kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         adpt_smr_fac=dos_adpt_smr_fac, &
-                         adpt_smr_max=dos_adpt_smr_max, &
-                         levelspacing_k=levelspacing_k, &
-                         UU=UU)
+      do loop_tot = 1, kpoint_dist%num_int_kpts_on_node(my_node_id)
+        kpt(:) = kpoint_dist%int_kpts(:, loop_tot)
+        if (pw90_dos%smearing%use_adaptive) then
+          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
+                                   ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                   del_eig, eig, eigval, kpt, real_lattice, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   w90_system%num_valence_bands, effective_model, have_disentangled, &
+                                   seedname, stdout, comm)
+          call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
+                                    recip_lattice)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
+                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
+                         pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
+                         pw90_dos%smearing, levelspacing_k=levelspacing_k, UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         smr_fixed_en_width=dos_smr_fixed_en_width, &
-                         UU=UU)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
+                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
+                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
+                         SS_R, pw90_dos%smearing, UU=UU)
         end if
-        dos_all = dos_all + dos_k*weight(loop_tot)
+        dos_all = dos_all + dos_k*kpoint_dist%weight(loop_tot)
       end do
 
     else
 
-      if (on_root) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
+      if (print_output%iprint > 0) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
 
-      kweight = 1.0_dp/real(PRODUCT(dos_kmesh), kind=dp)
-      do loop_tot = my_node_id, PRODUCT(dos_kmesh) - 1, num_nodes
-        loop_x = loop_tot/(dos_kmesh(2)*dos_kmesh(3))
-        loop_y = (loop_tot - loop_x*(dos_kmesh(2) &
-                                     *dos_kmesh(3)))/dos_kmesh(3)
-        loop_z = loop_tot - loop_x*(dos_kmesh(2)*dos_kmesh(3)) &
-                 - loop_y*dos_kmesh(3)
-        kpt(1) = real(loop_x, dp)/real(dos_kmesh(1), dp)
-        kpt(2) = real(loop_y, dp)/real(dos_kmesh(2), dp)
-        kpt(3) = real(loop_z, dp)/real(dos_kmesh(3), dp)
-        if (dos_adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-          call dos_get_levelspacing(del_eig, dos_kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         adpt_smr_fac=dos_adpt_smr_fac, &
-                         adpt_smr_max=dos_adpt_smr_max, &
-                         levelspacing_k=levelspacing_k, &
-                         UU=UU)
+      kweight = 1.0_dp/real(PRODUCT(pw90_dos%kmesh%mesh), kind=dp)
+      do loop_tot = my_node_id, PRODUCT(pw90_dos%kmesh%mesh) - 1, num_nodes
+        loop_x = loop_tot/(pw90_dos%kmesh%mesh(2)*pw90_dos%kmesh%mesh(3))
+        loop_y = (loop_tot - loop_x*(pw90_dos%kmesh%mesh(2) &
+                                     *pw90_dos%kmesh%mesh(3)))/pw90_dos%kmesh%mesh(3)
+        loop_z = loop_tot - loop_x*(pw90_dos%kmesh%mesh(2)*pw90_dos%kmesh%mesh(3)) &
+                 - loop_y*pw90_dos%kmesh%mesh(3)
+        kpt(1) = real(loop_x, dp)/real(pw90_dos%kmesh%mesh(1), dp)
+        kpt(2) = real(loop_y, dp)/real(pw90_dos%kmesh%mesh(2), dp)
+        kpt(3) = real(loop_z, dp)/real(pw90_dos%kmesh%mesh(3), dp)
+        if (pw90_dos%smearing%use_adaptive) then
+          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
+                                   ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                   del_eig, eig, eigval, kpt, real_lattice, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   w90_system%num_valence_bands, effective_model, have_disentangled, &
+                                   seedname, stdout, comm)
+          call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
+                                    recip_lattice)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
+                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
+                         SS_R, pw90_dos%smearing, levelspacing_k=levelspacing_k, UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         smr_fixed_en_width=dos_smr_fixed_en_width, &
-                         UU=UU)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
+                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
+                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
+                         SS_R, pw90_dos%smearing, UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
       end do
@@ -213,9 +277,9 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM')
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, comm)
 
-    if (on_root) then
+    if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
       write (stdout, '(/,3x,a)') trim(seedname)//'-dos.dat'
       dos_unit = io_file_unit()
@@ -226,15 +290,15 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (timing_level > 1) call io_stopwatch('dos', 2)
+      if (print_output%timing_level > 1) call io_stopwatch('dos', 2, stdout, seedname)
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main', stdout, seedname)
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main', stdout, seedname)
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main', stdout, seedname)
 
   end subroutine dos_main
 
@@ -270,7 +334,7 @@ contains
 !~         sum_mid_node,sum_mid_all,emin,emax,emid,&
 !~         emin_node(0:num_nodes-1),emax_node(0:num_nodes-1),&
 !~         ef
-!~    integer       :: loop_x,loop_y,loop_z,loop_kpt,loop_nodes,&
+!~    integer :: loop_x,loop_y,loop_z,loop_kpt,loop_nodes,&
 !~         loop_iter,ierr,num_int_kpts,ikp
 !~
 !~    real(kind=dp), allocatable :: eig_node(:,:)
@@ -466,27 +530,51 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, smr_index, &
-                       smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
+  subroutine dos_get_k(num_elec_per_state, ws_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
+                       wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
+                       pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
+                       smearing, levelspacing_k, UU)
+
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, spin_decomp, num_elec_per_state, &
-      num_dos_project, dos_project
+    use w90_postw90_types, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
+      wigner_seitz_type
+    use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
+    use w90_utility, only: utility_w0gauss
 
     ! Arguments
-    !
-    real(kind=dp), dimension(3), intent(in)               :: kpt
-    real(kind=dp), dimension(:), intent(in)               :: EnergyArray
-    real(kind=dp), dimension(:), intent(in)               :: eig_k
-    real(kind=dp), dimension(:, :), intent(out)            :: dos_k
-    integer, intent(in)                                   :: smr_index
-    real(kind=dp), intent(in), optional                    :: smr_fixed_en_width
-    real(kind=dp), intent(in), optional                    :: adpt_smr_fac
-    real(kind=dp), intent(in), optional                    :: adpt_smr_max
-    real(kind=dp), dimension(:), intent(in), optional      :: levelspacing_k
-    complex(kind=dp), dimension(:, :), intent(in), optional :: UU
+    type(pw90_dos_mod_type), intent(in) :: pw90_dos
+    type(pw90_spin_mod_type), intent(in) :: pw90_spin
+    type(ws_region_type), intent(in) :: ws_region
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(in) :: wigner_seitz
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(pw90_smearing_type), intent(in) :: smearing
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_elec_per_state
+    integer, intent(in) :: num_wann
+    !integer, intent(in) :: smr_index
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3)
+    real(kind=dp), intent(in) :: eig_k(:)
+    real(kind=dp), intent(in) :: EnergyArray(:)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(out) :: dos_k(:, :)
+    real(kind=dp), intent(in), optional :: levelspacing_k(:)
+    !real(kind=dp), intent(in), optional :: adpt_smr_fac
+    !real(kind=dp), intent(in), optional :: adpt_smr_max
+    !real(kind=dp), intent(in), optional :: smr_fixed_en_width
+
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
+    complex(kind=dp), intent(in), optional :: UU(:, :)
+
+    logical, intent(in) :: spin_decomp
+    character(len=50), intent(in) :: seedname
 
     ! Adaptive smearing
     !
@@ -494,38 +582,29 @@ contains
 
     ! Misc/Dummy
     !
-    integer          :: i, j, loop_f, min_f, max_f, num_s_steps
-    real(kind=dp)    :: rdum, spn_nk(num_wann), alpha_sq, beta_sq
-    real(kind=dp)    :: binwidth, r_num_elec_per_state
-    logical          :: DoSmearing
+    integer :: i, j, loop_f, min_f, max_f
+    real(kind=dp) :: rdum, spn_nk(num_wann), alpha_sq, beta_sq
+    real(kind=dp) :: binwidth, r_num_elec_per_state
+    logical :: DoSmearing
 
     if (present(levelspacing_k)) then
-      if (present(smr_fixed_en_width)) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'with smr_fixed_en_width parameters together')
-      if (.not. (present(adpt_smr_fac))) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_fac parameter')
-      if (.not. (present(adpt_smr_max))) &
-        call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_max parameter')
+      if (.not. smearing%use_adaptive) &
+        call io_error('Cannot call doskpt without levelspacing_k and ' &
+                      //'without adptative smearing', stdout, seedname)
     else
-      if (present(adpt_smr_fac)) &
+      if (smearing%use_adaptive) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_fac parameter')
-      if (present(adpt_smr_max)) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_max parameter')
-      if (.not. (present(smr_fixed_en_width))) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'without smr_fixed_en_width parameter')
+                      //'with adptative smearing', stdout, seedname)
     end if
 
     r_num_elec_per_state = real(num_elec_per_state, kind=dp)
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(kpt, spn_nk)
+    if (spin_decomp) then
+      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+    endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
@@ -540,10 +619,10 @@ contains
       end if
 
       if (.not. present(levelspacing_k)) then
-        eta_smr = smr_fixed_en_width
+        eta_smr = smearing%fixed_width
       else
         ! Eq.(35) YWVS07
-        eta_smr = min(levelspacing_k(i)*adpt_smr_fac, adpt_smr_max)
+        eta_smr = min(levelspacing_k(i)*smearing%adaptive_prefactor, smearing%adaptive_max_width)
 !          eta_smr=max(eta_smr,min_smearing_binwidth_ratio) !! No: it would render the next if always false
       end if
 
@@ -570,7 +649,7 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smr_index)/eta_smr
+          rdum = utility_w0gauss(arg, smearing%type_index, stdout, seedname)/eta_smr
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if
@@ -578,7 +657,7 @@ contains
         !
         ! Contribution to total DOS
         !
-        if (num_dos_project == num_wann) then
+        if (pw90_dos%num_project == num_wann) then
           !
           ! Total DOS (default): do not loop over j, to save time
           !
@@ -597,16 +676,16 @@ contains
           ! Partial DOS, projected onto the WFs with indices
           ! n=dos_project(1:num_dos_project)
           !
-          do j = 1, num_dos_project
+          do j = 1, pw90_dos%num_project
             dos_k(loop_f, 1) = dos_k(loop_f, 1) + rdum*r_num_elec_per_state &
-                               *abs(UU(dos_project(j), i))**2
+                               *abs(UU(pw90_dos%project(j), i))**2
             if (spin_decomp) then
               ! Spin-up contribution
               dos_k(loop_f, 2) = dos_k(loop_f, 2) &
-                                 + rdum*alpha_sq*abs(UU(dos_project(j), i))**2
+                                 + rdum*alpha_sq*abs(UU(pw90_dos%project(j), i))**2
               ! Spin-down contribution
               dos_k(loop_f, 3) = dos_k(loop_f, 3) &
-                                 + rdum*beta_sq*abs(UU(dos_project(j), i))**2
+                                 + rdum*beta_sq*abs(UU(pw90_dos%project(j), i))**2
             end if
           enddo
         endif
@@ -617,24 +696,25 @@ contains
 
   ! =========================================================================
 
-  subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing)
+  subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing, num_wann, recip_lattice)
     !! This subroutine calculates the level spacing, i.e. how much the level changes
     !! near a given point of the interpolation mesh
-    use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_kmesh_spacing
 
-    real(kind=dp), dimension(num_wann, 3), intent(in) :: del_eig
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: del_eig(:, :)
     !! Band velocities, already corrected when degeneracies occur
-    integer, dimension(3), intent(in)                :: kmesh
+    integer, intent(in) :: kmesh(3)
     !! array of three integers, giving the number of k points along
     !! each of the three directions defined by the reciprocal lattice vectors
-    real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
+    real(kind=dp), intent(out) :: levelspacing(num_wann)
     !! On output, the spacing for each of the bands (in eV)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     real(kind=dp) :: Delta_k
     integer :: band
 
-    Delta_k = pw90common_kmesh_spacing(kmesh)
+    Delta_k = pw90common_kmesh_spacing(kmesh, recip_lattice)
     do band = 1, num_wann
       levelspacing(band) = &
         sqrt(dot_product(del_eig(band, :), del_eig(band, :)))*Delta_k
@@ -655,7 +735,7 @@ contains
 !~
 !~    ! Arguments
 !~    !
-!~    real(kind=dp), intent(in)  :: kpt(3)
+!~    real(kind=dp), intent(in) :: kpt(3)
 !~    real(kind=dp), intent(out) :: eig(num_wann)
 !~    real(kind=dp), intent(out) :: levelspacing(num_wann)
 !~
@@ -667,7 +747,7 @@ contains
 !~    !
 !~    real(kind=dp) :: del_eig(num_wann,3),Delta_k
 !~
-!~    integer          :: i
+!~    integer :: i
 !~
 !~    allocate(HH(num_wann,num_wann))
 !~    allocate(delHH(num_wann,num_wann,3))
@@ -706,14 +786,14 @@ contains
 !~
 !~    ! Arguments
 !~    !
-!~    real(kind=dp)                  :: energy
+!~    real(kind=dp) :: energy
 !~    real(kind=dp), dimension (:,:) :: eig
 !~    real(kind=dp), dimension (:,:) :: levelspacing
-!~    integer                        :: npts
+!~    integer :: npts
 !~
 !~    ! Misc/Dummy
 !~    !
-!~    integer       :: loop_k,i
+!~    integer :: loop_k,i
 !~    real(kind=dp) :: sum,eta_smr,arg
 !~
 !~    count_states=0.0_dp
@@ -735,4 +815,3 @@ contains
 !~  end function count_states
 
 end module w90_dos
-

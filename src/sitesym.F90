@@ -23,7 +23,8 @@ module w90_sitesym
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-  use w90_io, only: io_error, stdout
+! use w90_io, only: io_error, stdout
+  use w90_io, only: io_error
 
   implicit none
 
@@ -40,29 +41,20 @@ module w90_sitesym
   public  :: sitesym_read
   public  :: sitesym_dealloc
 
-  type sitesym_data
-    ! Variables and parameters needed by other modules
-    integer :: nkptirr = 9999
-    integer :: nsymmetry = 9999
-    integer, allocatable :: kptsym(:, :), ir2ik(:), ik2ir(:)
-    real(kind=dp) :: symmetrize_eps = 1.d-3
-    complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
-    complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
-  end type sitesym_data
-
 contains
 
   !==================================================================!
-  subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow_in)
+  subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sitesym, lwindow_in)
     !==================================================================!
-
+!   not called !
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
 !   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_type), intent(inout) :: sitesym
 
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
@@ -70,8 +62,8 @@ contains
 
     !write(stdout,"(a)") '-- sitesym_slim_sym%d_matrix_band --'
 
-    do ir = 1, sym%nkptirr
-      ik = sym%ir2ik(ir)
+    do ir = 1, sitesym%nkptirr
+      ik = sitesym%ir2ik(ir)
       j = 0
       do i = 1, num_bands
         if (lwindow_in(i, ik)) then
@@ -82,9 +74,9 @@ contains
       nb = j
       do j = 1, nb
         i = nindx(j)
-        sym%d_matrix_band(1:nb, j, :, ir) = sym%d_matrix_band(nindx(1:nb), i, :, ir)
+        sitesym%d_matrix_band(1:nb, j, :, ir) = sitesym%d_matrix_band(nindx(1:nb), i, :, ir)
         if (nb .lt. num_bands) then
-          sym%d_matrix_band(nb + 1:, j, :, ir) = 0
+          sitesym%d_matrix_band(nb + 1:, j, :, ir) = 0
         endif
       enddo
     enddo
@@ -93,28 +85,28 @@ contains
   end subroutine sitesym_slim_d_matrix_band
 
   !==================================================================!
-  subroutine sitesym_replace_d_matrix_band(num_wann, sym)
+  subroutine sitesym_replace_d_matrix_band(sitesym, num_wann)
     !==================================================================!
-
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
 !   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_type), intent(inout) :: sitesym
 
     !write(stdout,"(a)") '-- sitesym_replace_sym%d_matrix_band --'
     !write(stdout,"(a)") 'sym%d_matrix_band is replaced by sym%d_matrix_wann'
-    deallocate (sym%d_matrix_band)
-    allocate (sym%d_matrix_band(num_wann, num_wann, sym%nsymmetry, sym%nkptirr))
-    sym%d_matrix_band = sym%d_matrix_wann
+    deallocate (sitesym%d_matrix_band)
+    allocate (sitesym%d_matrix_band(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr))
+    sitesym%d_matrix_band = sitesym%d_matrix_wann
 
     return
   end subroutine sitesym_replace_d_matrix_band
 
   !==========================================================================!
-  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                         ndim, umat, sym, lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
+                                         seedname, stdout, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -127,32 +119,37 @@ contains
     !                                                                          !
     !==========================================================================!
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
+!   passed variables
+    type(sitesym_type), intent(in) :: sitesym
+
     integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-!   end w90_parameters
-    type(sitesym_data), intent(in) :: sym
-
     integer, intent(in) :: ndim
+
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
+
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
 
-    ! local
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     integer :: ik, ir, isym, irk, n
     logical :: ldone(num_kpts)
     complex(kind=dp) :: cmat(ndim, num_wann)
 
-    if (present(lwindow_in) .and. (ndim .ne. num_bands)) call io_error('ndim!=num_bands')
+    if (present(lwindow_in) .and. (ndim .ne. num_bands)) call io_error('ndim!=num_bands', stdout, seedname)
     if (.not. present(lwindow_in)) then
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann')
+      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout, seedname)
     endif
 
     ldone = .false.
-    do ir = 1, sym%nkptirr
-      ik = sym%ir2ik(ir)
+    do ir = 1, sitesym%nkptirr
+      ik = sitesym%ir2ik(ir)
       ldone(ik) = .true.
       if (present(lwindow_in)) then
         n = count(lwindow_in(:, ik))
@@ -160,39 +157,45 @@ contains
         n = ndim
       endif
       if (present(lwindow_in)) then
-        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym, n)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
+                              seedname, n)
       else
-        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
+                              seedname)
       endif
-      do isym = 2, sym%nsymmetry
-        irk = sym%kptsym(isym, ir)
+      do isym = 2, sitesym%nsymmetry
+        irk = sitesym%kptsym(isym, ir)
         if (ldone(irk)) cycle
         ldone(irk) = .true.
         ! cmat = d(R,k) * U(k)
         call zgemm('N', 'N', n, num_wann, n, cmplx_1, &
-                   sym%d_matrix_band(:, :, isym, ir), ndim, &
+                   sitesym%d_matrix_band(:, :, isym, ir), ndim, &
                    umat(:, :, ik), ndim, cmplx_0, cmat, ndim)
 
         ! umat(Rk) = cmat*D^{+}(R,k) = d(R,k) * U(k) * D^{+}(R,k)
         call zgemm('N', 'C', n, num_wann, num_wann, cmplx_1, cmat, ndim, &
-                   sym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, umat(:, :, irk), ndim)
+                   sitesym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, umat(:, :, irk), ndim)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_u_matrix')
+    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_u_matrix', stdout, seedname)
 
     return
   end subroutine sitesym_symmetrize_u_matrix
 
   !==================================================================!
-  subroutine sitesym_symmetrize_gradient(imode, grad, num_wann, num_kpts, sym)
+  subroutine sitesym_symmetrize_gradient(sitesym, grad, imode, num_kpts, num_wann)
     !==================================================================!
     use w90_utility, only: utility_zgemm
+    use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
-    type(sitesym_data), intent(in) :: sym
+!   passed variables
+    type(sitesym_type), intent(in) :: sitesym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
+
+!   local variables
     integer :: ik, ir, isym, irk, ngk
 
     complex(kind=dp) :: grad_total(num_wann, num_wann)
@@ -203,49 +206,49 @@ contains
 
     if (imode .eq. 1) then
       lfound = .false.
-      do ir = 1, sym%nkptirr
-        ik = sym%ir2ik(ir)
+      do ir = 1, sitesym%nkptirr
+        ik = sitesym%ir2ik(ir)
         grad_total = grad(:, :, ik)
         lfound(ik) = .true.
-        do isym = 2, sym%nsymmetry
-          irk = sym%kptsym(isym, ir)
+        do isym = 2, sitesym%nsymmetry
+          irk = sitesym%kptsym(isym, ir)
           if (lfound(irk)) cycle
           lfound(irk) = .true.
           !
           ! cmat1 = D(R,k)^{+} G(Rk) D(R,k)
           ! cmat2 = D(R,k)^{\dagger} G(Rk)
           !
-          call utility_zgemm(cmat2, sym%d_matrix_wann(:, :, isym, ir), 'C', &
+          call utility_zgemm(cmat2, sitesym%d_matrix_wann(:, :, isym, ir), 'C', &
                              grad(:, :, irk), 'N', num_wann)
           call utility_zgemm(cmat1, cmat2, 'N', &
-                             sym%d_matrix_wann(:, :, isym, ir), 'N', num_wann)
+                             sitesym%d_matrix_wann(:, :, isym, ir), 'N', num_wann)
           grad_total = grad_total + cmat1
         enddo
         grad(:, :, ik) = grad_total
       enddo
       do ik = 1, num_kpts
-        if (sym%ir2ik(sym%ik2ir(ik)) .ne. ik) grad(:, :, ik) = 0
+        if (sitesym%ir2ik(sitesym%ik2ir(ik)) .ne. ik) grad(:, :, ik) = 0
       enddo
     endif ! if (imode.eq.1)
     !
     ! grad -> 1/N_{R'} \sum_{R'} D^{+}(R',k) grad D(R',k)
     ! where R' k = k
     !
-    do ir = 1, sym%nkptirr
-      ik = sym%ir2ik(ir)
-      ngk = count(sym%kptsym(:, ir) .eq. ik)
+    do ir = 1, sitesym%nkptirr
+      ik = sitesym%ir2ik(ir)
+      ngk = count(sitesym%kptsym(:, ir) .eq. ik)
       if (ngk .eq. 1) cycle
       grad_total = grad(:, :, ik)
-      do isym = 2, sym%nsymmetry
-        if (sym%kptsym(isym, ir) .ne. ik) cycle
+      do isym = 2, sitesym%nsymmetry
+        if (sitesym%kptsym(isym, ir) .ne. ik) cycle
         !
         ! calculate cmat1 = D^{+}(R,k) G(Rk) D(R,k)
         !
         ! step 1: cmat2 =  G(Rk) D(R,k)
         call utility_zgemm(cmat2, grad(:, :, ik), 'N', &
-                           sym%d_matrix_wann(:, :, isym, ir), 'N', num_wann)
+                           sitesym%d_matrix_wann(:, :, isym, ir), 'N', num_wann)
         ! step 2: cmat1 = D^{+}(R,k) * cmat2
-        call utility_zgemm(cmat1, sym%d_matrix_wann(:, :, isym, ir), 'C', &
+        call utility_zgemm(cmat1, sitesym%d_matrix_wann(:, :, isym, ir), 'C', &
                            cmat2, 'N', num_wann)
         grad_total = grad_total + cmat1
       enddo
@@ -256,17 +259,22 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !==================================================================!
-  subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts, sym)
+  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
     use w90_utility, only: utility_zgemm
+    use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
-    type(sitesym_data), intent(in) :: sym
+!   passed variables
+    type(sitesym_type), intent(in) :: sitesym
+
     integer, intent(in) :: num_wann, num_kpts
+    integer, intent(in) :: stdout
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
-    !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    ! local
+    character(len=50), intent(in)  :: seedname
+
+!   local variables
     integer :: ik, ir, isym, irk
     complex(kind=dp) :: cmat1(num_wann, num_wann)
     complex(kind=dp) :: cmat2(num_wann, num_wann)
@@ -274,47 +282,50 @@ contains
     logical :: ldone(num_kpts)
 
     ldone = .false.
-    do ir = 1, sym%nkptirr
-      ik = sym%ir2ik(ir)
+    do ir = 1, sitesym%nkptirr
+      ik = sitesym%ir2ik(ir)
       ldone(ik) = .true.
-      do isym = 2, sym%nsymmetry
-        irk = sym%kptsym(isym, ir)
+      do isym = 2, sitesym%nsymmetry
+        irk = sitesym%kptsym(isym, ir)
         if (irk .eq. ik) cycle
         if (ldone(irk)) cycle
         ldone(irk) = .true.
         ! cmat2 = UROT(k)*D(R,k)^{\dagger}
         call utility_zgemm(cmat2, urot(:, :, ik), 'N', &
-                           sym%d_matrix_wann(:, :, isym, ir), 'C', num_wann)
+                           sitesym%d_matrix_wann(:, :, isym, ir), 'C', num_wann)
         ! cmat1 = D(R,k)*cmat2
-        call utility_zgemm(cmat1, sym%d_matrix_wann(:, :, isym, ir), 'N', &
+        call utility_zgemm(cmat1, sitesym%d_matrix_wann(:, :, isym, ir), 'N', &
                            cmat2, 'N', num_wann)
         urot(:, :, irk) = cmat1(:, :)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_rotation')
+    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_rotation', stdout, seedname)
 
     return
   end subroutine sitesym_symmetrize_rotation
 
   !==================================================================!
-  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts, &
-                                        sym)
+  subroutine sitesym_symmetrize_zmatrix(sitesym, czmat, num_bands, num_kpts, lwindow_in)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
     !                                                                  !
     !==================================================================!
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
+!   passed variables
+    type(sitesym_type), intent(in) :: sitesym
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
-!   end w90_parameters
-    type(sitesym_data), intent(in) :: sym
 
     complex(kind=dp), intent(inout) :: czmat(num_bands, num_bands, num_kpts)
+
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
+
+!   local variables
     logical :: lfound(num_kpts)
     integer :: ik, ir, isym, irk, nd
     complex(kind=dp) :: cztmp(num_bands, num_bands)
@@ -322,35 +333,35 @@ contains
     complex(kind=dp) :: cmat2(num_bands, num_bands)
 
     lfound = .false.
-    do ir = 1, sym%nkptirr
-      ik = sym%ir2ik(ir)
+    do ir = 1, sitesym%nkptirr
+      ik = sitesym%ir2ik(ir)
       nd = count(lwindow_in(:, ik))
       lfound(ik) = .true.
-      do isym = 2, sym%nsymmetry
-        irk = sym%kptsym(isym, ir)
+      do isym = 2, sitesym%nsymmetry
+        irk = sitesym%kptsym(isym, ir)
         if (lfound(irk)) cycle
         lfound(irk) = .true.
         ! cmat1 = Z(R,k)*d(R,k)
         call zgemm('N', 'N', nd, nd, nd, cmplx_1, czmat(:, :, irk), num_bands, &
-                   sym%d_matrix_band(:, :, isym, ir), num_bands, cmplx_0, cmat1, num_bands)
+                   sitesym%d_matrix_band(:, :, isym, ir), num_bands, cmplx_0, cmat1, num_bands)
         ! cmat2 = d^{+}(R,k) Z(R,k) d(R,k) = d^{+}(R,k) cmat1
-        call zgemm('C', 'N', nd, nd, nd, cmplx_1, sym%d_matrix_band(:, :, isym, ir), num_bands, &
-                   cmat1, num_bands, cmplx_0, cmat2, num_bands)
+        call zgemm('C', 'N', nd, nd, nd, cmplx_1, sitesym%d_matrix_band(:, :, isym, ir), &
+                   num_bands, cmat1, num_bands, cmplx_0, cmat2, num_bands)
         czmat(:, :, ik) = czmat(:, :, ik) + cmat2(:, :)
       enddo
 
       cztmp(:, :) = czmat(:, :, ik)
-      do isym = 2, sym%nsymmetry
-        irk = sym%kptsym(isym, ir)
+      do isym = 2, sitesym%nsymmetry
+        irk = sitesym%kptsym(isym, ir)
         if (irk .ne. ik) cycle
         call zgemm('N', 'N', nd, nd, nd, cmplx_1, cztmp, num_bands, &
-                   sym%d_matrix_band(:, :, isym, ir), num_bands, cmplx_0, cmat1, num_bands)
+                   sitesym%d_matrix_band(:, :, isym, ir), num_bands, cmplx_0, cmat1, num_bands)
         ! cmat2 = d^{+}(R,k) Z(R,k) d(R,k) = d^{+}(R,k) cmat1
-        call zgemm('C', 'N', nd, nd, nd, cmplx_1, sym%d_matrix_band(:, :, isym, ir), num_bands, &
-                   cmat1, num_bands, cmplx_0, cmat2, num_bands)
+        call zgemm('C', 'N', nd, nd, nd, cmplx_1, sitesym%d_matrix_band(:, :, isym, ir), &
+                   num_bands, cmat1, num_bands, cmplx_0, cmat2, num_bands)
         czmat(:, :, ik) = czmat(:, :, ik) + cmat2(:, :)
       enddo
-      czmat(:, :, ik) = czmat(:, :, ik)/count(sym%kptsym(:, ir) .eq. ik)
+      czmat(:, :, ik) = czmat(:, :, ik)/count(sitesym%kptsym(:, ir) .eq. ik)
     enddo
 
     return
@@ -358,7 +369,7 @@ contains
 
   !==================================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
-                              sym, n)
+                              sitesym, stdout, seedname, n)
     !==================================================================!
     !                                                                  !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
@@ -367,21 +378,20 @@ contains
     !                                                                  !
     !==================================================================!
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
-!   end w90_parameters
-    type(sitesym_data), intent(in) :: sym
-
+    type(sitesym_type), intent(in) :: sitesym
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
     integer, optional, intent(in) :: n
+    character(len=50), intent(in)  :: seedname
 
     integer :: isym, ngk, i, iter, ntmp
     integer, parameter :: niter = 100
-
     real(kind=dp)    :: diff
     complex(kind=dp) :: usum(ndim, num_wann)
     complex(kind=dp) :: cmat_sub(ndim, num_wann)
@@ -390,16 +400,16 @@ contains
 
     !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
-      if (ndim .ne. num_bands) call io_error('ndim!=num_bands')
+      if (ndim .ne. num_bands) call io_error('ndim!=num_bands', stdout, seedname)
       ntmp = n
     else
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann')
+      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout, seedname)
       ntmp = ndim
     endif
 
-    ngk = count(sym%kptsym(:, ir) .eq. sym%ir2ik(ir))
+    ngk = count(sitesym%kptsym(:, ir) .eq. sitesym%ir2ik(ir))
     if (ngk .eq. 1) then
-      call orthogonalize_u(ndim, num_wann, umat, ntmp, sym)
+      call orthogonalize_u(ndim, num_wann, umat, ntmp, stdout, seedname)
       return
     endif
 
@@ -409,19 +419,19 @@ contains
       do i = 1, num_wann
         cmat2(i, i) = cmat2(i, i) + ngk
       enddo
-      do isym = 1, sym%nsymmetry
-        if (sym%kptsym(isym, ir) .ne. sym%ir2ik(ir)) cycle
+      do isym = 1, sitesym%nsymmetry
+        if (sitesym%kptsym(isym, ir) .ne. sitesym%ir2ik(ir)) cycle
         !
         ! cmat = d^{+}(R,k) U(k) D(R,k)
         ! size of umat: umat(ndim,num_wann)
         !
         ! cmat_sub = U(k) D(R,k)
         call zgemm('N', 'N', ntmp, num_wann, num_wann, cmplx_1, &
-                   umat, ndim, sym%d_matrix_wann(:, :, isym, ir), num_wann, &
+                   umat, ndim, sitesym%d_matrix_wann(:, :, isym, ir), num_wann, &
                    cmplx_0, cmat_sub, ndim)
         ! cmat = d^{+}(R,k) * cmat_sub
         call zgemm('C', 'N', ntmp, num_wann, ntmp, cmplx_1, &
-                   sym%d_matrix_band(:, :, isym, ir), ndim, cmat_sub, ndim, &
+                   sitesym%d_matrix_band(:, :, isym, ir), ndim, cmat_sub, ndim, &
                    cmplx_0, cmat, ndim)
         usum(:, :) = usum(:, :) + cmat(:, :)
         ! check
@@ -429,16 +439,16 @@ contains
                       matmul(conjg(transpose(umat(:ntmp, :))), cmat(:ntmp, :))
       enddo ! isym
       diff = sum(abs(cmat2))
-      if (diff .lt. sym%symmetrize_eps) exit
+      if (diff .lt. sitesym%symmetrize_eps) exit
       if (iter .eq. niter) then
         write (stdout, "(a)") 'Error in symmetrize_u: not converged'
         write (stdout, "(a)") 'Either eps is too small or specified irreps is not'
         write (stdout, "(a)") '  compatible with the bands'
-        write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sym%symmetrize_eps
-        call io_error('symmetrize_ukirr: not converged')
+        write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sitesym%symmetrize_eps
+        call io_error('symmetrize_ukirr: not converged', stdout, seedname)
       endif
       usum = usum/ngk
-      call orthogonalize_u(ndim, num_wann, usum, ntmp, sym)
+      call orthogonalize_u(ndim, num_wann, usum, ntmp, stdout, seedname)
       umat(:, :) = usum
     enddo ! iter
 
@@ -446,7 +456,7 @@ contains
   end subroutine symmetrize_ukirr
 
   !==================================================================!
-  subroutine orthogonalize_u(ndim, m, u, n, sym)
+  subroutine orthogonalize_u(ndim, m, u, n, stdout, seedname)
     !==================================================================!
 
     implicit none
@@ -454,7 +464,8 @@ contains
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
-    type(sitesym_data), intent(in) :: sym
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
     complex(kind=dp), allocatable :: WORK(:)
@@ -462,7 +473,7 @@ contains
     integer :: INFO, i, j, l
     integer :: LWORK
 
-    if (n .lt. m) call io_error('n<m')
+    if (n .lt. m) call io_error('n<m', stdout, seedname)
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
     allocate (evecl(n, n), evecr(m, m))
     allocate (eig(min(m, n)))
@@ -475,7 +486,7 @@ contains
     call ZGESVD('A', 'A', n, m, smat, n, &
                 eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
-      call io_error(' ERROR: IN ZGESVD IN orthogonalize_u')
+      call io_error(' ERROR: IN ZGESVD IN orthogonalize_u', stdout, seedname)
     endif
     deallocate (smat, eig, WORK, RWORK)
     ! u_matrix is the initial guess for the unitary rotation of the
@@ -494,8 +505,8 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda, &
-                                          umat, num_bands, num_wann, sym)
+  subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
+                                          seedname, stdout)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -506,19 +517,24 @@ contains
     !                                                                  !
     !==================================================================!
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_wann
-!   end w90_parameters
-    type(sitesym_data), intent(in) :: sym
+!   passed variables
+    type(sitesym_type), intent(in) :: sitesym
 
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
+    integer, intent(in) :: num_wann
     integer, intent(in) :: ik, n
+
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
     complex(kind=dp), intent(out) :: lambda(num_wann, num_wann)
     complex(kind=dp), intent(inout) :: umat(num_bands, num_wann)
 
+    character(len=50), intent(in)  :: seedname
+
+!   local variables
     complex(kind=dp) :: umatnew(num_bands, num_wann)
     complex(kind=dp) :: ZU(num_bands, num_wann)
     complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
@@ -569,13 +585,14 @@ contains
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
             endif
-            call io_error('error at sitesym_dis_extract_symmetry')
+            call io_error('error at sitesym_dis_extract_symmetry', stdout, seedname)
           endif
         endif
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
-      call symmetrize_ukirr(num_wann, num_bands, sym%ik2ir(ik), num_bands, umatnew, sym, n)
+      call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
+                            stdout, seedname, n)
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 
@@ -583,69 +600,76 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !==================================================================!
-  subroutine sitesym_read(num_bands, num_wann, num_kpts, sym)
+  subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
-    use w90_io, only: io_file_unit, io_error, seedname
+    use w90_io, only: io_file_unit, io_error
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
+!   passed variables
+    type(sitesym_type), intent(inout) :: sitesym
+
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-!   end w90_parameters
-    type(sitesym_data), intent(inout) :: sym
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
+!   local variables
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()
     open (unit=iu, file=trim(seedname)//".dmn", form='formatted', status='old', action='read')
     read (iu, *)
-    read (iu, *) ibnum, sym%nsymmetry, sym%nkptirr, iknum
-    if (ibnum .ne. num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)")
-    if (iknum .ne. num_kpts) call io_error("Error: Number of k-points is not correct (sitesym_read)")
+    read (iu, *) ibnum, sitesym%nsymmetry, sitesym%nkptirr, iknum
+    if (ibnum .ne. num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)", stdout, seedname)
+    if (iknum .ne. num_kpts) call io_error("Error: Number of k-points is not correct (sitesym_read)", stdout, seedname)
 
-    allocate (sym%ik2ir(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%ik2ir in sitesym_read')
-    allocate (sym%ir2ik(sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%ir2ik in sitesym_read')
-    allocate (sym%kptsym(sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%kptsym in sitesym_read')
-    allocate (sym%d_matrix_band(num_bands, num_bands, sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_band in sitesym_read')
-    allocate (sym%d_matrix_wann(num_wann, num_wann, sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_wann in sitesym_read')
+    allocate (sitesym%ik2ir(num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating sitesym%ik2ir in sitesym_read', stdout, seedname)
+    allocate (sitesym%ir2ik(sitesym%nkptirr), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating sitesym%ir2ik in sitesym_read', stdout, seedname)
+    allocate (sitesym%kptsym(sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating sitesym%kptsym in sitesym_read', stdout, seedname)
+    allocate (sitesym%d_matrix_band(num_bands, num_bands, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating sitesym%d_matrix_band in sitesym_read', stdout, seedname)
+    allocate (sitesym%d_matrix_wann(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating sitesym%d_matrix_wann in sitesym_read', stdout, seedname)
 
-    read (iu, *) sym%ik2ir
-    read (iu, *) sym%ir2ik
-    read (iu, *) sym%kptsym
-    read (iu, *) sym%d_matrix_wann
-    read (iu, *) sym%d_matrix_band
+    read (iu, *) sitesym%ik2ir
+    read (iu, *) sitesym%ir2ik
+    read (iu, *) sitesym%kptsym
+    read (iu, *) sitesym%d_matrix_wann
+    read (iu, *) sitesym%d_matrix_band
     close (iu)
 
     return
   end subroutine sitesym_read
 
   !==================================================================!
-  subroutine sitesym_dealloc(sym)
+  subroutine sitesym_dealloc(sitesym, stdout, seedname)
     !==================================================================!
     use w90_io, only: io_error
 
+    use w90_wannier90_types, only: sitesym_type
     implicit none
 
-    type(sitesym_data), intent(inout) :: sym
+    type(sitesym_type), intent(inout) :: sitesym
     integer :: ierr
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
-    deallocate (sym%ik2ir, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%ik2ir in sitesym_dealloc')
-    deallocate (sym%ir2ik, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%ir2ik in sitesym_dealloc')
-    deallocate (sym%kptsym, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%kptsym in sitesym_dealloc')
-    deallocate (sym%d_matrix_band, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_band in sitesym_dealloc')
-    deallocate (sym%d_matrix_wann, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_wann in sitesym_dealloc')
+    deallocate (sitesym%ik2ir, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating sitesym%ik2ir in sitesym_dealloc', stdout, seedname)
+    deallocate (sitesym%ir2ik, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating sitesym%ir2ik in sitesym_dealloc', stdout, seedname)
+    deallocate (sitesym%kptsym, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating sitesym%kptsym in sitesym_dealloc', stdout, seedname)
+    deallocate (sitesym%d_matrix_band, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating sitesym%d_matrix_band in sitesym_dealloc', stdout, seedname)
+    deallocate (sitesym%d_matrix_wann, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc', stdout, seedname)
 
     return
   end subroutine sitesym_dealloc
