@@ -519,6 +519,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     logical :: found
+    integer :: kdotp_num_bands, ierr
     character(len=maxlen)              :: ctmp
 
 !-------------------------------------------------------
@@ -542,8 +543,8 @@ contains
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
         .and. index(pw90_berry%task, 'morb') == 0 &
         .and. index(pw90_berry%task, 'kubo') == 0 .and. index(pw90_berry%task, 'sc') == 0 &
-        .and. index(pw90_berry%task, 'shc') == 0) call io_error &
-      ('Error: value of berry_task not recognised in param_read', stdout, seedname)
+        .and. index(pw90_berry%task, 'shc') == 0 .and. index(pw90_berry%task, 'kdotp') == 0) &
+      call io_error('Error: value of berry_task not recognised in param_read', stdout, seedname)
 
     pw90_berry%curv_adpt_kmesh = 1
     call param_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found, &
@@ -597,6 +598,10 @@ contains
     if ((pw90_berry%sc_phase_conv .ne. 1) .and. ((pw90_berry%sc_phase_conv .ne. 2))) &
       call io_error('Error: sc_phase_conv must be either 1 or 2', stdout, seedname)
 
+    pw90_berry%sc_use_eta_corr = .true.
+    call param_get_keyword(stdout, seedname, 'sc_use_eta_corr', found, &
+                           l_value=pw90_berry%sc_use_eta_corr)
+
     ! By default: use the "global" smearing index
     pw90_berry%kubo_smearing%type_index = pw90_smearing%type_index
     call param_get_keyword(stdout, seedname, 'kubo_smr_type', found, c_value=ctmp)
@@ -608,6 +613,24 @@ contains
 
     pw90_berry%sc_w_thr = 5.0d0
     call param_get_keyword(stdout, seedname, 'sc_w_thr', found, r_value=pw90_berry%sc_w_thr)
+
+    pw90_berry%kdotp_kpoint(:) = 0.0_dp
+    call param_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 3, &
+                                  r_value=pw90_berry%kdotp_kpoint)
+
+    kdotp_num_bands = 0
+    call param_get_keyword(stdout, seedname, 'kdotp_num_bands', found, i_value=kdotp_num_bands)
+    if (found) then
+      if (kdotp_num_bands < 1) call io_error('Error: problem reading kdotp_num_bands', stdout, &
+                                             seedname)
+      allocate (pw90_berry%kdotp_bands(kdotp_num_bands), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating kdotp_num_bands in param_read', stdout, &
+                                   seedname)
+      call param_get_range_vector(stdout, seedname, 'kdotp_bands', found, kdotp_num_bands, &
+                                  .false., pw90_berry%kdotp_bands)
+      if (any(pw90_berry%kdotp_bands < 1)) &
+        call io_error('Error: kdotp_bands must contain positive numbers', stdout, seedname)
+    end if
 
   end subroutine param_read_berry
 
@@ -670,6 +693,14 @@ contains
     if (pw90_spin_hall%bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided', &
                     stdout, seedname)
+
+    pw90_spin_hall%method = ' '
+    call param_get_keyword(stdout, seedname, 'shc_method', found, c_value=pw90_spin_hall%method)
+    if (index(berry_task, 'shc') > 0 .and. .not. found) call io_error &
+      ('Error: berry_task=shc and shc_method is not set', stdout, seedname)
+    if (index(berry_task, 'shc') > 0 .and. index(pw90_spin_hall%method, 'qiao') == 0 &
+        .and. index(pw90_spin_hall%method, 'ryoo') == 0) call io_error &
+      ('Error: value of shc_method not recognised in param_read', stdout, seedname)
 
   end subroutine param_read_spin_hall
 
@@ -1691,6 +1722,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
+      if (index(pw90_berry%task, 'kdotp') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       F', '|'
+      endif
       if (index(pw90_berry%task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
@@ -1713,6 +1749,16 @@ contains
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for shift current      :', pw90_berry%sc_w_thr, '|'
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(pw90_berry%sc_phase_conv)), '|'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for shift current   :', &
+          pw90_berry%sc_use_eta_corr, '|'
+      end if
+      if (index(pw90_berry%task, 'kdotp') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1x,f8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
+          pw90_berry%kdotp_kpoint(1), pw90_berry%kdotp_kpoint(2), pw90_berry%kdotp_kpoint(3), '|'
+        write (stdout, '(1x,a46,10x,i4,13x,a1)') '|  kdotp_num_bands                             :', &
+          size(pw90_berry%kdotp_bands), '|'
+        write (stdout, '(1x,a46,10x,*(i4))') '|  kdotp_bands                                 :', &
+          pw90_berry%kdotp_bands(:)
       end if
       if (pw90_berry%kubo_smearing%use_adaptive .eqv. pw90_extra_io%smear%use_adaptive .and. &
           pw90_berry%kubo_smearing%adaptive_prefactor == pw90_extra_io%smear%adaptive_prefactor .and. &

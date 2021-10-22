@@ -378,6 +378,7 @@ contains
     call comms_bcast(pw90_spin_hall%bandshift, 1, stdout, seedname, comm)
     call comms_bcast(pw90_spin_hall%bandshift_firstband, 1, stdout, seedname, comm)
     call comms_bcast(pw90_spin_hall%bandshift_energyshift, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_spin_hall%method, len(pw90_spin_hall%method), stdout, seedname, comm)
 
     call comms_bcast(pw90_berry%kubo_smearing%use_adaptive, 1, stdout, seedname, comm)
     call comms_bcast(pw90_berry%kubo_smearing%adaptive_prefactor, 1, stdout, seedname, comm)

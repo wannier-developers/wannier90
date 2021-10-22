@@ -933,6 +933,7 @@ contains
     call param_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found)
     call param_get_keyword(stdout, seedname, 'kslice', found)
     call param_get_keyword(stdout, seedname, 'kslice_task', found)
+    call param_get_keyword(stdout, seedname, 'kdotp_num_bands', found)
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found)
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr', found)
     call param_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found)
@@ -945,6 +946,7 @@ contains
     call param_get_keyword(stdout, seedname, 'sc_eta', found)
     call param_get_keyword(stdout, seedname, 'scissors_shift', found)
     call param_get_keyword(stdout, seedname, 'sc_phase_conv', found)
+    call param_get_keyword(stdout, seedname, 'sc_use_eta_corr', found)
     call param_get_keyword(stdout, seedname, 'sc_w_thr', found)
     call param_get_keyword(stdout, seedname, 'shc_alpha', found)
     call param_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found)
@@ -953,6 +955,7 @@ contains
     call param_get_keyword(stdout, seedname, 'shc_beta', found)
     call param_get_keyword(stdout, seedname, 'shc_freq_scan', found)
     call param_get_keyword(stdout, seedname, 'shc_gamma', found)
+    call param_get_keyword(stdout, seedname, 'shc_method', found)
     call param_get_keyword(stdout, seedname, 'smr_fixed_en_width', found)
     call param_get_keyword(stdout, seedname, 'smr_max_arg', found)
     call param_get_keyword(stdout, seedname, 'smr_type', found)
@@ -974,11 +977,13 @@ contains
     call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b3', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'gyrotropic_kmesh', found, 0)
+    call param_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 0)
     call param_get_keyword_vector(stdout, seedname, 'spin_kmesh', found, 0)
+    ! BGS what about get_range_vectors and gyrotropic_band_list, kdotp_bands etc?
     ! ends list of postw90 keywords
 
   end subroutine get_all_keywords

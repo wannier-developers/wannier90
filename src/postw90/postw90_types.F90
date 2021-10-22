@@ -146,8 +146,11 @@ module w90_postw90_types
     integer :: sc_phase_conv
     real(kind=dp) :: sc_eta ! also postw90/wan_ham
     real(kind=dp) :: sc_w_thr
+    logical :: sc_use_eta_corr
     logical :: wanint_kpoint_file ! also postw90/spin, postw90/dos, postw90.F90
     logical :: transl_inv !also used in postw90/get_oper, postw90/gyrotropic
+    real(kind=dp) :: kdotp_kpoint(3)
+    integer, allocatable :: kdotp_bands(:)
     integer :: kubo_nfreq
     complex(kind=dp), allocatable :: kubo_freq_list(:)
     real(kind=dp) :: kubo_eigval_max
@@ -165,6 +168,7 @@ module w90_postw90_types
     logical :: bandshift
     integer :: bandshift_firstband
     real(kind=dp) :: bandshift_energyshift
+    character(len=120) :: method
   end type pw90_spin_hall_type
 
   type pw90_gyrotropic_type ! postw90 - common, gyrotropic

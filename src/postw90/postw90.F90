@@ -88,6 +88,7 @@ program postw90
   complex(kind=dp), allocatable :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
   !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
 
+  !spin Hall using Qiao's method
   complex(kind=dp), allocatable :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
@@ -96,7 +97,15 @@ program postw90
 
   complex(kind=dp), allocatable :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
-!
+
+  !spin Hall using Ryoo's method
+  complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+
+  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+  complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+
+  !
   ! w90_parameters stuff
   type(print_output_type) :: verbose
   integer :: optimisation
@@ -436,9 +445,10 @@ program postw90
     call berry_main(berry, dis_window, fermi_energy_list, kmesh_info, kpt_dist, kpt_latt, &
                     pw90_ham, postw90_oper, pw90_spin, physics, ws_region, spin_hall, wann_data, &
                     ws_distance, ws_vec, verbose, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, &
-                    u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, &
-                    num_wann, num_kpts, num_bands, system%num_valence_bands, effective_model, &
-                    have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, comm)
+                    SAA_R, SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
+                    mp_grid, fermi_n, num_wann, num_kpts, num_bands, system%num_valence_bands, &
+                    effective_model, have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, &
+                    comm)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
