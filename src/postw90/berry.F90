@@ -39,7 +39,7 @@ module w90_berry
   private
 
   public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, &
-            berry_get_shc_klist, berry_get_kdotp!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
+            berry_get_shc_klist, berry_get_kdotp
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -94,7 +94,8 @@ contains
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants_type
     use w90_utility, only: utility_recip_lattice_base
-    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
+    use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R, &
+      get_SAA_R, get_SBB_R
     use w90_io, only: io_error, io_file_unit, io_stopwatch
     use w90_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
@@ -349,8 +350,12 @@ contains
                        wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
                        num_valence_bands, have_disentangled, seedname, stdout, comm)
       else
-        call get_SAA_R !FIXME FIXME
-        call get_SBB_R
+        call get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, eigval, &
+                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                       have_disentangled, seedname, stdout, comm)
+        call get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, eigval, &
+                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                       have_disentangled, seedname, stdout, comm)
       endif
 
       if (pw90_spin_hall%freq_scan) then

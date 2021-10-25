@@ -20,7 +20,9 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
-  use w90_constants, only: dp
+  use w90_comms, only: comms_bcast, w90comm_type, mpirank
+  use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+  use w90_io, only: io_error, io_stopwatch, io_file_unit
 
   implicit none
 
@@ -46,11 +48,8 @@ contains
     !
     !======================================================
 
-    use w90_comms, only: w90comm_type, mpirank, comms_bcast
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
-    use w90_types, only: dis_manifold_type, print_output_type
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_types, only: dis_manifold_type, print_output_type
 
     implicit none
 
@@ -258,11 +257,7 @@ contains
     !
     !==================================================
 
-    use w90_postw90_types, only: pw90_berry_mod_type, pw90_oper_read_type, &
-      pw90_spin_hall_type
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_oper_read_type, pw90_spin_hall_type
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
@@ -539,9 +534,6 @@ contains
     !
     !=====================================================
 
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
@@ -701,7 +693,6 @@ contains
   end subroutine get_BB_R
 
   !=============================================================
-
   subroutine get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
                       v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, &
                       num_wann, have_disentangled, seedname, stdout, comm)
@@ -713,9 +704,6 @@ contains
     !=============================================================
 
     use w90_postw90_types, only: pw90_oper_read_type
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
@@ -851,7 +839,8 @@ contains
                                           Ho_qb1_q_qb2, have_disentangled, H_qb1_q_qb2)
             do b = 1, 3
               do a = 1, b
-                CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
+                CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) &
+                                       + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
                                        *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_qb1_q_qb2(:, :)
               enddo
             enddo
@@ -868,7 +857,6 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-
           call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
         enddo
       enddo
@@ -898,9 +886,6 @@ contains
     !
     !===========================================================
 
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
@@ -922,7 +907,7 @@ contains
 
     logical, intent(in) :: have_disentangled
 
-    ! local variable
+    ! local variables
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
 
@@ -935,12 +920,14 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+      call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+        call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
       return
     end if
 
@@ -1048,7 +1035,8 @@ contains
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+      call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
 
 107 call io_error &
@@ -1059,9 +1047,9 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, irvec, &
-                      nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
-                      comm)
+  subroutine get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, &
+                      eigval, irvec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
+                      seedname, stdout, comm)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1070,9 +1058,6 @@ contains
     !================================================================
 
     use w90_postw90_types, only: pw90_oper_read_type
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_types, only: dis_manifold_type, print_output_type
 
     implicit none
@@ -1225,10 +1210,10 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, pw90_spin_hall, SH_R, &
-                       SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, &
-                       num_kpts, num_wann, num_valence_bands, have_disentangled, seedname, stdout, &
-                       comm)
+  subroutine get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
+                       pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, &
+                       nrpts, num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
+                       seedname, stdout, comm)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1239,9 +1224,6 @@ contains
     !==================================================
 
     use w90_postw90_types, only: pw90_oper_read_type, pw90_spin_hall_type
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
     implicit none
@@ -1606,8 +1588,10 @@ contains
 
   end subroutine get_SHC_R
 
-  !============================================================!
-  subroutine get_SBB_R
+  !==================================================
+  subroutine get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, eigval, &
+                       scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                       have_disentangled, seedname, stdout, comm)
     !============================================================!
     !                                                            !
     ! SBB_ab(R) = <0|s_a.H.(r-R)_b|R> is the Fourier transform of !
@@ -1615,16 +1599,29 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, &
-      num_bands, ndimwin, wb, bk, &
-      have_disentangled, timing_level, &
-      scissors_shift
-    use w90_postw90_common, only: nrpts, v_matrix
-    use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
-      seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
+    implicit none
+
+    ! arguments
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in)   :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(w90comm_type), intent(in)       :: comm
+
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+
+    logical, intent(in) :: have_disentangled
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, sHu_in, qb1, qb2, winmin_q, winmin_qb2
     integer :: ipol
@@ -1634,20 +1631,25 @@ contains
     complex(kind=dp), allocatable :: H_q_qb2(:, :)
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SBB_R', 1)
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (.not. allocated(BB_R)) then
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+      call io_stopwatch('get_oper: get_SBB_R', 1, stdout, seedname)
+
+    if (.not. allocated(SBB_R)) then
       allocate (SBB_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SBB_R', 2)
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+        call io_stopwatch('get_oper: get_SBB_R', 2, stdout, seedname)
       return
     end if
 
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) &
-        call io_error('Error: scissors correction not yet implemented for SBB_R')
+        call io_error('Error: scissors correction not yet implemented for SBB_R', stdout, seedname)
 
       allocate (Ho_q_qb2(num_bands, num_bands, 3))
       allocate (H_q_qb2(num_wann, num_wann))
@@ -1656,7 +1658,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1672,21 +1674,21 @@ contains
       read (sHu_in, err=112, end=112) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) &
         call io_error &
-        (trim(seedname)//'.sHu has not the right number of bands')
+        (trim(seedname)//'.sHu has not the right number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
-        (trim(seedname)//'.sHu has not the right number of k-points')
-      if (nntot_tmp .ne. nntot) &
+        (trim(seedname)//'.sHu has not the right number of k-points', stdout, seedname)
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.sHu has not the right number of nearest neighbours')
+        (trim(seedname)//'.sHu has not the right number of nearest neighbours', stdout, seedname)
 
       SBB_q = cmplx_0
       do ik = 1, num_kpts
 
-        call get_win_min(ik, winmin_q)
-        do nn2 = 1, nntot
-          qb2 = nnlist(ik, nn2)
-          call get_win_min(qb2, winmin_qb2)
+        call get_win_min(num_bands, dis_manifold, ik, winmin_q, have_disentangled)
+        do nn2 = 1, kmesh_info%nntot
+          qb2 = kmesh_info%nnlist(ik, nn2)
+          call get_win_min(num_bands, dis_manifold, qb2, winmin_qb2, have_disentangled)
           do ipol = 1, 3
             !
             ! Read from .sHu file the matrices <u_q|s_a H_q|u_{q+b2}>
@@ -1716,7 +1718,7 @@ contains
             enddo
             do b = 1, 3
               SBB_q(:, :, ik, ipol, b) = SBB_q(:, :, ik, ipol, b) + &
-                                         cmplx_i*wb(nn2)*bk(b, nn2, ik)*H_q_qb2(:, :)
+                                         cmplx_i*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
             enddo
           enddo !ipol
         enddo !nn2
@@ -1725,26 +1727,29 @@ contains
       close (sHu_in)
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(SBB_q(:, :, :, a, b), SBB_R(:, :, :, a, b))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SBB_q(:, :, :, a, b), SBB_R(:, :, :, a, b))
         enddo
       enddo
 
     endif !on_root
 
-    call comms_bcast(SBB_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(SBB_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SBB_R', 2)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+      call io_stopwatch('get_oper: get_SBB_R', 2, stdout, seedname)
     return
 
 111 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.sHu')
+      ('Error: Problem opening input file '//trim(seedname)//'.sHu', stdout, seedname)
 112 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.sHu')
+      ('Error: Problem reading input file '//trim(seedname)//'.sHu', stdout, seedname)
 
   end subroutine get_SBB_R
 
-  !============================================================!
-  subroutine get_SAA_R
+  !==================================================
+  subroutine get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, eigval, &
+                       scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
+                       have_disentangled, seedname, stdout, comm)
     !============================================================!
     !                                                            !
     ! SAA_ab(R) = <0|s_a.(r-R)_b|R> is the Fourier transform of  !
@@ -1752,16 +1757,29 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, &
-      num_bands, ndimwin, wb, bk, &
-      have_disentangled, timing_level, &
-      scissors_shift
-    use w90_postw90_common, only: nrpts, v_matrix
-    use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
-      seedname
-    use w90_comms, only: on_root, comms_bcast, my_node_id
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
 
+    implicit none
+
+    ! arguments
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in)   :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(w90comm_type), intent(in)      :: comm
+
+    integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
+
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    complex(kind=dp), intent(in) :: v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) !<0n|sigma_x,y,z.(r-R)_alpha|Rm>
+
+    logical, intent(in) :: have_disentangled
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, sIu_in, qb1, qb2, winmin_q, winmin_qb2
     integer :: ipol
@@ -1771,20 +1789,25 @@ contains
     complex(kind=dp), allocatable :: H_q_qb2(:, :)
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
+    logical :: on_root = .false.
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SAA_R', 1)
+    if (mpirank(comm) == 0) on_root = .true.
 
-    if (.not. allocated(BB_R)) then
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+      call io_stopwatch('get_oper: get_SAA_R', 1, stdout, seedname)
+
+    if (.not. allocated(SAA_R)) then
       allocate (SAA_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SAA_R', 2)
+      if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
+        call io_stopwatch('get_oper: get_SAA_R', 2, stdout, seedname)
       return
     end if
 
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) &
-        call io_error('Error: scissors correction not yet implemented for SAA_R')
+        call io_error('Error: scissors correction not yet implemented for SAA_R', stdout, seedname)
 
       allocate (Ho_q_qb2(num_bands, num_bands, 3))
       allocate (H_q_qb2(num_wann, num_wann))
@@ -1793,7 +1816,7 @@ contains
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
         if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+          num_states(ik) = dis_manifold%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1809,21 +1832,21 @@ contains
       read (sIu_in, err=114, end=114) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) &
         call io_error &
-        (trim(seedname)//'.sIu has not the right number of bands')
+        (trim(seedname)//'.sIu has not the right number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
-        (trim(seedname)//'.sIu has not the right number of k-points')
-      if (nntot_tmp .ne. nntot) &
+        (trim(seedname)//'.sIu has not the right number of k-points', stdout, seedname)
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.sIu has not the right number of nearest neighbours')
+        (trim(seedname)//'.sIu has not the right number of nearest neighbours', stdout, seedname)
 
       SAA_q = cmplx_0
       do ik = 1, num_kpts
 
-        call get_win_min(ik, winmin_q)
-        do nn2 = 1, nntot
-          qb2 = nnlist(ik, nn2)
-          call get_win_min(qb2, winmin_qb2)
+        call get_win_min(num_bands, dis_manifold, ik, winmin_q, have_disentangled)
+        do nn2 = 1, kmesh_info%nntot
+          qb2 = kmesh_info%nnlist(ik, nn2)
+          call get_win_min(num_bands, dis_manifold, qb2, winmin_qb2, have_disentangled)
           do ipol = 1, 3
             !
             ! Read from .sIu file the matrices <u_q|s_a|u_{q+b2}>
@@ -1853,7 +1876,7 @@ contains
             enddo
             do b = 1, 3
               SAA_q(:, :, ik, ipol, b) = SAA_q(:, :, ik, ipol, b) + &
-                                         cmplx_i*wb(nn2)*bk(b, nn2, ik)*H_q_qb2(:, :)
+                                         cmplx_i*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
             enddo
 !             enddo !nn1
           enddo !ipol
@@ -1864,20 +1887,20 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(SAA_q(:, :, :, a, b), SAA_R(:, :, :, a, b))
+          call fourier_q_to_R(num_kpts, nrpts, irvec, kpt_latt, SAA_q(:, :, :, a, b), SAA_R(:, :, :, a, b))
         enddo
       enddo
     endif !on_root
 
-    call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SAA_R', 2)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SAA_R', 2, stdout, seedname)
     return
 
 113 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.sIu')
+      ('Error: Problem opening input file '//trim(seedname)//'.sIu', stdout, seedname)
 114 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.sIu')
+      ('Error: Problem reading input file '//trim(seedname)//'.sIu', stdout, seedname)
 
   end subroutine get_SAA_R
 
@@ -1895,8 +1918,6 @@ contains
     !! O_ij(q) --> O_ij(R) = (1/N_kpts) sum_q e^{-iqR} O_ij(q)
     !
     !==========================================================
-
-    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
 
     implicit none
 
@@ -1932,7 +1953,6 @@ contains
     !
     !===============================================
 
-    use w90_constants, only: dp
     use w90_types, only: dis_manifold_type, print_output_type
 
     implicit none
@@ -1961,8 +1981,8 @@ contains
   end subroutine get_win_min
 
   !==========================================================
-  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, &
-                                      ik_a, ns_a, ik_b, ns_b, S_o, have_disentangled, S, H)
+  subroutine get_gauge_overlap_matrix(num_bands, num_wann, eigval, v_matrix, dis_manifold, ik_a, &
+                                      ns_a, ik_b, ns_b, S_o, have_disentangled, S, H)
     !==========================================================
     !
     ! Wannier-gauge overlap matrix S in the projected subspace
@@ -1973,7 +1993,6 @@ contains
     !
     !==========================================================
 
-    use w90_constants, only: dp
     use w90_types, only: dis_manifold_type
     use w90_utility, only: utility_zgemmm
 
@@ -1981,12 +2000,12 @@ contains
 
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_manifold
-    !type(print_output_type), intent(in) :: print_output
-    integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     real(kind=dp), intent(in) :: eigval(:, :)
     complex(kind=dp), intent(in) :: S_o(:, :), v_matrix(:, :, :)
-    complex(kind=dp), intent(out), optional :: S(:, :), H(:, :)
+    integer, intent(in) :: num_wann, num_bands, ik_a, ns_a, ik_b, ns_b
     logical, intent(in) :: have_disentangled
+
+    complex(kind=dp), intent(out), optional :: S(:, :), H(:, :)
 
     ! local variables
     integer :: wm_a, wm_b

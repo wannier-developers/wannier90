@@ -57,10 +57,10 @@ program postw90
 #endif
 
   type(pw90_physical_constants_type) :: physics
-  integer       :: nkp, len_seedname
-  integer       :: stdout
+  integer :: nkp, len_seedname
+  integer :: stdout
   character(len=50) :: seedname
-  logical       :: have_gamma
+  logical :: have_gamma
   real(kind=dp) :: time0, time1, time2
   character(len=9) :: stat, pos
   logical :: wpout_found, werr_found, dryrun
@@ -99,10 +99,10 @@ program postw90
   !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
 
   !spin Hall using Ryoo's method
-  complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
-
+  complex(kind=dp), allocatable :: SAA_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
-  complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+
+  complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
   !
@@ -170,7 +170,7 @@ program postw90
 
   ! module  d o s
   ! No need to save 'dos_plot', only used here (introduced 'dos_task')
-  logical          :: dos_plot
+  logical :: dos_plot
 
   type(pw90_dos_mod_type) :: dos_data
   type(pw90_berry_mod_type) :: berry
@@ -390,8 +390,8 @@ program postw90
   if (pw90_calcs%kpath) then
     call k_path(berry, dis_window, fermi_energy_list, kmesh_info, kpath, kpt_latt, postw90_oper, &
                 pw90_ham, pw90_spin, ws_region, spec_points, spin_hall, verbose, wann_data, &
-                ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, v_matrix, &
-                u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, &
+                ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, &
+                SBB_R, v_matrix, u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, &
                 mp_grid, fermi_n, num_wann, num_bands, num_kpts, system%num_valence_bands, &
                 effective_model, have_disentangled, seedname, stdout, comm)
   end if
@@ -404,10 +404,10 @@ program postw90
 
     call k_slice(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, kslice, postw90_oper, &
                  pw90_ham, pw90_spin, ws_region, spin_hall, verbose, wann_data, ws_distance, &
-                 ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, v_matrix, u_matrix, &
-                 physics%bohr, eigval, real_lattice, scissors_shift, mp_grid, &
-                 fermi_n, num_bands, num_kpts, num_wann, system%num_valence_bands, &
-                 effective_model, have_disentangled, seedname, stdout, comm)
+                 ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, &
+                 u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, &
+                 num_bands, num_kpts, num_wann, system%num_valence_bands, effective_model, &
+                 have_disentangled, seedname, stdout, comm)
   end if
 
   ! --------------------
@@ -417,10 +417,9 @@ program postw90
   if (pw90_calcs%spin_moment) then
     call spin_get_moment(dis_window, fermi_energy_list, kpt_dist, kpt_latt, postw90_oper, &
                          pw90_spin, ws_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
-                         SS_R, u_matrix, v_matrix, eigval, real_lattice, &
-                         scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
-                         system%num_valence_bands, effective_model, have_disentangled, &
-                         berry%wanint_kpoint_file, seedname, stdout, comm)
+                         SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
+                         num_wann, num_bands, num_kpts, system%num_valence_bands, effective_model, &
+                         have_disentangled, berry%wanint_kpoint_file, seedname, stdout, comm)
   end if
 
   ! -------------------------------------------------------------------

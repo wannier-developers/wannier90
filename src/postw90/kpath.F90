@@ -43,7 +43,7 @@ contains
   subroutine k_path(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, pw90_kpath, kpt_latt, &
                     pw90_oper_read, pw90_band_deriv_degen, pw90_spin, ws_region, kpoint_path, pw90_spin_hall, print_output, &
                     wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, &
-                    SS_R, v_matrix, u_matrix, bohr, eigval, real_lattice, &
+                    SS_R, SAA_R, SBB_R, v_matrix, u_matrix, bohr, eigval, real_lattice, &
                     scissors_shift, mp_grid, fermi_n, num_wann, num_bands, num_kpts, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
 
@@ -90,6 +90,8 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) ! FIXME JJ document
+    complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) ! FIXME JJ document
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
 
     real(kind=dp), intent(in) :: bohr
@@ -289,7 +291,7 @@ contains
         else if (pw90_kpath%bands_colour == 'shc') then
           call berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, pw90_band_deriv_degen, &
                                    ws_region, pw90_spin_hall, print_output, wannier_data, ws_distance, wigner_seitz, &
-                                   AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, &
+                                   AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, &
                                    eigval, kpt, real_lattice, scissors_shift, mp_grid, fermi_n, &
                                    num_bands, num_kpts, num_wann, num_valence_bands, &
                                    effective_model, have_disentangled, seedname, stdout, comm, &
@@ -331,7 +333,7 @@ contains
       if (plot_shc) then
         call berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, pw90_band_deriv_degen, &
                                  ws_region, pw90_spin_hall, print_output, wannier_data, ws_distance, wigner_seitz, &
-                                 AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, u_matrix, v_matrix, eigval, &
+                                 AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, &
                                  kpt, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                  num_kpts, num_wann, num_valence_bands, effective_model, &
                                  have_disentangled, seedname, stdout, comm, shc_k_fermi=shc_k_fermi)
