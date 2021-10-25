@@ -102,7 +102,8 @@ contains
     type(ws_distance_type) :: ws_distance
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nkp, bands_num_spec_points, my_node_id, num_nodes
-    logical :: have_gamma, on_root
+    logical :: have_gamma
+    logical :: on_root = .false.
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
@@ -1197,6 +1198,7 @@ contains
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
 
+    on_root = .false.
     if (my_node_id == 0) on_root = .true.
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))

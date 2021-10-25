@@ -442,16 +442,18 @@ contains
         call io_stopwatch('berry: k-interpolation', 1, stdout, seedname)
       endif
 
+      if (eval_kdotp) then
+        ! JJ pw90_berry%kdotp_bands is only allocated on process 0
+        ! this causes a segfault at 2895 (accessing nonexistent element zero)
+        ! moving to process 0 (on_root) only
+        call berry_get_kdotp(kdotp, dis_manifold, kpt_latt, print_output, pw90_berry, &
+                             pw90_band_deriv_degen, wannier_data, ws_distance, wigner_seitz, &
+                             ws_region, HH_R, u_matrix, v_matrix, eigval, real_lattice, &
+                             scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                             num_valence_bands, effective_model, have_disentangled, seedname, &
+                             stdout, comm)
+      end if
     end if ! print_output%iprint > 0, aka "on_root"
-
-    if (eval_kdotp) then
-      call berry_get_kdotp(kdotp, dis_manifold, kpt_latt, print_output, pw90_berry, &
-                           pw90_band_deriv_degen, wannier_data, ws_distance, wigner_seitz, &
-                           ws_region, HH_R, u_matrix, v_matrix, eigval, real_lattice, &
-                           scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                           num_valence_bands, effective_model, have_disentangled, seedname, &
-                           stdout, comm)
-    end if
 
     ! Set up adaptive refinement mesh
     !
@@ -2554,7 +2556,6 @@ contains
       !====================================================================!
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      ! beware SBB_R is new FIXME
       use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
         ws_distance_type
       use w90_postw90_types, only: pw90_spin_hall_type, wigner_seitz_type
