@@ -90,8 +90,8 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-    complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) ! FIXME JJ document
-    complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) ! FIXME JJ document
+    complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :) !<0n|sigma_x,y,z.(r-R)_alpha|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :) !<0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
 
     real(kind=dp), intent(in) :: bohr
