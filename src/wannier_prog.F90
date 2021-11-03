@@ -53,6 +53,7 @@ program wannier
   !! The main Wannier90 program
 
   use w90_constants, only: w90_physical_constants_type, dp
+  use w90_error
   use w90_types
   use w90_io
   use w90_hamiltonian
@@ -210,6 +211,8 @@ program wannier
   logical :: use_bloch_phases, cp_pp, calc_only_A
   logical :: gamma_only
   logical :: have_disentangled, disentanglement
+
+  type(w90_error_type), allocatable :: err
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
@@ -433,13 +436,19 @@ program wannier
                    u_matrix, u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, &
                    num_wann, optimisation, rpt_origin, band_plot%mode, transport%mode, &
-                   have_disentangled, lsitesymmetry, seedname, stdout, comm)
+                   have_disentangled, lsitesymmetry, seedname, stdout, err, comm)
   else
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &
                          m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          real_space_ham%translate_home_cell, seedname, stdout, comm)
+  end if
+
+  ! handle errors
+  if (allocated(err)) then
+    call prterr(err,stdout)
+    call exit(err%code)
   end if
 
   time1 = io_time()
@@ -517,5 +526,14 @@ program wannier
 
   call comms_end
 
+  contains
+
+  subroutine prterr(err,stdout)
+    type(w90_error_type), intent(in) :: err
+    integer, intent(in) :: stdout
+    write(stdout,*) "ERROR CODE: ", err%code
+    write(stdout,*) "ERROR CONDITION: ", err%message
+  end subroutine prterr
 end program wannier
+
 

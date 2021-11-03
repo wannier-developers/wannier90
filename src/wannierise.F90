@@ -55,13 +55,14 @@ contains
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                        bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
-                       seedname, stdout, comm)
+                       seedname, stdout, err, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !                                                                  !
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
+    use w90_error
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_wannier90_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
@@ -96,6 +97,7 @@ contains
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90comm_type), intent(in)            :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
+    type(w90_error_type), allocatable, intent(out) :: err
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands
@@ -212,9 +214,11 @@ contains
     first_pass = .true.
 
     ! Allocate stuff
-
     allocate (history(wann_control%conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating history in wann_main', stdout, seedname)
+    if (ierr /= 0) then
+            call set_error_alloc(err, 'Error allocating history in wann_main')
+            return
+    endif
 
     ! module data
 !    if(optimisation>0) then

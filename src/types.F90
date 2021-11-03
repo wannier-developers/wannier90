@@ -23,6 +23,7 @@ module w90_types
 
   public
 
+
   type print_output_type
     !! ==============================
     !! Contains variables to control output file formatting and verbosity.
