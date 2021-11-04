@@ -133,7 +133,6 @@ program wannier
   integer, allocatable :: exclude_bands(:)
 
   real(kind=dp), allocatable :: eigval(:, :)
-  real(kind=dp) :: symmetrize_eps = 1.d-3
   real(kind=dp), allocatable :: fermi_energy_list(:)
   real(kind=dp) :: real_lattice(3, 3)
   real(kind=dp) :: recip_lattice(3, 3)
@@ -243,7 +242,7 @@ program wannier
                     output_file, wvfn_read, wann_control, omega, proj_input, input_proj, &
                     real_space_ham, select_projection, kpoint_path, w90_system, transport, &
                     print_output, wannier_data, wannier_plot, w90_extra_io, ws_region, &
-                    w90_calculation, eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                    w90_calculation, eigval, real_lattice, physics%bohr, sitesym%symmetrize_eps, mp_grid, &
                     num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
                     calc_only_A, cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
                     use_bloch_phases, seedname, stdout)
@@ -280,7 +279,7 @@ program wannier
                      fermi_surface_plot, kpt_latt, output_file, wvfn_read, wann_control, &
                      proj_input, input_proj, real_space_ham, select_projection, kpoint_path, &
                      transport, print_output, wannier_data, wannier_plot, w90_extra_io, &
-                     w90_calculation, real_lattice, symmetrize_eps, mp_grid, num_bands, num_kpts, &
+                     w90_calculation, real_lattice, sitesym%symmetrize_eps, mp_grid, num_bands, num_kpts, &
                      num_proj, num_wann, optimisation, cp_pp, gamma_only, lsitesymmetry, &
                      w90_system%spinors, use_bloch_phases, stdout)
     time1 = io_time()
@@ -313,7 +312,7 @@ program wannier
                   fermi_energy_list, fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
                   output_file, wvfn_read, wann_control, omega, input_proj, real_space_ham, &
                   w90_system, transport, print_output, wannier_data, wannier_plot, ws_region, &
-                  w90_calculation, eigval, real_lattice, symmetrize_eps, mp_grid, &
+                  w90_calculation, eigval, real_lattice, sitesym%symmetrize_eps, mp_grid, &
                   kpoint_path%num_points_first_segment, num_bands, num_kpts, num_proj, num_wann, &
                   optimisation, eig_found, cp_pp, gamma_only, have_disentangled, &
                   lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
@@ -340,7 +339,6 @@ program wannier
                           omega%invariant, num_bands, num_kpts, num_wann, &
                           checkpoint, have_disentangled, seedname, stdout, comm)
     if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
-    if (lsitesymmetry) sitesym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
     select case (w90_calculation%restart)
     case ('default')    ! continue from where last checkpoint was written
@@ -386,7 +384,6 @@ program wannier
   endif
 
   if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout) ! update this to read on root and bcast - JRY
-  if (lsitesymmetry) sitesym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
@@ -424,9 +421,9 @@ program wannier
 
 1001 time2 = io_time()
 
-  ! JJ hack to workaround mpi_scatterv requirement that all arrays are valid *for all mpi procs*
-  ! m_matrix* usually alloc'd in overlaps.F90, but not always
-  if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+  ! JJ workaround mpi_scatterv requirement that all arrays are valid *for all mpi procs*
+  ! m_matrix* usually alloc'd in overlaps.F90, but not invariably, need to check here
+  if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1))
 
   if (.not. gamma_only) then
     call wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
