@@ -234,11 +234,11 @@ contains
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout, &
                                    seedname)
       if (on_root) then
-        deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
+        deallocate (m_matrix)
         allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main', stdout, seedname)
       endif
-      deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
+      deallocate (m_matrix_local)
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, &
                                    seedname)
@@ -255,11 +255,11 @@ contains
     else
 
       if (on_root) then
-        deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
+        deallocate (m_matrix)
         allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main', stdout, seedname)
       endif
-      deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
+      deallocate (m_matrix_local)
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout, &
                                    seedname)

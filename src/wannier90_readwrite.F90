@@ -455,7 +455,7 @@ contains
     call param_get_keyword(stdout, seedname, 'conv_noise_amp', found, &
                            r_value=wann_control%conv_noise_amp)
 
-    ! JJ why is this -1 by default?  it implies that no checking is made for convergence
+    ! note that the default here is not to check convergence
     wann_control%conv_window = -1
     if (wann_control%conv_noise_amp > 0.0_dp) wann_control%conv_window = 5
     call param_get_keyword(stdout, seedname, 'conv_window', found, &

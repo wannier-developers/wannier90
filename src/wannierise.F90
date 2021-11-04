@@ -1519,7 +1519,7 @@ contains
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
-      integer :: my_node_id !absence of this was not caught by ifort (!!) why -- fixme JJ
+      integer :: my_node_id
 
       my_node_id = mpirank(comm)
 
