@@ -689,11 +689,12 @@ contains
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
-                             m_matrix_orig_local, u_matrix, u_matrix_opt, seedname, stdout, comm)
+                             m_matrix_orig_local, u_matrix, u_matrix_opt, error, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
-    use w90_io, only: io_error
+    !use w90_io, only: io_error
+    use w90_error, only: set_error_dealloc, w90_error_type
 
     implicit none
 
@@ -705,8 +706,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig_local(:, :, :, :)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     ! local variables
@@ -717,35 +717,56 @@ contains
 
     if (allocated(u_matrix_opt)) then
       deallocate (u_matrix_opt, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating u_matrix_opt in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating u_matrix_opt in overlap_dealloc')
+        return
+      endif
     end if
     if (allocated(a_matrix)) then
       deallocate (a_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating a_matrix in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating a_matrix in overlap_dealloc')
+        return
+      endif
     end if
 !    if (on_root) then
     if (allocated(m_matrix_orig)) then
       deallocate (m_matrix_orig, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating m_matrix_orig in overlap_dealloc')
+        return
+      endif
     endif
 !    endif
     if (allocated(m_matrix_orig_local)) then
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating m_matrix_orig_local in overlap_dealloc')
+        return
+      endif
     endif
     if (on_root) then
       if (allocated(m_matrix)) then
         deallocate (m_matrix, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating m_matrix in overlap_dealloc', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating m_matrix in overlap_dealloc')
+          return
+        endif
       endif
     endif
     if (allocated(m_matrix_local)) then
       deallocate (m_matrix_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_local in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating m_matrix_local in overlap_dealloc')
+        return
+      endif
     endif
     if (allocated(u_matrix)) then
       deallocate (u_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating u_matrix in overlap_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating u_matrix in overlap_dealloc')
+        return
+      endif
     endif
 
     return

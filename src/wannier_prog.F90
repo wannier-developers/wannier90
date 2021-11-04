@@ -392,10 +392,18 @@ program wannier
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
                         print_output%timing_level, stdout, err, comm)
+  if (allocated(err)) then
+    call prterr(err, stdout)
+    call exit(err%code)
+  end if
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
                     gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, err, comm)
+  if (allocated(err)) then
+    call prterr(err, stdout)
+    call exit(err%code)
+  end if
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
     ' (sec)'
@@ -503,7 +511,11 @@ program wannier
   call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                       u_matrix, u_matrix_opt, seedname, stdout, comm)
+                       u_matrix, u_matrix_opt, err, comm)
+  if (allocated(err)) then
+    call prterr(err, stdout)
+    call exit(err%code)
+  end if
   call kmesh_dealloc(kmesh_info, stdout, seedname)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                          kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
