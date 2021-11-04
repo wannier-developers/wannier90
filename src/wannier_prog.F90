@@ -391,7 +391,7 @@ program wannier
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        print_output%timing_level, seedname, stdout, comm)
+                        print_output%timing_level, stdout, err, comm)
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
@@ -447,7 +447,7 @@ program wannier
 
   ! handle errors
   if (allocated(err)) then
-    call prterr(err,stdout)
+    call prterr(err, stdout)
     call exit(err%code)
   end if
 
@@ -526,14 +526,13 @@ program wannier
 
   call comms_end
 
-  contains
+contains
 
-  subroutine prterr(err,stdout)
+  subroutine prterr(err, stdout)
     type(w90_error_type), intent(in) :: err
     integer, intent(in) :: stdout
-    write(stdout,*) "ERROR CODE: ", err%code
-    write(stdout,*) "ERROR CONDITION: ", err%message
+    write (stdout, *) "ERROR CODE: ", err%code
+    write (stdout, *) "ERROR CONDITION: ", err%message
   end subroutine prterr
 end program wannier
-
 

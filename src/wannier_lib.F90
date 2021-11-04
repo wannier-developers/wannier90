@@ -602,7 +602,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call comms_array_split(num_kpts, counts, displs, comm)
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        verbose%timing_level, seedname, stdout, comm)
+                        verbose%timing_level, stdout, error, comm)
   if (disentanglement) then
     m_matrix_orig = m_matrix_loc
     a_matrix = a_matrix_loc

@@ -51,6 +51,7 @@ module w90_io
   !! Number of active stopwatches
 
   public :: io_stopwatch
+  public :: io_stopwatch_new
   public :: io_commandline
   public :: io_print_timings
   public :: io_get_seedname
@@ -61,6 +62,71 @@ module w90_io
   public :: io_file_unit
 
 contains
+
+  !BGS this should be renamed to io_stopwatch and the original one deleted
+  !=====================================
+  subroutine io_stopwatch_new(tag, mode, stdout, error)
+    !=====================================
+    !! Stopwatch to time parts of the code
+    !=====================================
+
+    use w90_error, only: w90_error_type, set_warning, set_error_unconv
+    implicit none
+
+    character(len=*), intent(in) :: tag
+    !! Which stopwatch to act upon
+    integer, intent(in)          :: mode
+    type(w90_error_type), allocatable, intent(out) :: error
+    !! Action  1=start 2=stop
+
+    integer :: i
+    integer :: stdout
+    real(kind=dp) :: t
+
+    call cpu_time(t)
+
+    select case (mode)
+
+    case (1)
+
+      do i = 1, nnames
+        if (clocks(i)%label .eq. tag) then
+          clocks(i)%ptime = t
+          clocks(i)%ncalls = clocks(i)%ncalls + 1
+          return
+        endif
+      enddo
+
+      nnames = nnames + 1
+      if (nnames .gt. nmax) &
+        call set_error_unconv(error, 'Maximum number of calls to io_stopwatch exceeded')
+
+      clocks(nnames)%label = tag
+      clocks(nnames)%ctime = 0.0_dp
+      clocks(nnames)%ptime = t
+      clocks(nnames)%ncalls = 1
+
+    case (2)
+
+      do i = 1, nnames
+        if (clocks(i)%label .eq. tag) then
+          clocks(i)%ctime = clocks(i)%ctime + t - clocks(i)%ptime
+          return
+        endif
+      end do
+
+      write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
+
+    case default
+
+      write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
+      call set_warning(error, 'Value of mode not recognised in io_stopwatch')
+
+    end select
+
+    return
+
+  end subroutine io_stopwatch_new
 
   !=====================================
   subroutine io_stopwatch(tag, mode, stdout, seedname)

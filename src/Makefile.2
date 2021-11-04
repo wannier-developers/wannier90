@@ -99,10 +99,10 @@ constants.o: ../constants.F90
 comms-abort.o: ../comms-abort.F90 ../../make.inc
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms-abort.F90
 
-io.o: ../io.F90 constants.o comms-abort.o
+io.o: ../io.F90 constants.o comms-abort.o error.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../io.F90
 
-utility.o: ../utility.F90  constants.o io.o
+utility.o: ../utility.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../utility.F90
 
 wannier90_types.o: ../wannier90_types.F90 constants.o io.o
@@ -114,19 +114,19 @@ wannier90_readwrite.o: ../wannier90_readwrite.F90 constants.o io.o types.o wanni
 readwrite.o: ../readwrite.F90 types.o constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../readwrite.F90
 
-types.o: ../types.F90 constants.o io.o utility.o comms.o
+types.o: ../types.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../types.F90
 
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o types.o wannier90_types.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../hamiltonian.F90
 
-overlap.o: ../overlap.F90 constants.o io.o utility.o types.o sitesym.o wannier90_types.o
+overlap.o: ../overlap.F90 constants.o io.o utility.o types.o sitesym.o wannier90_types.o error.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
 kmesh.o: ../kmesh.F90 constants.o io.o utility.o types.o 
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
-error.o: ../error.F90 types.o
+error.o: ../error.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../error.F90
 
 disentangle.o: ../disentangle.F90 constants.o io.o types.o sitesym.o comms.o wannier90_types.o

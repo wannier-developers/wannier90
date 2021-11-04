@@ -34,12 +34,13 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, seedname, stdout, comm)
+                              num_kpts, num_wann, timing_level, stdout, error, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
 
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_error
 
     ! passed variables
     integer, intent(in) :: nntot
@@ -57,9 +58,8 @@ contains
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: ierr
@@ -78,18 +78,24 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, stdout, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_matrix in overlap_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_read')
+      return
+    endif
     u_matrix = cmplx_0
 
     if (disentanglement) then
       if (on_root) then
         allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix_orig in overlap_read', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_read')
+          return
+        endif
         allocate (m_matrix(1, 1, 1, 1))
       else
         allocate (m_matrix_orig(1, 1, 1, 1))
@@ -97,18 +103,30 @@ contains
       endif
 
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_orig_local in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read')
+        return
+      endif
       allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating a_matrix in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read')
+        return
+      endif
       allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating u_matrix_opt in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_read')
+        return
+      endif
 
       allocate (m_matrix_local(1, 1, 1, 1))
 
     else
       if (on_root) then
         allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix in overlap_read', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read')
+          return
+        endif
         m_matrix = cmplx_0
         allocate (m_matrix_orig(1, 1, 1, 1))
       else
@@ -117,7 +135,10 @@ contains
       endif
 
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read')
+        return
+      endif
       m_matrix_local = cmplx_0
 
       allocate (m_matrix_orig_local(1, 1, 1, 1))
@@ -126,7 +147,7 @@ contains
 
     endif
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, stdout, error)
 
   end subroutine overlap_allocate
 

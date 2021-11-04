@@ -15,34 +15,35 @@
 module w90_error
   !! Module to handle errors
 
-  use w90_constants, only: dp
+  !use w90_constants, only: dp
   !use w90_types, only: w90_error_type
 
   implicit none
 
   public
 
-  integer, parameter :: code_ok = 0 
-  integer, parameter :: code_fatal = 1 
-  integer, parameter :: code_alloc = 2 
-  integer, parameter :: code_dealloc = 3 
+  integer, parameter :: code_ok = 0
+  integer, parameter :: code_fatal = 1
+  integer, parameter :: code_alloc = 2
+  integer, parameter :: code_dealloc = 3
   integer, parameter :: code_unconv = -1
+  integer, parameter :: code_warning = -3
 
   type w90_error_type
     !! Codify error state with integer code and human readable string
     integer :: code
     character(len=120) :: message
-    contains
+  contains
     final :: untrapped_error
   end type w90_error_type
 
-  contains
+contains
 
   subroutine untrapped_error(err)
     type(w90_error_type), intent(in) :: err
     ! this routine should never be called, writing to stderr in desparation
-    write(0,*) "UNTRAPPED ERROR: ", err%code
-    write(0,*) "UNTRAPPED ERROR: ", err%message
+    write (0, *) "UNTRAPPED ERROR: ", err%code
+    write (0, *) "UNTRAPPED ERROR: ", err%message
     ! this routine should never be called, call stop() in utter desparation FIXME?
     stop
   end subroutine untrapped_error
@@ -50,7 +51,7 @@ module w90_error
   subroutine set_error_alloc(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
-    allocate(err)
+    allocate (err)
     err%message = mesg !FIXME, trim to 120
     err%code = code_alloc
   end subroutine set_error_alloc
@@ -58,7 +59,7 @@ module w90_error
   subroutine set_error_fatal(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
-    allocate(err)
+    allocate (err)
     err%message = mesg !FIXME, trim to 120
     err%code = code_fatal
   end subroutine set_error_fatal
@@ -66,7 +67,7 @@ module w90_error
   subroutine set_error_dealloc(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
-    allocate(err)
+    allocate (err)
     err%message = mesg !FIXME, trim to 120
     err%code = code_dealloc
   end subroutine set_error_dealloc
@@ -74,16 +75,19 @@ module w90_error
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
-    allocate(err)
+    allocate (err)
+    ! BGS should io_stopwatch call this or something else?
     err%message = mesg !FIXME, trim to 120
     err%code = code_unconv
   end subroutine set_error_unconv
 
-
-
+  subroutine set_warning(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_warning ! trivial coding error in io_stopwatch etc...
+  end subroutine set_warning
 
 end module w90_error
-
-  
-
 
