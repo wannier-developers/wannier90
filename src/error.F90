@@ -26,6 +26,10 @@ module w90_error
   integer, parameter :: code_fatal = 1
   integer, parameter :: code_alloc = 2
   integer, parameter :: code_dealloc = 3
+  integer, parameter :: code_mpi = 4
+  integer, parameter :: code_input_command = 5 !BGS is it a warning?
+  integer, parameter :: code_file_read = 6
+  integer, parameter :: code_file_open = 7
   integer, parameter :: code_unconv = -1
   integer, parameter :: code_warning = -3
 
@@ -71,6 +75,38 @@ contains
     err%message = mesg !FIXME, trim to 120
     err%code = code_dealloc
   end subroutine set_error_dealloc
+
+  subroutine set_error_mpi(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_mpi
+  end subroutine set_error_mpi
+
+  subroutine set_error_input(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_input_command
+  end subroutine set_error_input
+
+  subroutine set_error_file(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_file_read
+  end subroutine set_error_file
+
+  subroutine set_error_open(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_file_open
+  end subroutine set_error_open
 
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err

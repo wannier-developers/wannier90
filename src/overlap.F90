@@ -156,14 +156,15 @@ contains
                           m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                           u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
                           cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                          comm)
+                          error, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
 
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
+    use w90_error
 
     implicit none
 
@@ -171,6 +172,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
@@ -219,7 +221,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -249,17 +251,26 @@ contains
       read (mmn_in, *, err=103, end=103) nb_tmp, nkp_tmp, nntot_tmp
 
       ! Checks
-      if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has not the right number of bands', stdout, seedname)
-      if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has not the right number of k-points', stdout, seedname)
-      if (nntot_tmp .ne. kmesh_info%nntot) &
-        call io_error(trim(seedname)//'.mmn has not the right number of nearest neighbours', stdout, seedname)
+      if (nb_tmp .ne. num_bands) then
+        call set_error_file(error, trim(seedname)//'.mmn has not the right number of bands')
+        return
+      endif
+      if (nkp_tmp .ne. num_kpts) then
+        call set_error_file(error, trim(seedname)//'.mmn has not the right number of k-points')
+        return
+      endif
+      if (nntot_tmp .ne. kmesh_info%nntot) then
+        call set_error_file(error, trim(seedname)//'.mmn has not the right number of nearest neighbours')
+        return
+      endif
 
       ! Read the overlaps
       num_mmn = num_kpts*kmesh_info%nntot
       allocate (mmn_tmp(num_bands, num_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating mmn_tmp in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating mmn_tmp in overlap_read')
+        return
+      endif
       do ncount = 1, num_mmn
         read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
         do n = 1, num_bands
@@ -279,15 +290,17 @@ contains
               nn_found = .true.
               nn = inn
             else
-              call io_error('Error reading '//trim(seedname)// &
-                            '.mmn. More than one matching nearest neighbour found', stdout, seedname)
+              call set_error_file(error, 'Error reading '//trim(seedname)// &
+                                  '.mmn. More than one matching nearest neighbour found')
+              return
             endif
           endif
         end do
         if (nn .eq. 0) then
           if (on_root) write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
             ' Error reading '//trim(seedname)//'.mmn:', ncount, nkp, nkp2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found', stdout, seedname)
+          call set_error_file(error, 'Neighbour not found')
+          return
         end if
         if (disentanglement) then
           m_matrix_orig(:, :, nn, nkp) = mmn_tmp(:, :)
@@ -297,7 +310,10 @@ contains
         end if
       end do
       deallocate (mmn_tmp, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating mmn_tmp in overlap_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating mmn_tmp in overlap_read')
+        return
+      endif
       close (mmn_in)
     endif
 
@@ -328,15 +344,23 @@ contains
         read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
 
         ! Checks
-        if (nb_tmp .ne. num_bands) &
-          call io_error(trim(seedname)//'.amn has not the right number of bands', stdout, seedname)
-        if (nkp_tmp .ne. num_kpts) &
-          call io_error(trim(seedname)//'.amn has not the right number of k-points', stdout, seedname)
-        if (np_tmp .ne. num_proj) &
-          call io_error(trim(seedname)//'.amn has not the right number of projections', stdout, seedname)
+        if (nb_tmp .ne. num_bands) then
+          call set_error_file(error, trim(seedname)//'.amn has not the right number of bands')
+          return
+        endif
+        if (nkp_tmp .ne. num_kpts) then
+          call set_error_file(error, trim(seedname)//'.amn has not the right number of k-points')
+          return
+        endif
+        if (np_tmp .ne. num_proj) then
+          call set_error_file(error, trim(seedname)//'.amn has not the right number of projections')
+          return
+        endif
 
-        if (num_proj > num_wann .and. .not. select_projection%lselproj) &
-          call io_error(trim(seedname)//'.amn has too many projections to be used without selecting a subset', stdout, seedname)
+        if (num_proj > num_wann .and. .not. select_projection%lselproj) then
+          call set_error_file(error, trim(seedname)//'.amn has too many projections to be used without selecting a subset')
+          return
+        endif
 
         ! Read the projections
         num_amn = num_bands*num_proj*num_kpts
@@ -418,13 +442,17 @@ contains
     !~      end if
 ![ysl-e]
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 2, stdout, seedname)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 2, stdout, error)
 
     return
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
-102 call io_error('Error: Problem opening input file '//trim(seedname)//'.amn', stdout, seedname)
-103 call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
-104 call io_error('Error: Problem reading input file '//trim(seedname)//'.amn', stdout, seedname)
+101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+    return
+102 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.amn')
+    return
+103 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+    return
+104 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.amn')
+    return
 
   end subroutine overlap_read
 
