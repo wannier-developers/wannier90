@@ -39,8 +39,11 @@ contains
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, &
                        stdout, comm)
+    !==================================================================!
     !! Main plotting routine
-    !============================================!
+    !
+    !                                                                  !
+    !==================================================================!
 
     use w90_constants, only: eps6, dp
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &

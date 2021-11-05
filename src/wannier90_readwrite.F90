@@ -45,16 +45,16 @@ module w90_wannier90_readwrite
 contains
 
   !==================================================================!
-  subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
-                        exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
-                        kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
-                        proj, proj_input, real_space_ham, select_proj, kpoint_path, w90_system, &
-                        tran, print_output, wannier_data, wann_plot, w90_extra_io, ws_region, &
-                        w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, mp_grid, &
-                        num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
+  subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
+                        dis_manifold, exclude_bands, fermi_energy_list, fermi_surface_data, &
+                        kmesh_input, kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, &
+                        wann_omega, proj, proj_input, real_space_ham, select_proj, kpoint_path, &
+                        w90_system, tran, print_output, wannier_data, wann_plot, w90_extra_io, &
+                        ws_region, w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, &
+                        mp_grid, num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
                         calc_only_A, cp_pp, gamma_only, lhasproj, library, &
-                        library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, use_bloch_phases, &
-                        seedname, stdout)
+                        library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, &
+                        use_bloch_phases, seedname, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -64,53 +64,54 @@ contains
     !!
     !                                                                  !
     !===================================================================
+
     use w90_constants, only: w90_physical_constants_type
     use w90_utility, only: utility_recip_lattice, utility_inverse_mat
+
     implicit none
 
-    !data from parameters module
-    type(w90_calculation_type), intent(inout) :: w90_calculation
+    ! arguments
+    type(atom_data_type), intent(inout) :: atom_data
+    type(band_plot_type), intent(inout) :: band_plot
+    type(dis_control_type), intent(inout) :: dis_control
+    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(dis_spheres_type), intent(inout) :: dis_spheres
+    type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     type(output_file_type), intent(inout) :: output_file
     type(print_output_type), intent(inout) :: print_output
+    type(proj_input_type), intent(inout) :: proj
+    type(proj_input_type), intent(inout) :: proj_input
     type(real_space_ham_type), intent(inout) :: real_space_ham
+    type(select_projection_type), intent(inout) :: select_proj
+    type(transport_type), intent(inout) :: tran
+    type(w90_calculation_type), intent(inout) :: w90_calculation
+    type(w90_extra_io_type), intent(inout) :: w90_extra_io
+    type(w90_system_type), intent(inout) :: w90_system
+    type(wann_control_type), intent(inout) :: wann_control
+    type(wannier_data_type), intent(inout) :: wannier_data
+    type(wannier_plot_type), intent(inout) :: wann_plot
+    type(wann_omega_type), intent(inout) :: wann_omega
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
-    type(band_plot_type), intent(inout) :: band_plot
-    type(wannier_plot_type), intent(inout) :: wann_plot
-    type(wann_control_type), intent(inout) :: wann_control
-    type(wann_omega_type), intent(inout) :: wann_omega
-    type(wannier_data_type), intent(inout) :: wannier_data
-    type(kmesh_input_type), intent(inout) :: kmesh_input
-    type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(dis_control_type), intent(inout) :: dis_control
-    type(dis_spheres_type), intent(inout) :: dis_spheres
-    type(dis_manifold_type), intent(inout) :: dis_manifold
-    type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
-    type(transport_type), intent(inout) :: tran
-    type(atom_data_type), intent(inout) :: atom_data
-    type(w90_system_type), intent(inout) :: w90_system
-    type(kpoint_path_type), intent(inout) :: kpoint_path
-    type(select_projection_type), intent(inout) :: select_proj
-    type(proj_input_type), intent(inout) :: proj_input
-    type(w90_extra_io_type), intent(inout) :: w90_extra_io
-    ! was in driver, only used by wannier_lib
-    type(proj_input_type), intent(inout) :: proj
 
-    integer, intent(inout) :: num_bands
-    integer, intent(inout) :: num_wann
-    integer, intent(in) :: stdout
-    integer, intent(inout) :: mp_grid(3)
-    integer, intent(inout) :: num_proj
-    integer, intent(inout) :: num_kpts
-    integer, intent(inout) :: optimisation
     integer, allocatable, intent(inout) :: exclude_bands(:)
+    integer, intent(inout) :: mp_grid(3)
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_kpts
+    integer, intent(inout) :: num_proj
+    integer, intent(inout) :: num_wann
+    integer, intent(inout) :: optimisation
+    integer, intent(in) :: stdout
 
-    real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    real(kind=dp), intent(inout) :: symmetrize_eps
-    real(kind=dp), intent(in) :: bohr
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: symmetrize_eps
 
     character(len=50), intent(in)  :: seedname
 
@@ -125,14 +126,11 @@ contains
     logical, intent(out) :: use_bloch_phases, cp_pp, calc_only_A
     logical, intent(inout) :: gamma_only
 
-    !local variables
+    ! local variables
     integer :: num_exclude_bands
     character(len=20) :: energy_unit
     !! Units for energy
-    logical                   :: found_fermi_energy
-    !real(kind=dp)             :: kmesh_spacing
-    !integer                   :: kmesh(3)
-    !logical                   :: global_kmesh_set
+    logical :: found_fermi_energy
     logical :: has_kpath
     logical :: disentanglement
 

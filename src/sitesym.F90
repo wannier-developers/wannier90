@@ -12,6 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
+! w90_sitesym:                                               !
 ! Reference:                                                 !
 !    R. Sakuma, Symmetry-adapted Wannier functions           !
 !    in the maximal localization procedure,                  !
@@ -45,21 +46,17 @@ contains
   !==================================================================!
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sitesym, lwindow_in)
     !==================================================================!
-!   not called !
+    ! not called !
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
-!   end w90_parameters
+    logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     type(sitesym_type), intent(inout) :: sitesym
 
-    logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
     integer :: nindx(num_bands)
-
-    !write(stdout,"(a)") '-- sitesym_slim_sym%d_matrix_band --'
 
     do ir = 1, sitesym%nkptirr
       ik = sitesym%ir2ik(ir)

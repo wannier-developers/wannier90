@@ -36,43 +36,45 @@ module w90_overlap
 
 contains
 
-  !%%%%%%%%%%%%%%%%%%%%%
+  !==================================================================!
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
                               num_kpts, num_wann, timing_level, seedname, stdout, comm)
-    !%%%%%%%%%%%%%%%%%%%%%
+    !==================================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
+    !                                                                  !
+    !==================================================================!
 
     use w90_io, only: io_error, io_stopwatch
 
     ! passed variables
     integer, intent(in) :: nntot
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
-    integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
-    complex(kind=dp), allocatable :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+    complex(kind=dp), allocatable :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
 
     type(w90comm_type), intent(in) :: comm
 
-    character(len=50), intent(in)  :: seedname
+    character(len=50), intent(in) :: seedname
 
     ! local variables
-    integer :: ierr
-    integer :: num_nodes, my_node_id
-    logical :: on_root = .false.
     integer, allocatable :: counts(:)
     integer, allocatable :: displs(:)
+    integer :: ierr
+    integer :: num_nodes, my_node_id
     logical :: disentanglement
+    logical :: on_root = .false.
 
     disentanglement = (num_bands > num_wann)
 

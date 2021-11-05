@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  w90_wannier90_type: data types specific to wannier90.x    !
+!  w90_wannier90_types: data types specific to wannier90.x   !
 !                                                            !
 !------------------------------------------------------------!
 
@@ -264,12 +264,12 @@ module w90_wannier90_types
   ! from hamiltonian
   type ham_logical_type
     logical :: ham_have_setup = .false.
-    logical :: have_translated = .false.
-    logical :: use_translation = .false.
-    logical :: have_ham_r = .false.
     logical :: have_ham_k = .false.
+    logical :: have_ham_r = .false.
+    logical :: have_translated = .false.
     logical :: hr_written = .false.
     logical :: tb_written = .false.
+    logical :: use_translation = .false.
   end type ham_logical_type
 
 end module w90_wannier90_types

@@ -65,10 +65,13 @@ program wannier
   use w90_comms
   use w90_sitesym !YN:
 
-  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, w90_readwrite_chkpt_dist
+  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, &
+          w90_readwrite_chkpt_dist
   use w90_wannier90_types
-  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_w90_dealloc, &
-          w90_wannier90_readwrite_write, w90_wannier90_readwrite_dist, w90_wannier90_readwrite_memory_estimate, &
+  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
+          w90_wannier90_readwrite_w90_dealloc, &
+          w90_wannier90_readwrite_write, w90_wannier90_readwrite_dist, &
+          w90_wannier90_readwrite_memory_estimate, &
           w90_wannier90_readwrite_write_chkpt, w90_extra_io_type
 
 #ifdef MPI
@@ -157,28 +160,12 @@ program wannier
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
   complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
 
-  ! end data from parameters module
-
-! integer, save :: rpt_origin
-  !! index of R=0
-! integer, save :: nrpts
-  !! number of Wigner-Seitz grid points
-! integer, save, allocatable :: irvec(:, :)
-  !!  The irpt-th Wigner-Seitz grid point has components
-  !! irvec(1:3,irpt) in the basis of the lattice vectors
-! integer, save, allocatable :: shift_vec(:, :)
-! integer, save, allocatable :: ndegen(:)
-  !! Weight of the irpt-th point is 1/ndegen(irpt)
-! real(kind=dp), save, allocatable :: wannier_centres_translated(:, :)
-! complex(kind=dp), save, allocatable :: ham_r(:, :, :)
-  !! Hamiltonian matrix in WF representation
-
   integer :: rpt_origin
   !! index of R=0
   integer :: nrpts
   !! number of Wigner-Seitz grid points
   integer, allocatable :: irvec(:, :)
-  !!  The irpt-th Wigner-Seitz grid point has components
+  !! The irpt-th Wigner-Seitz grid point has components
   !! irvec(1:3,irpt) in the basis of the lattice vectors
   integer, allocatable :: shift_vec(:, :)
   integer, allocatable :: ndegen(:)
@@ -186,35 +173,36 @@ program wannier
   real(kind=dp), allocatable :: wannier_centres_translated(:, :)
   complex(kind=dp), allocatable :: ham_r(:, :, :)
   !! Hamiltonian matrix in WF representation
-
   complex(kind=dp), allocatable :: ham_k(:, :, :)
 
-  real(kind=dp) time0, time1, time2
-  character(len=9) :: stat, pos, cdate, ctime
-  logical :: wout_found, dryrun
-  integer :: len_seedname
-  integer :: stdout
-  character(len=50) :: prog
-  character(len=50) :: seedname
-  character(len=20) :: checkpoint
-  logical :: on_root = .false.
-  integer :: num_nodes, my_node_id, ierr
-
+  type(proj_input_type) :: proj_input ! Projections
   type(w90_extra_io_type) :: w90_extra_io
-  ! was in driver, only used by wannier_lib
-  type(proj_input_type) :: proj_input
-  !Projections
-  logical :: lhasproj
+
+  real(kind=dp) time0, time1, time2
+
+  integer :: len_seedname
+  integer :: num_nodes, my_node_id, ierr
+  integer :: stdout
+
   logical :: eig_found
-  logical :: lsitesymmetry = .false. ! RS: symmetry-adapted Wannier functions
-  logical :: use_bloch_phases, cp_pp, calc_only_A
   logical :: gamma_only
   logical :: have_disentangled, disentanglement
+  logical :: lhasproj
+  logical :: lsitesymmetry = .false. ! RS: symmetry-adapted Wannier functions
+  logical :: on_root = .false.
+  logical :: use_bloch_phases, cp_pp, calc_only_A
+  logical :: wout_found, dryrun
+
+  character(len=20) :: checkpoint
+  character(len=50) :: prog
+  character(len=50) :: seedname
+  character(len=9) :: stat, pos, cdate, ctime
+
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)  ! JJ, fixme, what are stdout, seedname here?  unassigned!
+  if (ierr .ne. 0) call io_error('MPI initialisation error', 0, "wannier")  ! stdout, seedname not yet known!
 #endif
 
   num_nodes = mpisize(comm)

@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  w90spn_parameters: reformat spn files                     !
+!  w90spn2spn: reformat spn files                            !
 !                                                            !
 !------------------------------------------------------------!
 

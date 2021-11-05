@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  w90chk_parameters:                                        !
+!  w90chk2chk: checkpoint file conversion utility            !
 !                                                            !
 !------------------------------------------------------------!
 

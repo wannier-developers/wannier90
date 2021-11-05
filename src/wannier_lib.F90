@@ -119,7 +119,6 @@ module w90_wannier90_libv1_types
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
-
   use w90_wannier90_types
 
   implicit none

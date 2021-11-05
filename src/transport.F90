@@ -80,6 +80,7 @@ module w90_transport
   public :: tran_main
 
 contains
+
   !==================================================================!
   subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, &
                        output_file, real_space_ham, transport, print_output, wannier_data, &
@@ -87,7 +88,10 @@ contains
                        real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
+
+    !==================================================================!
     !! Main transport subroutine
+    !                 
     !==================================================================!
 
     use w90_io, only: io_error, io_stopwatch

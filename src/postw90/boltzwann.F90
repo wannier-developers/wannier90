@@ -60,21 +60,22 @@ module w90_boltzwann
   integer, parameter :: ZZ = 6
 
   character(len=74), parameter :: pub_string_1 = &
-                                  "Please cite the following paper when publishing results obtained using    "
+     "Please cite the following paper when publishing results obtained using    "
   character(len=74), parameter :: pub_string_2 = &
-                                  "the BoltzWann module:                                                     "
+     "the BoltzWann module:                                                     "
   character(len=74), parameter :: pub_string_3 = &
-                                  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
+     "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
   character(len=74), parameter :: pub_string_4 = &
-                                  "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
+     "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
 
 contains
 
-  subroutine boltzwann_main(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, pw90_band_deriv_degen, postw90_oper, &
-                            pw90_spin, physics, ws_region, w90_system, wannier_data, ws_distance, wigner_seitz, &
-                            print_output, HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, &
-                            scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
-                            effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
+  subroutine boltzwann_main(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, &
+                            pw90_band_deriv_degen, postw90_oper, pw90_spin, physics, ws_region, &
+                            w90_system, wannier_data, ws_distance, wigner_seitz, print_output, &
+                            HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
+                            mp_grid, num_wann, num_bands, num_kpts, effective_model, &
+                            have_disentangled, spin_decomp, seedname, stdout, comm)
 
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
