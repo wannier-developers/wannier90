@@ -400,6 +400,7 @@ contains
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
     if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
                                    timing_level, stdout, error)
+    if (allocated(error)) return
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
@@ -429,8 +430,9 @@ contains
                              timing_level, lsitesymmetry, seedname, stdout, error, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                   timing_level, seedname, stdout)
+                                   timing_level, stdout, error)
       endif
+      if (allocated(error)) return
     endif
 !~[aam]
 
@@ -969,8 +971,8 @@ contains
 
 ![ysl-b]
   !==================================================================!
-  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, seedname, &
-                                   stdout)
+  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, &
+                                   stdout, error)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -980,7 +982,9 @@ contains
     !                                                                  !
     !==================================================================!
     use w90_constants
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
+      set_error_not_unitary
     use w90_utility, only: utility_zgemm
 
     implicit none
@@ -991,7 +995,8 @@ contains
     integer, intent(in) :: num_wann
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    !character(len=50), intent(in)  :: seedname
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn
@@ -1010,27 +1015,48 @@ contains
 !~ integer :: n,mdev, ndev, nndev,p(1)
 !~ real(kind=dp)                 :: dev, dev_tmp
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, stdout, error)
 
 !~    allocate(ph_g(num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_project_gamma')
     ! internal variables
     allocate (u_matrix_r(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_matrix_r in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix_r in overlap_project_gamma')
+      return
+    endif
 !~    allocate(u_cmp(num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating u_cmp in overlap_project_gamma')
     allocate (svals(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating svals in overlap_project_gamma')
+      return
+    endif
     allocate (work(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating work in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating work in overlap_project_gamma')
+      return
+    endif
     allocate (rz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rz in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating rz in overlap_project_gamma')
+      return
+    endif
     allocate (rv(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rv in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating rv in overlap_project_gamma')
+      return
+    endif
     allocate (cz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cz in overlap_project_gamma')
+      return
+    endif
     allocate (cvdag(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cvdag in overlap_project_gamma')
+      return
+    endif
 
     !
 !~    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
@@ -1095,7 +1121,8 @@ contains
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
       endif
-      call io_error('overlap_project_gamma: problem in DGESVD 1', stdout, seedname)
+      call set_error_lapack(error, 'overlap_project_gamma: problem in DGESVD 1')
+      return
     endif
 
     call dgemm('N', 'N', num_wann, num_wann, num_wann, 1.0_dp, &
@@ -1115,7 +1142,8 @@ contains
           write (stdout, '(1x,a,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call io_error('Error in unitarity of initial U in overlap_project_gamma', stdout, seedname)
+          call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project_gamma')
+          return
         endif
         if ((i .ne. j) .and. (abs(rtmp2) .gt. eps5)) then
           write (stdout, *) ' ERROR: unitarity of initial U'
@@ -1123,7 +1151,8 @@ contains
           write (stdout, '(1x,a,f12.6,1x,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call io_error('Error in unitarity of initial U in overlap_project_gamma', stdout, seedname)
+          call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project_gamma')
+          return
         endif
       enddo
     enddo
@@ -1142,23 +1171,44 @@ contains
     end do
 
     deallocate (cvdag, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cvdag in overlap_project_gamma')
+      return
+    endif
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cz in overlap_project_gamma')
+      return
+    endif
     deallocate (rv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rv in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating rv in overlap_project_gamma')
+      return
+    endif
     deallocate (rz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rz in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating rz in overlap_project_gamma')
+      return
+    endif
     deallocate (work, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating work in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating work in overlap_project_gamma')
+      return
+    endif
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating svals in overlap_project_gamma')
+      return
+    endif
 !~    deallocate(u_cmp,stat=ierr)
 !~    if (ierr/=0) call io_error('Error in deallocating u_cmp in overlap_project_gamma')
     deallocate (u_matrix_r, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u_matrix_r in overlap_project_gamma', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating u_matrix_r in overlap_project_gamma')
+      return
+    endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, stdout, error)
 
     return
 
