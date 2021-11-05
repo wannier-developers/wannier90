@@ -29,7 +29,7 @@ module w90_postw90_common
 
   private
 
-  public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist
+  public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_w90_wannier90_readwrite_dist
   public :: pw90common_wanint_data_dist, pw90common_get_occ
   public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
   public :: pw90common_kmesh_spacing
@@ -200,11 +200,11 @@ contains
 !   if(my_node_id < num_int_kpts- num_int_kpts_on_node*num_nodes)  num_int_kpts_on_node= num_int_kpts_on_node+1
 
     allocate (kpoint_dist%int_kpts(3, kpoint_dist%max_int_kpts_on_node), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating max_int_kpts_on_node in param_read_um', stdout, &
+    if (ierr /= 0) call io_error('Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um', stdout, &
                                  seedname)
     kpoint_dist%int_kpts = 0.0_dp
     allocate (kpoint_dist%weight(kpoint_dist%max_int_kpts_on_node), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating weight in param_read_um', stdout, seedname)
+    if (ierr /= 0) call io_error('Error allocating weight in w90_wannier90_readwrite_read_um', stdout, seedname)
     kpoint_dist%weight = 0.0_dp
 
     sum = 0.0_dp
@@ -243,7 +243,7 @@ contains
   end subroutine pw90common_wanint_get_kpoint_file
 
   !===========================================================!
-  subroutine pw90common_wanint_param_dist(print_output, ws_region, kmesh_info, kpt_latt, num_kpts, &
+  subroutine pw90common_wanint_w90_wannier90_readwrite_dist(print_output, ws_region, kmesh_info, kpt_latt, num_kpts, &
                                           dis_manifold, w90_system, fermi_energy_list, num_bands, &
                                           num_wann, eigval, mp_grid, real_lattice, &
                                           pw90_calculation, scissors_shift, effective_model, &
@@ -477,36 +477,36 @@ contains
     call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
 
     ! These variables are different from the ones above in that they are
-    ! allocatable, and in param_read they were allocated on the root node only
+    ! allocatable, and in w90_wannier90_readwrite_read they were allocated on the root node only
     !
     if (.not. on_root) then
       allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) call io_error( &
-        'Error allocating fermi_energy_read in postw90_param_dist', stdout, seedname)
+        'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
       if (ierr /= 0) call io_error( &
-        'Error allocating kubo_freq_list in postw90_param_dist', stdout, seedname)
+        'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
 
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) call io_error( &
-        'Error allocating gyrotropic_band_list in postw90_param_dist', stdout, seedname)
+        'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
 
       allocate (pw90_gyrotropic%freq_list(pw90_gyrotropic%nfreq), stat=ierr)
       if (ierr /= 0) call io_error( &
-        'Error allocating gyrotropic_freq_list in postw90_param_dist', stdout, seedname)
+        'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
 
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) &
-        call io_error('Error allocating dos_project in postw90_param_dist', stdout, seedname)
+        call io_error('Error allocating dos_project in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       if (.not. effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
-            call io_error('Error allocating eigval in postw90_param_dist', stdout, seedname)
+            call io_error('Error allocating eigval in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
         end if
         allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error allocating kpt_latt in postw90_param_dist', stdout, seedname)
+          call io_error('Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       endif
     end if
 
@@ -536,25 +536,25 @@ contains
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating nnlist in pw90common_wanint_param_dist', stdout, &
+          call io_error('Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, &
                         seedname)
         allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating neigh in pw90common_wanint_param_dist', stdout, &
+          call io_error('Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, &
                         seedname)
         allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating nncell in pw90common_wanint_param_dist', stdout, &
+          call io_error('Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, &
                         seedname)
         allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating wb in pw90common_wanint_param_dist', stdout, seedname)
+          call io_error('Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating bka in pw90common_wanint_param_dist', stdout, seedname)
+          call io_error('Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating bk in pw90common_wanint_param_dist', stdout, seedname)
+          call io_error('Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist', stdout, seedname)
       end if
 
       call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, stdout, seedname, comm)
@@ -567,7 +567,7 @@ contains
 
     endif
 
-  end subroutine pw90common_wanint_param_dist
+  end subroutine pw90common_wanint_w90_wannier90_readwrite_dist
 
   !===========================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
@@ -608,8 +608,8 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (.not. on_root) then
-      ! wannier_centres is allocated in param_read, so only on root node
-      ! It is then read in param_read_chpkt
+      ! wannier_centres is allocated in w90_wannier90_readwrite_read, so only on root node
+      ! It is then read in w90_wannier90_readwrite_read_chpkt
       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) &

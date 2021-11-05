@@ -68,7 +68,7 @@ contains
       ham_logical_type
     use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
       atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
-    use w90_wannier90_readwrite, only: param_write_chkpt
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
     use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
@@ -702,7 +702,7 @@ contains
       end if
 
       if (ldump) then
-        ! Before calling param_write_chkpt, I need to gather on the root node
+        ! Before calling w90_wannier90_readwrite_write_chkpt, I need to gather on the root node
         ! the u_matrix from the u_matrix_loc. No need to broadcast it since
         ! it's printed by the root node only
         call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
@@ -712,7 +712,7 @@ contains
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
-        if (on_root) call param_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
+        if (on_root) call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
                                             kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                                             real_lattice, omega%invariant, have_disentangled, &
@@ -3170,7 +3170,7 @@ contains
     use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_types, only: kmesh_info_type, print_output_type, &
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
-    use w90_wannier90_readwrite, only: param_write_chkpt
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90comm_type
 
@@ -3482,7 +3482,7 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, kpt_latt, &
+        call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, kpt_latt, &
                                num_kpts, dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, &
                                m_matrix, mp_grid, real_lattice, omega%invariant, &
                                have_disentangled, stdout, seedname)

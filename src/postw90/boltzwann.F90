@@ -692,7 +692,7 @@ contains
       ws_region_type, ws_distance_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
-    use w90_readwrite, only: param_get_smearing_type
+    use w90_readwrite, only: w90_readwrite_get_smearing_type
     use w90_wan_ham, only: wham_get_eig_deleig
 
     implicit none
@@ -842,13 +842,13 @@ contains
     if (pw90_boltzwann%calc_also_dos .and. on_root .and. (print_output%iprint > 1)) then
       write (stdout, '(5X,A)') "Smearing for DOS: "
       if (pw90_boltzwann%dos_smearing%use_adaptive) then
-        write (stdout, '(7X,A)') trim(param_get_smearing_type(pw90_boltzwann%dos_smearing%type_index))//", adaptive"
+        write (stdout, '(7X,A)') trim(w90_readwrite_get_smearing_type(pw90_boltzwann%dos_smearing%type_index))//", adaptive"
       else
         if (pw90_boltzwann%dos_smearing%fixed_width/(DOS_EnergyArray(2) - DOS_EnergyArray(1)) < &
             min_smearing_binwidth_ratio) then
           write (stdout, '(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
         else
-          write (stdout, '(7X,A,G18.10)') trim(param_get_smearing_type(pw90_boltzwann%dos_smearing%type_index))// &
+          write (stdout, '(7X,A,G18.10)') trim(w90_readwrite_get_smearing_type(pw90_boltzwann%dos_smearing%type_index))// &
             ", non-adaptive, width (eV) =", pw90_boltzwann%dos_smearing%fixed_width
         end if
       end if
@@ -867,7 +867,7 @@ contains
       else
         write (stdout, '(5X,A)') "Smearing for TDF: "
         write (stdout, '(7X,A,G18.10)') &
-          trim(param_get_smearing_type(pw90_boltzwann%tdf_smearing%type_index))//", non-adaptive, width (eV) =", &
+          trim(w90_readwrite_get_smearing_type(pw90_boltzwann%tdf_smearing%type_index))//", non-adaptive, width (eV) =", &
           pw90_boltzwann%tdf_smearing%fixed_width
       end if
     end if

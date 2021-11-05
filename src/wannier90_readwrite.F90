@@ -30,17 +30,17 @@ module w90_wannier90_readwrite
   end type w90_extra_io_type
 
   public :: w90_extra_io_type
-  public :: param_read
-  public :: param_write
-  public :: param_w90_dealloc
-  public :: param_write_chkpt
-  public :: param_memory_estimate
-  public :: param_dist
+  public :: w90_wannier90_readwrite_read
+  public :: w90_wannier90_readwrite_write
+  public :: w90_wannier90_readwrite_w90_dealloc
+  public :: w90_wannier90_readwrite_write_chkpt
+  public :: w90_wannier90_readwrite_memory_estimate
+  public :: w90_wannier90_readwrite_dist
 
 contains
 
   !==================================================================!
-  subroutine param_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
+  subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
                         exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
                         kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
                         proj, proj_input, real_space_ham, select_proj, kpoint_path, w90_system, &
@@ -48,7 +48,7 @@ contains
                         w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, mp_grid, &
                         num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
                         calc_only_A, cp_pp, gamma_only, lhasproj, library, &
-                        library_param_read_first_pass, lsitesymmetry, use_bloch_phases, &
+                        library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, use_bloch_phases, &
                         seedname, stdout)
     !==================================================================!
     !                                                                  !
@@ -112,7 +112,7 @@ contains
     real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
-    logical, intent(in) :: library_param_read_first_pass
+    logical, intent(in) :: library_w90_wannier90_readwrite_read_first_pass
     !Projections
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
@@ -132,51 +132,51 @@ contains
     logical :: disentanglement
 
     disentanglement = .false.
-    call param_in_file(seedname, stdout)
-    call param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
+    call w90_readwrite_in_file(seedname, stdout)
+    call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
 
-    call param_read_verbosity(print_output, stdout, seedname)
-    call param_read_algorithm_control(optimisation, stdout, seedname)
-    call param_read_w90_calcs(w90_calculation, stdout, seedname)
-    call param_read_transport(w90_calculation%transport, tran, w90_calculation%restart, stdout, &
+    call w90_readwrite_read_verbosity(print_output, stdout, seedname)
+    call w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
+    call w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname)
+    call w90_wannier90_readwrite_read_transport(w90_calculation%transport, tran, w90_calculation%restart, stdout, &
                               seedname)
-    call param_read_dist_cutoff(real_space_ham, stdout, seedname)
+    call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call param_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
+      call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
                             stdout, seedname)
-      call param_read_num_wann(num_wann, stdout, seedname)
-      call param_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
-      call param_read_num_bands(.false., library, num_exclude_bands, num_bands, &
-                                num_wann, library_param_read_first_pass, stdout, seedname)
+      call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
+      call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
+      call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
+                                num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
       disentanglement = (num_bands > num_wann)
-      call param_read_lattice(library, real_lattice, bohr, stdout, seedname)
-      call param_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
+      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
+      call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                  stdout, seedname)
-      !call param_read_devel(print_output%devel_flag, stdout, seedname)
-      call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
-      call param_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-      call param_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, &
+      !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
+      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
+      call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
+      call w90_wannier90_readwrite_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, &
                                 seedname)
-      call param_read_restart(w90_calculation, stdout, seedname)
-      call param_read_system(library, w90_system, stdout, seedname)
-      call param_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, stdout, &
+      call w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname)
+      call w90_readwrite_read_system(library, w90_system, stdout, seedname)
+      call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, stdout, &
                             seedname)
-      call param_read_plot_info(wvfn_read, stdout, seedname)
-      call param_read_band_plot(band_plot, num_wann, has_kpath, w90_calculation%bands_plot, &
+      call w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname)
+      call w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, w90_calculation%bands_plot, &
                                 stdout, seedname)
-      call param_read_wann_plot(wann_plot, num_wann, w90_calculation%wannier_plot, stdout, seedname)
-      call param_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, &
+      call w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, w90_calculation%wannier_plot, stdout, seedname)
+      call w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, &
                                     stdout, seedname)
-      call param_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
-      call param_read_outfiles(output_file, num_kpts, w90_system%num_valence_bands, &
+      call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
+      call w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, w90_system%num_valence_bands, &
                                disentanglement, gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
-    call param_read_one_dim(w90_calculation, band_plot, real_space_ham, w90_extra_io%one_dim_axis, &
+    call w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, w90_extra_io%one_dim_axis, &
                             tran%read_ht, stdout, seedname)
-    call param_read_ws_data(ws_region, stdout, seedname) !ws_search etc
+    call w90_readwrite_read_ws_data(ws_region, stdout, seedname) !ws_search etc
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call param_read_eigvals(.false., .false., .false., &
+      call w90_readwrite_read_eigvals(.false., .false., .false., &
                               w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
                               output_file%write_hr, disentanglement, eig_found, &
                               eigval, library, w90_calculation%postproc_setup, num_bands, num_kpts, &
@@ -185,21 +185,21 @@ contains
       dis_manifold%win_max = 0.0_dp
       if (eig_found) dis_manifold%win_min = minval(eigval)
       if (eig_found) dis_manifold%win_max = maxval(eigval)
-      call param_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
-      call param_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
+      call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
+      call w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
                                       stdout, seedname)
-      call param_read_hamil(real_space_ham, stdout, seedname)
-      call param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
-      call param_read_kmesh_data(kmesh_input, stdout, seedname)
+      call w90_wannier90_readwrite_read_hamil(real_space_ham, stdout, seedname)
+      call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
+      call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
       call utility_inverse_mat(real_lattice, inv_lattice)
-      call param_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, seedname)
-      call param_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, &
+      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, seedname)
+      call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, &
                                     seedname)
-      !call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
+      !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
       !                             stdout, seedname)
-      call param_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
-      call param_read_projections(proj, use_bloch_phases, lhasproj, &
+      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
+      call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                   wann_control%guiding_centres%enable, &
                                   proj_input, select_proj, num_proj, &
                                   atom_data, inv_lattice, num_wann, gamma_only, &
@@ -212,26 +212,25 @@ contains
       endif
       ! projections needs to be allocated before reading constrained centres
       if (wann_control%constrain%constrain) then
-        call param_read_constrained_centres(w90_extra_io%ccentres_frac, wann_control, &
+        call w90_wannier90_readwrite_read_constrained_centres(w90_extra_io%ccentres_frac, wann_control, &
                                             real_lattice, num_wann, library, stdout, seedname)
       endif
     endif
-    call param_clean_infile(stdout, seedname)
+    call w90_readwrite_clean_infile(stdout, seedname)
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
-      call param_uppercase(atom_data, kpoint_path, print_output%length_unit)
+      call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
       ! Initialise
       wann_omega%total = -999.0_dp
       wann_omega%tilde = -999.0_dp
       wann_omega%invariant = -999.0_dp
-      !param_input%have_disentangled = .false.
-      call param_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+      call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
                                   num_bands, num_kpts, stdout, seedname)
     endif
-  end subroutine param_read
+  end subroutine w90_wannier90_readwrite_read
 
   !==================================================================!
-  subroutine param_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
+  subroutine w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
@@ -244,13 +243,13 @@ contains
     logical :: found
 
     ! default value is lsitesymmetry=.false.
-    call param_get_keyword(stdout, seedname, 'site_symmetry', found, l_value=lsitesymmetry)!YN:
+    call w90_readwrite_get_keyword(stdout, seedname, 'site_symmetry', found, l_value=lsitesymmetry)!YN:
 
     ! default value is symmetrize_eps=0.001
-    call param_get_keyword(stdout, seedname, 'symmetrize_eps', found, r_value=symmetrize_eps)!YN:
-  end subroutine param_read_sym
+    call w90_readwrite_get_keyword(stdout, seedname, 'symmetrize_eps', found, r_value=symmetrize_eps)!YN:
+  end subroutine w90_wannier90_readwrite_read_sym
 
-  subroutine param_read_w90_calcs(w90_calculation, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
@@ -263,24 +262,24 @@ contains
     logical :: found
 
     w90_calculation%transport = .false.
-    call param_get_keyword(stdout, seedname, 'transport', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'transport', found, &
                            l_value=w90_calculation%transport)
 
     w90_calculation%wannier_plot = .false.
-    call param_get_keyword(stdout, seedname, 'wannier_plot', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot', found, &
                            l_value=w90_calculation%wannier_plot)
 
     w90_calculation%bands_plot = .false.
-    call param_get_keyword(stdout, seedname, 'bands_plot', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot', found, &
                            l_value=w90_calculation%bands_plot)
 
     w90_calculation%fermi_surface_plot = .false.
-    call param_get_keyword(stdout, seedname, 'fermi_surface_plot', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot', found, &
                            l_value=w90_calculation%fermi_surface_plot)
 
-  end subroutine param_read_w90_calcs
+  end subroutine w90_wannier90_readwrite_read_w90_calcs
 
-  subroutine param_read_transport(transport, tran, restart, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_transport(transport, tran, restart, stdout, seedname)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
@@ -295,63 +294,63 @@ contains
     logical :: found
 
     tran%read_ht = .false.
-    call param_get_keyword(stdout, seedname, 'tran_read_ht', found, l_value=tran%read_ht)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_read_ht', found, l_value=tran%read_ht)
 
     tran%easy_fix = .false.
-    call param_get_keyword(stdout, seedname, 'tran_easy_fix', found, l_value=tran%easy_fix)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_easy_fix', found, l_value=tran%easy_fix)
 
     if (transport .and. tran%read_ht) restart = ' '
 
     tran%mode = 'bulk'
-    call param_get_keyword(stdout, seedname, 'transport_mode', found, c_value=tran%mode)
+    call w90_readwrite_get_keyword(stdout, seedname, 'transport_mode', found, c_value=tran%mode)
 
 !    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
 !       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
 
     tran%win_min = -3.0_dp
-    call param_get_keyword(stdout, seedname, 'tran_win_min', found, r_value=tran%win_min)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_min', found, r_value=tran%win_min)
 
     tran%win_max = 3.0_dp
-    call param_get_keyword(stdout, seedname, 'tran_win_max', found, r_value=tran%win_max)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_max', found, r_value=tran%win_max)
 
     tran%energy_step = 0.01_dp
-    call param_get_keyword(stdout, seedname, 'tran_energy_step', found, r_value=tran%energy_step)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_energy_step', found, r_value=tran%energy_step)
 
     tran%num_bb = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_bb', found, i_value=tran%num_bb)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bb', found, i_value=tran%num_bb)
 
     tran%num_ll = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_ll', found, i_value=tran%num_ll)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_ll', found, i_value=tran%num_ll)
 
     tran%num_rr = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_rr', found, i_value=tran%num_rr)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_rr', found, i_value=tran%num_rr)
 
     tran%num_cc = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_cc', found, i_value=tran%num_cc)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cc', found, i_value=tran%num_cc)
 
     tran%num_lc = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_lc', found, i_value=tran%num_lc)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_lc', found, i_value=tran%num_lc)
 
     tran%num_cr = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_cr', found, i_value=tran%num_cr)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cr', found, i_value=tran%num_cr)
 
     tran%num_bandc = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_bandc', found, i_value=tran%num_bandc)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bandc', found, i_value=tran%num_bandc)
 
     tran%write_ht = .false.
-    call param_get_keyword(stdout, seedname, 'tran_write_ht', found, l_value=tran%write_ht)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_write_ht', found, l_value=tran%write_ht)
 
     tran%use_same_lead = .true.
-    call param_get_keyword(stdout, seedname, 'tran_use_same_lead', found, l_value=tran%use_same_lead)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_use_same_lead', found, l_value=tran%use_same_lead)
 
     tran%num_cell_ll = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_cell_ll', found, i_value=tran%num_cell_ll)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_ll', found, i_value=tran%num_cell_ll)
 
     tran%num_cell_rr = 0
-    call param_get_keyword(stdout, seedname, 'tran_num_cell_rr', found, i_value=tran%num_cell_rr)
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_rr', found, i_value=tran%num_cell_rr)
 
     tran%group_threshold = 0.15_dp
-    call param_get_keyword(stdout, seedname, 'tran_group_threshold', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'tran_group_threshold', found, &
                            r_value=tran%group_threshold)
 
     ! checks
@@ -370,9 +369,9 @@ contains
       if (tran%group_threshold < 0.0_dp) call io_error('Error: tran_group_threshold < 0', stdout, seedname)
     endif
 
-  end subroutine param_read_transport
+  end subroutine w90_wannier90_readwrite_read_transport
 
-  subroutine param_read_dist_cutoff(real_space_ham, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -382,7 +381,7 @@ contains
     logical :: found
 
     real_space_ham%dist_cutoff_mode = 'three_dim'
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_mode', found, &
                            c_value=real_space_ham%dist_cutoff_mode)
     if ((index(real_space_ham%dist_cutoff_mode, 'three_dim') .eq. 0) &
         .and. (index(real_space_ham%dist_cutoff_mode, 'two_dim') .eq. 0) &
@@ -390,23 +389,23 @@ contains
       call io_error('Error: dist_cutoff_mode not recognised', stdout, seedname)
 
     real_space_ham%dist_cutoff = 1000.0_dp
-    call param_get_keyword(stdout, seedname, 'dist_cutoff', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff', found, &
                            r_value=real_space_ham%dist_cutoff)
 
     real_space_ham%dist_cutoff_hc = real_space_ham%dist_cutoff
-    call param_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_hc', found, &
                            r_value=real_space_ham%dist_cutoff_hc)
 
     real_space_ham%hr_cutoff = 0.0_dp
-    call param_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=real_space_ham%hr_cutoff)
+    call w90_readwrite_get_keyword(stdout, seedname, 'hr_cutoff', found, r_value=real_space_ham%hr_cutoff)
 
     real_space_ham%system_dim = 3
-    call param_get_keyword(stdout, seedname, 'bands_plot_dim', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_dim', found, &
                            i_value=real_space_ham%system_dim)
 
-  end subroutine param_read_dist_cutoff
+  end subroutine w90_wannier90_readwrite_read_dist_cutoff
 
-  subroutine param_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, seedname)
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
@@ -422,89 +421,89 @@ contains
     logical :: found
 
     wann_control%num_dump_cycles = 100     ! frequency to write backups at
-    call param_get_keyword(stdout, seedname, 'num_dump_cycles', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_dump_cycles', found, &
                            i_value=wann_control%num_dump_cycles)
     if (wann_control%num_dump_cycles < 0) &
       call io_error('Error: num_dump_cycles must be positive', stdout, seedname)
 
     wann_control%num_print_cycles = 1          ! frequency to write at
-    call param_get_keyword(stdout, seedname, 'num_print_cycles', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_print_cycles', found, &
                            i_value=wann_control%num_print_cycles)
     if (wann_control%num_print_cycles < 0) &
       call io_error('Error: num_print_cycles must be positive', stdout, seedname)
 
     wann_control%num_iter = 100
-    call param_get_keyword(stdout, seedname, 'num_iter', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_iter', found, &
                            i_value=wann_control%num_iter)
     if (wann_control%num_iter < 0) &
       call io_error('Error: num_iter must be positive', stdout, seedname)
 
     wann_control%num_cg_steps = 5
-    call param_get_keyword(stdout, seedname, 'num_cg_steps', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_cg_steps', found, &
                            i_value=wann_control%num_cg_steps)
     if (wann_control%num_cg_steps < 0) &
       call io_error('Error: num_cg_steps must be positive', stdout, seedname)
 
     wann_control%conv_tol = 1.0e-10_dp
-    call param_get_keyword(stdout, seedname, 'conv_tol', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'conv_tol', found, &
                            r_value=wann_control%conv_tol)
     if (wann_control%conv_tol < 0.0_dp) &
       call io_error('Error: conv_tol must be positive', stdout, seedname)
 
     wann_control%conv_noise_amp = -1.0_dp
-    call param_get_keyword(stdout, seedname, 'conv_noise_amp', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_amp', found, &
                            r_value=wann_control%conv_noise_amp)
 
     ! note that the default here is not to check convergence
     wann_control%conv_window = -1
     if (wann_control%conv_noise_amp > 0.0_dp) wann_control%conv_window = 5
-    call param_get_keyword(stdout, seedname, 'conv_window', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'conv_window', found, &
                            i_value=wann_control%conv_window)
 
     wann_control%conv_noise_num = 3
-    call param_get_keyword(stdout, seedname, 'conv_noise_num', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_num', found, &
                            i_value=wann_control%conv_noise_num)
     if (wann_control%conv_noise_num < 0) &
       call io_error('Error: conv_noise_num must be positive', stdout, seedname)
 
     wann_control%guiding_centres%enable = .false.
-    call param_get_keyword(stdout, seedname, 'guiding_centres', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'guiding_centres', found, &
                            l_value=wann_control%guiding_centres%enable)
 
     wann_control%guiding_centres%num_guide_cycles = 1
-    call param_get_keyword(stdout, seedname, 'num_guide_cycles', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_guide_cycles', found, &
                            i_value=wann_control%guiding_centres%num_guide_cycles)
     if (wann_control%guiding_centres%num_guide_cycles < 0) &
       call io_error('Error: num_guide_cycles must be >= 0', stdout, seedname)
 
     wann_control%guiding_centres%num_no_guide_iter = 0
-    call param_get_keyword(stdout, seedname, 'num_no_guide_iter', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_no_guide_iter', found, &
                            i_value=wann_control%guiding_centres%num_no_guide_iter)
     if (wann_control%guiding_centres%num_no_guide_iter < 0) &
       call io_error('Error: num_no_guide_iter must be >= 0', stdout, seedname)
 
     wann_control%fixed_step = -999.0_dp; 
     wann_control%lfixstep = .false.
-    call param_get_keyword(stdout, seedname, 'fixed_step', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'fixed_step', found, &
                            r_value=wann_control%fixed_step)
     if (found .and. (wann_control%fixed_step < 0.0_dp)) &
       call io_error('Error: fixed_step must be > 0', stdout, seedname)
     if (wann_control%fixed_step > 0.0_dp) wann_control%lfixstep = .true.
 
     wann_control%trial_step = 2.0_dp
-    call param_get_keyword(stdout, seedname, 'trial_step', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'trial_step', found, &
                            r_value=wann_control%trial_step)
     if (found .and. wann_control%lfixstep) then
       call io_error('Error: cannot specify both fixed_step and trial_step', stdout, seedname)
     endif
 
     wann_control%precond = .false.
-    call param_get_keyword(stdout, seedname, 'precond', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'precond', found, &
                            l_value=wann_control%precond)
 
     wann_control%constrain%slwf_num = num_wann
     wann_control%constrain%selective_loc = .false.
-    call param_get_keyword(stdout, seedname, 'slwf_num', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_num', found, &
                            i_value=wann_control%constrain%slwf_num)
     if (found) then
       if (wann_control%constrain%slwf_num .gt. num_wann .or. &
@@ -516,15 +515,15 @@ contains
     end if
 
     wann_control%constrain%constrain = .false.
-    call param_get_keyword(stdout, seedname, 'slwf_constrain', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_constrain', found, &
                            l_value=wann_control%constrain%constrain)
     if (found .and. wann_control%constrain%constrain) then
       if (wann_control%constrain%selective_loc) then
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
+          call io_error('Error allocating ccentres_frac in w90_readwrite_get_centre_constraints', stdout, seedname)
         allocate (wann_control%constrain%centres(num_wann, 3), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ccentres_cart in w90_readwrite_get_centre_constraints', stdout, seedname)
       else
         write (stdout, *) ' No selective localisation requested. Ignoring constraints on centres'
         wann_control%constrain%constrain = .false.
@@ -532,15 +531,15 @@ contains
     end if
 
     wann_control%constrain%lambda = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'slwf_lambda', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_lambda', found, &
                            r_value=wann_control%constrain%lambda)
     if (found) then
       if (wann_control%constrain%lambda < 0.0_dp) &
         call io_error('Error: slwf_lambda  must be positive.', stdout, seedname)
     endif
-  end subroutine param_read_wannierise
+  end subroutine w90_wannier90_readwrite_read_wannierise
 
-  subroutine param_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
+  subroutine w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
                                         stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -557,35 +556,35 @@ contains
     logical :: found
 
     dis_control%num_iter = 200
-    call param_get_keyword(stdout, seedname, 'dis_num_iter', found, i_value=dis_control%num_iter)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_num_iter', found, i_value=dis_control%num_iter)
     if (dis_control%num_iter < 0) call io_error('Error: dis_num_iter must be positive', stdout, seedname)
 
     dis_control%mix_ratio = 0.5_dp
-    call param_get_keyword(stdout, seedname, 'dis_mix_ratio', found, r_value=dis_control%mix_ratio)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_mix_ratio', found, r_value=dis_control%mix_ratio)
     if (dis_control%mix_ratio <= 0.0_dp .or. dis_control%mix_ratio > 1.0_dp) &
       call io_error('Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0', stdout, seedname)
 
     dis_control%conv_tol = 1.0e-10_dp
-    call param_get_keyword(stdout, seedname, 'dis_conv_tol', found, r_value=dis_control%conv_tol)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_tol', found, r_value=dis_control%conv_tol)
     if (dis_control%conv_tol < 0.0_dp) call io_error('Error: dis_conv_tol must be positive', stdout, seedname)
 
     dis_control%conv_window = 3
-    call param_get_keyword(stdout, seedname, 'dis_conv_window', found, i_value=dis_control%conv_window)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_window', found, i_value=dis_control%conv_window)
     if (dis_control%conv_window < 0) call io_error('Error: dis_conv_window must be positive', stdout, seedname)
 
     ! GS-start
     dis_spheres%first_wann = 1
-    call param_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found, i_value=dis_spheres%first_wann)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found, i_value=dis_spheres%first_wann)
     if (dis_spheres%first_wann < 1) call io_error('Error: dis_spheres_first_wann must be greater than 0', stdout, seedname)
     if (dis_spheres%first_wann > num_bands - num_wann + 1) &
       call io_error('Error: dis_spheres_first_wann is larger than num_bands-num_wann+1', stdout, seedname)
     dis_spheres%num = 0
-    call param_get_keyword(stdout, seedname, 'dis_spheres_num', found, i_value=dis_spheres%num)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_num', found, i_value=dis_spheres%num)
     if (dis_spheres%num < 0) call io_error('Error: dis_spheres_num cannot be negative', stdout, seedname)
     if (dis_spheres%num > 0) then
       allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating dis_spheres in param_read', stdout, seedname)
-      call param_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, &
+      if (ierr /= 0) call io_error('Error allocating dis_spheres in w90_wannier90_readwrite_read', stdout, seedname)
+      call w90_readwrite_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, &
                                    bohr, r_value=dis_spheres%spheres)
       if (.not. found) call io_error('Error: Did not find dis_spheres in the input file', stdout, seedname)
       do nkp = 1, dis_spheres%num
@@ -594,9 +593,9 @@ contains
       enddo
     endif
     ! GS-end
-  end subroutine param_read_disentangle_w90
+  end subroutine w90_wannier90_readwrite_read_disentangle_w90
 
-  subroutine param_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname)
 !   use w90_io, only: post_proc_flag, io_error
     use w90_io, only: post_proc_flag
     implicit none
@@ -607,18 +606,18 @@ contains
     logical :: found
 
     postproc_setup = .false.            ! set to true to write .nnkp file and exit
-    call param_get_keyword(stdout, seedname, 'postproc_setup', found, l_value=postproc_setup)
+    call w90_readwrite_get_keyword(stdout, seedname, 'postproc_setup', found, l_value=postproc_setup)
     ! We allow this keyword to be overriden by a command line arg -pp
     if (post_proc_flag) postproc_setup = .true.
 
     cp_pp = .false.         ! set to true if doing CP post-processing
-    call param_get_keyword(stdout, seedname, 'cp_pp', found, l_value=cp_pp)
+    call w90_readwrite_get_keyword(stdout, seedname, 'cp_pp', found, l_value=cp_pp)
 
     pp_only_A = .false.
-    call param_get_keyword(stdout, seedname, 'calc_only_A', found, l_value=pp_only_A)
-  end subroutine param_read_post_proc
+    call w90_readwrite_get_keyword(stdout, seedname, 'calc_only_A', found, l_value=pp_only_A)
+  end subroutine w90_wannier90_readwrite_read_post_proc
 
-  subroutine param_read_restart(w90_calculation, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname)
 !   use w90_io, only: seedname, io_error
     use w90_io, only: io_error
     implicit none
@@ -629,7 +628,7 @@ contains
     logical :: found, chk_found
 
     w90_calculation%restart = ' '
-    call param_get_keyword(stdout, seedname, 'restart', found, c_value=w90_calculation%restart)
+    call w90_readwrite_get_keyword(stdout, seedname, 'restart', found, c_value=w90_calculation%restart)
     if (found) then
       if ((w90_calculation%restart .ne. 'default') .and. (w90_calculation%restart .ne. 'wannierise') &
           .and. (w90_calculation%restart .ne. 'plot') .and. (w90_calculation%restart .ne. 'transport')) then
@@ -642,9 +641,9 @@ contains
     endif
     !post processing takes priority (user is not warned of this)
     if (w90_calculation%postproc_setup) w90_calculation%restart = ' '
-  end subroutine param_read_restart
+  end subroutine w90_wannier90_readwrite_read_restart
 
-  subroutine param_read_outfiles(output_file, num_kpts, num_valence_bands, disentanglement, &
+  subroutine w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, num_valence_bands, disentanglement, &
                                  gamma_only, stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -658,29 +657,29 @@ contains
     logical :: found, hr_plot
 
     output_file%write_xyz = .false.
-    call param_get_keyword(stdout, seedname, 'write_xyz', found, l_value=output_file%write_xyz)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_xyz', found, l_value=output_file%write_xyz)
 
     output_file%write_r2mn = .false.
-    call param_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=output_file%write_r2mn)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_r2mn', found, l_value=output_file%write_r2mn)
 
     output_file%write_proj = .false.
-    call param_get_keyword(stdout, seedname, 'write_proj', found, l_value=output_file%write_proj)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_proj', found, l_value=output_file%write_proj)
 
     output_file%write_hr_diag = .false.
-    call param_get_keyword(stdout, seedname, 'write_hr_diag', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr_diag', found, &
                            l_value=output_file%write_hr_diag)
 
     hr_plot = .false.
-    call param_get_keyword(stdout, seedname, 'hr_plot', found, l_value=hr_plot)
+    call w90_readwrite_get_keyword(stdout, seedname, 'hr_plot', found, l_value=hr_plot)
     if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.', stdout, seedname)
     output_file%write_hr = .false.
-    call param_get_keyword(stdout, seedname, 'write_hr', found, l_value=output_file%write_hr)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr', found, l_value=output_file%write_hr)
 
     output_file%write_rmn = .false.
-    call param_get_keyword(stdout, seedname, 'write_rmn', found, l_value=output_file%write_rmn)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_rmn', found, l_value=output_file%write_rmn)
 
     output_file%write_tb = .false.
-    call param_get_keyword(stdout, seedname, 'write_tb', found, l_value=output_file%write_tb)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_tb', found, l_value=output_file%write_tb)
 
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
@@ -688,7 +687,7 @@ contains
 
     ! aam: vdW
     output_file%write_vdw_data = .false.
-    call param_get_keyword(stdout, seedname, 'write_vdw_data', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_vdw_data', found, &
                            l_value=output_file%write_vdw_data)
     if (output_file%write_vdw_data) then
       if ((.not. gamma_only) .or. (num_kpts .ne. 1)) &
@@ -699,15 +698,15 @@ contains
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined', stdout, seedname)
 
     output_file%write_u_matrices = .false.
-    call param_get_keyword(stdout, seedname, 'write_u_matrices', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_u_matrices', found, &
                            l_value=output_file%write_u_matrices)
 
     output_file%write_bvec = .false.
-    call param_get_keyword(stdout, seedname, 'write_bvec', found, l_value=output_file%write_bvec)
+    call w90_readwrite_get_keyword(stdout, seedname, 'write_bvec', found, l_value=output_file%write_bvec)
 
-  end subroutine param_read_outfiles
+  end subroutine w90_wannier90_readwrite_read_outfiles
 
-  subroutine param_read_plot_info(wvfn_read, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
@@ -721,10 +720,10 @@ contains
     character(len=6) :: spin_str
 
     wvfn_read%formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=wvfn_read%formatted)
+    call w90_readwrite_get_keyword(stdout, seedname, 'wvfn_formatted', found, l_value=wvfn_read%formatted)
 
     wvfn_read%spin_channel = 1
-    call param_get_keyword(stdout, seedname, 'spin', found, c_value=spin_str)
+    call w90_readwrite_get_keyword(stdout, seedname, 'spin', found, c_value=spin_str)
     if (found) then
       if (index(spin_str, 'up') > 0) then
         wvfn_read%spin_channel = 1
@@ -735,9 +734,9 @@ contains
       end if
     end if
 
-  end subroutine param_read_plot_info
+  end subroutine w90_wannier90_readwrite_read_plot_info
 
-  subroutine param_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
@@ -754,20 +753,20 @@ contains
     logical :: found
 
     band_plot%format = 'gnuplot'
-    call param_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%format)
+    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_format', found, c_value=band_plot%format)
 
     band_plot%mode = 's-k'
-    call param_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
+    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
 
     num_project = 0
-    call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+    call w90_readwrite_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
                                 num_project, lcount=.true.)
     if (found) then
       if (num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
       if (allocated(band_plot%project)) deallocate (band_plot%project)
       allocate (band_plot%project(num_project), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_plot_project in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
+      if (ierr /= 0) call io_error('Error allocating bands_plot_project in w90_wannier90_readwrite_read', stdout, seedname)
+      call w90_readwrite_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
                                   num_project, .false., band_plot%project)
       if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
@@ -785,9 +784,9 @@ contains
         call io_error('Error: bands_plot_mode not recognised', stdout, seedname)
     endif
 
-  end subroutine param_read_band_plot
+  end subroutine w90_wannier90_readwrite_read_band_plot
 
-  subroutine param_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
@@ -804,15 +803,15 @@ contains
 
     wann_plot%supercell = 2
 
-    call param_get_vector_length(stdout, seedname, 'wannier_plot_supercell', found, length=i)
+    call w90_readwrite_get_vector_length(stdout, seedname, 'wannier_plot_supercell', found, length=i)
     if (found) then
       if (i .eq. 1) then
-        call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 1, &
+        call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 1, &
                                       i_value=wann_plot%supercell)
         wann_plot%supercell(2) = wann_plot%supercell(1)
         wann_plot%supercell(3) = wann_plot%supercell(1)
       elseif (i .eq. 3) then
-        call param_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 3, &
+        call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 3, &
                                       i_value=wann_plot%supercell)
       else
         call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers', &
@@ -823,29 +822,29 @@ contains
     end if
 
     wann_plot%format = 'xcrysden'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_format', found, c_value=wann_plot%format)
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_format', found, c_value=wann_plot%format)
 
     wann_plot%mode = 'crystal'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_mode', found, c_value=wann_plot%mode)
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_mode', found, c_value=wann_plot%mode)
 
     wann_plot%spinor_mode = 'total'
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found, &
                            c_value=wann_plot%spinor_mode)
     wann_plot%spinor_phase = .true.
-    call param_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found, &
                            l_value=wann_plot%spinor_phase)
 
     wann_plot_num = 0
-    call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
+    call w90_readwrite_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
                                 wann_plot_num, lcount=.true.)
     if (found) then
       if (wann_plot_num < 1) call io_error('Error: problem reading wannier_plot_list', &
                                            stdout, seedname)
       if (allocated(wann_plot%list)) deallocate (wann_plot%list)
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', &
+      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in w90_wannier90_readwrite_read', &
                                    stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
+      call w90_readwrite_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
                                   wann_plot_num, .false., wann_plot%list)
       if (any(wann_plot%list < 1) .or. any(wann_plot%list > num_wann)) &
         call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted', stdout, seedname)
@@ -854,7 +853,7 @@ contains
       wann_plot_num = num_wann
       if (allocated(wann_plot%list)) deallocate (wann_plot%list)
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in param_read', &
+      if (ierr /= 0) call io_error('Error allocating wannier_plot_list in w90_wannier90_readwrite_read', &
                                    stdout, seedname)
       do loop = 1, num_wann
         wann_plot%list(loop) = loop
@@ -862,10 +861,10 @@ contains
     end if
 
     wann_plot%radius = 3.5_dp
-    call param_get_keyword(stdout, seedname, 'wannier_plot_radius', found, r_value=wann_plot%radius)
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_radius', found, r_value=wann_plot%radius)
 
     wann_plot%scale = 1.0_dp
-    call param_get_keyword(stdout, seedname, 'wannier_plot_scale', found, r_value=wann_plot%scale)
+    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_scale', found, r_value=wann_plot%scale)
 
     ! checks
     if (wannier_plot) then
@@ -881,9 +880,9 @@ contains
       if (wann_plot%scale < 0.0_dp) call io_error('Error: wannier_plot_scale must be positive', stdout, seedname)
     endif
 
-  end subroutine param_read_wann_plot
+  end subroutine w90_wannier90_readwrite_read_wann_plot
 
-  subroutine param_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -894,11 +893,11 @@ contains
     logical :: found
 
     fermi_surface_data%num_points = 50
-    call param_get_keyword(stdout, seedname, 'fermi_surface_num_points', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_num_points', found, &
                            i_value=fermi_surface_data%num_points)
 
     fermi_surface_data%plot_format = 'xcrysden'
-    call param_get_keyword(stdout, seedname, 'fermi_surface_plot_format', &
+    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot_format', &
                            found, c_value=fermi_surface_data%plot_format)
 
     if (fermi_surface_plot) then
@@ -907,9 +906,9 @@ contains
       if (fermi_surface_data%num_points < 0) &
         call io_error('Error: fermi_surface_num_points must be positive', stdout, seedname)
     endif
-  end subroutine param_read_fermi_surface
+  end subroutine w90_wannier90_readwrite_read_fermi_surface
 
-  subroutine param_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
+  subroutine w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
                                 tran_read_ht, stdout, seedname)
     use w90_io, only: io_error
     implicit none
@@ -924,7 +923,7 @@ contains
     logical :: found
 
     one_dim_axis = 'none'
-    call param_get_keyword(stdout, seedname, 'one_dim_axis', found, c_value=one_dim_axis)
+    call w90_readwrite_get_keyword(stdout, seedname, 'one_dim_axis', found, c_value=one_dim_axis)
     real_space_ham%one_dim_dir = 0
     if (index(one_dim_axis, 'x') > 0) real_space_ham%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) real_space_ham%one_dim_dir = 2
@@ -937,9 +936,9 @@ contains
         (real_space_ham%one_dim_dir .eq. 0)) &
       call io_error('Error: one_dim_axis not recognised', stdout, seedname)
 
-  end subroutine param_read_one_dim
+  end subroutine w90_wannier90_readwrite_read_one_dim
 
-  subroutine param_read_hamil(hamiltonian, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, stdout, seedname)
     implicit none
     integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: hamiltonian
@@ -949,20 +948,20 @@ contains
     logical :: found
 
     hamiltonian%translate_home_cell = .false.
-    call param_get_keyword(stdout, seedname, 'translate_home_cell', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'translate_home_cell', found, &
                            l_value=hamiltonian%translate_home_cell)
 
     hamiltonian%automatic_translation = .true.
     hamiltonian%translation_centre_frac = 0.0_dp
-    call param_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, &
+    call w90_readwrite_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, &
                                   r_value=rv_temp)
     if (found) then
       hamiltonian%translation_centre_frac = rv_temp
       hamiltonian%automatic_translation = .false.
     endif
-  end subroutine param_read_hamil
+  end subroutine w90_wannier90_readwrite_read_hamil
 
-  subroutine param_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -973,12 +972,12 @@ contains
     logical :: found
 
     use_bloch_phases = .false.
-    call param_get_keyword(stdout, seedname, 'use_bloch_phases', found, l_value=use_bloch_phases)
+    call w90_readwrite_get_keyword(stdout, seedname, 'use_bloch_phases', found, l_value=use_bloch_phases)
     if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
-  end subroutine param_read_bloch_phase
+  end subroutine w90_wannier90_readwrite_read_bloch_phase
 
-  subroutine param_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, &
+  subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, &
                                       stdout, seedname)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
@@ -997,7 +996,7 @@ contains
     integer, allocatable, dimension(:) :: nnkpts_idx
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call param_get_block_length(stdout, seedname, 'nnkpts', kmesh_info%explicit_nnkpts, &
+    call w90_readwrite_get_block_length(stdout, seedname, 'nnkpts', kmesh_info%explicit_nnkpts, &
                                 rows, library)
     if (kmesh_info%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
@@ -1006,8 +1005,8 @@ contains
       end if
       if (allocated(nnkpts_block)) deallocate (nnkpts_block)
       allocate (nnkpts_block(5, rows), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read', stdout, seedname)
-      call param_get_keyword_block(stdout, seedname, 'nnkpts', found, rows, 5, bohr, i_value=nnkpts_block)
+      if (ierr /= 0) call io_error('Error allocating nnkpts_block in w90_wannier90_readwrite_read', stdout, seedname)
+      call w90_readwrite_get_keyword_block(stdout, seedname, 'nnkpts', found, rows, 5, bohr, i_value=nnkpts_block)
       ! check that postproc_setup is true
       if (.not. w90_calculation%postproc_setup) &
         call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.', stdout, seedname)
@@ -1015,16 +1014,16 @@ contains
       ! this keeps track of how many neighbours have been seen for each k-point
       if (allocated(nnkpts_idx)) deallocate (nnkpts_idx)
       allocate (nnkpts_idx(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating nnkpts_idx in w90_wannier90_readwrite_read', stdout, seedname)
       nnkpts_idx = 1
       ! allocating "global" nnlist & nncell
       ! These are deallocated in kmesh_dealloc
       if (allocated(kmesh_info%nnlist)) deallocate (kmesh_info%nnlist)
       allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating nnlist in param_read', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating nnlist in w90_wannier90_readwrite_read', stdout, seedname)
       if (allocated(kmesh_info%nncell)) deallocate (kmesh_info%nncell)
       allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating nncell in param_read', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating nncell in w90_wannier90_readwrite_read', stdout, seedname)
       do i = 1, num_kpts*kmesh_info%nntot
         k = nnkpts_block(1, i)
         kmesh_info%nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
@@ -1036,14 +1035,14 @@ contains
         call io_error('Inconsistent number of nearest neighbours.', stdout, seedname)
       end if
       deallocate (nnkpts_idx, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in w90_wannier90_readwrite_read', stdout, seedname)
       deallocate (nnkpts_block, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating nnkpts_block in w90_wannier90_readwrite_read', stdout, seedname)
     end if
 
-  end subroutine param_read_explicit_kpts
+  end subroutine w90_wannier90_readwrite_read_explicit_kpts
 
-  subroutine param_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
+  subroutine w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_input, select_proj, num_proj, &
                                     atom_data, recip_lattice, num_wann, gamma_only, &
                                     spinors, library, bohr, stdout, seedname)
@@ -1073,34 +1072,34 @@ contains
 
     ! Projections
     proj_input%auto_projections = .false.
-    call param_get_keyword(stdout, seedname, 'auto_projections', found, &
+    call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found, &
                            l_value=proj_input%auto_projections)
     num_proj = 0
-    call param_get_block_length(stdout, seedname, 'projections', found, i_temp, library)
+    call w90_readwrite_get_block_length(stdout, seedname, 'projections', found, i_temp, library)
     ! check to see that there are no unrecognised keywords
     if (found) then
       if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
                                                      stdout, seedname)
       lhasproj = .true.
-      call param_get_projections(num_proj, atom_data, num_wann, proj_input, &
+      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, &
                                  proj, recip_lattice, .true., spinors, bohr, stdout, seedname)
     else
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
-        call io_error('param_read: Guiding centres requested, but no projection block found', stdout, seedname)
+        call io_error('w90_wannier90_readwrite_read: Guiding centres requested, but no projection block found', stdout, seedname)
       lhasproj = .false.
       num_proj = num_wann
     end if
 
     select_proj%lselproj = .false.
     num_select_projections = 0
-    call param_get_range_vector(stdout, seedname, 'select_projections', found, &
+    call w90_readwrite_get_range_vector(stdout, seedname, 'select_projections', found, &
                                 num_select_projections, lcount=.true.)
     if (found) then
       if (num_select_projections < 1) call io_error('Error: problem reading select_projections', stdout, seedname)
       if (allocated(select_projections)) deallocate (select_projections)
       allocate (select_projections(num_select_projections), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating select_projections in param_read', stdout, seedname)
-      call param_get_range_vector(stdout, seedname, 'select_projections', found, &
+      if (ierr /= 0) call io_error('Error allocating select_projections in w90_wannier90_readwrite_read', stdout, seedname)
+      call w90_readwrite_get_range_vector(stdout, seedname, 'select_projections', found, &
                                   num_select_projections, .false., select_projections)
       if (any(select_projections < 1)) &
         call io_error('Error: select_projections must contain positive numbers', stdout, seedname)
@@ -1117,7 +1116,7 @@ contains
 
     if (allocated(select_proj%proj2wann_map)) deallocate (select_proj%proj2wann_map)
     allocate (select_proj%proj2wann_map(num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj2wann_map in param_read', stdout, seedname)
+    if (ierr /= 0) call io_error('Error allocating proj2wann_map in w90_wannier90_readwrite_read', stdout, seedname)
     select_proj%proj2wann_map = -1
 
     if (select_proj%lselproj) then
@@ -1133,7 +1132,7 @@ contains
     endif
 
     if (lhasproj) then
-      call param_get_projections(num_proj, atom_data, num_wann, proj_input, &
+      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, &
                                  proj, recip_lattice, .false., spinors, bohr, stdout, seedname)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
@@ -1155,9 +1154,9 @@ contains
       endif
     endif
 
-  end subroutine param_read_projections
+  end subroutine w90_wannier90_readwrite_read_projections
 
-  subroutine param_read_constrained_centres(ccentres_frac, wann_control, real_lattice, &
+  subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, real_lattice, &
                                             num_wann, library, stdout, seedname)
 !   use w90_io, only: io_error, stdout
     use w90_io, only: io_error
@@ -1174,11 +1173,11 @@ contains
     logical :: found
 
     ! Constrained centres
-    call param_get_block_length(stdout, seedname, 'slwf_centres', found, i_temp, library)
+    call w90_readwrite_get_block_length(stdout, seedname, 'slwf_centres', found, i_temp, library)
     if (found) then
       if (wann_control%constrain%constrain) then
         ! Allocate array for constrained centres
-        call param_get_centre_constraints(ccentres_frac, &
+        call w90_readwrite_get_centre_constraints(ccentres_frac, &
                                           wann_control%constrain%centres, &
                                           wann_control%guiding_centres%centres, &
                                           num_wann, real_lattice, stdout, seedname)
@@ -1194,7 +1193,7 @@ contains
                & <projection_block> are specified.', stdout, seedname)
         else
           ! Allocate array for constrained centres
-          call param_get_centre_constraints(ccentres_frac, &
+          call w90_readwrite_get_centre_constraints(ccentres_frac, &
                                             wann_control%constrain%centres, &
                                             wann_control%guiding_centres%centres, &
                                             num_wann, real_lattice, stdout, seedname)
@@ -1206,10 +1205,10 @@ contains
         .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
-  end subroutine param_read_constrained_centres
+  end subroutine w90_wannier90_readwrite_read_constrained_centres
 
 !===================================================================
-  subroutine param_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
+  subroutine w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
                          fermi_surface_data, kpt_latt, output_file, wvfn_read, wann_control, proj, &
                          proj_input, real_space_ham, select_proj, kpoint_path, tran, print_output, &
                          wannier_data, wann_plot, w90_extra_io, w90_calculation, real_lattice, &
@@ -1668,9 +1667,9 @@ contains
 
 101 format(20x, a3, 2x, 3F11.6)
 
-  end subroutine param_write
+  end subroutine w90_wannier90_readwrite_write
 
-  subroutine param_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
+  subroutine w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                kmesh_input, kpt_latt, wann_control, proj, proj_input, select_proj, &
                                kpoint_path, wannier_data, wann_plot, w90_extra_io, eigval, &
                                seedname, stdout)
@@ -1705,77 +1704,77 @@ contains
 !   passed variables
     integer :: ierr
 
-    call param_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
+    call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
                        dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(band_plot%project)) then
       deallocate (band_plot%project, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bands_plot_project in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating bands_plot_project in w90_readwrite_dealloc', stdout, seedname)
     endif
     if (allocated(w90_extra_io%ccentres_frac)) then
       deallocate (w90_extra_io%ccentres_frac, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating ccentres_frac in param_w90_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating ccentres_frac in w90_wannier90_readwrite_w90_dealloc', stdout, seedname)
     endif
     if (allocated(wann_control%guiding_centres%centres)) then
       deallocate (wann_control%guiding_centres%centres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier proj_site in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating wannier proj_site in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(wann_control%constrain%centres)) then
       deallocate (wann_control%constrain%centres, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating ccentres_cart in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error deallocating ccentres_cart in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%l)) then
       deallocate (proj%l, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_l in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_l in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%site)) then
       deallocate (proj%site, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_site in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_site in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%m)) then
       deallocate (proj%m, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_m in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_m in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%s)) then
       deallocate (proj%s, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_s in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_s in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%s_qaxis)) then
       deallocate (proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_s_qaxis in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_s_qaxis in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%z)) then
       deallocate (proj%z, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_z in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_z in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%x)) then
       deallocate (proj%x, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_x in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_x in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%radial)) then
       deallocate (proj%radial, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_radial in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_radial in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(proj%zona)) then
       deallocate (proj%zona, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating proj_zona in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating proj_zona in w90_readwrite_dealloc', stdout, seedname)
     end if
     if (allocated(dis_spheres%spheres)) then
       deallocate (dis_spheres%spheres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in w90_readwrite_dealloc', stdout, seedname)
     endif
     if (allocated(select_proj%proj2wann_map)) then
       deallocate (select_proj%proj2wann_map, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating select_projections in param_dealloc', &
+      if (ierr /= 0) call io_error('Error in deallocating select_projections in w90_readwrite_dealloc', &
                                    stdout, seedname)
     endif
-  end subroutine param_w90_dealloc
+  end subroutine w90_wannier90_readwrite_w90_dealloc
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, kpt_latt, num_kpts, &
+  subroutine w90_wannier90_readwrite_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, kpt_latt, num_kpts, &
                                dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                mp_grid, real_lattice, omega_invariant, &
                                have_disentangled, stdout, seedname)
@@ -1866,10 +1865,10 @@ contains
 
     return
 
-  end subroutine param_write_chkpt
+  end subroutine w90_wannier90_readwrite_write_chkpt
 
 !===========================================!
-  subroutine param_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, &
+  subroutine w90_wannier90_readwrite_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, &
                                    num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                    gamma_only, stdout)
     !===========================================!
@@ -2101,10 +2100,10 @@ contains
 !    write(*,'(a12,f12.4,a)') 'Module',(mem_param)/(1024**2),' Mb'
 
     return
-  end subroutine param_memory_estimate
+  end subroutine w90_wannier90_readwrite_memory_estimate
 
 !===========================================================!
-  subroutine param_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
+  subroutine w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
                         exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
                         kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
                         proj_input, real_space_ham, w90_system, tran, print_output, wannier_data, &
@@ -2240,7 +2239,7 @@ contains
       if (.not. on_root) then
         allocate (exclude_bands(num_exclude_bands), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating exclude_bands in param_dist', stdout, seedname)
+          call io_error('Error in allocating exclude_bands in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
 
       call comms_bcast(exclude_bands(1), num_exclude_bands, stdout, seedname, comm)
@@ -2261,7 +2260,7 @@ contains
       if (.not. on_root) then
         allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating dis_spheres in param_dist', stdout, seedname)
+          call io_error('Error in allocating dis_spheres in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
       call comms_bcast(dis_spheres%spheres(1, 1), 4*dis_spheres%num, stdout, seedname, comm)
     end if
@@ -2280,7 +2279,7 @@ contains
       if (.not. on_root) then
         allocate (wann_plot%list(wann_plot_num), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating wannier_plot_list in param_dist', stdout, seedname)
+          call io_error('Error in allocating wannier_plot_list in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
       call comms_bcast(wann_plot%list(1), wann_plot_num, stdout, seedname, comm)
     end if
@@ -2309,7 +2308,7 @@ contains
       if (.not. on_root) then
         allocate (band_plot%project(num_project), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating bands_plot_project in param_dist', stdout, seedname)
+          call io_error('Error in allocating bands_plot_project in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
       call comms_bcast(band_plot%project(1), num_project, stdout, seedname, comm)
     end if
@@ -2500,9 +2499,9 @@ contains
     if (wann_control%constrain%selective_loc .and. wann_control%constrain%constrain) then
       if (.not. on_root) then
         !allocate (ccentres_frac(num_wann, 3), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ccentres_frac in w90_readwrite_get_centre_constraints', stdout, seedname)
         allocate (wann_control%constrain%centres(num_wann, 3), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ccentres_cart in w90_readwrite_get_centre_constraints', stdout, seedname)
       endif
       !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
       call comms_bcast(wann_control%constrain%centres(1, 1), 3*num_wann, stdout, seedname, comm)
@@ -2516,43 +2515,43 @@ contains
     if (lhasproj) then
       if (.not. on_root) then
         allocate (proj_input%site(3, num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_site in param_dist', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating input_proj_site in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (wann_control%guiding_centres%centres(3, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_site in param_dist', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating proj_site in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
       call comms_bcast(proj_input%site(1, 1), 3*num_proj, stdout, seedname, comm)
       call comms_bcast(wann_control%guiding_centres%centres(1, 1), 3*num_wann, stdout, seedname, comm)
     endif
 
     ! These variables are different from the ones above in that they are
-    ! allocatable, and in param_read they were allocated on the root node only
+    ! allocatable, and in w90_wannier90_readwrite_read they were allocated on the root node only
     !
     if (.not. on_root) then
       allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) call io_error( &
-        'Error allocating fermi_energy_read in postw90_param_dist', stdout, seedname)
+        'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       !allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
       !if (ierr /= 0) call io_error( &
-      !  'Error allocating kubo_freq_list in postw90_param_dist')
+      !  'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist')
       !allocate (dos_data%project(dos_data%num_project), stat=ierr)
       !if (ierr /= 0) &
-      !  call io_error('Error allocating dos_project in postw90_param_dist')
+      !  call io_error('Error allocating dos_project in postw90_w90_wannier90_readwrite_dist')
       !if (.not. pw90_common%effective_model) then
       if (eig_found) then
         allocate (eigval(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error allocating eigval in postw90_param_dist', stdout, seedname)
+          call io_error('Error allocating eigval in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       end if
       allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) &
-        call io_error('Error allocating kpt_latt in postw90_param_dist', stdout, seedname)
+        call io_error('Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist', stdout, seedname)
       !endif
       !allocate (gyrotropic%band_list(gyrotropic%num_bands), stat=ierr)
       !if (ierr /= 0) call io_error( &
-      !  'Error allocating gyrotropic_num_bands in postw90_param_dist')
+      !  'Error allocating gyrotropic_num_bands in postw90_w90_wannier90_readwrite_dist')
       !allocate (gyrotropic%freq_list(gyrotropic%nfreq), stat=ierr)
       !if (ierr /= 0) call io_error( &
-      !  'Error allocating gyrotropic_freq_list in postw90_param_dist')
+      !  'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist')
     end if
 
     if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, comm)
@@ -2578,22 +2577,22 @@ contains
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating nnlist in param_dist', stdout, seedname)
+          call io_error('Error in allocating nnlist in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating neigh in param_dist', stdout, seedname)
+          call io_error('Error in allocating neigh in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating nncell in param_dist', stdout, seedname)
+          call io_error('Error in allocating nncell in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating wb in param_dist', stdout, seedname)
+          call io_error('Error in allocating wb in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating bka in param_dist', stdout, seedname)
+          call io_error('Error in allocating bka in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) &
-          call io_error('Error in allocating bk in param_dist', stdout, seedname)
+          call io_error('Error in allocating bk in w90_wannier90_readwrite_dist', stdout, seedname)
       end if
 
       call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, stdout, seedname, comm)
@@ -2613,19 +2612,19 @@ contains
 
     if (.not. on_root) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in param_dist', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating wannier_centres in w90_wannier90_readwrite_dist', stdout, seedname)
       wannier_data%centres = 0.0_dp
       allocate (wannier_data%spreads(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_dist', stdout, seedname)
+      if (ierr /= 0) call io_error('Error in allocating wannier_spreads in w90_wannier90_readwrite_dist', stdout, seedname)
       wannier_data%spreads = 0.0_dp
       if (disentanglement) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in param_dist', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ndimwin in w90_wannier90_readwrite_dist', stdout, seedname)
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in param_dist', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating lwindow in w90_wannier90_readwrite_dist', stdout, seedname)
       endif
     endif
 
-  end subroutine param_dist
+  end subroutine w90_wannier90_readwrite_dist
 
 end module w90_wannier90_readwrite

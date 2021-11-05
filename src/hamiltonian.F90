@@ -172,7 +172,7 @@ contains
     if (allocated(wannier_centres_translated)) then
       deallocate (wannier_centres_translated, stat=ierr)
       if (ierr /= 0) &
-        call io_error('Error in deallocating wannier_centres_translated in param_dealloc', stdout, &
+        call io_error('Error in deallocating wannier_centres_translated in w90_readwrite_dealloc', stdout, &
                       seedname)
     end if
 

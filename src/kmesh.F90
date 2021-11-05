@@ -1608,7 +1608,7 @@ contains
 
 101 call io_error('Error: Problem (2) reading input file '//trim(seedname)//'.kshell', stdout, seedname)
 103 call io_error('Error: Problem (3) reading input file '//trim(seedname)//'.kshell', stdout, seedname)
-230 call io_error('Error: Problem reading in param_get_keyword_vector', stdout, seedname)
+230 call io_error('Error: Problem reading in w90_readwrite_get_keyword_vector', stdout, seedname)
 
   end subroutine kmesh_shell_from_file
 

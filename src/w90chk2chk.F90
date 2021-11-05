@@ -22,7 +22,6 @@ module w90chk_parameters
 
   public
 
-  !type(parameter_input_type), save :: param_input
   type(wannier_data_type), save :: wannier_data
 ! type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
@@ -73,7 +72,7 @@ module w90chk_parameters
 
 end module w90chk_parameters
 
-module wannchk_param_data
+module wannchk_data
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -87,11 +86,9 @@ module wannchk_param_data
   type(w90_calculation_type), save :: w90_calcs
   !type(plot_type), save :: plot
   !type(disentangle_type), save :: dis_data
-  !type(param_wannierise_type), save :: param_wannierise
   ! RS: symmetry-adapted Wannier functions
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3
-  !type(param_hamiltonian_type), save :: param_hamil
   type(fermi_surface_plot_type), save :: fermi_surface_data
   type(transport_type), save :: tran
   type(select_projection_type), save :: select_proj
@@ -109,7 +106,7 @@ module wannchk_param_data
 
   real(kind=dp), save :: omega_invariant
 
-end module wannchk_param_data
+end module wannchk_data
 
 module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
@@ -198,7 +195,7 @@ contains
 !   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
-    use wannchk_param_data
+    use wannchk_data
 
     implicit none
     integer, intent(in) :: stdout
@@ -351,7 +348,7 @@ contains
 !   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
-    use wannchk_param_data
+    use wannchk_data
 
     implicit none
 
@@ -560,7 +557,7 @@ contains
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters
-    use wannchk_param_data
+    use wannchk_data
 
     implicit none
 
@@ -614,7 +611,7 @@ contains
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters
-    use wannchk_param_data
+    use wannchk_data
 
     implicit none
 

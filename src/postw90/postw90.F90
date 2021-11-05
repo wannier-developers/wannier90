@@ -17,13 +17,13 @@ program postw90
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_types
   use w90_postw90_types
-  use w90_readwrite, only: param_read_chkpt, param_write_header
+  use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header
   use w90_postw90_readwrite
   use w90_io
   use w90_kmesh
   use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_param_dist, pw90common_wanint_data_dist
+    pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -237,7 +237,7 @@ program postw90
     stdout = io_file_unit()
     open (unit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
 
-    call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
+    call w90_readwrite_write_header(physics%bohr_version_str, physics%constants_version_str1, &
                             physics%constants_version_str2, stdout)
     if (num_nodes == 1) then
 #ifdef MPI
@@ -255,7 +255,7 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(ws_region, system, exclude_bands, verbose, wann_data, kmesh_data, &
+    call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, kmesh_data, &
                             kpt_latt, num_kpts, dis_window, fermi_energy_list, atoms, num_bands, &
                             num_wann, eigval, mp_grid, real_lattice, spec_points, &
                             pw90_calcs, postw90_oper, scissors_shift, effective_model, pw90_spin, &
@@ -263,7 +263,7 @@ program postw90
                             geninterp, boltz, eig_found, write_data, gamma_only, physics%bohr, &
                             optimisation, stdout, seedname)
 
-    call param_postw90_write(verbose, system, fermi_energy_list, atoms, num_wann, &
+    call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                              real_lattice, spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                              pw90_spin, kpath, kslice, dos_data, berry, &
                              gyrotropic, geninterp, boltz, write_data, optimisation, stdout)
@@ -298,7 +298,7 @@ program postw90
     ! print the memory information related to wannier90.x.
     ! Note that the code for the memory estimation for the
     ! Boltzwann routine is already there.
-    !       call param_memory_estimate
+    !       call w90_wannier90_readwrite_memory_estimate
   end if
 
   if (dryrun) then
@@ -314,7 +314,7 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   !
-  call pw90common_wanint_param_dist(verbose, ws_region, kmesh_info, kpt_latt, num_kpts, &
+  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, num_kpts, &
                                     dis_window, system, fermi_energy_list, num_bands, num_wann, &
                                     eigval, mp_grid, real_lattice, pw90_calcs, &
                                     scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, &
@@ -331,7 +331,7 @@ program postw90
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call param_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
+      call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
                             u_matrix, u_matrix_opt, real_lattice, omega_invariant, &
                             mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
                             have_disentangled, .true., seedname, stdout)

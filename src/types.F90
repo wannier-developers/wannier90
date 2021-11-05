@@ -27,7 +27,7 @@ module w90_types
     !! ==============================
     !! Contains variables to control output file formatting and verbosity.
     !! ==============================
-    ! verbosity flags - param_read_verbosity
+    ! verbosity flags - w90_readwrite_read_verbosity
     integer :: iprint
     ! Controls the verbosity of the output
     integer :: timing_level
