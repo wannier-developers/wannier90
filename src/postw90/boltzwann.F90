@@ -60,13 +60,13 @@ module w90_boltzwann
   integer, parameter :: ZZ = 6
 
   character(len=74), parameter :: pub_string_1 = &
-     "Please cite the following paper when publishing results obtained using    "
+                                  "Please cite the following paper when publishing results obtained using    "
   character(len=74), parameter :: pub_string_2 = &
-     "the BoltzWann module:                                                     "
+                                  "the BoltzWann module:                                                     "
   character(len=74), parameter :: pub_string_3 = &
-     "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
+                                  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
   character(len=74), parameter :: pub_string_4 = &
-     "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
+                                  "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
 
 contains
 

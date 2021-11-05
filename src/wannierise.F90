@@ -707,10 +707,10 @@ contains
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                            num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
         if (on_root) call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
-                                            kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, &
-                                            u_matrix, u_matrix_opt, m_matrix, mp_grid, &
-                                            real_lattice, omega%invariant, have_disentangled, &
-                                            stdout, seedname)
+                                                              kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, &
+                                                              u_matrix, u_matrix_opt, m_matrix, mp_grid, &
+                                                              real_lattice, omega%invariant, have_disentangled, &
+                                                              stdout, seedname)
       endif
 
       if (wann_control%conv_window .gt. 1) then
@@ -3477,9 +3477,9 @@ contains
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
         call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, kpt_latt, &
-                               num_kpts, dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, &
-                               m_matrix, mp_grid, real_lattice, omega%invariant, &
-                               have_disentangled, stdout, seedname)
+                                                 num_kpts, dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, &
+                                                 m_matrix, mp_grid, real_lattice, omega%invariant, &
+                                                 have_disentangled, stdout, seedname)
       endif
 
       if (wann_control%conv_window .gt. 1) then

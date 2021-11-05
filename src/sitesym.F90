@@ -29,7 +29,7 @@ module w90_sitesym
 
   implicit none
 
-  private 
+  private
 
   public  :: sitesym_dealloc
   public  :: sitesym_dis_extract_symmetry
