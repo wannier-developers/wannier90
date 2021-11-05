@@ -31,8 +31,12 @@ module w90_geninterp
 
 contains
 
+  ! =========================================================================
+
   subroutine internal_write_header(outdat_unit, commentline, pw90_geninterp)
+    ! =========================================================================
     !! Writes a header for the output file(s).
+    ! =========================================================================
 
     use w90_postw90_types, only: pw90_geninterp_mod_type
     use w90_io, only: io_date
@@ -60,12 +64,13 @@ contains
     end if
   end subroutine internal_write_header
 
+  ! =========================================================================
   subroutine geninterp_main(dis_manifold, pw90_geninterp, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, &
                             wannier_data, ws_distance, wigner_seitz, HH_R, v_matrix, u_matrix, eigval, &
                             real_lattice, scissors_shift, mp_grid, num_bands, &
                             num_kpts, num_wann, num_valence_bands, effective_model, &
                             have_disentangled, seedname, stdout, comm)
-
+    ! =========================================================================
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -73,6 +78,8 @@ contains
     !! But at least if works independently of the number of processors.
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
+    ! =========================================================================
+
     use w90_constants, only: dp, pi
     use w90_postw90_types, only: pw90_geninterp_mod_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type

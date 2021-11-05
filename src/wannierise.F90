@@ -73,7 +73,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(atom_data_type), intent(in)         :: atom_data
     type(dis_manifold_type), intent(in)      :: dis_manifold
     type(ham_logical_type), intent(inout)    :: ham_logical
@@ -1821,7 +1821,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(w90comm_type), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
 
@@ -2060,33 +2060,34 @@ contains
 
     implicit none
 
-    type(wann_slwf_type), intent(in) :: wann_slwf
-    real(kind=dp), intent(in) :: omega_invariant
-
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(localisation_vars_type), intent(out)  :: wann_spread
     type(print_output_type), intent(in) :: print_output
+    type(w90comm_type), intent(in) :: comm
+    type(wann_slwf_type), intent(in) :: wann_slwf
+
+    integer, intent(in) :: counts(0:), displs(0:)
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
 
     complex(kind=dp), intent(in)  :: csheet(:, :, :)
-    real(kind=dp), intent(in)  :: sheet(:, :, :)
-    real(kind=dp), intent(out) :: rave(:, :)
-    real(kind=dp), intent(out) :: r2ave(:)
-    real(kind=dp), intent(out) :: rave2(:)
-    type(localisation_vars_type), intent(out)  :: wann_spread
-
-    ! from w90_parameters
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: num_kpts
-    ! end of parameters
-    integer, intent(in) :: counts(0:), displs(0:)
-    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+
     real(kind=dp), intent(in) :: lambda_loc
+    real(kind=dp), intent(in) :: omega_invariant
+    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
+    real(kind=dp), intent(in)  :: sheet(:, :, :)
+    real(kind=dp), intent(out) :: r2ave(:)
+    real(kind=dp), intent(out) :: rave(:, :)
+    real(kind=dp), intent(out) :: rave2(:)
+
     logical, intent(inout) :: first_pass
-    integer, intent(in) :: stdout
-    type(w90comm_type), intent(in) :: comm
+
     character(len=50), intent(in)  :: seedname
 
-    !local variables
+    ! local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
     integer :: ind, nkp, nn, m, n, iw, nkp_loc
@@ -2932,7 +2933,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: num_kpts, num_wann, timing_level, iprint, stdout
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     character(len=50), intent(in)  :: seedname
@@ -3165,7 +3166,7 @@ contains
 
     !JJ this function has not yet been pllelised
 
-    ! passed variables
+    ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
     type(w90comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
@@ -3612,7 +3613,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       real(kind=dp), intent(inout) :: m_w(:, :, :)
       real(kind=dp), intent(inout)  :: ur_rot(:, :)
       integer, intent(in) :: tnntot
@@ -3699,7 +3700,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(localisation_vars_type), intent(in) :: wann_spread
       type(localisation_vars_type), intent(in) :: old_spread
       integer, intent(in) :: conv_window
@@ -3940,7 +3941,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(localisation_vars_type), intent(out)  :: wann_spread
 
     integer, intent(in) :: timing_level
@@ -3965,7 +3966,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-    !local variables
+    ! local variables
     real(kind=dp) :: summ, brn
     real(kind=dp), allocatable :: m_w_nn2(:)
     integer :: ind, nn, m, n, iw, rn, cn, ierr

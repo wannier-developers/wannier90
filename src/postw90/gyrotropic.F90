@@ -17,6 +17,7 @@
 !------------------------------------------------------------!
 
 module w90_gyrotropic
+  !
   !! This module computes various "gyrotropic" effects
   !! as described in :
   !!    TAS17 =  arXiv:1710.03204 (2017) Gyrotropic effects in trigonal tellurium studied from first principles
@@ -65,7 +66,6 @@ contains
                              SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              effective_model, have_disentangled, seedname, stdout, comm)
-
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -1077,6 +1077,8 @@ contains
   subroutine gyrotropic_outprint_tensor(stdout, seedname, pw90_gyrotropic, fermi_energy_list, &
                                         f_out_name, arrEf, arrEF1D, arrEfW, units, comment, &
                                         symmetrize)
+    !====================================================================!
+
     use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_io, only: io_file_unit
 
@@ -1135,6 +1137,7 @@ contains
 
   subroutine gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, omega, arr33N, &
                                           arrN, symmetrize)
+    !====================================================================!
 
     implicit none
 

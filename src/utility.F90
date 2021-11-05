@@ -916,15 +916,15 @@ contains
     use w90_constants, only: dp, pi
 
     implicit none
+
+    ! arguments
     real(kind=dp) :: utility_wgauss, x
     !! output: the value of the function
     !! input: the argument of the function
     integer :: n
     !! input: the order of the function
-    !
-    !    the local variables
-    !
 
+    ! local variables
     real(kind=dp) :: a, hp, arg, hd, xp
     ! the coefficient a_n
     ! the hermitean function
@@ -934,7 +934,7 @@ contains
     integer :: i, ni
     ! counter on the n indices
     ! counter on 2n
-!    real(kind=dp), external :: gauss_freq, qe_erf
+    !real(kind=dp), external :: gauss_freq, qe_erf
     real(kind=dp), parameter :: maxarg = 200.0_dp
     ! maximum value for the argument of the exponential
 
@@ -992,18 +992,20 @@ contains
     !
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
-    implicit none
-    integer :: stdout
-    real(kind=dp) :: utility_w0gauss, x
-    character(len=50), intent(in)  :: seedname
-    !! output: the value of the function
-    !! input: the point where to compute the function
 
-    integer :: n
+    implicit none
+
+    ! arguments
+    real(kind=dp) :: utility_w0gauss
+    !! output: the value of the function
+    real(kind=dp), intent(in) :: x
+    !! input: the point where to compute the function
+    integer, intent(in) :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
     ! the coefficients a_n
     ! the argument of the exponential
@@ -1073,20 +1075,20 @@ contains
     !
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
-    implicit none
-    integer :: stdout
-    real(kind=dp), intent(in)   ::  x(:)
-    character(len=50), intent(in)  :: seedname
-    real(kind=dp), allocatable  :: res(:), arg(:)
 
+    implicit none
+
+    ! arguments
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(in) ::  x(:)
+    real(kind=dp), allocatable  :: res(:), arg(:)
     !! output: the value of the function
     !! input: the point where to compute the function
-
     integer :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+
+    ! local variables
     real(kind=dp) :: sqrtpm1
 
     allocate (res(size(x)))

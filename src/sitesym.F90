@@ -118,7 +118,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -187,7 +187,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
@@ -263,7 +263,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_wann, num_kpts
@@ -312,7 +312,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -517,7 +517,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -605,7 +605,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(sitesym_type), intent(inout) :: sitesym
 
     integer, intent(in) :: num_bands

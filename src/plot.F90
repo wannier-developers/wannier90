@@ -60,7 +60,7 @@ contains
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(atom_data_type), intent(in)          :: atom_data
     type(band_plot_type), intent(in)          :: band_plot
     type(dis_manifold_type), intent(in)       :: dis_manifold
@@ -109,7 +109,7 @@ contains
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: spinors
 
-!   local variables
+    ! local variables
     type(ws_distance_type) :: ws_distance
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nkp, bands_num_spec_points, my_node_id, num_nodes
@@ -246,7 +246,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(band_plot_type), intent(in) :: band_plot
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(print_output_type), intent(in) :: print_output
@@ -629,7 +629,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(real_space_ham_type), intent(in) :: real_space_ham
       type(band_plot_type), intent(in) :: band_plot
 
@@ -808,7 +808,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(band_plot_type), intent(in) :: band_plot
       type(kpoint_path_type), intent(in) :: kpoint_path
       integer, intent(in) :: num_wann, bands_num_spec_points
@@ -997,7 +997,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
@@ -1154,7 +1154,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(atom_data_type), intent(in) :: atom_data
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(print_output_type), intent(in) :: print_output

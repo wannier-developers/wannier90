@@ -1705,7 +1705,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(band_plot_type), intent(inout) :: band_plot
     type(wann_control_type), intent(inout) :: wann_control
     type(wannier_data_type), intent(inout) :: wannier_data
@@ -1819,7 +1819,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(wannier_data_type), intent(in) :: wannier_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(dis_manifold_type), intent(in) :: dis_manifold
@@ -1910,7 +1910,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(wann_control_type), intent(in) :: wann_control
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -2138,7 +2138,7 @@ contains
                                           use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
-    !! distribute the parameters across processors              !
+    !! Distribute the various parameters across processors      !
     !                                                           !
     !===========================================================!
 
@@ -2148,8 +2148,7 @@ contains
 
     implicit none
 
-    !passed variables
-
+    ! arguments
     type(atom_data_type), intent(inout) :: atom_data
     type(band_plot_type), intent(inout) :: band_plot
     type(dis_control_type), intent(inout) :: dis_control

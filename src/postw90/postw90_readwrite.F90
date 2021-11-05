@@ -60,6 +60,8 @@ module w90_postw90_readwrite
 
 contains
 
+  !===========================================================!
+
   subroutine w90_postw90_readwrite_read(ws_region, w90_system, exclude_bands, print_output, wannier_data, &
                                         kmesh_input, kpt_latt, num_kpts, dis_manifold, fermi_energy_list, &
                                         atom_data, num_bands, num_wann, eigval, mp_grid, real_lattice, &
@@ -201,7 +203,9 @@ contains
                                         num_kpts, stdout, seedname)
   end subroutine w90_postw90_readwrite_read
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname)
+    !==================================================================!
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(out) :: pw90_calculation
@@ -231,7 +235,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_pw90_calcs
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname)
+    !==================================================================!
     implicit none
     integer, intent(in) :: stdout
     logical, intent(inout) :: effective_model
@@ -243,7 +249,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'effective_model', found, l_value=effective_model)
   end subroutine w90_wannier90_readwrite_read_effective_model
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
+    !==================================================================!
     implicit none
     integer, intent(in) :: stdout
     type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
@@ -260,8 +268,12 @@ contains
                                    l_value=pw90_oper_read%uHu_formatted)
   end subroutine w90_wannier90_readwrite_read_oper
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_kslice(kslicel, pw90_kslice, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: kslicel
@@ -333,8 +345,12 @@ contains
 !    call w90_readwrite_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
   end subroutine w90_wannier90_readwrite_read_kslice
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_smearing(pw90_smearing, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     type(pw90_smearing_type), intent(out) :: pw90_smearing
     integer, intent(in) :: stdout
@@ -378,7 +394,9 @@ contains
     ! [gp-end]
   end subroutine w90_wannier90_readwrite_read_smearing
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname)
+    !==================================================================!
     implicit none
     integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: scissors_shift
@@ -391,9 +409,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_scissors_shift
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_pw90spin(spin_moment, spin_decomp, pw90_spin, num_elec_per_state, &
                                                    stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     integer, intent(in) :: stdout
     logical, intent(out) :: spin_moment ! from pw90_calculation
@@ -423,9 +445,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_pw90spin
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, smr_fixed_en_width, smr_index, &
                                                      stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     integer, intent(in) :: stdout
     type(pw90_gyrotropic_type), intent(out) :: pw90_gyrotropic
@@ -514,8 +540,12 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_smearing, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -639,9 +669,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_berry
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, pw90_spin_hall, berry_task, &
                                                     stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -709,7 +743,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_spin_hall
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, stdout, seedname)
+    !==================================================================!
     implicit none
     integer, intent(in) :: stdout
     type(pw90_band_deriv_degen_type), intent(out) :: pw90_band_deriv_degen
@@ -727,8 +763,12 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_pw90ham
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -770,9 +810,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_pw90_kpath
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
                                               pw90_smearing, dos_plot, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -881,11 +925,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_dos
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_geninterp(pw90_geninterp, stdout, seedname)
+    !==================================================================!
     ! [gp-begin, Jun 1, 2012]
-    !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (pw90_geninterp)
-    !%%%%%%%%%%%%%%%%%%%%
+    !==================================================================!
+
     implicit none
 
     type(pw90_geninterp_mod_type), intent(out) :: pw90_geninterp
@@ -905,13 +951,16 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_geninterp
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_smearing, do_boltzwann, &
                                                     boltz_2d_dir, stdout, seedname)
+    !==================================================================!
     ! [gp-begin, Jun 1, 2012]
-    !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (pw90_geninterp)
-    !%%%%%%%%%%%%%%%%%%%%
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
     type(pw90_smearing_type), intent(in) :: pw90_smearing
@@ -1101,10 +1150,14 @@ contains
     ! [gp-end, Apr 12, 2012]
   end subroutine w90_wannier90_readwrite_read_boltzwann
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                        fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
+    !==================================================================!
+
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
+
     implicit none
 
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
@@ -1221,8 +1274,12 @@ contains
                                    r_value=pw90_gyrotropic%eigval_max)
   end subroutine w90_wannier90_readwrite_read_energy_range
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh, recip_lattice, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
 
     type(kmesh_spacing_type), intent(out) :: kmesh
@@ -1275,9 +1332,11 @@ contains
     ! [GP-end]
   end subroutine w90_wannier90_readwrite_read_global_kmesh
 
+  !==================================================================!
   subroutine w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
                                                       pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
                                                       global_kmesh_set, global_kmesh, stdout, seedname)
+    !==================================================================!
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -1317,8 +1376,10 @@ contains
                           module_kmesh=pw90_dos%kmesh)
   end subroutine w90_wannier90_readwrite_read_local_kmesh
 
+  !==================================================================!
   subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                               moduleprefix, should_be_defined, module_kmesh)
+    !==================================================================!
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
     !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
@@ -1326,7 +1387,10 @@ contains
     !!       one can check in the code what the user asked for
     !!  The function takes care also of setting the default value to the global one if no local
     !!       keyword is defined
+    !==================================================================!
+
     use w90_io, only: io_error
+
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=*), intent(in)       :: moduleprefix
@@ -1398,7 +1462,7 @@ contains
     end if
   end subroutine get_module_kmesh
 
-!===================================================================
+  !===================================================================
   subroutine w90_postw90_readwrite_write(print_output, w90_system, fermi_energy_list, atom_data, num_wann, &
                                          real_lattice, kpoint_path, pw90_calculation, pw90_oper_read, &
                                          scissors_shift, pw90_spin, pw90_kpath, pw90_kslice, pw90_dos, &
@@ -1410,6 +1474,7 @@ contains
     !                                                                  !
     !===================================================================
     use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac
+
     implicit none
 
     !data from parameters module
@@ -1940,12 +2005,15 @@ contains
 
   end subroutine w90_postw90_readwrite_write
 
+  !==================================================================!
   subroutine w90_postw90_readwrite_dealloc(exclude_bands, wannier_data, kmesh_input, kpt_latt, dis_manifold, &
                                            fermi_energy_list, atom_data, eigval, kpoint_path, pw90_dos, &
                                            pw90_berry, proj_input, stdout, seedname)
+    !==================================================================!
+
     use w90_io, only: io_error
+
     implicit none
-    !data from parameters module
 
     type(wannier_data_type), intent(inout) :: wannier_data
     type(kmesh_input_type), intent(inout) :: kmesh_input
@@ -1985,10 +2053,12 @@ contains
   end subroutine w90_postw90_readwrite_dealloc
 
   ! extra postw90 memory
+  !==================================================================!
   subroutine w90_postw90_readwrite_mem_estimate(mem_param, mem_bw, dis_manifold, do_boltzwann, &
                                                 pw90_boltzwann, spin_decomp, num_wann, stdout)
-
-    ! JJ, should only be called from root node
+    !==================================================================!
+    ! note, should only be called from root node
+    !==================================================================!
 
     implicit none
 
@@ -2061,8 +2131,9 @@ contains
 
   end subroutine w90_postw90_readwrite_mem_estimate
 
+  !==================================================================!
   subroutine parameters_gyro_write_task(task, key, comment, stdout)
-
+    !==================================================================!
     integer, intent(in) :: stdout
     character(len=*), intent(in) :: task, key, comment
     character(len=42) :: comment1

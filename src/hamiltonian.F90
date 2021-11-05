@@ -55,7 +55,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(ws_region_type), intent(in) :: ws_region
     type(print_output_type), intent(in)    :: print_output
     type(w90_calculation_type), intent(in) :: w90_calculation
@@ -145,7 +145,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(ham_logical_type), intent(inout) :: ham_logical
 
     integer, intent(inout), allocatable :: ndegen(:)
@@ -221,7 +221,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(ham_logical_type), intent(inout)    :: ham_logical
     type(atom_data_type), intent(in)         :: atom_data
     type(real_space_ham_type), intent(inout) :: real_space_ham
@@ -449,7 +449,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(atom_data_type), intent(in)            :: atom_data
       type(real_space_ham_type), intent(inout)    :: real_space_ham
 
@@ -554,7 +554,7 @@ contains
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_wannier90_types, only: ham_logical_type
 
-    ! passed variables
+    ! arguments
     type(ham_logical_type), intent(inout) :: ham_logical
 
     integer, intent(inout) :: nrpts
@@ -566,7 +566,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer            :: i, j, irpt, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
@@ -631,7 +631,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(ws_region_type), intent(in)    :: ws_region
     type(print_output_type), intent(in) :: print_output
 
@@ -787,7 +787,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
 
     integer, intent(inout) :: nrpts
@@ -874,7 +874,7 @@ contains
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: ham_logical_type
 
-    ! passed variables
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(ham_logical_type), intent(inout) :: ham_logical
 

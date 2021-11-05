@@ -18,10 +18,10 @@
 
 module w90_postw90_common
 
-!==============================================================================
-!! This contains the common variables and procedures needed to set up a Wannier
-!! interpolatation calculation for any physical property
-!==============================================================================
+  !==============================================================================
+  !! This contains the common variables and procedures needed to set up a Wannier
+  !! interpolatation calculation for any physical property
+  !==============================================================================
 
   use w90_constants, only: dp
 
@@ -52,13 +52,17 @@ contains
 
   !===========================================================!
   !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
-
   ! Public procedures have names starting with wanint_
+  !===========================================================!
 
   subroutine pw90common_wanint_setup(num_wann, print_output, real_lattice, mp_grid, &
                                      effective_model, wigner_seitz, stdout, seedname, comm)
+    !===========================================================!
+    !
     !! Setup data ready for interpolation
+    !
+    !===========================================================!
+
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit
     use w90_types, only: print_output_type
@@ -702,12 +706,15 @@ contains
 !=======================================================================
 
   subroutine pw90common_get_occ(ef, eig, occ, num_wann)
+    !===========================================================!
+    !
     !! Compute the electronic occupancy
+    !
+    !===========================================================!
 
     use w90_constants, only: dp
 
-    ! Arguments
-    !
+    ! arguments
     integer, intent(in) :: num_wann
 
     real(kind=dp), intent(in)  :: eig(num_wann)
@@ -717,13 +724,10 @@ contains
     real(kind=dp), intent(out) :: occ(num_wann)
     !! Occupancy of states
 
-    ! Misc/Dummy
-    !
-    integer       :: i
-!    real(kind=dp) :: kt
+    ! local variables
+    integer :: i
 
     ! State occupancies
-    !
 !    if(smear_temp < eps7) then
     !
     ! Use a step function occupancy (T=0)
@@ -746,13 +750,13 @@ contains
 
   end subroutine pw90common_get_occ
 
-!=======================================================================
-
+  !=======================================================================
   function kmesh_spacing_singleinteger(num_points, recip_lattice)
-
+    !=======================================================================
     !! Set up the value of the interpolation mesh spacing, needed for
     !! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of
     !! the three Delta_k's for each of the primitive translations b1, b2, and b3
+    !=======================================================================
 
     integer, intent(in) :: num_points
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -789,7 +793,7 @@ contains
     kmesh_spacing_mesh = maxval(Delta_k_i)
 
   end function kmesh_spacing_mesh
-  !
+
   !=========================================================!
   subroutine pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, OO, &
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
@@ -803,7 +807,6 @@ contains
     !! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]
     !! where R_alpha is a Cartesian component of R
     !! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
-
     !                                                         !
     !=========================================================!
 
@@ -836,11 +839,6 @@ contains
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
-
-!
-!  subroutine ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, &
-!                               wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts, &
-!                               irvec, force_recompute)
 
     if (ws_region%use_ws_distance) then
       CALL ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
@@ -887,8 +885,6 @@ contains
 
   end subroutine pw90common_fourier_R_to_k
 
-  ! ***NEW***
-  !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
@@ -1096,6 +1092,7 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new_second_d
 
+  !=========================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             ws_region, wannier_data, real_lattice, &
                                                             mp_grid, ws_distance, wigner_seitz, &
@@ -1254,8 +1251,6 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv
 
-  ! ***NEW***
-  !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &

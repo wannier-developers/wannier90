@@ -73,7 +73,6 @@ program postw90
   ! this is a dummy that is not used in postw90, DO NOT use
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
 
-!
   complex(kind=dp), allocatable :: HH_R(:, :, :) !  <0n|r|Rm>
   !! $$\langle 0n | H | Rm \rangle$$
 
@@ -109,7 +108,6 @@ program postw90
   complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
-  !
   ! w90_parameters stuff
   type(print_output_type) :: verbose
   integer :: optimisation
@@ -257,7 +255,7 @@ program postw90
 
   ! Read onto the root node all the input parameters from seendame.win,
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
-  !
+
   if (on_root) then
     call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, kmesh_data, &
                                     kpt_latt, num_kpts, dis_window, fermi_energy_list, atoms, num_bands, &
@@ -277,19 +275,19 @@ program postw90
 
     if (.not. effective_model) then
       ! Check if the q-mesh includes the gamma point
-      !
+
       have_gamma = .false.
       do nkp = 1, num_kpts
         if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
       end do
       if (.not. have_gamma) write (stdout, '(1x,a)') &
         'Ab-initio does not include Gamma. Interpolation may be incorrect!!!'
-      !
+
       ! Need nntot, wb, and bk to evaluate WF matrix elements of
       ! the position operator in reciprocal space. Also need
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
-      !
+
       call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
                      num_kpts, gamma_only, seedname, stdout)
       time2 = io_time()
@@ -317,7 +315,7 @@ program postw90
   endif
 
   ! We now distribute a subset of the parameters to the other nodes
-  !
+
   call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, num_kpts, &
                                                       dis_window, system, fermi_energy_list, num_bands, num_wann, &
                                                       eigval, mp_grid, real_lattice, pw90_calcs, &
@@ -328,10 +326,10 @@ program postw90
   if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
 
   if (.not. effective_model) then
-    !
+
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
-    !
+
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
@@ -340,7 +338,7 @@ program postw90
                                     mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
                                     have_disentangled, .true., seedname, stdout)
     endif
-    !
+
     ! Distribute the information in the um and chk files to the other nodes
     !
     ! Ivo: For interpolation purposes we do not need u_matrix_opt and
@@ -351,7 +349,7 @@ program postw90
                                      dis_window, wann_data, scissors_shift, v_matrix, &
                                      system%num_valence_bands, have_disentangled, stdout, &
                                      seedname, comm)
-    !
+
   end if
   ! Read list of k-points in irreducible BZ and their weights
   !
@@ -361,7 +359,7 @@ program postw90
                                                                        seedname, comm)
 
   ! Setup a number of common variables for all interpolation tasks
-  !
+
   call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
                                ws_vec, stdout, seedname, comm)
 
@@ -370,13 +368,13 @@ program postw90
     write (stdout, '(/1x,a25,f11.3,a)') &
       'Time to read and process .chk    ', time1 - time2, ' (sec)'
   endif
-  !
+
   ! Now perform one or more of the following tasks
 
   ! ---------------------------------------------------------------
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
-  !
+
   if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) then
     call dos_main(berry, dis_window, dos_data, kpt_dist, kpt_latt, postw90_oper, pw90_ham, &
                   pw90_spin, ws_region, system, verbose, wann_data, ws_distance, ws_vec, HH_R, &
@@ -403,7 +401,7 @@ program postw90
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
   ! ---------------------------------------------------------------------------
-  !
+
   if (pw90_calcs%kslice) then
 
     call k_slice(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, kslice, postw90_oper, &
@@ -417,7 +415,7 @@ program postw90
   ! --------------------
   ! Spin magnetic moment
   ! --------------------
-  !
+
   if (pw90_calcs%spin_moment) then
     call spin_get_moment(dis_window, fermi_energy_list, kpt_dist, kpt_latt, postw90_oper, &
                          pw90_spin, ws_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
@@ -443,7 +441,7 @@ program postw90
   ! -----------------------------------------------------------------
   ! Orbital magnetization
   ! -----------------------------------------------------------------
-  !
+
   if (pw90_calcs%berry) then
     call berry_main(berry, dis_window, fermi_energy_list, kmesh_info, kpt_dist, kpt_latt, &
                     pw90_ham, postw90_oper, pw90_spin, physics, ws_region, spin_hall, wann_data, &
@@ -456,7 +454,7 @@ program postw90
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
-  !
+
   if (on_root) then
     time1 = io_time()
   endif

@@ -69,7 +69,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(kmesh_input_type), intent(inout) :: kmesh_input
@@ -832,8 +832,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-!   end parameters.F90
-
     integer :: ierr
 
     ! Deallocate real arrays that are public
@@ -942,7 +940,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(in)  :: kmesh_input
 
@@ -959,7 +957,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer :: loop, nkp2, num_bvec
     real(kind=dp) :: dist, vkpp2(3), vkpp(3)
 
@@ -1009,7 +1007,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(inout) :: kmesh_input
 
@@ -1025,7 +1023,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     real(kind=dp), allocatable     :: bvector(:, :, :) ! the bvectors
 
     real(kind=dp), dimension(:), allocatable :: singv, tmp1, tmp2, tmp3
@@ -1266,7 +1264,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(in) :: kmesh_input
 
@@ -1282,7 +1280,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     real(kind=dp), allocatable     :: bvector(:, :, :)
 
     real(kind=dp) :: singv(kmesh_input%num_shells)
@@ -1415,7 +1413,7 @@ contains
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(inout) :: kmesh_input
 
@@ -1432,7 +1430,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     real(kind=dp), allocatable     :: bvector(:, :)
 
     real(kind=dp), dimension(:), allocatable :: singv

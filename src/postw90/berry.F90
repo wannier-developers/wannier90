@@ -1462,6 +1462,7 @@ contains
 
   end subroutine berry_main
 
+  !============================================================!
   subroutine berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
                                  wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, u_matrix, &
                                  v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
@@ -1475,6 +1476,7 @@ contains
     !! of Fermi energies, and stores it in axial-vector form
     !                                                            !
     !============================================================!
+
     use w90_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type, ws_distance_type
     use w90_comms, only: w90comm_type
@@ -1516,6 +1518,7 @@ contains
     real(kind=dp), intent(in), optional :: occ(:)
     logical, intent(in), optional :: ladpt(:)
 
+    ! local variables
     integer :: fermi_n
 
     fermi_n = 0
@@ -1547,6 +1550,7 @@ contains
 
   end subroutine berry_get_imf_klist
 
+  !============================================================!
   subroutine berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
                                    wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
@@ -2036,8 +2040,6 @@ contains
     !                                                                    !
     !====================================================================!
 
-    ! Arguments
-    !
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
     use w90_types, only: print_output_type, wannier_data_type, &
@@ -2086,7 +2088,7 @@ contains
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: effective_model
 
-!   local variables
+    ! local variables
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: AA(:, :, :), AA_bar(:, :, :)
     complex(kind=dp), allocatable :: AA_da(:, :, :, :), AA_da_bar(:, :, :, :)
@@ -2316,6 +2318,7 @@ contains
 
   end subroutine berry_get_sc_klist
 
+  !====================================================================!
   subroutine berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                  pw90_band_deriv_degen, ws_region, pw90_spin_hall, print_output, &
                                  wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, SH_R, SHR_R, &
@@ -2716,12 +2719,12 @@ contains
         enddo
         js_k = js_k/2.0_dp
       endif
-      !-------------------------------------------------------------------
 
     end subroutine berry_get_js_k
 
   end subroutine berry_get_shc_klist
 
+  !============================================================!
   subroutine berry_print_progress(end_k, loop_k, start_k, step_k, stdout)
     !============================================================!
     ! print k-points calculation progress, seperated into 11 points,
@@ -2731,6 +2734,7 @@ contains
     !
     ! only call from root MPI process!
     !============================================================!
+
     use w90_io, only: io_wallclocktime
 
     implicit none
@@ -2794,8 +2798,6 @@ contains
     !  see Appendix in IAdJS19 for details
     !====================================================================!
 
-    ! Arguments
-    !
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, &
       wham_get_D_h_P_value
@@ -2806,10 +2808,10 @@ contains
       pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_comms, only: w90comm_type
+
     implicit none
 
     ! Arguments
-    !
     type(pw90_berry_mod_type), intent(in) :: pw90_berry
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
@@ -2846,10 +2848,12 @@ contains
     real(kind=dp), allocatable    :: eig_da(:, :)
     complex(kind=dp), allocatable :: D_h(:, :, :)
 
-    !real(kind=dp)                 :: DeltaE_n, DeltaE_m
-    integer                       :: kdotp_num_bands
-    integer                       :: i, a, b, n, m, r !, c, bc,if, ifreq, istart, iend
-    logical                       :: break_loop
+    ! local variables
+    !real(kind=dp) :: DeltaE_n, DeltaE_m
+    integer :: kdotp_num_bands
+    integer :: i, a, b, n, m, r !, c, bc,if, ifreq, istart, iend
+    logical :: break_loop
+
     allocate (UU(num_wann, num_wann))
     allocate (HH_da(num_wann, num_wann, 3))
     allocate (HH_da_bar(num_wann, num_wann, 3))

@@ -50,8 +50,11 @@ contains
                     SS_R, SAA_R, SBB_R, v_matrix, u_matrix, bohr, eigval, real_lattice, &
                     scissors_shift, mp_grid, fermi_n, num_wann, num_bands, num_kpts, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-
+    !===========================================================!
+    !
     !! Main routine
+    !
+    !===========================================================!
 
     use w90_comms, only: w90comm_type, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
@@ -1088,6 +1091,7 @@ contains
   !===========================================================!
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, &
                                pw90_kpath, berry_curv_unit, stdout, seedname, comm)
+    !===========================================================!
 
     use w90_postw90_types, only: pw90_kpath_mod_type
     use w90_comms, only: w90comm_type, mpirank

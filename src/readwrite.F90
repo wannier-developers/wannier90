@@ -1554,7 +1554,7 @@ contains
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
-!   local variables
+    ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
@@ -1709,7 +1709,7 @@ contains
 
     implicit none
 
-    !data from parameters module
+    ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90comm_type), intent(in) :: comm
@@ -1727,7 +1727,7 @@ contains
     character(len=*), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
-!   local variables
+    ! local variables
     integer :: ierr
 
     logical :: on_root = .false.
@@ -3569,7 +3569,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     character(len=*), intent(in) :: keyword

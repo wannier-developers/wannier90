@@ -167,7 +167,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
     integer, intent(in) :: ws_search_size(3)

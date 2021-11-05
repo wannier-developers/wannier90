@@ -92,7 +92,6 @@ module w90_types
     ! REVIEW_2021-07-22: of the spread, matrix elements of r and r^2, etc. (TO FINISH)
   end type wannier_data_type
 
-  ! used in kmesh, and to allocate in parameters
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter :: max_shells = 6
   integer, parameter :: num_nnmax = 12
@@ -121,7 +120,6 @@ module w90_types
     !! ========================
     !! Contains information that can be provided by the user about the projections
     !! ========================
-    ! Projections, mainly used in parameters, maybe written by kmesh
     ! REVIEW_2021-07-22: site(:,:) has dual usage: for projections and for guiding centres.
     ! REVIEW_2021-07-22: Make a new type for guiding centres that only contains sites.
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
@@ -141,7 +139,7 @@ module w90_types
     logical :: auto_projections
   end type proj_input_type
 
-  ! kmesh parameters (set in kmesh)
+  ! kmesh information (set in kmesh)
   type kmesh_info_type
     !! =======================
     !! Contains derived information about the kmesh

@@ -53,7 +53,7 @@ contains
     use w90_io, only: io_file_unit
     use w90_utility, only: utility_recip_lattice_base
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: optimisation
     integer, intent(in) :: stdout
@@ -348,7 +348,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts, num_wann
@@ -415,7 +415,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: timing_level
@@ -508,7 +508,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -619,7 +619,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level, num_wann
     integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:)
@@ -748,7 +748,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(dis_spheres_type), intent(in)     :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_manifold ! ndimwin alone is modified
 
@@ -1074,7 +1074,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -1267,7 +1267,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level, iprint
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -1694,7 +1694,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: num_nodes, my_node_id
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -2485,7 +2485,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: iter, dis_conv_window
     integer, intent(in) :: stdout
 
@@ -2533,7 +2533,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
@@ -2606,7 +2606,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(dis_control_type), intent(in) :: dis_control
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -3260,7 +3260,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: timing_level, stdout
     integer, intent(in) :: num_bands, num_wann, nkp, nntot
     integer, intent(in) :: ndimwin(:)

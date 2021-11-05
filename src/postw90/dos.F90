@@ -19,6 +19,7 @@
 module w90_dos
 
   !! Compute Density of States
+
   use w90_constants, only: dp
 
   implicit none
@@ -41,7 +42,6 @@ contains
                       eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                       num_wann, effective_model, have_disentangled, spin_decomp, seedname, stdout, &
                       comm)
-
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -50,6 +50,7 @@ contains
     !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
+
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
@@ -531,11 +532,13 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
+
+  !=======================================================!
   subroutine dos_get_k(num_elec_per_state, ws_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
                        wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
                        pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
                        smearing, levelspacing_k, UU)
-
+    !=======================================================!
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
@@ -577,15 +580,11 @@ contains
     logical, intent(in) :: spin_decomp
     character(len=50), intent(in) :: seedname
 
-    ! Adaptive smearing
-    !
-    real(kind=dp) :: eta_smr, arg
-
-    ! Misc/Dummy
-    !
-    integer :: i, j, loop_f, min_f, max_f
+    ! local variables
+    real(kind=dp) :: eta_smr, arg ! Adaptive smearing
     real(kind=dp) :: rdum, spn_nk(num_wann), alpha_sq, beta_sq
     real(kind=dp) :: binwidth, r_num_elec_per_state
+    integer :: i, j, loop_f, min_f, max_f
     logical :: DoSmearing
 
     if (present(levelspacing_k)) then
@@ -696,10 +695,12 @@ contains
   end subroutine dos_get_k
 
   ! =========================================================================
-
   subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing, num_wann, recip_lattice)
+    ! =========================================================================
     !! This subroutine calculates the level spacing, i.e. how much the level changes
     !! near a given point of the interpolation mesh
+    ! =========================================================================
+
     use w90_postw90_common, only: pw90common_kmesh_spacing
 
     integer, intent(in) :: num_wann

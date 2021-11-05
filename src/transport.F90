@@ -3127,7 +3127,7 @@ contains
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(transport_type), intent(inout) :: transport
     type(atom_data_type), intent(in) :: atom_data
 
@@ -3139,7 +3139,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer          :: iw, ind, xyz_unit, nat, nsp
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3, num_wann)

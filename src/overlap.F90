@@ -49,7 +49,7 @@ contains
 
     use w90_io, only: io_error, io_stopwatch
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: nntot
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
@@ -156,7 +156,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
@@ -417,157 +417,11 @@ contains
 
   end subroutine overlap_read
 
-!~[aam]
-!~  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!~ subroutine overlap_check_m_symmetry()
-!~ !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!~
-!~   use w90_constants,  only : eps6
-!~   use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
-!~                              nntot,timing_level,disentanglement
-!~   use w90_io,         only : io_error,io_stopwatch
-!~
-!~   implicit none
-!~
-!~   integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr, num_tmp
-!~  real(kind=dp) :: dev,dev_tmp
-!~
-!~   if (timing_level>1) call io_stopwatch('overlap: check_m_sym',1)
-!~
-!~   if (disentanglement) then
-!~      num_tmp=num_bands
-!~   else
-!~      num_tmp=num_wann
-!~   endif
-!~
-!~   ! check whether M_mn is symmetric
-!~   dev = 0.0_dp
-!~   do nn=1,nntot
-!~      do n=1,num_tmp
-!~         do m=1,n
-!~            if (disentanglement) then
-!~               dev_tmp=abs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
-!~            else
-!~               dev_tmp=abs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
-!~            endif
-!~            if ( dev_tmp .gt. dev ) then
-!~               dev = dev_tmp
-!~               mdev  = m ; ndev  = n ;  nndev  = nn
-!~            end if
-!~         end do
-!~      end do
-!~   end do
-!~
-!~   if ( dev .gt. eps6 ) then
-!~      write(stdout,'(1x,"+",76("-"),"+")')
-!~      write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_check_m_symmetry'
-!~      write(stdout,'(3x,a,f12.8)') &
-!~           'Largest deviation |M_mn-M_nm| at k : ',dev
-!~      write(stdout,'(3(a5,i4))') &
-!~           '   m=',mdev,',  n=',ndev,',  k=',nndev
-!~      write(stdout,'(1x,"+",76("-"),"+")')
-!~   end if
-!~
-!~   if (timing_level>1) call io_stopwatch('overlap: check_m_sym',2)
-!~
-!~   return
-!~
-!~ end subroutine overlap_check_m_symmetry
-!~[aam]
-
-!~![ysl-b]
-!~  !%%%%%%%%%%%%%%%%%%%%%
-!~  subroutine overlap_symmetrize
-!~  !%%%%%%%%%%%%%%%%%%%%%
-!~
-!~    use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
-!~                               nntot,timing_level,disentanglement
-!~    use w90_io,         only : io_error,io_stopwatch
-!~
-!~    implicit none
-!~
-!~    integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr
-!~    real(kind=dp) :: eps,dev,dev_tmp
-!~    real(kind=dp),    allocatable :: a_cmp(:)
-!~
-!~
-!~    if (timing_level>1) call io_stopwatch('overlap: symmetrize',1)
-!~
-!~    allocate(a_cmp(num_wann),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating a_cmp in overlap_symmetrize')
-!~    allocate(ph_g(num_bands),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_symmetrize')
-!~
-!~    eps = 1.0e-6_dp
-!~    ph_g=cmplx_0
-!~
-!~    ! disentanglement - m_matrix_orig
-!~    ! localzation only - m_matrix
-!~
-!~    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
-!~    ! A_mn = ph_g(m)^(-1)*<m_R|g_n>   (m_R implies a real wave function)
-!~    ! At m_th row, find five elements with largest complex component
-!~    ! -> ph_g(m) is calculated from those elements
-!~    !
-!~   do m=1,num_bands
-!~       a_cmp(:)=abs(a_matrix(m,:,1))
-!~       p=maxloc(a_cmp)
-!~       ph_g(m)=conjg(a_matrix(m,p(1),1)/abs(a_matrix(m,p(1),1)))
-!~   end do
-!~
-!~    ! M_mn (new) = ph_g(m) * M_mn (old) * conjg(ph_g(n))
-!~    ! a_mn (new) = ph_g(m) * a_mn (old)
-!~
-!~    do nn=1,nntot
-!~       do n=1,num_bands
-!~          do m=1,num_bands
-!~             m_matrix_orig(m,n,nn,1)=ph_g(m)*m_matrix_orig(m,n,nn,1)*conjg(ph_g(n))
-!~          end do
-!~       end do
-!~    end do
-!~    do n=1,num_wann
-!~       do m=1,num_bands
-!~          a_matrix(m,n,1)=ph_g(m)*a_matrix(m,n,1)
-!~       end do
-!~    end do
-!~
-!~    ! check whether M_mn is now symmetric
-!~    dev = 0.0_dp
-!~    do nn=1,nntot
-!~       do n=1,num_bands
-!~          do m=1,n
-!~             dev_tmp=abs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
-!~             if ( dev_tmp .gt. dev ) then
-!~                dev = dev_tmp
-!~                mdev  = m ; ndev  = n ;  nndev  = nn
-!~             end if
-!~          end do
-!~       end do
-!~    end do
-!~    if ( dev .gt. eps ) then
-!~       write(stdout,'(1x,"+",76("-"),"+")')
-!~       write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_symmetrize'
-!~       write(stdout,'(3x,a,f12.8)') &
-!~            'Largest deviation |M_mn-M_nm| at k : ',dev
-!~       write(stdout,'(3(a5,i4))') &
-!~            '   m=',mdev,',  n=',ndev,',  k=',nndev
-!~       write(stdout,'(1x,"+",76("-"),"+")')
-!~    end if
-!~
-!~    deallocate(a_cmp,stat=ierr)
-!~    if (ierr/=0) call io_error('Error in deallocating a_cmp in overlap_symmetrize')
-!~
-!~    if (timing_level>1) call io_stopwatch('overlap: symmetrize',2)
-!~
-!~    return
-!~
-!~  end subroutine overlap_symmetrize
-!~![ysl-e]
-
   !==================================================================!
   subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, seedname, &
                             stdout)
     !==================================================================!
+    !
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
     !                                                                  !
@@ -663,7 +517,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig(:, :, :, :)
