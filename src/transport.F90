@@ -1988,7 +1988,7 @@ contains
     integer, intent(inout) :: one_dim_vec
     integer, intent(in) :: stdout
 
-    real(dp), intent(in) :: signatures(:, :)
+    real(kind=dp), intent(in) :: signatures(:, :)
     real(kind=dp), allocatable, intent(inout) :: hr_one_dim(:, :, :)
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -2007,10 +2007,10 @@ contains
     logical, intent(out) :: pl_warning
 
     ! local variables
-    real(dp), dimension(2, num_wann) :: centres_non_sorted, centres_initial_sorted
-    real(dp), dimension(2, transport%num_ll) :: PL1, PL2, PL3, PL4, PL
-    real(dp), dimension(2, num_wann - (4*transport%num_ll)) :: central_region
-    real(dp) :: reference_position, cell_length, distance, PL_max_val, PL_min_val
+    real(kind=dp), dimension(2, num_wann) :: centres_non_sorted, centres_initial_sorted
+    real(kind=dp), dimension(2, transport%num_ll) :: PL1, PL2, PL3, PL4, PL
+    real(kind=dp), dimension(2, num_wann - (4*transport%num_ll)) :: central_region
+    real(kind=dp) :: reference_position, cell_length, distance, PL_max_val, PL_min_val
 
     integer :: i, j, k, PL_selector, sort_iterator, sort_iterator2
     integer :: ierr, temp_coord_2, temp_coord_3, n
@@ -2519,15 +2519,15 @@ contains
 
     integer, intent(out), allocatable, dimension(:, :)  :: subgroup_info
 
-    real(dp), intent(inout), dimension(2, Array_size)  :: Array
+    real(kind=dp), intent(inout), dimension(2, Array_size)  :: Array
     character(len=50), intent(in)  :: seedname
 
     integer                                         :: i, j, k, Array_num_groups, increment, ierr, &
                                                        subgroup_increment, group_num_subgroups
     integer, allocatable, dimension(:)                :: group_subgroups
 
-    real(dp), allocatable, dimension(:, :)             :: group_array, sorted_group_array, &
-                                                          subgroup_array, sorted_subgroup_array
+    real(kind=dp), allocatable, dimension(:, :)             :: group_array, sorted_group_array, &
+                                                               subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
     if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
@@ -2649,8 +2649,8 @@ contains
 
     implicit none
 
-    real(dp), intent(inout) :: non_sorted(:, :)
-    real(dp), intent(out) :: sorted(:, :)
+    real(kind=dp), intent(inout) :: non_sorted(:, :)
+    real(kind=dp), intent(out) :: sorted(:, :)
 
     integer, dimension(1) :: min_loc
     integer :: num_col, i
@@ -2693,7 +2693,7 @@ contains
     real(kind=dp), intent(in) :: tran_group_threshold
     integer, intent(in) :: stdout
 
-    real(dp), intent(in), dimension(:, :)           :: array
+    real(kind=dp), intent(in), dimension(:, :)           :: array
     integer, intent(out), allocatable, dimension(:) :: array_groups
     character(len=50), intent(in)  :: seedname
 
@@ -2827,8 +2827,8 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(inout) :: tran_sorted_idx(:)
     integer, intent(in) :: stdout
-    real(dp), intent(in) :: wannier_centres_translated(:, :)
-    real(dp), intent(in) :: signatures(:, :)
+    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+    real(kind=dp), intent(in) :: signatures(:, :)
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: write_xyz
 
@@ -2840,7 +2840,7 @@ contains
     logical, allocatable :: has_similar_centres(:)
     integer :: i, j, k, l, ierr, group_iterator, coord_iterator, num_wf_iterator, num_wann_cell_ll
     integer :: iterator, max_position(1), p, num_wf_cell_iter
-    real(dp), allocatable :: dot_p(:)
+    real(kind=dp), allocatable :: dot_p(:)
 
     if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
 
@@ -3197,7 +3197,7 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: tran_sorted_idx(:)
 
-    real(dp), intent(inout) :: signatures(:, :)
+    real(kind=dp), intent(inout) :: signatures(:, :)
     real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
 
     type(print_output_type), intent(in) :: print_output
@@ -3207,7 +3207,7 @@ contains
 
     ! local variables
     integer :: i, j, k, wf_idx, num_wann_cell_ll
-    real(dp) :: signature_dot_p
+    real(kind=dp) :: signature_dot_p
 
     if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
 
@@ -3330,8 +3330,8 @@ contains
     ! local variables
     integer                :: i, j, k, num_wann_cell_ll, file_unit, ierr, band_size
     integer                :: fermi_n
-    real(dp), allocatable  :: sub_block(:, :)
-    real(dp)               :: PL_length, dist, dist_vec(3)
+    real(kind=dp), allocatable  :: sub_block(:, :)
+    real(kind=dp)          :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
     if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
