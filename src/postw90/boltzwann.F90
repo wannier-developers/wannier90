@@ -17,7 +17,7 @@
 !------------------------------------------------------------!
 
 module w90_boltzwann
-  !============================================================!
+  !================================================!
   !! Compute Boltzman tranport properties
   !!
   !! BoltzWann routines by
@@ -37,7 +37,7 @@ module w90_boltzwann
   !![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari
   !!    Comp. Phys. Comm. 185, 422 (2014)
   !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)
-  !============================================================!
+  !================================================!
 
   use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
     comms_allreduce, w90comm_type
@@ -71,7 +71,7 @@ module w90_boltzwann
 
 contains
 
-  !============================================================!
+  !================================================!
 
   subroutine boltzwann_main(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, &
                             pw90_band_deriv_degen, postw90_oper, pw90_spin, physics, ws_region, &
@@ -79,7 +79,7 @@ contains
                             HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
                             mp_grid, num_wann, num_bands, num_kpts, effective_model, &
                             have_disentangled, spin_decomp, seedname, stdout, comm)
-    !============================================================!
+    !================================================!
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -94,7 +94,7 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
-    !============================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -667,14 +667,14 @@ contains
 
   end subroutine boltzwann_main
 
-  !============================================================!
+  !================================================!
   subroutine calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, pw90_band_deriv_degen, &
                            pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
                            SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
                            cell_volume, scissors_shift, mp_grid, num_bands, &
                            num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
                            effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
-    !============================================================!
+    !================================================!
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -696,7 +696,7 @@ contains
     !!       conduction bands by a given amount, as defined by the pw90_boltzwann_bandshift_energyshift
     !!       and pw90_boltzwann_bandshift_firstband input flags.
     !!
-    !============================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
@@ -1086,15 +1086,15 @@ contains
 
   end subroutine calcTDFandDOS
 
-  !============================================================!
+  !================================================!
   function MinusFermiDerivative(E, mu, KT)
-    !============================================================!
+    !================================================!
     !> This function calculates -dn(E)/dE, where n(E) is the Fermi distribution function.
     !>
     !> \param E  Energy at which we want to calculate -dn(E)/dE, in 1/eV
     !> \param mu Chemical potential in eV
     !> \param KT k_Boltzmann * Temperature, in eV
-    !============================================================!
+    !================================================!
 
     real(kind=dp), intent(in) :: E
     real(kind=dp), intent(in) :: mu
@@ -1118,11 +1118,11 @@ contains
 
   end function MinusFermiDerivative
 
-  !============================================================!
+  !================================================!
   subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
                      deleig_k, eig_k, EnergyArray, kpt, real_lattice, TDF_k, &
                      mp_grid, num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
-    !============================================================!
+    !================================================!
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1145,7 +1145,7 @@ contains
     !! The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
     !!       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
     !!
-    !============================================================!
+    !================================================!
 
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss

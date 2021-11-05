@@ -51,12 +51,12 @@ module w90_ws_distance
 
 contains
 
-  !==================================================================!
+  !================================================!
 
   subroutine ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wannier_centres, real_lattice, mp_grid, nrpts, irvec, &
                                force_recompute)
-    !==================================================================!
+    !================================================!
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
     !! minimizes the distance between two given Wannier functions, i and j,
@@ -65,7 +65,7 @@ contains
     !! We also look for the number of equivalent translation, that happen when w_j,R
     !! is on the edge of the WS of w_i,0. The results are stored in global
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
@@ -151,16 +151,16 @@ contains
     enddo
   end subroutine ws_translate_dist
 
-  !==================================================================!
+  !================================================!
   subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, real_lattice, inv_lattice, &
                      ws_search_size, ws_distance_tol, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer
     !! shifts needed to get the vector (these are always multiples of
     !! the mp_grid, i.e. they are supercell displacements in the large supercell)
-    !==================================================================!
+    !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
     use w90_io, only: io_error
@@ -274,18 +274,18 @@ contains
         enddo
       enddo
     enddo
-    !==================================================================!
+    !================================================!
   end subroutine R_wz_sc
-  !==================================================================!
+  !================================================!
 
-  !==================================================================!
+  !================================================!
   subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
     !! in order to have the second Wannier function inside the WS cell
     !! of the first one.
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_types, only: ws_distance_type
@@ -346,12 +346,12 @@ contains
     return
 
 101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', stdout, seedname)
-    !====================================================!
+    !================================================!
   end subroutine ws_write_vec
 
-  !==================================================================!
+  !================================================!
   subroutine clean_ws_translate(ws_distance)
-    !==================================================================!
+    !================================================!
     use w90_types, only: ws_distance_type
     implicit none
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -359,7 +359,7 @@ contains
     if (allocated(ws_distance%irdist)) deallocate (ws_distance%irdist)
     if (allocated(ws_distance%ndeg)) deallocate (ws_distance%ndeg)
     if (allocated(ws_distance%crdist)) deallocate (ws_distance%crdist)
-    !==================================================================!
+    !================================================!
   end subroutine clean_ws_translate
 
 end module w90_ws_distance

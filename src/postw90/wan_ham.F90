@@ -37,15 +37,15 @@ module w90_wan_ham
 
 contains
 
-  !===========================================================!
+  !================================================!
 
   subroutine wham_get_D_h_a(delHH_a, UU, eig, ef, D_h_a, num_wann)
-    !===============================================!
+    !================================================!
     !                                               !
     !! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta),
     !! using Eq.(24) of WYSV06
     !                                               !
-    !===============================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
     use w90_utility, only: utility_rotate
@@ -83,14 +83,14 @@ contains
 
   end subroutine wham_get_D_h_a
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_D_h(delHH, D_h, UU, eig, num_wann)
-    !=========================================!
+    !================================================!
     !                                         !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
     !! using Eq.(24) of WYSV06
     !                                         !
-    !=========================================!
+    !================================================!
 
     ! TO DO: Implement version where energy denominators only connect
     !        occupied and empty states. In this case probably do not need
@@ -126,16 +126,16 @@ contains
 
   end subroutine wham_get_D_h
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_D_h_P_value(pw90_berry, delHH, D_h, UU, eig, num_wann)
-    !=========================================!
+    !================================================!
     !                                         !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
     !! using Eq.(24) of WYSV06
     !  and prescription for energy denominator
     !  from BK81
     !                                         !
-    !=========================================!
+    !================================================!
 
     ! TO DO: Implement version where energy denominators only connect
     !        occupied and empty states. In this case probably do not need
@@ -177,10 +177,10 @@ contains
 
   end subroutine wham_get_D_h_P_value
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, num_wann, &
                                    fermi_energy_list, occ)
-    !===============================================!
+    !================================================!
     !                                               !
     ! Compute JJ^+_a and JJ^-_a (a=Cartesian index) !
     ! for a list of Fermi energies                  !
@@ -192,7 +192,7 @@ contains
     !                                               !
     !  Tsirkin:   added the optional occ parameter  !
     !                                               !
-    !===============================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate_new
@@ -248,16 +248,16 @@ contains
 
   end subroutine wham_get_JJp_JJm_list
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
                                    stdout, eig, occ)
-    !================================!
+    !================================================!
     !                                !
     !! Occupation matrix f, and g=1-f
     !! for a list of Fermi energies
     ! Tsirkin: !now optionally either eig or occ parameters may be supplied  !
     !    (Changed consistently the calls from the Berry module)        !
-    !================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
     use w90_postw90_common, only: pw90common_get_occ
@@ -322,14 +322,14 @@ contains
 
   end subroutine wham_get_occ_mat_list
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_band_deriv_degen, &
                                stdout, seedname)
-    !==========================!
+    !================================================!
     !                          !
     !! Band derivatives dE/dk_a
     !                          !
-    !==========================!
+    !================================================!
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_rotate_diag
@@ -423,19 +423,19 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
                                  print_output, wannier_data, ws_distance, wigner_seitz, delHH, HH, &
                                  HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                  real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                  num_wann, num_valence_bands, effective_model, have_disentangled, &
                                  seedname, stdout, comm)
-    !===========================================================!
+    !================================================!
     !
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_postw90_types, only: pw90_band_deriv_degen_type, wigner_seitz_type
@@ -516,17 +516,17 @@ contains
 
   end subroutine wham_get_eig_deleig
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, delHH, UU, eig, del_eig, num_wann, &
                                          seedname, stdout)
-    !===========================================================!
+    !================================================!
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
     !
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
-    !===========================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_band_deriv_degen_type
 
@@ -555,7 +555,7 @@ contains
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
                                        print_output, wannier_data, ws_distance, wigner_seitz, HH, &
                                        HH_R, JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, &
@@ -563,12 +563,12 @@ contains
                                        num_bands, num_kpts, num_wann, num_valence_bands, &
                                        effective_model, have_disentangled, seedname, stdout, &
                                        comm, occ)
-    !========================================================!
+    !================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
     !    Added the optional occ parameter                    !
     !
-    !========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
@@ -641,7 +641,7 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  !===========================================================!
+  !================================================!
   subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, &
                                               ws_region, print_output, wannier_data, ws_distance, &
                                               wigner_seitz, AA_R, HH, HH_da, HH_dadb, HH_R, &
@@ -650,12 +650,12 @@ contains
                                               num_bands, num_kpts, num_wann, num_valence_bands, &
                                               effective_model, have_disentangled, seedname, &
                                               stdout, comm)
-    !========================================================!
+    !================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
     ! satisfying the TB phase convention
     !                                                        !
-    !========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R, get_AA_R
@@ -724,11 +724,11 @@ contains
                                       real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                       num_wann, num_valence_bands, effective_model, &
                                       have_disentangled, seedname, stdout, comm)
-    !========================================================!
+    !================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
     !                                                        !
-    !========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_get_oper, only: get_HH_R

@@ -36,17 +36,17 @@ module w90_hamiltonian
 
 contains
 
-  !============================================!
+  !================================================!
 
   subroutine hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
                                stdout, seedname, transport_mode)
-    !============================================!
+    !================================================!
     !
     !! Allocate arrays and setup data
     !
-    !============================================!
+    !================================================!
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
@@ -131,14 +131,14 @@ contains
     return
   end subroutine hamiltonian_setup
 
-  !============================================!
+  !================================================!
   subroutine hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, &
                                  ndegen, stdout, seedname)
-    !============================================!
+    !================================================!
     !
     !! Deallocate module data
     !
-    !============================================!
+    !================================================!
 
     use w90_io, only: io_error
     use w90_wannier90_types, only: ham_logical_type
@@ -198,21 +198,21 @@ contains
     ham_logical%tb_written = .false.
 
     return
-    !============================================!
+    !================================================!
   end subroutine hamiltonian_dealloc
 
-  !============================================!
+  !================================================!
   subroutine hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
-    !============================================!
+    !================================================!
     !
     !!  Calculate the Hamiltonian in the WF basis
     !                                            !
-    !============================================!
+    !================================================!
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
@@ -432,15 +432,15 @@ contains
 
   contains
 
-    !====================================================!
+    !================================================!
     subroutine internal_translate_centres(atom_data, real_space_ham, real_lattice, &
                                           wannier_centres, wannier_centres_translated, shift_vec, &
                                           iprint, num_wann, seedname, stdout)
-      !====================================================!
+      !================================================!
       !
       !! Translate the centres of the WF into the home cell
       !
-      !====================================================!
+      !================================================!
 
       use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
@@ -542,14 +542,14 @@ contains
 
   end subroutine hamiltonian_get_hr
 
-  !============================================!
+  !================================================!
   subroutine hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
                                   timing_level, seedname, stdout)
-    !============================================!
+    !================================================!
     !
     !!  Write the Hamiltonian in the WF basis
     !
-    !============================================!
+    !================================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_wannier90_types, only: ham_logical_type
@@ -610,14 +610,14 @@ contains
 
   end subroutine hamiltonian_write_hr
 
-  !================================================================================!
+  !================================================!
   subroutine hamiltonian_wigner_seitz(ws_region, print_output, real_lattice, irvec, mp_grid, &
                                       ndegen, nrpts, rpt_origin, seedname, stdout, count_pts)
-    !================================================================================!
+    !================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
     !! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3
-    !================================================================================!
+    !================================================!
 
     use w90_constants, only: eps8
     use w90_io, only: io_error, io_stopwatch
@@ -772,14 +772,14 @@ contains
 
   end subroutine hamiltonian_wigner_seitz
 
-  !============================================!
+  !================================================!
   subroutine hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
                                    num_wann, stdout, seedname)
-    !============================================!
+    !================================================!
     !
     !! Write out the matrix elements of r
     !
-    !============================================!
+    !================================================!
 
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, io_date
@@ -856,18 +856,18 @@ contains
 
   end subroutine hamiltonian_write_rmn
 
-  !============================================!
+  !================================================!
   subroutine hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
                                   real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, stdout, &
                                   timing_level, seedname)
-    !============================================!
+    !================================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
     !! tight-binding model:
     !! * lattice vectors
     !! * <0n|H|Rn>
     !! * <0n|r|Rn>
-    !============================================!
+    !================================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_constants, only: twopi, cmplx_i

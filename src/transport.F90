@@ -24,9 +24,9 @@
 !  (1999)                                                               !
 !-----------------------------------------------------------------------!
 
-!=======================================================================!
+!================================================!
 ! Definition of parameters used in w90_transport                        !
-!=======================================================================!
+!================================================!
 !                                                                       !
 ! transport_mode       = 'bulk' or 'lcr'                                !
 ! tran_win_min         = minimum E                                      !
@@ -52,7 +52,7 @@
 ! tran_num_cell_rr     = # of unit cells in a PL of right lead          !
 !                        (equal to tran_num_cell_ll for now)            !
 ! tran_group_threshold = distance defining the grouping of WFs          !
-!=======================================================================!
+!================================================!
 
 module w90_transport
 
@@ -80,7 +80,7 @@ module w90_transport
 
 contains
 
-  !==================================================================!
+  !================================================!
   subroutine tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, &
                        output_file, real_space_ham, transport, print_output, wannier_data, &
                        ws_region, w90_calculation, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
@@ -88,11 +88,11 @@ contains
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
 
-    !==================================================================!
+    !================================================!
     !
     !! Main transport subroutine
     !
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_error, io_stopwatch
 
@@ -291,15 +291,15 @@ contains
 
   end subroutine tran_main
 
-  !==================================================================!
+  !================================================!
   subroutine tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, timing_level, &
                             seedname, stdout)
-    !==================================================================!
+    !================================================!
     !
     ! reduce ham_r from 3-d to 1-d
     !
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch
@@ -402,11 +402,11 @@ contains
 
   end subroutine tran_reduce_hr
 
-  !==================================================================!
+  !================================================!
   subroutine tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch
@@ -571,14 +571,14 @@ contains
 
   end subroutine tran_cut_hr_one_dim
 
-  !==================================================================!
+  !================================================!
   subroutine tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
                          num_wann, timing_level, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !
     !!  Construct h00 and h01
     !
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
@@ -673,9 +673,9 @@ contains
 
   end subroutine tran_get_ht
 
-  !==================================================================!
+  !================================================!
   subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname)
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
@@ -851,9 +851,9 @@ contains
 
   end subroutine tran_bulk
 
-  !==================================================================!
+  !================================================!
   subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname)
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
@@ -1195,15 +1195,15 @@ contains
 
   end subroutine tran_lcr
 
-  !==================================================================!
+  !================================================!
   subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     ! iterative construction of the transfer matrix                    !
     ! as Lopez-Sancho^2&Rubio, J.Phys.F:Met.Phys., v.14, 1205 (1984)   !
     ! and ibid. v.15, 851 (1985)                                       !
     !                                                                  !
-    !===================================================================
+    !================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, eps7
     use w90_io, only: io_error
@@ -1399,9 +1399,9 @@ contains
 
   end subroutine tran_transfer
 
-  !==================================================================!
+  !================================================!
   subroutine tran_green(tot, tott, h_00, h_01, e_scan, g, igreen, invert, nxx, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !   construct green's functions
     !
     !   igreen = -1  left surface
@@ -1410,7 +1410,7 @@ contains
     !
     !   invert = 0 computes g^-1
     !   invert = 1 computes g^-1 and g
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
     use w90_io, only: io_error
@@ -1564,9 +1564,9 @@ contains
 
   end subroutine tran_green
 
-  !============================================!
+  !================================================!
   subroutine tran_read_htX(nxx, h_00, h_01, h_file, stdout, seedname)
-    !============================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error, maxlen
@@ -1608,9 +1608,9 @@ contains
 
   end subroutine tran_read_htX
 
-  !============================================!
+  !================================================!
   subroutine tran_read_htC(nxx, h_00, h_file, stdout, seedname)
-    !============================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error, maxlen
@@ -1649,9 +1649,9 @@ contains
 
   end subroutine tran_read_htC
 
-  !============================================!
+  !================================================!
   subroutine tran_read_htXY(nxx1, nxx2, h_01, h_file, stdout, seedname)
-    !============================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error, maxlen
@@ -1692,17 +1692,17 @@ contains
 
   end subroutine tran_read_htXY
 
-!========================================
+!================================================
   subroutine tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, u_matrix_opt, &
                                            u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
-    !=========================================================================!
+    !================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !
     ! Fourier components of each wannier function. Linear combinations of     !
     ! these provide integral of different spatial dependence.                 !
     ! The set of these integrals provide a signature for distinguishing the   !
     ! type and 'parity' of each wannier function.                             !
-    !=========================================================================!
+    !================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_types, only: print_output_type
@@ -1949,13 +1949,13 @@ contains
 
   end subroutine tran_find_integral_signatures
 
-  !========================================!
+  !================================================!
   subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, &
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
                                irvec_max, write_xyz, stdout, seedname)
-    !=======================================================!
+    !================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
     ! direction, group, sort in 2nd direction, group and    !
@@ -1965,7 +1965,7 @@ contains
     ! checks are passed we consider the possibility of      !
     ! multiple wannier functions are of similar centre, and !
     ! sort those                                            !
-    !=======================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
@@ -2488,17 +2488,17 @@ contains
 
   end subroutine tran_lcr_2c2_sort
 
-  !========================================!
+  !================================================!
   subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
                                    tran_group_threshold, print_output, wannier_centres_translated, &
                                    coord, stdout, seedname)
-    !=============================================================!
+    !================================================!
     ! General sorting and grouping subroutine which takes Array,  !
     ! an ordered in conduction direction array of wannier function!
     ! indexes and positions, and returns the ordered (and grouped)!
     ! indexes and positions after considering the other two       !
     ! directions. Sub group info is also return for later checks. !
-    !=============================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
@@ -2641,9 +2641,9 @@ contains
 
   end subroutine master_sort_and_group
 
-  !========================================!
+  !================================================!
   subroutine sort(non_sorted, sorted)
-    !========================================!
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -2681,9 +2681,9 @@ contains
 
   endsubroutine sort
 
-  !========================================!
+  !================================================!
   subroutine group(array, array_groups, tran_group_threshold, stdout, seedname)
-    !========================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error
@@ -2794,11 +2794,11 @@ contains
 
   end subroutine group
 
-  !=========================================================
+  !================================================
   subroutine check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                             num_wann, wannier_centres_translated, &
                                             coord, tran_sorted_idx, write_xyz, stdout, seedname)
-    !=======================================================!
+    !================================================!
     ! Here, we consider the possiblity of wannier functions !
     ! with similar centres, such as a set of d-orbitals     !
     ! centred on an atom. We use tran_group_threshold to    !
@@ -2809,7 +2809,7 @@ contains
     ! MS: For 2two-shot and beyond, some parameters,        !
     ! eg, first_group_element will need changing to consider!
     ! the geometry of the new systems.                      !
-    !=======================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch, io_error
@@ -3111,15 +3111,15 @@ contains
 
   end subroutine check_and_sort_similar_centres
 
-  !=====================================!
+  !================================================!
   subroutine tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, num_wann, &
                             seedname, stdout)
-    !=====================================!
+    !================================================!
     !                                     !
     ! Write xyz file with Wannier centres !
     ! and atomic positions                !
     !                                     !
-    !=====================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90_types, only: atom_data_type
@@ -3174,15 +3174,15 @@ contains
 
   end subroutine tran_write_xyz
 
-  !==============================================================!
+  !================================================!
   subroutine tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
-    !==============================================================!
+    !================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
     ! signatures) is used to determine its relavite parity         !
     ! with respect to the first unit cell. The parity pattern of   !
     ! first unit cell is then enforced.                            !
-    !==============================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch
@@ -3269,20 +3269,20 @@ contains
 
   end subroutine tran_parity_enforce
 
-  !========================================!
+  !================================================!
   subroutine tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, kpt_latt, &
                                     num_wann, transport, print_output, real_lattice, mp_grid, &
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
                                     hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname)
-    !==============================================!
+    !================================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
     ! conductance according to the 2c2 geometry.   !
     ! Leads are also symmetrised, in that unit cell!
     ! sub-blocks are copied to create truely ideal !
     ! leads.                                       !
-    !==============================================!
+    !================================================!
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch

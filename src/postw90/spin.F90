@@ -32,9 +32,9 @@ module w90_spin
 
 contains
 
-  !===========================================================!
+  !================================================!
   !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
+  !================================================!
 
   subroutine spin_get_moment(dis_manifold, fermi_energy_list, kpoint_dist, kpt_latt, pw90_oper_read, &
                              pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
@@ -42,11 +42,11 @@ contains
                              scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                              num_valence_bands, effective_model, have_disentangled, &
                              wanint_kpoint_file, seedname, stdout, comm)
-    !============================================================!
+    !================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
     !                                                            !
-    !============================================================!
+    !================================================!
 
     use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
@@ -192,10 +192,10 @@ contains
 
   end subroutine spin_get_moment
 
-  !===========================================================!
+  !================================================!
   subroutine spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
                          real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
-    !=============================================================!
+    !================================================!
     !                                                             !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
     !! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z
@@ -203,7 +203,7 @@ contains
     !! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit
     !! vector along the chosen spin quantization axis
     !                                                             !
-    !============================================================ !
+    !================================================ !
 
     use w90_constants, only: dp, pi
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
@@ -275,16 +275,16 @@ contains
 
   end subroutine spin_get_nk
 
-  !===========================================================!
+  !================================================!
   !                   PRIVATE PROCEDURES                      !
-  !===========================================================!
+  !================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, ws_region, wannier_data, real_lattice, &
                                mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
-    !===========================================================!
+    !================================================!
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
@@ -348,15 +348,15 @@ contains
 
   end subroutine spin_get_moment_k
 
-  !===========================================================!
+  !================================================!
   subroutine spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, &
                         mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
-    !===========================================================!
+    !================================================!
     !                                                           !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
     ! where S = (S_x,S_y,S_z) is the vector of Pauli matrices   !
     !                                                           !
-    !========================================================== !
+    !================================================ !
 
     use w90_constants, only: dp
     use w90_utility, only: utility_diagonalize, utility_rotate_diag

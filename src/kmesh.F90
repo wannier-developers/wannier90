@@ -54,14 +54,14 @@ module w90_kmesh
 
 contains
 
-  !=======================================================
+  !================================================
   subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, &
                        num_kpts, gamma_only, seedname, stdout)
-    !=====================================================
+    !================================================
     !
     !! Main routine to calculate the b-vectors
     !
-    !=====================================================
+    !================================================
 
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart
@@ -638,10 +638,10 @@ contains
 
   end subroutine kmesh_get
 
-  !==================================================================!
+  !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
                          real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
     !                                                                  !
@@ -668,7 +668,7 @@ contains
     ! calculate the M_mn(k,b) matrix elements -- Marzari & Vanderbilt  !
     ! PRB 56, 12847 (1997) Eq. (25) -- for each pair of band indices   !
     ! m and n.                                                         !
-    !===================================================================
+    !================================================
 
     use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_recip_lattice_base
@@ -814,14 +814,14 @@ contains
 
   end subroutine kmesh_write
 
-  !========================================
+  !================================================
   subroutine kmesh_dealloc(kmesh_info, stdout, seedname)
-    !========================================
+    !================================================
     !!  Release memory from the kmesh module
     !   This routine now check to see if arrays
     !   are allocated, as there are some code
     !   paths that will not allocate on all nodes
-    !========================================
+    !================================================
 
     use w90_io, only: io_error
     use w90_types, only: kmesh_info_type
@@ -866,14 +866,14 @@ contains
 
   end subroutine kmesh_dealloc
 
-  !==================================================================
+  !================================================
   subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout)
-    !==================================================================
+    !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
     !! Here we order the cells by the distance from the origin.
     !! Doing the search in this order gives a dramatic speed up
-    !==================================================================
+    !================================================
 
     use w90_io, only: io_stopwatch
     use w90_types, only: print_output_type
@@ -926,14 +926,14 @@ contains
 
   end subroutine kmesh_supercell_sort
 
-  !=============================================================
+  !================================================
   subroutine kmesh_get_bvectors(kmesh_input, print_output, bvector, kpt_cart, recip_lattice, shell_dist, &
                                 lmn, kpt, multi, num_kpts, seedname, stdout)
-    !=============================================================
+    !================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
     !
-    !=============================================================
+    !================================================
 
     use w90_io, only: io_error, io_stopwatch
     use w90_types, only: kmesh_input_type, print_output_type
@@ -989,17 +989,17 @@ contains
 
   end subroutine kmesh_get_bvectors
 
-  !==========================================================================
+  !================================================
   subroutine kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
                                    lmn, multi, num_kpts, seedname, stdout)
-    !==========================================================================
+    !================================================
     !! Find the correct set of shells to satisfy B1
     !!  The stratagy is:
     !!       1) Take the bvectors from the next shell
     !!       2) Reject them if they are parallel to exisiting b vectors
     !!       3) Test to see if we satisfy B1, if not add another shell and repeat
     !
-    !==========================================================================
+    !================================================
 
     use w90_constants, only: eps5, eps6
     use w90_io, only: io_error, io_stopwatch
@@ -1249,14 +1249,14 @@ contains
 
   end subroutine kmesh_shell_automatic
 
-  !================================================================
+  !================================================
   subroutine kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, lmn, &
                                multi, num_kpts, seedname, stdout)
-    !================================================================
+    !================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
     !
-    !================================================================
+    !================================================
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch
@@ -1397,15 +1397,15 @@ contains
 
   end subroutine kmesh_shell_fixed
 
-  !=================================================================
+  !================================================
   subroutine kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
                                    recip_lattice, lmn, multi, num_kpts, seedname, stdout)
-    !=================================================================
+    !================================================
     !!  Find the B1 weights for a set of b-vectors given in a file.
     !!  This routine is only activated via a devel_flag and is not
     !!  intended for regular use.
     !
-    !=================================================================
+    !================================================
 
     use w90_constants, only: eps7
     use w90_io, only: io_error, io_stopwatch, io_file_unit, maxlen
@@ -1616,13 +1616,13 @@ contains
 
   end subroutine kmesh_shell_from_file
 
-  !=================================
+  !================================================
   function internal_maxloc(dist)
-    !=================================
+    !================================================
     !!  A reproducible maxloc function
     !!  so b-vectors come in the same
     !!  order each time
-    !=================================
+    !================================================
 
     use w90_constants, only: eps8
 

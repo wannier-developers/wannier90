@@ -37,18 +37,18 @@ module w90_disentangle
 
 contains
 
-  !==================================================================!
+  !================================================!
 
   subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
                       print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                       m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
                       omega_invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
                       lsitesymmetry, stdout, seedname, comm)
-    !==================================================================!
+    !================================================!
     !
     !! Main disentanglement routine
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_file_unit
     use w90_utility, only: utility_recip_lattice_base
@@ -326,12 +326,12 @@ contains
                                                                        seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine dis_main
 
   subroutine internal_check_orthonorm(u_matrix_opt, ndimwin, num_kpts, num_wann, timing_level, &
                                       on_root, seedname, stdout)
-    !================================================================!
+    !================================================!
     !                                                                !
     !! This subroutine checks that the states in the columns of the
     !! final matrix U_opt are orthonormal at every k-point, i.e.,
@@ -342,7 +342,7 @@ contains
     !! are indeed orthogonal to the frozen states, at those k-points
     !! where both are present in the trial subspace.
     !                                                                !
-    !================================================================!
+    !================================================!
 
     use w90_constants, only: eps8
 
@@ -400,18 +400,18 @@ contains
                                                           seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine internal_check_orthonorm
 
   subroutine internal_slim_m(m_matrix_orig_local, ndimwin, nfirstwin, nnlist, nntot, num_bands, &
                              num_kpts, timing_level, seedname, stdout, comm)
-    !================================================================!
+    !================================================!
     !                                                                !
     !! This subroutine slims down the original Mmn(k,b), removing
     !! rows and columns corresponding to u_nks that fall outside
     !! the outer energy window.
     !                                                                !
-    !================================================================!
+    !================================================!
 
     implicit none
 
@@ -479,13 +479,13 @@ contains
     if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 2, stdout, seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine internal_slim_m
 
   subroutine internal_find_u(sitesym, a_matrix, u_matrix, u_matrix_opt, ndimwin, num_bands, &
                              num_kpts, num_wann, timing_level, lsitesymmetry, on_root, seedname, &
                              stdout, comm)
-    !================================================================!
+    !================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
     !! rotation matrix u_matrix. The method is similar to Sec. III.D
@@ -503,7 +503,7 @@ contains
     !! Note: |psi> U_opt = |psitilde> and obviously
     !! <psitilde| = (U_opt)^dagger <psi|
     !                                                                !
-    !================================================================!
+    !================================================!
 
     use w90_wannier90_types, only: sitesym_type
     implicit none
@@ -604,18 +604,18 @@ contains
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2, stdout, seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine internal_find_u
 
 ![ysl-b]
   subroutine internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, ndimwin, num_wann, &
                                    timing_level, seedname, stdout)
-    !================================================================!
+    !================================================!
     !                                                                !
     !! Make initial u_matrix real
     !! Must be the case when gamma_only = .true.
     !                                                                !
-    !================================================================!
+    !================================================!
 
     implicit none
 
@@ -706,14 +706,14 @@ contains
     if (timing_level > 1) call io_stopwatch('dis: main: find_u_gamma', 2, stdout, seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine internal_find_u_gamma
 ![ysl-e]
 
   subroutine dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, &
                          indxfroz, indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, &
                          num_wann, timing_level, lfrozen, linner, on_root, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
     !! window (ie, the energy window out of which we fish out the
@@ -729,7 +729,7 @@ contains
     !! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above
     !! they are set to zero.
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     ! OUTPUT:
     !     ndimwin(nkp)   number of bands inside outer window at nkp-th k poi
@@ -1019,12 +1019,12 @@ contains
     if (timing_level > 1) call io_stopwatch('dis: windows', 2, stdout, seedname)
 
     return
-    !================================================================!
+    !================================================!
   end subroutine dis_windows
 
   subroutine dis_project(a_matrix, u_matrix_opt, ndimwin, nfirstwin, num_bands, num_kpts, &
                          num_wann, timing_level, on_root, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Construct projections for the start of the disentanglement routine
     !!
@@ -1068,7 +1068,7 @@ contains
     !! num_wann x num_wann and diagonal, and CVdag is
     !! num_wann x num_wann and unitary.
     !!
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: eps5
 
@@ -1247,12 +1247,12 @@ contains
     if (timing_level > 1) call io_stopwatch('dis: project', 2, stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine dis_project
 
   subroutine dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, ndimwin, iprint, num_bands, &
                            num_kpts, num_wann, timing_level, lfrozen, on_root, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
     !! WHERE P_s PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED
@@ -1261,7 +1261,7 @@ contains
     !! EIGENSTATES INSIDE THE OUTER ENERGY WINDOW
     !! (See Eq. (27) in Sec. III.G of SMV)
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     use w90_constants, only: eps8
 
@@ -1641,19 +1641,19 @@ contains
     if (timing_level > 1) call io_stopwatch('dis: proj_froz', 2, stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine dis_proj_froz
 
   subroutine dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                          m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, &
                          indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
                          num_wann, lsitesymmetry, on_root, seedname, stdout, comm)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
     !! minimizing Omega_I
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima
@@ -2472,16 +2472,16 @@ contains
     if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 2, stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine dis_extract
 
   subroutine internal_test_convergence(history, delta_womegai, dis_conv_tol, iter, &
                                        dis_conv_window, dis_converged, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !
     !! Check if we have converged
     !
-    !==================================================================!
+    !================================================!
 
     implicit none
 
@@ -2519,17 +2519,17 @@ contains
     if (ierr /= 0) call io_error('Error deallocating temp_hist in dis_extract', stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine internal_test_convergence
 
   subroutine internal_zmatrix(cbw, cmtrx, m_matrix_orig_local, u_matrix_opt, wb, indxnfroz, &
                               ndimfroz, ndimwin, nnlist, nkp, nkp_loc, nntot, num_bands, num_wann, &
                               timing_level, on_root, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Compute the Z-matrix
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     implicit none
 
@@ -2586,7 +2586,7 @@ contains
     if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract: zmatrix', 2, stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine internal_zmatrix
 ![ysl-b]
 
@@ -2594,12 +2594,12 @@ contains
                                m_matrix_orig, u_matrix_opt, eigval_opt, omega_invariant, &
                                indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
                                num_wann, lsitesymmetry, on_root, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
     !! minimizing Omega_I (Gamma point version)
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_time
     use w90_wannier90_types, only: sitesym_type
@@ -3246,17 +3246,17 @@ contains
     if (print_output%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2, stdout, seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine dis_extract_gamma
 
   subroutine internal_zmatrix_gamma(cbw, m_matrix_orig, u_matrix_opt, rmtrx, wb, indxnfroz, &
                                     ndimfroz, ndimwin, nnlist, nkp, nntot, num_bands, num_wann, &
                                     timing_level, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Compute Z-matrix (Gamma point routine)
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     implicit none
 
@@ -3309,7 +3309,7 @@ contains
                                             seedname)
 
     return
-    !==================================================================!
+    !================================================!
   end subroutine internal_zmatrix_gamma
 
 end module w90_disentangle

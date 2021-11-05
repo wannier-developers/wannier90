@@ -78,7 +78,7 @@ module w90_readwrite
 
 contains
 
-  !==================================================================!
+  !================================================!
   subroutine w90_readwrite_read_verbosity(print_output, stdout, seedname)
     implicit none
     type(print_output_type), intent(inout) :: print_output
@@ -1164,12 +1164,12 @@ contains
 
   end function w90_readwrite_get_smearing_index
 
-!===================================================================
+!================================================
   subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
-    !===================================================================
+    !================================================
     !! Convert a few things to uppercase to look nice in the output
     !                                                                  !
-    !===================================================================
+    !================================================
 
     implicit none
 
@@ -1307,13 +1307,13 @@ contains
 
   end subroutine w90_readwrite_write_header
 
-!==================================================================!
+!================================================!
   subroutine w90_readwrite_dealloc(exclude_bands, wannier_data, input_proj, kmesh_input, kpt_latt, &
                                    dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !! release memory from allocated parameters
     !                                                                  !
-    !===================================================================
+    !================================================
     use w90_io, only: io_error
 
     implicit none
@@ -1428,13 +1428,13 @@ contains
 
   end subroutine w90_readwrite_dealloc
 
-!~  !================================!
+!~  !================================================!
 !~  subroutine w90_wannier90_readwrite_write_um
-!~    !================================!
+!~    !================================================!
 !~    !                                !
 !~    ! Dump the U and M to *_um.dat   !
 !~    !                                !
-!~    !================================!
+!~    !================================================!
 !~
 !~
 !~    use w90_io,        only : io_file_unit,io_error,seedname,io_date
@@ -1460,13 +1460,13 @@ contains
 !~
 !~  end subroutine w90_wannier90_readwrite_write_um
 
-!~  !================================!
+!~  !================================================!
 !~  subroutine w90_wannier90_readwrite_read_um
-!~    !================================!
+!~    !================================================!
 !~    !                                !
 !~    ! Restore U and M from file      !
 !~    !                                !
-!~    !================================!
+!~    !================================================!
 !~
 !~    use w90_io,        only : io_file_unit,io_error,seedname
 !~    implicit none
@@ -1507,12 +1507,12 @@ contains
 !~
 ! $  end subroutine w90_wannier90_readwrite_read_um
 
-!=================================================!
+!================================================!
   subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, m_matrix, &
                                       u_matrix, u_matrix_opt, real_lattice, &
                                       omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
                                       num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
-    !=================================================!
+    !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
@@ -1520,7 +1520,7 @@ contains
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
-    !=================================================!
+    !================================================!
 
     use w90_constants, only: eps6
     use w90_io, only: io_file_unit, io_error
@@ -1693,15 +1693,15 @@ contains
 
   end subroutine w90_readwrite_read_chkpt
 
-!===========================================================!
+!================================================!
   subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, omega_invariant, &
                                       num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
                                       seedname, stdout, comm)
-    !===========================================================!
+    !================================================!
     !                                                           !
     !! Distribute the chk files
     !                                                           !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
@@ -1785,14 +1785,14 @@ contains
 
   end subroutine w90_readwrite_chkpt_dist
 
-!=======================================!
+!================================================!
   subroutine w90_readwrite_in_file(seedname, stdout)
-    !=======================================!
+    !================================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
     !! blank lines and converting everything
     !! to lowercase characters
-    !=======================================!
+    !================================================!
 
     use w90_utility, only: utility_lowercase
     use w90_io, only: io_file_unit, io_error
@@ -1863,12 +1863,12 @@ contains
 
   end subroutine w90_readwrite_in_file
 
-  !===========================================================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword(stdout, seedname, keyword, found, c_value, l_value, i_value, r_value)
-    !===========================================================================!
+    !================================================!
     !! Finds the value of the required keyword.
     !                                                                           !
-    !===========================================================================!
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -1937,13 +1937,13 @@ contains
 
   end subroutine w90_readwrite_get_keyword
 
-  !=========================================================================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword_vector(stdout, seedname, keyword, found, length, c_value, &
                                               l_value, i_value, r_value)
-    !=========================================================================================!
+    !================================================!
     !! Finds the values of the required keyword vector
     !                                                                                         !
-    !=========================================================================================!
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2006,12 +2006,12 @@ contains
 
   end subroutine w90_readwrite_get_keyword_vector
 
-!========================================================!
+!================================================!
   subroutine w90_readwrite_get_vector_length(stdout, seedname, keyword, found, length)
-    !======================================================!
+    !================================================!
     !! Returns the length of a keyword vector
     !                                                      !
-    !======================================================!
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2071,13 +2071,13 @@ contains
 
   end subroutine w90_readwrite_get_vector_length
 
-  !==============================================================================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword_block(stdout, seedname, keyword, found, rows, columns, &
                                              bohr, c_value, l_value, i_value, r_value)
-    !==============================================================================================!
+    !================================================!
     !!   Finds the values of the required data block
     !                                                                                              !
-    !==============================================================================================!
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2212,12 +2212,12 @@ contains
 
   end subroutine w90_readwrite_get_keyword_block
 
-  !=====================================================!
+  !================================================!
   subroutine w90_readwrite_get_block_length(stdout, seedname, keyword, found, rows, library, lunits)
-    !=====================================================!
+    !================================================!
     !! Finds the length of the data block
     !                                                     !
-    !=====================================================!
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2320,12 +2320,12 @@ contains
 
   end subroutine w90_readwrite_get_block_length
 
-  !===================================!
+  !================================================!
   subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
-    !===================================!
+    !================================================!
     !!   Fills the atom data block
     !                                   !
-    !===================================!
+    !================================================!
 
     use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac, utility_inverse_mat
     use w90_io, only: io_error
@@ -2496,13 +2496,13 @@ contains
 
   end subroutine readwrite_get_atoms
 
-  !=====================================================!
+  !================================================!
   subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
                                          stdout, seedname)
-    !=====================================================!
+    !================================================!
     !!   Fills the atom data block during a library call
     !                                                     !
-    !=====================================================!
+    !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat, utility_lowercase
     use w90_io, only: io_error
@@ -2591,12 +2591,12 @@ contains
 
   end subroutine w90_readwrite_lib_set_atoms
 
-  !====================================================================!
+  !================================================!
   subroutine w90_readwrite_get_range_vector(stdout, seedname, keyword, found, length, lcount, i_value)
-    !====================================================================!
+    !================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
-    !====================================================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -2697,12 +2697,12 @@ contains
 
   subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
                                                   proj_site, num_wann, real_lattice, stdout, seedname)
-    !=============================================================================!
+    !================================================!
     !!  assigns projection centres as default centre constraints and global
     !!  Lagrange multiplier as individual Lagrange multipliers then reads
     !!  the centre_constraints block for individual centre constraint parameters
     !                                                                             !
-    !=============================================================================!
+    !================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_frac_to_cart
     integer, intent(in) :: stdout
@@ -2779,15 +2779,15 @@ contains
     end do
   end subroutine w90_readwrite_get_centre_constraints
 
-  !===================================!
+  !================================================!
   subroutine get_centre_constraint_from_column(column, start, finish, &
                                                wann, dummy, ccentres_frac, stdout, seedname)
-    !===================================!
+    !================================================!
     !                                   !
     !!  assigns value read to constraint
     !!  parameters based on column
     !                                   !
-    !===================================!
+    !================================================!
     use w90_io, only: io_error
     integer, intent(in) :: stdout
     integer, intent(inout):: column, start, finish, wann
@@ -2805,13 +2805,13 @@ contains
     column = column + 1
   end subroutine get_centre_constraint_from_column
 
-  !===================================!
+  !================================================!
   subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
                                            inv_lattice, lcount, spinors, bohr, stdout, seedname)
-    !===================================!
+    !================================================!
     !!  Fills the projection data block
     !                                   !
-    !===================================!
+    !================================================!
 
     use w90_constants, only: eps6, eps2
     use w90_utility, only: utility_cart_to_frac, utility_string_to_coord, utility_strip
@@ -3481,12 +3481,12 @@ contains
 
   end subroutine w90_readwrite_get_projections
 
-  !===================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
-    !===================================!
+    !================================================!
     !!  Fills the kpath data block
     !                                   !
-    !===================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -3558,13 +3558,13 @@ contains
 
   end subroutine w90_readwrite_get_keyword_kpath
 
-  !===================================!
+  !================================================!
   subroutine clear_block(stdout, seedname, keyword)
-    !===================================!
+    !================================================!
     ! a dummy read routine to remove unused but legitimate input block from input stream
     ! needed to preserve input file error checking (i.e. input stream should be empty after all
     ! legitimate keywords/blocks are read)
-    !===================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none

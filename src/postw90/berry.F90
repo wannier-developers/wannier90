@@ -74,9 +74,9 @@ module w90_berry
 
 contains
 
-  !===========================================================!
+  !================================================!
   !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
+  !================================================!
   subroutine berry_main(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpoint_dist, &
                         kpt_latt, pw90_band_deriv_degen, pw90_oper_read, pw90_spin, physics, &
                         ws_region, pw90_spin_hall, wannier_data, ws_distance, wigner_seitz, &
@@ -84,7 +84,7 @@ contains
                         SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         fermi_n, num_wann, num_kpts, num_bands, num_valence_bands, &
                         effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
-    !============================================================!
+    !================================================!
     !                                                            !
     !! Computes the following quantities:
     !!   (i) Anomalous Hall conductivity (from Berry curvature)
@@ -93,7 +93,7 @@ contains
     !!  (iv) Nonlinear shift current
     !!   (v) Spin Hall conductivity
     !                                                            !
-    !============================================================!
+    !================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants_type
@@ -1462,20 +1462,20 @@ contains
 
   end subroutine berry_main
 
-  !============================================================!
+  !================================================!
   subroutine berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
                                  wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, u_matrix, &
                                  v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
                                  mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
                                  effective_model, have_disentangled, seedname, &
                                  stdout, comm, occ, ladpt)
-    !============================================================!
+    !================================================!
     !                                                            !
     !! Calculates the Berry curvature traced over the occupied
     !! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list
     !! of Fermi energies, and stores it in axial-vector form
     !                                                            !
-    !============================================================!
+    !================================================!
 
     use w90_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, ws_region_type, ws_distance_type
@@ -1550,7 +1550,7 @@ contains
 
   end subroutine berry_get_imf_klist
 
-  !============================================================!
+  !================================================!
   subroutine berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
                                    wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
@@ -1558,7 +1558,7 @@ contains
                                    num_wann, num_valence_bands, effective_model, &
                                    have_disentangled, seedname, stdout, comm, imf_k_list, &
                                    img_k_list, imh_k_list, occ, ladpt)
-    !=========================================================!
+    !================================================!
     !
     !! Calculates the three quantities needed for the orbital
     !! magnetization:
@@ -1574,7 +1574,7 @@ contains
     ! 'img_k_list' are only calculated if both of them are
     ! present.
     !
-    !=========================================================!
+    !================================================!
 
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_i
@@ -1804,9 +1804,9 @@ contains
 
   end subroutine berry_get_imfgh_klist
 
-  !===========================================================!
+  !================================================!
   !                   PRIVATE PROCEDURES                      !
-  !===========================================================!
+  !================================================!
 
   subroutine berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, pw90_band_deriv_degen, pw90_spin, &
                               ws_region, print_output, wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, &
@@ -1815,13 +1815,13 @@ contains
                               num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
                               have_disentangled, spin_decomp, seedname, stdout, comm, &
                               kubo_AH_k_spn, kubo_H_k_spn, jdos_k_spn)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     !! Contribution from point k to the complex interband optical
     !! conductivity, separated into Hermitian (H) and anti-Hermitian (AH)
     !! parts. Also returns the joint density of states
     !                                                                    !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
     use w90_comms, only: w90comm_type
@@ -2023,7 +2023,7 @@ contains
                                 sc_k_list, scissors_shift, mp_grid, num_bands, &
                                 num_kpts, num_wann, num_valence_bands, effective_model, &
                                 have_disentangled, seedname, stdout, comm)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     !  Contribution from point k to the nonlinear shift current
     !  [integrand of Eq.8 IATS18]
@@ -2038,7 +2038,7 @@ contains
     !  sum_HD                 <-->   summatory of Eq. 30 IATS18
     !  eig_da(n)-eig_da(m)    <-->   \mathbbm{Delta}_{nm}
     !                                                                    !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
@@ -2318,7 +2318,7 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  !====================================================================!
+  !================================================!
   subroutine berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                  pw90_band_deriv_degen, ws_region, pw90_spin_hall, print_output, &
                                  wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, SH_R, SHR_R, &
@@ -2327,7 +2327,7 @@ contains
                                  fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
                                  effective_model, have_disentangled, seedname, stdout, comm, &
                                  shc_k_fermi, shc_k_freq, shc_k_band)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     ! Contribution from a k-point to the spin Hall conductivity on a list
     ! of Fermi energies or a list of frequencies or a list of energy bands
@@ -2347,7 +2347,7 @@ contains
     !    shc_k_band:  return a list for each energy band
     !
     !   Junfeng Qiao (18/8/2018)                                         !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate, utility_recip_lattice_base
@@ -2543,14 +2543,14 @@ contains
 
   contains
 
-    !===========================================================!
+    !================================================!
     !                   PRIVATE PROCEDURES                      !
-    !===========================================================!
+    !================================================!
     subroutine berry_get_js_k(ws_region, pw90_spin_hall, wannier_data, ws_distance, wigner_seitz, &
                               D_alpha_h, js_k, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, UU, eig, &
                               del_alpha_eig, delHH_alpha, kpt, real_lattice, mp_grid, num_wann, &
                               seedname, stdout)
-      !====================================================================!
+      !================================================!
       !                                                                    !
       ! Contribution from point k to the
       !   <psi_k | 1/2*(sigma_gamma*v_alpha + v_alpha*sigma_gamma) | psi_k>
@@ -2560,7 +2560,7 @@ contains
       !
       !  Junfeng Qiao (8/7/2018)
       !                                                                    !
-      !====================================================================!
+      !================================================!
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
       use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
@@ -2621,10 +2621,10 @@ contains
       complex(kind=dp)    :: spinvel0(num_wann, num_wann)
       integer :: i
 
-      !===========
+      !================================================
       js_k = cmplx_0
 
-      !=========== S_k ===========
+      !================================================ S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
@@ -2634,7 +2634,7 @@ contains
       S_k = utility_rotate(S_w, UU, num_wann)
 
       if (index(pw90_spin_hall%method, 'qiao') > 0) then !if Qiao
-        !=========== K_k ===========
+        !================================================ K_k ===========
         ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
         ! QZYZ18 Eq.(37)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
@@ -2645,7 +2645,7 @@ contains
         SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, pw90_spin_hall%alpha), UU, num_wann)
         K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
 
-        !=========== L_k ===========
+        !================================================ L_k ===========
         ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
         ! QZYZ18 Eq.(38)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
@@ -2662,7 +2662,7 @@ contains
         SH_k = utility_rotate(SH_w(:, :, pw90_spin_hall%gamma), UU, num_wann)
         L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
 
-        !=========== B_k ===========
+        !================================================ B_k ===========
         ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ18 Eq.(24)
         B_k = cmplx_0
         do i = 1, num_wann
@@ -2672,7 +2672,7 @@ contains
         ! note * is not matmul
         B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
 
-        !=========== js_k ===========
+        !================================================ js_k ===========
         ! QZYZ18 Eq.(23)
         ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
         ! to get spin current, we need to multiply it by hbar/2,
@@ -2724,16 +2724,16 @@ contains
 
   end subroutine berry_get_shc_klist
 
-  !============================================================!
+  !================================================!
   subroutine berry_print_progress(end_k, loop_k, start_k, step_k, stdout)
-    !============================================================!
+    !================================================!
     ! print k-points calculation progress, seperated into 11 points,
     ! from 0%, 10%, ... to 100%
     ! start_k, end_k are inclusive
     ! loop_k should in the array start_k to end_k with step step_k
     !
     ! only call from root MPI process!
-    !============================================================!
+    !================================================!
 
     use w90_io, only: io_wallclocktime
 
@@ -2792,11 +2792,11 @@ contains
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              num_valence_bands, effective_model, have_disentangled, seedname, &
                              stdout, comm)
-    !====================================================================!
+    !================================================!
     !  Extracts k.p expansion coefficients using quasi-degenerate
     !  (Lowdin) perturbation theory, adapted to the Wannier formalism,
     !  see Appendix in IAdJS19 for details
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, &

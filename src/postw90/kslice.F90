@@ -40,9 +40,9 @@ module w90_kslice
 
 contains
 
-  !===========================================================!
+  !================================================!
   !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
+  !================================================!
 
   subroutine k_slice(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, pw90_kslice, &
                      pw90_oper_read, pw90_band_deriv_degen, pw90_spin, ws_region, pw90_spin_hall, print_output, wannier_data, &
@@ -50,11 +50,11 @@ contains
                      v_matrix, u_matrix, bohr, eigval, real_lattice, &
                      scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                      num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-    !===========================================================!
+    !================================================!
     !
     !! Main routine
     !
-    !===========================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type, wigner_seitz_type
@@ -906,13 +906,13 @@ contains
 
   end subroutine k_slice
 
-  !===========================================================!
+  !================================================!
   !                   PRIVATE PROCEDURES
-  !===========================================================!
+  !================================================!
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
                                plot_shc, stdout, seedname, pw90_berry, fermi_energy_list)
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_postw90_types, only: pw90_berry_mod_type
@@ -997,7 +997,7 @@ contains
   end subroutine
 
   subroutine write_coords_file(stdout, filename, fmt, coords, vals, mask, blocklen)
-    !===========================================================!
+    !================================================!
 
     use w90_io, only: io_error, io_file_unit
     use w90_constants, only: dp
@@ -1046,7 +1046,7 @@ contains
   end subroutine
 
   subroutine script_common(scriptunit, areab1b2, square, seedname)
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -1095,7 +1095,7 @@ contains
   end subroutine script_common
 
   subroutine script_fermi_lines(scriptunit, seedname, fermi_energy_list)
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     implicit none

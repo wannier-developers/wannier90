@@ -56,9 +56,9 @@ module w90_gyrotropic
 
 contains
 
-  !===========================================================!
+  !================================================!
   !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
+  !================================================!
 
   subroutine gyrotropic_main(pw90_berry, dis_manifold, fermi_energy_list, pw90_gyrotropic, kmesh_info, &
                              kpt_latt, physics, pw90_oper_read, pw90_band_deriv_degen, ws_region, w90_system, &
@@ -66,7 +66,7 @@ contains
                              SS_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              effective_model, have_disentangled, seedname, stdout, comm)
-    !============================================================!
+    !================================================!
     !                                                            !
     !! Computes the following quantities:
     !!   (i) D tensor
@@ -75,7 +75,7 @@ contains
     !!  (iv) current-induced optical activity
     !!   (v) natural optical activity
     !                                                            !
-    !============================================================!
+    !================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
@@ -531,7 +531,7 @@ contains
                                    pw90_gyrotropic, scissors_shift, effective_model, pw90_band_deriv_degen, &
                                    ws_distance, wigner_seitz, stdout, seedname, comm, &
                                    HH_R, AA_R, BB_R, CC_R, SS_R)
-    !======================================================================!
+    !================================================!
     !                                                                      !
     ! Contribution from point k to the GME tensor, Eq.(9) of ZMS16,        !
     ! evaluated in the clean limit of omega.tau >> 1 where  it is real.    !
@@ -559,7 +559,7 @@ contains
     !                                                                      !
     ! gme_NOA_spn_k = ??????                                           !
     !                                                                      !
-    !======================================================================!
+    !================================================!
 
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -784,7 +784,7 @@ contains
   end subroutine gyrotropic_get_k_list
 
   subroutine gyrotropic_get_curv_w_k(eig, AA, curv_w_k, pw90_gyrotropic)
-    !======================================================================!
+    !================================================!
     !                                                                      !
     ! calculation of the band-resolved                                     !
     ! frequency-dependent   berry curvature                                !
@@ -792,7 +792,7 @@ contains
     ! tildeOmega(w)=                                                        !
     !     -eps_{bcd}sum_m ( w_mn^2/(wmn^2-w^2)) *Im[A_{nm,c}A_{mn,d}       !
     !                                        !
-    !======================================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_constants, only: dp
@@ -833,7 +833,7 @@ contains
                                   num_wann, print_output, fermi_energy_list, wannier_data, real_lattice, &
                                   mp_grid, pw90_gyrotropic, ws_distance, wigner_seitz, stdout, seedname, &
                                   SS_R, gyro_NOA_spn)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     ! Contribution from point k to the real (antisymmetric) part         !
     ! of the natural  complex interband optical conductivity             !
@@ -850,7 +850,7 @@ contains
     ! [units of Ang/eV^2]                                                !
     !
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
-    !====================================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type, wigner_seitz_type
     use w90_constants, only: dp, cmplx_1
@@ -987,14 +987,14 @@ contains
 
   subroutine gyrotropic_get_NOA_Bnl_orb(eig, del_eig, AA, num_occ, occ_list, num_unocc, &
                                         unocc_list, Bnl, pw90_gyrotropic)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     ! Calculating the matrix                                             !
     ! B_{nl,ac}(num_occ,num_unocc,3,3)=                    !
     !      -sum_m(  (E_m-E_n)A_nma*Amlc +(E_l-E_m)A_nmc*A_mla -          !
     !      -i( del_a (E_n+E_l) A_nlc                                     !
     !   in units eV*Ang^2                                                !
-    !====================================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_constants, only: dp, cmplx_i, cmplx_0
@@ -1035,13 +1035,13 @@ contains
   end subroutine gyrotropic_get_NOA_Bnl_orb
 
   subroutine gyrotropic_get_NOA_Bnl_spin(S_h, num_occ, occ_list, num_unocc, unocc_list, Bnl)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     ! Calculating the matrix                                             !
     ! B_{nl,ac}^spin(num_occ,num_unocc,3,3)=                             !
     !      -i  eps_{abc}  < u_n | sigma_b | u_l >                        !
     !   ( dimensionless )                                                !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_i, cmplx_0
 
@@ -1077,7 +1077,7 @@ contains
   subroutine gyrotropic_outprint_tensor(stdout, seedname, pw90_gyrotropic, fermi_energy_list, &
                                         f_out_name, arrEf, arrEF1D, arrEfW, units, comment, &
                                         symmetrize)
-    !====================================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type
     use w90_io, only: io_file_unit
@@ -1137,7 +1137,7 @@ contains
 
   subroutine gyrotropic_outprint_tensor_w(fermi_energy_list, fermi_n, file_unit, omega, arr33N, &
                                           arrN, symmetrize)
-    !====================================================================!
+    !================================================!
 
     implicit none
 

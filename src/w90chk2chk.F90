@@ -183,13 +183,13 @@ contains
 
   end subroutine conv_get_seedname
 
-  !=======================================!
+  !================================================!
   subroutine conv_read_chkpt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
     !
     !! Read formatted checkpoint file
     !
-    !=======================================!
+    !================================================!
 
     use w90_constants, only: eps6
     use w90_io, only: io_error, io_file_unit
@@ -339,11 +339,11 @@ contains
   end subroutine conv_read_chkpt
 
   subroutine conv_read_chkpt_fmt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
     !
     !! Read formatted checkpoint file
     !
-    !=======================================!
+    !================================================!
 
     use w90_constants, only: eps6
     use w90_io, only: io_error, io_file_unit
@@ -551,11 +551,11 @@ contains
   end subroutine conv_read_chkpt_fmt
 
   subroutine conv_write_chkpt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
     !
     !! Write formatted checkpoint file
     !
-    !=======================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters
@@ -607,11 +607,11 @@ contains
   end subroutine conv_write_chkpt
 
   subroutine conv_write_chkpt_fmt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
     !
     !! Write formatted checkpoint file
     !
-    !=======================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters

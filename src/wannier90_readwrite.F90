@@ -44,7 +44,7 @@ module w90_wannier90_readwrite
 
 contains
 
-  !==================================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                           dis_manifold, exclude_bands, fermi_energy_list, fermi_surface_data, &
                                           kmesh_input, kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, &
@@ -55,7 +55,7 @@ contains
                                           calc_only_A, cp_pp, gamma_only, lhasproj, library, &
                                           library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
     !!
@@ -63,7 +63,7 @@ contains
     !! from the root node only!
     !!
     !                                                                  !
-    !===================================================================
+    !================================================
 
     use w90_constants, only: w90_physical_constants_type
     use w90_utility, only: utility_recip_lattice, utility_inverse_mat
@@ -232,11 +232,11 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
-    !===================================================!
+    !================================================!
     ! Site symmetry
-    !===================================================!
+    !================================================!
     implicit none
     logical, intent(inout) :: lsitesymmetry
     real(kind=dp), intent(inout) :: symmetrize_eps
@@ -252,9 +252,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'symmetrize_eps', found, r_value=symmetrize_eps)!YN:
   end subroutine w90_wannier90_readwrite_read_sym
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname)
-    !===================================================!
+    !================================================!
     implicit none
     integer, intent(in) :: stdout
     type(w90_calculation_type), intent(out) :: w90_calculation
@@ -280,11 +280,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_w90_calcs
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_transport(transport, tran, restart, stdout, seedname)
-    !===================================================!
+    !================================================!
     ! Transport
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -373,9 +373,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_transport
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -409,11 +409,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_dist_cutoff
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, seedname)
-    !===================================================!
+    !================================================!
     ! Wannierise
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     type(wann_control_type), intent(out) :: wann_control
@@ -544,10 +544,10 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_wannierise
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, &
                                                           num_wann, bohr, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -600,9 +600,9 @@ contains
     ! GS-end
   end subroutine w90_wannier90_readwrite_read_disentangle_w90
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: post_proc_flag
     implicit none
     integer, intent(in) :: stdout
@@ -623,9 +623,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'calc_only_A', found, l_value=pp_only_A)
   end subroutine w90_wannier90_readwrite_read_post_proc
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -650,10 +650,10 @@ contains
     if (w90_calculation%postproc_setup) w90_calculation%restart = ' '
   end subroutine w90_wannier90_readwrite_read_restart
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, num_valence_bands, disentanglement, &
                                                    gamma_only, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     type(output_file_type), intent(inout) :: output_file
@@ -715,11 +715,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_outfiles
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname)
-    !===================================================!
+    !================================================!
     ! Plotting
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     type(wvfn_read_type), intent(out) :: wvfn_read
@@ -746,11 +746,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_plot_info
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname)
-    !===================================================!
+    !================================================!
     ! Plotting
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     type(band_plot_type), intent(out) :: band_plot
@@ -797,11 +797,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_band_plot
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname)
-    !===================================================!
+    !================================================!
     ! Plotting
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     type(wannier_plot_type), intent(out) :: wann_plot
@@ -894,9 +894,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_wann_plot
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -922,10 +922,10 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_fermi_surface
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
                                                   tran_read_ht, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -954,9 +954,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_one_dim
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, stdout, seedname)
-    !===================================================!
+    !================================================!
     implicit none
     integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: hamiltonian
@@ -979,9 +979,9 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_hamil
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -997,9 +997,9 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
   end subroutine w90_wannier90_readwrite_read_bloch_phase
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -1063,13 +1063,13 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_explicit_kpts
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                       guiding_centres, proj_input, select_proj, &
                                                       num_proj, atom_data, recip_lattice, &
                                                       num_wann, gamma_only, spinors, library, &
                                                       bohr, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -1181,10 +1181,10 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_projections
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, real_lattice, &
                                                               num_wann, library, stdout, seedname)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
@@ -1233,7 +1233,7 @@ contains
            & Desired centres for SLWF same as projection centres.'
   end subroutine w90_wannier90_readwrite_read_constrained_centres
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
                                            fermi_surface_data, kpt_latt, output_file, wvfn_read, wann_control, proj, &
                                            proj_input, real_space_ham, select_proj, kpoint_path, tran, print_output, &
@@ -1241,11 +1241,11 @@ contains
                                            symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                                            optimisation, cp_pp, gamma_only, lsitesymmetry, spinors, &
                                            use_bloch_phases, stdout)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
     !                                                                  !
-    !===================================================================
+    !================================================
     use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac, &
       utility_frac_to_cart
 
@@ -1695,12 +1695,12 @@ contains
 
   end subroutine w90_wannier90_readwrite_write
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                                  kmesh_input, kpt_latt, wann_control, proj, proj_input, select_proj, &
                                                  kpoint_path, wannier_data, wann_plot, w90_extra_io, eigval, &
                                                  seedname, stdout)
-    !===================================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -1800,19 +1800,19 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_w90_dealloc
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, kpt_latt, num_kpts, &
                                                  dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                                  mp_grid, real_lattice, omega_invariant, &
                                                  have_disentangled, stdout, seedname)
-    !=================================================!
+    !================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
     !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
     !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
     !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
-    !=================================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_recip_lattice_base
@@ -1898,15 +1898,15 @@ contains
 
   end subroutine w90_wannier90_readwrite_write_chkpt
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, &
                                                      num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                                      gamma_only, stdout)
-    !===========================================!
+    !================================================!
     !                                           !
     !! Estimate how much memory we will allocate
     !                                           !
-    !===========================================!
+    !================================================!
 
     implicit none
 
@@ -2124,7 +2124,7 @@ contains
     return
   end subroutine w90_wannier90_readwrite_memory_estimate
 
-  !===================================================!
+  !================================================!
   subroutine w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, &
                                           dis_manifold, exclude_bands, fermi_energy_list, &
                                           fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
@@ -2136,11 +2136,11 @@ contains
                                           num_wann, optimisation, eig_found, cp_pp, gamma_only, &
                                           have_disentangled, lhasproj, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout, comm)
-    !===========================================================!
+    !================================================!
     !                                                           !
     !! Distribute the various parameters across processors      !
     !                                                           !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time

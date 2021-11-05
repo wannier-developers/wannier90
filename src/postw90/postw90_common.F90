@@ -18,10 +18,10 @@
 
 module w90_postw90_common
 
-  !==============================================================================
+  !================================================
   !! This contains the common variables and procedures needed to set up a Wannier
   !! interpolatation calculation for any physical property
-  !==============================================================================
+  !================================================
 
   use w90_constants, only: dp
 
@@ -50,18 +50,18 @@ module w90_postw90_common
 
 contains
 
-  !===========================================================!
+  !================================================!
   !                   PUBLIC PROCEDURES                       !
   ! Public procedures have names starting with wanint_
-  !===========================================================!
+  !================================================!
 
   subroutine pw90common_wanint_setup(num_wann, print_output, real_lattice, mp_grid, &
                                      effective_model, wigner_seitz, stdout, seedname, comm)
-    !===========================================================!
+    !================================================!
     !
     !! Setup data ready for interpolation
     !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit
@@ -151,13 +151,13 @@ contains
 
   end subroutine pw90common_wanint_setup
 
-  !===========================================================!
+  !================================================!
   subroutine pw90common_wanint_get_kpoint_file(kpoint_dist, stdout, seedname, comm)
-    !===========================================================!
+    !================================================!
     !                                                           !
     !! read kpoints from kpoint.dat and distribute
     !                                                           !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
@@ -238,7 +238,7 @@ contains
 
   end subroutine pw90common_wanint_get_kpoint_file
 
-  !===========================================================!
+  !================================================!
   subroutine pw90common_wanint_w90_wannier90_readwrite_dist(print_output, ws_region, kmesh_info, kpt_latt, num_kpts, &
                                                             dis_manifold, w90_system, fermi_energy_list, num_bands, &
                                                             num_wann, eigval, mp_grid, real_lattice, &
@@ -247,12 +247,12 @@ contains
                                                             pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
                                                             pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
                                                             eig_found, stdout, seedname, comm)
-    !===========================================================!
+    !================================================!
     !                                                           !
     !! distribute the parameters across processors
     !! NOTE: we only send the ones postw90 uses, not all in w90
     !                                                           !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
@@ -565,16 +565,16 @@ contains
 
   end subroutine pw90common_wanint_w90_wannier90_readwrite_dist
 
-  !===========================================================!
+  !================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                          dis_manifold, wannier_data, scissors_shift, v_matrix, &
                                          num_valence_bands, have_disentangled, stdout, seedname, &
                                          comm)
-    !===========================================================!
+    !================================================!
     !                                                           !
     !! Distribute the um and chk files
     !                                                           !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_file_unit, &
@@ -703,14 +703,14 @@ contains
 
   end subroutine pw90common_wanint_data_dist
 
-!=======================================================================
+!================================================
 
   subroutine pw90common_get_occ(ef, eig, occ, num_wann)
-    !===========================================================!
+    !================================================!
     !
     !! Compute the electronic occupancy
     !
-    !===========================================================!
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -750,13 +750,13 @@ contains
 
   end subroutine pw90common_get_occ
 
-  !=======================================================================
+  !================================================
   function kmesh_spacing_singleinteger(num_points, recip_lattice)
-    !=======================================================================
+    !================================================
     !! Set up the value of the interpolation mesh spacing, needed for
     !! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of
     !! the three Delta_k's for each of the primitive translations b1, b2, and b3
-    !=======================================================================
+    !================================================
 
     integer, intent(in) :: num_points
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -794,11 +794,11 @@ contains
 
   end function kmesh_spacing_mesh
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, OO, &
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
                                        seedname, stdout)
-    !=========================================================!
+    !================================================!
     !                                                         !
     !! For alpha=0:
     !! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)
@@ -808,7 +808,7 @@ contains
     !! where R_alpha is a Cartesian component of R
     !! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
     !                                                         !
-    !=========================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
@@ -885,11 +885,11 @@ contains
 
   end subroutine pw90common_fourier_R_to_k
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
                                            stdout, OO, OO_dx, OO_dy, OO_dz)
-    !=======================================================!
+    !================================================!
     !                                                       !
     !! For OO:
     !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
@@ -897,7 +897,7 @@ contains
     !! $$\sum_R [i.R_{dx,dy,dz}.e^{+ik.R}.O_{ij}(R)]$$
     !! where R_{x,y,z} are the Cartesian components of R
     !                                                       !
-    !=======================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -979,12 +979,12 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, ws_region, wannier_data, &
                                                     real_lattice, mp_grid, ws_distance, &
                                                     wigner_seitz, stdout, seedname, OO, OO_da, &
                                                     OO_dadb)
-    !=======================================================!
+    !================================================!
     !                                                       !
     !! For OO:
     !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
@@ -995,7 +995,7 @@ contains
     !! $$-\sum_R [R_{dx1,dy1,dz1}.R_{dx2,dy2,dz2}.e^{+ik.R}.O_{ij}(R)]$$
     !! where R_{xi,yi,zi} are the Cartesian components of R
     !                                                       !
-    !=======================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -1092,12 +1092,12 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new_second_d
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             ws_region, wannier_data, real_lattice, &
                                                             mp_grid, ws_distance, wigner_seitz, &
                                                             stdout, seedname, OO, OO_da, OO_dadb)
-    !=======================================================!
+    !================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
     !
@@ -1110,7 +1110,7 @@ contains
     !! $$-\sum_R [(R+tau_ij)_{dx1,dy1,dz1}.(R+tau_ij)_{dx2,dy2,dz2}.e^{+ik.(R+tau_ij)}.O_{ij}(R)]$$
     !! where {xi,yi,zi} denote the Cartesian components and
     !  tau_ij = tau_j - tau_i, being tau_i=<0i|r|0i> the individual wannier centres
-    !=======================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -1251,16 +1251,16 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
                                            stdout, OO_true, OO_pseudo)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     !! For OO_true (true vector):
     !! $${\vec O}_{ij}(k) = \sum_R e^{+ik.R} {\vec O}_{ij}(R)$$
     !                                                                    !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -1359,11 +1359,11 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_vec
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
                                                 wigner_seitz, OO_R, kpt, real_lattice, mp_grid, &
                                                 num_wann, seedname, stdout, OO_da, OO_dadb)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     !! For $$OO_{ij;dx,dy,dz}$$:
     !! $$O_{ij;dx,dy,dz}(k) = \sum_R e^{+ik.R} O_{ij;dx,dy,dz}(R)$$
@@ -1371,7 +1371,7 @@ contains
     !! $$O_{ij;dx1,dy1,dz1;dx2,dy2,dz2}(k) = \sum_R e^{+ik.R} i.R_{dx2,dy2,dz2}
     !!                                       .O_{ij;dx1,dy1,dz1}(R)$$
     !                                                                    !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -1461,12 +1461,12 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_vec_dadb
 
-  !=========================================================!
+  !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
                                                         wigner_seitz, OO_R, kpt, real_lattice, &
                                                         mp_grid, num_wann, seedname, stdout, &
                                                         OO_da, OO_dadb)
-    !====================================================================!
+    !================================================!
     !                                                                    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1478,7 +1478,7 @@ contains
     !!                                       .O_{ij;dx1,dy1,dz1}(R)$$
     ! with tau_ij = tau_j - tau_i, being tau_i=<0i|r|0i> the individual wannier centres
     !                                                                    !
-    !====================================================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
@@ -1671,19 +1671,19 @@ contains
 
   end subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv
 
-  !===========================================================!
+  !================================================!
   !                   PRIVATE PROCEDURES                      !
-  !===========================================================!
+  !================================================!
 
-  !================================!
+  !================================================!
   subroutine wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, seedname, &
                          count_pts, comm)
-    !================================!
+    !================================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
     !! origin of the Bravais superlattice with primitive translations
     !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3
-    !==========================================================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch

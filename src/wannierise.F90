@@ -41,7 +41,7 @@ module w90_wannierise
 
 contains
 
-  !==================================================================!
+  !================================================!
   subroutine wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
                        output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
                        print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
@@ -50,11 +50,11 @@ contains
                        num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                        bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
                        seedname, stdout, comm)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !                                                                  !
-    !===================================================================
+    !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_wannier90_types, only: wann_control_type, output_file_type, &
@@ -968,16 +968,16 @@ contains
 
   contains
 
-    !===============================================!
+    !================================================!
     subroutine internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                          conv_count, noise_count, lconverged, lrandom, lfirst, &
                                          wann_control, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Determine whether minimisation of non-gauge
       !! invariant spread is converged
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_io, only: io_error
       use w90_wannier90_types, only: wann_control_type
@@ -1057,14 +1057,14 @@ contains
 
     end subroutine internal_test_convergence
 
-    !===============================================!
+    !================================================!
     subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Add some random noise to the search direction
       !! to help escape from local minima
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
@@ -1128,19 +1128,19 @@ contains
 
     end subroutine internal_random_noise
 
-    !===============================================!
+    !================================================!
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                         k_to_r, wann_spread, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
                                         counts, displs, optimisation, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Calculate the conjugate gradients search
       !! direction using the Fletcher-Reeves formula:
       !!
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
@@ -1250,19 +1250,19 @@ contains
 
     end subroutine precond_search_direction
 
-    !===============================================!
+    !================================================!
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, &
                                          doda0, wann_control, num_wann, &
                                          wbtot, cdq_loc, cdodq_loc, counts, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Calculate the conjugate gradients search
       !! direction using the Fletcher-Reeves formula:
       !!
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_io, only: io_stopwatch
       use w90_comms, only: comms_allreduce, w90comm_type
@@ -1403,15 +1403,15 @@ contains
 
     end subroutine internal_search_direction
 
-    !===============================================!
+    !================================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
                                      lprint, trial_step, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Calculate the optimal step length based on a
       !! parabolic line search
       !                                               !
-      !===============================================!
+      !================================================!
       use w90_io, only: io_stopwatch
       use w90_comms, only: w90comm_type
 
@@ -1470,16 +1470,16 @@ contains
 
     end subroutine internal_optimal_step
 
-    !===============================================!
+    !================================================!
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
                                     m_matrix_loc, timing_level, stdout, sitesym, comm)
-      !===============================================!
+      !================================================!
       !                                               !
       !! Update U and M matrices after a trial step
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation
@@ -1618,9 +1618,9 @@ contains
 
     end subroutine internal_new_u_and_m
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_check_unitarity()
-!~    !========================================!
+!~    !================================================!
 !~
 !~      implicit none
 !~
@@ -1670,13 +1670,13 @@ contains
 !~
 !~    end subroutine internal_check_unitarity
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_write_r2mn()
-!~    !========================================!
+!~    !================================================!
 !~    !                                        !
 !~    ! Write seedname.r2mn file               !
 !~    !                                        !
-!~    !========================================!
+!~    !================================================!
 !~      use w90_io, only: seedname,io_file_unit,io_error
 !~
 !~      implicit none
@@ -1714,9 +1714,9 @@ contains
 !~
 !~    end subroutine internal_write_r2mn
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_svd_omega_i()
-!~    !========================================!
+!~    !================================================!
 !~
 !~      implicit none
 !~
@@ -1802,16 +1802,16 @@ contains
 
   end subroutine wann_main
 
-  !==================================================================!
+  !================================================!
 
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, &
                          seedname, iprint, comm, m_w)
-    !==================================================================!
+    !================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
     !                                                                  !
-    !===================================================================
+    !================================================
 
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
@@ -2040,18 +2040,18 @@ contains
 
   end subroutine wann_phases
 
-  !==================================================================!
+  !================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_slwf, omega_invariant, counts, displs, &
                         ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, stdout, seedname, comm)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
     !                                                                  !
     ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
-    !===================================================================
+    !================================================
 
     use w90_io, only: io_stopwatch
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
@@ -2342,19 +2342,19 @@ contains
 
   end subroutine wann_omega
 
-  !==================================================================!
+  !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
                          cdodq_loc, lambda_loc, timing_level, stdout, seedname, sitesym, comm, &
                          iprint, cdodq)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Imperial College London
-    !===================================================================
+    !================================================
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
@@ -2605,11 +2605,11 @@ contains
 
   end subroutine wann_domega
 
-  !==================================================================!
+  !================================================!
   subroutine wann_spread_copy(orig, copy)
-    !==================================================================!
+    !================================================!
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     implicit none
 
@@ -2631,15 +2631,15 @@ contains
 
   end subroutine wann_spread_copy
 
-  !==================================================================!
+  !================================================!
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
                                   timing_level, iprint, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     ! Calculates and writes the projection of each Wannier function    !
     ! on the original bands within the outer window.                   !
     !                                                                  !
-    !==================================================================!
+    !================================================!
 
     use w90_io, only: io_stopwatch
     use w90_comms, only: w90comm_type
@@ -2694,14 +2694,14 @@ contains
 
   end subroutine wann_calc_projection
 
-  !=====================================!
+  !================================================!
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
                             atom_data, print_output, stdout, seedname)
-    !=====================================!
+    !================================================!
     !                                     !
     ! Write xyz file with Wannier centres !
     !                                     !
-    !=====================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_translate_home
@@ -2763,16 +2763,16 @@ contains
 
   end subroutine wann_write_xyz
 
-  !=================================================================!
+  !================================================!
   subroutine wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, &
                                  u_matrix_opt, have_disentangled, w90_system, stdout, seedname)
-    !=================================================================!
+    !================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
     ! post-processing computation of vdW C6 coeffients.               !
     !                                                                 !
     ! Based on code written by Lampros Andrinopoulos.                 !
-    !=================================================================!
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
@@ -2922,10 +2922,10 @@ contains
 
   end subroutine wann_write_vdw_data
 
-  !========================================!
+  !================================================!
   subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
                                   seedname)
-    !========================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error
@@ -2985,13 +2985,13 @@ contains
 
   end subroutine wann_check_unitarity
 
-  !========================================!
+  !================================================!
   subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, stdout, seedname)
-    !========================================!
+    !================================================!
     !                                        !
     ! Write seedname.r2mn file               !
     !                                        !
-    !========================================!
+    !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error
@@ -3039,9 +3039,9 @@ contains
 
   end subroutine wann_write_r2mn
 
-  !========================================!
+  !================================================!
   subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, stdout, seedname)
-    !========================================!
+    !================================================!
 
     use w90_comms, only: w90comm_type
     use w90_constants, only: dp, cmplx_0
@@ -3140,18 +3140,18 @@ contains
 
   end subroutine wann_svd_omega_i
 
-  !==================================================================!
+  !================================================!
   subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, output_file, &
                              wann_control, omega, w90_system, print_output, wannier_data, m_matrix, &
                              u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                              num_bands, num_kpts, num_wann, have_disentangled, translate_home_cell, &
                              seedname, stdout, comm)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
-    !===================================================================
+    !================================================
 
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
@@ -3604,9 +3604,9 @@ contains
 
   contains
 
-    !===============================================!
+    !================================================!
     subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, timing_level, stdout)
-      !===============================================!
+      !================================================!
 
       use w90_constants, only: pi, eps10
       use w90_io, only: io_stopwatch
@@ -3686,15 +3686,15 @@ contains
 
     end subroutine internal_new_u_and_m_gamma
 
-    !===============================================!
+    !================================================!
     subroutine internal_test_convergence_gamma(wann_spread, old_spread, history, iter, lconverged, &
                                                conv_window, conv_tol, stdout)
-      !===============================================!
+      !================================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
       ! invariant spread is converged                 !
       !                                               !
-      !===============================================!
+      !================================================!
 
       use w90_io, only: io_error
 
@@ -3744,9 +3744,9 @@ contains
 
     end subroutine internal_test_convergence_gamma
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_check_unitarity()
-!~    !========================================!
+!~    !================================================!
 !~
 !~      implicit none
 !~
@@ -3796,13 +3796,13 @@ contains
 !~
 !~    end subroutine internal_check_unitarity
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_write_r2mn()
-!~    !========================================!
+!~    !================================================!
 !~    !                                        !
 !~    ! Write seedname.r2mn file               !
 !~    !                                        !
-!~    !========================================!
+!~    !================================================!
 !~      use w90_io, only: seedname,io_file_unit,io_error
 !~
 !~      implicit none
@@ -3839,9 +3839,9 @@ contains
 !~
 !~    end subroutine internal_write_r2mn
 
-!~    !========================================!
+!~    !================================================!
 !~    subroutine internal_svd_omega_i()
-!~    !========================================!
+!~    !================================================!
 !~
 !~      implicit none
 !~
@@ -3927,15 +3927,15 @@ contains
 
   end subroutine wann_main_gamma
 
-  !==================================================================!
+  !================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                               nntot, wbtot, wb, bk, omega_invariant, ln_tmp, first_pass, &
                               timing_level, stdout, seedname)
-    !==================================================================!
+    !================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
-    !===================================================================
+    !================================================
 
     use w90_io, only: io_error, io_stopwatch
 
