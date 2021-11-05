@@ -399,7 +399,7 @@ contains
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
     if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
-                                   timing_level, seedname, stdout)
+                                   timing_level, stdout, error)
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
@@ -604,16 +604,18 @@ contains
 !~![ysl-e]
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, seedname, &
-                            stdout)
+  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, &
+                            stdout, error)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
 
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
+    use w90_error, only: w90_error_type, set_error_lapack
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: nntot
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
@@ -622,14 +624,12 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
 
-    character(len=50), intent(in)  :: seedname
-
     integer       :: lam_unit, info, inn, i, j
     real(kind=DP) :: lambda(num_bands, num_bands)
     real(kind=DP) :: AP(num_bands*(num_bands + 1)/2)
     real(kind=DP) :: eig(num_bands), work(3*num_bands)
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, stdout, error)
 
     lam_unit = io_file_unit()
     open (unit=lam_unit, file='lambda.dat', &
@@ -646,8 +646,10 @@ contains
     end do
 
     CALL DSPEV('V', 'U', num_bands, AP, eig, lambda, num_bands, work, info)
-    if (info .ne. 0) &
-      call io_error('Diagonalization of lambda in overlap_rotate failed', stdout, seedname)
+    if (info .ne. 0) then
+      call set_error_lapack(error, 'Diagonalization of lambda in overlap_rotate failed')
+      return
+    endif
 
     ! For debugging
 !~    write(stdout,*) 'EIGENVALUES - CHECK WITH CP OUTPUT'
@@ -681,7 +683,7 @@ contains
 !~    enddo
 !~    stop
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, stdout, error)
 
     return
 

@@ -30,6 +30,7 @@ module w90_error
   integer, parameter :: code_input_command = 5 !BGS is it a warning?
   integer, parameter :: code_file_read = 6
   integer, parameter :: code_file_open = 7
+  integer, parameter :: code_matrix_lib = 8
   integer, parameter :: code_unconv = -1
   integer, parameter :: code_warning = -3
 
@@ -107,6 +108,15 @@ contains
     err%message = mesg !FIXME, trim to 120
     err%code = code_file_open
   end subroutine set_error_open
+
+  ! BGS should this just be unconv if lapack ierr /= 0?
+  subroutine set_error_lapack(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_matrix_lib
+  end subroutine set_error_lapack
 
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
