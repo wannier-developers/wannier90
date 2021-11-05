@@ -1417,7 +1417,8 @@ contains
                 do loop_w = 1, wann_plot_num
                   if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                  u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
+                                                       u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)* &
+                                                       r_wvfn(npoint, loop_b)*catmp
                   else
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
