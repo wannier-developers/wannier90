@@ -44,7 +44,6 @@ module w90chk_parameters
   ! or read in from an ab-initio grid
   ! a_matrix      = projection of trial orbitals on bloch states
   ! m_matrix_orig = overlap of bloch states
-  !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
   real(kind=dp), allocatable, save :: eigval(:, :)
 
   !BGS u_matrix_opt in postw90 only for generation of v_matrix
@@ -112,7 +111,6 @@ module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-! use w90_io, only: stdout, io_error, seedname
   use w90_io, only: io_error
   implicit none
 
@@ -188,11 +186,12 @@ contains
   !=======================================!
   subroutine conv_read_chkpt(checkpoint, stdout, seedname)
     !=======================================!
+    !
     !! Read formatted checkpoint file
+    !
     !=======================================!
 
     use w90_constants, only: eps6
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
@@ -341,11 +340,12 @@ contains
 
   subroutine conv_read_chkpt_fmt(checkpoint, stdout, seedname)
     !=======================================!
+    !
     !! Read formatted checkpoint file
+    !
     !=======================================!
 
     use w90_constants, only: eps6
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
@@ -552,7 +552,9 @@ contains
 
   subroutine conv_write_chkpt(checkpoint, stdout, seedname)
     !=======================================!
+    !
     !! Write formatted checkpoint file
+    !
     !=======================================!
 
     use w90_io, only: io_file_unit, io_date
@@ -606,7 +608,9 @@ contains
 
   subroutine conv_write_chkpt_fmt(checkpoint, stdout, seedname)
     !=======================================!
+    !
     !! Write formatted checkpoint file
+    !
     !=======================================!
 
     use w90_io, only: io_file_unit, io_date
@@ -760,7 +764,6 @@ program w90chk2chk
     call conv_write_chkpt(checkpoint, stdout, seedname)
   end if
 
-!  close(unit=stdout,status='delete')
   close (unit=stdout)
 
   call comms_end

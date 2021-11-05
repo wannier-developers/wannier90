@@ -232,11 +232,11 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read
 
-  !==================================================================!
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
-    !%%%%%%%%%%%%%%%%
+    !===================================================!
     ! Site symmetry
-    !%%%%%%%%%%%%%%%%
+    !===================================================!
     implicit none
     logical, intent(inout) :: lsitesymmetry
     real(kind=dp), intent(inout) :: symmetrize_eps
@@ -252,11 +252,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'symmetrize_eps', found, r_value=symmetrize_eps)!YN:
   end subroutine w90_wannier90_readwrite_read_sym
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname)
-    !%%%%%%%%%%%%%%%%
-    ! Transport
-    !%%%%%%%%%%%%%%%%
-!   use w90_io, only: io_error
+    !===================================================!
     implicit none
     integer, intent(in) :: stdout
     type(w90_calculation_type), intent(out) :: w90_calculation
@@ -282,10 +280,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_w90_calcs
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_transport(transport, tran, restart, stdout, seedname)
-    !%%%%%%%%%%%%%%%%
+    !===================================================!
     ! Transport
-    !%%%%%%%%%%%%%%%%
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -374,7 +373,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_transport
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -408,10 +409,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_dist_cutoff
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, seedname)
-    !%%%%%%%%%%%
+    !===================================================!
     ! Wannierise
-    !%%%%%%%%%%%
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     type(wann_control_type), intent(out) :: wann_control
@@ -542,12 +544,12 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_wannierise
 
-  subroutine w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
-                                                          stdout, seedname)
+  !===================================================!
+  subroutine w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, &
+                                                          num_wann, bohr, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
-    !logical, intent(in) :: eig_found
-    !real(kind=dp), intent(in) :: eigval(:, :)
     integer, intent(in) :: stdout
     type(dis_control_type), intent(inout) :: dis_control
     type(dis_spheres_type), intent(inout) :: dis_spheres
@@ -598,8 +600,9 @@ contains
     ! GS-end
   end subroutine w90_wannier90_readwrite_read_disentangle_w90
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname)
-!   use w90_io, only: post_proc_flag, io_error
+    !===================================================!
     use w90_io, only: post_proc_flag
     implicit none
     integer, intent(in) :: stdout
@@ -620,8 +623,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'calc_only_A', found, l_value=pp_only_A)
   end subroutine w90_wannier90_readwrite_read_post_proc
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname)
-!   use w90_io, only: seedname, io_error
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -646,8 +650,10 @@ contains
     if (w90_calculation%postproc_setup) w90_calculation%restart = ' '
   end subroutine w90_wannier90_readwrite_read_restart
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, num_valence_bands, disentanglement, &
                                                    gamma_only, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     type(output_file_type), intent(inout) :: output_file
@@ -709,10 +715,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_outfiles
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname)
-    !%%%%%%%%%
+    !===================================================!
     ! Plotting
-    !%%%%%%%%%
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     type(wvfn_read_type), intent(out) :: wvfn_read
@@ -739,10 +746,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_plot_info
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname)
-    !%%%%%%%%%
+    !===================================================!
     ! Plotting
-    !%%%%%%%%%
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     type(band_plot_type), intent(out) :: band_plot
@@ -789,10 +797,11 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_band_plot
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname)
-    !%%%%%%%%%
+    !===================================================!
     ! Plotting
-    !%%%%%%%%%
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     type(wannier_plot_type), intent(out) :: wann_plot
@@ -885,7 +894,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_wann_plot
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -911,8 +922,10 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_fermi_surface
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
                                                   tran_read_ht, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -941,7 +954,9 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_one_dim
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, stdout, seedname)
+    !===================================================!
     implicit none
     integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: hamiltonian
@@ -964,7 +979,9 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_read_hamil
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -980,8 +997,9 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement', stdout, seedname)
   end subroutine w90_wannier90_readwrite_read_bloch_phase
 
-  subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, &
-                                                        stdout, seedname)
+  !===================================================!
+  subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -1045,26 +1063,30 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_explicit_kpts
 
-  subroutine w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, guiding_centres, &
-                                                      proj_input, select_proj, num_proj, &
-                                                      atom_data, recip_lattice, num_wann, gamma_only, &
-                                                      spinors, library, bohr, stdout, seedname)
+  !===================================================!
+  subroutine w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
+                                                      guiding_centres, proj_input, select_proj, &
+                                                      num_proj, atom_data, recip_lattice, &
+                                                      num_wann, gamma_only, spinors, library, &
+                                                      bohr, stdout, seedname)
+    !===================================================!
     use w90_io, only: io_error
+
     implicit none
+
+    type(atom_data_type), intent(in) :: atom_data
     type(proj_input_type), intent(inout) :: proj
-    logical, intent(in) :: use_bloch_phases, guiding_centres, library
-    logical, intent(out) :: lhasproj
-    !real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
     type(proj_input_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
-    integer, intent(inout) :: num_proj
-    type(atom_data_type), intent(in) :: atom_data
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
+    integer, intent(inout) :: num_proj
+    real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: gamma_only
     logical, intent(in) :: spinors
-    real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: use_bloch_phases, guiding_centres, library
+    logical, intent(out) :: lhasproj
 
     integer, intent(in) :: stdout
     integer :: i, j, i_temp, loop, ierr
@@ -1159,9 +1181,10 @@ contains
 
   end subroutine w90_wannier90_readwrite_read_projections
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, real_lattice, &
                                                               num_wann, library, stdout, seedname)
-!   use w90_io, only: io_error, stdout
+    !===================================================!
     use w90_io, only: io_error
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
@@ -1210,7 +1233,7 @@ contains
            & Desired centres for SLWF same as projection centres.'
   end subroutine w90_wannier90_readwrite_read_constrained_centres
 
-!===================================================================
+  !===================================================!
   subroutine w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
                                            fermi_surface_data, kpt_latt, output_file, wvfn_read, wann_control, proj, &
                                            proj_input, real_space_ham, select_proj, kpoint_path, tran, print_output, &
@@ -1268,7 +1291,7 @@ contains
     logical, intent(in) :: gamma_only
     logical, intent(in) :: spinors
 
-!   local variables
+    ! local variables
     real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), kpt_cart(3), volume
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     real(kind=dp) :: cell_volume
@@ -1672,14 +1695,17 @@ contains
 
   end subroutine w90_wannier90_readwrite_write
 
+  !===================================================!
   subroutine w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                                  kmesh_input, kpt_latt, wann_control, proj, proj_input, select_proj, &
                                                  kpoint_path, wannier_data, wann_plot, w90_extra_io, eigval, &
                                                  seedname, stdout)
+    !===================================================!
     use w90_io, only: io_error
-!   passed variables
+
     implicit none
-    !data from parameters module
+
+    ! passed variables
     type(band_plot_type), intent(inout) :: band_plot
     type(wann_control_type), intent(inout) :: wann_control
     type(wannier_data_type), intent(inout) :: wannier_data
@@ -1701,10 +1727,8 @@ contains
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
 
     character(len=50), intent(in)  :: seedname
-    !type(dos_plot_type), intent(inout) :: dos_data
-    !type(berry_type), intent(inout) :: berry
 
-!   passed variables
+    ! local variables
     integer :: ierr
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
@@ -1776,7 +1800,7 @@ contains
     endif
   end subroutine w90_wannier90_readwrite_w90_dealloc
 
-!=================================================!
+  !===================================================!
   subroutine w90_wannier90_readwrite_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, kpt_latt, num_kpts, &
                                                  dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                                  mp_grid, real_lattice, omega_invariant, &
@@ -1790,35 +1814,39 @@ contains
     !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
     !=================================================!
 
-!   use w90_io, only: io_file_unit, io_date, seedname
     use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_recip_lattice_base
 
     implicit none
 
-    !data from parameters module
+    ! passed variables
     type(wannier_data_type), intent(in) :: wannier_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(dis_manifold_type), intent(in) :: dis_manifold
 
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    integer, intent(in) :: mp_grid(3)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: omega_invariant
-    character(len=50), intent(in)  :: seedname
-    character(len=*), intent(in) :: chkpt
-    logical, intent(in) :: have_disentangled
 
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: omega_invariant
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    integer, allocatable, intent(in) :: exclude_bands(:)
+    integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    integer, intent(in) :: num_kpts
-    real(kind=dp) :: recip_lattice(3, 3), volume
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in) :: chkpt
+
+    logical, intent(in) :: have_disentangled
+
+    ! local variables
     integer :: chk_unit, nkp, i, j, k, l, num_exclude_bands
-    integer, allocatable, intent(in) :: exclude_bands(:)
+    real(kind=dp) :: recip_lattice(3, 3), volume
     character(len=9) :: cdate, ctime
     character(len=33) :: header
     character(len=20) :: chkpt1
@@ -1870,7 +1898,7 @@ contains
 
   end subroutine w90_wannier90_readwrite_write_chkpt
 
-!===========================================!
+  !===================================================!
   subroutine w90_wannier90_readwrite_memory_estimate(atom_data, kmesh_info, wann_control, proj_input, print_output, &
                                                      num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                                      gamma_only, stdout)
@@ -1880,15 +1908,12 @@ contains
     !                                           !
     !===========================================!
 
-    !use w90_comms, only:
-
     implicit none
 
-    !data from parameters module
+    ! passed variables
     type(print_output_type), intent(in) :: print_output
     type(wann_control_type), intent(in) :: wann_control
     type(kmesh_info_type), intent(in) :: kmesh_info
-    !type(dis_control_type), intent(in) :: dis_control
     type(proj_input_type), intent(in) :: proj_input
     type(atom_data_type), intent(in) :: atom_data
 
@@ -1898,21 +1923,15 @@ contains
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_kpts
     integer, intent(in) :: optimisation
-    !type(pw90_calculation_type), intent(in) :: pw90_calcs
-    !type(postw90_common_type), intent(in) :: pw90_common
-    !type(boltzwann_type), intent(in) :: boltz
-    !logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(in) :: gamma_only
 
-!   local variables
+    ! local variables
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp
     real(kind=dp), parameter :: size_cmplx = 16.0_dp
     real(kind=dp) :: mem_wan, mem_wan1, mem_param, mem_dis, mem_dis2, mem_dis1
     real(kind=dp) :: mem_bw
-    !integer :: NumPoints1, NumPoints2, NumPoints3, ndim
-    !real(kind=dp) :: TDF_exceeding_energy
     logical :: disentanglement
 
     disentanglement = (num_bands > num_wann)
@@ -2105,53 +2124,56 @@ contains
     return
   end subroutine w90_wannier90_readwrite_memory_estimate
 
-!===========================================================!
-  subroutine w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
-                                          exclude_bands, fermi_energy_list, fermi_surface_data, kmesh_input, &
-                                          kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, wann_omega, &
-                                          proj_input, real_space_ham, w90_system, tran, print_output, wannier_data, &
-                                          wann_plot, ws_region, w90_calculation, eigval, real_lattice, &
-                                          symmetrize_eps, mp_grid, first_segment, num_bands, num_kpts, num_proj, &
-                                          num_wann, optimisation, eig_found, cp_pp, gamma_only, have_disentangled, &
-                                          lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
+  !===================================================!
+  subroutine w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, &
+                                          dis_manifold, exclude_bands, fermi_energy_list, &
+                                          fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
+                                          output_file, wvfn_read, wann_control, wann_omega, &
+                                          proj_input, real_space_ham, w90_system, tran, &
+                                          print_output, wannier_data, wann_plot, ws_region, &
+                                          w90_calculation, eigval, real_lattice, symmetrize_eps, &
+                                          mp_grid, first_segment, num_bands, num_kpts, num_proj, &
+                                          num_wann, optimisation, eig_found, cp_pp, gamma_only, &
+                                          have_disentangled, lhasproj, lsitesymmetry, &
+                                          use_bloch_phases, seedname, stdout, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
 
     implicit none
+
     !passed variables
-    type(w90_calculation_type), intent(inout) :: w90_calculation
-    type(output_file_type), intent(inout) :: output_file
-    integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(real_space_ham_type), intent(inout) :: real_space_ham
-    type(ws_region_type), intent(inout) :: ws_region
-    type(print_output_type), intent(inout) :: print_output
-    type(wvfn_read_type), intent(inout) :: wvfn_read
+
+    type(atom_data_type), intent(inout) :: atom_data
     type(band_plot_type), intent(inout) :: band_plot
-    type(wannier_plot_type), intent(inout) :: wann_plot
-    type(wann_control_type), intent(inout) :: wann_control
-    type(wann_omega_type), intent(inout) :: wann_omega
-    type(w90_system_type), intent(inout) :: w90_system
-    type(wannier_data_type), intent(inout) :: wannier_data
-    type(kmesh_input_type), intent(inout) :: kmesh_input
-    type(kmesh_info_type), intent(inout) :: kmesh_info
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(dis_control_type), intent(inout) :: dis_control
+    type(dis_manifold_type), intent(inout) :: dis_manifold
     type(dis_spheres_type), intent(inout) :: dis_spheres
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
-    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(output_file_type), intent(inout) :: output_file
+    type(print_output_type), intent(inout) :: print_output
     type(proj_input_type), intent(inout) :: proj_input
+    type(real_space_ham_type), intent(inout) :: real_space_ham
     type(transport_type), intent(inout) :: tran
-    type(atom_data_type), intent(inout) :: atom_data
-    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(w90_calculation_type), intent(inout) :: w90_calculation
     type(w90comm_type), intent(in) :: comm
+    type(w90_system_type), intent(inout) :: w90_system
+    type(wann_control_type), intent(inout) :: wann_control
+    type(wannier_data_type), intent(inout) :: wannier_data
+    type(wannier_plot_type), intent(inout) :: wann_plot
+    type(wann_omega_type), intent(inout) :: wann_omega
+    type(ws_region_type), intent(inout) :: ws_region
+    type(wvfn_read_type), intent(inout) :: wvfn_read
 
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(inout) :: first_segment
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -2161,9 +2183,10 @@ contains
     integer, intent(inout) :: num_kpts
     integer, intent(inout) :: optimisation
 
-    real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    !real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: symmetrize_eps
 
     character(len=50), intent(in)  :: seedname
@@ -2173,14 +2196,13 @@ contains
     logical, intent(inout) :: gamma_only
     logical, intent(inout) :: have_disentangled
     logical, intent(inout) :: lhasproj
-    ! RS: symmetry-adapted Wannier functions
-    logical, intent(inout) :: lsitesymmetry
+    logical, intent(inout) :: lsitesymmetry ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: use_bloch_phases
 
-!   local variables
+    ! local variables
     logical :: on_root = .false.
     integer :: ierr
-    integer :: iprintroot !JJ
+    integer :: iprintroot
     integer :: num_project, wann_plot_num, num_exclude_bands, fermi_n
     logical :: disentanglement
 

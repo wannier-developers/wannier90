@@ -59,9 +59,8 @@ contains
   subroutine pw90common_wanint_setup(num_wann, print_output, real_lattice, mp_grid, &
                                      effective_model, wigner_seitz, stdout, seedname, comm)
     !! Setup data ready for interpolation
-    use w90_constants, only: dp !, cmplx_0
+    use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit
-    !use w90_utility, only: utility_cart_to_frac
     use w90_types, only: print_output_type
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
@@ -251,7 +250,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
@@ -573,7 +572,7 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only: dp, cmplx_0 !, cmplx_i, twopi
+    use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_types, only: dis_manifold_type, wannier_data_type
@@ -705,9 +704,7 @@ contains
   subroutine pw90common_get_occ(ef, eig, occ, num_wann)
     !! Compute the electronic occupancy
 
-    use w90_constants, only: dp !,eps7
-    !use w90_parameters, only: num_wann !,smear_temp
-!    use w90_constants, only    : elem_charge_SI,k_B_SI
+    use w90_constants, only: dp
 
     ! Arguments
     !

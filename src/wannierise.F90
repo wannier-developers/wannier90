@@ -978,6 +978,7 @@ contains
       !! invariant spread is converged
       !                                               !
       !===============================================!
+
       use w90_io, only: io_error
       use w90_wannier90_types, only: wann_control_type
 
@@ -1064,6 +1065,7 @@ contains
       !! to help escape from local minima
       !                                               !
       !===============================================!
+
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
       use w90_comms, only: w90comm_type
@@ -1139,9 +1141,9 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
+
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      !use w90_comms, only: comms_allreduce, w90comm_type
 
       implicit none
 
@@ -1261,7 +1263,7 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
-      !use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
+
       use w90_io, only: io_stopwatch
       use w90_comms, only: comms_allreduce, w90comm_type
       use w90_wannier90_types, only: wann_control_type
@@ -1415,16 +1417,16 @@ contains
 
       implicit none
 
-      type(localisation_vars_type), intent(in) :: wann_spread
       type(localisation_vars_type), intent(in) :: trial_spread
+      type(localisation_vars_type), intent(in) :: wann_spread
+      integer, intent(in) :: stdout
       real(kind=dp), intent(in) :: doda0
+      real(kind=dp), intent(in) :: trial_step
       real(kind=dp), intent(out) :: alphamin, falphamin
       logical, intent(out) :: lquad
       logical, intent(in) :: lprint
-      real(kind=dp), intent(in) :: trial_step
-!     integer, intent(in) :: iprint, timing_level
-      integer, intent(in) :: stdout
-      ! local
+
+      ! local variables
       real(kind=dp) :: fac, shift, eqa, eqb
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
@@ -1478,6 +1480,7 @@ contains
       !! Update U and M matrices after a trial step
       !                                               !
       !===============================================!
+
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation
       use w90_wannier90_types, only: sitesym_type
@@ -1809,6 +1812,7 @@ contains
     !! consistent choice of branch cut for the spread definition
     !                                                                  !
     !===================================================================
+
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
@@ -2048,6 +2052,7 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
     !===================================================================
+
     use w90_io, only: io_stopwatch
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
     use w90_types, only: kmesh_info_type, print_output_type
@@ -2349,6 +2354,7 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Imperial College London
     !===================================================================
+
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
@@ -2696,7 +2702,6 @@ contains
     !                                     !
     !=====================================!
 
-!   use w90_io, only: seedname, io_file_unit, io_date
     use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_translate_home
     use w90_types, only: atom_data_type, print_output_type
@@ -2768,12 +2773,10 @@ contains
     ! Based on code written by Lampros Andrinopoulos.                 !
     !=================================================================!
 
-!   use w90_io, only: seedname, io_file_unit, io_date, io_error
     use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0
     use w90_types, only: wannier_data_type, w90_system_type
-!~    use w90_disentangle, only : ndimfroz
 
     implicit none
 
@@ -2990,7 +2993,6 @@ contains
     !========================================!
 
     use w90_constants, only: dp
-!   use w90_io, only: seedname, io_file_unit, io_error
     use w90_io, only: io_file_unit, io_error
     use w90_types, only: kmesh_info_type
 
@@ -2998,10 +3000,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
 
-    ! from parameters
-!   integer, intent(in) :: num_kpts, num_wann, nntot
     integer, intent(in) :: num_kpts, num_wann
-!   real(kind=dp), intent(in) :: wb(:)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -3043,31 +3042,24 @@ contains
   subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, stdout, seedname)
     !========================================!
 
+    use w90_comms, only: w90comm_type
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: w90comm_type
     use w90_types, only: kmesh_info_type, print_output_type
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
-
-    ! from w90_parameters
-!   integer, intent(in) :: num_wann, num_kpts, nntot
     integer, intent(in) :: num_wann, num_kpts
-!   real(kind=dp), intent(in) :: wb(:)
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-!   real(kind=dp), intent(in) :: lenconfac
-!   character(len=*), intent(in) :: length_unit
-!   integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    character(len=50), intent(in) :: seedname
 
-    complex(kind=dp), allocatable  :: cv1(:, :), cv2(:, :)
-    complex(kind=dp), allocatable  :: cw1(:), cw2(:)
-    complex(kind=dp), allocatable  :: cpad1(:)
-    real(kind=dp), allocatable  :: singvd(:)
+    complex(kind=dp), allocatable :: cv1(:, :), cv2(:, :)
+    complex(kind=dp), allocatable :: cw1(:), cw2(:)
+    complex(kind=dp), allocatable :: cpad1(:)
+    real(kind=dp), allocatable :: singvd(:)
 
     integer :: ierr, info
     integer :: nkp, nn, nb, na, ind
@@ -3159,6 +3151,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
     !===================================================================
+
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
     use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
@@ -3611,21 +3604,23 @@ contains
   contains
 
     !===============================================!
-    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, &
-                                          timing_level, stdout)
+    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, timing_level, stdout)
       !===============================================!
 
       use w90_constants, only: pi, eps10
       use w90_io, only: io_stopwatch
 
       implicit none
+
+      ! passed variables
       real(kind=dp), intent(inout) :: m_w(:, :, :)
       real(kind=dp), intent(inout)  :: ur_rot(:, :)
       integer, intent(in) :: tnntot
       integer, intent(in) :: num_wann
       integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
-      ! local
+
+      ! local variables
       real(kind=dp) :: theta, twotheta
       real(kind=dp) :: a11, a12, a21, a22
       real(kind=dp) :: cc, ss, rtmp1, rtmp2
@@ -3691,25 +3686,29 @@ contains
     end subroutine internal_new_u_and_m_gamma
 
     !===============================================!
-    subroutine internal_test_convergence_gamma(wann_spread, old_spread, history, &
-                                               iter, lconverged, conv_window, conv_tol, stdout)
+    subroutine internal_test_convergence_gamma(wann_spread, old_spread, history, iter, lconverged, &
+                                               conv_window, conv_tol, stdout)
       !===============================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
       ! invariant spread is converged                 !
       !                                               !
       !===============================================!
+
       use w90_io, only: io_error
 
       implicit none
+
+      ! passed variables
       type(localisation_vars_type), intent(in) :: wann_spread
       type(localisation_vars_type), intent(in) :: old_spread
-      real(kind=dp), intent(inout) :: history(:)
-      integer, intent(in) :: iter
-      logical, intent(out) :: lconverged
       integer, intent(in) :: conv_window
-      real(kind=dp), intent(in) :: conv_tol
+      integer, intent(in) :: iter
       integer, intent(in) :: stdout
+      real(kind=dp), intent(in) :: conv_tol
+      real(kind=dp), intent(inout) :: history(:)
+      logical, intent(out) :: lconverged
+
       ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
@@ -3936,6 +3935,7 @@ contains
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
     !===================================================================
+
     use w90_io, only: io_error, io_stopwatch
 
     implicit none

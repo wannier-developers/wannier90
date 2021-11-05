@@ -229,7 +229,7 @@ contains
   end subroutine
 
   !===================================================================
-  subroutine utility_inv3(a, b, det)                   !
+  subroutine utility_inv3(a, b, det)
     !==================================================================!
     !                                                                  !
     !! Return in b the adjoint of the 3x3 matrix a, and its
@@ -261,7 +261,7 @@ contains
   end subroutine utility_inv3
 
   !===================================================================
-  subroutine utility_inv2(a, b, det)                   !
+  subroutine utility_inv2(a, b, det)
     !==================================================================!
     !                                                                  !
     !! Return in b the adjoint of the 2x2 matrix
@@ -451,7 +451,9 @@ contains
     !!  Convert from Cartesian to fractional coordinates
     !                                                                  !
     !===================================================================
+
     use w90_constants, only: twopi
+
     implicit none
 
     real(kind=dp), intent(in)  :: inv_lat(3, 3)
@@ -580,38 +582,6 @@ contains
 
   end subroutine utility_string_to_coord
 
-!~  !===========================================!
-!~  function utility_string_to_coord(string_tmp)!
-!~  !===========================================!
-!~  !                                           !
-!~  !  Takes a string in the form 0.0,1.0,0.5   !
-!~  !   and returns an array of the real num    !
-!~  !                                           !
-!~  !===========================================!
-!~
-!~    implicit none
-!~
-!~    character(len=80), intent(in)  :: string_tmp
-!~    real(kind=dp) :: utility_string_to_coord(3)
-!~
-!~    integer :: pos,pos2
-!~    character(len=80)  :: ctemp
-!~    character(len=80)  :: ctemp2
-!~
-!~
-!~    ctemp=string_tmp
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(1)
-!~    ctemp=ctemp(pos2+1:)
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(2)
-!~    ctemp=ctemp(pos2+1:)
-!~    read(ctemp,*) utility_string_to_coord(3)
-!~
-!~  end function utility_string_to_coord
-
   !========================================================!
   subroutine utility_translate_home(vec, real_lat)
     !========================================================!
@@ -665,7 +635,6 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, cmplx_0
-!   use w90_io, only: io_error, stdout
     use w90_io, only: io_error
 
     integer, intent(in)           :: dim

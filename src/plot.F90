@@ -31,6 +31,7 @@ module w90_plot
 contains
 
   !============================================!
+
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
                        ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
                        kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
@@ -40,9 +41,9 @@ contains
                        transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, &
                        stdout, comm)
     !==================================================================!
+    !
     !! Main plotting routine
     !
-    !                                                                  !
     !==================================================================!
 
     use w90_constants, only: eps6, dp
@@ -797,6 +798,7 @@ contains
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in gnuplot format
+      !                                            !
       !============================================!
 
       use w90_constants, only: dp
@@ -884,10 +886,12 @@ contains
 
     end subroutine plot_interpolate_gnuplot
 
+    !============================================!
     subroutine plot_interpolate_xmgrace(kpoint_path, bands_num_spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in Xmgrace format
+      !                                            !
       !============================================!
 
       use w90_io, only: io_file_unit, io_date
@@ -1137,7 +1141,6 @@ contains
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
                           comm)
     !============================================!
-    !                                            !
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
     !                                            !
@@ -1573,7 +1576,6 @@ contains
       !                                            !
       !============================================!
 
-      !use w90_constants, only: bohr
       use w90_utility, only: utility_translate_home, utility_cart_to_frac, utility_frac_to_cart, &
         utility_inverse_mat, utility_recip_lattice_base
       use w90_types, only: wannier_data_type, atom_data_type
@@ -1974,10 +1976,8 @@ contains
     !                                            !
     !============================================!
 
-!   use w90_io, only: io_error, io_file_unit, seedname, &
-    use w90_io, only: io_error, io_file_unit, &
-      io_time, io_stopwatch, io_date
-    use w90_constants, only: dp  !lp
+    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch, io_date
+    use w90_constants, only: dp
 
     implicit none
 
@@ -2029,7 +2029,7 @@ contains
 
   !============================================!
   subroutine plot_bvec(kmesh_info, num_kpts, stdout, seedname)
-    !!
+    !============================================!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
     !! This is used by EPW to compute the velocity.
@@ -2037,9 +2037,8 @@ contains
     !!
     !============================================!
 
-!   use w90_io, only: io_error, io_file_unit, seedname, io_date
     use w90_io, only: io_error, io_file_unit, io_date
-    use w90_constants, only: dp  !lp
+    use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
 
     implicit none

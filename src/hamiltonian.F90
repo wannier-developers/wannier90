@@ -37,11 +37,15 @@ module w90_hamiltonian
 contains
 
   !============================================!
+
   subroutine hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
                                stdout, seedname, transport_mode)
+    !============================================!
+    !
     !! Allocate arrays and setup data
+    !
     !============================================!
 
     use w90_constants, only: cmplx_0
@@ -130,7 +134,10 @@ contains
   !============================================!
   subroutine hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, &
                                  ndegen, stdout, seedname)
+    !============================================!
+    !
     !! Deallocate module data
+    !
     !============================================!
 
     use w90_io, only: io_error
@@ -191,6 +198,7 @@ contains
     ham_logical%tb_written = .false.
 
     return
+    !============================================!
   end subroutine hamiltonian_dealloc
 
   !============================================!
@@ -201,7 +209,7 @@ contains
                                 num_kpts, num_wann, have_disentangled, stdout, seedname, &
                                 lsitesymmetry)
     !============================================!
-    !                                            !
+    !
     !!  Calculate the Hamiltonian in the WF basis
     !                                            !
     !============================================!
@@ -424,13 +432,14 @@ contains
 
   contains
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     !====================================================!
     subroutine internal_translate_centres(atom_data, real_space_ham, real_lattice, &
                                           wannier_centres, wannier_centres_translated, shift_vec, &
                                           iprint, num_wann, seedname, stdout)
+      !====================================================!
+      !
       !! Translate the centres of the WF into the home cell
+      !
       !====================================================!
 
       use w90_io, only: io_error
@@ -537,13 +546,15 @@ contains
   subroutine hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
                                   timing_level, seedname, stdout)
     !============================================!
+    !
     !!  Write the Hamiltonian in the WF basis
+    !
     !============================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
     use w90_wannier90_types, only: ham_logical_type
 
-!   passed variables
+    ! passed variables
     type(ham_logical_type), intent(inout) :: ham_logical
 
     integer, intent(inout) :: nrpts
@@ -764,7 +775,10 @@ contains
   !============================================!
   subroutine hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
                                    num_wann, stdout, seedname)
+    !============================================!
+    !
     !! Write out the matrix elements of r
+    !
     !============================================!
 
     use w90_constants, only: twopi, cmplx_i
@@ -860,9 +874,9 @@ contains
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: ham_logical_type
 
-!   passed variables
+    ! passed variables
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(ham_logical_type), intent(inout)  :: ham_logical
+    type(ham_logical_type), intent(inout) :: ham_logical
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
     integer, intent(in)    :: num_wann
@@ -872,13 +886,16 @@ contains
     integer, intent(inout) :: nrpts
     integer, intent(in)    :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
+
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     real(kind=dp)      :: rdotk
     complex(kind=dp)   :: fac, pos_r(3)
     character(len=33)  :: header

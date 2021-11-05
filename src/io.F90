@@ -54,9 +54,12 @@ module w90_io
 contains
 
   !=====================================
+
   subroutine io_stopwatch(tag, mode, stdout, seedname)
     !=====================================
+    !
     !! Stopwatch to time parts of the code
+    !
     !=====================================
 
     implicit none
@@ -118,7 +121,9 @@ contains
   !=====================================
   subroutine io_print_timings(stdout)
     !=====================================
+    !
     !! Output timing information to stdout
+    !
     !=====================================
 
     implicit none
@@ -146,6 +151,7 @@ contains
     !=======================================
     !
     !! Get the seedname from the commandline
+    !
     !=======================================
 
     implicit none
@@ -191,6 +197,7 @@ contains
     !=======================================
     !
     !! Parse the commandline
+    !
     !=======================================
 
     implicit none
@@ -298,7 +305,9 @@ contains
   !========================================
   subroutine io_error(error_msg, stdout, seedname)
     !========================================
+    !
     !! Abort the code giving an error message
+    !
     !========================================
 
     implicit none
@@ -382,11 +391,12 @@ contains
   !==================================================================!
   function io_wallclocktime()
     !==================================================================!
-    !                                                                  !
     ! Returns elapsed wall clock time in seconds since its first call  !
-    !                                                                  !
+    !
     !===================================================================
+
     use w90_constants, only: dp, i64
+
     implicit none
 
     real(kind=dp) :: io_wallclocktime
@@ -411,11 +421,11 @@ contains
   !===========================================
   function io_file_unit()
     !===========================================
-    !
     !! Returns an unused unit number
     !! so we can later open a file on that unit.
     !
     !===========================================
+
     implicit none
 
     integer :: io_file_unit, unit

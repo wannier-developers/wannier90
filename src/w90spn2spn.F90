@@ -44,8 +44,13 @@ module w90_conv_spn
 
 contains
 
+  !===================================================!
   subroutine print_usage(stdout)
+    !===================================================!
+    !
     !! Writes the usage of the program to stdout
+    !
+    !===================================================!
 
     implicit none
 
@@ -66,8 +71,13 @@ contains
     write (stdout, '(A)') "      The seedname.spn.fmt file is read and the seedname.spn file is generated."
   end subroutine print_usage
 
+  !===================================================!
   subroutine conv_get_seedname(stdout, seedname)
+    !===================================================!
+    !
     !! Set the seedname from the command line
+    !
+    !===================================================!
     implicit none
 
     integer, intent(in) :: stdout
@@ -110,14 +120,15 @@ contains
 
   end subroutine conv_get_seedname
 
-  !=======================================!
+  !===================================================!
   subroutine conv_read_spn(stdout, seedname)
-    !=======================================!
+    !===================================================!
+    !
     !! Read unformatted spn file
-    !=======================================!
+    !
+    !===================================================!
 
     use w90_constants, only: eps6, dp
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
@@ -187,13 +198,15 @@ contains
 
   end subroutine conv_read_spn
 
+  !===================================================!
   subroutine conv_read_spn_fmt(stdout, seedname)
-    !=======================================!
+    !===================================================!
+    !
     !! Read formatted spn file
-    !=======================================!
+    !
+    !===================================================!
 
     use w90_constants, only: eps6, dp
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
@@ -258,10 +271,13 @@ contains
 
   end subroutine conv_read_spn_fmt
 
+  !===================================================!
   subroutine conv_write_spn(stdout, seedname)
-    !=======================================!
+    !===================================================!
+    !
     !! Write unformatted spn file
-    !=======================================!
+    !
+    !===================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90spn_parameters, only: num_bands, num_kpts
@@ -304,10 +320,13 @@ contains
 
   end subroutine conv_write_spn
 
+  !===================================================!
   subroutine conv_write_spn_fmt(stdout, seedname)
-    !=======================================!
+    !===================================================!
+    !
     !! Write formatted spn file
-    !=======================================!
+    !
+    !===================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90spn_parameters, only: num_bands, num_kpts
@@ -404,7 +423,6 @@ program w90spn2spn
     call conv_write_spn(stdout, seedname)
   end if
 
-!  close(unit=stdout,status='delete')
   close (unit=stdout)
 
   call comms_end

@@ -47,7 +47,9 @@ contains
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sitesym, lwindow_in)
     !==================================================================!
     ! not called !
+
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
     integer, intent(in) :: num_bands
@@ -83,16 +85,14 @@ contains
   !==================================================================!
   subroutine sitesym_replace_d_matrix_band(sitesym, num_wann)
     !==================================================================!
+
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
-!   end w90_parameters
     type(sitesym_type), intent(inout) :: sitesym
 
-    !write(stdout,"(a)") '-- sitesym_replace_sym%d_matrix_band --'
-    !write(stdout,"(a)") 'sym%d_matrix_band is replaced by sym%d_matrix_wann'
     deallocate (sitesym%d_matrix_band)
     allocate (sitesym%d_matrix_band(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr))
     sitesym%d_matrix_band = sitesym%d_matrix_wann
@@ -118,7 +118,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -181,17 +181,18 @@ contains
   !==================================================================!
   subroutine sitesym_symmetrize_gradient(sitesym, grad, imode, num_kpts, num_wann)
     !==================================================================!
+
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(in) :: sitesym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
 
-!   local variables
+    ! local variables
     integer :: ik, ir, isym, irk, ngk
 
     complex(kind=dp) :: grad_total(num_wann, num_wann)
@@ -262,7 +263,7 @@ contains
 
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_wann, num_kpts
@@ -270,7 +271,7 @@ contains
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer :: ik, ir, isym, irk
     complex(kind=dp) :: cmat1(num_wann, num_wann)
     complex(kind=dp) :: cmat2(num_wann, num_wann)
@@ -311,7 +312,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -321,7 +322,7 @@ contains
 
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
 
-!   local variables
+    ! local variables
     logical :: lfound(num_kpts)
     integer :: ik, ir, isym, irk, nd
     complex(kind=dp) :: cztmp(num_bands, num_bands)
@@ -516,7 +517,7 @@ contains
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -530,7 +531,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     complex(kind=dp) :: umatnew(num_bands, num_wann)
     complex(kind=dp) :: ZU(num_bands, num_wann)
     complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
@@ -598,12 +599,13 @@ contains
   !==================================================================!
   subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)
     !==================================================================!
-    use w90_io, only: io_file_unit, io_error
 
+    use w90_io, only: io_file_unit, io_error
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
-!   passed variables
+    ! passed variables
     type(sitesym_type), intent(inout) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -612,7 +614,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()
@@ -646,9 +648,10 @@ contains
   !==================================================================!
   subroutine sitesym_dealloc(sitesym, stdout, seedname)
     !==================================================================!
-    use w90_io, only: io_error
 
+    use w90_io, only: io_error
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
     type(sitesym_type), intent(inout) :: sitesym

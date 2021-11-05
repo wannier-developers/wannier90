@@ -93,53 +93,51 @@ program wannier
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(w90_physical_constants_type) :: physics ! data from parameters module
-  type(w90_calculation_type) :: w90_calculation
+  type(atom_data_type) :: atom_data
+  type(band_plot_type) :: band_plot
+  type(dis_control_type) :: dis_control
+  type(dis_manifold_type) :: dis_manifold
+  type(dis_spheres_type) :: dis_spheres
+  type(fermi_surface_plot_type) :: fermi_surface_plot
+  type(ham_logical_type) :: ham_logical
+  type(kmesh_info_type) :: kmesh_info
+  type(kmesh_input_type) :: kmesh_input
+  type(kpoint_path_type) :: kpoint_path
   type(output_file_type) :: output_file
-  ! Are we running postw90?
-  !logical :: ispostw90 = .false.
   type(print_output_type) :: print_output
-  integer :: optimisation
-  type(w90_system_type) :: w90_system
+  type(proj_input_type) :: input_proj
   type(real_space_ham_type) :: real_space_ham
+  type(select_projection_type) :: select_projection
+  type(sitesym_type) :: sitesym
+  type(transport_type) :: transport
+  type(w90_calculation_type) :: w90_calculation
+  type(w90comm_type) :: comm
+  type(w90_physical_constants_type) :: physics
+  type(w90_system_type) :: w90_system
+  type(wann_control_type) :: wann_control
+  type(wannier_data_type) :: wannier_data
+  type(wannier_plot_type) :: wannier_plot
+  type(wann_omega_type) :: omega
   type(ws_region_type) :: ws_region
   type(wvfn_read_type) :: wvfn_read
-  type(band_plot_type) :: band_plot
-  type(wannier_plot_type) :: wannier_plot
-  type(wann_control_type) :: wann_control
-  type(wann_omega_type) :: omega
-  type(wannier_data_type) :: wannier_data
-  type(kmesh_input_type) :: kmesh_input
-  type(proj_input_type) :: input_proj
-  type(kmesh_info_type) :: kmesh_info
-  real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
-  type(dis_control_type) :: dis_control
-  type(dis_spheres_type) :: dis_spheres
-  type(dis_manifold_type) :: dis_manifold
-  type(fermi_surface_plot_type) :: fermi_surface_plot
-  type(transport_type) :: transport
-  type(atom_data_type) :: atom_data
-  type(select_projection_type) :: select_projection
-  type(kpoint_path_type) :: kpoint_path
-
-  type(sitesym_type) :: sitesym
-  type(ham_logical_type) :: ham_logical
-  type(w90comm_type) :: comm
-
-  integer :: num_bands   !! Number of bands
-
-  integer :: num_wann    !! number of wannier functions
-  integer :: mp_grid(3)  !! Dimensions of the Monkhorst-Pack grid
-  integer :: num_kpts
-  integer :: num_proj
-  integer :: num_exclude_bands
 
   integer, allocatable :: exclude_bands(:)
+  integer :: mp_grid(3)  !! Dimensions of the Monkhorst-Pack grid
+  integer :: num_bands   !! Number of bands
+  integer :: num_exclude_bands
+  integer :: num_kpts
+  integer :: num_proj
+  integer :: num_wann    !! number of wannier functions
+  integer :: optimisation
 
+  real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
   real(kind=dp), allocatable :: eigval(:, :)
   real(kind=dp), allocatable :: fermi_energy_list(:)
   real(kind=dp) :: real_lattice(3, 3)
   real(kind=dp) :: recip_lattice(3, 3)
+
+  ! Are we running postw90?
+  !logical :: ispostw90 = .false.
 
   ! a_matrix and m_matrix_orig can be calculated internally from bloch states
   ! or read in from an ab-initio grid
@@ -201,7 +199,8 @@ program wannier
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', 0, "wannier")  ! stdout, seedname not yet known!
+  seedname = "wannier"
+  if (ierr .ne. 0) call io_error('MPI initialisation error', 0, seedname)  ! stdout, seedname not yet known!
 #endif
 
   num_nodes = mpisize(comm)
@@ -477,7 +476,6 @@ program wannier
     end if
   endif
 
-  call tran_dealloc() !(stdout, seedname)
   call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            stdout, seedname)
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &

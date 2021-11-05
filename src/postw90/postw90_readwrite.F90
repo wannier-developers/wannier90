@@ -710,7 +710,6 @@ contains
   end subroutine w90_wannier90_readwrite_read_spin_hall
 
   subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, stdout, seedname)
-!   use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     type(pw90_band_deriv_degen_type), intent(out) :: pw90_band_deriv_degen
@@ -887,7 +886,6 @@ contains
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (pw90_geninterp)
     !%%%%%%%%%%%%%%%%%%%%
-!   use w90_io, only: io_error
     implicit none
 
     type(pw90_geninterp_mod_type), intent(out) :: pw90_geninterp
@@ -1225,7 +1223,6 @@ contains
 
   subroutine w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh, recip_lattice, stdout, seedname)
     use w90_io, only: io_error
-    !use w90_utility, only: utility_recip_lattice
     implicit none
 
     type(kmesh_spacing_type), intent(out) :: kmesh
@@ -2065,7 +2062,6 @@ contains
   end subroutine w90_postw90_readwrite_mem_estimate
 
   subroutine parameters_gyro_write_task(task, key, comment, stdout)
-!   use w90_io, only: stdout
 
     integer, intent(in) :: stdout
     character(len=*), intent(in) :: task, key, comment
