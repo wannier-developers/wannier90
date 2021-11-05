@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  COMMS: set of MPI wrapper                                 !
+!  COMMS: set of MPI wrappers                                !
 !  written 2006-2012 Jonathan R. Yates                       !
 !    later additions Giovanni Pizzi                          !
 !                                                            !

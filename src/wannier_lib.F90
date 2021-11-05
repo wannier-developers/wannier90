@@ -178,7 +178,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_libv1_types
   use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_lib_set_atoms
   use w90_sitesym
-  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
+  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
+    w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
   use w90_wannier90_libv1_types
 
 #ifdef MPI
@@ -407,8 +408,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_constants, only: w90_physical_constants_type, dp
   use w90_libv1_types
   use w90_wannier90_libv1_types
-  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, w90_wannier90_readwrite_write_chkpt, &
-    w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
+  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
+    w90_wannier90_readwrite_write_chkpt, w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
   use w90_io
   use w90_hamiltonian
   use w90_kmesh

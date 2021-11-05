@@ -80,25 +80,25 @@ contains
     logical, intent(in) :: gamma_only
 
     ! local variables
+    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
+    real(kind=dp), allocatable :: bvec_tmp(:, :)
     real(kind=dp), allocatable :: kpt_cart(:, :)
+    real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
+    real(kind=dp) :: bweight(max_shells)
+    real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
+    real(kind=dp) :: dnn(kmesh_input%search_shells)
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
-    integer :: nnsh, nn, nnx, loop, i, j
-    integer :: stdout
+    real(kind=dp) :: vkpp(3), vkpp2(3)
+    real(kind=dp) :: wb_local(num_nnmax)
+
+    integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
     integer :: ifound, counter, na, nap, loop_s, loop_b, shell !, nbvec, bnum
     integer :: ifpos, ifneg, ierr, multi(kmesh_input%search_shells)
-    integer :: nnshell(num_kpts, kmesh_input%search_shells)
-    integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
     integer :: lmn(3, (2*nsupcell + 1)**3) ! Order in which to search the cells (ordered in dist from origin)
-    real(kind=dp) :: vkpp(3), vkpp2(3)
-    real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
-    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
-    real(kind=dp) :: bweight(max_shells)
-    real(kind=dp) :: dnn(kmesh_input%search_shells)
-    real(kind=dp) :: wb_local(num_nnmax)
-    real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
-    real(kind=dp), allocatable :: bvec_tmp(:, :)
-    !real(kind=dp) :: bvec_inp(3, num_nnmax, max_shells) ! The input b-vectors (only used in the rare case they are read from file)
+    integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
+    integer :: nnshell(num_kpts, kmesh_input%search_shells)
+    integer :: nnsh, nn, nnx, loop, i, j
+    integer :: stdout
 
     if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
 
