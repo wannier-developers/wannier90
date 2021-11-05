@@ -1056,12 +1056,12 @@ contains
     implicit none
     real(kind=dp), intent(in) :: spacing
     !! Minimum spacing between neighboring points, in angstrom^(-1)
-    real(kind=dp), dimension(3, 3), intent(in) :: reclat
+    real(kind=dp), intent(in) :: reclat(3, 3)
     !! Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
-    integer, dimension(3), intent(out) :: mesh
+    integer, intent(out) :: mesh(3)
     !! Will contain the three integers defining the interpolation k-mesh
 
-    real(kind=dp), dimension(3) :: blen
+    real(kind=dp) :: blen(3)
     integer :: i
 
     do i = 1, 3

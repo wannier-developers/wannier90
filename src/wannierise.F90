@@ -160,7 +160,6 @@ contains
     complex(kind=dp), allocatable :: cdodq_precond_loc(:, :, :)
     real(kind=dp), allocatable :: sheet(:, :, :)
     real(kind=dp), allocatable :: rave(:, :), r2ave(:), rave2(:)
-    !real(kind=dp), dimension(3) :: rvec_cart
 
     !local arrays not passed into subroutines
     complex(kind=dp), allocatable  :: cwschur1(:), cwschur2(:)
@@ -1173,7 +1172,7 @@ contains
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
-      real(kind=dp), dimension(3) :: rvec_cart
+      real(kind=dp) :: rvec_cart(3)
       real(kind=dp) :: alpha_precond
       integer :: irpt, loop_kpt
 

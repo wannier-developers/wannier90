@@ -1752,8 +1752,8 @@ contains
     complex(kind=dp) :: lambda(num_wann, num_wann) !RS:
 
     ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
+    integer :: counts(0:num_nodes - 1)
+    integer :: displs(0:num_nodes - 1)
     integer :: nkp_loc
 
     if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 1, stdout, &

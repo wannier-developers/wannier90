@@ -1000,21 +1000,26 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, seedname)
     !================================================!
+
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
+
     implicit none
-    integer, intent(in) :: stdout
-    logical, intent(in) :: library
-    type(w90_calculation_type), intent(in) :: w90_calculation
+
+    ! arguments
     type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(w90_calculation_type), intent(in) :: w90_calculation
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: library
 
+    ! local variables
+    integer, allocatable :: nnkpts_block(:, :)
+    integer, allocatable :: nnkpts_idx(:)
     integer :: i, k, ierr, rows
     logical :: found
-    integer, allocatable, dimension(:, :) :: nnkpts_block
-    integer, allocatable, dimension(:) :: nnkpts_idx
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call w90_readwrite_get_block_length(stdout, seedname, 'nnkpts', kmesh_info%explicit_nnkpts, &
