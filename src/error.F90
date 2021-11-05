@@ -31,6 +31,7 @@ module w90_error
   integer, parameter :: code_file_read = 6
   integer, parameter :: code_file_open = 7
   integer, parameter :: code_matrix_lib = 8
+  integer, parameter :: code_not_unitary = 9
   integer, parameter :: code_unconv = -1
   integer, parameter :: code_warning = -3
 
@@ -117,6 +118,15 @@ contains
     err%message = mesg !FIXME, trim to 120
     err%code = code_matrix_lib
   end subroutine set_error_lapack
+
+  ! BGS what should this be? fatal?
+  subroutine set_error_not_unitary(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_not_unitary
+  end subroutine set_error_not_unitary
 
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err

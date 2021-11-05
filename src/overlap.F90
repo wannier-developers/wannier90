@@ -426,7 +426,7 @@ contains
       if (.not. gamma_only) then
         call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                             timing_level, lsitesymmetry, seedname, stdout, comm)
+                             timing_level, lsitesymmetry, seedname, stdout, error, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
                                    timing_level, seedname, stdout)
@@ -778,7 +778,7 @@ contains
   !==================================================================!
   subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
                              num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, &
-                             seedname, stdout, comm)
+                             seedname, stdout, error, comm)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -788,7 +788,9 @@ contains
     !                                                                  !
     !==================================================================!
     use w90_constants
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
+      set_error_not_unitary
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
     use w90_wannier90_types, only: sitesym_type
@@ -796,6 +798,7 @@ contains
     implicit none
 
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: nnlist(:, :)
@@ -835,18 +838,30 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 1, stdout, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (svals(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating svals in overlap_project')
+      return
+    endif
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cz in overlap_project')
+      return
+    endif
     allocate (cvdag(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cvdag in overlap_project')
+      return
+    endif
     allocate (cwork(4*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cwork in overlap_project')
+      return
+    endif
 
     ! Calculate the transformation matrix CU = CS^(-1/2).CA,
     ! where CS = CA.CA^\dagger.
@@ -864,7 +879,8 @@ contains
         if (info .lt. 0) then
           write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
         endif
-        call io_error('Error in ZGESVD in overlap_project', stdout, seedname)
+        call set_error_lapack(error, 'Error in ZGESVD in overlap_project')
+        return
       endif
 
 !       u_matrix(:,:,nkp)=matmul(cz,cvdag)
@@ -886,7 +902,8 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('Error in unitarity of initial U in overlap_project', stdout, seedname)
+            call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project')
+            return
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             write (stdout, *) ' ERROR: unitarity of initial U'
@@ -895,7 +912,8 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('Error in unitarity of initial U in overlap_project', stdout, seedname)
+            call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project')
+            return
           endif
         enddo
       enddo
@@ -923,15 +941,27 @@ contains
                        stdout, seedname, comm)
 
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwork in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cwork in overlap_project')
+      return
+    endif
     deallocate (cvdag, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cvdag in overlap_project')
+      return
+    endif
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cz in overlap_project')
+      return
+    endif
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating svals in overlap_project')
+      return
+    endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 2, stdout, error)
 
     return
 
