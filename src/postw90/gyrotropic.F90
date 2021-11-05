@@ -11,8 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
-
-! ---------------------------------------------------------------
+!                                                            !
+!  w90_gyrotropic: various gyrotropic effects                !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_gyrotropic
   !! This module computes various "gyrotropic" effects

@@ -20,26 +20,25 @@
 !------------------------------------------------------------!
 
 module w90_sitesym
+
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-! use w90_io, only: io_error, stdout
   use w90_io, only: io_error
 
   implicit none
 
-  private :: symmetrize_ukirr
-  private :: orthogonalize_u
+  private 
 
-  public  :: sitesym_slim_d_matrix_band
-  public  :: sitesym_replace_d_matrix_band
-  public  :: sitesym_symmetrize_u_matrix
-  public  :: sitesym_symmetrize_gradient
-  public  :: sitesym_symmetrize_rotation
-  public  :: sitesym_symmetrize_zmatrix
+  public  :: sitesym_dealloc
   public  :: sitesym_dis_extract_symmetry
   public  :: sitesym_read
-  public  :: sitesym_dealloc
+  public  :: sitesym_replace_d_matrix_band
+  public  :: sitesym_slim_d_matrix_band
+  public  :: sitesym_symmetrize_gradient
+  public  :: sitesym_symmetrize_rotation
+  public  :: sitesym_symmetrize_u_matrix
+  public  :: sitesym_symmetrize_zmatrix
 
 contains
 

@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_overlap: setup overlap and projection matrices        !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_overlap
+
   !! This module reads in the overlap (Mmn) and Projections (Amn)
   !! and performs simple operations on them.
 
@@ -24,10 +29,10 @@ module w90_overlap
   private
 
   public :: overlap_allocate
-  public :: overlap_read
   public :: overlap_dealloc
   public :: overlap_project
-  public :: overlap_project_gamma  ![ysl]
+  public :: overlap_project_gamma
+  public :: overlap_read
 
 contains
 

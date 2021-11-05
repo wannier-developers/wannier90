@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_spin: spin operations                                 !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_spin
+
   !! Module to compute spin
 
   use w90_constants, only: dp
@@ -21,7 +26,9 @@ module w90_spin
 
   private
 
-  public :: spin_get_moment, spin_get_nk, spin_get_S
+  public :: spin_get_moment
+  public :: spin_get_nk
+  public :: spin_get_S
 
 contains
 

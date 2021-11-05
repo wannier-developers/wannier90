@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_get_oper: matrix elements of various operators        !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_get_oper
 !===========================================================
@@ -28,7 +32,8 @@ module w90_get_oper
 
   public
 
-  private :: fourier_q_to_R, get_win_min
+  private :: fourier_q_to_R
+  private :: get_win_min
 
 contains
 
@@ -1622,14 +1627,13 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
-                        nntot_tmp, sHu_in, qb1, qb2, winmin_q, winmin_qb2
+    integer          :: i, j, ii, jj, m, n, a, b, nn2, ik, nb_tmp, nkp_tmp, &
+                        nntot_tmp, sHu_in, qb2, winmin_q, winmin_qb2
     integer :: ipol
     integer, allocatable          :: num_states(:)
     complex(kind=dp), allocatable :: SBB_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: Ho_q_qb2(:, :, :)
     complex(kind=dp), allocatable :: H_q_qb2(:, :)
-    real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
     logical :: on_root = .false.
 
@@ -1780,14 +1784,13 @@ contains
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
-                        nntot_tmp, sIu_in, qb1, qb2, winmin_q, winmin_qb2
+    integer          :: i, j, ii, jj, m, n, a, b, nn2, ik, nb_tmp, nkp_tmp, &
+                        nntot_tmp, sIu_in, qb2, winmin_q, winmin_qb2
     integer :: ipol
     integer, allocatable          :: num_states(:)
     complex(kind=dp), allocatable :: SAA_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: Ho_q_qb2(:, :, :)
     complex(kind=dp), allocatable :: H_q_qb2(:, :)
-    real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
     logical :: on_root = .false.
 

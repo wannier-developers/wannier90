@@ -11,6 +11,11 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_postw90_readwrite: input and output routines          !
+!    specific to postw90.x                                   !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_postw90_readwrite
 
@@ -29,12 +34,12 @@ module w90_postw90_readwrite
   ! These could be local to w90_wannier90_readwrite_read if they weren't also used by w90_wannier90_readwrite_write
   type pw90_extra_io_type
     ! from gyrotropic section
-    real(kind=dp)                               :: gyrotropic_freq_min
-    real(kind=dp)                               :: gyrotropic_freq_max
-    real(kind=dp)                               :: gyrotropic_freq_step
-    real(kind=dp)                               :: kubo_freq_min
-    real(kind=dp)                               :: kubo_freq_max
-    real(kind=dp)                               :: kubo_freq_step
+    real(kind=dp) :: gyrotropic_freq_min
+    real(kind=dp) :: gyrotropic_freq_max
+    real(kind=dp) :: gyrotropic_freq_step
+    real(kind=dp) :: kubo_freq_min
+    real(kind=dp) :: kubo_freq_max
+    real(kind=dp) :: kubo_freq_step
     ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
     ! Only internal, always use the local variables defined by each module
     ! that take this value as default
@@ -43,8 +48,8 @@ module w90_postw90_readwrite
     ! Global interpolation k mesh variables
     ! These don't need to be public, since their values are copied in the variables of the
     ! local interpolation meshes. JRY: added save attribute
-    type(kmesh_spacing_type)  :: global_kmesh
-    logical                   :: global_kmesh_set
+    type(kmesh_spacing_type) :: global_kmesh
+    logical :: global_kmesh_set
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
   end type pw90_extra_io_type

@@ -11,9 +11,12 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_readwrite: input parsing and information printout     !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_readwrite
-  ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -24,52 +27,53 @@ module w90_readwrite
   private
 
   ! Private data for processing input file
-  integer                            :: num_lines
+  integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
 
-  public :: w90_readwrite_dealloc
-  public :: w90_readwrite_write_header
-  public :: w90_readwrite_read_chkpt
-  public :: w90_readwrite_lib_set_atoms
-  public :: w90_readwrite_get_smearing_type
-  public :: w90_readwrite_get_convention_type
   public :: w90_readwrite_chkpt_dist
+  public :: w90_readwrite_dealloc
+  public :: w90_readwrite_get_convention_type
+  public :: w90_readwrite_get_smearing_type
+  public :: w90_readwrite_lib_set_atoms
+  public :: w90_readwrite_read_chkpt
+  public :: w90_readwrite_write_header
   ! for postw90 parameters
-  public :: w90_readwrite_in_file
+  public :: w90_readwrite_get_block_length
+  public :: w90_readwrite_get_centre_constraints
   public :: w90_readwrite_get_keyword
   public :: w90_readwrite_get_keyword_block
-  public :: w90_readwrite_get_block_length
-  public :: w90_readwrite_get_vector_length
   public :: w90_readwrite_get_keyword_vector
-  public :: w90_readwrite_get_range_vector
-  public :: w90_readwrite_get_centre_constraints
   public :: w90_readwrite_get_projections
+  public :: w90_readwrite_get_range_vector
   public :: w90_readwrite_get_smearing_index
+  public :: w90_readwrite_get_vector_length
+  public :: w90_readwrite_in_file
   public :: w90_readwrite_set_kmesh
   public :: w90_readwrite_uppercase
   ! common read routines
-  public :: w90_readwrite_read_gamma_only
-  public :: w90_readwrite_read_verbosity
-  public :: w90_readwrite_read_algorithm_control
-  public :: w90_readwrite_read_num_wann
-  public :: w90_readwrite_read_exclude_bands
-  public :: w90_readwrite_read_lattice
-  public :: w90_readwrite_read_atoms
-  public :: w90_readwrite_read_units
-  public :: w90_readwrite_read_devel
-  public :: w90_readwrite_read_mp_grid
-  public :: w90_readwrite_read_kpath
-  public :: w90_readwrite_read_dis_manifold
-  public :: w90_readwrite_read_num_bands
-  public :: w90_readwrite_read_system
-  public :: w90_readwrite_read_fermi_energy
-  public :: w90_readwrite_read_ws_data
-  public :: w90_readwrite_read_eigvals
-  public :: w90_readwrite_read_kmesh_data
-  public :: w90_readwrite_read_kpoints
   public :: w90_readwrite_clean_infile
-  public :: w90_readwrite_read_final_alloc
   public :: w90_readwrite_clear_keywords
+  public :: w90_readwrite_read_algorithm_control
+  public :: w90_readwrite_read_atoms
+  public :: w90_readwrite_read_devel
+  public :: w90_readwrite_read_dis_manifold
+  public :: w90_readwrite_read_eigvals
+  public :: w90_readwrite_read_exclude_bands
+  public :: w90_readwrite_read_fermi_energy
+  public :: w90_readwrite_read_final_alloc
+  public :: w90_readwrite_read_gamma_only
+  public :: w90_readwrite_read_kmesh_data
+  public :: w90_readwrite_read_kpath
+  public :: w90_readwrite_read_kpoints
+  public :: w90_readwrite_read_lattice
+  public :: w90_readwrite_read_mp_grid
+  public :: w90_readwrite_read_num_bands
+  public :: w90_readwrite_read_num_wann
+  public :: w90_readwrite_read_system
+  public :: w90_readwrite_read_units
+  public :: w90_readwrite_read_verbosity
+  public :: w90_readwrite_read_ws_data
+
   private :: clear_block
 
 contains

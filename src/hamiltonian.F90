@@ -11,20 +11,26 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_hamiltonian: Hamiltonian in Wannier basis             !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_hamiltonian
+
   !! Module to obtain the Hamiltonian in a Wannier basis
   !! This is a simplified routine, more sophisticated properties
   !! are found in postw90 (e.g. w90_get_oper)
+
   use w90_constants, only: dp
   use w90_types
 
   implicit none
 
-  public :: hamiltonian_get_hr
-  public :: hamiltonian_write_hr
-  public :: hamiltonian_setup
   public :: hamiltonian_dealloc
+  public :: hamiltonian_get_hr
+  public :: hamiltonian_setup
+  public :: hamiltonian_write_hr
   public :: hamiltonian_write_rmn
   public :: hamiltonian_write_tb
 

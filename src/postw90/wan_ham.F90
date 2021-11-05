@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_wan_ham: Hamiltonian operations in Wannier basis      !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_wan_ham
+
   !! This module contain operations on the Hamiltonian in the WF basis
 
   use w90_constants, only: dp
@@ -21,9 +26,14 @@ module w90_wan_ham
 
   private
 
-  public :: wham_get_D_h, wham_get_eig_deleig, wham_get_eig_deleig_TB_conv, wham_get_D_h_P_value
-  public :: wham_get_occ_mat_list, wham_get_eig_UU_HH_JJlist
-  public :: wham_get_eig_UU_HH_AA_sc, wham_get_eig_UU_HH_AA_sc_TB_conv
+  public :: wham_get_D_h
+  public :: wham_get_D_h_P_value
+  public :: wham_get_eig_deleig
+  public :: wham_get_eig_deleig_TB_conv
+  public :: wham_get_eig_UU_HH_AA_sc
+  public :: wham_get_eig_UU_HH_AA_sc_TB_conv
+  public :: wham_get_eig_UU_HH_JJlist
+  public :: wham_get_occ_mat_list
 
 contains
 

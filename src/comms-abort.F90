@@ -1,4 +1,17 @@
-
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+!
 ! this routine contains the MPI parts of io_error() (called everywhere)
 ! io_error previously called mpi_abort(mpi_comm_world) directly, but this means that the io
 ! module is dependent on the MPI compilation environment

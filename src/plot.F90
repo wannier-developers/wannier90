@@ -11,14 +11,21 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_plot: plot various data                               !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_plot
+
   !! This module handles various plots
 
   use w90_comms, only: comms_array_split, comms_reduce, w90comm_type, mpisize, mpirank
 
   implicit none
+
   private
+
   public :: plot_main
 
 contains

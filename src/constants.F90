@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_constants: physical constants and tolerances          !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_constants
 
@@ -34,8 +38,6 @@ module w90_constants
 !aam_2012-04-11; fix to run on MacBook Air
   integer, parameter, public          :: dp = kind(1.0d0)
   !! double precision
-!  integer, parameter, public          :: dp = selected_real_kind(14,200)
-!  integer, parameter, public          :: dp = selected_real_kind(15,300)
   real(kind=dp), parameter, public    :: pi = 3.141592653589793238462643383279_dp
   !! $$\pi$$
   real(kind=dp), parameter, public    :: twopi = 2*pi
@@ -150,15 +152,6 @@ module w90_constants
 #endif
 
   type w90_physical_constants_type
-    !real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
-    !real(kind=dp) :: elec_mass_SI = elc_mass_SI      ! electron mass
-    !real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
-    !real(kind=dp) :: k_B_SI = k_B_SI                 ! Boltzman Constant
-    !real(kind=dp) :: bohr_magn_SI = bohr_magn_SI     ! Bohr magneton
-    !real(kind=dp) :: eps0_SI = eps0_SI               ! Vacuum Dielectric Constant
-    !real(kind=dp) :: speedlight_SI = speedlight_SI   ! Speed of light
-    !real(kind=dp) :: eV_au = eV_au                   ! Electron Volt in atomic units
-    !real(kind=dp) :: eV_seconds = eV_seconds         ! Electron Volt in seconds
     real(kind=dp) :: bohr = bohr
     character(len=75) :: bohr_version_str = bohr_version_str
     character(len=75) :: constants_version_str1 = constants_version_str1
@@ -167,12 +160,10 @@ module w90_constants
 
   type pw90_physical_constants_type
     real(kind=dp) :: elem_charge_SI = elem_charge_SI ! elemental charge
-    real(kind=dp) :: elec_mass_SI = elec_mass_SI      ! electron mass
+    real(kind=dp) :: elec_mass_SI = elec_mass_SI     ! electron mass
     real(kind=dp) :: hbar_SI = hbar_SI               ! hbar
     real(kind=dp) :: k_B_SI = k_B_SI                 ! Boltzman Constant
-    !real(kind=dp) :: bohr_magn_SI = bohr_magn_SI     ! Bohr magneton
     real(kind=dp) :: eps0_SI = eps0_SI               ! Vacuum Dielectric Constant
-    !real(kind=dp) :: speedlight_SI = speedlight_SI   ! Speed of light
     real(kind=dp) :: eV_au = eV_au                   ! Electron Volt in atomic units
     real(kind=dp) :: eV_seconds = eV_seconds         ! Electron Volt in seconds
     real(kind=dp) :: bohr = bohr

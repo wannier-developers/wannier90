@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_types: derived types encapsulating different data     !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_types
+
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 

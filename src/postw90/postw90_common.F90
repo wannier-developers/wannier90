@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_postw90_common: routines used throughout postw90      !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_postw90_common
 
@@ -19,36 +23,25 @@ module w90_postw90_common
 !! interpolatation calculation for any physical property
 !==============================================================================
 
-  ! Should we remove this 'use w90_comms' and invoke in individual routines
-  ! when needed?
-  !
-  !use w90_comms
   use w90_constants, only: dp
 
   implicit none
 
   private
 
-  public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_w90_wannier90_readwrite_dist
-  public :: pw90common_wanint_data_dist, pw90common_get_occ
-  public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
+  public :: pw90common_fourier_R_to_k
+  public :: pw90common_fourier_R_to_k_new
+  public :: pw90common_fourier_R_to_k_new_second_d
+  public :: pw90common_fourier_R_to_k_new_second_d_TB_conv
+  public :: pw90common_fourier_R_to_k_vec
+  public :: pw90common_fourier_R_to_k_vec_dadb
+  public :: pw90common_fourier_R_to_k_vec_dadb_TB_conv
+  public :: pw90common_get_occ
   public :: pw90common_kmesh_spacing
-  public :: pw90common_fourier_R_to_k_new_second_d, &
-            pw90common_fourier_R_to_k_new_second_d_TB_conv, pw90common_fourier_R_to_k_vec_dadb, &
-            pw90common_fourier_R_to_k_vec_dadb_TB_conv
-
-! AAM PROBABLY REMOVE THIS
-  ! This 'save' statement could probably be ommited, since this module
-  ! is USEd by the main program 'wannier_parint'
-  !
-  save
-
-! AAM REMOVE THIS
-  ! Default accessibility is PUBLIC
-  !
-!  private :: wigner_seitz
-!
-!  private :: kmesh_spacing_singleinteger, kmesh_spacing_mesh
+  public :: pw90common_wanint_data_dist
+  public :: pw90common_wanint_get_kpoint_file
+  public :: pw90common_wanint_setup
+  public :: pw90common_wanint_w90_wannier90_readwrite_dist
 
   interface pw90common_kmesh_spacing
     module procedure kmesh_spacing_singleinteger

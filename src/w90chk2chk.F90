@@ -11,11 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90chk_parameters:                                        !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90chk_parameters
 
-  !use w90_constants, only: dp
-  !use w90_io, only: maxlen
   use w90_types
 
   implicit none
@@ -23,10 +25,8 @@ module w90chk_parameters
   public
 
   type(wannier_data_type), save :: wannier_data
-! type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
   type(dis_manifold_type), save :: dis_manifold
-! type(atom_data_type), save :: atoms
 
   integer, allocatable, save :: exclude_bands(:)
   real(kind=dp), allocatable, save :: kpt_latt(:, :)

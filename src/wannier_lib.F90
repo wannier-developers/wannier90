@@ -58,31 +58,29 @@ module w90_libv1_types
 
   public
 
-  type(print_output_type), save :: verbose
-  type(w90_system_type), save :: system
   integer, allocatable, save :: exclude_bands(:)
-  type(ws_region_type) :: ws_region
-  type(wannier_data_type), save :: wann_data
-  type(kmesh_input_type), save :: kmesh_data
-  type(kmesh_info_type), save :: kmesh_info
-  real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
+  integer, save :: num_bands !! Number of bands
   integer, save :: num_kpts
-  type(dis_manifold_type), save :: dis_window
-  real(kind=dp), allocatable, save :: fermi_energy_list(:)
-  type(atom_data_type), save :: atoms
-  type(proj_input_type), save :: input_proj
+  integer, save :: num_wann !! number of wannier functions
   integer, save :: optimisation
 
+  type(atom_data_type), save :: atoms
+  type(dis_manifold_type), save :: dis_window
+  type(kmesh_info_type), save :: kmesh_info
+  type(kmesh_input_type), save :: kmesh_data
+  type(print_output_type), save :: verbose
+  type(proj_input_type), save :: input_proj
+  type(w90_system_type), save :: system
+  type(wannier_data_type), save :: wann_data
+  type(ws_region_type) :: ws_region
+
+  real(kind=dp), allocatable, save :: fermi_energy_list(:)
+  real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
+
   logical, save :: cp_pp, calc_only_A
-  logical, save :: use_bloch_phases
   logical, save :: gamma_only
   logical, save :: have_disentangled
-
-  integer, save :: num_bands
-  !! Number of bands
-
-  integer, save :: num_wann
-  !! number of wannier functions
+  logical, save :: use_bloch_phases
 
   ! a_matrix and m_matrix_orig can be calculated internally from bloch states
   ! or read in from an ab-initio grid

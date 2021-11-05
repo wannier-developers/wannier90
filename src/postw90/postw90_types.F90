@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_postw90_types: types specific to postw90.x            !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_postw90_types
 
@@ -21,7 +25,7 @@ module w90_postw90_types
 
   public
 
-  type pw90_calculation_type !postw90.F90
+  type pw90_calculation_type
     !! =================
     !! Contains information about the high-level task that pw90 is being asked to do,
     !! including any global variables that affect all calculation branches.
@@ -33,11 +37,11 @@ module w90_postw90_types
     logical :: gyrotropic
     logical :: geninterp
     logical :: boltzwann
-    logical :: spin_moment !postw90_common and postw90
-    logical :: spin_decomp !postw90_common, berry, dos and boltzwann
+    logical :: spin_moment
+    logical :: spin_decomp
   end type pw90_calculation_type
 
-  type pw90_oper_read_type ! only in postw90/get_oper.F90
+  type pw90_oper_read_type
     !! ==============
     !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
     !! ==============

@@ -11,9 +11,15 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  postw90: postw90 main routine                             !
+!                                                            !
+!------------------------------------------------------------!
 
 program postw90
+
   !! The postw90 program
+
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_types
   use w90_postw90_types
@@ -25,8 +31,6 @@ program postw90
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
 
-  ! These modules deal with the interpolation of specific physical properties
-  !
   use w90_dos
   use w90_berry, only: berry_main
   use w90_gyrotropic

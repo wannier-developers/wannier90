@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_disentangle: extract subspace from entangled bands    !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_disentangle
+
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 

@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_dos: compute density of states                        !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_dos
+
   !! Compute Density of States
   use w90_constants, only: dp
 
@@ -20,14 +25,9 @@ module w90_dos
 
   private
 
-  public :: dos_main
-  public :: dos_get_levelspacing
   public :: dos_get_k
-
-! integer :: num_freq
-  !! Number of sampling points
-  real(kind=dp) :: d_omega
-  !! Step between energies
+  public :: dos_get_levelspacing
+  public :: dos_main
 
 contains
 
@@ -35,11 +35,12 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main(pw90_berry, dis_manifold, pw90_dos, kpoint_dist, kpt_latt, pw90_oper_read, pw90_band_deriv_degen, &
-                      pw90_spin, ws_region, w90_system, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                      SS_R, u_matrix, v_matrix, eigval, real_lattice, &
-                      scissors_shift, mp_grid, num_bands, num_kpts, num_wann, effective_model, &
-                      have_disentangled, spin_decomp, seedname, stdout, comm)
+  subroutine dos_main(pw90_berry, dis_manifold, pw90_dos, kpoint_dist, kpt_latt, pw90_oper_read, &
+                      pw90_band_deriv_degen, pw90_spin, ws_region, w90_system, print_output, &
+                      wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, &
+                      eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                      num_wann, effective_model, have_disentangled, spin_decomp, seedname, stdout, &
+                      comm)
 
     !=======================================================!
     !                                                       !

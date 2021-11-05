@@ -18,8 +18,6 @@
 !                                                            !
 !------------------------------------------------------------!
 
-! JJ 04.21 use MPI_IN_PLACE to avoid unnecessary array alloc/copy/deallocs
-
 module w90_comms
   !! This module handles all of the communications
 

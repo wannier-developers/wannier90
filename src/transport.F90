@@ -55,8 +55,9 @@
 !=======================================================================!
 
 module w90_transport
+
   !! Module to handle ballistic transport.
-  !!Based on
+  !! Based on
   !!  < dosqc_1.0 >
   !!  Density Of States and Quantum Conductance - Version 1.0
   !!  Marco Buongiorno Nardelli, January 2000.
@@ -71,14 +72,12 @@ module w90_transport
 
   private
 
-  complex(kind=dp), parameter :: eta = (0.0_dp, 0.0005_dp)
-  !! small complex number
+  complex(kind=dp), parameter :: eta = (0.0_dp, 0.0005_dp) !! small complex number
 
-  integer, parameter :: nterx = 50
-  !! nterx  = # of maximum iteration to calculate transfer matrix
+  integer, parameter :: nterx = 50 !! nterx  = # of maximum iteration to calculate transfer matrix
 
-  public :: tran_main
   public :: tran_dealloc
+  public :: tran_main
 
 contains
   !==================================================================!

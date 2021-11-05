@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_kslice: properties evaluated on isosurface in BZ      !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_kslice
 

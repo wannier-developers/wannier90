@@ -12,6 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
+! ws_distance.F90:
 ! Original implementation by Lorenzo Paulatto, with later    !
 ! modifications by Marco Gibertini, Dominik Gresch           !
 ! and Giovanni Pizzi                                         !
@@ -19,16 +20,19 @@
 !------------------------------------------------------------!
 
 module w90_ws_distance
+
   !! This module computes the optimal Wigner-Seitz cell around each Wannier
   !! function to use for interpolation.
+
   use w90_constants, only: dp
 
   implicit none
 
   private
 
-  !
-  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
+  public :: clean_ws_translate
+  public :: ws_translate_dist
+  public :: ws_write_vec
 
   integer, parameter :: ndegenx = 8
   !! max number of unit cells that can touch

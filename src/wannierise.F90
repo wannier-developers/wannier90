@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_wannierise: MLFW algorithm                            !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_wannierise
+
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
@@ -22,27 +27,16 @@ module w90_wannierise
   private
 
   public :: wann_main
-  public :: wann_main_gamma  ![ysl]
+  public :: wann_main_gamma
 
   type localisation_vars_type
     !! Contributions to the spread
-    real(kind=dp) :: om_i
-    !! Gauge Invarient
-    real(kind=dp) :: om_d
-    !! Diagonal
-    real(kind=dp) :: om_od
-    !! Off-diagonal
-    real(kind=dp) :: om_tot
-    !! Total
-    real(kind=dp) :: om_iod
-    !! Combined I-OD term for selective localization
-    real(kind=dp) :: om_nu
-    !! Lagrange multiplier term due to constrained centres
-    !! real(kind=dp) :: om_c
-    !! Total spread functional with constraints
-!~     real(kind=dp) :: om_1
-!~     real(kind=dp) :: om_2
-!~     real(kind=dp) :: om_3
+    real(kind=dp) :: om_i   !! Gauge Invarient
+    real(kind=dp) :: om_d   !! Diagonal
+    real(kind=dp) :: om_od  !! Off-diagonal
+    real(kind=dp) :: om_tot !! Total
+    real(kind=dp) :: om_iod !! Combined I-OD term for selective localization
+    real(kind=dp) :: om_nu  !! Lagrange multiplier term due to constrained centres
   end type localisation_vars_type
 
 contains

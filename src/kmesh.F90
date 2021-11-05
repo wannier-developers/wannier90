@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_kmesh: operations on BZ mesh                          !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_kmesh
+
   !! Routines to analyse the regular k-point mesh
   !! and determine the overlaps neccessary for a finite
   !! difference representation of the spread operator.
@@ -40,9 +45,9 @@ module w90_kmesh
   ! bka     ! the b-directions (not considering inversion) from
   ! 1st k-point to its neighbours
 
+  public :: kmesh_dealloc
   public :: kmesh_get
   public :: kmesh_write
-  public :: kmesh_dealloc
 
   integer, parameter :: nsupcell = 5
   !! Size of supercell (of recip cell) in which to search for k-point shells

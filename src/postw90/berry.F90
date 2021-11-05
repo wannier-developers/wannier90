@@ -11,10 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
-
-! ---------------------------------------------------------------
+!                                                            !
+!  w90_berry: computes Berry phase and related properties    !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_berry
+
   !! This module computes various "Berry phase" related properties
   !!
   !! Key REFERENCES
@@ -38,8 +41,11 @@ module w90_berry
 
   private
 
-  public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, &
-            berry_get_shc_klist, berry_get_kdotp
+  public :: berry_get_imfgh_klist
+  public :: berry_get_imf_klist
+  public :: berry_get_kdotp
+  public :: berry_get_shc_klist
+  public :: berry_main
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -63,10 +69,8 @@ module w90_berry
   integer, dimension(6), parameter :: beta_S = (/1, 2, 3, 2, 3, 3/)
   integer, dimension(6), parameter, public :: berry_alpha_S = alpha_S
   integer, dimension(6), parameter, public::  berry_beta_S = beta_S
-!  integer,   dimension(3,3) , parameter, public::  berry_alpha_beta_S=  (/  (/1,4,5/), (/ 4,2,6 /)  , (/ 5,6,3 /)   /)
   integer, parameter, public:: berry_alpha_beta_S(3, 3) = &
                                reshape((/1, 4, 5, 4, 2, 6, 5, 6, 3/), (/3, 3/))
-!(/  (/1,4,5/), (/ 4,2,6 /)  , (/ 5,6,3 /)   /)
 
 contains
 
@@ -2612,7 +2616,7 @@ contains
       complex(kind=dp)    :: SBB(num_wann, num_wann, 3, 3)
       complex(kind=dp)    :: VV0(num_wann, num_wann)
       complex(kind=dp)    :: spinvel0(num_wann, num_wann)
-      integer :: i, j
+      integer :: i
 
       !===========
       js_k = cmplx_0

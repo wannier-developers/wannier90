@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_boltzwann: Boltzman transport                         !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_boltzwann
   !! Compute Boltzman tranport properties
@@ -44,6 +48,7 @@ module w90_boltzwann
   implicit none
 
   private
+
   public :: boltzwann_main
 
   ! Constants to identify the six components of a tensor when it is stored in packed form

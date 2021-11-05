@@ -11,6 +11,11 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_wannier90_readwrite: input/output routines            !
+!     specific to wannier90.x                                !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_wannier90_readwrite
 
@@ -30,12 +35,12 @@ module w90_wannier90_readwrite
   end type w90_extra_io_type
 
   public :: w90_extra_io_type
-  public :: w90_wannier90_readwrite_read
-  public :: w90_wannier90_readwrite_write
-  public :: w90_wannier90_readwrite_w90_dealloc
-  public :: w90_wannier90_readwrite_write_chkpt
-  public :: w90_wannier90_readwrite_memory_estimate
   public :: w90_wannier90_readwrite_dist
+  public :: w90_wannier90_readwrite_memory_estimate
+  public :: w90_wannier90_readwrite_read
+  public :: w90_wannier90_readwrite_w90_dealloc
+  public :: w90_wannier90_readwrite_write
+  public :: w90_wannier90_readwrite_write_chkpt
 
 contains
 

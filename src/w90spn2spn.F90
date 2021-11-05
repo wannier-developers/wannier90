@@ -11,11 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90spn_parameters: reformat spn files                     !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90spn_parameters
 
-  !use w90_constants, only: dp
-  !use w90_io, only: maxlen
   use w90_types
 
   implicit none
@@ -23,9 +25,7 @@ module w90spn_parameters
   public
 
   integer, save :: num_kpts !BGS put in k_point_type?
-
-  integer, save :: num_bands
-  !! Number of bands
+  integer, save :: num_bands !! Number of bands
 
 end module w90spn_parameters
 

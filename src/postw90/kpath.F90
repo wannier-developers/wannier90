@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_kpath: evaluate properties along a path in k-space    !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_kpath
 

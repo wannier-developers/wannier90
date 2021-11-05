@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_utility: blas wrappers and other basic routines       !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_utility
+
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
@@ -21,37 +26,37 @@ module w90_utility
 
   private
 
-  public :: utility_inv3
-  public :: utility_inv2
-  public :: utility_det3
-  public :: utility_inverse_mat
-  public :: utility_recip_lattice_base
-  public :: utility_recip_lattice
-  public :: utility_metric
-  public :: utility_compar
   public :: utility_cart_to_frac
-  public :: utility_frac_to_cart
-  public :: utility_string_to_coord
-  public :: utility_lowercase
-  public :: utility_strip
-  public :: utility_zgemm
-  public :: utility_zgemm_new
-  public :: utility_zgemmm
-  public :: utility_translate_home
-  public :: utility_rotate
-  public :: utility_rotate_new
-  public :: utility_matmul_diag
-  public :: utility_rotate_diag
   public :: utility_commutator_diag
-  public :: utility_re_tr
-  public :: utility_re_tr_prod
+  public :: utility_compar
+  public :: utility_det3
+  public :: utility_diagonalize
+  public :: utility_frac_to_cart
   public :: utility_im_tr
   public :: utility_im_tr_prod
+  public :: utility_inv2
+  public :: utility_inv3
+  public :: utility_inverse_mat
+  public :: utility_lowercase
+  public :: utility_matmul_diag
+  public :: utility_metric
+  public :: utility_recip_lattice
+  public :: utility_recip_lattice_base
+  public :: utility_re_tr
+  public :: utility_re_tr_prod
+  public :: utility_rotate
+  public :: utility_rotate_diag
+  public :: utility_rotate_new
+  public :: utility_string_to_coord
+  public :: utility_strip
+  public :: utility_translate_home
   public :: utility_w0gauss
   public :: utility_w0gauss_vec
   public :: utility_wgauss
   public :: utility_zdotu
-  public :: utility_diagonalize
+  public :: utility_zgemm
+  public :: utility_zgemmm
+  public :: utility_zgemm_new
 
 contains
 
