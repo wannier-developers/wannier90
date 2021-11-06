@@ -18,10 +18,8 @@
 
 module w90_postw90_common
 
-  !================================================
   !! This contains the common variables and procedures needed to set up a Wannier
   !! interpolatation calculation for any physical property
-  !================================================
 
   use w90_constants, only: dp
 
@@ -51,7 +49,7 @@ module w90_postw90_common
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                       !
+  !                   PUBLIC PROCEDURES
   ! Public procedures have names starting with wanint_
   !================================================!
 
@@ -86,7 +84,6 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
-    !
     if (effective_model) then
       if (on_root) then
         ! nrpts is read from file, together with num_wann
@@ -109,7 +106,6 @@ contains
     endif
 
     ! Now can allocate several arrays
-    !
     allocate (wigner_seitz%irvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in pw90common_wanint_setup', stdout, &
                                  seedname)
@@ -122,22 +118,21 @@ contains
     if (ierr /= 0) call io_error('Error in allocating ndegen in pw90common_wanint_setup', stdout, &
                                  seedname)
     wigner_seitz%ndegen = 0
-    !
+
     ! Also rpt_origin, so that when effective_model=.true it is not
     ! passed to get_HH_R without being initialized.
     wigner_seitz%rpt_origin = 0
 
     ! If effective_model, this is done in get_HH_R
     if (.not. effective_model) then
-      !
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
-      !
+
       call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, seedname, &
                        .false., comm)
-      !
+
       ! Convert from reduced to Cartesian coordinates
-      !
+
       do ir = 1, wigner_seitz%nrpts
         ! Note that 'real_lattice' stores the lattice vectors as *rows*
         wigner_seitz%crvec(:, ir) = matmul(transpose(real_lattice), wigner_seitz%irvec(:, ir))
@@ -154,9 +149,9 @@ contains
   !================================================!
   subroutine pw90common_wanint_get_kpoint_file(kpoint_dist, stdout, seedname, comm)
     !================================================!
-    !                                                           !
+    !
     !! read kpoints from kpoint.dat and distribute
-    !                                                           !
+    !
     !================================================!
 
     use w90_constants, only: dp
@@ -248,10 +243,10 @@ contains
                                                             pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
                                                             eig_found, stdout, seedname, comm)
     !================================================!
-    !                                                           !
+    !
     !! distribute the parameters across processors
     !! NOTE: we only send the ones postw90 uses, not all in w90
-    !                                                           !
+    !
     !================================================!
 
     use w90_constants, only: dp
@@ -427,7 +422,7 @@ contains
     call comms_bcast(pw90_berry%transl_inv, 1, stdout, seedname, comm)
     call comms_bcast(w90_system%num_elec_per_state, 1, stdout, seedname, comm)
     call comms_bcast(scissors_shift, 1, stdout, seedname, comm)
-    !
+
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
 !    call comms_bcast(bands_num_points,1)
@@ -474,7 +469,7 @@ contains
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in w90_wannier90_readwrite_read they were allocated on the root node only
-    !
+
     if (.not. on_root) then
       allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) call io_error( &
@@ -571,9 +566,9 @@ contains
                                          num_valence_bands, have_disentangled, stdout, seedname, &
                                          comm)
     !================================================!
-    !                                                           !
+    !
     !! Distribute the um and chk files
-    !                                                           !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
@@ -799,7 +794,7 @@ contains
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
                                        seedname, stdout)
     !================================================!
-    !                                                         !
+    !
     !! For alpha=0:
     !! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)
     !!
@@ -807,7 +802,7 @@ contains
     !! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]
     !! where R_alpha is a Cartesian component of R
     !! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
-    !                                                         !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -890,13 +885,13 @@ contains
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
                                            stdout, OO, OO_dx, OO_dy, OO_dz)
     !================================================!
-    !                                                       !
+    !
     !! For OO:
     !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
     !! For $$OO_{dx,dy,dz}$$:
     !! $$\sum_R [i.R_{dx,dy,dz}.e^{+ik.R}.O_{ij}(R)]$$
     !! where R_{x,y,z} are the Cartesian components of R
-    !                                                       !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -985,7 +980,7 @@ contains
                                                     wigner_seitz, stdout, seedname, OO, OO_da, &
                                                     OO_dadb)
     !================================================!
-    !                                                       !
+    !
     !! For OO:
     !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
     !! For $$OO_{dx,dy,dz}$$:
@@ -994,7 +989,7 @@ contains
     !! For $$OO_{dx1,dy1,dz1;dx2,dy2,dz2}$$:
     !! $$-\sum_R [R_{dx1,dy1,dz1}.R_{dx2,dy2,dz2}.e^{+ik.R}.O_{ij}(R)]$$
     !! where R_{xi,yi,zi} are the Cartesian components of R
-    !                                                       !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -1256,10 +1251,10 @@ contains
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
                                            stdout, OO_true, OO_pseudo)
     !================================================!
-    !                                                                    !
+    !
     !! For OO_true (true vector):
     !! $${\vec O}_{ij}(k) = \sum_R e^{+ik.R} {\vec O}_{ij}(R)$$
-    !                                                                    !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -1364,13 +1359,13 @@ contains
                                                 wigner_seitz, OO_R, kpt, real_lattice, mp_grid, &
                                                 num_wann, seedname, stdout, OO_da, OO_dadb)
     !================================================!
-    !                                                                    !
+    !
     !! For $$OO_{ij;dx,dy,dz}$$:
     !! $$O_{ij;dx,dy,dz}(k) = \sum_R e^{+ik.R} O_{ij;dx,dy,dz}(R)$$
     !! For $$OO_{ij;dx1,dy1,dz1;dx2,dy2,dz2}$$:
     !! $$O_{ij;dx1,dy1,dz1;dx2,dy2,dz2}(k) = \sum_R e^{+ik.R} i.R_{dx2,dy2,dz2}
     !!                                       .O_{ij;dx1,dy1,dz1}(R)$$
-    !                                                                    !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -1467,7 +1462,7 @@ contains
                                                         mp_grid, num_wann, seedname, stdout, &
                                                         OO_da, OO_dadb)
     !================================================!
-    !                                                                    !
+    !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
     !
@@ -1477,7 +1472,7 @@ contains
     !! $$O_{ij;dx1,dy1,dz1;dx2,dy2,dz2}(k) = \sum_R e^{+ik.(R+tau_ij)} i.(R+tau_ij)_{dx2,dy2,dz2}
     !!                                       .O_{ij;dx1,dy1,dz1}(R)$$
     ! with tau_ij = tau_j - tau_i, being tau_i=<0i|r|0i> the individual wannier centres
-    !                                                                    !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
@@ -1672,7 +1667,7 @@ contains
   end subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv
 
   !================================================!
-  !                   PRIVATE PROCEDURES                      !
+  !                   PRIVATE PROCEDURES
   !================================================!
 
   !================================================!
@@ -1772,9 +1767,9 @@ contains
               wigner_seitz%irvec(1, wigner_seitz%nrpts) = n1
               wigner_seitz%irvec(2, wigner_seitz%nrpts) = n2
               wigner_seitz%irvec(3, wigner_seitz%nrpts) = n3
-              !
+
               ! Remember which grid point r is at the origin
-              !
+
               if (n1 == 0 .and. n2 == 0 .and. n3 == 0) wigner_seitz%rpt_origin = wigner_seitz%nrpts
             endif
           end if
@@ -1785,7 +1780,7 @@ contains
       enddo
       !n1
     enddo
-    !
+
     if (count_pts) then
       if (print_output%timing_level > 1 .and. on_root) &
         call io_stopwatch('postw90_common: wigner_seitz', 2, stdout, seedname)

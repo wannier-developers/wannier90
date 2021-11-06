@@ -796,9 +796,9 @@ contains
     !================================================!
     subroutine plot_interpolate_gnuplot(band_plot, kpoint_path, bands_num_spec_points, num_wann)
       !================================================!
-      !                                            !
+      !
       !! Plots the interpolated band structure in gnuplot format
-      !                                            !
+      !
       !================================================!
 
       use w90_constants, only: dp
@@ -889,9 +889,9 @@ contains
     !================================================!
     subroutine plot_interpolate_xmgrace(kpoint_path, bands_num_spec_points, num_wann)
       !================================================!
-      !                                            !
+      !
       !! Plots the interpolated band structure in Xmgrace format
-      !                                            !
+      !
       !================================================!
 
       use w90_io, only: io_file_unit, io_date
@@ -986,9 +986,9 @@ contains
   subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
     !================================================!
-    !                                                           !
+    !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
-    !                                                           !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
@@ -1143,7 +1143,7 @@ contains
     !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
-    !                                            !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
@@ -1572,9 +1572,9 @@ contains
     subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
                                     real_lattice, bohr)
       !================================================!
-      !                                            !
+      !
       !! Write WFs in Gaussian cube format.
-      !                                            !
+      !
       !================================================!
 
       use w90_utility, only: utility_translate_home, utility_cart_to_frac, utility_frac_to_cart, &
@@ -1972,9 +1972,9 @@ contains
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, &
                              num_wann, num_kpts, num_bands, seedname)
     !================================================!
-    !                                            !
+    !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
-    !                                            !
+    !
     !================================================!
 
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch, io_date

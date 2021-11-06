@@ -12,11 +12,18 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  w90_postw90_types: types specific to postw90.x            !
+!  w90_postw90_types: data types specific to postw90.x       !
 !                                                            !
 !------------------------------------------------------------!
 
 module w90_postw90_types
+
+  ! Definition of types encapsulating various quantities, data and parameters.
+  ! Variables are grouped according to physical meaning and their use in the Wannier90 project.
+  !
+  !! Here are defined types specific to postw90.x (not used by wannier90.x).
+  !! Types used by both wannier90.x and postw90.x are defined in types.F90.
+  !! Types specific to wannier90.x (not used by postw90.x) are defined in wannier90_types.F90.
 
   use w90_constants, only: dp
   use w90_comms, only: w90comm_type
@@ -26,10 +33,10 @@ module w90_postw90_types
   public
 
   type pw90_calculation_type
-    !! =================
+    !!==================================================
     !! Contains information about the high-level task that pw90 is being asked to do,
     !! including any global variables that affect all calculation branches.
-    !! =================
+    !!==================================================
     logical :: kpath
     logical :: kslice
     logical :: dos
@@ -42,9 +49,9 @@ module w90_postw90_types
   end type pw90_calculation_type
 
   type pw90_oper_read_type
-    !! ==============
+    !!==================================================
     !! Contains variables for determining whether formatted or unformatted input is read by get_oper.F90
-    !! ==============
+    !!==================================================
     logical :: spn_formatted
     !! Read the spin from fortran formatted file
     logical :: uHu_formatted
@@ -58,9 +65,9 @@ module w90_postw90_types
 
   ! Module  s p i n
   type pw90_spin_mod_type
-    !! ===============
+    !!==================================================
     !! Contains variables used in the spin module of postw90
-    !! ===============
+    !!==================================================
     real(kind=dp) :: axis_polar
     real(kind=dp) :: axis_azimuth
     type(kmesh_spacing_type) :: kmesh
@@ -75,19 +82,19 @@ module w90_postw90_types
   ! REVIEW_2021-08-09: This would make reading and debugging the code easier in future.
 
   type pw90_band_deriv_degen_type
-    !! ================
+    !!==================================================
     !! Contains variables for doing degenerate perturbation theory when bands are degenerate
     !! and band derivatives are needed.
-    !! ================
+    !!==================================================
     logical :: use_degen_pert
     real(kind=dp) :: degen_thr
   end type pw90_band_deriv_degen_type
 
   ! module  k p a t h (used by postw90/kpath)
   type pw90_kpath_mod_type
-    !! ================
+    !!==================================================
     !! Contains control variables for the kpath module of postw90
-    !! ================
+    !!==================================================
     character(len=20) :: task
     integer :: num_points
     character(len=20) :: bands_colour
@@ -95,9 +102,9 @@ module w90_postw90_types
 
   ! module  k s l i c e (postw90/kslice)
   type pw90_kslice_mod_type
-    !! ===============
+    !!==================================================
     !! Contains control variables for the kslice module of postw90
-    !! ===============
+    !!==================================================
     character(len=20) :: task
     real(kind=dp) :: corner(3)
     real(kind=dp) :: b1(3)
@@ -107,9 +114,9 @@ module w90_postw90_types
   end type pw90_kslice_mod_type
 
   type pw90_smearing_type
-    !! =============
+    !!==================================================
     !! Contains variables for controlling the smearing.
-    !! =============
+    !!==================================================
     logical    :: use_adaptive
     real(kind=dp)    :: adaptive_prefactor
     integer    :: type_index
@@ -121,9 +128,9 @@ module w90_postw90_types
   end type pw90_smearing_type
 
   type pw90_dos_mod_type
-    !! ===============
+    !!==================================================
     !! Contains variables for the dos module of postw90
-    !! ===============
+    !!==================================================
     character(len=20)    :: task
     type(pw90_smearing_type) :: smearing
     real(kind=dp)    :: energy_max
@@ -138,9 +145,9 @@ module w90_postw90_types
 
   ! Module  b e r r y (mainly postw90/berry)
   type pw90_berry_mod_type
-    !! =============
+    !!==================================================
     !! Contains variables for the berry module of postw90
-    !! =============
+    !!==================================================
     character(len=120) :: task
     type(kmesh_spacing_type) :: kmesh
     integer :: curv_adpt_kmesh
@@ -162,9 +169,9 @@ module w90_postw90_types
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
   type pw90_spin_hall_type
-    !! =============
+    !!==================================================
     !! Contains variables controlling the calculation of spin hall conductivity in postw90
-    !! =============
+    !!==================================================
     logical :: freq_scan
     integer :: alpha
     integer :: beta
@@ -176,9 +183,9 @@ module w90_postw90_types
   end type pw90_spin_hall_type
 
   type pw90_gyrotropic_type ! postw90 - common, gyrotropic
-    !! =============
+    !!==================================================
     !! Contains variables for the gyrotropic module of postw90
-    !! =============
+    !!==================================================
     character(len=120) :: task
     type(kmesh_spacing_type) :: kmesh
     integer :: nfreq
@@ -194,9 +201,9 @@ module w90_postw90_types
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables - postw90/geninterp
   type pw90_geninterp_mod_type
-    !! =============
+    !!==================================================
     !! Contains variables for the geninterp module of postw90
-    !! =============
+    !!==================================================
     logical :: alsofirstder
     logical :: single_file
   end type pw90_geninterp_mod_type
@@ -205,9 +212,9 @@ module w90_postw90_types
   ! [gp-begin, Apr 12, 2012]
   ! BoltzWann variables (postw90/boltzwann.F90)
   type pw90_boltzwann_type
-    !! =============
+    !!==================================================
     !! Contains variables for the boltzwann module of postw90
-    !! =============
+    !!==================================================
     logical :: calc_also_dos
     integer :: dir_num_2d
     real(kind=dp) :: dos_energy_step

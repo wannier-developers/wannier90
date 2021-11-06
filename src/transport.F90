@@ -24,9 +24,9 @@
 !  (1999)                                                               !
 !-----------------------------------------------------------------------!
 
-!================================================!
+!=======================================================================!
 ! Definition of parameters used in w90_transport                        !
-!================================================!
+!=======================================================================!
 !                                                                       !
 ! transport_mode       = 'bulk' or 'lcr'                                !
 ! tran_win_min         = minimum E                                      !
@@ -52,7 +52,7 @@
 ! tran_num_cell_rr     = # of unit cells in a PL of right lead          !
 !                        (equal to tran_num_cell_ll for now)            !
 ! tran_group_threshold = distance defining the grouping of WFs          !
-!================================================!
+!=======================================================================!
 
 module w90_transport
 
@@ -1198,11 +1198,11 @@ contains
   !================================================!
   subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, seedname)
     !================================================!
-    !                                                                  !
-    ! iterative construction of the transfer matrix                    !
-    ! as Lopez-Sancho^2&Rubio, J.Phys.F:Met.Phys., v.14, 1205 (1984)   !
-    ! and ibid. v.15, 851 (1985)                                       !
-    !                                                                  !
+    !
+    ! iterative construction of the transfer matrix
+    ! as Lopez-Sancho^2&Rubio, J.Phys.F:Met.Phys., v.14, 1205 (1984)
+    ! and ibid. v.15, 851 (1985)
+    !
     !================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, eps7
@@ -1697,11 +1697,11 @@ contains
                                            u_matrix, num_bands, num_wann, have_disentangled, &
                                            wannier_centres_translated, stdout, seedname)
     !================================================!
-    ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !
-    ! Fourier components of each wannier function. Linear combinations of     !
-    ! these provide integral of different spatial dependence.                 !
-    ! The set of these integrals provide a signature for distinguishing the   !
-    ! type and 'parity' of each wannier function.                             !
+    ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate
+    ! Fourier components of each wannier function. Linear combinations of
+    ! these provide integral of different spatial dependence.
+    ! The set of these integrals provide a signature for distinguishing the
+    ! type and 'parity' of each wannier function.
     !================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
@@ -1956,15 +1956,15 @@ contains
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
                                irvec_max, write_xyz, stdout, seedname)
     !================================================!
-    ! This is the main subroutine controling the sorting    !
-    ! for the 2c2 geometry. We first sort in the conduction !
-    ! direction, group, sort in 2nd direction, group and    !
-    ! sort in 3rd direction. Rigourous checks are performed !
-    ! to ensure group and subgroup structure is consistent  !
-    ! between principal layers (PLs), and unit cells. Once  !
-    ! checks are passed we consider the possibility of      !
-    ! multiple wannier functions are of similar centre, and !
-    ! sort those                                            !
+    ! This is the main subroutine controling the sorting
+    ! for the 2c2 geometry. We first sort in the conduction
+    ! direction, group, sort in 2nd direction, group and
+    ! sort in 3rd direction. Rigourous checks are performed
+    ! to ensure group and subgroup structure is consistent
+    ! between principal layers (PLs), and unit cells. Once
+    ! checks are passed we consider the possibility of
+    ! multiple wannier functions are of similar centre, and
+    ! sort those
     !================================================!
 
     use w90_constants, only: dp
@@ -2493,11 +2493,11 @@ contains
                                    tran_group_threshold, print_output, wannier_centres_translated, &
                                    coord, stdout, seedname)
     !================================================!
-    ! General sorting and grouping subroutine which takes Array,  !
-    ! an ordered in conduction direction array of wannier function!
-    ! indexes and positions, and returns the ordered (and grouped)!
-    ! indexes and positions after considering the other two       !
-    ! directions. Sub group info is also return for later checks. !
+    ! General sorting and grouping subroutine which takes Array,
+    ! an ordered in conduction direction array of wannier function
+    ! indexes and positions, and returns the ordered (and grouped)
+    ! indexes and positions after considering the other two
+    ! directions. Sub group info is also return for later checks.
     !================================================!
 
     use w90_constants, only: dp
@@ -2799,16 +2799,16 @@ contains
                                             num_wann, wannier_centres_translated, &
                                             coord, tran_sorted_idx, write_xyz, stdout, seedname)
     !================================================!
-    ! Here, we consider the possiblity of wannier functions !
-    ! with similar centres, such as a set of d-orbitals     !
-    ! centred on an atom. We use tran_group_threshold to    !
-    ! identify them, if they exist, then use the signatures !
-    ! to dishinguish and sort then consistently from unit   !
-    ! cell to unit cell.                                    !
-    !                                                       !
-    ! MS: For 2two-shot and beyond, some parameters,        !
-    ! eg, first_group_element will need changing to consider!
-    ! the geometry of the new systems.                      !
+    ! Here, we consider the possiblity of wannier functions
+    ! with similar centres, such as a set of d-orbitals
+    ! centred on an atom. We use tran_group_threshold to
+    ! identify them, if they exist, then use the signatures
+    ! to dishinguish and sort then consistently from unit
+    ! cell to unit cell.
+    !
+    ! MS: For 2two-shot and beyond, some parameters,
+    ! eg, first_group_element will need changing to consider
+    ! the geometry of the new systems.
     !================================================!
 
     use w90_constants, only: dp
@@ -3115,10 +3115,10 @@ contains
   subroutine tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, num_wann, &
                             seedname, stdout)
     !================================================!
-    !                                     !
-    ! Write xyz file with Wannier centres !
-    ! and atomic positions                !
-    !                                     !
+    !
+    ! Write xyz file with Wannier centres
+    ! and atomic positions
+    !
     !================================================!
 
     use w90_io, only: io_file_unit, io_date
@@ -3178,10 +3178,10 @@ contains
   subroutine tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, seedname)
     !================================================!
-    ! Here, the signatures of the each wannier fucntion (stored in !
-    ! signatures) is used to determine its relavite parity         !
-    ! with respect to the first unit cell. The parity pattern of   !
-    ! first unit cell is then enforced.                            !
+    ! Here, the signatures of the each wannier fucntion (stored in
+    ! signatures) is used to determine its relavite parity
+    ! with respect to the first unit cell. The parity pattern of
+    ! first unit cell is then enforced.
     !================================================!
 
     use w90_constants, only: dp
@@ -3276,12 +3276,12 @@ contains
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
                                     hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname)
     !================================================!
-    ! Builds hamiltonians blocks required for the  !
-    ! Greens function caclulations of the quantum  !
-    ! conductance according to the 2c2 geometry.   !
-    ! Leads are also symmetrised, in that unit cell!
-    ! sub-blocks are copied to create truely ideal !
-    ! leads.                                       !
+    ! Builds hamiltonians blocks required for the
+    ! Greens function caclulations of the quantum
+    ! conductance according to the 2c2 geometry.
+    ! Leads are also symmetrised, in that unit cell
+    ! sub-blocks are copied to create truely ideal
+    ! leads.
     !================================================!
 
     use w90_constants, only: dp, eps5

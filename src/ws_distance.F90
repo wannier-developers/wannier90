@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-! ws_distance.F90:
+! ws_distance:
 ! Original implementation by Lorenzo Paulatto, with later    !
 ! modifications by Marco Gibertini, Dominik Gresch           !
 ! and Giovanni Pizzi                                         !

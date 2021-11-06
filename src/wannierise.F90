@@ -51,9 +51,9 @@ contains
                        bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
                        seedname, stdout, comm)
     !================================================!
-    !                                                                  !
+    !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
-    !                                                                  !
+    !
     !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
@@ -972,10 +972,10 @@ contains
                                          conv_count, noise_count, lconverged, lrandom, lfirst, &
                                          wann_control, stdout)
       !================================================!
-      !                                               !
+      !
       !! Determine whether minimisation of non-gauge
       !! invariant spread is converged
-      !                                               !
+      !
       !================================================!
 
       use w90_io, only: io_error
@@ -1059,10 +1059,10 @@ contains
     !================================================!
     subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc, stdout)
       !================================================!
-      !                                               !
+      !
       !! Add some random noise to the search direction
       !! to help escape from local minima
-      !                                               !
+      !
       !================================================!
 
       use w90_constants, only: cmplx_0
@@ -1133,12 +1133,12 @@ contains
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
                                         counts, displs, optimisation, stdout)
       !================================================!
-      !                                               !
+      !
       !! Calculate the conjugate gradients search
       !! direction using the Fletcher-Reeves formula:
       !!
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
-      !                                               !
+      !
       !================================================!
 
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
@@ -1255,12 +1255,12 @@ contains
                                          doda0, wann_control, num_wann, &
                                          wbtot, cdq_loc, cdodq_loc, counts, stdout)
       !================================================!
-      !                                               !
+      !
       !! Calculate the conjugate gradients search
       !! direction using the Fletcher-Reeves formula:
       !!
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
-      !                                               !
+      !
       !================================================!
 
       use w90_io, only: io_stopwatch
@@ -1406,10 +1406,10 @@ contains
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
                                      lprint, trial_step, stdout)
       !================================================!
-      !                                               !
+      !
       !! Calculate the optimal step length based on a
       !! parabolic line search
-      !                                               !
+      !
       !================================================!
       use w90_io, only: io_stopwatch
       use w90_comms, only: w90comm_type
@@ -1475,9 +1475,9 @@ contains
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
                                     m_matrix_loc, timing_level, stdout, sitesym, comm)
       !================================================!
-      !                                               !
+      !
       !! Update U and M matrices after a trial step
-      !                                               !
+      !
       !================================================!
 
       use w90_constants, only: cmplx_i
@@ -1672,9 +1672,9 @@ contains
 !~    !================================================!
 !~    subroutine internal_write_r2mn()
 !~    !================================================!
-!~    !                                        !
-!~    ! Write seedname.r2mn file               !
-!~    !                                        !
+!~    !
+!~    ! Write seedname.r2mn file
+!~    !
 !~    !================================================!
 !~      use w90_io, only: seedname,io_file_unit,io_error
 !~
@@ -1809,7 +1809,7 @@ contains
     !================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
-    !                                                                  !
+    !
     !================================================
 
     use w90_constants, only: eps6, cmplx_0, cmplx_i
@@ -2044,11 +2044,11 @@ contains
                         num_kpts, print_output, wann_slwf, omega_invariant, counts, displs, &
                         ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, stdout, seedname, comm)
     !================================================!
-    !                                                                  !
-    !!   Calculate the Wannier Function spread                         !
-    !                                                                  !
-    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
-    ! Jun 2018, based on previous work by Charles T. Johnson and       !
+    !
+    !!   Calculate the Wannier Function spread
+    !
+    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)
+    ! Jun 2018, based on previous work by Charles T. Johnson and
     ! Radu Miron at Implerial College London
     !================================================
 
@@ -2347,11 +2347,11 @@ contains
                          cdodq_loc, lambda_loc, timing_level, stdout, seedname, sitesym, comm, &
                          iprint, cdodq)
     !================================================!
-    !                                                                  !
-    !   Calculate the Gradient of the Wannier Function spread          !
-    !                                                                  !
-    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
-    ! Jun 2018, based on previous work by Charles T. Johnson and       !
+    !
+    !   Calculate the Gradient of the Wannier Function spread
+    !
+    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)
+    ! Jun 2018, based on previous work by Charles T. Johnson and
     ! Radu Miron at Imperial College London
     !================================================
 
@@ -2607,7 +2607,7 @@ contains
   !================================================!
   subroutine wann_spread_copy(orig, copy)
     !================================================!
-    !                                                                  !
+    !
     !================================================!
 
     implicit none
@@ -2634,10 +2634,10 @@ contains
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
                                   timing_level, iprint, stdout, seedname)
     !================================================!
-    !                                                                  !
-    ! Calculates and writes the projection of each Wannier function    !
-    ! on the original bands within the outer window.                   !
-    !                                                                  !
+    !
+    ! Calculates and writes the projection of each Wannier function
+    ! on the original bands within the outer window.
+    !
     !================================================!
 
     use w90_io, only: io_stopwatch
@@ -2697,9 +2697,9 @@ contains
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
                             atom_data, print_output, stdout, seedname)
     !================================================!
-    !                                     !
-    ! Write xyz file with Wannier centres !
-    !                                     !
+    !
+    ! Write xyz file with Wannier centres
+    !
     !================================================!
 
     use w90_io, only: io_file_unit, io_date
@@ -2766,11 +2766,11 @@ contains
   subroutine wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, &
                                  u_matrix_opt, have_disentangled, w90_system, stdout, seedname)
     !================================================!
-    !                                                                 !
-    ! Write a file with Wannier centres, spreads and occupations for  !
-    ! post-processing computation of vdW C6 coeffients.               !
-    !                                                                 !
-    ! Based on code written by Lampros Andrinopoulos.                 !
+    !
+    ! Write a file with Wannier centres, spreads and occupations for
+    ! post-processing computation of vdW C6 coeffients.
+    !
+    ! Based on code written by Lampros Andrinopoulos.
     !================================================!
 
     use w90_io, only: io_file_unit, io_date, io_error
@@ -2987,9 +2987,9 @@ contains
   !================================================!
   subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, stdout, seedname)
     !================================================!
-    !                                        !
-    ! Write seedname.r2mn file               !
-    !                                        !
+    !
+    ! Write seedname.r2mn file
+    !
     !================================================!
 
     use w90_constants, only: dp
@@ -3146,10 +3146,10 @@ contains
                              num_bands, num_kpts, num_wann, have_disentangled, translate_home_cell, &
                              seedname, stdout, comm)
     !================================================!
-    !                                                                  !
-    ! Calculate the Unitary Rotations to give                          !
-    !            Maximally Localised Wannier Functions                 !
-    !                      Gamma version                               !
+    !
+    ! Calculate the Unitary Rotations to give
+    !            Maximally Localised Wannier Functions
+    !                      Gamma version
     !================================================
 
     use w90_constants, only: dp, cmplx_1, cmplx_0
@@ -3689,10 +3689,10 @@ contains
     subroutine internal_test_convergence_gamma(wann_spread, old_spread, history, iter, lconverged, &
                                                conv_window, conv_tol, stdout)
       !================================================!
-      !                                               !
-      ! Determine whether minimisation of non-gauge-  !
-      ! invariant spread is converged                 !
-      !                                               !
+      !
+      ! Determine whether minimisation of non-gauge-
+      ! invariant spread is converged
+      !
       !================================================!
 
       use w90_io, only: io_error
@@ -3798,9 +3798,9 @@ contains
 !~    !================================================!
 !~    subroutine internal_write_r2mn()
 !~    !================================================!
-!~    !                                        !
-!~    ! Write seedname.r2mn file               !
-!~    !                                        !
+!~    !
+!~    ! Write seedname.r2mn file
+!~    !
 !~    !================================================!
 !~      use w90_io, only: seedname,io_file_unit,io_error
 !~
@@ -3931,9 +3931,9 @@ contains
                               nntot, wbtot, wb, bk, omega_invariant, ln_tmp, first_pass, &
                               timing_level, stdout, seedname)
     !================================================!
-    !                                                                  !
-    !   Calculate the Wannier Function spread                          !
-    !                                                                  !
+    !
+    !   Calculate the Wannier Function spread
+    !
     !================================================
 
     use w90_io, only: io_error, io_stopwatch

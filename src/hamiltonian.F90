@@ -211,7 +211,7 @@ contains
     !================================================!
     !
     !!  Calculate the Hamiltonian in the WF basis
-    !                                            !
+    !
     !================================================!
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi

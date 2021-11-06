@@ -44,7 +44,7 @@ contains
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_error, io_stopwatch
@@ -147,7 +147,7 @@ contains
     !================================================!
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -424,7 +424,7 @@ contains
     !
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
@@ -508,9 +508,9 @@ contains
   subroutine overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                              m_matrix_orig_local, u_matrix, u_matrix_opt, seedname, stdout, comm)
     !================================================!
-    !                                                                  !
+    !
     !! Dellocate memory
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_error
@@ -581,7 +581,7 @@ contains
     !!  See section 3 of the CPC 2008
     !!  Note that in this subroutine num_wann = num_bands
     !!  since, if we are here, then disentanglement = FALSE
-    !                                                                  !
+    !
     !================================================!
     use w90_constants
     use w90_io, only: io_error, io_stopwatch
@@ -743,7 +743,7 @@ contains
     !!  Note that in this subroutine num_wann = num_bands
     !!  since, if we are here, then disentanglement = FALSE
     !!  Gamma specific version
-    !                                                                  !
+    !
     !================================================!
     use w90_constants
     use w90_io, only: io_error, io_stopwatch

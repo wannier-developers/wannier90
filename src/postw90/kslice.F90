@@ -41,7 +41,7 @@ module w90_kslice
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                       !
+  !                   PUBLIC PROCEDURES
   !================================================!
 
   subroutine k_slice(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, pw90_kslice, &
@@ -218,7 +218,7 @@ contains
     endif
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
-    !
+
     bvec(1, :) = matmul(pw90_kslice%b1(:), recip_lattice(:, :))
     bvec(2, :) = matmul(pw90_kslice%b2(:), recip_lattice(:, :))
     ! z_vec (orthogonal to the slice)
@@ -281,7 +281,7 @@ contains
 
     ! Loop over local portion of uniform mesh of k-points covering the slice,
     ! including all four borders
-    !
+
     do iloc = 1, my_nkpts
       itot = iloc - 1 + displs(my_node_id)
       i2 = itot/(pw90_kslice%kmesh2d(1) + 1) ! slow

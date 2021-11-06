@@ -33,7 +33,7 @@ module w90_spin
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                       !
+  !                   PUBLIC PROCEDURES
   !================================================!
 
   subroutine spin_get_moment(dis_manifold, fermi_energy_list, kpoint_dist, kpt_latt, pw90_oper_read, &
@@ -43,9 +43,9 @@ contains
                              num_valence_bands, effective_model, have_disentangled, &
                              wanint_kpoint_file, seedname, stdout, comm)
     !================================================!
-    !                                                            !
+    !
     !! Computes the spin magnetic moment by Wannier interpolation
-    !                                                            !
+    !
     !================================================!
 
     use w90_constants, only: dp, pi
@@ -130,10 +130,10 @@ contains
         write (stdout, '(5x,a)') &
           '               Check results against a full BZ calculation!'
       end if
-      !
+
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
       ! read from file 'kpoint.dat'
-      !
+
       do loop_tot = 1, kpoint_dist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kpoint_dist%int_kpts(:, loop_tot)
         kweight = kpoint_dist%weight(loop_tot)
@@ -165,12 +165,12 @@ contains
     end if
 
     ! Collect contributions from all nodes
-    !
+
     call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, comm)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
-    !
+
     spn_mom(1:3) = -spn_all(1:3)
 
     if (print_output%iprint > 0) then
@@ -181,7 +181,7 @@ contains
       write (stdout, '(1x,a18,f11.6)') 'z component:', spn_mom(3)
 
       ! Polar and azimuthal angles of the magnetization (defined as in pwscf)
-      !
+
       conv = 180.0_dp/pi
       magnitude = sqrt(spn_mom(1)**2 + spn_mom(2)**2 + spn_mom(3)**2)
       theta = acos(spn_mom(3)/magnitude)*conv
@@ -196,13 +196,13 @@ contains
   subroutine spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
                          real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
     !================================================!
-    !                                                             !
+    !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
     !! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z
     !!
     !! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit
     !! vector along the chosen spin quantization axis
-    !                                                             !
+    !
     !================================================ !
 
     use w90_constants, only: dp, pi
@@ -235,13 +235,13 @@ contains
     ! local variables
 
     ! Physics
-    !
+
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: SS(:, :, :), SS_n(:, :)
 
     ! Misc/Dummy
-    !
+
     integer          :: is
     real(kind=dp)    :: eig(num_wann), alpha(3), conv
 
@@ -261,14 +261,14 @@ contains
     enddo
 
     ! Unit vector along the magnetization direction
-    !
+
     conv = 180.0_dp/pi
     alpha(1) = sin(pw90_spin%axis_polar/conv)*cos(pw90_spin%axis_azimuth/conv)
     alpha(2) = sin(pw90_spin%axis_polar/conv)*sin(pw90_spin%axis_azimuth/conv)
     alpha(3) = cos(pw90_spin%axis_polar/conv)
 
     ! Vector of spin matrices projected along the quantization axis
-    !
+
     SS_n(:, :) = alpha(1)*SS(:, :, 1) + alpha(2)*SS(:, :, 2) + alpha(3)*SS(:, :, 3)
 
     spn_nk(:) = real(utility_rotate_diag(SS_n, UU, num_wann), dp)
@@ -276,7 +276,7 @@ contains
   end subroutine spin_get_nk
 
   !================================================!
-  !                   PRIVATE PROCEDURES                      !
+  !                   PRIVATE PROCEDURES
   !================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, ws_region, wannier_data, real_lattice, &
@@ -315,14 +315,14 @@ contains
 
     ! local variables
     ! Physics
-    !
+
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: SS(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
     real(kind=dp)                 :: spn_nk(num_wann, 3)
 
     ! Misc/Dummy
-    !
+
     integer          :: i, is
     real(kind=dp)    :: eig(num_wann), occ(num_wann)
 
@@ -352,10 +352,10 @@ contains
   subroutine spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, &
                         mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
     !================================================!
-    !                                                           !
-    ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
-    ! where S = (S_x,S_y,S_z) is the vector of Pauli matrices   !
-    !                                                           !
+    !
+    ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann)
+    ! where S = (S_x,S_y,S_z) is the vector of Pauli matrices
+    !
     !================================================ !
 
     use w90_constants, only: dp
@@ -385,14 +385,12 @@ contains
 
     ! local variables
     ! Physics
-    !
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: SS(:, :, :)
     real(kind=dp)                 :: eig(num_wann)
 
     ! Misc/Dummy
-    !
     integer :: i
 
     allocate (HH(num_wann, num_wann))

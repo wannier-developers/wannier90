@@ -19,6 +19,8 @@
 
 module w90_wannier90_readwrite
 
+  !! Read/write routines specific to wannier90.x data types
+
   use w90_constants, only: dp
   use w90_types
   use w90_readwrite
@@ -56,13 +58,13 @@ contains
                                           library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! Read parameters and calculate derived values
     !!
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
-    !                                                                  !
+    !
     !================================================
 
     use w90_constants, only: w90_physical_constants_type
@@ -1247,9 +1249,9 @@ contains
                                            optimisation, cp_pp, gamma_only, lsitesymmetry, spinors, &
                                            use_bloch_phases, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! write wannier90 parameters to stdout
-    !                                                                  !
+    !
     !================================================
     use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac, &
       utility_frac_to_cart
@@ -1909,9 +1911,9 @@ contains
                                                      num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                                      gamma_only, stdout)
     !================================================!
-    !                                           !
+    !
     !! Estimate how much memory we will allocate
-    !                                           !
+    !
     !================================================!
 
     implicit none
@@ -2143,9 +2145,9 @@ contains
                                           have_disentangled, lhasproj, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout, comm)
     !================================================!
-    !                                                           !
-    !! Distribute the various parameters across processors      !
-    !                                                           !
+    !
+    !! Distribute the various parameters across processors
+    !
     !================================================!
 
     use w90_constants, only: dp
@@ -2429,7 +2431,6 @@ contains
     !call comms_bcast(berry%transl_inv, 1)
     call comms_bcast(w90_system%num_elec_per_state, 1, stdout, seedname, comm)
     !call comms_bcast(pw90_common%scissors_shift, 1)
-    !
 
 ! ----------------------------------------------
     !call comms_bcast(pw90_calcs%geninterp, 1)

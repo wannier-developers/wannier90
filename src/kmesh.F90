@@ -641,7 +641,7 @@ contains
   !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
                          real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
-    !================================================!
+    !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
     !                                                                  !
@@ -668,7 +668,7 @@ contains
     ! calculate the M_mn(k,b) matrix elements -- Marzari & Vanderbilt  !
     ! PRB 56, 12847 (1997) Eq. (25) -- for each pair of band indices   !
     ! m and n.                                                         !
-    !================================================
+    !==================================================================!
 
     use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_utility, only: utility_recip_lattice_base

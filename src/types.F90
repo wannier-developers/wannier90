@@ -12,14 +12,19 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  w90_types: derived types encapsulating different data     !
+!  w90_types: derived types encapsulating data required by   !
+!      both wannier90.x and postw90.x                        !
 !                                                            !
 !------------------------------------------------------------!
 
 module w90_types
 
-  !! This module contains parameters to control the actions of wannier90.
-  !! Also routines to read the parameters and write them out again.
+  !! Definition of types encapsulating various quantities, data and parameters.
+  !! Variables are grouped according to physical meaning and their use in the Wannier90 project.
+  !!
+  !! Here are defined types used by both wannier90.x and postw90.x.
+  !! Types specific to wannier90.x (not used by postw90.x) are defined in wannier90_types.F90.
+  !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -29,9 +34,9 @@ module w90_types
   public
 
   type print_output_type
-    !! ==============================
+    !!==================================================
     !! Contains variables to control output file formatting and verbosity.
-    !! ==============================
+    !!==================================================
     ! verbosity flags - w90_readwrite_read_verbosity
     integer :: iprint
     ! Controls the verbosity of the output
@@ -44,9 +49,9 @@ module w90_types
   end type print_output_type
 
   type w90_system_type
-    !! ==============================
+    !!==================================================
     !! Contains physical information about the material being calculated.
-    !! ==============================
+    !!==================================================
     integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
@@ -82,9 +87,9 @@ module w90_types
 
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
-    !! =========================================
+    !!==================================================
     !! Contains the centres and spreads of the MLWFs
-    !! =========================================
+    !!==================================================
     ! Wannier centres and spreads
     real(kind=dp), allocatable :: centres(:, :)
     real(kind=dp), allocatable :: spreads(:)
@@ -97,9 +102,9 @@ module w90_types
   integer, parameter :: num_nnmax = 12
 
   type kmesh_input_type
-    !! ================================
+    !!==================================================
     !! Contains information that can be provided by the user about determining the kmesh
-    !! ================================
+    !!==================================================
     integer :: num_shells
     !! no longer an input keyword
     logical :: skip_B1_tests
@@ -117,9 +122,9 @@ module w90_types
   !AAM: generated, in which case projection_type is not needed.
   !AAM: It makes sense to keep the projection sites separate from the projection_type data below.
   type proj_input_type
-    !! ========================
+    !!==================================================
     !! Contains information that can be provided by the user about the projections
-    !! ========================
+    !!==================================================
     ! REVIEW_2021-07-22: site(:,:) has dual usage: for projections and for guiding centres.
     ! REVIEW_2021-07-22: Make a new type for guiding centres that only contains sites.
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
@@ -141,9 +146,9 @@ module w90_types
 
   ! kmesh information (set in kmesh)
   type kmesh_info_type
-    !! =======================
+    !!==================================================
     !! Contains derived information about the kmesh
-    !! =======================
+    !!==================================================
     integer              :: nnh           ! the number of b-directions (bka)
     integer              :: nntot         ! total number of neighbours for each k-point
     integer, allocatable :: nnlist(:, :)   ! list of neighbours for each k-point
@@ -159,9 +164,9 @@ module w90_types
 
   ! this contains data which described the disentangled manifold, also used in postw90
   type dis_manifold_type
-    !! ===========================
+    !!==================================================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
-    !! ===========================
+    !!==================================================
     real(kind=dp) :: win_min
     !! lower bound of the disentanglement outer window
     real(kind=dp) :: win_max
@@ -180,9 +185,9 @@ module w90_types
   ! Atom sites - often used in the write_* routines
   ! hamiltonian, wannierise, plot, transport, wannier_lib
   type atom_data_type
-    !! =======================
+    !!==================================================
     !! Contains information about the atoms (and maybe the cell...) of the system being calculated.
-    !! =======================
+    !!==================================================
     real(kind=dp), allocatable :: pos_cart(:, :, :)
     integer, allocatable :: species_num(:)
     character(len=maxlen), allocatable :: label(:)
@@ -193,11 +198,11 @@ module w90_types
 
   ! plot.F90 and postw90/kpath
   type kpoint_path_type
-    !! ============================
+    !!==================================================
     !! Contains information that specifies the k-point path for plotting and other purposes.
     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
     !! number of segments specified by the user. Each pair of special points defines a segment.
-    !! ============================
+    !!==================================================
     integer num_points_first_segment
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)

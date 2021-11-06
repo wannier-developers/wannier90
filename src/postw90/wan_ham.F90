@@ -41,10 +41,10 @@ contains
 
   subroutine wham_get_D_h_a(delHH_a, UU, eig, ef, D_h_a, num_wann)
     !================================================!
-    !                                               !
+    !
     !! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta),
     !! using Eq.(24) of WYSV06
-    !                                               !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
@@ -86,10 +86,10 @@ contains
   !================================================!
   subroutine wham_get_D_h(delHH, D_h, UU, eig, num_wann)
     !================================================!
-    !                                         !
+    !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
     !! using Eq.(24) of WYSV06
-    !                                         !
+    !
     !================================================!
 
     ! TO DO: Implement version where energy denominators only connect
@@ -129,12 +129,12 @@ contains
   !================================================!
   subroutine wham_get_D_h_P_value(pw90_berry, delHH, D_h, UU, eig, num_wann)
     !================================================!
-    !                                         !
+    !
     !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z)
     !! using Eq.(24) of WYSV06
     !  and prescription for energy denominator
     !  from BK81
-    !                                         !
+    !
     !================================================!
 
     ! TO DO: Implement version where energy denominators only connect
@@ -181,17 +181,17 @@ contains
   subroutine wham_get_JJp_JJm_list(delHH, UU, eig, JJp_list, JJm_list, num_wann, &
                                    fermi_energy_list, occ)
     !================================================!
-    !                                               !
-    ! Compute JJ^+_a and JJ^-_a (a=Cartesian index) !
-    ! for a list of Fermi energies                  !
-    !                                               !
-    ! This routine is a replacement for             !
-    ! wham_get_JJp_list and wham_getJJm_list.       !
-    ! It computes both lists at once in a more      !
-    ! efficient manner.                             !
-    !                                               !
-    !  Tsirkin:   added the optional occ parameter  !
-    !                                               !
+    !                                                !
+    ! Compute JJ^+_a and JJ^-_a (a=Cartesian index)  !
+    ! for a list of Fermi energies                   !
+    !                                                !
+    ! This routine is a replacement for              !
+    ! wham_get_JJp_list and wham_getJJm_list.        !
+    ! It computes both lists at once in a more       !
+    ! efficient manner.                              !
+    !                                                !
+    !  Tsirkin:   added the optional occ parameter   !
+    !                                                !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -252,11 +252,11 @@ contains
   subroutine wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
                                    stdout, eig, occ)
     !================================================!
-    !                                !
+    !
     !! Occupation matrix f, and g=1-f
     !! for a list of Fermi energies
-    ! Tsirkin: !now optionally either eig or occ parameters may be supplied  !
-    !    (Changed consistently the calls from the Berry module)        !
+    ! Tsirkin: !now optionally either eig or occ parameters may be supplied
+    !    (Changed consistently the calls from the Berry module)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
@@ -326,9 +326,9 @@ contains
   subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_band_deriv_degen, &
                                stdout, seedname)
     !================================================!
-    !                          !
+    !
     !! Band derivatives dE/dk_a
-    !                          !
+    !
     !================================================!
 
     use w90_constants, only: dp !, cmplx_0, cmplx_i
@@ -367,20 +367,20 @@ contains
         if (i + 1 <= num_wann) then
           diff = eig(i + 1) - eig(i)
         else
-          !
+
           ! i-th is the highest band, and it is non-degenerate
-          !
+
           diff = pw90_band_deriv_degen%degen_thr + 1.0_dp
         end if
         if (diff < pw90_band_deriv_degen%degen_thr) then
-          !
+
           ! Bands i and i+1 are degenerate
-          !
+
           degen_min = i
           degen_max = degen_min + 1
-          !
+
           ! See if any higher bands are in the same degenerate group
-          !
+
           do
             if (degen_max + 1 > num_wann) exit
             diff = eig(degen_max + 1) - eig(degen_max)
@@ -390,25 +390,24 @@ contains
               exit
             end if
           end do
-          !
+
           ! Bands from degen_min to degen_max are degenerate. Diagonalize
           ! the submatrix in Eq.(31) YWVS07 over this degenerate subspace.
           ! The eigenvalues are the band gradients
-          !
-          !
+
           dim = degen_max - degen_min + 1
           call utility_diagonalize(delHH_bar_a(degen_min:degen_max, &
                                                degen_min:degen_max), dim, &
                                    deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), &
                                    stdout, seedname)
-          !
+
           ! Scanned bands up to degen_max
-          !
+
           i = degen_max
         else
-          !
+
           ! Use non-degenerate form [Eq.(27) YWVS07] for current (i-th) band
-          !
+
           deleig_a(i) = real(delHH_bar_a(i, i), dp)
         end if
       end do
@@ -416,7 +415,7 @@ contains
     else
 
       ! Use non-degenerate form for all bands
-      !
+
       deleig_a(:) = real(utility_rotate_diag(delHH_a(:, :), UU, num_wann), dp)
 
     end if
@@ -564,9 +563,9 @@ contains
                                        effective_model, have_disentangled, seedname, stdout, &
                                        comm, occ)
     !================================================!
-    !                                                        !
+    !
     !! Wrapper routine used to reduce number of Fourier calls
-    !    Added the optional occ parameter                    !
+    !    Added the optional occ parameter
     !
     !================================================!
 
@@ -651,10 +650,10 @@ contains
                                               effective_model, have_disentangled, seedname, &
                                               stdout, comm)
     !================================================!
-    !                                                        !
+    !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
     ! satisfying the TB phase convention
-    !                                                        !
+    !
     !================================================!
 
     use w90_constants, only: dp
@@ -725,9 +724,9 @@ contains
                                       num_wann, num_valence_bands, effective_model, &
                                       have_disentangled, seedname, stdout, comm)
     !================================================!
-    !                                                        !
+    !
     !! Wrapper routine used to reduce number of Fourier calls
-    !                                                        !
+    !
     !================================================!
 
     use w90_constants, only: dp

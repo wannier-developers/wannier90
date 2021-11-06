@@ -13,11 +13,13 @@
 !------------------------------------------------------------!
 !                                                            !
 !  w90_postw90_readwrite: input and output routines          !
-!    specific to postw90.x                                   !
+!     specific to postw90.x                                  !
 !                                                            !
 !------------------------------------------------------------!
 
 module w90_postw90_readwrite
+
+  !! Read/write routines specific to postw90.x data types
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -71,13 +73,13 @@ contains
                                         pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, eig_found, &
                                         pw90_extra_io, gamma_only, bohr, optimisation, stdout, seedname)
     !================================================!
-    !                                                                  !
+    !
     !! Read parameters and calculate derived values
     !!
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
-    !                                                                  !
+    !
     !================================================
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -1196,7 +1198,7 @@ contains
     pw90_extra_io%gyrotropic_freq_min = pw90_extra_io%kubo_freq_min
     call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_min', found, &
                                    r_value=pw90_extra_io%kubo_freq_min)
-    !
+
     if (dis_manifold%frozen_states) then
       pw90_extra_io%kubo_freq_max = dis_manifold%froz_max - fermi_energy_list(1) + 0.6667_dp
     elseif (allocated(eigval)) then
@@ -1208,19 +1210,18 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_max', found, &
                                    r_value=pw90_extra_io%kubo_freq_max)
 
-    !
     pw90_extra_io%kubo_freq_step = 0.01_dp
     call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_step', found, &
                                    r_value=pw90_extra_io%kubo_freq_step)
     if (found .and. pw90_extra_io%kubo_freq_step < 0.0_dp) call io_error( &
       'Error: kubo_freq_step must be positive', stdout, seedname)
-    !
+
     pw90_berry%kubo_nfreq = nint((pw90_extra_io%kubo_freq_max - pw90_extra_io%kubo_freq_min) &
                                  /pw90_extra_io%kubo_freq_step) + 1
     if (pw90_berry%kubo_nfreq <= 1) pw90_berry%kubo_nfreq = 2
     pw90_extra_io%kubo_freq_step = (pw90_extra_io%kubo_freq_max - pw90_extra_io%kubo_freq_min) &
                                    /(pw90_berry%kubo_nfreq - 1)
-    !
+
     if (allocated(pw90_berry%kubo_freq_list)) deallocate (pw90_berry%kubo_freq_list)
     allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
     if (ierr /= 0) &
@@ -1230,7 +1231,7 @@ contains
                                      (i - 1)*(pw90_extra_io%kubo_freq_max - &
                                               pw90_extra_io%kubo_freq_min)/(pw90_berry%kubo_nfreq - 1)
     enddo
-    !
+
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
 
@@ -1293,7 +1294,7 @@ contains
     logical :: found
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
-    ! k meshes                                                                                 !
+    ! k meshes
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
     ! [GP-begin, Apr13, 2012]
     ! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
@@ -1469,15 +1470,15 @@ contains
                                          pw90_berry, pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
                                          pw90_extra_io, optimisation, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! write postw90 parameters to stdout
-    !                                                                  !
+    !
     !================================================
     use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac
 
     implicit none
 
-    !data from parameters module
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(w90_system_type), intent(in) :: w90_system
     type(atom_data_type), intent(in) :: atom_data
@@ -1494,15 +1495,17 @@ contains
     type(pw90_boltzwann_type), intent(in) :: pw90_boltzwann
     type(pw90_extra_io_type), intent(in) :: pw90_extra_io
 
-    real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), volume
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: scissors_shift
-    integer :: i, loop, nat, nsp
     integer, intent(in) :: num_wann
     integer, intent(in) :: optimisation
     integer, intent(in) :: stdout
+
+    ! local variables
+    real(kind=dp) :: recip_lattice(3, 3), inv_lattice(3, 3), pos_frac(3), volume
     real(kind=dp) :: cell_volume
+    integer :: i, loop, nat, nsp
 
     ! System
     write (stdout, *)
@@ -1965,9 +1968,12 @@ contains
       endif
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute DOS at same time                  :', pw90_boltzwann%calc_also_dos, '|'
       if (pw90_boltzwann%calc_also_dos .and. print_output%iprint > 2) then
-     write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', pw90_boltzwann%dos_energy_min, '|'
-     write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', pw90_boltzwann%dos_energy_max, '|'
-    write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', pw90_boltzwann%dos_energy_step, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', &
+          pw90_boltzwann%dos_energy_min, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', &
+          pw90_boltzwann%dos_energy_max, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', &
+          pw90_boltzwann%dos_energy_step, '|'
         if (pw90_boltzwann%dos_smearing%use_adaptive .eqv. pw90_extra_io%smear%use_adaptive .and. &
             pw90_boltzwann%dos_smearing%adaptive_prefactor == pw90_extra_io%smear%adaptive_prefactor &
             .and. pw90_boltzwann%dos_smearing%adaptive_max_width == pw90_extra_io%smear%adaptive_max_width &

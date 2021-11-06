@@ -75,7 +75,7 @@ module w90_berry
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                       !
+  !                   PUBLIC PROCEDURES
   !================================================!
   subroutine berry_main(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpoint_dist, &
                         kpt_latt, pw90_band_deriv_degen, pw90_oper_read, pw90_spin, physics, &
@@ -85,14 +85,14 @@ contains
                         fermi_n, num_wann, num_kpts, num_bands, num_valence_bands, &
                         effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
     !================================================!
-    !                                                            !
+    !
     !! Computes the following quantities:
     !!   (i) Anomalous Hall conductivity (from Berry curvature)
     !!  (ii) Complex optical conductivity (Kubo-Greenwood) & JDOS
     !! (iii) Orbital magnetization
     !!  (iv) Nonlinear shift current
     !!   (v) Spin Hall conductivity
-    !                                                            !
+    !
     !================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
@@ -608,7 +608,6 @@ contains
           sc_list = sc_list + sc_k_list*kweight
         end if
 
-        !
         ! ***END COPY OF CODE BLOCK 1***
 
         if (eval_shc) then
@@ -702,7 +701,6 @@ contains
         kpt(3) = loop_z*db3
 
         ! ***BEGIN CODE BLOCK 1***
-        !
         if (eval_ahc) then
 
           call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
@@ -798,7 +796,6 @@ contains
           sc_list = sc_list + sc_k_list*kweight
         end if
 
-        !
         ! ***END CODE BLOCK 1***
 
         if (eval_shc) then
@@ -879,7 +876,6 @@ contains
     end if !wanint_kpoint_file
 
     ! Collect contributions from all nodes
-    !
     if (eval_ahc) then
       call comms_reduce(imf_list(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
       call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', stdout, seedname, comm)
@@ -1031,9 +1027,9 @@ contains
         ! (iii) Multiply by -e^2/hbar in SI, with has units ofconductance,
         !       (Ohm)^{-1}, or Siemens (S), to get the final result in S/cm
         !
-        ! ===========================
+        !==================================================
         ! fac = -e^2/(hbar.V_c*10^-8)
-        ! ===========================
+        !==================================================
         !
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
@@ -1320,9 +1316,9 @@ contains
         ! (iii) Multiply by ( pi.e^3/(4.hbar^2) ) in SI, which multiplied by [T] in seconds from (ii), gives final
         !       units of A/V^2
         !
-        ! ===========================
+        !==================================================
         ! fac = eV_seconds.( pi.e^3/(4.hbar^2.V_c) )
-        ! ===========================
+        !==================================================
         !
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
@@ -1470,11 +1466,11 @@ contains
                                  effective_model, have_disentangled, seedname, &
                                  stdout, comm, occ, ladpt)
     !================================================!
-    !                                                            !
+    !
     !! Calculates the Berry curvature traced over the occupied
     !! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list
     !! of Fermi energies, and stores it in axial-vector form
-    !                                                            !
+    !
     !================================================!
 
     use w90_types, only: print_output_type, wannier_data_type, &
@@ -1805,7 +1801,7 @@ contains
   end subroutine berry_get_imfgh_klist
 
   !================================================!
-  !                   PRIVATE PROCEDURES                      !
+  !                   PRIVATE PROCEDURES
   !================================================!
 
   subroutine berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, pw90_band_deriv_degen, pw90_spin, &
@@ -1816,11 +1812,11 @@ contains
                               have_disentangled, spin_decomp, seedname, stdout, comm, &
                               kubo_AH_k_spn, kubo_H_k_spn, jdos_k_spn)
     !================================================!
-    !                                                                    !
+    !
     !! Contribution from point k to the complex interband optical
     !! conductivity, separated into Hermitian (H) and anti-Hermitian (AH)
     !! parts. Also returns the joint density of states
-    !                                                                    !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
@@ -2024,7 +2020,7 @@ contains
                                 num_kpts, num_wann, num_valence_bands, effective_model, &
                                 have_disentangled, seedname, stdout, comm)
     !================================================!
-    !                                                                    !
+    !
     !  Contribution from point k to the nonlinear shift current
     !  [integrand of Eq.8 IATS18]
     !  Notation correspondence with IATS18:
@@ -2037,7 +2033,7 @@ contains
     !  sum_AD                 <-->   summatory of Eq. 32 IATS18
     !  sum_HD                 <-->   summatory of Eq. 30 IATS18
     !  eig_da(n)-eig_da(m)    <-->   \mathbbm{Delta}_{nm}
-    !                                                                    !
+    !
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -2328,7 +2324,7 @@ contains
                                  effective_model, have_disentangled, seedname, stdout, comm, &
                                  shc_k_fermi, shc_k_freq, shc_k_band)
     !================================================!
-    !                                                                    !
+    !
     ! Contribution from a k-point to the spin Hall conductivity on a list
     ! of Fermi energies or a list of frequencies or a list of energy bands
     !   sigma_{alpha,beta}^{gamma}(k), alpha, beta, gamma = 1, 2, 3
@@ -2346,7 +2342,7 @@ contains
     !    shc_k_freq:  return a list for different frequencies
     !    shc_k_band:  return a list for each energy band
     !
-    !   Junfeng Qiao (18/8/2018)                                         !
+    !   Junfeng Qiao (18/8/2018)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -2544,14 +2540,14 @@ contains
   contains
 
     !================================================!
-    !                   PRIVATE PROCEDURES                      !
+    !                   PRIVATE PROCEDURES
     !================================================!
     subroutine berry_get_js_k(ws_region, pw90_spin_hall, wannier_data, ws_distance, wigner_seitz, &
                               D_alpha_h, js_k, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, UU, eig, &
                               del_alpha_eig, delHH_alpha, kpt, real_lattice, mp_grid, num_wann, &
                               seedname, stdout)
       !================================================!
-      !                                                                    !
+      !
       ! Contribution from point k to the
       !   <psi_k | 1/2*(sigma_gamma*v_alpha + v_alpha*sigma_gamma) | psi_k>
       !
@@ -2559,7 +2555,7 @@ contains
       !  not divided by hbar (required by velocity operator)
       !
       !  Junfeng Qiao (8/7/2018)
-      !                                                                    !
+      !
       !================================================!
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate

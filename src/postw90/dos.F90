@@ -33,7 +33,7 @@ module w90_dos
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                     !
+  !                   PUBLIC PROCEDURES
   !================================================!
 
   subroutine dos_main(pw90_berry, dis_manifold, pw90_dos, kpoint_dist, kpt_latt, pw90_oper_read, &
@@ -43,12 +43,12 @@ contains
                       num_wann, effective_model, have_disentangled, spin_decomp, seedname, stdout, &
                       comm)
     !================================================!
-    !                                                       !
+    !
     !! Computes the electronic density of states. Can
     !! resolve into up-spin and down-spin parts, project
     !! onto selected Wannier orbitals, and use adaptive
     !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
-    !                                                       !
+    !
     !================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
@@ -304,7 +304,7 @@ contains
 
   end subroutine dos_main
 
-  ! =========================================================================
+  !==================================================
 
 ! The next routine is commented. It should be working (apart for a
 ! missing broadcast at the very end, see comments there).  However,
@@ -694,12 +694,12 @@ contains
 
   end subroutine dos_get_k
 
-  ! =========================================================================
+  !==================================================
   subroutine dos_get_levelspacing(del_eig, kmesh, levelspacing, num_wann, recip_lattice)
-    ! =========================================================================
+    !==================================================
     !! This subroutine calculates the level spacing, i.e. how much the level changes
     !! near a given point of the interpolation mesh
-    ! =========================================================================
+    !==================================================
 
     use w90_postw90_common, only: pw90common_kmesh_spacing
 

@@ -104,15 +104,15 @@ contains
   subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
                                          seedname, stdout, lwindow_in)
     !================================================!
-    !                                                                          !
-    ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
-    !                                                                          !
-    ! 1. "disentanglement" phase (present(lwindow))                            !
-    !    ndim=num_bands                                                        !
-    !                                                                          !
-    ! 2. Minimization of Omega_{D+OD} (.not.present(lwindow))                  !
-    !    ndim=num_wann,  d=sym%d_matrix_band                                       !
-    !                                                                          !
+    !
+    ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases:
+    !
+    ! 1. "disentanglement" phase (present(lwindow))
+    !    ndim=num_bands
+    !
+    ! 2. Minimization of Omega_{D+OD} (.not.present(lwindow))
+    !    ndim=num_wann,  d=sym%d_matrix_band
+    !
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
@@ -304,9 +304,9 @@ contains
   !================================================!
   subroutine sitesym_symmetrize_zmatrix(sitesym, czmat, num_bands, num_kpts, lwindow_in)
     !================================================!
-    !                                                                  !
-    !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
-    !                                                                  !
+    !
+    !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)
+    !
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
@@ -368,11 +368,11 @@ contains
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
                               sitesym, stdout, seedname, n)
     !================================================!
-    !                                                                  !
-    !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
-    !  where R'k = k                                                   !
-    !  and orthonormalize it                                           !
-    !                                                                  !
+    !
+    !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)
+    !  where R'k = k
+    !  and orthonormalize it
+    !
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
@@ -505,13 +505,13 @@ contains
   subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
                                           seedname, stdout)
     !================================================!
-    !                                                                  !
-    !   minimize Omega_I by steepest descendent                        !
-    !                                                                  !
-    !   delta U_{mu I}(k) = Z_{mu mu'}*U_{mu' I}(k)                    !
-    !                        - \sum_{J} lambda_{JI} U_{mu J}(k)        !
-    !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
-    !                                                                  !
+    !
+    !   minimize Omega_I by steepest descendent
+    !
+    !   delta U_{mu I}(k) = Z_{mu mu'}*U_{mu' I}(k)
+    !                        - \sum_{J} lambda_{JI} U_{mu J}(k)
+    !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}
+    !
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type

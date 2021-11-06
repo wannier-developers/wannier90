@@ -18,8 +18,12 @@
 
 module w90_wannier90_types
 
-  !! This module contains parameters to control the actions of wannier90.
-  !! Also routines to read the parameters and write them out again.
+  ! Definition of types encapsulating various quantities, data and parameters.
+  ! Variables are grouped according to physical meaning and their use in the Wannier90 project.
+  !
+  !! Here are defined types specific to wannier90.x (not used by postw90.x).
+  !! Types used by both wannier90.x and postw90.x are defined in types.F90.
+  !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -29,9 +33,9 @@ module w90_wannier90_types
   public
 
   type w90_calculation_type
-    !! =========================
+    !!==================================================
     !! Contains variables to control the execution path of the program.
-    !! =========================
+    !!==================================================
     logical :: postproc_setup
     character(len=20) :: restart
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
@@ -55,10 +59,10 @@ module w90_wannier90_types
   end type output_file_type
 
   type real_space_ham_type
-    !! ===============================
+    !!==================================================
     !! Contains information to control the structure of the real-space Hamiltonian
     !! and how it is calculated.
-    !! ===============================
+    !!==================================================
     real(kind=dp) :: hr_cutoff !plot and transport
     ! dist_cutoff - only plot and transport
     real(kind=dp) :: dist_cutoff !plot and transport
@@ -85,18 +89,18 @@ module w90_wannier90_types
   end type real_space_ham_type
 
   type band_plot_type
-    !! ========================
+    !!==================================================
     !! Contains information to control how the bandstructure plotting is performed and formatted.
-    !! ========================
+    !!==================================================
     character(len=20) :: mode !hamiltonian (setup only), plot
     character(len=20) :: format
     integer, allocatable :: project(:)
   end type band_plot_type
 
   type wannier_plot_type
-    !! ======================
+    !!==================================================
     !! Contains information for how to plot the wannier functions.
-    !! ======================
+    !!==================================================
     integer, allocatable :: list(:)
     integer :: supercell(3)
     real(kind=dp) :: radius
@@ -108,9 +112,9 @@ module w90_wannier90_types
   end type wannier_plot_type
 
   type wvfn_read_type ! only in plot.F90
-    !! ========================
+    !!==================================================
     !! Contains information for how to read the wavefunction files
-    !! ========================
+    !!==================================================
     logical :: formatted
     !! Read the wvfn from fortran formatted file
     integer :: spin_channel
@@ -119,9 +123,9 @@ module w90_wannier90_types
 
   ! parameters used to control the minimisation of the disentanglement process
   type dis_control_type
-    !! ========================
+    !!==================================================
     !! Contains parameters that control the disentanglement minimisation procedure
-    !! ========================
+    !!==================================================
     integer :: num_iter
     !! number of disentanglement iteration steps
     real(kind=dp) :: mix_ratio
@@ -141,9 +145,9 @@ module w90_wannier90_types
   end type dis_spheres_type
 
   type wann_slwf_type
-    !! ===================
+    !!==================================================
     !! Contains parameters that control the selective localisation and constrained centres algorithm
-    !! ===================
+    !!==================================================
     integer :: slwf_num
     !! Number of objective Wannier functions (others excluded from spread functional)
     logical :: selective_loc
@@ -164,9 +168,9 @@ module w90_wannier90_types
   end type guiding_centres_type
 
   type wann_control_type ! only in wannierise.F90
-    !! ========================
+    !!==================================================
     !! Contains parameters that control the wannierisation minimisation procedure
-    !! ========================
+    !!==================================================
     integer :: num_dump_cycles
     !! Number of steps before writing checkpoint
     integer :: num_print_cycles
@@ -188,12 +192,12 @@ module w90_wannier90_types
   end type wann_control_type
 
   type wann_omega_type
-    !! ===================
+    !!==================================================
     !! Contains the total spread and its decomposition into gauge invariant and gauge dependent parts.
-    !! ===================
+    !!==================================================
     ! REVIEW_2021-08-04: This type is mainly used for the library mode to be returned back to the external code.
     ! REVIEW_2021-08-04: Internally the code mostly uses the localisation_vars type in wannierise.F90.
-    ! ===================
+    !==================================================
     real(kind=dp) :: invariant !wannierise, disentangle and chk2chk
     real(kind=dp) :: total
     real(kind=dp) :: tilde
@@ -201,9 +205,9 @@ module w90_wannier90_types
 
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.
   type fermi_surface_plot_type
-    !! ==================
+    !!==================================================
     !! Contains variables to control Fermi surface plotting in the main wannier code.
-    !! ==================
+    !!==================================================
     integer :: num_points
     character(len=20) :: plot_format
   end type fermi_surface_plot_type
@@ -211,9 +215,9 @@ module w90_wannier90_types
   ! REVIEW_2021-08-09: This functionality should be moved to postw90 at some point.
   ! REVIEW_2021-08-09: See Issue 31 in the main repo.
   type transport_type ! transport.F90
-    !! =================
+    !!==================================================
     !! Contains variables to control the calculation of quantum (Landauer-Buttiker) transport
-    !! =================
+    !!==================================================
     logical :: easy_fix
     character(len=20) :: mode ! also hamiltonian
     real(kind=dp) :: win_min
@@ -241,9 +245,9 @@ module w90_wannier90_types
   ! REVIEW_2021-08-09: proj_input and proj, the latter containing the subset of selected projections.
   ! REVIEW_2021-08-09: Perhaps best to keep it as currently coded (for now at least).
   type select_projection_type
-    !! ================
+    !!==================================================
     !! Contains variables relevant to selecting a subset of the projections for the calculation.
-    !! ================
+    !!==================================================
     logical :: lselproj
     !integer, save :: num_select_projections
     !integer, allocatable, save :: select_projections(:)

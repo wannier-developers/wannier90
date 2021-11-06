@@ -41,7 +41,7 @@ module w90_kpath
 contains
 
   !================================================!
-  !                   PUBLIC PROCEDURES                       !
+  !                   PUBLIC PROCEDURES
   !================================================!
 
   subroutine k_path(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, pw90_kpath, kpt_latt, &
@@ -153,7 +153,7 @@ contains
     ! Everything is done on the root node (not worthwhile parallelizing)
     ! However, we still have to read and distribute the data if we
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
-    !
+
     plot_bands = index(pw90_kpath%task, 'bands') > 0
     plot_curv = index(pw90_kpath%task, 'curv') > 0
     plot_morb = index(pw90_kpath%task, 'morb') > 0

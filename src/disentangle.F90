@@ -47,7 +47,7 @@ contains
     !================================================!
     !
     !! Main disentanglement routine
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_file_unit
@@ -332,7 +332,7 @@ contains
   subroutine internal_check_orthonorm(u_matrix_opt, ndimwin, num_kpts, num_wann, timing_level, &
                                       on_root, seedname, stdout)
     !================================================!
-    !                                                                !
+    !
     !! This subroutine checks that the states in the columns of the
     !! final matrix U_opt are orthonormal at every k-point, i.e.,
     !! that the matrix is unitary in the sense that
@@ -341,7 +341,7 @@ contains
     !! In particular, this checks whether the projected gaussians
     !! are indeed orthogonal to the frozen states, at those k-points
     !! where both are present in the trial subspace.
-    !                                                                !
+    !
     !================================================!
 
     use w90_constants, only: eps8
@@ -406,11 +406,11 @@ contains
   subroutine internal_slim_m(m_matrix_orig_local, ndimwin, nfirstwin, nnlist, nntot, num_bands, &
                              num_kpts, timing_level, seedname, stdout, comm)
     !================================================!
-    !                                                                !
+    !
     !! This subroutine slims down the original Mmn(k,b), removing
     !! rows and columns corresponding to u_nks that fall outside
     !! the outer energy window.
-    !                                                                !
+    !
     !================================================!
 
     implicit none
@@ -486,7 +486,7 @@ contains
                              num_kpts, num_wann, timing_level, lsitesymmetry, on_root, seedname, &
                              stdout, comm)
     !================================================!
-    !                                                                !
+    !
     !! This subroutine finds the initial guess for the square unitary
     !! rotation matrix u_matrix. The method is similar to Sec. III.D
     !! of SMV, but with square instead of rectangular matrices:
@@ -502,7 +502,7 @@ contains
     !!
     !! Note: |psi> U_opt = |psitilde> and obviously
     !! <psitilde| = (U_opt)^dagger <psi|
-    !                                                                !
+    !
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
@@ -611,10 +611,10 @@ contains
   subroutine internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, ndimwin, num_wann, &
                                    timing_level, seedname, stdout)
     !================================================!
-    !                                                                !
+    !
     !! Make initial u_matrix real
     !! Must be the case when gamma_only = .true.
-    !                                                                !
+    !
     !================================================!
 
     implicit none
@@ -714,7 +714,7 @@ contains
                          indxfroz, indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, &
                          num_wann, timing_level, lfrozen, linner, on_root, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! This subroutine selects the states that are inside the outer
     !! window (ie, the energy window out of which we fish out the
     !! optimally-connected subspace) and those that are inside the
@@ -728,7 +728,7 @@ contains
     !! Note - in windows eigval_opt are shifted, so the lowest ones go
     !! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above
     !! they are set to zero.
-    !                                                                  !
+    !
     !================================================!
 
     ! OUTPUT:
@@ -1025,7 +1025,7 @@ contains
   subroutine dis_project(a_matrix, u_matrix_opt, ndimwin, nfirstwin, num_bands, num_kpts, &
                          num_wann, timing_level, on_root, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! Construct projections for the start of the disentanglement routine
     !!
     !! Original notes from Nicola (refers only to the square case)
@@ -1253,14 +1253,14 @@ contains
   subroutine dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, ndimwin, iprint, num_bands, &
                            num_kpts, num_wann, timing_level, lfrozen, on_root, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
     !! WHERE P_s PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED
     !! GAUSSIANS, P_f THE PROJECTOR ONTO THE FROZEN STATES, AND
     !! Q_froz = 1 - P_froz, ALL EXP IN THE BASIS OF THE BLOCH
     !! EIGENSTATES INSIDE THE OUTER ENERGY WINDOW
     !! (See Eq. (27) in Sec. III.G of SMV)
-    !                                                                  !
+    !
     !================================================!
 
     use w90_constants, only: eps8
@@ -1649,10 +1649,10 @@ contains
                          indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
                          num_wann, lsitesymmetry, on_root, seedname, stdout, comm)
     !================================================!
-    !                                                                  !
+    !
     !! Extracts an num_wann-dimensional subspace at each k by
     !! minimizing Omega_I
-    !                                                                  !
+    !
     !================================================!
 
     ! MODIFIED:
@@ -2526,9 +2526,9 @@ contains
                               ndimfroz, ndimwin, nnlist, nkp, nkp_loc, nntot, num_bands, num_wann, &
                               timing_level, on_root, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! Compute the Z-matrix
-    !                                                                  !
+    !
     !================================================!
 
     implicit none
@@ -2595,10 +2595,10 @@ contains
                                indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
                                num_wann, lsitesymmetry, on_root, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! Extracts an num_wann-dimensional subspace at each k by
     !! minimizing Omega_I (Gamma point version)
-    !                                                                  !
+    !
     !================================================!
 
     use w90_io, only: io_time
@@ -3253,9 +3253,9 @@ contains
                                     ndimfroz, ndimwin, nnlist, nkp, nntot, num_bands, num_wann, &
                                     timing_level, seedname, stdout)
     !================================================!
-    !                                                                  !
+    !
     !! Compute Z-matrix (Gamma point routine)
-    !                                                                  !
+    !
     !================================================!
 
     implicit none
