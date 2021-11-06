@@ -354,7 +354,7 @@ contains
     integer, intent(in) :: num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
     character(len=50), intent(in)  :: seedname
 
     logical, intent(in) :: on_root
@@ -421,7 +421,7 @@ contains
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
-    integer, intent(in) :: ndimwin(:) ! (num_kpts)
+    integer, intent(in) :: ndimwin(:)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts) index of lowest band inside outer window at nkp-th
 
@@ -506,6 +506,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
     ! arguments
@@ -514,9 +515,9 @@ contains
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
-    complex(kind=dp), intent(in) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(in) :: a_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry
 
@@ -1701,11 +1702,11 @@ contains
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) ! (num_bands,num_kpts)
 
-    real(kind=dp), intent(inout) :: eigval_opt(:, :) ! (num_bands,num_kpts)
+    real(kind=dp), intent(inout) :: eigval_opt(:, :)
     real(kind=dp), intent(out) :: omega_invariant
 
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry
     character(len=50), intent(in)  :: seedname
@@ -2489,7 +2490,7 @@ contains
     integer, intent(in) :: iter, dis_conv_window
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(inout) :: history(:) ! (dis_conv_window)
+    real(kind=dp), intent(inout) :: history(:)
     real(kind=dp), intent(in) :: delta_womegai, dis_conv_tol
 
     logical, intent(inout) :: dis_converged
