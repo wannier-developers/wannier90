@@ -191,8 +191,8 @@ contains
       if (eig_found) dis_manifold%win_min = minval(eigval)
       if (eig_found) dis_manifold%win_max = maxval(eigval)
       call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
-      call w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, num_wann, bohr, &
-                                                        stdout, seedname)
+      call w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, num_wann, bohr, &
+                                                    stdout, seedname)
       call w90_wannier90_readwrite_read_hamil(real_space_ham, stdout, seedname)
       call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
@@ -547,8 +547,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_wannierise
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_disentangle_w90(dis_control, dis_spheres, num_bands, &
-                                                          num_wann, bohr, stdout, seedname)
+  subroutine w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, &
+                                                      num_wann, bohr, stdout, seedname)
     !================================================!
     use w90_io, only: io_error
     implicit none
@@ -600,7 +600,7 @@ contains
       enddo
     endif
     ! GS-end
-  end subroutine w90_wannier90_readwrite_read_disentangle_w90
+  end subroutine w90_wannier90_readwrite_read_disentangle
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname)
