@@ -615,7 +615,7 @@ contains
 !~  end subroutine overlap_symmetrize
 !~![ysl-e]
 
-  !%%%%%%%%%%%%%%%%%%%%%
+  !================================================!
   subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, &
                             stdout, error)
     !================================================!
