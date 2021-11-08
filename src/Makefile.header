@@ -6,7 +6,8 @@ OBJS_LIBV1 = wannier_lib.o
 
 OBJS_POST  = ws_distance.o types.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
         postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
-        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o comms-abort.o readwrite.o
+        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o comms-abort.o readwrite.o \
+	error.o
 
 LIBRARY = ../../libwannier.a
 LIBRARYV2 = ../../libwan2.a

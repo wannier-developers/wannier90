@@ -49,7 +49,6 @@ module w90_io
   public :: io_file_unit
   public :: io_get_seedname
   public :: io_print_timings
-  public :: io_stopwatch
   public :: io_time
   public :: io_wallclocktime
 

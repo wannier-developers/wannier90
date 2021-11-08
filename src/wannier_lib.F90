@@ -414,8 +414,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_transport
   use w90_comms, only: comms_array_split, comms_scatterv, w90comm_type, &
     mpisize, mpirank
-
   use w90_readwrite, only: w90_readwrite_lib_set_atoms
+  use w90_error
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -493,6 +493,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   type(w90comm_type) :: comm
   logical :: disentanglement
   logical :: mpiinitalready
+
+  type(w90_error_type), allocatable :: err
 
   ! CORRECT ONLY FOR SERIAL CASE!!!
   ! THESE LIBRARY ROUTINES ARE OBSOLETE
@@ -658,7 +660,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, comm)
+                   seedname, stdout, err, comm)
   endif
 
   call w90_wannier90_readwrite_write_chkpt('postwann', exclude_bands, wann_data, kmesh_info, kpt_latt, &

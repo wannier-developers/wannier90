@@ -468,7 +468,6 @@ contains
 
   end subroutine overlap_read
 
-<<<<<<< HEAD
 !~[aam]
 !~  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !~ subroutine overlap_check_m_symmetry()
@@ -987,8 +986,7 @@ contains
 
 ![ysl-b]
   !================================================!
-  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, seedname, &
-                                   stdout, error)
+  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, stdout, error)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -1012,7 +1010,6 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    !character(len=50), intent(in)  :: seedname
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn
