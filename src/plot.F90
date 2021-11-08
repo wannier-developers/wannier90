@@ -11,19 +11,27 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_plot: plot various data                               !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_plot
+
   !! This module handles various plots
 
   use w90_comms, only: comms_array_split, comms_reduce, w90comm_type, mpisize, mpirank
 
   implicit none
+
   private
+
   public :: plot_main
 
 contains
 
-  !============================================!
+  !================================================!
+
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
                        ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
                        kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
@@ -32,8 +40,11 @@ contains
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, &
                        stdout, comm)
+    !================================================!
+    !
     !! Main plotting routine
-    !============================================!
+    !
+    !================================================!
 
     use w90_constants, only: eps6, dp
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
@@ -49,7 +60,7 @@ contains
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(atom_data_type), intent(in)          :: atom_data
     type(band_plot_type), intent(in)          :: band_plot
     type(dis_manifold_type), intent(in)       :: dis_manifold
@@ -98,7 +109,7 @@ contains
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: spinors
 
-!   local variables
+    ! local variables
     type(ws_distance_type) :: ws_distance
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: nkp, bands_num_spec_points, my_node_id, num_nodes
@@ -214,16 +225,16 @@ contains
   !----------------- Private Routines ------------------------------
   !-----------------------------------------------------------------
 
-  !============================================!
+  !================================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, real_space_ham, &
                                     ws_region, print_output, recip_lattice, num_wann, wannier_data, &
                                     ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
                                     ws_distance, bands_num_spec_points, stdout, seedname)
-    !============================================!
+    !================================================!
     !                                            !
     !! Plots the interpolated band structure
     !                                            !
-    !============================================!
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
     use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
@@ -235,7 +246,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(band_plot_type), intent(in) :: band_plot
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(print_output_type), intent(in) :: print_output
@@ -591,10 +602,10 @@ contains
 
   contains
 
-    !============================================!
+    !================================================!
     subroutine plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
                            wannier_centres_translated, stdout)
-      !============================================!
+      !================================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
       !!  j_th WF at 0 and i_th WF at the lattice point translated
@@ -610,7 +621,7 @@ contains
       !!  limitation: when bands_plot_dim .ne. 3
       !!      one_dim_vec must be parallel to one of the cartesian axis
       !!      and perpendicular to the other two primitive lattice vectors
-      !============================================!
+      !================================================!
 
       use w90_constants, only: dp, cmplx_0, eps8
       use w90_io, only: io_error
@@ -618,7 +629,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(real_space_ham_type), intent(in) :: real_space_ham
       type(band_plot_type), intent(in) :: band_plot
 
@@ -782,12 +793,13 @@ contains
 
     end subroutine plot_cut_hr
 
-    !============================================!
+    !================================================!
     subroutine plot_interpolate_gnuplot(band_plot, kpoint_path, bands_num_spec_points, num_wann)
-      !============================================!
-      !                                            !
+      !================================================!
+      !
       !! Plots the interpolated band structure in gnuplot format
-      !============================================!
+      !
+      !================================================!
 
       use w90_constants, only: dp
       use w90_io, only: io_file_unit
@@ -796,7 +808,7 @@ contains
 
       implicit none
 
-      ! passed variables
+      ! arguments
       type(band_plot_type), intent(in) :: band_plot
       type(kpoint_path_type), intent(in) :: kpoint_path
       integer, intent(in) :: num_wann, bands_num_spec_points
@@ -874,11 +886,13 @@ contains
 
     end subroutine plot_interpolate_gnuplot
 
+    !================================================!
     subroutine plot_interpolate_xmgrace(kpoint_path, bands_num_spec_points, num_wann)
-      !============================================!
-      !                                            !
+      !================================================!
+      !
       !! Plots the interpolated band structure in Xmgrace format
-      !============================================!
+      !
+      !================================================!
 
       use w90_io, only: io_file_unit, io_date
       use w90_types, only: kpoint_path_type
@@ -968,14 +982,14 @@ contains
 
   end subroutine plot_interpolate_bands
 
-  !===========================================================!
+  !================================================!
   subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
@@ -983,7 +997,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
@@ -1121,17 +1135,16 @@ contains
 
   end subroutine plot_fermi_surface
 
-  !============================================!
+  !================================================!
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                           dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
                           comm)
-    !============================================!
-    !                                            !
+    !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
-    !                                            !
-    !============================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
@@ -1141,7 +1154,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(atom_data_type), intent(in) :: atom_data
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(print_output_type), intent(in) :: print_output
@@ -1404,7 +1417,8 @@ contains
                 do loop_w = 1, wann_plot_num
                   if (.not. spinors) then
                     wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                  u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
+                                                       u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)* &
+                                                       r_wvfn(npoint, loop_b)*catmp
                   else
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                       wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
@@ -1554,16 +1568,15 @@ contains
 
   contains
 
-    !============================================!
+    !================================================!
     subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
                                     real_lattice, bohr)
-      !============================================!
-      !                                            !
+      !================================================!
+      !
       !! Write WFs in Gaussian cube format.
-      !                                            !
-      !============================================!
+      !
+      !================================================!
 
-      !use w90_constants, only: bohr
       use w90_utility, only: utility_translate_home, utility_cart_to_frac, utility_frac_to_cart, &
         utility_inverse_mat, utility_recip_lattice_base
       use w90_types, only: wannier_data_type, atom_data_type
@@ -1955,19 +1968,17 @@ contains
 
   end subroutine plot_wannier
 
-  !============================================!
+  !================================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, &
                              num_wann, num_kpts, num_bands, seedname)
-    !============================================!
-    !                                            !
+    !================================================!
+    !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
-    !                                            !
-    !============================================!
+    !
+    !================================================!
 
-!   use w90_io, only: io_error, io_file_unit, seedname, &
-    use w90_io, only: io_error, io_file_unit, &
-      io_time, io_stopwatch, io_date
-    use w90_constants, only: dp  !lp
+    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch, io_date
+    use w90_constants, only: dp
 
     implicit none
 
@@ -2017,19 +2028,18 @@ contains
 
   end subroutine plot_u_matrices
 
-  !============================================!
+  !================================================!
   subroutine plot_bvec(kmesh_info, num_kpts, stdout, seedname)
-    !!
+    !================================================!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
     !! This is used by EPW to compute the velocity.
     !! You need "write_bvec = .true." in your wannier input
     !!
-    !============================================!
+    !================================================!
 
-!   use w90_io, only: io_error, io_file_unit, seedname, io_date
     use w90_io, only: io_error, io_file_unit, io_date
-    use w90_constants, only: dp  !lp
+    use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
 
     implicit none

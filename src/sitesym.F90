@@ -12,6 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
+! w90_sitesym:                                               !
 ! Reference:                                                 !
 !    R. Sakuma, Symmetry-adapted Wannier functions           !
 !    in the maximal localization procedure,                  !
@@ -20,47 +21,44 @@
 !------------------------------------------------------------!
 
 module w90_sitesym
+
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-! use w90_io, only: io_error, stdout
   use w90_io, only: io_error
 
   implicit none
 
-  private :: symmetrize_ukirr
-  private :: orthogonalize_u
+  private
 
-  public  :: sitesym_slim_d_matrix_band
-  public  :: sitesym_replace_d_matrix_band
-  public  :: sitesym_symmetrize_u_matrix
-  public  :: sitesym_symmetrize_gradient
-  public  :: sitesym_symmetrize_rotation
-  public  :: sitesym_symmetrize_zmatrix
+  public  :: sitesym_dealloc
   public  :: sitesym_dis_extract_symmetry
   public  :: sitesym_read
-  public  :: sitesym_dealloc
+  public  :: sitesym_replace_d_matrix_band
+  public  :: sitesym_slim_d_matrix_band
+  public  :: sitesym_symmetrize_gradient
+  public  :: sitesym_symmetrize_rotation
+  public  :: sitesym_symmetrize_u_matrix
+  public  :: sitesym_symmetrize_zmatrix
 
 contains
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sitesym, lwindow_in)
-    !==================================================================!
-!   not called !
+    !================================================!
+    ! not called !
+
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
-!   end w90_parameters
+    logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     type(sitesym_type), intent(inout) :: sitesym
 
-    logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
     integer :: nindx(num_bands)
-
-    !write(stdout,"(a)") '-- sitesym_slim_sym%d_matrix_band --'
 
     do ir = 1, sitesym%nkptirr
       ik = sitesym%ir2ik(ir)
@@ -84,19 +82,17 @@ contains
     return
   end subroutine sitesym_slim_d_matrix_band
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_replace_d_matrix_band(sitesym, num_wann)
-    !==================================================================!
+    !================================================!
+
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
-!   end w90_parameters
     type(sitesym_type), intent(inout) :: sitesym
 
-    !write(stdout,"(a)") '-- sitesym_replace_sym%d_matrix_band --'
-    !write(stdout,"(a)") 'sym%d_matrix_band is replaced by sym%d_matrix_wann'
     deallocate (sitesym%d_matrix_band)
     allocate (sitesym%d_matrix_band(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr))
     sitesym%d_matrix_band = sitesym%d_matrix_wann
@@ -104,25 +100,25 @@ contains
     return
   end subroutine sitesym_replace_d_matrix_band
 
-  !==========================================================================!
+  !================================================!
   subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
                                          seedname, stdout, lwindow_in)
-    !==========================================================================!
-    !                                                                          !
-    ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
-    !                                                                          !
-    ! 1. "disentanglement" phase (present(lwindow))                            !
-    !    ndim=num_bands                                                        !
-    !                                                                          !
-    ! 2. Minimization of Omega_{D+OD} (.not.present(lwindow))                  !
-    !    ndim=num_wann,  d=sym%d_matrix_band                                       !
-    !                                                                          !
-    !==========================================================================!
+    !================================================!
+    !
+    ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases:
+    !
+    ! 1. "disentanglement" phase (present(lwindow))
+    !    ndim=num_bands
+    !
+    ! 2. Minimization of Omega_{D+OD} (.not.present(lwindow))
+    !    ndim=num_wann,  d=sym%d_matrix_band
+    !
+    !================================================!
 
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -182,20 +178,21 @@ contains
     return
   end subroutine sitesym_symmetrize_u_matrix
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_symmetrize_gradient(sitesym, grad, imode, num_kpts, num_wann)
-    !==================================================================!
+    !================================================!
+
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
 
-!   local variables
+    ! local variables
     integer :: ik, ir, isym, irk, ngk
 
     complex(kind=dp) :: grad_total(num_wann, num_wann)
@@ -258,15 +255,15 @@ contains
     return
   end subroutine sitesym_symmetrize_gradient
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, seedname, stdout)
-    !==================================================================!
+    !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_wann, num_kpts
@@ -274,7 +271,7 @@ contains
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer :: ik, ir, isym, irk
     complex(kind=dp) :: cmat1(num_wann, num_wann)
     complex(kind=dp) :: cmat2(num_wann, num_wann)
@@ -304,18 +301,18 @@ contains
     return
   end subroutine sitesym_symmetrize_rotation
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_symmetrize_zmatrix(sitesym, czmat, num_bands, num_kpts, lwindow_in)
-    !==================================================================!
-    !                                                                  !
-    !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
-    !                                                                  !
-    !==================================================================!
+    !================================================!
+    !
+    !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)
+    !
+    !================================================!
 
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -325,7 +322,7 @@ contains
 
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
 
-!   local variables
+    ! local variables
     logical :: lfound(num_kpts)
     integer :: ik, ir, isym, irk, nd
     complex(kind=dp) :: cztmp(num_bands, num_bands)
@@ -367,16 +364,16 @@ contains
     return
   end subroutine sitesym_symmetrize_zmatrix
 
-  !==================================================================!
+  !================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
                               sitesym, stdout, seedname, n)
-    !==================================================================!
-    !                                                                  !
-    !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
-    !  where R'k = k                                                   !
-    !  and orthonormalize it                                           !
-    !                                                                  !
-    !==================================================================!
+    !================================================!
+    !
+    !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)
+    !  where R'k = k
+    !  and orthonormalize it
+    !
+    !================================================!
 
     use w90_wannier90_types, only: sitesym_type
     implicit none
@@ -455,9 +452,9 @@ contains
     return
   end subroutine symmetrize_ukirr
 
-  !==================================================================!
+  !================================================!
   subroutine orthogonalize_u(ndim, m, u, n, stdout, seedname)
-    !==================================================================!
+    !================================================!
 
     implicit none
 
@@ -504,23 +501,23 @@ contains
     return
   end subroutine orthogonalize_u
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
                                           seedname, stdout)
-    !==================================================================!
-    !                                                                  !
-    !   minimize Omega_I by steepest descendent                        !
-    !                                                                  !
-    !   delta U_{mu I}(k) = Z_{mu mu'}*U_{mu' I}(k)                    !
-    !                        - \sum_{J} lambda_{JI} U_{mu J}(k)        !
-    !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
-    !                                                                  !
-    !==================================================================!
+    !================================================!
+    !
+    !   minimize Omega_I by steepest descendent
+    !
+    !   delta U_{mu I}(k) = Z_{mu mu'}*U_{mu' I}(k)
+    !                        - \sum_{J} lambda_{JI} U_{mu J}(k)
+    !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}
+    !
+    !================================================!
 
     use w90_wannier90_types, only: sitesym_type
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -534,7 +531,7 @@ contains
 
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     complex(kind=dp) :: umatnew(num_bands, num_wann)
     complex(kind=dp) :: ZU(num_bands, num_wann)
     complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
@@ -599,15 +596,16 @@ contains
     return
   end subroutine sitesym_dis_extract_symmetry
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)
-    !==================================================================!
-    use w90_io, only: io_file_unit, io_error
+    !================================================!
 
+    use w90_io, only: io_file_unit, io_error
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
-!   passed variables
+    ! arguments
     type(sitesym_type), intent(inout) :: sitesym
 
     integer, intent(in) :: num_bands
@@ -616,7 +614,7 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-!   local variables
+    ! local variables
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()
@@ -647,12 +645,13 @@ contains
     return
   end subroutine sitesym_read
 
-  !==================================================================!
+  !================================================!
   subroutine sitesym_dealloc(sitesym, stdout, seedname)
-    !==================================================================!
-    use w90_io, only: io_error
+    !================================================!
 
+    use w90_io, only: io_error
     use w90_wannier90_types, only: sitesym_type
+
     implicit none
 
     type(sitesym_type), intent(inout) :: sitesym

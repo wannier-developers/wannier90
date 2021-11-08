@@ -11,11 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90chk2chk: checkpoint file conversion utility            !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90chk_parameters
 
-  !use w90_constants, only: dp
-  !use w90_io, only: maxlen
   use w90_types
 
   implicit none
@@ -23,10 +25,8 @@ module w90chk_parameters
   public
 
   type(wannier_data_type), save :: wannier_data
-! type(kmesh_input_type), save :: kmesh_data
   type(kmesh_info_type), save :: kmesh_info
   type(dis_manifold_type), save :: dis_manifold
-! type(atom_data_type), save :: atoms
 
   integer, allocatable, save :: exclude_bands(:)
   real(kind=dp), allocatable, save :: kpt_latt(:, :)
@@ -44,7 +44,6 @@ module w90chk_parameters
   ! or read in from an ab-initio grid
   ! a_matrix      = projection of trial orbitals on bloch states
   ! m_matrix_orig = overlap of bloch states
-  !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
   real(kind=dp), allocatable, save :: eigval(:, :)
 
   !BGS u_matrix_opt in postw90 only for generation of v_matrix
@@ -112,7 +111,6 @@ module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-! use w90_io, only: stdout, io_error, seedname
   use w90_io, only: io_error
   implicit none
 
@@ -185,14 +183,15 @@ contains
 
   end subroutine conv_get_seedname
 
-  !=======================================!
+  !================================================!
   subroutine conv_read_chkpt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
+    !
     !! Read formatted checkpoint file
-    !=======================================!
+    !
+    !================================================!
 
     use w90_constants, only: eps6
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
@@ -340,12 +339,13 @@ contains
   end subroutine conv_read_chkpt
 
   subroutine conv_read_chkpt_fmt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
+    !
     !! Read formatted checkpoint file
-    !=======================================!
+    !
+    !================================================!
 
     use w90_constants, only: eps6
-!   use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
@@ -551,9 +551,11 @@ contains
   end subroutine conv_read_chkpt_fmt
 
   subroutine conv_write_chkpt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
+    !
     !! Write formatted checkpoint file
-    !=======================================!
+    !
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters
@@ -605,9 +607,11 @@ contains
   end subroutine conv_write_chkpt
 
   subroutine conv_write_chkpt_fmt(checkpoint, stdout, seedname)
-    !=======================================!
+    !================================================!
+    !
     !! Write formatted checkpoint file
-    !=======================================!
+    !
+    !================================================!
 
     use w90_io, only: io_file_unit, io_date
     use w90chk_parameters
@@ -760,7 +764,6 @@ program w90chk2chk
     call conv_write_chkpt(checkpoint, stdout, seedname)
   end if
 
-!  close(unit=stdout,status='delete')
   close (unit=stdout)
 
   call comms_end

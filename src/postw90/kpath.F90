@@ -11,6 +11,10 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_kpath: evaluate properties along a path in k-space    !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_kpath
 
@@ -36,9 +40,9 @@ module w90_kpath
 
 contains
 
-  !===========================================================!
-  !                   PUBLIC PROCEDURES                       !
-  !===========================================================!
+  !================================================!
+  !                   PUBLIC PROCEDURES
+  !================================================!
 
   subroutine k_path(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, pw90_kpath, kpt_latt, &
                     pw90_oper_read, pw90_band_deriv_degen, pw90_spin, ws_region, kpoint_path, pw90_spin_hall, print_output, &
@@ -46,8 +50,11 @@ contains
                     SS_R, SAA_R, SBB_R, v_matrix, u_matrix, bohr, eigval, real_lattice, &
                     scissors_shift, mp_grid, fermi_n, num_wann, num_bands, num_kpts, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
-
+    !================================================!
+    !
     !! Main routine
+    !
+    !================================================!
 
     use w90_comms, only: w90comm_type, mpirank, mpisize, comms_array_split, comms_scatterv, &
       comms_gatherv, comms_bcast
@@ -146,7 +153,7 @@ contains
     ! Everything is done on the root node (not worthwhile parallelizing)
     ! However, we still have to read and distribute the data if we
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
-    !
+
     plot_bands = index(pw90_kpath%task, 'bands') > 0
     plot_curv = index(pw90_kpath%task, 'curv') > 0
     plot_morb = index(pw90_kpath%task, 'morb') > 0
@@ -1079,11 +1086,12 @@ contains
 
   end subroutine k_path
 
-  !===========================================================!
+  !================================================!
   !                   PRIVATE PROCEDURES                      !
-  !===========================================================!
+  !================================================!
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, &
                                pw90_kpath, berry_curv_unit, stdout, seedname, comm)
+    !================================================!
 
     use w90_postw90_types, only: pw90_kpath_mod_type
     use w90_comms, only: w90comm_type, mpirank
@@ -1151,14 +1159,14 @@ contains
 
   end subroutine
 
-  !===================================================================!
+  !================================================!
   subroutine k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint, kpoint_path, &
                                recip_lattice, pw90_kpath)
-    !===================================================================!
+    !================================================!
     ! Determine the number of k-points (total_pts) as well as           !
     ! their reciprocal-lattice coordinates long the path (plot_kpoint)  !
     ! and their associated horizontal coordinate for the plot (xval)    !
-    !===================================================================!
+    !================================================!
 
     use w90_postw90_types, only: pw90_kpath_mod_type
     use w90_types, only: kpoint_path_type

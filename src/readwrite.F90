@@ -11,9 +11,17 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_readwrite: input parsing and information printout     !
+!     routines for input/output for data used/needed by      !
+!     *both* wannier90.x and postw90.x                       !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_readwrite
-  ! very few of these use save, so may actually be local to subroutines
+
+  !! Common read/write routines for data needed by both
+  !! wannier90.x and postw90.x executables
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
@@ -24,91 +32,86 @@ module w90_readwrite
   private
 
   ! Private data for processing input file
-  integer                            :: num_lines
+  integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
 
-  public :: w90_readwrite_dealloc
-  public :: w90_readwrite_write_header
-  public :: w90_readwrite_read_chkpt
-  public :: w90_readwrite_lib_set_atoms
-  public :: w90_readwrite_get_smearing_type
-  public :: w90_readwrite_get_convention_type
   public :: w90_readwrite_chkpt_dist
+  public :: w90_readwrite_dealloc
+  public :: w90_readwrite_get_convention_type
+  public :: w90_readwrite_get_smearing_type
+  public :: w90_readwrite_lib_set_atoms
+  public :: w90_readwrite_read_chkpt
+  public :: w90_readwrite_write_header
   ! for postw90 parameters
-  public :: w90_readwrite_in_file
+  public :: w90_readwrite_get_block_length
+  public :: w90_readwrite_get_centre_constraints
   public :: w90_readwrite_get_keyword
   public :: w90_readwrite_get_keyword_block
-  public :: w90_readwrite_get_block_length
-  public :: w90_readwrite_get_vector_length
   public :: w90_readwrite_get_keyword_vector
-  public :: w90_readwrite_get_range_vector
-  public :: w90_readwrite_get_centre_constraints
   public :: w90_readwrite_get_projections
+  public :: w90_readwrite_get_range_vector
   public :: w90_readwrite_get_smearing_index
+  public :: w90_readwrite_get_vector_length
+  public :: w90_readwrite_in_file
   public :: w90_readwrite_set_kmesh
   public :: w90_readwrite_uppercase
   ! common read routines
-  public :: w90_readwrite_read_gamma_only
-  public :: w90_readwrite_read_verbosity
-  public :: w90_readwrite_read_algorithm_control
-  public :: w90_readwrite_read_num_wann
-  public :: w90_readwrite_read_exclude_bands
-  public :: w90_readwrite_read_lattice
-  public :: w90_readwrite_read_atoms
-  public :: w90_readwrite_read_units
-  public :: w90_readwrite_read_devel
-  public :: w90_readwrite_read_mp_grid
-  public :: w90_readwrite_read_kpath
-  public :: w90_readwrite_read_dis_manifold
-  public :: w90_readwrite_read_num_bands
-  public :: w90_readwrite_read_system
-  public :: w90_readwrite_read_fermi_energy
-  public :: w90_readwrite_read_ws_data
-  public :: w90_readwrite_read_eigvals
-  public :: w90_readwrite_read_kmesh_data
-  public :: w90_readwrite_read_kpoints
   public :: w90_readwrite_clean_infile
-  public :: w90_readwrite_read_final_alloc
   public :: w90_readwrite_clear_keywords
+  public :: w90_readwrite_read_algorithm_control
+  public :: w90_readwrite_read_atoms
+  public :: w90_readwrite_read_devel
+  public :: w90_readwrite_read_dis_manifold
+  public :: w90_readwrite_read_eigvals
+  public :: w90_readwrite_read_exclude_bands
+  public :: w90_readwrite_read_fermi_energy
+  public :: w90_readwrite_read_final_alloc
+  public :: w90_readwrite_read_gamma_only
+  public :: w90_readwrite_read_kmesh_data
+  public :: w90_readwrite_read_kpath
+  public :: w90_readwrite_read_kpoints
+  public :: w90_readwrite_read_lattice
+  public :: w90_readwrite_read_mp_grid
+  public :: w90_readwrite_read_num_bands
+  public :: w90_readwrite_read_num_wann
+  public :: w90_readwrite_read_system
+  public :: w90_readwrite_read_units
+  public :: w90_readwrite_read_verbosity
+  public :: w90_readwrite_read_ws_data
+
   private :: clear_block
 
 contains
 
+  !================================================!
   subroutine w90_readwrite_read_verbosity(print_output, stdout, seedname)
-    !%%%%%%%%%%%%%%%%
-    !System variables
-    !%%%%%%%%%%%%%%%%
     implicit none
     type(print_output_type), intent(inout) :: print_output
     logical :: found
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    print_output%timing_level = 1             ! Verbosity of timing output info
+    print_output%timing_level = 1 ! Verbosity of timing output info
     call w90_readwrite_get_keyword(stdout, seedname, 'timing_level', found, i_value=print_output%timing_level)
 
-    print_output%iprint = 1             ! Verbosity
+    print_output%iprint = 1 ! Verbosity
     call w90_readwrite_get_keyword(stdout, seedname, 'iprint', found, i_value=print_output%iprint)
 
   end subroutine w90_readwrite_read_verbosity
 
   subroutine w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
-    !%%%%%%%%%%%%%%%%
-    !System variables
-    !%%%%%%%%%%%%%%%%
     implicit none
     integer, intent(inout) :: optimisation
     logical :: found
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
-    optimisation = 3             ! Verbosity
+    optimisation = 3 ! Verbosity
     call w90_readwrite_get_keyword(stdout, seedname, 'optimisation', found, i_value=optimisation)
 
   end subroutine w90_readwrite_read_algorithm_control
 
   subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname)
-    !use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
     real(kind=dp), intent(out) :: lenconfac
@@ -119,10 +122,10 @@ contains
     real(kind=dp), intent(in) :: bohr
     logical :: found
 
-    energy_unit = 'ev'          !
+    energy_unit = 'ev'
     call w90_readwrite_get_keyword(stdout, seedname, 'energy_unit', found, c_value=energy_unit)
 
-    length_unit = 'ang'         !
+    length_unit = 'ang'
     lenconfac = 1.0_dp
     call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') &
@@ -159,21 +162,21 @@ contains
 
     num_exclude_bands = 0
     call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                num_exclude_bands, lcount=.true.)
+                                        num_exclude_bands, lcount=.true.)
     if (found) then
       if (num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
       if (allocated(exclude_bands)) deallocate (exclude_bands)
       allocate (exclude_bands(num_exclude_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating exclude_bands in w90_wannier90_readwrite_read', stdout, seedname)
       call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                  num_exclude_bands, .false., exclude_bands)
+                                          num_exclude_bands, .false., exclude_bands)
       if (any(exclude_bands < 1)) &
         call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
   subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, num_bands, &
-                                  num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
+                                          num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, library
@@ -187,8 +190,6 @@ contains
     integer :: i_temp
     logical :: found
 
-    ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
-!    num_bands       =   -1
     call w90_readwrite_get_keyword(stdout, seedname, 'num_bands', found, i_value=i_temp)
     if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
@@ -208,7 +209,6 @@ contains
   end subroutine w90_readwrite_read_num_bands
 
   subroutine w90_readwrite_read_devel(devel_flag, stdout, seedname)
-!   use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
     character(len=*), intent(out) :: devel_flag
@@ -216,7 +216,7 @@ contains
 
     logical :: found
 
-    devel_flag = ' '          !
+    devel_flag = ' '
     call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found, c_value=devel_flag)
   end subroutine w90_readwrite_read_devel
 
@@ -253,7 +253,6 @@ contains
     integer :: iv_temp(3)
     logical :: found
 
-!    mp_grid=-99
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'mp_grid', found, 3, i_value=iv_temp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <mp_grid> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
@@ -295,7 +294,7 @@ contains
       w90_system%num_elec_per_state = 2
     endif
     call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
-                           i_value=w90_system%num_elec_per_state)
+                                   i_value=w90_system%num_elec_per_state)
     if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) &
       call io_error('Error: num_elec_per_state can be only 1 or 2', stdout, seedname)
     if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) &
@@ -339,7 +338,7 @@ contains
     end if
     kpoint_path%num_points_first_segment = 100
     call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found, &
-                           i_value=kpoint_path%num_points_first_segment)
+                                   i_value=kpoint_path%num_points_first_segment)
     ! checks
     if (bands_plot) then
       if (kpoint_path%num_points_first_segment < 0) &
@@ -370,7 +369,7 @@ contains
       found_fermi_energy = .true.
       n = 1
     endif
-    !
+
     fermi_energy_scan = .false.
     call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found, r_value=fermi_energy_min)
     if (found) then
@@ -379,17 +378,17 @@ contains
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
       call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found, &
-                             r_value=fermi_energy_max)
+                                     r_value=fermi_energy_max)
       if (found .and. fermi_energy_max <= fermi_energy_min) call io_error( &
         'Error: fermi_energy_max must be larger than fermi_energy_min', stdout, seedname)
       fermi_energy_step = 0.01_dp
       call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found, &
-                             r_value=fermi_energy_step)
+                                     r_value=fermi_energy_step)
       if (found .and. fermi_energy_step <= 0.0_dp) call io_error( &
         'Error: fermi_energy_step must be positive', stdout, seedname)
       n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
     endif
-    !
+
     if (found_fermi_energy) then
       if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
       allocate (fermi_energy_list(1), stat=ierr)
@@ -444,12 +443,12 @@ contains
     if (found) then
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 1, &
-                                      i_value=ws_region%ws_search_size)
+                                              i_value=ws_region%ws_search_size)
         ws_region%ws_search_size(2) = ws_region%ws_search_size(1)
         ws_region%ws_search_size(3) = ws_region%ws_search_size(1)
       elseif (i .eq. 3) then
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
-                                      i_value=ws_region%ws_search_size)
+                                              i_value=ws_region%ws_search_size)
       else
         call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
@@ -460,24 +459,20 @@ contains
   end subroutine w90_readwrite_read_ws_data
 
   subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
-                                disentanglement, eig_found, eigval, library, postproc_setup, &
-                                num_bands, num_kpts, stdout, seedname)
+                                        disentanglement, eig_found, eigval, library, postproc_setup, &
+                                        num_bands, num_kpts, stdout, seedname)
 
     use w90_io, only: io_file_unit, io_error
 
     implicit none
-    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, &
-                           pw90_geninterp, w90_plot, disentanglement, &
-                           library, postproc_setup
-    logical, intent(out) :: eig_found
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     character(len=50), intent(in)  :: seedname
-    !w90_plot = bands_plot or dos_plot or fermi_surface_plot or write_hr
+    logical, intent(in) :: disentanglement, library, postproc_setup
+    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
+    logical, intent(out) :: eig_found
     integer :: i, j, k, n, eig_unit, ierr
-    !integer, allocatable, dimension(:, :) :: nnkpts_block
-    !integer, allocatable, dimension(:) :: nnkpts_idx
 
     ! Read the eigenvalues from wannier.eig
     eig_found = .false.
@@ -533,19 +528,13 @@ contains
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: eig_found
-    !real(kind=dp), intent(in) :: eigval(:, :)
     type(dis_manifold_type), intent(inout) :: dis_manifold
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    !integer, intent(in) :: num_bands, num_wann
-    !integer :: nkp, ierr
     logical :: found, found2
 
-    !dis_manifold%win_min = -1.0_dp; dis_manifold%win_max = 0.0_dp
-    !if (eig_found) dis_manifold%win_min = minval(eigval)
     call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_manifold%win_min)
 
-    !if (eig_found) dis_manifold%win_max = maxval(eigval)
     call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_manifold%win_max)
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) &
       call io_error('Error: w90_wannier90_readwrite_read: check disentanglement windows', stdout, seedname)
@@ -570,12 +559,10 @@ contains
 
   subroutine w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
     use w90_io, only: io_error
-!   use w90_utility, only: utility_recip_lattice
     implicit none
     type(kmesh_input_type), intent(out) :: kmesh_input
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     integer :: itmp, ierr
     logical :: found
 
@@ -596,7 +583,7 @@ contains
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating shell_list in w90_wannier90_readwrite_read', stdout, seedname)
       call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, .false., &
-              kmesh_input%shell_list)
+                                          kmesh_input%shell_list)
       if (any(kmesh_input%shell_list < 1)) &
         call io_error('Error: shell_list must contain positive numbers', stdout, seedname)
     else
@@ -620,19 +607,18 @@ contains
   end subroutine w90_readwrite_read_kmesh_data
 
   subroutine w90_readwrite_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
-                                bohr, stdout, seedname)
+                                        bohr, stdout, seedname)
     use w90_io, only: io_error
-!   use w90_utility, only: utility_recip_lattice
     implicit none
-    logical, intent(in) :: pw90_effective_model, library
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+
+    character(len=50), intent(in)  :: seedname
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
-    !real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
-    !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    logical, intent(in) :: pw90_effective_model, library
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), allocatable :: kpt_cart(:, :)
+    real(kind=dp), intent(in) :: bohr
+
     integer :: ierr
     logical :: found
 
@@ -644,7 +630,7 @@ contains
     end if
 
     call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, &
-                                 r_value=kpt_cart)
+                                         r_value=kpt_cart)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       kpt_latt = kpt_cart
@@ -737,7 +723,6 @@ contains
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
 
-    !type(kpoint_path_type) :: kpoint_path ! for the special case of w90_readwrite_get_keyword_kpath
     logical :: found
 
     ! keywords for wannier.x
@@ -997,7 +982,7 @@ contains
 
     integer :: loop, ierr
 
-    ! JJ, filter out any remaining accepted keywords
+    ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
     call w90_readwrite_clear_keywords(stdout, seedname)
 
     if (any(len_trim(in_data(:)) > 0)) then
@@ -1018,10 +1003,10 @@ contains
   end subroutine w90_readwrite_clean_infile
 
   subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, &
-                                    num_wann, num_bands, num_kpts, stdout, seedname)
-    ! =============================== !
+                                            num_wann, num_bands, num_kpts, stdout, seedname)
+    !================================================== !
     ! Some checks and initialisations !
-    ! =============================== !
+    !================================================== !
     use w90_io, only: io_error
     implicit none
     integer, intent(in) :: stdout
@@ -1032,8 +1017,6 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: ierr
-
-!    if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then
       if (allocated(dis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
@@ -1078,12 +1061,12 @@ contains
     implicit none
     real(kind=dp), intent(in) :: spacing
     !! Minimum spacing between neighboring points, in angstrom^(-1)
-    real(kind=dp), dimension(3, 3), intent(in) :: reclat
+    real(kind=dp), intent(in) :: reclat(3, 3)
     !! Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
-    integer, dimension(3), intent(out) :: mesh
+    integer, intent(out) :: mesh(3)
     !! Will contain the three integers defining the interpolation k-mesh
 
-    real(kind=dp), dimension(3) :: blen
+    real(kind=dp) :: blen(3)
     integer :: i
 
     do i = 1, 3
@@ -1101,9 +1084,8 @@ contains
     !! associated to a given smr_index integer value.
     integer, intent(in) :: smearing_index
     !! The integer index for which we want to get the string
-    character(len=80)   :: w90_readwrite_get_smearing_type
-
-    character(len=4)   :: orderstr
+    character(len=80) :: w90_readwrite_get_smearing_type
+    character(len=4) :: orderstr
 
     if (smearing_index > 0) then
       write (orderstr, '(I0)') smearing_index
@@ -1187,13 +1169,12 @@ contains
 
   end function w90_readwrite_get_smearing_index
 
-!===================================================================
+!================================================
   subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
-    !===================================================================
-    !                                                                  !
+    !================================================
     !! Convert a few things to uppercase to look nice in the output
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
 
@@ -1238,7 +1219,7 @@ contains
   subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, constants_version_str2, stdout)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
-    !use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
+
     implicit none
 
     integer, intent(in) :: stdout
@@ -1331,29 +1312,28 @@ contains
 
   end subroutine w90_readwrite_write_header
 
-!==================================================================!
+!================================================!
   subroutine w90_readwrite_dealloc(exclude_bands, wannier_data, input_proj, kmesh_input, kpt_latt, &
-                           dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
-    !==================================================================!
-    !                                                                  !
+                                   dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+    !================================================!
     !! release memory from allocated parameters
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
     use w90_io, only: io_error
 
     implicit none
-    !data from parameters module
-    integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(wannier_data_type), intent(inout) :: wannier_data
-    type(proj_input_type), intent(inout) :: input_proj
-    type(kmesh_input_type), intent(inout) :: kmesh_input
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    type(dis_manifold_type), intent(inout) :: dis_manifold
+
     type(atom_data_type), intent(inout) :: atom_data
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(kmesh_input_type), intent(inout) :: kmesh_input
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    character(len=50), intent(in)  :: seedname
+    type(proj_input_type), intent(inout) :: input_proj
+    type(wannier_data_type), intent(inout) :: wannier_data
+    integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(in) :: stdout
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+    character(len=50), intent(in)  :: seedname
 
     integer :: ierr
 
@@ -1453,13 +1433,13 @@ contains
 
   end subroutine w90_readwrite_dealloc
 
-!~  !================================!
+!~  !================================================!
 !~  subroutine w90_wannier90_readwrite_write_um
-!~    !================================!
-!~    !                                !
+!~    !================================================!
+!~    !
 !~    ! Dump the U and M to *_um.dat   !
-!~    !                                !
-!~    !================================!
+!~    !
+!~    !================================================!
 !~
 !~
 !~    use w90_io,        only : io_file_unit,io_error,seedname,io_date
@@ -1485,13 +1465,13 @@ contains
 !~
 !~  end subroutine w90_wannier90_readwrite_write_um
 
-!~  !================================!
+!~  !================================================!
 !~  subroutine w90_wannier90_readwrite_read_um
-!~    !================================!
+!~    !================================================!
 !~    !                                !
 !~    ! Restore U and M from file      !
 !~    !                                !
-!~    !================================!
+!~    !================================================!
 !~
 !~    use w90_io,        only : io_file_unit,io_error,seedname
 !~    implicit none
@@ -1532,12 +1512,12 @@ contains
 !~
 ! $  end subroutine w90_wannier90_readwrite_read_um
 
-!=================================================!
+!================================================!
   subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, m_matrix, &
-                              u_matrix, u_matrix_opt, real_lattice, &
-                              omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                              num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
-    !=================================================!
+                                      u_matrix, u_matrix_opt, real_lattice, &
+                                      omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
+                                      num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
+    !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
@@ -1545,8 +1525,7 @@ contains
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
-    !! This function should be called
-    !=================================================!
+    !================================================!
 
     use w90_constants, only: eps6
     use w90_io, only: io_file_unit, io_error
@@ -1554,7 +1533,6 @@ contains
 
     implicit none
 
-    !data from parameters module
     integer, allocatable, intent(inout) :: exclude_bands(:)
     type(wannier_data_type), intent(inout) :: wannier_data
     type(kmesh_info_type), intent(in) :: kmesh_info
@@ -1581,7 +1559,7 @@ contains
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
-!   local variables
+    ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
@@ -1706,7 +1684,7 @@ contains
 
 121 if (ispostw90) then
       call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', stdout, &
-              seedname)
+                    seedname)
     else
       call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
     end if
@@ -1720,23 +1698,23 @@ contains
 
   end subroutine w90_readwrite_read_chkpt
 
-!===========================================================!
+!================================================!
   subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, omega_invariant, &
-                              num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
-                              seedname, stdout, comm)
-    !===========================================================!
-    !                                                           !
+                                      num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
+                                      seedname, stdout, comm)
+    !================================================!
+    !
     !! Distribute the chk files
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
-    use w90_constants, only: dp !, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: dp
     use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
 
     implicit none
 
-    !data from parameters module
+    ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90comm_type), intent(in) :: comm
@@ -1754,7 +1732,7 @@ contains
     character(len=*), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
-!   local variables
+    ! local variables
     integer :: ierr
 
     logical :: on_root = .false.
@@ -1812,14 +1790,14 @@ contains
 
   end subroutine w90_readwrite_chkpt_dist
 
-!=======================================!
+!================================================!
   subroutine w90_readwrite_in_file(seedname, stdout)
-    !=======================================!
+    !================================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
     !! blank lines and converting everything
     !! to lowercase characters
-    !=======================================!
+    !================================================!
 
     use w90_utility, only: utility_lowercase
     use w90_io, only: io_file_unit, io_error
@@ -1890,13 +1868,13 @@ contains
 
   end subroutine w90_readwrite_in_file
 
-!===========================================================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword(stdout, seedname, keyword, found, c_value, l_value, i_value, r_value)
-    !===========================================================================!
-    !                                                                           !
+    !================================================!
+    !
     !! Finds the value of the required keyword.
-    !                                                                           !
-    !===========================================================================!
+    !
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -1965,14 +1943,14 @@ contains
 
   end subroutine w90_readwrite_get_keyword
 
-!=========================================================================================!
-  subroutine w90_readwrite_get_keyword_vector(stdout, seedname, keyword, found, length, c_value, l_value, &
-                                      i_value, r_value)
-    !=========================================================================================!
-    !                                                                                         !
+  !================================================!
+  subroutine w90_readwrite_get_keyword_vector(stdout, seedname, keyword, found, length, c_value, &
+                                              l_value, i_value, r_value)
+    !================================================!
+    !
     !! Finds the values of the required keyword vector
-    !                                                                                         !
-    !=========================================================================================!
+    !
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2035,13 +2013,13 @@ contains
 
   end subroutine w90_readwrite_get_keyword_vector
 
-!========================================================!
+!================================================!
   subroutine w90_readwrite_get_vector_length(stdout, seedname, keyword, found, length)
-    !======================================================!
-    !                                                      !
+    !================================================!
+    !
     !! Returns the length of a keyword vector
-    !                                                      !
-    !======================================================!
+    !
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2101,16 +2079,15 @@ contains
 
   end subroutine w90_readwrite_get_vector_length
 
-!==============================================================================================!
-  subroutine w90_readwrite_get_keyword_block(stdout, seedname, keyword, found, rows, columns, bohr, c_value, &
-                                     l_value, i_value, r_value)
-    !==============================================================================================!
-    !                                                                                              !
+  !================================================!
+  subroutine w90_readwrite_get_keyword_block(stdout, seedname, keyword, found, rows, columns, &
+                                             bohr, c_value, l_value, i_value, r_value)
+    !================================================!
+    !
     !!   Finds the values of the required data block
-    !                                                                                              !
-    !==============================================================================================!
+    !
+    !================================================!
 
-    !use w90_constants, only: bohr
     use w90_io, only: io_error
 
     implicit none
@@ -2244,13 +2221,13 @@ contains
 
   end subroutine w90_readwrite_get_keyword_block
 
-!=====================================================!
+  !================================================!
   subroutine w90_readwrite_get_block_length(stdout, seedname, keyword, found, rows, library, lunits)
-    !=====================================================!
-    !                                                     !
+    !================================================!
+    !
     !! Finds the length of the data block
-    !                                                     !
-    !=====================================================!
+    !
+    !================================================!
 
     use w90_io, only: io_error
 
@@ -2331,8 +2308,6 @@ contains
 
     if (present(lunits)) then
       dummy = in_data(line_s + 1)
-      !       write(stdout,*) dummy
-      !       write(stdout,*) trim(dummy)
       read (dummy, *, end=555) atsym, (atpos(i), i=1, 3)
       lunits = .false.
     endif
@@ -2355,15 +2330,14 @@ contains
 
   end subroutine w90_readwrite_get_block_length
 
-!===================================!
+  !================================================!
   subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
-    !===================================!
-    !                                   !
+    !================================================!
+    !
     !!   Fills the atom data block
-    !                                   !
-    !===================================!
+    !
+    !================================================!
 
-    !use w90_constants, only: bohr
     use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac, utility_inverse_mat
     use w90_io, only: io_error
     implicit none
@@ -2533,14 +2507,14 @@ contains
 
   end subroutine readwrite_get_atoms
 
-!=====================================================!
+  !================================================!
   subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
-                                 stdout, seedname)
-    !=====================================================!
-    !                                                     !
+                                         stdout, seedname)
+    !================================================!
+    !
     !!   Fills the atom data block during a library call
-    !                                                     !
-    !=====================================================!
+    !
+    !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat, utility_lowercase
     use w90_io, only: io_error
@@ -2629,12 +2603,12 @@ contains
 
   end subroutine w90_readwrite_lib_set_atoms
 
-!====================================================================!
+  !================================================!
   subroutine w90_readwrite_get_range_vector(stdout, seedname, keyword, found, length, lcount, i_value)
-    !====================================================================!
+    !================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
-    !====================================================================!
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -2734,14 +2708,13 @@ contains
   end subroutine w90_readwrite_get_range_vector
 
   subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
-                                          proj_site, num_wann, real_lattice, stdout, seedname)
-    !=============================================================================!
-    !                                                                             !
+                                                  proj_site, num_wann, real_lattice, stdout, seedname)
+    !================================================!
     !!  assigns projection centres as default centre constraints and global
     !!  Lagrange multiplier as individual Lagrange multipliers then reads
     !!  the centre_constraints block for individual centre constraint parameters
-    !                                                                             !
-    !=============================================================================!
+    !
+    !================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_frac_to_cart
     integer, intent(in) :: stdout
@@ -2787,7 +2760,7 @@ contains
             if (dummy(loop2:loop2) == ' ') then
               finish = loop2 - 1
               call get_centre_constraint_from_column(column, start, finish, &
-                                                           wann, dummy, ccentres_frac, stdout, seedname)
+                                                     wann, dummy, ccentres_frac, stdout, seedname)
               start = loop2 + 1
               finish = start
             end if
@@ -2795,7 +2768,7 @@ contains
           if (loop2 == len_trim(dummy) .and. dummy(loop2:loop2) /= ' ') then
             finish = loop2
             call get_centre_constraint_from_column(column, start, finish, &
-                                                         wann, dummy, ccentres_frac, stdout, seedname)
+                                                   wann, dummy, ccentres_frac, stdout, seedname)
             start = loop2 + 1
             finish = start
           end if
@@ -2818,14 +2791,15 @@ contains
     end do
   end subroutine w90_readwrite_get_centre_constraints
 
+  !================================================!
   subroutine get_centre_constraint_from_column(column, start, finish, &
-                                                     wann, dummy, ccentres_frac, stdout, seedname)
-    !===================================!
-    !                                   !
+                                               wann, dummy, ccentres_frac, stdout, seedname)
+    !================================================!
+    !
     !!  assigns value read to constraint
     !!  parameters based on column
-    !                                   !
-    !===================================!
+    !
+    !================================================!
     use w90_io, only: io_error
     integer, intent(in) :: stdout
     integer, intent(inout):: column, start, finish, wann
@@ -2843,35 +2817,35 @@ contains
     column = column + 1
   end subroutine get_centre_constraint_from_column
 
-!===================================!
+  !================================================!
   subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
-                                   inv_lattice, lcount, spinors, bohr, stdout, seedname)
-    !===================================!
-    !                                   !
+                                           inv_lattice, lcount, spinors, bohr, stdout, seedname)
+    !================================================!
+    !
     !!  Fills the projection data block
-    !                                   !
-    !===================================!
+    !
+    !================================================!
 
     use w90_constants, only: eps6, eps2
-    use w90_utility, only: utility_cart_to_frac, &
-      utility_string_to_coord, utility_strip
+    use w90_utility, only: utility_cart_to_frac, utility_string_to_coord, utility_strip
     use w90_io, only: io_error
 
     implicit none
 
+    ! arguments
+    type(atom_data_type), intent(in) :: atom_data
+    type(proj_input_type), intent(inout) :: input_proj
+    type(proj_input_type), intent(inout) :: proj ! intent(out)?
+    integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-    type(atom_data_type), intent(in) :: atom_data
-    ! projection data
-    integer, intent(in) :: num_wann
-    type(proj_input_type), intent(inout) :: proj ! intent(out)?
-    type(proj_input_type), intent(inout) :: input_proj
+    real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: inv_lattice(3, 3)
+    character(len=50), intent(in)  :: seedname
     logical, intent(in)    :: lcount
     logical, intent(in) :: spinors
-    real(kind=dp), intent(in) :: bohr
 
+    ! local variables
     real(kind=dp)     :: pos_frac(3)
     real(kind=dp)     :: pos_cart(3)
     character(len=20) :: keyword
@@ -2881,7 +2855,7 @@ contains
     logical           :: found_e, found_s
     character(len=maxlen) :: dummy, end_st, start_st
     character(len=maxlen) :: ctemp, ctemp2, ctemp3, ctemp4, ctemp5, m_string
-    !
+
     integer, parameter :: min_l = -5
     integer, parameter :: max_l = 3
     integer, parameter :: min_m = 1
@@ -2893,7 +2867,7 @@ contains
     real(kind=dp), parameter :: proj_s_qaxis_def(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
     real(kind=dp), parameter :: proj_zona_def = 1.0_dp
     integer, parameter       :: proj_radial_def = 1
-    !
+
     real(kind=dp) :: proj_z_tmp(3)
     real(kind=dp) :: proj_x_tmp(3)
     real(kind=dp) :: proj_s_qaxis_tmp(3)
@@ -2901,7 +2875,7 @@ contains
     integer       :: proj_radial_tmp
     logical       :: lconvert, lrandom, proj_u_tmp, proj_d_tmp
     logical       :: lpartrandom
-    !
+
     real(kind=dp) :: xnorm, znorm, cosphi, sinphi, xnorm_new, cosphi_new
 
     keyword = "projections"
@@ -2984,12 +2958,12 @@ contains
 
     if (.not. found_e) then
       call io_error('w90_readwrite_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, &
-              seedname)
+                    seedname)
     end if
 
     if (line_e <= line_s) then
       call io_error('w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, &
-              seedname)
+                    seedname)
     end if
 
     dummy = in_data(line_s + 1)
@@ -3044,7 +3018,7 @@ contains
         pos1 = index(dummy, ':')
         if (pos1 == 0) &
           call io_error('w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy), stdout, &
-          seedname)
+                        seedname)
         sites = 0
         ctemp = dummy(:pos1 - 1)
         ! Read the atomic site
@@ -3061,7 +3035,7 @@ contains
         else
           if (atom_data%num_species == 0) &
             call io_error('w90_wannier90_readwrite_read_projection: Atom centred projection requested but no atoms defined', &
-            stdout, seedname)
+                          stdout, seedname)
           do loop = 1, atom_data%num_species
             if (trim(ctemp) == atom_data%label(loop)) then
               species = loop
@@ -3140,7 +3114,7 @@ contains
               read (ctemp3(3:), *, err=101, end=101) l_tmp
             end if
             if (l_tmp < -5 .or. l_tmp > 3) call io_error('w90_readwrite_get_projections: Incorrect l state requested', stdout, &
-                    seedname)
+                                                         seedname)
             if (mstate == 0) then
               if (l_tmp >= 0) then
                 do loop_m = 1, 2*l_tmp + 1
@@ -3171,7 +3145,7 @@ contains
                 read (ctemp5(1:), *, err=102, end=102) m_tmp
                 if (l_tmp >= 0) then
                   if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) call io_error('w90_readwrite_get_projections: m is > l !', &
-                  stdout, seedname)
+                                                                             stdout, seedname)
                 elseif (l_tmp == -1 .and. (m_tmp > 2 .or. m_tmp <= 0)) then
                   call io_error('w90_readwrite_get_projections: m has incorrect value (1)', stdout, seedname)
                 elseif (l_tmp == -2 .and. (m_tmp > 3 .or. m_tmp <= 0)) then
@@ -3339,7 +3313,7 @@ contains
         !   if (counter + spn_counter*sites*sum(ang_states) > num_proj) &
         !     call io_error('w90_readwrite_get_projections: too many projections defined')
         ! end if
-        !
+
         if (sites == -1) then
           do loop_l = min_l, max_l
             do loop_m = min_m, max_m
@@ -3520,13 +3494,13 @@ contains
 
   end subroutine w90_readwrite_get_projections
 
-!===================================!
+  !================================================!
   subroutine w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
-    !===================================!
-    !                                   !
+    !================================================!
+    !
     !!  Fills the kpath data block
-    !                                   !
-    !===================================!
+    !
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
@@ -3598,15 +3572,18 @@ contains
 
   end subroutine w90_readwrite_get_keyword_kpath
 
+  !================================================!
   subroutine clear_block(stdout, seedname, keyword)
+    !================================================!
     ! a dummy read routine to remove unused but legitimate input block from input stream
     ! needed to preserve input file error checking (i.e. input stream should be empty after all
     ! legitimate keywords/blocks are read)
+    !================================================!
     use w90_io, only: io_error
 
     implicit none
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
     character(len=*), intent(in) :: keyword

@@ -58,31 +58,29 @@ module w90_libv1_types
 
   public
 
-  type(print_output_type), save :: verbose
-  type(w90_system_type), save :: system
   integer, allocatable, save :: exclude_bands(:)
-  type(ws_region_type) :: ws_region
-  type(wannier_data_type), save :: wann_data
-  type(kmesh_input_type), save :: kmesh_data
-  type(kmesh_info_type), save :: kmesh_info
-  real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
+  integer, save :: num_bands !! Number of bands
   integer, save :: num_kpts
-  type(dis_manifold_type), save :: dis_window
-  real(kind=dp), allocatable, save :: fermi_energy_list(:)
-  type(atom_data_type), save :: atoms
-  type(proj_input_type), save :: input_proj
+  integer, save :: num_wann !! number of wannier functions
   integer, save :: optimisation
 
+  type(atom_data_type), save :: atoms
+  type(dis_manifold_type), save :: dis_window
+  type(kmesh_info_type), save :: kmesh_info
+  type(kmesh_input_type), save :: kmesh_data
+  type(print_output_type), save :: verbose
+  type(proj_input_type), save :: input_proj
+  type(w90_system_type), save :: system
+  type(wannier_data_type), save :: wann_data
+  type(ws_region_type) :: ws_region
+
+  real(kind=dp), allocatable, save :: fermi_energy_list(:)
+  real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
+
   logical, save :: cp_pp, calc_only_A
-  logical, save :: use_bloch_phases
   logical, save :: gamma_only
   logical, save :: have_disentangled
-
-  integer, save :: num_bands
-  !! Number of bands
-
-  integer, save :: num_wann
-  !! number of wannier functions
+  logical, save :: use_bloch_phases
 
   ! a_matrix and m_matrix_orig can be calculated internally from bloch states
   ! or read in from an ab-initio grid
@@ -121,7 +119,6 @@ module w90_wannier90_libv1_types
 
   use w90_constants, only: dp
   use w90_io, only: maxlen
-
   use w90_wannier90_types
 
   implicit none
@@ -159,13 +156,14 @@ module w90_wannier90_libv1_types
 
 end module w90_wannier90_libv1_types
 
+!================================================!
 subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                          real_lattice_loc, recip_lattice_loc, kpt_latt_loc, num_bands_tot, &
                          num_atoms_loc, atom_symbols_loc, atoms_cart_loc, gamma_only_loc, spinors_loc, &
                          nntot_loc, nnlist_loc, nncell_loc, num_bands_loc, num_wann_loc, &
                          proj_site_loc, proj_l_loc, proj_m_loc, proj_radial_loc, proj_z_loc, &
                          proj_x_loc, proj_zona_loc, exclude_bands_loc, proj_s_loc, proj_s_qaxis_loc)
-
+  !================================================!
   !! This routine should be called first from a code calling the library
   !! mode to setup all the variables.
   !! NOTE! The library mode currently works ONLY in serial (when called from
@@ -173,6 +171,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !!
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
+  !================================================!
 
   use w90_comms, only: w90comm_type
   use w90_constants, only: w90_physical_constants_type, dp
@@ -259,8 +258,6 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   time0 = io_time()
 
-  !library = .true.
-!  seedname="wannier"
   seedname = trim(adjustl(seed__name))
   inquire (file=trim(seedname)//'.wout', exist=wout_found)
   if (wout_found) then
@@ -383,21 +380,14 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
 end subroutine wannier_setup
 
-! setup uses the same arguments as run and some extra ones:
-!subroutine wannier_setup(
-!                         spinors_loc, &
-!                          nnlist_loc, nncell_loc
-!                         proj_site_loc, proj_l_loc, proj_m_loc, proj_radial_loc, proj_z_loc, &
-!                         proj_x_loc, proj_zona_loc, exclude_bands_loc, proj_s_loc, proj_s_qaxis_loc)
-!
-!
-
+!================================================!
 subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, recip_lattice_loc, &
                        kpt_latt_loc, num_bands_loc, num_wann_loc, nntot_loc, num_atoms_loc, &
                        atom_symbols_loc, atoms_cart_loc, gamma_only_loc, M_matrix_loc, &
                        A_matrix_loc, eigenvalues_loc, U_matrix_loc, U_matrix_opt_loc, lwindow_loc, &
                        wann_centres_loc, wann_spreads_loc, spread_loc)
 
+  !================================================!
   !! This routine should be called after wannier_setup from a code calling
   !! the library mode to actually run the Wannier code.
   !!
@@ -407,6 +397,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !!
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
+  !================================================!
 
   use w90_constants, only: w90_physical_constants_type, dp
   use w90_libv1_types
@@ -535,8 +526,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   allocate (displs(0:num_nodes - 1)); 
   time0 = io_time()
 
-  !driver%library = .true.
-!  seedname="wannier"
   seedname = trim(adjustl(seed__name))
   inquire (file=trim(seedname)//'.wout', exist=wout_found)
   if (wout_found) then
@@ -555,15 +544,10 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
 !  call w90_readwrite_write_header
 
-  ! copy local data into module variables
-  ! variously allocated already in wannier_setup... not worth correcting logic in obsolete lib
-  ! adding workaround to maintain functionality for now. JJ
-
   num_bands = num_bands_loc
   mp_grid = mp_grid_loc
   num_kpts = num_kpts_loc
   real_lattice = real_lattice_loc
-  !recip_lattice = recip_lattice_loc
   allocate (kpt_latt(3, num_kpts), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout, seedname)
   kpt_latt = kpt_latt_loc

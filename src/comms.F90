@@ -12,13 +12,11 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
-!  COMMS: set of MPI wrapper                                 !
+!  COMMS: set of MPI wrappers                                !
 !  written 2006-2012 Jonathan R. Yates                       !
 !    later additions Giovanni Pizzi                          !
 !                                                            !
 !------------------------------------------------------------!
-
-! JJ 04.21 use MPI_IN_PLACE to avoid unnecessary array alloc/copy/deallocs
 
 module w90_comms
   !! This module handles all of the communications

@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_utility: blas wrappers and other basic routines       !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_utility
+
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
@@ -21,44 +26,44 @@ module w90_utility
 
   private
 
-  public :: utility_inv3
-  public :: utility_inv2
-  public :: utility_det3
-  public :: utility_inverse_mat
-  public :: utility_recip_lattice_base
-  public :: utility_recip_lattice
-  public :: utility_metric
-  public :: utility_compar
   public :: utility_cart_to_frac
-  public :: utility_frac_to_cart
-  public :: utility_string_to_coord
-  public :: utility_lowercase
-  public :: utility_strip
-  public :: utility_zgemm
-  public :: utility_zgemm_new
-  public :: utility_zgemmm
-  public :: utility_translate_home
-  public :: utility_rotate
-  public :: utility_rotate_new
-  public :: utility_matmul_diag
-  public :: utility_rotate_diag
   public :: utility_commutator_diag
-  public :: utility_re_tr
-  public :: utility_re_tr_prod
+  public :: utility_compar
+  public :: utility_det3
+  public :: utility_diagonalize
+  public :: utility_frac_to_cart
   public :: utility_im_tr
   public :: utility_im_tr_prod
+  public :: utility_inv2
+  public :: utility_inv3
+  public :: utility_inverse_mat
+  public :: utility_lowercase
+  public :: utility_matmul_diag
+  public :: utility_metric
+  public :: utility_recip_lattice
+  public :: utility_recip_lattice_base
+  public :: utility_re_tr
+  public :: utility_re_tr_prod
+  public :: utility_rotate
+  public :: utility_rotate_diag
+  public :: utility_rotate_new
+  public :: utility_string_to_coord
+  public :: utility_strip
+  public :: utility_translate_home
   public :: utility_w0gauss
   public :: utility_w0gauss_vec
   public :: utility_wgauss
   public :: utility_zdotu
-  public :: utility_diagonalize
+  public :: utility_zgemm
+  public :: utility_zgemmm
+  public :: utility_zgemm_new
 
 contains
 
-  !=============================================================!
+  !================================================!
   subroutine utility_zgemm(c, a, transa, b, transb, n)
-    !=============================================================!
-    !                                                             !
+    !================================================!
+    !
     !! Return matrix product of complex n x n matrices a and b:
     !!
     !!                       C = Op(A) Op(B)
@@ -68,8 +73,8 @@ contains
     !! transa = 'C'  ==> Op(A) = congj(transpose(A))
     !!
     !! similarly for B
-    !                                                             !
-    !=============================================================!
+    !
+    !================================================!
 
     use w90_constants, only: cmplx_0, cmplx_1
 
@@ -88,13 +93,13 @@ contains
 
   end subroutine utility_zgemm
 
-  !===================================================================
-  function utility_det3(A)                   !
-    !==================================================================!
-    !                                                                  !
-    !    Return determinant of a  3x3 matrix A                         !
-    !                                                                  !
-    !===================================================================
+  !================================================
+  function utility_det3(A)
+    !================================================!
+    !
+    !    Return determinant of a  3x3 matrix A
+    !
+    !================================================
 
     real(kind=dp), intent(in)  :: a(3, 3)
     real(kind=dp)  :: utility_det3
@@ -104,7 +109,7 @@ contains
     return
   end function utility_det3
 
-  !=============================================================!
+  !================================================!
   subroutine utility_zgemm_new(a, b, c, transa_opt, transb_opt)
     !=============================================================!
     !                                                             !
@@ -158,7 +163,7 @@ contains
     call zgemm(transa, transb, m, n, k, cmplx_1, a, size(a, 1), b, size(b, 1), cmplx_0, c, m)
 
   end subroutine utility_zgemm_new
-  !=============================================================!
+  !================================================!
   function utility_zdotu(a, b)
     complex(kind=dp), intent(in), dimension(:)  :: a, b
     complex(kind=dp) :: utility_zdotu
@@ -166,18 +171,18 @@ contains
     return
   end function utility_zdotu
 
-  !=============================================================!
+  !================================================!
   subroutine utility_zgemmm(a, transa, b, transb, c, transc, prod1, eigval, prod2)
-    !===============================================================!
-    ! Returns the complex matrix-matrix-matrix product              !
-    ! --> prod1 = op(a).op(b).op(c),                                !
-    ! where op(a/b/c) are defined according to transa/transb/transc !
-    ! (see also documentation of utility_zgemm above)               !
-    !                                                               !
-    ! If eigval and prod2 are present, also                         !
-    ! --> prod2 = op(a).diag(eigval).op(b).op(c)                    !
-    ! is returned.                                                  !
-    !===============================================================!
+    !================================================!
+    ! Returns the complex matrix-matrix-matrix product
+    ! --> prod1 = op(a).op(b).op(c),
+    ! where op(a/b/c) are defined according to transa/transb/transc
+    ! (see also documentation of utility_zgemm above)
+    !
+    ! If eigval and prod2 are present, also
+    ! --> prod2 = op(a).diag(eigval).op(b).op(c)
+    ! is returned.
+    !================================================!
 
     complex(kind=dp), dimension(:, :), intent(in)  :: a, b, c
     character(len=1), intent(in)                  :: transa, transb, transc
@@ -223,16 +228,16 @@ contains
     end if
   end subroutine
 
-  !===================================================================
-  subroutine utility_inv3(a, b, det)                   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inv3(a, b, det)
+    !================================================!
+    !
     !! Return in b the adjoint of the 3x3 matrix a, and its
     !! determinant.
     !! The inverse is defined as the adjoint divided by the
     !! determinant, so that inverse(a) = b/det
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
     real(kind=dp), intent(in)  :: a(3, 3)
@@ -255,16 +260,16 @@ contains
 
   end subroutine utility_inv3
 
-  !===================================================================
-  subroutine utility_inv2(a, b, det)                   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inv2(a, b, det)
+    !================================================!
+    !
     !! Return in b the adjoint of the 2x2 matrix
     !! a, together with the determinant of a.
     !! The inverse is defined as the adjoind divided by the
     !! determinant, so that inverse(a) = b/det
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
     real(kind=dp), intent(in)  :: a(2, 2)
@@ -282,13 +287,13 @@ contains
 
   end subroutine utility_inv2
 
-  !===================================================================
-  subroutine utility_inverse_mat(a, b)                   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inverse_mat(a, b)
+    !================================================!
+    !
     !! Return in b int inverse of a. Uses utility_inv3
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
     real(kind=dp), intent(in)  :: a(3, 3)
@@ -303,13 +308,13 @@ contains
 
   end subroutine utility_inverse_mat
 
-  !===================================================================
-  subroutine utility_recip_lattice_base(real_lat, recip_lat, volume)   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_recip_lattice_base(real_lat, recip_lat, volume)
+    !================================================!
+    !
     !!  Calculates the reciprical lattice vectors and the cell volume
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     use w90_constants, only: dp, twopi, eps5
     use w90_io, only: io_error
@@ -331,13 +336,13 @@ contains
   end subroutine utility_recip_lattice_base
 
   subroutine utility_recip_lattice(real_lat, recip_lat, volume, stdout, seedname)  !
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !!  Calculates the reciprical lattice vectors and the cell volume
     !!  Includes a check that the volume isn't almost 0
     !!  Use the first time the lattice is read to check its sensible
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     use w90_constants, only: dp, twopi, eps5
     use w90_io, only: io_error
@@ -359,13 +364,13 @@ contains
 
   end subroutine utility_recip_lattice
 
-  !===================================================================
+  !================================================
   subroutine utility_compar(a, b, ifpos, ifneg)
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !! Compares two vectors
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
     use w90_constants, only: eps8
 
     implicit none
@@ -387,13 +392,13 @@ contains
 
   end subroutine utility_compar
 
-  !===================================================================
+  !================================================
   subroutine utility_metric(lattice, metric)
-    !==================================================================!
-    !                                                                  !
-    !!  Calculate the  metric for a lattice                            !
-    !                                                                  !
-    !===================================================================
+    !================================================!
+    !
+    !!  Calculate the  metric for a lattice
+    !
+    !================================================
     implicit none
 
     real(kind=dp), intent(in)  :: lattice(3, 3)
@@ -416,13 +421,13 @@ contains
 
   end subroutine utility_metric
 
-  !===================================================================
+  !================================================
   subroutine utility_frac_to_cart(frac, cart, real_lat)
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !!  Convert from fractional to Cartesian coordinates
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
     implicit none
 
     real(kind=dp), intent(in)  :: real_lat(3, 3)
@@ -439,14 +444,16 @@ contains
 
   end subroutine utility_frac_to_cart
 
-  !===================================================================
+  !================================================
   subroutine utility_cart_to_frac(cart, frac, inv_lat)
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !!  Convert from Cartesian to fractional coordinates
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
+
     use w90_constants, only: twopi
+
     implicit none
 
     real(kind=dp), intent(in)  :: inv_lat(3, 3)
@@ -463,13 +470,13 @@ contains
 
   end subroutine utility_cart_to_frac
 
-  !=============================!
+  !================================================!
   function utility_strip(string)!
-    !=============================!
-    !                             !
+    !================================================!
+    !
     !! Strips string of all blank spaces
-    !                             !
-    !=============================!
+    !
+    !================================================!
 
     use w90_io, only: maxlen
 
@@ -499,14 +506,14 @@ contains
 
   end function utility_strip
 
-  !=================================!
+  !================================================!
   function utility_lowercase(string)!
-    !=================================!
-    !                                 !
+    !================================================!
+    !
     !! Takes a string and converts to
     !!  lowercase characters
-    !                                 !
-    !=================================!
+    !
+    !================================================!
 
     use w90_io, only: maxlen
 
@@ -535,14 +542,14 @@ contains
 
   end function utility_lowercase
 
-  !====================================================!
+  !================================================!
   subroutine utility_string_to_coord(string_tmp, outvec, stdout, seedname)!
-    !====================================================!
-    !                                                    !
+    !================================================!
+    !
     !! Takes a string in the form 0.0,1.0,0.5
     !! and returns an array of the real num
-    !                                                    !
-    !====================================================!
+    !
+    !================================================!
     use w90_io, only: io_error, maxlen
 
     implicit none
@@ -575,45 +582,13 @@ contains
 
   end subroutine utility_string_to_coord
 
-!~  !===========================================!
-!~  function utility_string_to_coord(string_tmp)!
-!~  !===========================================!
-!~  !                                           !
-!~  !  Takes a string in the form 0.0,1.0,0.5   !
-!~  !   and returns an array of the real num    !
-!~  !                                           !
-!~  !===========================================!
-!~
-!~    implicit none
-!~
-!~    character(len=80), intent(in)  :: string_tmp
-!~    real(kind=dp) :: utility_string_to_coord(3)
-!~
-!~    integer :: pos,pos2
-!~    character(len=80)  :: ctemp
-!~    character(len=80)  :: ctemp2
-!~
-!~
-!~    ctemp=string_tmp
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(1)
-!~    ctemp=ctemp(pos2+1:)
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(2)
-!~    ctemp=ctemp(pos2+1:)
-!~    read(ctemp,*) utility_string_to_coord(3)
-!~
-!~  end function utility_string_to_coord
-
-  !========================================================!
+  !================================================!
   subroutine utility_translate_home(vec, real_lat)
-    !========================================================!
-    !                                                        !
+    !================================================!
+    !
     !! Translate a vector to the home unit cell
-    !                                                        !
-    !========================================================!
+    !
+    !================================================!
 
     implicit none
 
@@ -650,17 +625,16 @@ contains
     return
   end subroutine utility_translate_home
 
-  !============================================================!
+  !================================================!
   subroutine utility_diagonalize(mat, dim, eig, rot, stdout, seedname)
-    !============================================================!
-    !                                                            !
+    !================================================!
+    !
     !! Diagonalize the dim x dim  hermitian matrix 'mat' and
     !! return the eigenvalues 'eig' and the unitary rotation 'rot'
-    !                                                            !
-    !============================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
-!   use w90_io, only: io_error, stdout
     use w90_io, only: io_error
 
     integer, intent(in)           :: dim
@@ -694,14 +668,14 @@ contains
 
   end subroutine utility_diagonalize
 
-  !===========================================================!
+  !================================================!
   function utility_rotate(mat, rot, dim)
-    !==========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Rotates the dim x dim matrix 'mat' according to
     !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -714,17 +688,17 @@ contains
 
   end function utility_rotate
 
-  !===========================================================!
+  !================================================!
   subroutine utility_rotate_new(mat, rot, N, reverse)
-    !==============================================================!
-    !                                                              !
-    ! Rotates the N x N matrix 'mat' according to                  !
-    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR !
-    ! * rot.mat.(rot)^dagger (reverse = .true.),                   !
-    ! where 'rot' is a unitary matrix.                             !
-    ! The matrix 'mat' is overwritten.                             !
-    !                                                              !
-    !==============================================================!
+    !================================================!
+    !
+    ! Rotates the N x N matrix 'mat' according to
+    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR
+    ! * rot.mat.(rot)^dagger (reverse = .true.),
+    ! where 'rot' is a unitary matrix.
+    ! The matrix 'mat' is overwritten.
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -751,13 +725,13 @@ contains
 
   end subroutine utility_rotate_new
 
-  !===========================================================!
+  !================================================!
   function utility_matmul_diag(mat1, mat2, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Computes the diagonal elements of the matrix mat1.mat2
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
 
@@ -777,15 +751,15 @@ contains
 
   end function utility_matmul_diag
 
-  !===========================================================!
+  !================================================!
   function utility_rotate_diag(mat, rot, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Rotates the dim x dim matrix 'mat' according to
     !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix.
     !! Computes only the diagonal elements of rotated matrix.
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -800,14 +774,14 @@ contains
 
   end function utility_rotate_diag
 
-  !===========================================================!
+  !================================================!
   function utility_commutator_diag(mat1, mat2, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Computes diagonal elements of
     !! [mat1,mat2]=mat1.mat2-mat2.mat1
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -820,13 +794,13 @@ contains
 
   end function utility_commutator_diag
 
-  !===================================================!
+  !================================================!
   function utility_re_tr_prod(a, b)
     !================================================!
-    !                                                !
-    ! Return Re(tr(a.b)), i.e. the real part of the  !
-    ! trace of the matrix product of a and b.        !
-    !                                                !
+    !
+    ! Return Re(tr(a.b)), i.e. the real part of the
+    ! trace of the matrix product of a and b.
+    !
     !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
@@ -847,14 +821,14 @@ contains
     utility_re_tr_prod = s
   end function
 
-  !===================================================!
+  !================================================!
   function utility_im_tr_prod(a, b)
-    !====================================================!
-    !                                                    !
-    ! Return Im(tr(a.b)), i.e. the imaginary part of the !
-    ! trace of the matrix product of a and b.            !
-    !                                                    !
-    !====================================================!
+    !================================================!
+    !
+    ! Return Im(tr(a.b)), i.e. the imaginary part of the
+    ! trace of the matrix product of a and b.
+    !
+    !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
     complex(kind=dp), dimension(:, :), intent(in) :: a, b
@@ -875,13 +849,13 @@ contains
     utility_im_tr_prod = s
   end function
 
-  !===================================================!
+  !================================================!
   function utility_re_tr(mat)
-    !========================!
-    !                        !
+    !================================================!
+    !
     !! Real part of the trace
-    !                        !
-    !========================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
@@ -902,11 +876,11 @@ contains
   end function utility_re_tr
 
   function utility_im_tr(mat)
-    !=============================!
-    !                             !
+    !================================================!
+    !
     !! Imaginary part of the trace
-    !                             !
-    !=============================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
 
@@ -942,15 +916,15 @@ contains
     use w90_constants, only: dp, pi
 
     implicit none
+
+    ! arguments
     real(kind=dp) :: utility_wgauss, x
     !! output: the value of the function
     !! input: the argument of the function
     integer :: n
     !! input: the order of the function
-    !
-    !    the local variables
-    !
 
+    ! local variables
     real(kind=dp) :: a, hp, arg, hd, xp
     ! the coefficient a_n
     ! the hermitean function
@@ -960,7 +934,7 @@ contains
     integer :: i, ni
     ! counter on the n indices
     ! counter on 2n
-!    real(kind=dp), external :: gauss_freq, qe_erf
+    !real(kind=dp), external :: gauss_freq, qe_erf
     real(kind=dp), parameter :: maxarg = 200.0_dp
     ! maximum value for the argument of the exponential
 
@@ -1018,18 +992,20 @@ contains
     !
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
-    implicit none
-    integer :: stdout
-    real(kind=dp) :: utility_w0gauss, x
-    character(len=50), intent(in)  :: seedname
-    !! output: the value of the function
-    !! input: the point where to compute the function
 
-    integer :: n
+    implicit none
+
+    ! arguments
+    real(kind=dp) :: utility_w0gauss
+    !! output: the value of the function
+    real(kind=dp), intent(in) :: x
+    !! input: the point where to compute the function
+    integer, intent(in) :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
+    ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
     ! the coefficients a_n
     ! the argument of the exponential
@@ -1099,20 +1075,20 @@ contains
     !
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
-    implicit none
-    integer :: stdout
-    real(kind=dp), intent(in)   ::  x(:)
-    character(len=50), intent(in)  :: seedname
-    real(kind=dp), allocatable  :: res(:), arg(:)
 
+    implicit none
+
+    ! arguments
+    integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(in) ::  x(:)
+    real(kind=dp), allocatable  :: res(:), arg(:)
     !! output: the value of the function
     !! input: the point where to compute the function
-
     integer :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+
+    ! local variables
     real(kind=dp) :: sqrtpm1
 
     allocate (res(size(x)))

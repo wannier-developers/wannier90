@@ -11,8 +11,13 @@
 !                                                            !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
+!                                                            !
+!  w90_overlap: setup overlap and projection matrices        !
+!                                                            !
+!------------------------------------------------------------!
 
 module w90_overlap
+
   !! This module reads in the overlap (Mmn) and Projections (Amn)
   !! and performs simple operations on them.
 
@@ -24,50 +29,53 @@ module w90_overlap
   private
 
   public :: overlap_allocate
-  public :: overlap_read
   public :: overlap_dealloc
   public :: overlap_project
-  public :: overlap_project_gamma  ![ysl]
+  public :: overlap_project_gamma
+  public :: overlap_read
 
 contains
 
-  !%%%%%%%%%%%%%%%%%%%%%
+  !================================================!
+
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
                               num_kpts, num_wann, timing_level, stdout, error, comm)
-    !%%%%%%%%%%%%%%%%%%%%%
+    !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
+    !
+    !================================================!
 
     use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_error
 
-    ! passed variables
+    ! arguments
     integer, intent(in) :: nntot
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
-    integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
-    complex(kind=dp), allocatable :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+    complex(kind=dp), allocatable :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
 
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     ! local variables
-    integer :: ierr
-    integer :: num_nodes, my_node_id
-    logical :: on_root = .false.
     integer, allocatable :: counts(:)
     integer, allocatable :: displs(:)
+    integer :: ierr
+    integer :: num_nodes, my_node_id
     logical :: disentanglement
+    logical :: on_root = .false.
 
     disentanglement = (num_bands > num_wann)
 
@@ -151,15 +159,17 @@ contains
 
   end subroutine overlap_allocate
 
-  !%%%%%%%%%%%%%%%%%%%%%
+  !================================================!
   subroutine overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, &
                           m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                           u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
                           cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
                           error, comm)
-    !%%%%%%%%%%%%%%%%%%%%%
+    !================================================!
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
+    !
+    !================================================!
 
     use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
     use w90_types, only: kmesh_info_type
@@ -168,7 +178,7 @@ contains
 
     implicit none
 
-    ! passed variables
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
@@ -458,6 +468,7 @@ contains
 
   end subroutine overlap_read
 
+<<<<<<< HEAD
 !~[aam]
 !~  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !~ subroutine overlap_check_m_symmetry()
@@ -608,9 +619,12 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, &
                             stdout, error)
-    !%%%%%%%%%%%%%%%%%%%%%
+    !================================================!
+    !
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
+    !
+    !================================================!
 
     use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
     use w90_error, only: w90_error_type, set_error_lapack
@@ -691,18 +705,21 @@ contains
 
   end subroutine overlap_rotate
 
-  !%%%%%%%%%%%%%%%%%%%%%
+  !================================================!
   subroutine overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                              m_matrix_orig_local, u_matrix, u_matrix_opt, error, comm)
-    !%%%%%%%%%%%%%%%%%%%%%
+    !================================================!
+    !
     !! Dellocate memory
+    !
+    !================================================!
 
     !use w90_io, only: io_error
     use w90_error, only: set_error_dealloc, w90_error_type
 
     implicit none
 
-    ! passed variables
+    ! arguments
     complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig(:, :, :, :)
@@ -777,18 +794,17 @@ contains
 
   end subroutine overlap_dealloc
 
-  !==================================================================!
+  !================================================!
   subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
                              num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, &
                              seedname, stdout, error, comm)
-    !==================================================================!
+    !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
     !!  Note that in this subroutine num_wann = num_bands
     !!  since, if we are here, then disentanglement = FALSE
-    !                                                                  !
-    !                                                                  !
-    !==================================================================!
+    !
+    !================================================!
     use w90_constants
     use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
@@ -970,17 +986,17 @@ contains
   end subroutine overlap_project
 
 ![ysl-b]
-  !==================================================================!
-  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, &
+  !================================================!
+  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, seedname, &
                                    stdout, error)
-    !==================================================================!
+    !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
     !!  Note that in this subroutine num_wann = num_bands
     !!  since, if we are here, then disentanglement = FALSE
     !!  Gamma specific version
-    !                                                                  !
-    !==================================================================!
+    !
+    !================================================!
     use w90_constants
     use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
