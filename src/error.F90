@@ -33,6 +33,7 @@ module w90_error
   integer, parameter :: code_matrix_lib = 8
   integer, parameter :: code_not_unitary = 9
   integer, parameter :: code_unconv = -1
+  integer, parameter :: code_plot = -2 ! failing to plot something isn't fatal?
   integer, parameter :: code_warning = -3
 
   type w90_error_type
@@ -136,6 +137,14 @@ contains
     err%message = mesg !FIXME, trim to 120
     err%code = code_unconv
   end subroutine set_error_unconv
+
+  subroutine set_error_plot(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_plot
+  end subroutine set_error_plot
 
   subroutine set_warning(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err

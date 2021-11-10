@@ -468,7 +468,7 @@ program wannier
                  w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                  real_lattice, wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, &
                  shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, transport%mode, &
-                 have_disentangled, lsitesymmetry, w90_system%spinors, seedname, stdout, comm)
+                 have_disentangled, lsitesymmetry, w90_system%spinors, seedname, stdout, err, comm)
 
   if (on_root) then
     time1 = io_time()

@@ -39,7 +39,7 @@ contains
                        real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, &
-                       stdout, comm)
+                       stdout, error, comm)
     !================================================!
     !
     !! Main plotting routine
@@ -49,7 +49,7 @@ contains
     use w90_constants, only: eps6, dp
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_types, only: kmesh_info_type, wannier_data_type, atom_data_type, dis_manifold_type, &
       kpoint_path_type, print_output_type, ws_region_type, ws_distance_type
     use w90_utility, only: utility_recip_lattice_base
@@ -57,6 +57,7 @@ contains
       fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
       ham_logical_type
     use w90_ws_distance, only: ws_translate_dist, ws_write_vec
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -77,6 +78,7 @@ contains
     type(wannier_plot_type), intent(in)       :: wannier_plot
     type(ws_region_type), intent(in)          :: ws_region
     type(wvfn_read_type), intent(in)          :: wvfn_read
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), intent(in)                 :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
@@ -122,7 +124,7 @@ contains
     if (my_node_id == 0) on_root = .true.
 
     if (on_root) then
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
+      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, error)
 
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       ! Print the header only if there is something to plot
@@ -163,11 +165,12 @@ contains
         if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
 
         if (w90_calculation%bands_plot) then
-          call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, real_space_ham, &
-                                      ws_region, print_output, recip_lattice, num_wann, &
-                                      wannier_data, ham_r, irvec, ndegen, nrpts, &
+          call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &
+                                      real_space_ham, ws_region, print_output, recip_lattice, &
+                                      num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
                                       wannier_centres_translated, ws_distance, &
-                                      bands_num_spec_points, stdout, seedname)
+                                      bands_num_spec_points, stdout, seedname, error)
+          if (allocated(error)) return
         endif
 
         if (w90_calculation%fermi_surface_plot) then
@@ -216,7 +219,7 @@ contains
                                                              have_disentangled, num_wann, num_kpts, &
                                                              num_bands, seedname)
 
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
+      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, error)
     end if
 
   end subroutine plot_main
@@ -227,9 +230,10 @@ contains
 
   !================================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, real_space_ham, &
-                                    ws_region, print_output, recip_lattice, num_wann, wannier_data, &
-                                    ham_r, irvec, ndegen, nrpts, wannier_centres_translated, &
-                                    ws_distance, bands_num_spec_points, stdout, seedname)
+                                    ws_region, print_output, recip_lattice, num_wann, &
+                                    wannier_data, ham_r, irvec, ndegen, nrpts, &
+                                    wannier_centres_translated, ws_distance, &
+                                    bands_num_spec_points, stdout, seedname, error)
     !================================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -237,12 +241,14 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_time, io_stopwatch => io_stopwatch_new
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, ws_region_type, &
       ws_distance_type
     use w90_wannier90_types, only: band_plot_type, real_space_ham_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack, &
+      set_error_unconv, set_error_plot
 
     implicit none
 
@@ -254,6 +260,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(ws_region_type), intent(in) :: ws_region
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -306,7 +313,9 @@ contains
     character(len=10), allocatable :: ctemp(:)
 
     !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
+    if (print_output%timing_level > 1) then
+      call io_stopwatch('plot: interpolate_bands', 1, stdout, error)
+    endif
     !
     time0 = io_time()
     call utility_metric(recip_lattice, recip_metric)
@@ -315,24 +324,51 @@ contains
     write (stdout, *)
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_pack in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ham_pack in plot_interpolate_bands')
+      return
+    endif
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_kprm in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ham_kprm in plot_interpolate_bands')
+      return
+    endif
     allocate (U_int(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating U_int in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating U_int in plot_interpolate_bands')
+      return
+    endif
     allocate (cwork(2*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cwork in plot_interpolate_bands')
+      return
+    endif
     allocate (rwork(7*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating rwork in plot_interpolate_bands')
+      return
+    endif
     allocate (iwork(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating iwork in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating iwork in plot_interpolate_bands')
+      return
+    endif
     allocate (ifail(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ifail in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ifail in plot_interpolate_bands')
+      return
+    endif
 
     allocate (idx_special_points(bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating idx_special_points in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating idx_special_points in plot_interpolate_bands')
+      return
+    endif
     allocate (xval_special_points(bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xval_special_points in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating xval_special_points in plot_interpolate_bands')
+      return
+    endif
     idx_special_points = -1
     xval_special_points = -1._dp
     !
@@ -381,19 +417,40 @@ contains
     end do
 
     allocate (plot_kpoint(3, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating plot_kpoint in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating plot_kpoint in plot_interpolate_bands')
+      return
+    endif
     allocate (xval(total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xval in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating xval in plot_interpolate_bands')
+      return
+    endif
     allocate (eig_int(num_wann, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eig_int in plot_interpolate_bands')
+      return
+    endif
     allocate (bands_proj(num_wann, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating bands_proj in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating bands_proj in plot_interpolate_bands')
+      return
+    endif
     allocate (glabel(num_spts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating num_spts in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating num_spts in plot_interpolate_bands')
+      return
+    endif
     allocate (xlabel(num_spts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xlabel in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating xlabel in plot_interpolate_bands')
+      return
+    endif
     allocate (ctemp(bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ctemp in plot_interpolate_bands', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ctemp in plot_interpolate_bands')
+      return
+    endif
     eig_int = 0.0_dp; bands_proj = 0.0_dp
     !
     ! Find the position of each kpoint in the path
@@ -483,7 +540,8 @@ contains
                                wannier_data%centres, real_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, force_recompute=.true.)
       else
-        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout, seedname)
+        call set_error_plot(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+        return
       endif
     endif
 
@@ -549,11 +607,13 @@ contains
                   nfound, eig_int(1, loop_kpt), U_int, num_wann, cwork, rwork, iwork, ifail, info)
       if (info < 0) then
         write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-        call io_error('Error in plot_interpolate_bands', stdout, seedname)
+        call set_error_lapack(error, 'Error in plot_interpolate_bands')
+        return
       endif
       if (info > 0) then
         write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-        call io_error('Error in plot_interpolate_bands', stdout, seedname)
+        call set_error_unconv(error, 'Error in plot_interpolate_bands')
+        return
       endif
       ! Compute projection onto WF if requested
       if (allocated(band_plot%project)) then
@@ -586,19 +646,40 @@ contains
       'Time to calculate interpolated band structure ', io_time() - time0, ' (sec)'
     write (stdout, *)
 
-    if (allocated(ham_r_cut)) deallocate (ham_r_cut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ham_r_cut in plot_interpolate_bands', stdout, seedname)
-    if (allocated(irvec_cut)) deallocate (irvec_cut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands', stdout, seedname)
+    if (allocated(ham_r_cut)) then
+      deallocate (ham_r_cut, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ham_r_cut in plot_interpolate_bands')
+        return
+      endif
+    endif
+    if (allocated(irvec_cut)) then
+      deallocate (irvec_cut, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating irvec_cut in plot_interpolate_bands')
+        return
+      endif
+    endif
     !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, &
+                                                         stdout, error)
     !
-    if (allocated(idx_special_points)) deallocate (idx_special_points, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating idx_special_points in &
-                                 &plot_interpolate_bands', stdout, seedname)
-    if (allocated(xval_special_points)) deallocate (xval_special_points, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating xval_special_points in &
-                                 &plot_interpolate_bands', stdout, seedname)
+    if (allocated(idx_special_points)) then
+      deallocate (idx_special_points, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating idx_special_points in &
+            &plot_interpolate_bands')
+        return
+      endif
+    endif
+    if (allocated(xval_special_points)) then
+      deallocate (xval_special_points, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating xval_special_points in &
+            &plot_interpolate_bands')
+        return
+      endif
+    endif
 
   contains
 
