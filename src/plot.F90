@@ -206,12 +206,13 @@ contains
       end if
     end if !on_root
 
-    if (w90_calculation%wannier_plot) call plot_wannier(wannier_plot, wvfn_read, wannier_data, &
-                                                        print_output, u_matrix_opt, dis_manifold, &
-                                                        real_lattice, atom_data, kpt_latt, &
-                                                        u_matrix, num_kpts, num_bands, num_wann, &
-                                                        have_disentangled, spinors, bohr, &
-                                                        stdout, seedname, comm)
+    if (w90_calculation%wannier_plot) then
+      call plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                        dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
+                        num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
+                        error, comm)
+      if (allocated(error)) return
+    endif
 
     if (on_root) then
       if (output_file%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
@@ -1270,7 +1271,7 @@ contains
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                           dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
-                          comm)
+                          error, comm)
     !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
@@ -1278,10 +1279,12 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90comm_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
+      set_error_plot
 
     implicit none
 
@@ -1292,6 +1295,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wannier_plot_type), intent(in) :: wannier_plot
     type(wvfn_read_type), intent(in) :: wvfn_read
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -1348,7 +1352,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, error)
     !
     associate (ngs=>wannier_plot%supercell)
       !
@@ -1358,7 +1362,10 @@ contains
         write (wfnname, 199) 1
       endif
       inquire (file=wfnname, exist=have_file)
-      if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout, seedname)
+      if (.not. have_file) then
+        call set_error_open(error, 'plot_wannier: file '//wfnname//' not found')
+        return
+      endif
 
       file_unit = io_file_unit()
       if (wvfn_read%formatted) then
@@ -1381,30 +1388,48 @@ contains
       allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                           -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                           -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wann_func in plot_wannier', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier')
+        return
+      endif
       wann_func = cmplx_0
       if (spinors) then
         allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                                -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                                -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot_num), &
                   stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating wann_func_nc in plot_wannier', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier')
+          return
+        endif
         wann_func_nc = cmplx_0
       endif
       if (.not. spinors) then
         if (have_disentangled) then
           allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_manifold%ndimwin)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp in plot_wannier')
+            return
+          endif
         end if
         allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating r_wvfn in plot_wannier', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating r_wvfn in plot_wannier')
+          return
+        endif
       else
         if (have_disentangled) then
           allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_manifold%ndimwin), 2), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp_nc in plot_wannier')
+            return
+          endif
         end if
         allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating r_wvfn_nc in plot_wannier', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier')
+          return
+        endif
       endif
 
       call io_date(cdate, ctime)
@@ -1435,7 +1460,8 @@ contains
           write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
           write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
           write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call io_error('plot_wannier', stdout, seedname)
+          call set_error_file(error, 'plot_wannier')
+          return
         end if
 
         if (have_disentangled) then
@@ -1576,8 +1602,9 @@ contains
                       case ('down')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
-                        call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wannier_plot%spinor_mode), stdout, seedname)
+                        call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode '&
+                            &//trim(wannier_plot%spinor_mode))
+                        return
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = &
                         wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
@@ -1623,8 +1650,9 @@ contains
                   case ('down')
                     wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                   case default
-                    call io_error('plot_wannier: Invalid wannier_plot_spinor_mode ' &
-                                  //trim(wannier_plot%spinor_mode), stdout, seedname)
+                    call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode ' &
+                                        //trim(wannier_plot%spinor_mode))
+                    return
                   end select
                   wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                 end do
@@ -1685,12 +1713,14 @@ contains
           call internal_xsf_format()
         elseif (wannier_plot%format .eq. 'cube') then
           call internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                    real_lattice, bohr)
+                                    real_lattice, bohr, error)
+          if (allocated(error)) return
         else
-          call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
+          call set_error_plot(error, 'wannier_plot_format not recognised in wannier_plot')
+          return
         endif
 
-        if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
+        if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, error)
       end if !on_root
 
     end associate
@@ -1701,7 +1731,7 @@ contains
 
     !================================================!
     subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                    real_lattice, bohr)
+                                    real_lattice, bohr, error)
       !================================================!
       !
       !! Write WFs in Gaussian cube format.
@@ -1712,12 +1742,14 @@ contains
         utility_inverse_mat, utility_recip_lattice_base
       use w90_types, only: wannier_data_type, atom_data_type
       use w90_wannier90_types, only: wvfn_read_type
+      use w90_error, only: w90_error_type, set_error_alloc, set_error_plot, set_error_dealloc
 
       implicit none
 
       type(wvfn_read_type), intent(in) :: wvfn_read
       type(wannier_data_type), intent(in) :: wannier_data
       type(atom_data_type), intent(in) :: atom_data
+      type(w90_error_type), allocatable, intent(out) :: error
       real(kind=dp), intent(in) :: bohr
 
       real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -1752,7 +1784,10 @@ contains
       associate (ngs=>wannier_plot%supercell)
 
         allocate (atomic_Z(atom_data%num_species), stat=ierr)
-        if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout, seedname)
+        if (ierr .ne. 0) then
+          call set_error_alloc(error, 'Error: allocating atomic_Z in wannier_plot')
+          return
+        endif
 
         call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
         lmol = .false.
@@ -1849,7 +1884,10 @@ contains
           endif
 
           allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
-          if (ierr .ne. 0) call io_error('Error: allocating wann_cube in wannier_plot', stdout, seedname)
+          if (ierr .ne. 0) then
+            call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot')
+            return
+          endif
 
           ! initialise
           wann_cube = 0.0_dp
@@ -1865,7 +1903,8 @@ contains
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
               write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-              call io_error('Error plotting WF cube.', stdout, seedname)
+              call set_error_plot(error, 'Error plotting WF cube.')
+              return
             endif
             do nyy = 1, ilength(2)
               qyy = nyy + istart(2) - 1
@@ -1878,7 +1917,8 @@ contains
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
                 write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                call io_error('Error plotting WF cube.', stdout, seedname)
+                call set_error_plot(error, 'Error plotting WF cube.')
+                return
               endif
               do nxx = 1, ilength(1)
                 qxx = nxx + istart(1) - 1
@@ -1891,7 +1931,8 @@ contains
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
                   write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                  call io_error('Error plotting WF cube.', stdout, seedname)
+                  call set_error_plot(error, 'Error plotting WF cube.')
+                  return
                 endif
                 wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
               enddo
@@ -2005,12 +2046,18 @@ contains
           enddo
 
           deallocate (wann_cube, stat=ierr)
-          if (ierr .ne. 0) call io_error('Error: deallocating wann_cube in wannier_plot', stdout, seedname)
+          if (ierr .ne. 0) then
+            call set_error_dealloc(error, 'Error: deallocating wann_cube in wannier_plot')
+            return
+          endif
 
         end do
 
         deallocate (atomic_Z, stat=ierr)
-        if (ierr .ne. 0) call io_error('Error: deallocating atomic_Z in wannier_plot', stdout, seedname)
+        if (ierr .ne. 0) then
+          call set_error_dealloc(error, 'Error: deallocating atomic_Z in wannier_plot')
+          return
+        endif
 
       end associate
 
