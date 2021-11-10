@@ -525,7 +525,8 @@ contains
     !
     if (index(band_plot%mode, 'cut') .ne. 0) then
       call plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
-                       wannier_centres_translated, stdout)
+                       wannier_centres_translated, stdout, error)
+      if (allocated(error)) return
     endif
     !
     ! Interpolate the Hamiltonian at each kpoint
@@ -685,7 +686,7 @@ contains
 
     !================================================!
     subroutine plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
-                           wannier_centres_translated, stdout)
+                           wannier_centres_translated, stdout, error)
       !================================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
@@ -705,14 +706,15 @@ contains
       !================================================!
 
       use w90_constants, only: dp, cmplx_0, eps8
-      use w90_io, only: io_error
       use w90_wannier90_types, only: band_plot_type, real_space_ham_type
+      use w90_error, only: w90_error_type, set_error_alloc, set_error_plot
 
       implicit none
 
       ! arguments
       type(real_space_ham_type), intent(in) :: real_space_ham
       type(band_plot_type), intent(in) :: band_plot
+      type(w90_error_type), allocatable, intent(out) :: error
 
       real(kind=dp), intent(in) :: real_lattice(3, 3)
       real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
@@ -732,7 +734,10 @@ contains
       real(kind=dp) :: dist
 
       allocate (ham_r_tmp(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ham_r_tmp in plot_cut_hr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating ham_r_tmp in plot_cut_hr')
+        return
+      endif
 
       irvec_max = maxval(irvec, DIM=2) + 1
 
@@ -748,7 +753,10 @@ contains
             j = j + 1
           end if
         end do
-        if (j .ne. 1) call io_error('Error: 1-d lattice vector not defined in plot_cut_hr', stdout, seedname)
+        if (j .ne. 1) then
+          call set_error_plot(error, 'Error: 1-d lattice vector not defined in plot_cut_hr')
+          return
+        endif
         j = 0
         do i = 1, 3
           if (i .ne. one_dim_vec) then
@@ -765,11 +773,20 @@ contains
 
       nrpts_cut = (2*irvec_max(1) + 1)*(2*irvec_max(2) + 1)*(2*irvec_max(3) + 1)
       allocate (ham_r_cut(num_wann, num_wann, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ham_r_cut in plot_cut_hr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating ham_r_cut in plot_cut_hr')
+        return
+      endif
       allocate (irvec_cut(3, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating irvec_cut in plot_cut_hr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating irvec_cut in plot_cut_hr')
+        return
+      endif
       allocate (shift_vec(3, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating shift_vec in plot_cut_hr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating shift_vec in plot_cut_hr')
+        return
+      endif
 
       nrpts_tmp = 0
       do n1 = -irvec_max(1), irvec_max(1)
@@ -794,7 +811,8 @@ contains
 
       if (nrpts_tmp .ne. nrpts_cut) then
         write (stdout, '(a)') 'FAILED TO EXPAND ham_r'
-        call io_error('Error in plot_cut_hr', stdout, seedname)
+        call set_error_plot(error, 'Error in plot_cut_hr')
+        return
       end if
 
       ! AAM: 29/10/2009 Bug fix thanks to Dr Shujun Hu, NIMS, Japan.
