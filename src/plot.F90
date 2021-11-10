@@ -176,7 +176,8 @@ contains
         if (w90_calculation%fermi_surface_plot) then
           call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                   ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
-                                  seedname)
+                                  seedname, error)
+          if (allocated(error)) return
         endif
 
         if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
@@ -1083,7 +1084,7 @@ contains
 
   !================================================!
   subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
-                                ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname)
+                                ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname, error)
     !================================================!
     !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -1091,13 +1092,15 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch => io_stopwatch_new
     use w90_wannier90_types, only: fermi_surface_plot_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv
 
     implicit none
 
     ! arguments
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
+    type(w90_error_type), allocatable, intent(out) :: error
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
@@ -1124,7 +1127,7 @@ contains
     integer              :: fermi_n
     character(len=9)     :: cdate, ctime
     !
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, error)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
@@ -1132,27 +1135,54 @@ contains
     !
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
-    if (fermi_n > 1) call io_error("Error in plot: nfermi>1. Set the fermi level " &
-                                   //"using the input parameter 'fermi_level'", stdout, seedname)
+    if (fermi_n > 1) then
+      call set_error_alloc(error, "Error in plot: nfermi>1. Set the fermi level " &
+                           //"using the input parameter 'fermi_level'")
+      return
+    endif
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_pack plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ham_pack plot_fermi_surface')
+      return
+    endif
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_kprm plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ham_kprm plot_fermi_surface')
+      return
+    endif
     allocate (U_int(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating U_int in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating U_int in plot_fermi_surface')
+      return
+    endif
     allocate (cwork(2*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating cwork in plot_fermi_surface')
+      return
+    endif
     allocate (rwork(7*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating rwork in plot_fermi_surface')
+      return
+    endif
     allocate (iwork(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating iwork in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating iwork in plot_fermi_surface')
+      return
+    endif
     allocate (ifail(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ifail in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ifail in plot_fermi_surface')
+      return
+    endif
     !
     npts_plot = (fermi_surface_plot%num_points + 1)**3
     allocate (eig_int(num_wann, npts_plot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_fermi_surface', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eig_int in plot_fermi_surface')
+      return
+    endif
     eig_int = 0.0_dp
     U_int = (0.0_dp, 0.0_dp)
     !
@@ -1180,11 +1210,13 @@ contains
                       nfound, eig_int(1, ikp), U_int, num_wann, cwork, rwork, iwork, ifail, info)
           if (info < 0) then
             write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call io_error('Error in plot_fermi_surface', stdout, seedname)
+            call set_error_lapack(error, 'Error in plot_fermi_surface')
+            return
           endif
           if (info > 0) then
             write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call io_error('Error in plot_fermi_surface', stdout, seedname)
+            call set_error_unconv(error, 'Error in plot_fermi_surface')
+            return
           endif
         end do
       end do
@@ -1228,7 +1260,7 @@ contains
       io_time() - time0, ' (sec)'
     write (stdout, *)
     !
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, error)
     !
     return
 
