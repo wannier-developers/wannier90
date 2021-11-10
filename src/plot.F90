@@ -215,11 +215,15 @@ contains
     endif
 
     if (on_root) then
-      if (output_file%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
+      if (output_file%write_bvec) then
+        call plot_bvec(kmesh_info, num_kpts, seedname, error)
+        if (allocated(error)) return
+      endif
 
-      if (output_file%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
-                                                             have_disentangled, num_wann, num_kpts, &
-                                                             num_bands, seedname)
+      if (output_file%write_u_matrices) then
+        call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, num_wann, &
+                             num_kpts, num_bands, seedname)
+      endif
 
       if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, error)
     end if
@@ -2155,7 +2159,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch, io_date
+    use w90_io, only: io_file_unit, io_time, io_date
     use w90_constants, only: dp
 
     implicit none
@@ -2207,7 +2211,7 @@ contains
   end subroutine plot_u_matrices
 
   !================================================!
-  subroutine plot_bvec(kmesh_info, num_kpts, stdout, seedname)
+  subroutine plot_bvec(kmesh_info, num_kpts, seedname, error)
     !================================================!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
@@ -2216,14 +2220,16 @@ contains
     !!
     !================================================!
 
-    use w90_io, only: io_error, io_file_unit, io_date
+    use w90_io, only: io_file_unit, io_date
     use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
+    use w90_error, only: w90_error_type, set_error_open
 
     implicit none
 
     type(kmesh_info_type), intent(in) :: kmesh_info
-    integer, intent(in) :: stdout
+    type(w90_error_type), allocatable, intent(out) :: error
+    !integer, intent(in) :: stdout
     integer            :: nkp, nn, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
@@ -2247,7 +2253,8 @@ contains
     !
     return
     !
-101 call io_error('Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec', stdout, seedname)
+101 call set_error_open(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
+    return
 
   end subroutine plot_bvec
 
