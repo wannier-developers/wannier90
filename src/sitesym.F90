@@ -161,11 +161,12 @@ contains
       endif
       if (present(lwindow_in)) then
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              seedname, n)
+                              seedname, error, n)
       else
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              seedname)
+                              seedname, error)
       endif
+      if (allocated(error)) return
       do isym = 2, sitesym%nsymmetry
         irk = sitesym%kptsym(isym, ir)
         if (ldone(irk)) cycle
@@ -381,7 +382,7 @@ contains
 
   !================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
-                              sitesym, stdout, seedname, n)
+                              sitesym, stdout, seedname, error, n)
     !================================================!
     !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)
@@ -391,13 +392,14 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_sym, set_error_unconv
     implicit none
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
     integer, optional, intent(in) :: n
@@ -413,10 +415,16 @@ contains
 
     !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
-      if (ndim .ne. num_bands) call io_error('ndim!=num_bands', stdout, seedname)
+      if (ndim .ne. num_bands) then
+        call set_error_sym(error, 'ndim!=num_bands')
+        return
+      endif
       ntmp = n
     else
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout, seedname)
+      if (ndim .ne. num_wann) then
+        call set_error_sym(error, 'ndim!=num_wann')
+        return
+      endif
       ntmp = ndim
     endif
 
@@ -458,7 +466,8 @@ contains
         write (stdout, "(a)") 'Either eps is too small or specified irreps is not'
         write (stdout, "(a)") '  compatible with the bands'
         write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sitesym%symmetrize_eps
-        call io_error('symmetrize_ukirr: not converged', stdout, seedname)
+        call set_error_unconv(error, 'symmetrize_ukirr: not converged')
+        return
       endif
       usum = usum/ngk
       call orthogonalize_u(ndim, num_wann, usum, ntmp, stdout, seedname)
@@ -520,7 +529,7 @@ contains
 
   !================================================!
   subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
-                                          seedname, stdout)
+                                          seedname, stdout, error)
     !================================================!
     !
     !   minimize Omega_I by steepest descendent
@@ -532,11 +541,12 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_lapack
     implicit none
 
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -600,14 +610,16 @@ contains
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
             endif
-            call io_error('error at sitesym_dis_extract_symmetry', stdout, seedname)
+            call set_error_lapack(error, 'error at sitesym_dis_extract_symmetry')
+            return
           endif
         endif
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
       call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
-                            stdout, seedname, n)
+                            stdout, seedname, error, n)
+      if (allocated(error)) return
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 

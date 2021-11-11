@@ -937,9 +937,11 @@ contains
     enddo
     ! NKP
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, &
-                                                        num_kpts, num_wann, seedname, stdout, &
-                                                        error) !RS: update U(Rk)
+    if (lsitesymmetry) then
+      call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
+                                       seedname, stdout, error) !RS: update U(Rk)
+      if (allocated(error)) return
+    endif
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated

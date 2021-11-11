@@ -1997,7 +1997,7 @@ contains
           call sitesym_dis_extract_symmetry(sitesym, lambda, u_matrix_opt_loc(:, :, nkp_loc), &
                                             czmat_in_loc(:, :, nkp_loc), nkp, &
                                             dis_manifold%ndimwin(nkp), num_bands, num_wann, &
-                                            seedname, stdout) !RS:
+                                            seedname, stdout, error) !RS:
           do j = 1, num_wann                                                          !RS:
             wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)   !RS:
           enddo                                                                    !RS:
