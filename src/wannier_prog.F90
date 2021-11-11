@@ -328,7 +328,11 @@ program wannier
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, &
                                   checkpoint, have_disentangled, seedname, stdout, comm)
-    if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
+    if (lsitesymmetry) then
+      call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, err)
+      ! update this to read on root and bcast - JRY
+      if (allocated(err)) call prterr(err, stdout)
+    endif
 
     select case (w90_calculation%restart)
     case ('default')    ! continue from where last checkpoint was written
@@ -373,7 +377,11 @@ program wannier
     stop
   endif
 
-  if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout) ! update this to read on root and bcast - JRY
+  if (lsitesymmetry) then
+    call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, err)
+    ! update this to read on root and bcast - JRY
+    if (allocated(err)) call prterr(err, stdout)
+  endif
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &

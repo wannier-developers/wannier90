@@ -265,7 +265,7 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !================================================!
-  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, seedname, stdout, error)
+  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, error)
     !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
@@ -278,9 +278,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts
-    integer, intent(in) :: stdout
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: ik, ir, isym, irk
@@ -626,21 +624,22 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !================================================!
-  subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)
+  subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error)
     !================================================!
 
-    use w90_io, only: io_file_unit, io_error
+    use w90_io, only: io_file_unit
     use w90_wannier90_types, only: sitesym_type
+    use w90_error, only: w90_error_type, set_error_file, set_error_alloc
 
     implicit none
 
     ! arguments
     type(sitesym_type), intent(inout) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
 
     ! local variables
@@ -650,19 +649,40 @@ contains
     open (unit=iu, file=trim(seedname)//".dmn", form='formatted', status='old', action='read')
     read (iu, *)
     read (iu, *) ibnum, sitesym%nsymmetry, sitesym%nkptirr, iknum
-    if (ibnum .ne. num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)", stdout, seedname)
-    if (iknum .ne. num_kpts) call io_error("Error: Number of k-points is not correct (sitesym_read)", stdout, seedname)
+    if (ibnum .ne. num_bands) then
+      call set_error_file(error, "Error: Number of bands is not correct (sitesym_read)")
+      return
+    endif
+    if (iknum .ne. num_kpts) then
+      call set_error_file(error, "Error: Number of k-points is not correct (sitesym_read)")
+      return
+    endif
 
     allocate (sitesym%ik2ir(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sitesym%ik2ir in sitesym_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%ik2ir in sitesym_read')
+      return
+    endif
     allocate (sitesym%ir2ik(sitesym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sitesym%ir2ik in sitesym_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%ir2ik in sitesym_read')
+      return
+    endif
     allocate (sitesym%kptsym(sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sitesym%kptsym in sitesym_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%kptsym in sitesym_read')
+      return
+    endif
     allocate (sitesym%d_matrix_band(num_bands, num_bands, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sitesym%d_matrix_band in sitesym_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_band in sitesym_read')
+      return
+    endif
     allocate (sitesym%d_matrix_wann(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sitesym%d_matrix_wann in sitesym_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_wann in sitesym_read')
+      return
+    endif
 
     read (iu, *) sitesym%ik2ir
     read (iu, *) sitesym%ir2ik

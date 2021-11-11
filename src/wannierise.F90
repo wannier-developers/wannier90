@@ -1588,8 +1588,8 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, seedname, stdout, &
-                                         error) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error)
+        !RS: calculate cdq(Rk) from k
         if (allocated(error)) return
 
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
