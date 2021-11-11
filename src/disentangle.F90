@@ -52,6 +52,7 @@ contains
 
     use w90_io, only: io_file_unit
     use w90_utility, only: utility_recip_lattice_base
+    use w90_error, only: w90_error_type
 
     ! arguments
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -80,6 +81,7 @@ contains
     real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
     type(sitesym_type), intent(inout) :: sitesym
+    type(w90_error_type), allocatable :: error !BGS needs to be fixed
     type(w90comm_type), intent(in)         :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -167,7 +169,7 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
-                                       num_wann, seedname, stdout, dis_manifold%lwindow)
+                                       num_wann, seedname, stdout, error, dis_manifold%lwindow)
     endif
 
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
@@ -506,6 +508,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -522,6 +525,7 @@ contains
     logical, intent(in) :: on_root, lsitesymmetry
 
     type(sitesym_type), intent(inout) :: sitesym
+    type(w90_error_type), allocatable :: error !BGS FIXME
     type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
@@ -599,7 +603,7 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
-                                       seedname, stdout)
+                                       seedname, stdout, error)
     endif
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2, stdout, seedname)
@@ -1692,6 +1696,7 @@ contains
 
     use w90_io, only: io_wallclocktime
     use w90_wannier90_types, only: sitesym_type
+    use w90_error
 
     implicit none
 
@@ -1716,6 +1721,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable :: error !BGS Needs to be fixed by whovever edits this file
     type(w90comm_type), intent(in) :: comm
 
     ! Internal variables
@@ -2089,7 +2095,7 @@ contains
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, &
                                                           num_bands, num_kpts, num_wann, seedname, &
-                                                          stdout, dis_manifold%lwindow) !RS:
+                                                          stdout, error, dis_manifold%lwindow) !RS:
       !if (index(print_output%devel_flag, 'compspace') > 0) then
       !  if (iter .eq. dis_control%num_iter) then
       !    call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &

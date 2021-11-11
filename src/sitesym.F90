@@ -25,7 +25,6 @@ module w90_sitesym
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-  use w90_io, only: io_error
 
   implicit none
 
@@ -102,7 +101,7 @@ contains
 
   !================================================!
   subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
-                                         seedname, stdout, lwindow_in)
+                                         seedname, stdout, error, lwindow_in)
     !================================================!
     !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases:
@@ -116,10 +115,12 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
+    use w90_error, only: w90_error_type, set_error_sym
     implicit none
 
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -138,9 +139,15 @@ contains
     logical :: ldone(num_kpts)
     complex(kind=dp) :: cmat(ndim, num_wann)
 
-    if (present(lwindow_in) .and. (ndim .ne. num_bands)) call io_error('ndim!=num_bands', stdout, seedname)
+    if (present(lwindow_in) .and. (ndim .ne. num_bands)) then
+      call set_error_sym(error, 'ndim!=num_bands')
+      return
+    endif
     if (.not. present(lwindow_in)) then
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout, seedname)
+      if (ndim .ne. num_wann) then
+        call set_error_sym(error, 'ndim!=num_wann')
+        return
+      endif
     endif
 
     ldone = .false.
@@ -173,7 +180,10 @@ contains
                    sitesym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, umat(:, :, irk), ndim)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_u_matrix', stdout, seedname)
+    if (any(.not. ldone)) then
+      call set_error_sym(error, 'error in sitesym_symmetrize_u_matrix')
+      return
+    endif
 
     return
   end subroutine sitesym_symmetrize_u_matrix
@@ -260,6 +270,7 @@ contains
     !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
+    use w90_io, only: io_error
 
     implicit none
 
@@ -376,6 +387,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
+    use w90_io, only: io_error
     implicit none
 
     integer, intent(in) :: num_bands
@@ -456,6 +468,7 @@ contains
   subroutine orthogonalize_u(ndim, m, u, n, stdout, seedname)
     !================================================!
 
+    use w90_io, only: io_error
     implicit none
 
     integer, intent(in) :: ndim, m
@@ -515,6 +528,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
+    use w90_io, only: io_error
     implicit none
 
     ! arguments
