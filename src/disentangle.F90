@@ -169,7 +169,8 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
-                                       num_wann, seedname, stdout, error, dis_manifold%lwindow)
+                                       num_wann, stdout, error, dis_manifold%lwindow)
+      if (allocated(error)) return
     endif
 
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
@@ -603,7 +604,8 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
-                                       seedname, stdout, error)
+                                       stdout, error)
+      if (allocated(error)) return
     endif
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2, stdout, seedname)
@@ -1997,7 +1999,7 @@ contains
           call sitesym_dis_extract_symmetry(sitesym, lambda, u_matrix_opt_loc(:, :, nkp_loc), &
                                             czmat_in_loc(:, :, nkp_loc), nkp, &
                                             dis_manifold%ndimwin(nkp), num_bands, num_wann, &
-                                            seedname, stdout, error) !RS:
+                                            stdout, error) !RS:
           do j = 1, num_wann                                                          !RS:
             wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)   !RS:
           enddo                                                                    !RS:
@@ -2093,9 +2095,11 @@ contains
                          num_bands*num_wann*counts, num_bands*num_wann*displs, stdout, seedname, &
                          comm)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, &
-                                                          num_bands, num_kpts, num_wann, seedname, &
-                                                          stdout, error, dis_manifold%lwindow) !RS:
+      if (lsitesymmetry) then
+        call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
+                                         num_wann, stdout, error, dis_manifold%lwindow) !RS:
+        if (allocated(error)) return
+      endif
       !if (index(print_output%devel_flag, 'compspace') > 0) then
       !  if (iter .eq. dis_control%num_iter) then
       !    call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &

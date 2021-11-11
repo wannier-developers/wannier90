@@ -939,7 +939,7 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
-                                       seedname, stdout, error) !RS: update U(Rk)
+                                       stdout, error) !RS: update U(Rk)
       if (allocated(error)) return
     endif
 

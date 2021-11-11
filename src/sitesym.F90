@@ -101,7 +101,7 @@ contains
 
   !================================================!
   subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
-                                         seedname, stdout, error, lwindow_in)
+                                         stdout, error, lwindow_in)
     !================================================!
     !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases:
@@ -132,8 +132,6 @@ contains
 
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
 
-    character(len=50), intent(in)  :: seedname
-
     ! local variables
     integer :: ik, ir, isym, irk, n
     logical :: ldone(num_kpts)
@@ -161,10 +159,10 @@ contains
       endif
       if (present(lwindow_in)) then
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              seedname, error, n)
+                              error, n)
       else
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              seedname, error)
+                              error)
       endif
       if (allocated(error)) return
       do isym = 2, sitesym%nsymmetry
@@ -382,7 +380,7 @@ contains
 
   !================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
-                              sitesym, stdout, seedname, error, n)
+                              sitesym, stdout, error, n)
     !================================================!
     !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)
@@ -403,7 +401,6 @@ contains
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
     integer, optional, intent(in) :: n
-    character(len=50), intent(in)  :: seedname
 
     integer :: isym, ngk, i, iter, ntmp
     integer, parameter :: niter = 100
@@ -430,7 +427,7 @@ contains
 
     ngk = count(sitesym%kptsym(:, ir) .eq. sitesym%ir2ik(ir))
     if (ngk .eq. 1) then
-      call orthogonalize_u(ndim, num_wann, umat, ntmp, stdout, seedname)
+      call orthogonalize_u(ndim, num_wann, umat, ntmp, error)
       return
     endif
 
@@ -470,7 +467,8 @@ contains
         return
       endif
       usum = usum/ngk
-      call orthogonalize_u(ndim, num_wann, usum, ntmp, stdout, seedname)
+      call orthogonalize_u(ndim, num_wann, usum, ntmp, error)
+      if (allocated(error)) return
       umat(:, :) = usum
     enddo ! iter
 
@@ -478,17 +476,16 @@ contains
   end subroutine symmetrize_ukirr
 
   !================================================!
-  subroutine orthogonalize_u(ndim, m, u, n, stdout, seedname)
+  subroutine orthogonalize_u(ndim, m, u, n, error)
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_sym, set_error_lapack
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
     complex(kind=dp), allocatable :: WORK(:)
@@ -496,7 +493,10 @@ contains
     integer :: INFO, i, j, l
     integer :: LWORK
 
-    if (n .lt. m) call io_error('n<m', stdout, seedname)
+    if (n .lt. m) then
+      call set_error_sym(error, 'n<m')
+      return
+    endif
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
     allocate (evecl(n, n), evecr(m, m))
     allocate (eig(min(m, n)))
@@ -509,7 +509,8 @@ contains
     call ZGESVD('A', 'A', n, m, smat, n, &
                 eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
-      call io_error(' ERROR: IN ZGESVD IN orthogonalize_u', stdout, seedname)
+      call set_error_lapack(error, ' ERROR: IN ZGESVD IN orthogonalize_u')
+      return
     endif
     deallocate (smat, eig, WORK, RWORK)
     ! u_matrix is the initial guess for the unitary rotation of the
@@ -529,7 +530,7 @@ contains
 
   !================================================!
   subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
-                                          seedname, stdout, error)
+                                          stdout, error)
     !================================================!
     !
     !   minimize Omega_I by steepest descendent
@@ -556,8 +557,6 @@ contains
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
     complex(kind=dp), intent(out) :: lambda(num_wann, num_wann)
     complex(kind=dp), intent(inout) :: umat(num_bands, num_wann)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     complex(kind=dp) :: umatnew(num_bands, num_wann)
@@ -618,7 +617,7 @@ contains
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
       call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
-                            stdout, seedname, error, n)
+                            stdout, error, n)
       if (allocated(error)) return
       umat(:, :) = umatnew(:, :)
     enddo ! iter
