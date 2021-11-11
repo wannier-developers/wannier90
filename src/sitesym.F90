@@ -266,16 +266,17 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !================================================!
-  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, seedname, stdout)
+  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, seedname, stdout, error)
     !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_sym
 
     implicit none
 
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
@@ -307,7 +308,10 @@ contains
         urot(:, :, irk) = cmat1(:, :)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_rotation', stdout, seedname)
+    if (any(.not. ldone)) then
+      call set_error_sym(error, 'error in sitesym_symmetrize_rotation')
+      return
+    endif
 
     return
   end subroutine sitesym_symmetrize_rotation

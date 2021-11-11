@@ -1491,12 +1491,14 @@ contains
       use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
       use w90_types, only: kmesh_info_type
+      use w90_error, only: w90_error_type
 
       implicit none
 
       type(kmesh_info_type), intent(in) :: kmesh_info
 
       type(sitesym_type), intent(in) :: sitesym
+      type(w90_error_type), allocatable :: error !BGS FIXME
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -1586,7 +1588,8 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, seedname, stdout) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, seedname, stdout, &
+                                         error) !RS: calculate cdq(Rk) from k
 
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
                                                   + counts(my_node_id))
