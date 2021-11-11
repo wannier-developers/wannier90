@@ -514,7 +514,10 @@ program wannier
                                            kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
                                            select_projection, kpoint_path, wannier_data, wannier_plot, &
                                            w90_extra_io, eigval, seedname, stdout)
-  if (lsitesymmetry) call sitesym_dealloc(sitesym, stdout, seedname) !YN:
+  if (lsitesymmetry) then
+    call sitesym_dealloc(sitesym, err) !YN:
+    if (allocated(err)) call prterr(err, stdout)
+  endif
 
 4004 continue
 

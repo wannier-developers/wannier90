@@ -695,29 +695,43 @@ contains
   end subroutine sitesym_read
 
   !================================================!
-  subroutine sitesym_dealloc(sitesym, stdout, seedname)
+  subroutine sitesym_dealloc(sitesym, error)
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_dealloc
     use w90_wannier90_types, only: sitesym_type
 
     implicit none
 
     type(sitesym_type), intent(inout) :: sitesym
+    type(w90_error_type), allocatable, intent(out) :: error
     integer :: ierr
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     deallocate (sitesym%ik2ir, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sitesym%ik2ir in sitesym_dealloc', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%ik2ir in sitesym_dealloc')
+      return
+    endif
     deallocate (sitesym%ir2ik, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sitesym%ir2ik in sitesym_dealloc', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%ir2ik in sitesym_dealloc')
+      return
+    endif
     deallocate (sitesym%kptsym, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sitesym%kptsym in sitesym_dealloc', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%kptsym in sitesym_dealloc')
+      return
+    endif
     deallocate (sitesym%d_matrix_band, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sitesym%d_matrix_band in sitesym_dealloc', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_band in sitesym_dealloc')
+      return
+    endif
     deallocate (sitesym%d_matrix_wann, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc')
+      return
+    endif
 
     return
   end subroutine sitesym_dealloc
