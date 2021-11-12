@@ -1975,6 +1975,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_types, only: wannier_data_type, atom_data_type, print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -2004,6 +2005,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
     type(wannier_data_type), intent(in) :: wannier_data
+    type(w90_error_type), allocatable :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -2421,7 +2423,8 @@ contains
 
     call check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                         num_wann, wannier_centres_translated, coord, &
-                                        tran_sorted_idx, write_xyz, stdout, seedname)
+                                        tran_sorted_idx, write_xyz, stdout, seedname, error)
+    if (allocated(error)) return
 
     write (stdout, *) ' '
     write (stdout, *) '------------------------- Sorted Wannier Centres -----------------------------'
@@ -2800,8 +2803,8 @@ contains
 
   !================================================
   subroutine check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
-                                            num_wann, wannier_centres_translated, &
-                                            coord, tran_sorted_idx, write_xyz, stdout, seedname)
+                                            num_wann, wannier_centres_translated, coord, &
+                                            tran_sorted_idx, write_xyz, stdout, seedname, error)
     !================================================!
     ! Here, we consider the possiblity of wannier functions
     ! with similar centres, such as a set of d-orbitals
@@ -2816,9 +2819,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch, io_error
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_types, only: atom_data_type, print_output_type
     use w90_wannier90_types, only: transport_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
 
     implicit none
 
@@ -2826,6 +2830,7 @@ contains
     type(atom_data_type), intent(in) :: atom_data
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: coord(3)
     integer, intent(in) :: num_G
     integer, intent(in) :: num_wann
@@ -2846,24 +2851,45 @@ contains
     integer :: iterator, max_position(1), p, num_wf_cell_iter
     real(kind=dp), allocatable :: dot_p(:)
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, error)
 
     num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
     allocate (wf_similar_centres(transport%num_cell_ll*4, num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wf_similar_centre in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wf_similar_centre in check_and_sort_similar_centres')
+      return
+    endif
     allocate (idx_similar_wf(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating idx_similar_wf in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating idx_similar_wf in check_and_sort_similar_centres')
+      return
+    endif
     allocate (has_similar_centres(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating has_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating has_similar_centres in check_and_sort_similar_centres')
+      return
+    endif
     allocate (tmp_wf_verifier(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tmp_wf_verifier in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tmp_wf_verifier in check_and_sort_similar_centres')
+      return
+    endif
     allocate (group_verifier(4*transport%num_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating group_verifier in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating group_verifier in check_and_sort_similar_centres')
+      return
+    endif
     allocate (first_group_element(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating first_group_element in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating first_group_element in check_and_sort_similar_centres')
+      return
+    endif
     allocate (centre_id(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating centre_id in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating centre_id in check_and_sort_similar_centres')
+      return
+    endif
 
     ! First find WFs with similar centres: store in wf_similar_centres(cell#,group#,WF#)
 
@@ -2970,7 +2996,8 @@ contains
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
           if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
-          call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells', stdout, seedname)
+          call set_error_tran(error, 'Inconsistent number of groups of similar centred wannier functions between unit cells')
+          return
         elseif (i .eq. 4*transport%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
           write (stdout, *) ' unit cells found'
@@ -2984,7 +3011,10 @@ contains
     if (any(has_similar_centres)) then
 
       allocate (wf_verifier(4*transport%num_cell_ll, group_verifier(1)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating wf_verifier in check_and_sort_similar_centres')
+        return
+      endif
 
       if (print_output%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
       wf_verifier = 0
@@ -2994,10 +3024,12 @@ contains
           if (print_output%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
             j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
-            if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
-                call io_error('Inconsitent number of wannier &
+            if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) then
+              call set_error_tran(error, 'Inconsistent number of wannier &
                   &functions between equivalent groups of similar &
-                &centred wannier functions', stdout, seedname)
+                  &centred wannier functions')
+              return
+            endif
           endif
         enddo
       enddo
@@ -3015,19 +3047,23 @@ contains
 
           allocate (ref_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+            call set_error_alloc(error, 'Error in allocating ref_similar_centres in check_and_sort_similar_centres')
+            return
           end if
           allocate (unsorted_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+            call set_error_alloc(error, 'Error in allocating unsorted_similar_centres in check_and_sort_similar_centres')
+            return
           end if
           allocate (sorted_idx(wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres', stdout, seedname)
+            call set_error_alloc(error, 'Error in allocating sorted_idx in check_and_sort_similar_centres')
+            return
           end if
           allocate (dot_p(wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call io_error('Error in allocating dot_p in check_and_sort_similar_centres', stdout, seedname)
+            call set_error_alloc(error, 'Error in allocating dot_p in check_and_sort_similar_centres')
+            return
           end if
 
           do k = 1, wf_verifier(1, j)
@@ -3061,15 +3097,25 @@ contains
                &wf_verifier(i, j) - 1) = sorted_idx(:)
 
           deallocate (dot_p, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_dealloc(error, 'Error in deallocating dot_p in check_and_sort_similar_centres')
+            return
+          endif
           deallocate (sorted_idx, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_dealloc(error, 'Error in deallocating sorted_idx in check_and_sort_similar_centres')
+            return
+          endif
           deallocate (unsorted_similar_centres, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres', &
-                                       stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_dealloc(error, 'Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres')
+            return
+          endif
           deallocate (ref_similar_centres, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres', &
-                                       stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_dealloc(error, 'Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
+            return
+          endif
         enddo
       enddo
 
@@ -3085,31 +3131,58 @@ contains
           endif
         enddo
 
-        if ((iterator .ge. 2) .or. (iterator .eq. 0)) call io_error( &
-        'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
-        &poor wannierisation and/or disentanglement', stdout, seedname)
+        if ((iterator .ge. 2) .or. (iterator .eq. 0)) then
+          call set_error_tran(error, &
+              'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
+              &poor wannierisation and/or disentanglement')
+          return
+        endif
         !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
       enddo
       deallocate (wf_verifier, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating wf_verifier in check_and_sort_similar_centres', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating wf_verifier in check_and_sort_similar_centres')
+        return
+      endif
     endif
 
     deallocate (centre_id, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating centre_id in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating centre_id in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (first_group_element, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating first_group_element in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating first_group_element in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (group_verifier, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating group_verifier in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating group_verifier in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (tmp_wf_verifier, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating tmp_wf_verifier in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating tmp_wf_verifier in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (has_similar_centres, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating has_similar_centres in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating has_similar_centres in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (idx_similar_wf, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating idx_similar_wf in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating idx_similar_wf in check_and_sort_similar_centres')
+      return
+    endif
     deallocate (wf_similar_centres, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating wf_similar_centre in check_and_sort_similar_centres')
+      return
+    endif
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, error)
 
     return
 
