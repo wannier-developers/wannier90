@@ -95,7 +95,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error, io_stopwatch
-
+    use w90_error, only: w90_error_type
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
     use w90_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, dis_manifold_type
@@ -117,6 +117,7 @@ contains
     real(kind=dp), intent(in)                   :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(ham_logical_type), intent(inout)       :: ham_logical
+    type(w90_error_type), allocatable           :: error
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -256,7 +257,9 @@ contains
                                     num_wann, transport, print_output, real_lattice, mp_grid, &
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
-                                    hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname)
+                                    hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname, &
+                                    error)
+        if (allocated(error)) return
       endif
       call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, &
                     stdout, seedname)
@@ -3274,7 +3277,8 @@ contains
                                     num_wann, transport, print_output, real_lattice, mp_grid, &
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
-                                    hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname)
+                                    hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname, &
+                                    error)
     !================================================!
     ! Builds hamiltonians blocks required for the
     ! Greens function caclulations of the quantum
@@ -3285,9 +3289,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps5
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
     use w90_types, only: print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
+    use w90_error, only: w90_error_type, set_error_tran, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -3322,6 +3327,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -3334,27 +3340,51 @@ contains
     real(kind=dp)          :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, error)
 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
-    if (fermi_n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
-                                   //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
+    if (fermi_n > 1) then
+      call set_error_tran(error, "Error in tran_lcr_2c2_build_ham: nfermi>1. " &
+                          //"Set the fermi level using the input parameter 'fermi_evel'")
+      return
+    endif
 
     allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hR0(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hR1(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hLC(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hLC in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hCR(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hCR in tran_lcr_2c2_build_ham')
+      return
+    endif
     allocate (hC(num_wann - (2*transport%num_ll), num_wann - (2*transport%num_ll)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hC in tran_lcr_2c2_build_ham')
+      return
+    endif
 
     !This checks that only the gamma point is used in wannierisation
     !This is necessary since this calculation only makes sense if we
@@ -3362,13 +3392,17 @@ contains
     !BGS, I think (0, 0, 0) in kpt_latt should work as well as in kpt_cart
     if ((size(kpt_latt, 2) .ne. 1) .and. (kpt_latt(1, 1) .eq. 0.0_dp) &
         .and. (kpt_latt(2, 1) .eq. 0.0_dp) .and. (kpt_latt(3, 1) .eq. 0.0_dp)) then
-      call io_error('Calculation must be performed at gamma only', stdout, seedname)
+      call set_error_tran(error, 'Calculation must be performed at gamma only')
+      return
     endif
 
     num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
     allocate (sub_block(num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sub_block in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sub_block in tran_lcr_2c2_build_ham')
+      return
+    endif
 
     !Build hL0 & hL1
 
@@ -3562,7 +3596,10 @@ contains
       real_space_ham%dist_cutoff = real_space_ham%dist_cutoff_hc
       write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        return
+      endif
       call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
                           nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
                           seedname, stdout)
@@ -3741,9 +3778,12 @@ contains
     end if
 
     deallocate (sub_block, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating sub_block in tran_lcr_2c2_build_ham')
+      return
+    endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, error)
 
     return
 
