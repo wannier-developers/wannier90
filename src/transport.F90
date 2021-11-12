@@ -252,7 +252,8 @@ contains
                                                        tran_sorted_idx, num_wann, seedname, stdout)
 
         call tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
-                                 hr_one_dim, irvec_max, stdout, seedname)
+                                 hr_one_dim, irvec_max, stdout, error)
+        if (allocated(error)) return ! BGS only io_stopwatch, may not be needed... FIXME
         call tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, kpt_latt, &
                                     num_wann, transport, print_output, real_lattice, mp_grid, &
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
@@ -3179,7 +3180,7 @@ contains
 
   !================================================!
   subroutine tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
-                                 hr_one_dim, irvec_max, stdout, seedname)
+                                 hr_one_dim, irvec_max, stdout, error)
     !================================================!
     ! Here, the signatures of the each wannier fucntion (stored in
     ! signatures) is used to determine its relavite parity
@@ -3188,9 +3189,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_types, only: print_output_type
     use w90_wannier90_types, only: transport_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -3205,14 +3207,13 @@ contains
 
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(in) :: transport
-
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
     integer :: i, j, k, wf_idx, num_wann_cell_ll
     real(kind=dp) :: signature_dot_p
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, error)
 
     ! NP: special "easy" fix of the parities by switching the sign
     ! of the Wannier Functions if the first element of the signature
@@ -3266,7 +3267,7 @@ contains
       enddo
     enddo
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, error)
 
     return
 
