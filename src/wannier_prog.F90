@@ -410,7 +410,7 @@ program wannier
                   print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                   m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
                   omega%invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
-                  lsitesymmetry, stdout, seedname, comm)
+                  lsitesymmetry, stdout, err, seedname, comm)
     have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &

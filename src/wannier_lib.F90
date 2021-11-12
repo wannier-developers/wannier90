@@ -624,7 +624,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
                   num_bands, num_kpts, num_wann, optimisation, gamma_only, lsitesymmetry, &
-                  stdout, seedname, comm)
+                  stdout, err, seedname, comm)
     have_disentangled = .true.
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                                              kpt_latt, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
