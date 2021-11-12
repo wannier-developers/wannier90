@@ -2132,6 +2132,7 @@ contains
       !Grouping wannier functions with similar coord(1)
 
       call group(PL, PL_groups, transport%group_threshold, error)
+      if (allocated(error)) return
 
       if (print_output%iprint .ge. 4) then
 
@@ -2149,8 +2150,9 @@ contains
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
       call master_sort_and_group(PL, PL_groups, transport%num_ll, PL_subgroup_info, &
-                                 transport%group_threshold, print_output, wannier_centres_translated, &
-                                 coord, stdout, seedname)
+                                 transport%group_threshold, print_output, &
+                                 wannier_centres_translated, coord, stdout, error)
+      if (allocated(error)) return
 
       select case (PL_selector)
       case (1)
@@ -2216,6 +2218,7 @@ contains
     !Group central region
 
     call group(central_region, central_region_groups, transport%group_threshold, error)
+    if (allocated(error)) return
 
     !Print central region group breakdown
 
@@ -2234,7 +2237,8 @@ contains
     if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
     call master_sort_and_group(central_region, central_region_groups, num_wann - (4*transport%num_ll), &
                                central_subgroup_info, transport%group_threshold, print_output, &
-                               wannier_centres_translated, coord, stdout, seedname)
+                               wannier_centres_translated, coord, stdout, error)
+    if (allocated(error)) return
     deallocate (central_subgroup_info, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
     write (stdout, *) ' '
@@ -2498,7 +2502,7 @@ contains
   !================================================!
   subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
                                    tran_group_threshold, print_output, wannier_centres_translated, &
-                                   coord, stdout, seedname)
+                                   coord, stdout, error)
     !================================================!
     ! General sorting and grouping subroutine which takes Array,
     ! an ordered in conduction direction array of wannier function
@@ -2508,14 +2512,14 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_types, only: print_output_type
-    use w90_error, only: w90_error_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2529,7 +2533,6 @@ contains
     integer, intent(out), allocatable, dimension(:, :)  :: subgroup_info
 
     real(kind=dp), intent(inout), dimension(2, Array_size)  :: Array
-    character(len=50), intent(in)  :: seedname
 
     integer                                         :: i, j, k, Array_num_groups, increment, ierr, &
                                                        subgroup_increment, group_num_subgroups
@@ -2539,10 +2542,13 @@ contains
                                                                subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, error)
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating subgroup_info in master_sort_and_group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating subgroup_info in master_sort_and_group')
+      return
+    endif
     subgroup_info = 0
 
     !Number of groups inside the principal layer
@@ -2557,9 +2563,15 @@ contains
 
     do j = 1, Array_num_groups
       allocate (group_array(2, Array_groups(j)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating group_array in master_sort_and_group', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating group_array in master_sort_and_group')
+        return
+      endif
       allocate (sorted_group_array(2, Array_groups(j)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating sorted_group_array in master_sort_and_group', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating sorted_group_array in master_sort_and_group')
+        return
+      endif
 
       !Extract the group from the Array
 
@@ -2573,6 +2585,7 @@ contains
 
       call sort(group_array, sorted_group_array)
       call group(sorted_group_array, group_subgroups, tran_group_threshold, error)
+      if (allocated(error)) return
 
       group_num_subgroups = size(group_subgroups)
 
@@ -2600,9 +2613,15 @@ contains
 
       do k = 1, group_num_subgroups
         allocate (subgroup_array(2, group_subgroups(k)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating subgroup_array in master_sort_and_group', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating subgroup_array in master_sort_and_group')
+          return
+        endif
         allocate (sorted_subgroup_array(2, group_subgroups(k)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating sorted_subgroup_array in master_sort_and_group', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating sorted_subgroup_array in master_sort_and_group')
+          return
+        endif
 
         !Extract the subgroup from the group
 
@@ -2624,9 +2643,15 @@ contains
 
         subgroup_increment = subgroup_increment + group_subgroups(k)
         deallocate (sorted_subgroup_array, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating sorted_subgroup_array in master_sort_and_group', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating sorted_subgroup_array in master_sort_and_group')
+          return
+        endif
         deallocate (subgroup_array, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating subgroup_array in master_sort_and_group', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating subgroup_array in master_sort_and_group')
+          return
+        endif
       enddo
 
       !Update Array with the sorted group array
@@ -2637,14 +2662,23 @@ contains
 
       increment = increment + Array_groups(j)
       deallocate (group_array, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating group_array in master_sort_and_group', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating group_array in master_sort_and_group')
+        return
+      endif
       deallocate (sorted_group_array, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating sorted_group_array in master_sort_and_group', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating sorted_group_array in master_sort_and_group')
+        return
+      endif
       deallocate (group_subgroups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating group_subgroups in master_sort_and_group', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating group_subgroups in master_sort_and_group')
+        return
+      endif
     enddo
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, seedname)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, error)
 
     return
 
