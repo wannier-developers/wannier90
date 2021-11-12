@@ -2131,7 +2131,7 @@ contains
 
       !Grouping wannier functions with similar coord(1)
 
-      call group(PL, PL_groups, transport%group_threshold, stdout, seedname)
+      call group(PL, PL_groups, transport%group_threshold, error)
 
       if (print_output%iprint .ge. 4) then
 
@@ -2215,7 +2215,7 @@ contains
 
     !Group central region
 
-    call group(central_region, central_region_groups, transport%group_threshold, stdout, seedname)
+    call group(central_region, central_region_groups, transport%group_threshold, error)
 
     !Print central region group breakdown
 
@@ -2510,10 +2510,12 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch
     use w90_types, only: print_output_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
+    type(w90_error_type), allocatable :: error
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
@@ -2570,7 +2572,7 @@ contains
       enddo
 
       call sort(group_array, sorted_group_array)
-      call group(sorted_group_array, group_subgroups, tran_group_threshold, stdout, seedname)
+      call group(sorted_group_array, group_subgroups, tran_group_threshold, error)
 
       group_num_subgroups = size(group_subgroups)
 
@@ -2689,20 +2691,19 @@ contains
   endsubroutine sort
 
   !================================================!
-  subroutine group(array, array_groups, tran_group_threshold, stdout, seedname)
+  subroutine group(array, array_groups, tran_group_threshold, error)
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     real(kind=dp), intent(in) :: tran_group_threshold
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in), dimension(:, :)           :: array
     integer, intent(out), allocatable, dimension(:) :: array_groups
-    character(len=50), intent(in)  :: seedname
 
     integer, allocatable, dimension(:)             :: dummy_array
     logical, allocatable, dimension(:)             :: logic
@@ -2711,9 +2712,15 @@ contains
     array_size = size(array, 2)
 
     allocate (dummy_array(array_size), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating dummy_array in group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating dummy_array in group')
+      return
+    endif
     allocate (logic(array_size), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating logic in group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating logic in group')
+      return
+    endif
 
     !Initialise dummy array
 
@@ -2789,13 +2796,22 @@ contains
     !Copy elements of dummy_array to array_groups
 
     allocate (array_groups(array_idx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating array_groups in group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating array_groups in group')
+      return
+    endif
     array_groups = dummy_array(:array_idx)
 
     deallocate (dummy_array, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating dummy_array in group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating dummy_array in group')
+      return
+    endif
     deallocate (logic, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating logic in group', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating logic in group')
+      return
+    endif
 
     return
 
