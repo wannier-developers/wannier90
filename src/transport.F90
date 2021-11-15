@@ -241,7 +241,7 @@ contains
         call tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            have_disentangled, wannier_centres_translated, stdout, &
-                                           seedname)
+                                           seedname, error)
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, &
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
@@ -1698,9 +1698,10 @@ contains
   end subroutine tran_read_htXY
 
 !================================================
-  subroutine tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, u_matrix_opt, &
-                                           u_matrix, num_bands, num_wann, have_disentangled, &
-                                           wannier_centres_translated, stdout, seedname)
+  subroutine tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, &
+                                           u_matrix_opt, u_matrix, num_bands, num_wann, &
+                                           have_disentangled, wannier_centres_translated, stdout, &
+                                           seedname, error)
     !================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate
     ! Fourier components of each wannier function. Linear combinations of
@@ -1709,12 +1710,15 @@ contains
     ! type and 'parity' of each wannier function.
     !================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
     use w90_types, only: print_output_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
+      set_error_dealloc
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -1735,29 +1739,47 @@ contains
     complex(kind=dp) :: phase_factor, signature_basis(32)
     logical :: have_file
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, error)
 
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
-    if (.not. have_file) call io_error('tran_hr_parity_unkg: file '//trim(seedname)// &
-                                       '.unkg not found', stdout, seedname)
+    if (.not. have_file) then
+      call set_error_open(error, 'tran_hr_parity_unkg: file '//trim(seedname)// &
+                          '.unkg not found')
+      return
+    endif
     open (file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
 
     write (stdout, '(3a)') ' Reading '//trim(seedname)//'.unkg  file'
     read (file_unit, *) num_G
 
     allocate (signatures(20, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating signatures in tran_find_sigs_unkg_int', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating signatures in tran_find_sigs_unkg_int')
+      return
+    endif
     allocate (unkg(num_G, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating unkg in tran_find_sigs_unkg_int', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating unkg in tran_find_sigs_unkg_int')
+      return
+    endif
     allocate (g_abc(num_G, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_abc in tran_find_sigs_unkg_int', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_abc in tran_find_sigs_unkg_int')
+      return
+    endif
     if (have_disentangled) then
       allocate (tran_u_matrix(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+        return
+      endif
     else
       allocate (tran_u_matrix(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+        return
+      endif
     endif
 
     unkg = cmplx_0
@@ -1765,7 +1787,8 @@ contains
       do i = 1, num_G
         read (file_unit, *) ibnd, ig, a, b, c, r_unkg, i_unkg
         if ((ig .ne. i) .OR. (ibnd .ne. m)) then
-          call io_error('tran_find_sigs_unkg_int: Incorrect bands or g vectors', stdout, seedname)
+          call set_error_file(error, 'tran_find_sigs_unkg_int: Incorrect bands or g vectors')
+          return
         endif
         unkg(i, m) = cmplx(r_unkg, i_unkg, kind=dp)
         g_abc(i, :) = (/a, b, c/)
@@ -1942,13 +1965,22 @@ contains
     num_G = 20
 
     deallocate (tran_u_matrix, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating tran_u_matrix in tran_find_signatures', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating tran_u_matrix in tran_find_signatures')
+      return
+    endif
     deallocate (g_abc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating g_abc in tran_find_signatures', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating g_abc in tran_find_signatures')
+      return
+    endif
     deallocate (unkg, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating unkg in tran_find_signatures', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating unkg in tran_find_signatures')
+      return
+    endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, error)
 
     return
 
