@@ -685,6 +685,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -696,6 +697,7 @@ contains
     real(kind=dp), allocatable :: hB1(:, :)
 
     type(transport_type), intent(in) :: transport
+    type(w90_error_type), allocatable :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -756,7 +758,8 @@ contains
       allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating hB1 in tran_bulk', stdout, seedname)
       filename = trim(seedname)//'_htB.dat'
-      call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, seedname)
+      call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, error)
+      if (allocated(error)) return
     end if
 
     !   loop over the energies
@@ -947,7 +950,8 @@ contains
       if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr', stdout, seedname)
 
       filename = trim(seedname)//'_htL.dat'
-      call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, seedname)
+      call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, error)
+      if (allocated(error)) return
 
       if (.not. transport%use_same_lead) then
         allocate (hR0(transport%num_rr, transport%num_rr), stat=ierr)
@@ -955,7 +959,8 @@ contains
         allocate (hR1(transport%num_rr, transport%num_rr), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr', stdout, seedname)
         filename = trim(seedname)//'_htR.dat'
-        call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, seedname)
+        call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, error)
+        if (allocated(error)) return
       end if
 
       filename = trim(seedname)//'_htC.dat'
@@ -1575,19 +1580,20 @@ contains
   end subroutine tran_green
 
   !================================================!
-  subroutine tran_read_htX(nxx, h_00, h_01, h_file, stdout, seedname)
+  subroutine tran_read_htX(nxx, h_00, h_01, h_file, stdout, error)
     !================================================!
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_error, maxlen
+    use w90_error, only: w90_error_type, set_error_file, set_error_open
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx), h_01(nxx, nxx)
     character(len=50), intent(in) :: h_file
-    character(len=50), intent(in)  :: seedname
 
     integer :: i, j, nw, file_unit
     character(len=maxlen) :: dummy
@@ -1603,18 +1609,26 @@ contains
     write (stdout, '(a)') trim(dummy)
 
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX', stdout, seedname)
+    if (nw .ne. nxx) then
+      call set_error_file(error, 'wrong matrix size in transport: read_htX')
+      return
+    endif
     read (file_unit, *) ((h_00(i, j), i=1, nxx), j=1, nxx)
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX', stdout, seedname)
+    if (nw .ne. nxx) then
+      call set_error_file(error, 'wrong matrix size in transport: read_htX')
+      return
+    endif
     read (file_unit, *, err=102, end=102) ((h_01(i, j), i=1, nxx), j=1, nxx)
 
     close (unit=file_unit)
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file, stdout, seedname)
-102 call io_error('Error: Problem reading input file '//h_file, stdout, seedname)
+101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+    return
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+    return
 
   end subroutine tran_read_htX
 
