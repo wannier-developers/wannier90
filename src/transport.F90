@@ -863,6 +863,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -879,6 +880,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
 
     type(transport_type), intent(in) :: transport
+    type(w90_error_type), allocatable :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -959,9 +961,11 @@ contains
       filename = trim(seedname)//'_htC.dat'
       call tran_read_htC(transport%num_cc, hC, filename, stdout, seedname)
       filename = trim(seedname)//'_htLC.dat'
-      call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, seedname)
+      call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, error)
+      if (allocated(error)) return
       filename = trim(seedname)//'_htCR.dat'
-      call tran_read_htXY(transport%num_cr, transport%num_rr, hCR, filename, stdout, seedname)
+      call tran_read_htXY(transport%num_cr, transport%num_rr, hCR, filename, stdout, error)
+      if (allocated(error)) return
     endif
 
     !  Banded matrix H_C  :  save memory !
@@ -1655,19 +1659,20 @@ contains
   end subroutine tran_read_htC
 
   !================================================!
-  subroutine tran_read_htXY(nxx1, nxx2, h_01, h_file, stdout, seedname)
+  subroutine tran_read_htXY(nxx1, nxx2, h_01, h_file, stdout, error)
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_error, maxlen
+    use w90_io, only: io_file_unit, maxlen
+    use w90_error, only: w90_error_type, set_error_file, set_error_open
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) ::  nxx1, nxx2
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_01(nxx1, nxx2)
     character(len=50), intent(in) :: h_file
-    character(len=50), intent(in)  :: seedname
 
     integer :: i, j, nw1, nw2, file_unit
     character(len=maxlen) :: dummy
@@ -1684,7 +1689,10 @@ contains
 
     read (file_unit, *, err=102, end=102) nw1, nw2
 
-    if (nw1 .ne. nxx1 .or. nw2 .ne. nxx2) call io_error('wrong matrix size in transport: read_htXY', stdout, seedname)
+    if (nw1 .ne. nxx1 .or. nw2 .ne. nxx2) then
+      call set_error_file(error, 'wrong matrix size in transport: read_htXY')
+      return
+    endif
 
     read (file_unit, *, err=102, end=102) ((h_01(i, j), i=1, nxx1), j=1, nxx2)
 
@@ -1692,8 +1700,10 @@ contains
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file, stdout, seedname)
-102 call io_error('Error: Problem reading input file '//h_file, stdout, seedname)
+101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+    return
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+    return
 
   end subroutine tran_read_htXY
 
