@@ -959,7 +959,8 @@ contains
       end if
 
       filename = trim(seedname)//'_htC.dat'
-      call tran_read_htC(transport%num_cc, hC, filename, stdout, seedname)
+      call tran_read_htC(transport%num_cc, hC, filename, stdout, error)
+      if (allocated(error)) return
       filename = trim(seedname)//'_htLC.dat'
       call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, error)
       if (allocated(error)) return
@@ -1618,19 +1619,20 @@ contains
   end subroutine tran_read_htX
 
   !================================================!
-  subroutine tran_read_htC(nxx, h_00, h_file, stdout, seedname)
+  subroutine tran_read_htC(nxx, h_00, h_file, stdout, error)
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_error, maxlen
+    use w90_io, only: io_file_unit, maxlen
+    use w90_error, only: w90_error_type, set_error_file, set_error_open
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx)
     character(len=50), intent(in) :: h_file
-    character(len=50), intent(in)  :: seedname
 
     integer :: i, j, nw, file_unit
     character(len=maxlen) :: dummy
@@ -1646,15 +1648,20 @@ contains
     write (stdout, '(a)') trim(dummy)
 
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htC', stdout, seedname)
+    if (nw .ne. nxx) then
+      call set_error_file(error, 'wrong matrix size in transport: read_htC')
+      return
+    endif
     read (file_unit, *, err=102, end=102) ((h_00(i, j), i=1, nxx), j=1, nxx)
 
     close (unit=file_unit)
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file, stdout, seedname)
-102 call io_error('Error: Problem reading input file '//h_file, stdout, seedname)
+101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+    return
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+    return
 
   end subroutine tran_read_htC
 
