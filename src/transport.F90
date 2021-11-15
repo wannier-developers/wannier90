@@ -246,7 +246,8 @@ contains
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
-                               irvec_max, output_file%write_xyz, stdout, seedname)
+                               irvec_max, output_file%write_xyz, stdout, seedname, error)
+        if (allocated(error)) return
         if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
                                                        wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
@@ -1958,7 +1959,7 @@ contains
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
-                               irvec_max, write_xyz, stdout, seedname)
+                               irvec_max, write_xyz, stdout, seedname, error)
     !================================================!
     ! This is the main subroutine controling the sorting
     ! for the 2c2 geometry. We first sort in the conduction
@@ -1972,10 +1973,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_types, only: wannier_data_type, atom_data_type, print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
-    use w90_error, only: w90_error_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
 
     implicit none
 
@@ -2005,7 +2006,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
     type(wannier_data_type), intent(in) :: wannier_data
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -2030,19 +2031,23 @@ contains
     character(30) :: fmt_1
 
     allocate (tran_sorted_idx(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tran_sorted_idx in tran_lcr_2c2_sort', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tran_sorted_idx in tran_lcr_2c2_sort')
+      return
+    endif
 
     num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, error)
 
     sort_iterator = 0
 
     !Check translated centres have been found
 
     if (size(wannier_centres_translated) .eq. 0) then
-      call io_error('Translated centres not known : required perform lcr transport, &
-                    &try restart=plot', stdout, seedname)
+      call set_error_tran(error, 'Translated centres not known : required perform lcr transport, &
+                          &try restart=plot')
+      return
     endif
 
     !read one_dim_dir and creates an array (coord) that correspond to the
@@ -2067,15 +2072,17 @@ contains
 
     if (((real_lattice(coord(1), coord(2)) .ne. 0) .or. (real_lattice(coord(1), coord(3)) .ne. 0)) .or. &
         ((real_lattice(coord(2), coord(1)) .ne. 0) .or. (real_lattice(coord(3), coord(1)) .ne. 0))) then
-      call io_error( &
+      call set_error_tran(error, &
       'Lattice vector in conduction direction must point along x,y or z &
-      & direction and be orthogonal to the remaining lattice vectors.', stdout, seedname)
+      & direction and be orthogonal to the remaining lattice vectors.')
+      return
     endif
 
     !Check
 
     if (num_wann .le. 4*transport%num_ll) then
-      call io_error('Principle layers are too big.', stdout, seedname)
+      call set_error_tran(error, 'Principle layers are too big.')
+      return
     endif
 
 100 continue
@@ -2148,7 +2155,10 @@ contains
       !Returns the sorted PL and informations on this PL
 
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating PL_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       call master_sort_and_group(PL, PL_groups, transport%num_ll, PL_subgroup_info, &
                                  transport%group_threshold, print_output, &
                                  wannier_centres_translated, coord, stdout, error)
@@ -2157,56 +2167,95 @@ contains
       select case (PL_selector)
       case (1)
         allocate (PL1_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL1_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL1_groups in tran_lcr_2c2_sort')
+          return
+        endif
         allocate (PL1_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
 
         PL1 = PL
         PL1_groups = PL_groups
         PL1_subgroup_info = PL_subgroup_info
 
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
       case (2)
         allocate (PL2_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL2_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL2_groups in tran_lcr_2c2_sort')
+          return
+        endif
         allocate (PL2_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
 
         PL2 = PL
         PL2_groups = PL_groups
         PL2_subgroup_info = PL_subgroup_info
 
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
       case (3)
         allocate (PL3_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL3_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL3_groups in tran_lcr_2c2_sort')
+          return
+        endif
         allocate (PL3_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
 
         PL3 = PL
         PL3_groups = PL_groups
         PL3_subgroup_info = PL_subgroup_info
 
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
       case (4)
         allocate (PL4_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL4_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL4_groups in tran_lcr_2c2_sort')
+          return
+        endif
         allocate (PL4_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
 
         PL4 = PL
         PL4_groups = PL_groups
         PL4_subgroup_info = PL_subgroup_info
 
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
       endselect
 
       deallocate (PL_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL_groups in tran_lcr_2c2_sort')
+        return
+      endif
     enddo ! Principal layer loop
 
     !Grouping and sorting of central conductor region
@@ -2234,13 +2283,20 @@ contains
     !Returns sorted central group region
 
     allocate (central_subgroup_info(size(central_region_groups), maxval(central_region_groups)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
-    call master_sort_and_group(central_region, central_region_groups, num_wann - (4*transport%num_ll), &
-                               central_subgroup_info, transport%group_threshold, print_output, &
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating central_group_info in tran_lcr_2c2_sort')
+      return
+    endif
+    call master_sort_and_group(central_region, central_region_groups, &
+                               num_wann - (4*transport%num_ll), central_subgroup_info, &
+                               transport%group_threshold, print_output, &
                                wannier_centres_translated, coord, stdout, error)
     if (allocated(error)) return
     deallocate (central_subgroup_info, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating central_group_info in tran_lcr_2c2_sort')
+      return
+    endif
     write (stdout, *) ' '
 
     !Build the sorted index array
@@ -2262,26 +2318,51 @@ contains
       if (sort_iterator .ge. 2) then
         if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                            tran_sorted_idx, num_wann, seedname, stdout)
-        call io_error('Sorting techniques exhausted:&
-          & Inconsistent number of groups among principal layers', stdout, seedname)
+        call set_error_tran(error, 'Sorting techniques exhausted:&
+          & Inconsistent number of groups among principal layers')
+        return
       endif
       write (stdout, *) 'Inconsistent number of groups among principal layers: restarting sorting...'
       deallocate (PL1_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL2_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL3_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL4_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL1_subgroup_info)
-      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL2_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL3_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL4_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       goto 100
     endif
 
@@ -2292,29 +2373,54 @@ contains
         if (sort_iterator .ge. 2) then
           if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
-          call io_error &
-           ('Sorting techniques exhausted: Inconsitent number of wannier function among &
-             & similar groups within principal layers', stdout, seedname)
+          call set_error_tran(error, &
+           'Sorting techniques exhausted: Inconsitent number of wannier function among &
+             & similar groups within principal layers')
+          return
         endif
         write (stdout, *) 'Inconsitent number of wannier function among &
           &similar groups within& principal layers: restarting sorting...'
 
         deallocate (PL1_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL2_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL3_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL4_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL1_subgroup_info)
-        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL2_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL3_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
         deallocate (PL4_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          return
+        endif
         goto 100
       endif
     enddo
@@ -2342,10 +2448,13 @@ contains
       write (stdout, *) ' Rebuilding Hamiltonian...'
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout, seedname)
-      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
-                          seedname, stdout)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        return
+      endif
+      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
+                          irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
+                          print_output%timing_level, seedname, stdout)
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                one_dim_vec, seedname, stdout)
@@ -2354,21 +2463,45 @@ contains
       write (stdout, *) ' '
       sort_iterator = sort_iterator - 1
       deallocate (PL1_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL2_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL3_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL4_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL1_subgroup_info)
-      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL2_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL3_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       deallocate (PL4_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        return
+      endif
       goto 100
     endif
 
@@ -2376,7 +2509,10 @@ contains
     ! check for inconsistencies in subgroups
 
     allocate (temp_subgroup(size(PL1_subgroup_info, 1), size(PL1_subgroup_info, 2)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tmp_subgroup in tran_lcr_2c2_sort', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tmp_subgroup in tran_lcr_2c2_sort')
+      return
+    endif
     do i = 2, 4
       select case (i)
       case (2)
@@ -2394,28 +2530,56 @@ contains
                                                  wannier_centres_translated, &
                                                  tran_sorted_idx, num_wann, seedname, &
                                                  stdout)
-              call io_error &
-                ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', stdout, seedname)
+              call set_error_tran(error, &
+                                  'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+              return
             endif
             write (stdout, *) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
             deallocate (temp_subgroup, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating tmp_subgroup in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating tmp_subgroup in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL1_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL2_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL3_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL4_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL1_subgroup_info)
-            if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL2_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL3_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+              return
+            endif
             deallocate (PL4_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout, seedname)
+            if (ierr /= 0) then
+              call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+              return
+            endif
             goto 100
           endif
         enddo
@@ -2493,7 +2657,7 @@ contains
     endif
     ! End MS.
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, error)
 
     return
 
