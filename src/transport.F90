@@ -264,7 +264,7 @@ contains
         if (allocated(error)) return
       endif
       call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, &
-                    stdout, seedname)
+                    stdout, seedname, error)
     end if
 
     if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
@@ -862,13 +862,14 @@ contains
   end subroutine tran_bulk
 
   !================================================!
-  subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname)
+  subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, &
+                      seedname, error)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
+    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
-    use w90_error, only: w90_error_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack
 
     implicit none
 
@@ -885,7 +886,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: hR1(:, :)
 
     type(transport_type), intent(in) :: transport
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -913,7 +914,7 @@ contains
     character(len=50) :: filename
     character(len=9) :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, error)
 
     call io_date(cdate, ctime)
 
@@ -932,24 +933,48 @@ contains
     KC = max(transport%num_lc, transport%num_cr)
 
     allocate (hCband(2*KL + KU + 1, transport%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCband in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hCband in tran_lcr')
+      return
+    endif
     allocate (hLC_cmp(transport%num_ll, transport%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hLC_cmp in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hLC_cmp in tran_lcr')
+      return
+    endif
     allocate (hCR_cmp(transport%num_cr, transport%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCR_cmp in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hCR_cmp in tran_lcr')
+      return
+    endif
 
     !If construct used only when reading matrices from file
     if (transport%read_ht) then
       allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr')
+        return
+      endif
       allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr')
+        return
+      endif
       allocate (hC(transport%num_cc, transport%num_cc), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hC in tran_lcr')
+        return
+      endif
       allocate (hLC(transport%num_ll, transport%num_lc), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hLC in tran_lcr')
+        return
+      endif
       allocate (hCR(transport%num_cr, transport%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hCR in tran_lcr')
+        return
+      endif
 
       filename = trim(seedname)//'_htL.dat'
       call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, error)
@@ -957,9 +982,15 @@ contains
 
       if (.not. transport%use_same_lead) then
         allocate (hR0(transport%num_rr, transport%num_rr), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr')
+          return
+        endif
         allocate (hR1(transport%num_rr, transport%num_rr), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr')
+          return
+        endif
         filename = trim(seedname)//'_htR.dat'
         call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, error)
         if (allocated(error)) return
@@ -983,54 +1014,114 @@ contains
       end do
     end do
     deallocate (hC, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hC in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hC in tran_lcr')
+      return
+    endif
 
     !  H_LC : to a complex matrix
     hLC_cmp(:, :) = cmplx(hLC(:, :), kind=dp)
     deallocate (hLC, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hLC in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hLC in tran_lcr')
+      return
+    endif
 
     !  H_CR : to a complex matrix
     hCR_cmp(:, :) = cmplx(hCR(:, :), kind=dp)
     deallocate (hCR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCR in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hCR in tran_lcr')
+      return
+    endif
 
     allocate (totL(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating totL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating totL in tran_lcr')
+      return
+    endif
     allocate (tottL(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tottL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tottL in tran_lcr')
+      return
+    endif
     if (.not. transport%use_same_lead) then
       allocate (totR(transport%num_rr, transport%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating totR in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating totR in tran_lcr')
+        return
+      endif
       allocate (tottR(transport%num_rr, transport%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tottR in tran_lcr', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating tottR in tran_lcr')
+        return
+      endif
     end if
     allocate (g_surf_L(transport%num_ll, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_surf_L in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_surf_L in tran_lcr')
+      return
+    endif
     allocate (g_surf_R(transport%num_rr, transport%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_surf_R in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_surf_R in tran_lcr')
+      return
+    endif
     allocate (g_C_inv(2*KL + KU + 1, transport%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_C_inv in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_C_inv in tran_lcr')
+      return
+    endif
     allocate (g_C(transport%num_cc, transport%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_C in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_C in tran_lcr')
+      return
+    endif
     allocate (sLr(transport%num_lc, transport%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sLr in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sLr in tran_lcr')
+      return
+    endif
     allocate (sRr(transport%num_cr, transport%num_cr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sRr in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sRr in tran_lcr')
+      return
+    endif
     allocate (gL(transport%num_lc, transport%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating gL in tran_lcr')
+      return
+    endif
     allocate (gR(transport%num_cr, transport%num_cr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gR in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating gR in tran_lcr')
+      return
+    endif
     allocate (c1(transport%num_lc, transport%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating c1 in tran_lcr')
+      return
+    endif
     allocate (c2(transport%num_cr, transport%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c2 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating c2 in tran_lcr')
+      return
+    endif
     allocate (s1(KC, KC), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s1 in tran_lcr')
+      return
+    endif
     allocate (s2(KC, KC), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s2 in tran_lcr')
+      return
+    endif
     allocate (ipiv(transport%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_lcr')
+      return
+    endif
 
     !  Loop over the energies
     n_e = floor((transport%win_max - transport%win_min)/transport%energy_step) + 1
@@ -1118,7 +1209,8 @@ contains
                  info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
-        call io_error('tran_lcr: problem in ZGBSV', stdout, seedname)
+        call set_error_lapack(error, 'tran_lcr: problem in ZGBSV')
+        return
       end if
 
       ! Gamma_L = i(Sigma_L^r-Sigma_L^a)
@@ -1174,47 +1266,111 @@ contains
     close (dos_unit)
 
     deallocate (ipiv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_lcr')
+      return
+    endif
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_lcr')
+      return
+    endif
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_lcr')
+      return
+    endif
     deallocate (c2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c2 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating c2 in tran_lcr')
+      return
+    endif
     deallocate (c1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating c1 in tran_lcr')
+      return
+    endif
     deallocate (gR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gR in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating gR in tran_lcr')
+      return
+    endif
     deallocate (gL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating gL in tran_lcr')
+      return
+    endif
     deallocate (sRr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sRr in tran_lcr')
+      return
+    endif
     deallocate (sLr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sLr in tran_lcr')
+      return
+    endif
     deallocate (g_C, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_C in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_C in tran_lcr')
+      return
+    endif
     deallocate (g_C_inv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_C_inv in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_C_inv in tran_lcr')
+      return
+    endif
     deallocate (g_surf_R, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_surf_R in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_surf_R in tran_lcr')
+      return
+    endif
     deallocate (g_surf_L, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_surf_L in tran_lcr', stdout, seedname)
-    if (allocated(tottR)) deallocate (tottR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tottR in tran_lcr', stdout, seedname)
-    if (allocated(totR)) deallocate (totR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating totR in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_surf_L in tran_lcr')
+      return
+    endif
+    if (allocated(tottR)) then
+      deallocate (tottR, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating tottR in tran_lcr')
+        return
+      endif
+    endif
+    if (allocated(totR)) then
+      deallocate (totR, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating totR in tran_lcr')
+        return
+      endif
+    endif
     deallocate (tottL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tottL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tottL in tran_lcr')
+      return
+    endif
     deallocate (totL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating totL in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating totL in tran_lcr')
+      return
+    endif
     deallocate (hCR_cmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCR_cmp in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hCR_cmp in tran_lcr')
+      return
+    endif
     deallocate (hLC_cmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hLC_cmp in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hLC_cmp in tran_lcr')
+      return
+    endif
     deallocate (hCband, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCband in tran_lcr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating hCband in tran_lcr')
+      return
+    endif
 
-    if (timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout, error)
 
     return
 
