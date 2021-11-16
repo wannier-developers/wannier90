@@ -210,7 +210,8 @@ contains
                                                        wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
       end if
-      call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname)
+      call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname, error)
+      if (allocated(error)) return
     end if
 
     if (index(transport%mode, 'lcr') > 0) then
@@ -265,6 +266,7 @@ contains
       endif
       call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, &
                     stdout, seedname, error)
+      if (allocated(error)) return
     end if
 
     if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
@@ -679,13 +681,13 @@ contains
   end subroutine tran_get_ht
 
   !================================================!
-  subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname)
+  subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname, error)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
+    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
-    use w90_error, only: w90_error_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -697,7 +699,7 @@ contains
     real(kind=dp), allocatable :: hB1(:, :)
 
     type(transport_type), intent(in) :: transport
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=50), intent(in)  :: seedname
 
@@ -715,28 +717,58 @@ contains
     character(len=50) :: filename
     character(len=9)  :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, error)
 
     allocate (tot(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tot in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tot in tran_bulk')
+      return
+    endif
     allocate (tott(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tott in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tott in tran_bulk')
+      return
+    endif
     allocate (g_B(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_B in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_B in tran_bulk')
+      return
+    endif
     allocate (gL(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gL in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating gL in tran_bulk')
+      return
+    endif
     allocate (gR(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gR in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating gR in tran_bulk')
+      return
+    endif
     allocate (sLr(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sLr in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sLr in tran_bulk')
+      return
+    endif
     allocate (sRr(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sRr in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sRr in tran_bulk')
+      return
+    endif
     allocate (s1(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s1 in tran_bulk')
+      return
+    endif
     allocate (s2(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s2 in tran_bulk')
+      return
+    endif
     allocate (c1(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating c1 in tran_bulk')
+      return
+    endif
 
     call io_date(cdate, ctime)
 
@@ -754,9 +786,15 @@ contains
 
     if (transport%read_ht) then
       allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hB0 in tran_bulk', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hB0 in tran_bulk')
+        return
+      endif
       allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hB1 in tran_bulk', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating hB1 in tran_bulk')
+        return
+      endif
       filename = trim(seedname)//'_htB.dat'
       call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, error)
       if (allocated(error)) return
@@ -835,27 +873,57 @@ contains
     close (dos_unit)
 
     deallocate (c1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating c1 in tran_bulk')
+      return
+    endif
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_bulk')
+      return
+    endif
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_bulk')
+      return
+    endif
     deallocate (sRr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sRr in tran_bulk')
+      return
+    endif
     deallocate (sLr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sLr in tran_bulk')
+      return
+    endif
     deallocate (gR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gR in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating gR in tran_bulk')
+      return
+    endif
     deallocate (gL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gL in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating gL in tran_bulk')
+      return
+    endif
     deallocate (g_B, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_B in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_B in tran_bulk')
+      return
+    endif
     deallocate (tott, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tott in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tott in tran_bulk')
+      return
+    endif
     deallocate (tot, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tot in tran_bulk', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tot in tran_bulk')
+      return
+    endif
 
-    if (timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout, error)
 
     return
 
