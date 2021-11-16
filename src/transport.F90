@@ -778,7 +778,8 @@ contains
       ! retarded Green
 
       e_scan_cmp = e_scan + eta
-      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, seedname)
+      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, error)
+      if (allocated(error)) return
       call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, error)
       if (allocated(error)) return
 
@@ -1047,7 +1048,8 @@ contains
       e_scan_cmp = e_scan + eta
 
       ! Surface green function for the left lead : g_surf_L
-      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, seedname)
+      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, error)
+      if (allocated(error)) return
       call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, &
                       error)
       if (allocated(error)) return
@@ -1066,7 +1068,8 @@ contains
                         error)
         if (allocated(error)) return
       else
-        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, seedname)
+        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, error)
+        if (allocated(error)) return
         call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
                         error)
         if (allocated(error)) return
@@ -1218,7 +1221,7 @@ contains
   end subroutine tran_lcr
 
   !================================================!
-  subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, seedname)
+  subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, error)
     !================================================!
     !
     ! iterative construction of the transfer matrix
@@ -1228,10 +1231,12 @@ contains
     !================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, eps7
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv, &
+      set_error_dealloc
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) ::  e_scan_cmp
@@ -1239,7 +1244,6 @@ contains
     complex(kind=dp), intent(out) ::  tott(nxx, nxx)
     real(kind=dp), intent(in) :: h_00(nxx, nxx)
     real(kind=dp), intent(in) :: h_01(nxx, nxx)
-    character(len=50), intent(in)  :: seedname
 
     integer  :: ierr, info
     integer  :: i, j, n, nxx2
@@ -1251,23 +1255,50 @@ contains
     complex(kind=dp), allocatable, dimension(:, :, :) :: tau, taut
 
     allocate (ipiv(nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_transfer')
+      return
+    endif
     allocate (tsum(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tsum in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tsum in tran_transfer')
+      return
+    endif
     allocate (tsumt(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tsumt in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tsumt in tran_transfer')
+      return
+    endif
     allocate (t11(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating t11 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating t11 in tran_transfer')
+      return
+    endif
     allocate (t12(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating t12 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating t12 in tran_transfer')
+      return
+    endif
     allocate (s1(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s1 in tran_transfer')
+      return
+    endif
     allocate (s2(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s2 in tran_transfer')
+      return
+    endif
     allocate (tau(nxx, nxx, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tau in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating tau in tran_transfer')
+      return
+    endif
     allocate (taut(nxx, nxx, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating taut in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating taut in tran_transfer')
+      return
+    endif
 
     nxx2 = nxx*nxx
 
@@ -1291,7 +1322,8 @@ contains
     call ZGESV(nxx, nxx, t12, nxx, ipiv, t11, nxx, info)
     if (info .ne. 0) then
       write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-      call io_error('tran_transfer: problem in ZGESV 1', stdout, seedname)
+      call set_error_lapack(error, 'tran_transfer: problem in ZGESV 1')
+      return
     end if
 
     ! compute intermediate t-matrices (defined as tau(nxx,nxx,niter)
@@ -1339,7 +1371,8 @@ contains
       call ZGESV(nxx, nxx, s1, nxx, ipiv, s2, nxx, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-        call io_error('tran_transfer: problem in ZGESV 2', stdout, seedname)
+        call set_error_lapack(error, 'tran_transfer: problem in ZGESV 2')
+        return
       end if
 
       t11 = cmplx_0
@@ -1395,27 +1428,56 @@ contains
       if (conver .lt. eps7 .and. conver2 .lt. eps7) return
     end do
 
-    if (conver .gt. eps7 .or. conver2 .gt. eps7) &
-      call io_error('Error in converging transfer matrix in tran_transfer', stdout, seedname)
+    if (conver .gt. eps7 .or. conver2 .gt. eps7) then
+      call set_error_unconv(error, 'Error in converging transfer matrix in tran_transfer')
+      return
+    endif
 
     deallocate (taut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating taut in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating taut in tran_transfer')
+      return
+    endif
     deallocate (tau, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tau in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tau in tran_transfer')
+      return
+    endif
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_transfer')
+      return
+    endif
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_transfer')
+      return
+    endif
     deallocate (t12, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating t12 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating t12 in tran_transfer')
+      return
+    endif
     deallocate (t11, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating t11 in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating t11 in tran_transfer')
+      return
+    endif
     deallocate (tsumt, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tsumt in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tsumt in tran_transfer')
+      return
+    endif
     deallocate (tsum, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tsum in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating tsum in tran_transfer')
+      return
+    endif
     deallocate (ipiv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_transfer', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in deallocating ipiv in tran_transfer')
+      return
+    endif
 
     return
 
