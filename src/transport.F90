@@ -779,7 +779,8 @@ contains
 
       e_scan_cmp = e_scan + eta
       call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, seedname)
-      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, seedname)
+      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, error)
+      if (allocated(error)) return
 
       ! compute S_Lr and S_Rr
 
@@ -1047,7 +1048,9 @@ contains
 
       ! Surface green function for the left lead : g_surf_L
       call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, seedname)
-      call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, seedname)
+      call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, &
+                      error)
+      if (allocated(error)) return
 
       ! Self-energy (Sigma_L) : sLr = (hLC_cmp)^+ * g_surf_L * hLC_cmp
       c1 = cmplx_0
@@ -1059,10 +1062,14 @@ contains
 
       ! Surface green function for the right lead : g_surf_R
       if (transport%use_same_lead) then
-        call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, seedname)
+        call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
+                        error)
+        if (allocated(error)) return
       else
         call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, seedname)
-        call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, seedname)
+        call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
+                        error)
+        if (allocated(error)) return
       end if
 
       ! Self-energy (Sigma_R) : sRr = hCR_cmp * g_surf_R * (hCR_cmp)^+
@@ -1415,7 +1422,7 @@ contains
   end subroutine tran_transfer
 
   !================================================!
-  subroutine tran_green(tot, tott, h_00, h_01, e_scan, g, igreen, invert, nxx, stdout, seedname)
+  subroutine tran_green(tot, tott, h_00, h_01, e_scan, g, igreen, invert, nxx, stdout, error)
     !================================================!
     !   construct green's functions
     !
@@ -1428,10 +1435,11 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     integer, intent(in) :: igreen
@@ -1440,7 +1448,6 @@ contains
     real(kind=dp), intent(in) :: h_00(nxx, nxx), h_01(nxx, nxx)
     complex(kind=dp), intent(in) :: tot(nxx, nxx), tott(nxx, nxx)
     complex(kind=dp), intent(out) :: g(nxx, nxx)
-    character(len=50), intent(in)  :: seedname
 
     integer :: ierr, info
     integer :: i
@@ -1449,17 +1456,35 @@ contains
     complex(kind=dp), allocatable, dimension(:, :) :: s1, s2, c1
 
     allocate (ipiv(nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_green')
+      return
+    endif
     allocate (g_inv(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating g_inv in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating g_inv in tran_green')
+      return
+    endif
     allocate (eh_00(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating eh_00 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eh_00 in tran_green')
+      return
+    endif
     allocate (c1(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating c1 in tran_green')
+      return
+    endif
     allocate (s1(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s1 in tran_green')
+      return
+    endif
     allocate (s2(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating s2 in tran_green')
+      return
+    endif
 
     c1(:, :) = cmplx(h_01(:, :), kind=dp)
 
@@ -1492,7 +1517,8 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 1', stdout, seedname)
+          call set_error_lapack(error, 'tran_green: problem in ZGESV 1')
+          return
         end if
       end if
 
@@ -1523,7 +1549,8 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 2', stdout, seedname)
+          call set_error_lapack(error, 'tran_green: problem in ZGESV 2')
+          return
         end if
       end if
 
@@ -1556,24 +1583,43 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 3', stdout, seedname)
+          call set_error_lapack(error, 'tran_green: problem in ZGESV 3')
+          return
         end if
       end if
 
     end select
 
     deallocate (s2)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_green')
+      return
+    endif
     deallocate (s1)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_green')
+      return
+    endif
     deallocate (c1)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in deallocating c1 in tran_green')
+      return
+    endif
     deallocate (eh_00)
-    if (ierr /= 0) call io_error('Error in deallocating eh_00 in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating eh_00 in tran_green')
+      return
+    endif
     deallocate (g_inv)
-    if (ierr /= 0) call io_error('Error in deallocating g_inv in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating g_inv in tran_green')
+      return
+    endif
     deallocate (ipiv)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_green', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_green')
+      return
+    endif
 
     return
 
