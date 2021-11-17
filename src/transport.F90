@@ -205,7 +205,8 @@ contains
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)
         call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, print_output%timing_level, seedname, stdout)
+                         num_wann, print_output%timing_level, seedname, stdout, error)
+        if (allocated(error)) return
         if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
                                                        wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
@@ -580,7 +581,7 @@ contains
 
   !================================================!
   subroutine tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, timing_level, seedname, stdout)
+                         num_wann, timing_level, seedname, stdout, error)
     !================================================!
     !
     !!  Construct h00 and h01
@@ -588,14 +589,16 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_stopwatch, io_date, io_file_unit
+    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
 
     implicit none
 
     ! arguments
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(transport_type), intent(inout) :: transport
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
@@ -615,19 +618,28 @@ contains
     integer :: fermi_n
     character(len=9) :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, error)
 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
-    if (fermi_n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
-                                   //"Set the fermi level using the input parameter 'fermi_evel'", stdout, seedname)
+    if (fermi_n > 1) then
+      call set_error_tran(error, "Error in tran_get_ht: nfermi>1. " &
+                          //"Set the fermi level using the input parameter 'fermi_evel'")
+      return
+    endif
 
     transport%num_bb = num_pl*num_wann
 
     allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hB0 in tran_get_ht', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hB0 in tran_get_ht')
+      return
+    endif
     allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hB1 in tran_get_ht', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hB1 in tran_get_ht')
+      return
+    endif
 
     hB0 = 0.0_dp
     hB1 = 0.0_dp
@@ -674,7 +686,7 @@ contains
 
     end if
 
-    if (timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout, error)
 
     return
 
