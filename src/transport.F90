@@ -200,7 +200,8 @@ contains
                                                             seedname, stdout)
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                            print_output%timing_level, seedname, stdout)
+                            print_output%timing_level, stdout, error)
+        if (allocated(error)) return
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)
@@ -234,7 +235,8 @@ contains
                                                             seedname, stdout)
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                            print_output%timing_level, seedname, stdout)
+                            print_output%timing_level, stdout, error)
+        if (allocated(error)) return
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)
@@ -302,7 +304,7 @@ contains
   !================================================!
   subroutine tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, timing_level, &
-                            seedname, stdout)
+                            stdout, error)
     !================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -310,13 +312,15 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps8
-    use w90_io, only: io_error, io_stopwatch
+    use w90_io, only: io_error, io_stopwatch => io_stopwatch_new
     use w90_wannier90_types, only: real_space_ham_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
 
     implicit none
 
     ! passed vars
     type(real_space_ham_type), intent(in) :: real_space_ham
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -333,15 +337,13 @@ contains
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    character(len=50), intent(in)  :: seedname
-
     ! local variables
     integer :: ierr
     integer :: irvec_tmp(3), two_dim_vec(2)
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
-    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, error)
 
     ! Find one_dim_vec which is parallel to one_dim_dir
     ! two_dim_vec - the other two lattice vectors
@@ -355,7 +357,8 @@ contains
     end do
     if (j .ne. 1) then
       write (stdout, '(i3,a)') j, ' : 1-D LATTICE VECTOR NOT DEFINED'
-      call io_error('Error: 1-d lattice vector not defined in tran_reduce_hr', stdout, seedname)
+      call set_error_tran(error, 'Error: 1-d lattice vector not defined in tran_reduce_hr')
+      return
     end if
 
     j = 0
@@ -376,7 +379,10 @@ contains
     nrpts_one_dim = 2*irvec_max + 1
 
     allocate (hr_one_dim(num_wann, num_wann, -irvec_max:irvec_max), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hr_one_dim in tran_reduce_hr', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating hr_one_dim in tran_reduce_hr')
+      return
+    endif
     hr_one_dim = 0.0_dp
 
     ! check imaginary part
@@ -401,10 +407,11 @@ contains
 
     if (nrpts_tmp .ne. nrpts_one_dim) then
       write (stdout, '(a)') 'FAILED TO EXTRACT 1-D HAMILTONIAN'
-      call io_error('Error: cannot extract 1d hamiltonian in tran_reduce_hr', stdout, seedname)
+      call set_error_tran(error, 'Error: cannot extract 1d hamiltonian in tran_reduce_hr')
+      return
     end if
 
-    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout, error)
 
     return
 
@@ -420,6 +427,7 @@ contains
     use w90_io, only: io_stopwatch
     use w90_types, only: print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
+    !BGS FIXME - error would only be used by stopwatch calls, is it needed?
 
     implicit none
 
@@ -2861,7 +2869,8 @@ contains
       endif
       call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                           irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                          print_output%timing_level, seedname, stdout)
+                          print_output%timing_level, stdout, error)
+      if (allocated(error)) return
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                one_dim_vec, seedname, stdout)
@@ -4295,9 +4304,10 @@ contains
         call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort')
         return
       endif
-      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, irvec_max, &
-                          nrpts, nrpts_one_dim, num_wann, one_dim_vec, print_output%timing_level, &
-                          seedname, stdout)
+      call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
+                          irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
+                          print_output%timing_level, stdout, error)
+      if (allocated(error)) return
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
                                one_dim_vec, seedname, stdout)
