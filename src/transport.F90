@@ -86,7 +86,7 @@ contains
                        ws_region, w90_calculation, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
-                       bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout)
+                       bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout, error)
 
     !================================================!
     !
@@ -94,8 +94,8 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_error, io_stopwatch
-    use w90_error, only: w90_error_type
+    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_error, only: w90_error_type, set_error_dealloc
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
     use w90_types, only: wannier_data_type, print_output_type, ws_region_type, &
       atom_data_type, dis_manifold_type
@@ -117,7 +117,7 @@ contains
     real(kind=dp), intent(in)                   :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
     type(ham_logical_type), intent(inout)       :: ham_logical
-    type(w90_error_type), allocatable           :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -174,7 +174,7 @@ contains
 
     logical :: pl_warning
 
-    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, error)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, '(1x,a)') '|                              TRANSPORT                                    |'
@@ -272,31 +272,49 @@ contains
       if (allocated(error)) return
     end if
 
-    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, error)
 
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR1 in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hR1 in tran_main')
+        return
+      endif
     end if
     if (allocated(hR0)) then
       deallocate (hR0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR0 in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hR0 in tran_main')
+        return
+      endif
     end if
     if (allocated(hL1)) then
       deallocate (hL1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hL1 in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hL1 in tran_main')
+        return
+      endif
     end if
     if (allocated(hB1)) then
       deallocate (hB1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB1 in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hB1 in tran_main')
+        return
+      endif
     end if
     if (allocated(hB0)) then
       deallocate (hB0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB0 in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hB0 in tran_main')
+        return
+      endif
     end if
     if (allocated(hr_one_dim)) then
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hr_one_dim in tran_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating hr_one_dim in tran_main')
+        return
+      endif
     end if
 
   end subroutine tran_main
@@ -312,7 +330,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps8
-    use w90_io, only: io_error, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch => io_stopwatch_new
     use w90_wannier90_types, only: real_space_ham_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
 
@@ -1936,7 +1954,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_error, maxlen
+    use w90_io, only: io_file_unit, maxlen
     use w90_error, only: w90_error_type, set_error_file, set_error_open
 
     implicit none

@@ -690,7 +690,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
                    rpt_origin, band_plot%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout)
+                   stdout, err)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if
