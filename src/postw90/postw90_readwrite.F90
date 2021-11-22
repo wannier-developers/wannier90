@@ -82,6 +82,7 @@ contains
     !
     !================================================
     use w90_utility, only: utility_recip_lattice
+    use w90_error, only: w90_error_type
     implicit none
 
     ! arguments
@@ -106,6 +107,7 @@ contains
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(inout) :: w90_system
     type(wannier_data_type), intent(inout) :: wannier_data
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_bands
@@ -142,21 +144,31 @@ contains
     call w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
     call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname)
     call w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname)
-    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
-                                  stdout, seedname)
+    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
+                                  bohr, stdout, seedname, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
-    call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
-    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname) !for read_chkpt
-    call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, num_wann, &
-                                      .false., stdout, seedname)
+    call w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, error) !for read_chkpt
+    if (allocated(error)) return
+    call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, &
+                                      num_wann, .false., stdout, seedname, error)
+    if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
     !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
     call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, &
-                                    stdout, seedname)
-    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-    call w90_readwrite_read_system(library, w90_system, stdout, seedname)
-    call w90_readwrite_read_kpath(library, kpoint_path, ok, .false., stdout, seedname)
-    call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
+                                    stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_system(library, w90_system, stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_kpath(library, kpoint_path, ok, .false., stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname, &
+                                         error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, stdout, seedname)
     call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, stdout, seedname)
     call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname)
@@ -171,38 +183,48 @@ contains
     call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, stdout, seedname)
     call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
                                           pw90_extra_io%smear, dos_plot, stdout, seedname)
-    call w90_readwrite_read_ws_data(ws_region, stdout, seedname)
+    call w90_readwrite_read_ws_data(ws_region, stdout, seedname, error)
+    if (allocated(error)) return
     call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
-                                    pw90_calculation%geninterp, dos_plot, disentanglement, eig_found, &
-                                    eigval, library, .false., num_bands, num_kpts, stdout, seedname)
+                                    pw90_calculation%geninterp, dos_plot, disentanglement, &
+                                    eig_found, eigval, library, .false., num_bands, num_kpts, &
+                                    stdout, seedname, error)
+    if (allocated(error)) return
     dis_manifold%win_min = -1.0_dp
     dis_manifold%win_max = 0.0_dp
     if (eig_found) dis_manifold%win_min = minval(eigval)
     if (eig_found) dis_manifold%win_max = maxval(eigval)
-    call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
+    call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, stdout, seedname)
     call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
                                                 pw90_calculation%boltzwann, pw90_extra_io%boltz_2d_dir, stdout, &
                                                 seedname)
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                    fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
-    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
-    call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
+    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname, error)
+    if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
-                                    bohr, stdout, seedname)
+                                    bohr, stdout, seedname, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                    recip_lattice, stdout, seedname)
     call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
                                                   pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
                                                   pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                   stdout, seedname)
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname) !pw90_write
-    call w90_readwrite_clean_infile(stdout, seedname)
+    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, error) !pw90_write
+    if (allocated(error)) return
+    call w90_readwrite_clean_infile(stdout, seedname, error)
+    if (allocated(error)) return
     ! For aesthetic purposes, convert some things to uppercase
     call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
-    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, num_bands, &
-                                        num_kpts, stdout, seedname)
+    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                        num_bands, num_kpts, error)
+    if (allocated(error)) return
   end subroutine w90_postw90_readwrite_read
 
   !================================================!

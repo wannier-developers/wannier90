@@ -111,8 +111,9 @@ contains
 
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname, &
+                                      error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     real(kind=dp), intent(out) :: lenconfac
     integer, intent(in) :: stdout
@@ -120,6 +121,7 @@ contains
     character(len=*), intent(out) :: energy_unit
     character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: bohr
+    type(w90_error_type), allocatable, intent(out) :: error
     logical :: found
 
     energy_unit = 'ev'
@@ -128,34 +130,45 @@ contains
     length_unit = 'ang'
     lenconfac = 1.0_dp
     call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
-    if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') &
-      call io_error('Error: value of length_unit not recognised in w90_wannier90_readwrite_read', stdout, seedname)
+    if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
+      call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units')
+      return
+    endif
     if (length_unit .eq. 'bohr') lenconfac = 1.0_dp/bohr
   end subroutine w90_readwrite_read_units
 
-  subroutine w90_readwrite_read_num_wann(num_wann, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     integer, intent(out) :: num_wann
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
 
     num_wann = -99
     call w90_readwrite_get_keyword(stdout, seedname, 'num_wann', found, i_value=num_wann)
-    if (.not. found) call io_error('Error: You must specify num_wann', stdout, seedname)
-    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero', stdout, seedname)
+    if (.not. found) then
+      call set_error_input(error, 'Error: You must specify num_wann')
+      return
+    endif
+    if (num_wann <= 0) then
+      call set_error_input(error, 'Error: num_wann must be greater than zero')
+      return
+    endif
   end subroutine w90_readwrite_read_num_wann
 
-  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, &
+                                              error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(out) :: num_exclude_bands
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr
     logical :: found
@@ -164,28 +177,38 @@ contains
     call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
                                         num_exclude_bands, lcount=.true.)
     if (found) then
-      if (num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
+      if (num_exclude_bands < 1) then
+        call set_error_input(error, 'Error: problem reading exclude_bands')
+        return
+      endif
       if (allocated(exclude_bands)) deallocate (exclude_bands)
       allocate (exclude_bands(num_exclude_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating exclude_bands in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating exclude_bands in w90_readwrite_read_exclude_bands')
+        return
+      endif
       call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
                                           num_exclude_bands, .false., exclude_bands)
-      if (any(exclude_bands < 1)) &
-        call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
+      if (any(exclude_bands < 1)) then
+        call set_error_input(error, 'Error: exclude_bands must contain positive numbers')
+        return
+      endif
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
-  subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, num_bands, &
-                                          num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, &
+                                          num_bands, num_wann, library_param_read_first_pass, &
+                                          stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: pw90_effective_model, library
     integer, intent(in) :: num_exclude_bands
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    logical, intent(in) :: library_w90_wannier90_readwrite_read_first_pass
+    logical, intent(in) :: library_param_read_first_pass
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp
     logical :: found
@@ -198,12 +221,13 @@ contains
     end if
     ! GP: I subtract it here, but only the first time when I pass the total number of bands
     ! In later calls, I need to pass instead num_bands already subtracted.
-    if (library .and. library_w90_wannier90_readwrite_read_first_pass) num_bands = num_bands - num_exclude_bands
+    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
     if (.not. pw90_effective_model) then
       if (found .and. num_bands < num_wann) then
         write (stdout, *) 'num_bands', num_bands
         write (stdout, *) 'num_wann', num_wann
-        call io_error('Error: num_bands must be greater than or equal to num_wann', stdout, seedname)
+        call set_error_input(error, 'Error: num_bands must be greater than or equal to num_wann')
+        return
       endif
     endif
   end subroutine w90_readwrite_read_num_bands
@@ -220,14 +244,15 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found, c_value=devel_flag)
   end subroutine w90_readwrite_read_devel
 
-  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
     logical, intent(in) :: library
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, ltmp
 
@@ -235,20 +260,24 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'gamma_only', found, l_value=ltmp)
     if (.not. library) then
       gamma_only = ltmp
-      if (gamma_only .and. (num_kpts .ne. 1)) &
-        call io_error('Error: gamma_only is true, but num_kpts > 1', stdout, seedname)
+      if (gamma_only .and. (num_kpts .ne. 1)) then
+        call set_error_input(error, 'Error: gamma_only is true, but num_kpts > 1')
+        return
+      endif
     else
       if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
     endif
   end subroutine w90_readwrite_read_gamma_only
 
-  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, &
+                                        seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: pw90_effective_model, library
     integer, intent(inout) :: mp_grid(3), num_kpts
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: iv_temp(3)
     logical :: found
@@ -258,21 +287,23 @@ contains
     if (.not. library .and. .not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
-        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid', stdout, seedname)
+        call set_error_input(error, 'Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
+        return
       elseif (any(mp_grid < 1)) then
-        call io_error('Error: mp_grid must be greater than zero', stdout, seedname)
+        call set_error_input(error, 'Error: mp_grid must be greater than zero')
       end if
       num_kpts = mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
   end subroutine w90_readwrite_read_mp_grid
 
-  subroutine w90_readwrite_read_system(library, w90_system, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_system(library, w90_system, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
     type(w90_system_type), intent(inout) :: w90_system
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, ltmp
 
@@ -295,28 +326,36 @@ contains
     endif
     call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
                                    i_value=w90_system%num_elec_per_state)
-    if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) &
-      call io_error('Error: num_elec_per_state can be only 1 or 2', stdout, seedname)
-    if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) &
-      call io_error('Error: when spinors = T num_elec_per_state must be 1', stdout, seedname)
+    if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) then
+      call set_error_input(error, 'Error: num_elec_per_state can be only 1 or 2')
+      return
+    endif
+    if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) then
+      call set_error_input(error, 'Error: when spinors = T num_elec_per_state must be 1')
+      return
+    endif
 
     ! set to a negative default value
     w90_system%num_valence_bands = -99
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=w90_system%num_valence_bands)
-    if (found .and. (w90_system%num_valence_bands .le. 0)) &
-      call io_error('Error: num_valence_bands should be greater than zero', stdout, seedname)
+    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found, &
+                                   i_value=w90_system%num_valence_bands)
+    if (found .and. (w90_system%num_valence_bands .le. 0)) then
+      call set_error_input(error, 'Error: num_valence_bands should be greater than zero')
+      return
+    endif
     ! there is a check on this parameter later
 
   end subroutine w90_readwrite_read_system
 
-  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(in) :: library, bands_plot
     type(kpoint_path_type), intent(out) :: kpoint_path
     integer, intent(in) :: stdout
     logical, intent(out) :: ok
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
@@ -328,10 +367,16 @@ contains
       bands_num_spec_points = i_temp*2
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating labels in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating labels in w90_wannier90_readwrite_read')
+        return
+      endif
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating points in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read')
+        return
+      endif
       call w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
     else
       ok = .false.
@@ -341,18 +386,22 @@ contains
                                    i_value=kpoint_path%num_points_first_segment)
     ! checks
     if (bands_plot) then
-      if (kpoint_path%num_points_first_segment < 0) &
-        call io_error('Error: bands_num_points must be positive', stdout, seedname)
+      if (kpoint_path%num_points_first_segment < 0) then
+        call set_error_input(error, 'Error: bands_num_points must be positive')
+        return
+      endif
     endif
   end subroutine w90_readwrite_read_kpath
 
-  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, &
+                                             seedname, error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(out) :: found_fermi_energy
     real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp) :: fermi_energy
     logical :: fermi_energy_scan
@@ -373,19 +422,25 @@ contains
     fermi_energy_scan = .false.
     call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found, r_value=fermi_energy_min)
     if (found) then
-      if (found_fermi_energy) call io_error( &
-        'Error: Cannot specify both fermi_energy and fermi_energy_min', stdout, seedname)
+      if (found_fermi_energy) then
+        call set_error_input(error, 'Error: Cannot specify both fermi_energy and fermi_energy_min')
+        return
+      endif
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
       call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found, &
                                      r_value=fermi_energy_max)
-      if (found .and. fermi_energy_max <= fermi_energy_min) call io_error( &
-        'Error: fermi_energy_max must be larger than fermi_energy_min', stdout, seedname)
+      if (found .and. fermi_energy_max <= fermi_energy_min) then
+        call set_error_input(error, 'Error: fermi_energy_max must be larger than fermi_energy_min')
+        return
+      endif
       fermi_energy_step = 0.01_dp
       call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found, &
                                      r_value=fermi_energy_step)
-      if (found .and. fermi_energy_step <= 0.0_dp) call io_error( &
-        'Error: fermi_energy_step must be positive', stdout, seedname)
+      if (found .and. fermi_energy_step <= 0.0_dp) then
+        call set_error_input(error, 'Error: fermi_energy_step must be positive')
+        return
+      endif
       n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
     endif
 
@@ -417,25 +472,31 @@ contains
       allocate (fermi_energy_list(1), stat=ierr)
       fermi_energy_list(1) = 0.0_dp
     endif
-    if (ierr /= 0) call io_error( &
-      'Error allocating fermi_energy_list in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, &
+                           'Error allocating fermi_energy_list in w90_readwrite_read_fermi_energy')
+      return
+    endif
   end subroutine w90_readwrite_read_fermi_energy
 
-  subroutine w90_readwrite_read_ws_data(ws_region, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_ws_data(ws_region, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(ws_region_type), intent(inout) :: ws_region
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i
     logical :: found
 
     ws_region%use_ws_distance = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found, l_value=ws_region%use_ws_distance)
+    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found, &
+                                   l_value=ws_region%use_ws_distance)
 
     ws_region%ws_distance_tol = 1.e-5_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found, r_value=ws_region%ws_distance_tol)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found, &
+                                   r_value=ws_region%ws_distance_tol)
 
     ws_region%ws_search_size = 2
 
@@ -450,19 +511,24 @@ contains
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
                                               i_value=ws_region%ws_search_size)
       else
-        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', &
-                      stdout, seedname)
+        call set_error_input(error, &
+                             'Error: ws_search_size must be provided as either one integer or a vector of three integers')
+        return
       end if
-      if (any(ws_region%ws_search_size <= 0)) &
-        call io_error('Error: ws_search_size elements must be greater than zero', stdout, seedname)
+      if (any(ws_region%ws_search_size <= 0)) then
+        call set_error_input(error, 'Error: ws_search_size elements must be greater than zero')
+        return
+      endif
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
-                                        disentanglement, eig_found, eigval, library, postproc_setup, &
-                                        num_bands, num_kpts, stdout, seedname)
+  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, &
+                                        w90_plot, disentanglement, eig_found, eigval, library, &
+                                        postproc_setup, num_bands, num_kpts, stdout, seedname, &
+                                        error)
 
-    use w90_io, only: io_file_unit, io_error
+    use w90_io, only: io_file_unit
+    use w90_error, only: w90_error_type, set_error_file, set_error_open, set_error_alloc
 
     implicit none
     integer, intent(in) :: num_bands, num_kpts
@@ -472,6 +538,8 @@ contains
     logical, intent(in) :: disentanglement, library, postproc_setup
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     logical, intent(out) :: eig_found
+    type(w90_error_type), allocatable, intent(out) :: error
+    ! local
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
@@ -482,14 +550,19 @@ contains
         inquire (file=trim(seedname)//'.eig', exist=eig_found)
         if (.not. eig_found) then
           if (disentanglement) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement', stdout, seedname)
+            call set_error_open(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+            return
           else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation', stdout, seedname)
+            call set_error_open(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation')
+            return
           end if
         else
           ! Allocate only here
           allocate (eigval(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) call io_error('Error allocating eigval in w90_wannier90_readwrite_read', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating eigval in w90_wannier90_readwrite_read')
+            return
+          endif
 
           eig_unit = io_file_unit()
           open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
@@ -506,7 +579,8 @@ contains
                 write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
                 write (stdout, '(a)') 'to account for these electrons.'
                 write (stdout, '(a)') ' '
-                call io_error('w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', stdout, seedname)
+                call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig')
+                return
               end if
             enddo
           end do
@@ -519,82 +593,118 @@ contains
 
     return
 
-105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig', stdout, seedname)
-106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig', stdout, seedname)
+105 call set_error_open(error, 'Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
+    return
+106 call set_error_file(error, 'Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
+    return
 
   end subroutine w90_readwrite_read_eigvals
 
-  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    ! local
     logical :: found, found2
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_manifold%win_min)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found, &
+                                   r_value=dis_manifold%win_min)
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_manifold%win_max)
-    if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) &
-      call io_error('Error: w90_wannier90_readwrite_read: check disentanglement windows', stdout, seedname)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found, &
+                                   r_value=dis_manifold%win_max)
+    if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
+      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement windows')
+      return
+    endif
 
     dis_manifold%froz_min = -1.0_dp; dis_manifold%froz_max = 0.0_dp
     ! no default for dis_froz_max
     dis_manifold%frozen_states = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_manifold%froz_max)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found, &
+                                   r_value=dis_manifold%froz_max)
     if (found) then
       dis_manifold%frozen_states = .true.
       dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_manifold%froz_min)
+    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found2, &
+                                   r_value=dis_manifold%froz_min)
     if (eig_found) then
-      if (dis_manifold%froz_max .lt. dis_manifold%froz_min) &
-        call io_error('Error: w90_wannier90_readwrite_read: check disentanglement frozen windows', stdout, seedname)
-      if (found2 .and. .not. found) &
-        call io_error('Error: w90_wannier90_readwrite_read: found dis_froz_min but not dis_froz_max', stdout, seedname)
+      if (dis_manifold%froz_max .lt. dis_manifold%froz_min) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement frozen windows')
+        return
+      endif
+      if (found2 .and. .not. found) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: found dis_froz_min but not dis_froz_max')
+        return
+      endif
     endif
     ! ndimwin/lwindow are not read
   end subroutine w90_readwrite_read_dis_manifold
 
-  subroutine w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     type(kmesh_input_type), intent(out) :: kmesh_input
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+
     integer :: itmp, ierr
     logical :: found
 
     kmesh_input%search_shells = 36
-    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found, i_value=kmesh_input%search_shells)
-    if (kmesh_input%search_shells < 0) call io_error('Error: search_shells must be positive', stdout, seedname)
+    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found, &
+                                   i_value=kmesh_input%search_shells)
+    if (kmesh_input%search_shells < 0) then
+      call set_error_input(error, 'Error: search_shells must be positive')
+      return
+    endif
 
     kmesh_input%tol = 0.000001_dp
     call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_tol', found, r_value=kmesh_input%tol)
-    if (kmesh_input%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive', stdout, seedname)
+    if (kmesh_input%tol < 0.0_dp) then
+      call set_error_input(error, 'Error: kmesh_tol must be positive')
+      return
+    endif
 
     kmesh_input%num_shells = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, lcount=.true.)
+    call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, &
+                                        kmesh_input%num_shells, lcount=.true.)
     if (found) then
-      if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) &
-        call io_error('Error: number of shell in shell_list must be between zero and six', stdout, seedname)
+      if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) then
+        call set_error_input(error, 'Error: number of shell in shell_list must be between zero and six')
+        return
+      endif
       if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, .false., &
-                                          kmesh_input%shell_list)
-      if (any(kmesh_input%shell_list < 1)) &
-        call io_error('Error: shell_list must contain positive numbers', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read')
+        return
+      endif
+      call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, &
+                                          kmesh_input%num_shells, .false., kmesh_input%shell_list)
+      if (any(kmesh_input%shell_list < 1)) then
+        call set_error_input(error, 'Error: shell_list must contain positive numbers')
+        return
+      endif
     else
       if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
       allocate (kmesh_input%shell_list(max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating shell_list in w90_readwrite_read_kmesh_data')
+        return
+      endif
     end if
 
     call w90_readwrite_get_keyword(stdout, seedname, 'num_shells', found, i_value=itmp)
-    if (found .and. (itmp /= kmesh_input%num_shells)) &
-      call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', stdout, seedname)
+    if (found .and. (itmp /= kmesh_input%num_shells)) then
+      call set_error_input(error, 'Error: Found obsolete keyword num_shells. Its value does not agree with shell_list')
+      return
+    endif
 
     ! If .true., does not perform the check of B1 of
     ! Marzari, Vanderbild, PRB 56, 12847 (1997)
@@ -602,13 +712,14 @@ contains
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
     kmesh_input%skip_B1_tests = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found, l_value=kmesh_input%skip_B1_tests)
+    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found, &
+                                   l_value=kmesh_input%skip_B1_tests)
 
   end subroutine w90_readwrite_read_kmesh_data
 
   subroutine w90_readwrite_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
-                                        bohr, stdout, seedname)
-    use w90_io, only: io_error
+                                        bohr, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
     character(len=50), intent(in)  :: seedname
@@ -616,17 +727,24 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: pw90_effective_model, library
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp), intent(in) :: bohr
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
     logical :: found
 
     if (.not. pw90_effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating kpt_cart in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints')
+      return
+    endif
     if (.not. library) then
       allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints')
+        return
+      endif
     end if
 
     call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, &
@@ -634,7 +752,10 @@ contains
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       kpt_latt = kpt_cart
-      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file', stdout, seedname)
+      if (.not. found) then
+        call set_error_input(error, 'Error: Did not find the kpoint information in the input file')
+        return
+      endif
     end if
 
     ! Calculate the kpoints in cartesian coordinates
@@ -644,12 +765,15 @@ contains
     !  end do
     !endif
     deallocate (kpt_cart, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating kpt_cart in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints')
+      return
+    endif
 
   end subroutine w90_readwrite_read_kpoints
 
-  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: library
     integer, intent(in) :: stdout
@@ -657,19 +781,25 @@ contains
     real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
 
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 3, 3, bohr, r_value=real_lattice_tmp)
+    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 3, 3, bohr, &
+                                         r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
       real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) call io_error('Error: Did not find the cell information in the input file', stdout, seedname)
+      if (.not. found) then
+        call set_error_input(error, 'Error: Did not find the cell information in the input file')
+        return
+      endif
     end if
   end subroutine w90_readwrite_read_lattice
 
-  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, &
+                                      error)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: library
     integer, intent(in) :: stdout
@@ -677,6 +807,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
@@ -685,10 +816,14 @@ contains
     if (.not. library) atom_data%num_atoms = 0
     call w90_readwrite_get_block_length(stdout, seedname, 'atoms_frac', found, i_temp, library)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_cart', found2, i_temp2, library, lunits)
+    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_cart', found2, i_temp2, library, &
+                                        lunits)
     if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
     if (.not. library) then
-      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart', stdout, seedname)
+      if (found .and. found2) then
+        call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart')
+        return
+      endif
       if (found .and. i_temp > 0) then
         lunits = .false.
         atom_data%num_atoms = i_temp
@@ -716,7 +851,7 @@ contains
     !
     ! (for _vector: just specify zero length)
     ! (for _block: small modification to skip checking/failure when rows=0 )
-    use w90_io, only: io_error
+    !use w90_io, only: io_error
 
     implicit none
 
@@ -974,11 +1109,12 @@ contains
 
   end subroutine w90_readwrite_clear_keywords
 
-  subroutine w90_readwrite_clean_infile(stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_clean_infile(stdout, seedname, error)
+    use w90_error, only: w90_error_type, set_error_input, set_error_dealloc
     implicit none
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: loop, ierr
 
@@ -994,37 +1130,46 @@ contains
         end if
       end do
       write (stdout, *)
-      call io_error('Unrecognised keyword(s) in input file, see also output file', stdout, seedname)
+      call set_error_input(error, 'Unrecognised keyword(s) in input file, see also output file')
+      return
     end if
 
     deallocate (in_data, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating in_data in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating in_data in w90_readwrite_clean_infile')
+      return
+    endif
 
   end subroutine w90_readwrite_clean_infile
 
   subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, &
-                                            num_wann, num_bands, num_kpts, stdout, seedname)
+                                            num_wann, num_bands, num_kpts, error)
     !================================================== !
     ! Some checks and initialisations !
     !================================================== !
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(wannier_data_type), intent(inout) :: wannier_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr
 
     if (disentanglement) then
       if (allocated(dis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
       allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ndimwin in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read')
+        return
+      endif
       if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
       allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating lwindow in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read')
+        return
+      endif
     endif
 
 !    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
@@ -1038,11 +1183,17 @@ contains
 
     if (allocated(wannier_data%centres)) deallocate (wannier_data%centres)
     allocate (wannier_data%centres(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wannier_centres in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wannier_centres in w90_wannier90_readwrite_read')
+      return
+    endif
     wannier_data%centres = 0.0_dp
     if (allocated(wannier_data%spreads)) deallocate (wannier_data%spreads)
     allocate (wannier_data%spreads(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_wannier90_readwrite_read')
+      return
+    endif
     wannier_data%spreads = 0.0_dp
   end subroutine w90_readwrite_read_final_alloc
 

@@ -55,7 +55,7 @@ contains
                                           ws_region, w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, &
                                           mp_grid, num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
                                           calc_only_A, cp_pp, gamma_only, lhasproj, library, &
-                                          library_w90_wannier90_readwrite_read_first_pass, lsitesymmetry, &
+                                          library_param_read_first_pass, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout)
     !================================================!
     !
@@ -69,6 +69,7 @@ contains
 
     use w90_constants, only: w90_physical_constants_type
     use w90_utility, only: utility_recip_lattice, utility_inverse_mat
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -98,6 +99,7 @@ contains
     type(wann_omega_type), intent(inout) :: wann_omega
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(inout) :: mp_grid(3)
@@ -120,7 +122,7 @@ contains
     real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
-    logical, intent(in) :: library_w90_wannier90_readwrite_read_first_pass
+    logical, intent(in) :: library_param_read_first_pass
     !Projections
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
@@ -147,63 +149,83 @@ contains
                                                 seedname)
     call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
-                                    stdout, seedname)
-      call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
-      call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
+      call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
+                                    bohr, stdout, seedname, error)
+      if (allocated(error)) return
+      call w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
+      if (allocated(error)) return
+      call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, &
+                                            error)
+      if (allocated(error)) return
       call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
-                                        num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
+                                        num_wann, library_param_read_first_pass, stdout, seedname, &
+                                        error)
+      if (allocated(error)) return
       disentanglement = (num_bands > num_wann)
-      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
+      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                                    stdout, seedname)
       !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
-      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname)
-      call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
+      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname, error)
+      if (allocated(error)) return
+      call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, &
                                                   seedname)
       call w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname)
-      call w90_readwrite_read_system(library, w90_system, stdout, seedname)
-      call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, stdout, &
-                                    seedname)
+      call w90_readwrite_read_system(library, w90_system, stdout, seedname, error)
+      if (allocated(error)) return
+      call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, &
+                                    stdout, seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname)
       call w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, w90_calculation%bands_plot, &
                                                   stdout, seedname)
       call w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, w90_calculation%wannier_plot, stdout, seedname)
       call w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, &
                                                       stdout, seedname)
-      call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
+      call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, &
+                                           seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, w90_system%num_valence_bands, &
                                                  disentanglement, gamma_only, stdout, seedname)
     endif
     ! BGS tran/plot related stuff...
     call w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, w90_extra_io%one_dim_axis, &
                                               tran%read_ht, stdout, seedname)
-    call w90_readwrite_read_ws_data(ws_region, stdout, seedname) !ws_search etc
+    call w90_readwrite_read_ws_data(ws_region, stdout, seedname, error) !ws_search etc
+    if (allocated(error)) return
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_eigvals(.false., .false., .false., &
                                       w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
                                       output_file%write_hr, disentanglement, eig_found, &
-                                      eigval, library, w90_calculation%postproc_setup, num_bands, num_kpts, &
-                                      stdout, seedname)
+                                      eigval, library, w90_calculation%postproc_setup, num_bands, &
+                                      num_kpts, stdout, seedname, error)
+      if (allocated(error)) return
       dis_manifold%win_min = -1.0_dp
       dis_manifold%win_max = 0.0_dp
       if (eig_found) dis_manifold%win_min = minval(eigval)
       if (eig_found) dis_manifold%win_max = maxval(eigval)
-      call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
+      call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, num_wann, bohr, &
                                                     stdout, seedname)
       call w90_wannier90_readwrite_read_hamil(real_space_ham, stdout, seedname)
       call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
-      call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
+      call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname, error)
+      if (allocated(error)) return
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
       call utility_inverse_mat(real_lattice, inv_lattice)
-      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, seedname)
+      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, &
+                                      seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, &
                                                       seedname)
       !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
       !                             stdout, seedname)
-      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
+      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, error)
+      if (allocated(error)) return
       call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                     wann_control%guiding_centres%enable, &
                                                     proj_input, select_proj, num_proj, &
@@ -221,7 +243,8 @@ contains
                                                               real_lattice, num_wann, library, stdout, seedname)
       endif
     endif
-    call w90_readwrite_clean_infile(stdout, seedname)
+    call w90_readwrite_clean_infile(stdout, seedname, error)
+    if (allocated(error)) return
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
       call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
@@ -230,7 +253,8 @@ contains
       wann_omega%tilde = -999.0_dp
       wann_omega%invariant = -999.0_dp
       call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
-                                          num_bands, num_kpts, stdout, seedname)
+                                          num_bands, num_kpts, error)
+      if (allocated(error)) return
     endif
   end subroutine w90_wannier90_readwrite_read
 
