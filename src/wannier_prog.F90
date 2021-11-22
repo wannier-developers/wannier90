@@ -319,11 +319,12 @@ program wannier
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, &
-                                    m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                                    omega%invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                                    num_wann, checkpoint, have_disentangled, .false., &
-                                    seedname, stdout)
+      call w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
+                                    wannier_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                                    omega%invariant, mp_grid, num_bands, num_exclude_bands, &
+                                    num_kpts, num_wann, checkpoint, have_disentangled, .false., &
+                                    seedname, stdout, err)
+      if (allocated(err)) call prterr(err, stdout)
     endif
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, &

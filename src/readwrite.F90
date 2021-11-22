@@ -1733,10 +1733,11 @@ contains
 ! $  end subroutine w90_wannier90_readwrite_read_um
 
 !================================================!
-  subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, m_matrix, &
-                                      u_matrix, u_matrix_opt, real_lattice, &
-                                      omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                                      num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
+  subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
+                                      wannier_data, m_matrix, u_matrix, u_matrix_opt, &
+                                      real_lattice, omega_invariant, mp_grid, num_bands, &
+                                      num_exclude_bands, num_kpts, num_wann, checkpoint, &
+                                      have_disentangled, ispostw90, seedname, stdout, error)
     !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1748,7 +1749,8 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_file_unit, io_error
+    use w90_io, only: io_file_unit
+    use w90_error, only: w90_error_type, set_error_file, set_error_open, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
     implicit none
@@ -1758,6 +1760,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -1797,51 +1800,72 @@ contains
 
     ! Consistency checks
     read (chk_unit) ntmp                           ! Number of bands
-    if (ntmp .ne. num_bands) call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_bands', stdout, seedname)
+    if (ntmp .ne. num_bands) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_bands')
+      return
+    endif
     read (chk_unit) ntmp                           ! Number of excluded bands
-    if (ntmp .ne. num_exclude_bands) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_exclude_bands', stdout, seedname)
+    if (ntmp .ne. num_exclude_bands) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_exclude_bands')
+      return
+    endif
     read (chk_unit) (tmp_excl_bands(i), i=1, num_exclude_bands) ! Excluded bands
     do i = 1, num_exclude_bands
-      if (tmp_excl_bands(i) .ne. exclude_bands(i)) &
-        call io_error('w90_wannier90_readwrite_read_chk: Mismatch in exclude_bands', stdout, seedname)
+      if (tmp_excl_bands(i) .ne. exclude_bands(i)) then
+        call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in exclude_bands')
+        return
+      endif
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice
     do j = 1, 3
       do i = 1, 3
-        if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in real_lattice', stdout, seedname)
+        if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in real_lattice')
+          return
+        endif
       enddo
     enddo
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
       do i = 1, 3
-        if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in recip_lattice', stdout, seedname)
+        if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in recip_lattice')
+          return
+        endif
       enddo
     enddo
     read (chk_unit) ntmp                ! K-points
-    if (ntmp .ne. num_kpts) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_kpts', stdout, seedname)
+    if (ntmp .ne. num_kpts) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_kpts')
+      return
+    endif
     read (chk_unit) (tmp_mp_grid(i), i=1, 3)         ! M-P grid
     do i = 1, 3
-      if (tmp_mp_grid(i) .ne. mp_grid(i)) &
-        call io_error('w90_wannier90_readwrite_read_chk: Mismatch in mp_grid', stdout, seedname)
+      if (tmp_mp_grid(i) .ne. mp_grid(i)) then
+        call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in mp_grid')
+        return
+      endif
     enddo
     read (chk_unit) ((tmp_kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     do nkp = 1, num_kpts
       do i = 1, 3
-        if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in kpt_latt', stdout, seedname)
+        if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in kpt_latt')
+          return
+        endif
       enddo
     enddo
     read (chk_unit) ntmp                ! nntot
-    if (ntmp .ne. kmesh_info%nntot) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in nntot', stdout, seedname)
+    if (ntmp .ne. kmesh_info%nntot) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in nntot')
+      return
+    endif
     read (chk_unit) ntmp                ! num_wann
-    if (ntmp .ne. num_wann) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_wann', stdout, seedname)
+    if (ntmp .ne. num_wann) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_wann')
+      return
+    endif
     ! End of consistency checks
 
     read (chk_unit) checkpoint             ! checkpoint
@@ -1856,21 +1880,30 @@ contains
       ! lwindow
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in w90_readwrite_read_chkpt', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_read_chkpt')
+          return
+        endif
       endif
       read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in w90_readwrite_read_chkpt', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_read_chkpt')
+          return
+        endif
       endif
       read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in w90_readwrite_read_chkpt', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt')
+          return
+        endif
       endif
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
 
@@ -1879,14 +1912,20 @@ contains
     ! U_matrix
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating u_matrix in w90_readwrite_read_chkpt', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt')
+        return
+      endif
     endif
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in w90_readwrite_read_chkpt', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt')
+        return
+      endif
     endif
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
@@ -1903,18 +1942,26 @@ contains
     return
 
 121 if (ispostw90) then
-      call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', stdout, &
-                    seedname)
+      call set_error_open(error, &
+                          'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?')
     else
-      call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
+      call set_error_open(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
     end if
-122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
+    return
+122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
+128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+    return
 
   end subroutine w90_readwrite_read_chkpt
 
