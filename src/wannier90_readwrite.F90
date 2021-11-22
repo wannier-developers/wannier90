@@ -1733,6 +1733,7 @@ contains
                                                  kpoint_path, wannier_data, wann_plot, w90_extra_io, eigval, &
                                                  seedname, stdout)
     !================================================!
+    use w90_error, only: w90_error_type
     use w90_io, only: io_error
 
     implicit none
@@ -1751,6 +1752,7 @@ contains
     type(wannier_plot_type), intent(inout) :: wann_plot
     type(proj_input_type), intent(inout) :: proj
     type(proj_input_type), intent(inout) :: proj_input
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
@@ -1764,7 +1766,7 @@ contains
     integer :: ierr
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
-                               dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+                               dis_manifold, atom_data, eigval, kpoint_path, error)
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in w90_readwrite_dealloc', stdout, seedname)

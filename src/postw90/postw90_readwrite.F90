@@ -2039,6 +2039,7 @@ contains
                                            pw90_berry, proj_input, stdout, seedname)
     !================================================!
 
+    use w90_error, only: w90_error_type
     use w90_io, only: io_error
 
     implicit none
@@ -2051,6 +2052,7 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
@@ -2062,7 +2064,7 @@ contains
     integer :: ierr
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
-                               dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+                               dis_manifold, atom_data, eigval, kpoint_path, error)
     if (allocated(pw90_dos%project)) then
       deallocate (pw90_dos%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dos_project in w90_postw90_readwrite_dealloc', &

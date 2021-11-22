@@ -1367,7 +1367,8 @@ contains
 
   end subroutine w90_readwrite_uppercase
 
-  subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, constants_version_str2, stdout)
+  subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
+                                        constants_version_str2, stdout)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
 
@@ -1465,12 +1466,12 @@ contains
 
 !================================================!
   subroutine w90_readwrite_dealloc(exclude_bands, wannier_data, input_proj, kmesh_input, kpt_latt, &
-                                   dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+                                   dis_manifold, atom_data, eigval, kpoint_path, error)
     !================================================!
     !! release memory from allocated parameters
     !
     !================================================
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_dealloc
 
     implicit none
 
@@ -1481,104 +1482,172 @@ contains
     type(proj_input_type), intent(inout) :: input_proj
     type(wannier_data_type), intent(inout) :: wannier_data
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr
 
     if (allocated(dis_manifold%ndimwin)) then
       deallocate (dis_manifold%ndimwin, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ndimwin in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ndimwin in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(dis_manifold%lwindow)) then
       deallocate (dis_manifold%lwindow, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating lwindow in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lwindow in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(eigval)) then
       deallocate (eigval, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating eigval in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating eigval in w90_readwrite_dealloc')
+        return
+      endif
     endif
     if (allocated(kmesh_input%shell_list)) then
       deallocate (kmesh_input%shell_list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating shell_list in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating shell_list in w90_readwrite_dealloc')
+        return
+      endif
     endif
     if (allocated(kpt_latt)) then
       deallocate (kpt_latt, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kpt_latt in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating kpt_latt in w90_readwrite_dealloc')
+        return
+      endif
     endif
     if (allocated(kpoint_path%labels)) then
       deallocate (kpoint_path%labels, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating labels in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating labels in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(kpoint_path%points)) then
       deallocate (kpoint_path%points, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating points in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating points in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(atom_data%label)) then
       deallocate (atom_data%label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_label in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_label in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(atom_data%symbol)) then
       deallocate (atom_data%symbol, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_symbol in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(atom_data%pos_cart)) then
       deallocate (atom_data%pos_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_pos_cart in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(atom_data%species_num)) then
       deallocate (atom_data%species_num, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_species_num in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%site)) then
       deallocate (input_proj%site, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_site in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_site in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%l)) then
       deallocate (input_proj%l, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_l in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_l in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%m)) then
       deallocate (input_proj%m, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_m in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_m in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%s)) then
       deallocate (input_proj%s, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_s in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%s_qaxis)) then
       deallocate (input_proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_s_qaxis in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%z)) then
       deallocate (input_proj%z, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_z in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_z in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%x)) then
       deallocate (input_proj%x, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_x in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_x in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%radial)) then
       deallocate (input_proj%radial, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_radial in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(input_proj%zona)) then
       deallocate (input_proj%zona, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj_zona in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(exclude_bands)) then
       deallocate (exclude_bands, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating exclude_bands in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating exclude_bands in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(wannier_data%centres)) then
       deallocate (wannier_data%centres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_centres in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wannier_centres in w90_readwrite_dealloc')
+        return
+      endif
     end if
     if (allocated(wannier_data%spreads)) then
       deallocate (wannier_data%spreads, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wannier_spreads in w90_readwrite_dealloc')
+        return
+      endif
     endif
     return
 
