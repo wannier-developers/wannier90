@@ -852,11 +852,13 @@ contains
     ! (for _vector: just specify zero length)
     ! (for _block: small modification to skip checking/failure when rows=0 )
     !use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
     integer, intent(in) :: stdout
     character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable :: error
 
     logical :: found
 
@@ -865,8 +867,8 @@ contains
     call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, 0, 0, 0.0_dp)
     call w90_readwrite_get_keyword_block(stdout, seedname, 'nnkpts', found, 0, 0, 0.0_dp)
     call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 0, 0, 0.0_dp)
-    call clear_block(stdout, seedname, 'projections')
-    call clear_block(stdout, seedname, 'kpoint_path')
+    call clear_block('projections', error)
+    call clear_block('kpoint_path', error)
     call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_dim', found)
@@ -1106,6 +1108,7 @@ contains
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'spin_kmesh', found, 0)
     ! BGS what about get_range_vectors and gyrotropic_band_list, kdotp_bands etc?
     ! ends list of postw90 keywords
+    if (allocated(error)) deallocate (error)
 
   end subroutine w90_readwrite_clear_keywords
 
@@ -3867,19 +3870,18 @@ contains
   end subroutine w90_readwrite_get_keyword_kpath
 
   !================================================!
-  subroutine clear_block(stdout, seedname, keyword)
+  subroutine clear_block(keyword, error)
     !================================================!
     ! a dummy read routine to remove unused but legitimate input block from input stream
     ! needed to preserve input file error checking (i.e. input stream should be empty after all
     ! legitimate keywords/blocks are read)
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     ! arguments
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
     character(len=*), intent(in) :: keyword
 
     ! local variables
@@ -3900,7 +3902,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -3912,22 +3915,26 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (found_s .and. (.not. found_e)) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (found_e .and. (.not. found_s)) then
-      call io_error('Error: Found '//trim(end_st)//' but no '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(end_st)//' but no '//trim(start_st)//' in input file')
+      return
     end if
 
     if (found_s .and. found_e) then
       if (line_e <= line_s) then
-        call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+        return
       end if
 
       in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
