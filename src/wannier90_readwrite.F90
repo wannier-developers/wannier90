@@ -1222,6 +1222,7 @@ contains
                                                               num_wann, library, stdout, seedname)
     !================================================!
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
     type(wann_control_type), intent(inout) :: wann_control
@@ -1230,6 +1231,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: library
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: i_temp
     logical :: found
@@ -1242,7 +1244,8 @@ contains
         call w90_readwrite_get_centre_constraints(ccentres_frac, &
                                                   wann_control%constrain%centres, &
                                                   wann_control%guiding_centres%centres, &
-                                                  num_wann, real_lattice, stdout, seedname)
+                                                  num_wann, real_lattice, error)
+        if (allocated(error)) return
       else
         write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
       end if
@@ -1258,7 +1261,8 @@ contains
           call w90_readwrite_get_centre_constraints(ccentres_frac, &
                                                     wann_control%constrain%centres, &
                                                     wann_control%guiding_centres%centres, &
-                                                    num_wann, real_lattice, stdout, seedname)
+                                                    num_wann, real_lattice, error)
+          if (allocated(error)) return
         end if
       end if
     end if

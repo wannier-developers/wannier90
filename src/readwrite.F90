@@ -3006,21 +3006,21 @@ contains
   end subroutine w90_readwrite_get_range_vector
 
   subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
-                                                  proj_site, num_wann, real_lattice, stdout, seedname)
+                                                  proj_site, num_wann, real_lattice, error)
     !================================================!
     !!  assigns projection centres as default centre constraints and global
     !!  Lagrange multiplier as individual Lagrange multipliers then reads
     !!  the centre_constraints block for individual centre constraint parameters
     !
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
     use w90_utility, only: utility_frac_to_cart
-    integer, intent(in) :: stdout
+    implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :), ccentres_cart(:, :)
     real(kind=dp), intent(in) :: proj_site(:, :)
     integer, intent(in) :: num_wann
-    character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer           :: loop1, index1, constraint_num, loop2
     integer           :: column, start, finish, wann
@@ -3039,11 +3039,17 @@ contains
       if (constraint_num > 0) then
         if (trim(dummy) == '') cycle
         index1 = index(dummy, 'begin')
-        if (index1 > 0) call io_error("slwf_centres block hasn't ended yet", stdout, seedname)
+        if (index1 > 0) then
+          call set_error_input(error, "slwf_centres block hasn't ended yet")
+          return
+        endif
         index1 = index(dummy, 'end')
         if (index1 > 0) then
           index1 = index(dummy, 'slwf_centres')
-          if (index1 == 0) call io_error('Wrong ending of block (need to end slwf_centres)', stdout, seedname)
+          if (index1 == 0) then
+            call set_error_input(error, 'Wrong ending of block (need to end slwf_centres)')
+            return
+          endif
           in_data(loop1) (1:maxlen) = ' '
           exit
         end if
@@ -3058,7 +3064,8 @@ contains
             if (dummy(loop2:loop2) == ' ') then
               finish = loop2 - 1
               call get_centre_constraint_from_column(column, start, finish, &
-                                                     wann, dummy, ccentres_frac, stdout, seedname)
+                                                     wann, dummy, ccentres_frac, error)
+              if (allocated(error)) return
               start = loop2 + 1
               finish = start
             end if
@@ -3066,7 +3073,8 @@ contains
           if (loop2 == len_trim(dummy) .and. dummy(loop2:loop2) /= ' ') then
             finish = loop2
             call get_centre_constraint_from_column(column, start, finish, &
-                                                   wann, dummy, ccentres_frac, stdout, seedname)
+                                                   wann, dummy, ccentres_frac, error)
+            if (allocated(error)) return
             start = loop2 + 1
             finish = start
           end if
@@ -3090,26 +3098,29 @@ contains
   end subroutine w90_readwrite_get_centre_constraints
 
   !================================================!
-  subroutine get_centre_constraint_from_column(column, start, finish, &
-                                               wann, dummy, ccentres_frac, stdout, seedname)
+  subroutine get_centre_constraint_from_column(column, start, finish, wann, dummy, ccentres_frac, &
+                                               error)
     !================================================!
     !
     !!  assigns value read to constraint
     !!  parameters based on column
     !
     !================================================!
-    use w90_io, only: io_error
-    integer, intent(in) :: stdout
+    use w90_error, only: w90_error_type, set_error_input
+    implicit none
     integer, intent(inout):: column, start, finish, wann
     character(len=maxlen), intent(inout):: dummy
-    character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
+    type(w90_error_type), allocatable, intent(out) :: error
 
     if (column == 0) then
       read (dummy(start:finish), '(i3)') wann
     end if
     if (column > 0) then
-      if (column > 4) call io_error("Didn't expect anything else after Lagrange multiplier", stdout, seedname)
+      if (column > 4) then
+        call set_error_input(error, "Didn't expect anything else after Lagrange multiplier")
+        return
+      endif
       if (column < 4) read (dummy(start:finish), '(f10.10)') ccentres_frac(wann, column)
     end if
     column = column + 1
