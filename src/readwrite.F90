@@ -60,7 +60,7 @@ module w90_readwrite
   public :: w90_readwrite_clear_keywords
   public :: w90_readwrite_read_algorithm_control
   public :: w90_readwrite_read_atoms
-  public :: w90_readwrite_read_devel
+  !public :: w90_readwrite_read_devel
   public :: w90_readwrite_read_dis_manifold
   public :: w90_readwrite_read_eigvals
   public :: w90_readwrite_read_exclude_bands
@@ -84,52 +84,54 @@ module w90_readwrite
 contains
 
   !================================================!
-  subroutine w90_readwrite_read_verbosity(print_output, stdout, seedname)
+  subroutine w90_readwrite_read_verbosity(print_output, error)
+    use w90_error, only: w90_error_type
     implicit none
     type(print_output_type), intent(inout) :: print_output
     logical :: found
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     print_output%timing_level = 1 ! Verbosity of timing output info
-    call w90_readwrite_get_keyword(stdout, seedname, 'timing_level', found, i_value=print_output%timing_level)
+    call w90_readwrite_get_keyword('timing_level', found, error, i_value=print_output%timing_level)
+    if (allocated(error)) return
 
     print_output%iprint = 1 ! Verbosity
-    call w90_readwrite_get_keyword(stdout, seedname, 'iprint', found, i_value=print_output%iprint)
+    call w90_readwrite_get_keyword('iprint', found, error, i_value=print_output%iprint)
+    if (allocated(error)) return
 
   end subroutine w90_readwrite_read_verbosity
 
-  subroutine w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
+  subroutine w90_readwrite_read_algorithm_control(optimisation, error)
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(inout) :: optimisation
     logical :: found
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     optimisation = 3 ! Verbosity
-    call w90_readwrite_get_keyword(stdout, seedname, 'optimisation', found, i_value=optimisation)
+    call w90_readwrite_get_keyword('optimisation', found, error, i_value=optimisation)
+    if (allocated(error)) return
 
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname, &
-                                      error)
+  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     real(kind=dp), intent(out) :: lenconfac
-    integer, intent(in) :: stdout
     character(len=*), intent(out) :: length_unit
     character(len=*), intent(out) :: energy_unit
-    character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     logical :: found
 
     energy_unit = 'ev'
-    call w90_readwrite_get_keyword(stdout, seedname, 'energy_unit', found, c_value=energy_unit)
+    call w90_readwrite_get_keyword('energy_unit', found, error, c_value=energy_unit)
+    if (allocated(error)) return
 
     length_unit = 'ang'
     lenconfac = 1.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
+    call w90_readwrite_get_keyword('length_unit', found, error, c_value=length_unit)
+    if (allocated(error)) return
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
       call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units')
       return
@@ -137,18 +139,17 @@ contains
     if (length_unit .eq. 'bohr') lenconfac = 1.0_dp/bohr
   end subroutine w90_readwrite_read_units
 
-  subroutine w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
+  subroutine w90_readwrite_read_num_wann(num_wann, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
     integer, intent(out) :: num_wann
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
 
     num_wann = -99
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_wann', found, i_value=num_wann)
+    call w90_readwrite_get_keyword('num_wann', found, error, i_value=num_wann)
+    if (allocated(error)) return
     if (.not. found) then
       call set_error_input(error, 'Error: You must specify num_wann')
       return
@@ -196,7 +197,7 @@ contains
 
   subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, &
                                           num_bands, num_wann, library_param_read_first_pass, &
-                                          stdout, seedname, error)
+                                          stdout, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: pw90_effective_model, library
@@ -205,13 +206,13 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     logical, intent(in) :: library_param_read_first_pass
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp
     logical :: found
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_bands', found, i_value=i_temp)
+    call w90_readwrite_get_keyword('num_bands', found, error, i_value=i_temp)
+    if (allocated(error)) return
     if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       if (found) num_bands = i_temp
@@ -230,32 +231,33 @@ contains
     endif
   end subroutine w90_readwrite_read_num_bands
 
-  subroutine w90_readwrite_read_devel(devel_flag, stdout, seedname)
-    implicit none
-    integer, intent(in) :: stdout
-    character(len=*), intent(out) :: devel_flag
-    character(len=50), intent(in)  :: seedname
+!  subroutine w90_readwrite_read_devel(devel_flag, error)
+!    use w90_error, only: w90_error_type
+!    implicit none
+!    character(len=*), intent(out) :: devel_flag
+!    type(w90_error_type), allocatable, intent(out) :: error
 
-    logical :: found
+!    logical :: found
 
-    devel_flag = ' '
-    call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found, c_value=devel_flag)
-  end subroutine w90_readwrite_read_devel
+!    devel_flag = ' '
+!    call w90_readwrite_get_keyword('devel_flag', found, error, c_value=devel_flag)
+!    if (allocated(error)) return
+!  end subroutine w90_readwrite_read_devel
 
-  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
+  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
     logical, intent(in) :: library
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, ltmp
 
     ltmp = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'gamma_only', found, l_value=ltmp)
+    call w90_readwrite_get_keyword('gamma_only', found, error, l_value=ltmp)
+    if (allocated(error)) return
     if (.not. library) then
       gamma_only = ltmp
       if (gamma_only .and. (num_kpts .ne. 1)) then
@@ -294,19 +296,19 @@ contains
     end if
   end subroutine w90_readwrite_read_mp_grid
 
-  subroutine w90_readwrite_read_system(library, w90_system, stdout, seedname, error)
+  subroutine w90_readwrite_read_system(library, w90_system, stdout, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: library
     type(w90_system_type), intent(inout) :: w90_system
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, ltmp
 
     ltmp = .false.  ! by default our WF are not spinors
-    call w90_readwrite_get_keyword(stdout, seedname, 'spinors', found, l_value=ltmp)
+    call w90_readwrite_get_keyword('spinors', found, error, l_value=ltmp)
+    if (allocated(error)) return
     if (.not. library) then
       w90_system%spinors = ltmp
     else
@@ -322,8 +324,9 @@ contains
     else
       w90_system%num_elec_per_state = 2
     endif
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
+    call w90_readwrite_get_keyword('num_elec_per_state', found, error, &
                                    i_value=w90_system%num_elec_per_state)
+    if (allocated(error)) return
     if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) then
       call set_error_input(error, 'Error: num_elec_per_state can be only 1 or 2')
       return
@@ -335,8 +338,9 @@ contains
 
     ! set to a negative default value
     w90_system%num_valence_bands = -99
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found, &
+    call w90_readwrite_get_keyword('num_valence_bands', found, error, &
                                    i_value=w90_system%num_valence_bands)
+    if (allocated(error)) return
     if (found .and. (w90_system%num_valence_bands .le. 0)) then
       call set_error_input(error, 'Error: num_valence_bands should be greater than zero')
       return
@@ -345,14 +349,12 @@ contains
 
   end subroutine w90_readwrite_read_system
 
-  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, stdout, seedname, error)
+  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, error)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(in) :: library, bands_plot
     type(kpoint_path_type), intent(out) :: kpoint_path
-    integer, intent(in) :: stdout
     logical, intent(out) :: ok
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp, ierr, bands_num_spec_points
@@ -382,8 +384,9 @@ contains
       ok = .false.
     end if
     kpoint_path%num_points_first_segment = 100
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found, &
+    call w90_readwrite_get_keyword('bands_num_points', found, error, &
                                    i_value=kpoint_path%num_points_first_segment)
+    if (allocated(error)) return
     ! checks
     if (bands_plot) then
       if (kpoint_path%num_points_first_segment < 0) then
@@ -393,14 +396,11 @@ contains
     endif
   end subroutine w90_readwrite_read_kpath
 
-  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, &
-                                             seedname, error)
+  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(out) :: found_fermi_energy
     real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp) :: fermi_energy
@@ -413,14 +413,16 @@ contains
 
     n = 0
     found_fermi_energy = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy', found, r_value=fermi_energy)
+    call w90_readwrite_get_keyword('fermi_energy', found, error, r_value=fermi_energy)
+    if (allocated(error)) return
     if (found) then
       found_fermi_energy = .true.
       n = 1
     endif
 
     fermi_energy_scan = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found, r_value=fermi_energy_min)
+    call w90_readwrite_get_keyword('fermi_energy_min', found, error, r_value=fermi_energy_min)
+    if (allocated(error)) return
     if (found) then
       if (found_fermi_energy) then
         call set_error_input(error, 'Error: Cannot specify both fermi_energy and fermi_energy_min')
@@ -428,15 +430,17 @@ contains
       endif
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
-      call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found, &
+      call w90_readwrite_get_keyword('fermi_energy_max', found, error, &
                                      r_value=fermi_energy_max)
+      if (allocated(error)) return
       if (found .and. fermi_energy_max <= fermi_energy_min) then
         call set_error_input(error, 'Error: fermi_energy_max must be larger than fermi_energy_min')
         return
       endif
       fermi_energy_step = 0.01_dp
-      call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found, &
+      call w90_readwrite_get_keyword('fermi_energy_step', found, error, &
                                      r_value=fermi_energy_step)
+      if (allocated(error)) return
       if (found .and. fermi_energy_step <= 0.0_dp) then
         call set_error_input(error, 'Error: fermi_energy_step must be positive')
         return
@@ -479,24 +483,24 @@ contains
     endif
   end subroutine w90_readwrite_read_fermi_energy
 
-  subroutine w90_readwrite_read_ws_data(ws_region, stdout, seedname, error)
+  subroutine w90_readwrite_read_ws_data(ws_region, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(ws_region_type), intent(inout) :: ws_region
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i
     logical :: found
 
     ws_region%use_ws_distance = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found, &
+    call w90_readwrite_get_keyword('use_ws_distance', found, error, &
                                    l_value=ws_region%use_ws_distance)
+    if (allocated(error)) return
 
     ws_region%ws_distance_tol = 1.e-5_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found, &
+    call w90_readwrite_get_keyword('ws_distance_tol', found, error, &
                                    r_value=ws_region%ws_distance_tol)
+    if (allocated(error)) return
 
     ws_region%ws_search_size = 2
 
@@ -603,22 +607,22 @@ contains
 
   end subroutine w90_readwrite_read_eigvals
 
-  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname, error)
+  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     ! local
     logical :: found, found2
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found, &
+    call w90_readwrite_get_keyword('dis_win_min', found, error, &
                                    r_value=dis_manifold%win_min)
+    if (allocated(error)) return
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found, &
+    call w90_readwrite_get_keyword('dis_win_max', found, error, &
                                    r_value=dis_manifold%win_max)
+    if (allocated(error)) return
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement windows')
       return
@@ -627,14 +631,16 @@ contains
     dis_manifold%froz_min = -1.0_dp; dis_manifold%froz_max = 0.0_dp
     ! no default for dis_froz_max
     dis_manifold%frozen_states = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found, &
+    call w90_readwrite_get_keyword('dis_froz_max', found, error, &
                                    r_value=dis_manifold%froz_max)
+    if (allocated(error)) return
     if (found) then
       dis_manifold%frozen_states = .true.
       dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found2, &
+    call w90_readwrite_get_keyword('dis_froz_min', found2, error, &
                                    r_value=dis_manifold%froz_min)
+    if (allocated(error)) return
     if (eig_found) then
       if (dis_manifold%froz_max .lt. dis_manifold%froz_min) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement frozen windows')
@@ -648,27 +654,27 @@ contains
     ! ndimwin/lwindow are not read
   end subroutine w90_readwrite_read_dis_manifold
 
-  subroutine w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname, error)
+  subroutine w90_readwrite_read_kmesh_data(kmesh_input, error)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     type(kmesh_input_type), intent(out) :: kmesh_input
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: itmp, ierr
     logical :: found
 
     kmesh_input%search_shells = 36
-    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found, &
+    call w90_readwrite_get_keyword('search_shells', found, error, &
                                    i_value=kmesh_input%search_shells)
+    if (allocated(error)) return
     if (kmesh_input%search_shells < 0) then
       call set_error_input(error, 'Error: search_shells must be positive')
       return
     endif
 
     kmesh_input%tol = 0.000001_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_tol', found, r_value=kmesh_input%tol)
+    call w90_readwrite_get_keyword('kmesh_tol', found, error, r_value=kmesh_input%tol)
+    if (allocated(error)) return
     if (kmesh_input%tol < 0.0_dp) then
       call set_error_input(error, 'Error: kmesh_tol must be positive')
       return
@@ -704,7 +710,8 @@ contains
       endif
     end if
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_shells', found, i_value=itmp)
+    call w90_readwrite_get_keyword('num_shells', found, error, i_value=itmp)
+    if (allocated(error)) return
     if (found .and. (itmp /= kmesh_input%num_shells)) then
       call set_error_input(error, 'Error: Found obsolete keyword num_shells. Its value does not agree with shell_list')
       return
@@ -716,8 +723,9 @@ contains
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
     kmesh_input%skip_B1_tests = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found, &
+    call w90_readwrite_get_keyword('skip_b1_tests', found, error, &
                                    l_value=kmesh_input%skip_B1_tests)
+    if (allocated(error)) return
 
   end subroutine w90_readwrite_read_kmesh_data
 
@@ -841,7 +849,7 @@ contains
     endif
   end subroutine w90_readwrite_read_atoms
 
-  subroutine w90_readwrite_clear_keywords(stdout, seedname)
+  subroutine w90_readwrite_clear_keywords()
     ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
     ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
     ! after removing all valid keys.
@@ -860,8 +868,6 @@ contains
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90_error_type), allocatable :: error
 
     logical :: found
@@ -873,117 +879,117 @@ contains
     call w90_readwrite_get_keyword_block('unit_cell_cart', found, 0, 0, 0.0_dp, error)
     call clear_block('projections', error)
     call clear_block('kpoint_path', error)
-    call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_dim', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'calc_only_A', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_amp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_window', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'cp_pp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_window', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_mix_ratio', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_num_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_hc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'energy_unit', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fixed_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gamma_only', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'guiding_centres', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'hr_cutoff', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'hr_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'iprint', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_cg_steps', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_dump_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_guide_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_no_guide_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_print_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_shells', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_wann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'one_dim_axis', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'optimisation', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'postproc_setup', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'precond', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'restart', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'site_symmetry', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_constrain', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_lambda', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spinors', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'symmetrize_eps', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'timing_level', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_easy_fix', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_group_threshold', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bandc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bb', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_ll', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_rr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_lc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_ll', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_rr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_read_ht', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'translate_home_cell', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transport', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transport_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_use_same_lead', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_write_ht', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'trial_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_bloch_phases', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_radius', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_scale', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_bvec', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr_diag', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_proj', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_r2mn', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_rmn', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_tb', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_u_matrices', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_vdw_data', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_xyz', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wvfn_formatted', found)
+    call w90_readwrite_get_keyword('auto_projections', found, error)
+    call w90_readwrite_get_keyword('bands_num_points', found, error)
+    call w90_readwrite_get_keyword('bands_plot_dim', found, error)
+    call w90_readwrite_get_keyword('bands_plot_format', found, error)
+    call w90_readwrite_get_keyword('bands_plot', found, error)
+    call w90_readwrite_get_keyword('bands_plot_mode', found, error)
+    call w90_readwrite_get_keyword('calc_only_A', found, error)
+    call w90_readwrite_get_keyword('conv_noise_amp', found, error)
+    call w90_readwrite_get_keyword('conv_noise_num', found, error)
+    call w90_readwrite_get_keyword('conv_tol', found, error)
+    call w90_readwrite_get_keyword('conv_window', found, error)
+    call w90_readwrite_get_keyword('cp_pp', found, error)
+    call w90_readwrite_get_keyword('devel_flag', found, error)
+    call w90_readwrite_get_keyword('dis_conv_tol', found, error)
+    call w90_readwrite_get_keyword('dis_conv_window', found, error)
+    call w90_readwrite_get_keyword('dis_froz_max', found, error)
+    call w90_readwrite_get_keyword('dis_froz_min', found, error)
+    call w90_readwrite_get_keyword('dis_mix_ratio', found, error)
+    call w90_readwrite_get_keyword('dis_num_iter', found, error)
+    call w90_readwrite_get_keyword('dis_spheres_first_wann', found, error)
+    call w90_readwrite_get_keyword('dis_spheres_num', found, error)
+    call w90_readwrite_get_keyword('dist_cutoff', found, error)
+    call w90_readwrite_get_keyword('dist_cutoff_hc', found, error)
+    call w90_readwrite_get_keyword('dist_cutoff_mode', found, error)
+    call w90_readwrite_get_keyword('dis_win_max', found, error)
+    call w90_readwrite_get_keyword('dis_win_min', found, error)
+    call w90_readwrite_get_keyword('energy_unit', found, error)
+    call w90_readwrite_get_keyword('fermi_energy', found, error)
+    call w90_readwrite_get_keyword('fermi_energy_max', found, error)
+    call w90_readwrite_get_keyword('fermi_energy_min', found, error)
+    call w90_readwrite_get_keyword('fermi_energy_step', found, error)
+    call w90_readwrite_get_keyword('fermi_surface_num_points', found, error)
+    call w90_readwrite_get_keyword('fermi_surface_plot_format', found, error)
+    call w90_readwrite_get_keyword('fermi_surface_plot', found, error)
+    call w90_readwrite_get_keyword('fixed_step', found, error)
+    call w90_readwrite_get_keyword('gamma_only', found, error)
+    call w90_readwrite_get_keyword('guiding_centres', found, error)
+    call w90_readwrite_get_keyword('hr_cutoff', found, error)
+    call w90_readwrite_get_keyword('hr_plot', found, error)
+    call w90_readwrite_get_keyword('iprint', found, error)
+    call w90_readwrite_get_keyword('kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('kmesh_tol', found, error)
+    call w90_readwrite_get_keyword('length_unit', found, error)
+    call w90_readwrite_get_keyword('num_bands', found, error)
+    call w90_readwrite_get_keyword('num_cg_steps', found, error)
+    call w90_readwrite_get_keyword('num_dump_cycles', found, error)
+    call w90_readwrite_get_keyword('num_elec_per_state', found, error)
+    call w90_readwrite_get_keyword('num_guide_cycles', found, error)
+    call w90_readwrite_get_keyword('num_iter', found, error)
+    call w90_readwrite_get_keyword('num_no_guide_iter', found, error)
+    call w90_readwrite_get_keyword('num_print_cycles', found, error)
+    call w90_readwrite_get_keyword('num_shells', found, error)
+    call w90_readwrite_get_keyword('num_valence_bands', found, error)
+    call w90_readwrite_get_keyword('num_wann', found, error)
+    call w90_readwrite_get_keyword('one_dim_axis', found, error)
+    call w90_readwrite_get_keyword('optimisation', found, error)
+    call w90_readwrite_get_keyword('postproc_setup', found, error)
+    call w90_readwrite_get_keyword('precond', found, error)
+    call w90_readwrite_get_keyword('restart', found, error)
+    call w90_readwrite_get_keyword('search_shells', found, error)
+    call w90_readwrite_get_keyword('site_symmetry', found, error)
+    call w90_readwrite_get_keyword('skip_b1_tests', found, error)
+    call w90_readwrite_get_keyword('slwf_constrain', found, error)
+    call w90_readwrite_get_keyword('slwf_lambda', found, error)
+    call w90_readwrite_get_keyword('slwf_num', found, error)
+    call w90_readwrite_get_keyword('spin', found, error)
+    call w90_readwrite_get_keyword('spinors', found, error)
+    call w90_readwrite_get_keyword('symmetrize_eps', found, error)
+    call w90_readwrite_get_keyword('timing_level', found, error)
+    call w90_readwrite_get_keyword('tran_easy_fix', found, error)
+    call w90_readwrite_get_keyword('tran_energy_step', found, error)
+    call w90_readwrite_get_keyword('tran_group_threshold', found, error)
+    call w90_readwrite_get_keyword('tran_num_bandc', found, error)
+    call w90_readwrite_get_keyword('tran_num_bb', found, error)
+    call w90_readwrite_get_keyword('tran_num_cc', found, error)
+    call w90_readwrite_get_keyword('tran_num_cell_ll', found, error)
+    call w90_readwrite_get_keyword('tran_num_cell_rr', found, error)
+    call w90_readwrite_get_keyword('tran_num_cr', found, error)
+    call w90_readwrite_get_keyword('tran_num_lc', found, error)
+    call w90_readwrite_get_keyword('tran_num_ll', found, error)
+    call w90_readwrite_get_keyword('tran_num_rr', found, error)
+    call w90_readwrite_get_keyword('tran_read_ht', found, error)
+    call w90_readwrite_get_keyword('translate_home_cell', found, error)
+    call w90_readwrite_get_keyword('transport', found, error)
+    call w90_readwrite_get_keyword('transport_mode', found, error)
+    call w90_readwrite_get_keyword('tran_use_same_lead', found, error)
+    call w90_readwrite_get_keyword('tran_win_max', found, error)
+    call w90_readwrite_get_keyword('tran_win_min', found, error)
+    call w90_readwrite_get_keyword('tran_write_ht', found, error)
+    call w90_readwrite_get_keyword('trial_step', found, error)
+    call w90_readwrite_get_keyword('use_bloch_phases', found, error)
+    call w90_readwrite_get_keyword('use_ws_distance', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_format', found, error)
+    call w90_readwrite_get_keyword('wannier_plot', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_mode', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_radius', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_scale', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_spinor_mode', found, error)
+    call w90_readwrite_get_keyword('wannier_plot_spinor_phase', found, error)
+    call w90_readwrite_get_keyword('write_bvec', found, error)
+    call w90_readwrite_get_keyword('write_hr_diag', found, error)
+    call w90_readwrite_get_keyword('write_hr', found, error)
+    call w90_readwrite_get_keyword('write_proj', found, error)
+    call w90_readwrite_get_keyword('write_r2mn', found, error)
+    call w90_readwrite_get_keyword('write_rmn', found, error)
+    call w90_readwrite_get_keyword('write_tb', found, error)
+    call w90_readwrite_get_keyword('write_u_matrices', found, error)
+    call w90_readwrite_get_keyword('write_vdw_data', found, error)
+    call w90_readwrite_get_keyword('write_xyz', found, error)
+    call w90_readwrite_get_keyword('ws_distance_tol', found, error)
+    call w90_readwrite_get_keyword('wvfn_formatted', found, error)
     call w90_readwrite_get_keyword_vector('kmesh', found, 0, error) ! the absent arrays have zero length ;-)
     call w90_readwrite_get_keyword_vector('mp_grid', found, 0, error)
     call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 0, error)
@@ -992,110 +998,110 @@ contains
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh_thresh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_unit', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_2d_dir', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_energyshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_relax_time', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltzwann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'degen_thr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'effective_model', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_alsofirstder', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_single_file', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_degen_thresh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_bands_colour', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kdotp_num_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_eigval_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_eta', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'scissors_shift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_phase_conv', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_use_eta_corr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_w_thr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_alpha', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_firstband', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_beta', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_freq_scan', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_gamma', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_method', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_max_arg', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_azimuth', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_polar', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_decomp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_moment', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spn_formatted', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transl_inv', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'uhu_formatted', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_degen_pert', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wanint_kpoint_file', found)
+    call w90_readwrite_get_keyword('adpt_smr_fac', found, error)
+    call w90_readwrite_get_keyword('adpt_smr', found, error)
+    call w90_readwrite_get_keyword('adpt_smr_max', found, error)
+    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh', found, error)
+    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh_thresh', found, error)
+    call w90_readwrite_get_keyword('berry_curv_unit', found, error)
+    call w90_readwrite_get_keyword('berry', found, error)
+    call w90_readwrite_get_keyword('berry_kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('berry_task', found, error)
+    call w90_readwrite_get_keyword('boltz_2d_dir', found, error)
+    call w90_readwrite_get_keyword('boltz_bandshift_energyshift', found, error)
+    call w90_readwrite_get_keyword('boltz_bandshift_firstband', found, error)
+    call w90_readwrite_get_keyword('boltz_bandshift', found, error)
+    call w90_readwrite_get_keyword('boltz_calc_also_dos', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_fac', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_max', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_energy_max', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_energy_min', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_energy_step', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('boltz_dos_smr_type', found, error)
+    call w90_readwrite_get_keyword('boltz_kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('boltz_mu_max', found, error)
+    call w90_readwrite_get_keyword('boltz_mu_min', found, error)
+    call w90_readwrite_get_keyword('boltz_mu_step', found, error)
+    call w90_readwrite_get_keyword('boltz_relax_time', found, error)
+    call w90_readwrite_get_keyword('boltz_tdf_energy_step', found, error)
+    call w90_readwrite_get_keyword('boltz_tdf_smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('boltz_tdf_smr_type', found, error)
+    call w90_readwrite_get_keyword('boltz_temp_max', found, error)
+    call w90_readwrite_get_keyword('boltz_temp_min', found, error)
+    call w90_readwrite_get_keyword('boltz_temp_step', found, error)
+    call w90_readwrite_get_keyword('boltzwann', found, error)
+    call w90_readwrite_get_keyword('degen_thr', found, error)
+    call w90_readwrite_get_keyword('dos_adpt_smr_fac', found, error)
+    call w90_readwrite_get_keyword('dos_adpt_smr', found, error)
+    call w90_readwrite_get_keyword('dos_adpt_smr_max', found, error)
+    call w90_readwrite_get_keyword('dos_energy_max', found, error)
+    call w90_readwrite_get_keyword('dos_energy_min', found, error)
+    call w90_readwrite_get_keyword('dos_energy_step', found, error)
+    call w90_readwrite_get_keyword('dos', found, error)
+    call w90_readwrite_get_keyword('dos_kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('dos_smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('dos_smr_type', found, error)
+    call w90_readwrite_get_keyword('dos_task', found, error)
+    call w90_readwrite_get_keyword('effective_model', found, error)
+    call w90_readwrite_get_keyword('geninterp_alsofirstder', found, error)
+    call w90_readwrite_get_keyword('geninterp', found, error)
+    call w90_readwrite_get_keyword('geninterp_single_file', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_degen_thresh', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_eigval_max', found, error)
+    call w90_readwrite_get_keyword('gyrotropic', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_freq_max', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_freq_min', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_freq_step', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_smr_max_arg', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_smr_type', found, error)
+    call w90_readwrite_get_keyword('gyrotropic_task', found, error)
+    call w90_readwrite_get_keyword('kpath_bands_colour', found, error)
+    call w90_readwrite_get_keyword('kpath', found, error)
+    call w90_readwrite_get_keyword('kpath_num_points', found, error)
+    call w90_readwrite_get_keyword('kpath_task', found, error)
+    call w90_readwrite_get_keyword('kslice_fermi_lines_colour', found, error)
+    call w90_readwrite_get_keyword('kslice', found, error)
+    call w90_readwrite_get_keyword('kslice_task', found, error)
+    call w90_readwrite_get_keyword('kdotp_num_bands', found, error)
+    call w90_readwrite_get_keyword('kubo_adpt_smr_fac', found, error)
+    call w90_readwrite_get_keyword('kubo_adpt_smr', found, error)
+    call w90_readwrite_get_keyword('kubo_adpt_smr_max', found, error)
+    call w90_readwrite_get_keyword('kubo_eigval_max', found, error)
+    call w90_readwrite_get_keyword('kubo_freq_max', found, error)
+    call w90_readwrite_get_keyword('kubo_freq_min', found, error)
+    call w90_readwrite_get_keyword('kubo_freq_step', found, error)
+    call w90_readwrite_get_keyword('kubo_smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('kubo_smr_type', found, error)
+    call w90_readwrite_get_keyword('sc_eta', found, error)
+    call w90_readwrite_get_keyword('scissors_shift', found, error)
+    call w90_readwrite_get_keyword('sc_phase_conv', found, error)
+    call w90_readwrite_get_keyword('sc_use_eta_corr', found, error)
+    call w90_readwrite_get_keyword('sc_w_thr', found, error)
+    call w90_readwrite_get_keyword('shc_alpha', found, error)
+    call w90_readwrite_get_keyword('shc_bandshift_energyshift', found, error)
+    call w90_readwrite_get_keyword('shc_bandshift_firstband', found, error)
+    call w90_readwrite_get_keyword('shc_bandshift', found, error)
+    call w90_readwrite_get_keyword('shc_beta', found, error)
+    call w90_readwrite_get_keyword('shc_freq_scan', found, error)
+    call w90_readwrite_get_keyword('shc_gamma', found, error)
+    call w90_readwrite_get_keyword('shc_method', found, error)
+    call w90_readwrite_get_keyword('smr_fixed_en_width', found, error)
+    call w90_readwrite_get_keyword('smr_max_arg', found, error)
+    call w90_readwrite_get_keyword('smr_type', found, error)
+    call w90_readwrite_get_keyword('spin_axis_azimuth', found, error)
+    call w90_readwrite_get_keyword('spin_axis_polar', found, error)
+    call w90_readwrite_get_keyword('spin_decomp', found, error)
+    call w90_readwrite_get_keyword('spin_kmesh_spacing', found, error)
+    call w90_readwrite_get_keyword('spin_moment', found, error)
+    call w90_readwrite_get_keyword('spn_formatted', found, error)
+    call w90_readwrite_get_keyword('transl_inv', found, error)
+    call w90_readwrite_get_keyword('uhu_formatted', found, error)
+    call w90_readwrite_get_keyword('use_degen_pert', found, error)
+    call w90_readwrite_get_keyword('wanint_kpoint_file', found, error)
     call w90_readwrite_get_keyword_vector('berry_kmesh', found, 0, error)
     call w90_readwrite_get_keyword_vector('boltz_kmesh', found, 0, error)
     call w90_readwrite_get_keyword_vector('dos_kmesh', found, 0, error)
@@ -1126,7 +1132,7 @@ contains
     integer :: loop, ierr
 
     ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
-    call w90_readwrite_clear_keywords(stdout, seedname)
+    call w90_readwrite_clear_keywords()
 
     if (any(len_trim(in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
@@ -2159,19 +2165,17 @@ contains
   end subroutine w90_readwrite_in_file
 
   !================================================!
-  subroutine w90_readwrite_get_keyword(stdout, seedname, keyword, found, c_value, l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword(keyword, found, error, c_value, l_value, i_value, r_value)
     !================================================!
     !
     !! Finds the value of the required keyword.
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2184,6 +2188,7 @@ contains
     !! Keyword value
     real(kind=dp), optional, intent(inout) :: r_value
     !! Keyword value
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer           :: kl, in, loop, itmp
     character(len=maxlen) :: dummy
@@ -2200,7 +2205,8 @@ contains
           .and. in_data(loop) (itmp:itmp) /= ':' &
           .and. in_data(loop) (itmp:itmp) /= ' ') cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file')
+        return
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -2220,7 +2226,8 @@ contains
         elseif (index(dummy, 'f') > 0) then
           l_value = .false.
         else
-          call io_error('Error: Problem reading logical keyword '//trim(keyword), stdout, seedname)
+          call set_error_input(error, 'Error: Problem reading logical keyword '//trim(keyword))
+          return
         endif
       endif
       if (present(i_value)) read (dummy, *, err=220, end=220) i_value
@@ -2229,7 +2236,8 @@ contains
 
     return
 
-220 call io_error('Error: Problem reading keyword '//trim(keyword), stdout, seedname)
+220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword))
+    return
 
   end subroutine w90_readwrite_get_keyword
 
