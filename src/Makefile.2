@@ -186,7 +186,7 @@ postw90_common.o: $(POSTDIR)postw90_common.F90 postw90_types.o ws_distance.o com
 postw90_types.o: $(POSTDIR)postw90_types.F90 comms.o types.o utility.o constants.o io.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_types.F90
 
-postw90_readwrite.o: $(POSTDIR)postw90_readwrite.F90 comms.o postw90_types.o types.o utility.o constants.o io.o 
+postw90_readwrite.o: $(POSTDIR)postw90_readwrite.F90 comms.o postw90_types.o types.o utility.o constants.o io.o error.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_readwrite.F90
 
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./types.o \

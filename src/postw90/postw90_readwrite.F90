@@ -151,7 +151,7 @@ contains
     call w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
     call w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
     if (allocated(error)) return
-    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, error) !for read_chkpt
+    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error) !for read_chkpt
     if (allocated(error)) return
     call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, &
                                       num_wann, .false., stdout, seedname, error)
@@ -476,6 +476,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
@@ -484,6 +485,7 @@ contains
     real(kind=dp), intent(in) :: smr_fixed_en_width
     integer, intent(in) :: smr_index
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     real(kind=dp) :: smr_max_arg
     real(kind=dp)                   :: gyrotropic_box_tmp(3)
@@ -513,8 +515,9 @@ contains
       gyrotropic_box_tmp(:) - 0.5*(pw90_gyrotropic%box(1, :) + pw90_gyrotropic%box(2, :) + &
                                    pw90_gyrotropic%box(3, :))
 
-    call w90_readwrite_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, &
-                                        pw90_gyrotropic%num_bands, lcount=.true.)
+    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, pw90_gyrotropic%num_bands, &
+                                        .true., error)
+    if (allocated(error)) return
     if (found) then
       if (pw90_gyrotropic%num_bands < 1) &
         call io_error('Error: problem reading gyrotropic_band_list', stdout, seedname)
@@ -522,8 +525,10 @@ contains
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', stdout, &
                                    seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, &
-                                          pw90_gyrotropic%num_bands, .false., pw90_gyrotropic%band_list)
+      call w90_readwrite_get_range_vector('gyrotropic_band_list', found, &
+                                          pw90_gyrotropic%num_bands, .false., error, &
+                                          pw90_gyrotropic%band_list)
+      if (allocated(error)) return
       if (any(pw90_gyrotropic%band_list < 1) .or. any(pw90_gyrotropic%band_list > num_wann)) &
         call io_error('Error: gyrotropic_band_list asks for a non-valid bands', stdout, seedname)
     else
@@ -570,6 +575,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
@@ -577,6 +583,7 @@ contains
     type(pw90_berry_mod_type), intent(out) :: pw90_berry
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
     integer :: kdotp_num_bands, ierr
@@ -686,8 +693,9 @@ contains
       allocate (pw90_berry%kdotp_bands(kdotp_num_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kdotp_num_bands in w90_wannier90_readwrite_read', stdout, &
                                    seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'kdotp_bands', found, kdotp_num_bands, &
-                                          .false., pw90_berry%kdotp_bands)
+      call w90_readwrite_get_range_vector('kdotp_bands', found, kdotp_num_bands, &
+                                          .false., error, pw90_berry%kdotp_bands)
+      if (allocated(error)) return
       if (any(pw90_berry%kdotp_bands < 1)) &
         call io_error('Error: kdotp_bands must contain positive numbers', stdout, seedname)
     end if
@@ -841,6 +849,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -853,6 +862,7 @@ contains
     logical, intent(out) :: dos_plot
     logical, intent(in) :: found_fermi_energy
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error
 
     integer :: i, ierr
     logical :: found
@@ -916,17 +926,17 @@ contains
 !    dos_plot_format           = 'gnuplot'
 !    call w90_readwrite_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
-    call w90_readwrite_get_range_vector(stdout, seedname, 'dos_project', found, &
-                                        pw90_dos%num_project, lcount=.true.)
+    call w90_readwrite_get_range_vector('dos_project', found, pw90_dos%num_project, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (pw90_dos%num_project < 1) call io_error('Error: problem reading dos_project', stdout, &
                                                   seedname)
       if (allocated(pw90_dos%project)) deallocate (pw90_dos%project)
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dos_project in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'dos_project', found, &
-                                          pw90_dos%num_project, .false., &
-                                          pw90_dos%project)
+      call w90_readwrite_get_range_vector('dos_project', found, pw90_dos%num_project, .false., &
+                                          error, pw90_dos%project)
+      if (allocated(error)) return
       if (any(pw90_dos%project < 1) .or. &
           any(pw90_dos%project > num_wann)) &
         call io_error('Error: dos_project asks for out-of-range Wannier functions', stdout, &

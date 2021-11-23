@@ -155,8 +155,7 @@ contains
       if (allocated(error)) return
       call w90_readwrite_read_num_wann(num_wann, stdout, seedname, error)
       if (allocated(error)) return
-      call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, &
-                                            error)
+      call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error)
       if (allocated(error)) return
       call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
                                         num_wann, library_param_read_first_pass, stdout, seedname, &
@@ -779,6 +778,7 @@ contains
     ! Plotting
     !================================================!
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
     implicit none
     type(band_plot_type), intent(out) :: band_plot
     integer, intent(in) :: stdout
@@ -786,6 +786,7 @@ contains
     logical, intent(in) :: has_kpath
     logical, intent(in) :: bands_plot
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: ierr, num_project
     logical :: found
@@ -797,15 +798,16 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_mode', found, c_value=band_plot%mode)
 
     num_project = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                        num_project, lcount=.true.)
+    call w90_readwrite_get_range_vector('bands_plot_project', found, num_project, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (num_project < 1) call io_error('Error: problem reading bands_plot_project', stdout, seedname)
       if (allocated(band_plot%project)) deallocate (band_plot%project)
       allocate (band_plot%project(num_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_plot_project in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'bands_plot_project', found, &
-                                          num_project, .false., band_plot%project)
+      call w90_readwrite_get_range_vector('bands_plot_project', found, &
+                                          num_project, .false., error, band_plot%project)
+      if (allocated(error)) return
       if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected', stdout, seedname)
     endif
@@ -830,12 +832,14 @@ contains
     ! Plotting
     !================================================!
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
     implicit none
     type(wannier_plot_type), intent(out) :: wann_plot
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     logical, intent(in) :: wannier_plot
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: i, loop, ierr, wann_plot_num
     logical :: found
@@ -874,8 +878,8 @@ contains
                                    l_value=wann_plot%spinor_phase)
 
     wann_plot_num = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
-                                        wann_plot_num, lcount=.true.)
+    call w90_readwrite_get_range_vector('wannier_plot_list', found, wann_plot_num, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (wann_plot_num < 1) call io_error('Error: problem reading wannier_plot_list', &
                                            stdout, seedname)
@@ -883,8 +887,9 @@ contains
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_plot_list in w90_wannier90_readwrite_read', &
                                    stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'wannier_plot_list', found, &
-                                          wann_plot_num, .false., wann_plot%list)
+      call w90_readwrite_get_range_vector('wannier_plot_list', found, wann_plot_num, .false., &
+                                          error, wann_plot%list)
+      if (allocated(error)) return
       if (any(wann_plot%list < 1) .or. any(wann_plot%list > num_wann)) &
         call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted', stdout, seedname)
     else
@@ -1152,15 +1157,17 @@ contains
 
     select_proj%lselproj = .false.
     num_select_projections = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'select_projections', found, &
-                                        num_select_projections, lcount=.true.)
+    call w90_readwrite_get_range_vector('select_projections', found, num_select_projections, &
+                                        .true., error)
+    if (allocated(error)) return
     if (found) then
       if (num_select_projections < 1) call io_error('Error: problem reading select_projections', stdout, seedname)
       if (allocated(select_projections)) deallocate (select_projections)
       allocate (select_projections(num_select_projections), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating select_projections in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'select_projections', found, &
-                                          num_select_projections, .false., select_projections)
+      call w90_readwrite_get_range_vector('select_projections', found, num_select_projections, &
+                                          .false., error, select_projections)
+      if (allocated(error)) return
       if (any(select_projections < 1)) &
         call io_error('Error: select_projections must contain positive numbers', stdout, seedname)
       if (num_select_projections < num_wann) &

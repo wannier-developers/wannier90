@@ -159,23 +159,20 @@ contains
     endif
   end subroutine w90_readwrite_read_num_wann
 
-  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname, &
-                                              error)
+  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(out) :: num_exclude_bands
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr
     logical :: found
 
     num_exclude_bands = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                        num_exclude_bands, lcount=.true.)
+    call w90_readwrite_get_range_vector('exclude_bands', found, num_exclude_bands, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (num_exclude_bands < 1) then
         call set_error_input(error, 'Error: problem reading exclude_bands')
@@ -187,8 +184,9 @@ contains
         call set_error_alloc(error, 'Error allocating exclude_bands in w90_readwrite_read_exclude_bands')
         return
       endif
-      call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                          num_exclude_bands, .false., exclude_bands)
+      call w90_readwrite_get_range_vector('exclude_bands', found, num_exclude_bands, .false., &
+                                          error, exclude_bands)
+      if (allocated(error)) return
       if (any(exclude_bands < 1)) then
         call set_error_input(error, 'Error: exclude_bands must contain positive numbers')
         return
@@ -673,8 +671,8 @@ contains
     endif
 
     kmesh_input%num_shells = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, &
-                                        kmesh_input%num_shells, lcount=.true.)
+    call w90_readwrite_get_range_vector('shell_list', found, kmesh_input%num_shells, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) then
         call set_error_input(error, 'Error: number of shell in shell_list must be between zero and six')
@@ -686,8 +684,9 @@ contains
         call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read')
         return
       endif
-      call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, &
-                                          kmesh_input%num_shells, .false., kmesh_input%shell_list)
+      call w90_readwrite_get_range_vector('shell_list', found, kmesh_input%num_shells, .false., &
+                                          error, kmesh_input%shell_list)
+      if (allocated(error)) return
       if (any(kmesh_input%shell_list < 1)) then
         call set_error_input(error, 'Error: shell_list must contain positive numbers')
         return
@@ -2902,17 +2901,15 @@ contains
   end subroutine w90_readwrite_lib_set_atoms
 
   !================================================!
-  subroutine w90_readwrite_get_range_vector(stdout, seedname, keyword, found, length, lcount, i_value)
+  subroutine w90_readwrite_get_range_vector(keyword, found, length, lcount, error, i_value)
     !================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)    :: keyword
     !! Keyword to examine
     logical, intent(out)   :: found
@@ -2921,6 +2918,7 @@ contains
     !! Number of states
     logical, intent(in)    :: lcount
     !! If T only count states
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, optional, intent(out)   :: i_value(length)
     !! States specified in range vector
 
@@ -2933,7 +2931,10 @@ contains
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
 
-    if (lcount .and. present(i_value)) call io_error('w90_readwrite_get_range_vector: incorrect call', stdout, seedname)
+    if (lcount .and. present(i_value)) then
+      call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call')
+      return
+    endif
 
     kl = len_trim(keyword)
 
@@ -2943,7 +2944,8 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file')
+        return
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -2958,11 +2960,17 @@ contains
     if (.not. found) return
 
     counter = 0
-    if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout, seedname)
+    if (len_trim(dummy) == 0) then
+      call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank')
+      return
+    endif
     dummy = adjustl(dummy)
     do
       i_punc = scan(dummy, c_punc)
-      if (i_punc == 0) call io_error('Error parsing keyword '//trim(keyword), stdout, seedname)
+      if (i_punc == 0) then
+        call set_error_input(error, 'Error parsing keyword '//trim(keyword))
+        return
+      endif
       c_num1 = dummy(1:i_punc - 1)
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
@@ -2985,7 +2993,10 @@ contains
       end if
 
       if (scan(dummy, c_sep) == 1) dummy = adjustl(dummy(2:))
-      if (scan(dummy, c_range) == 1) call io_error('Error parsing keyword '//trim(keyword)//' incorrect range', stdout, seedname)
+      if (scan(dummy, c_range) == 1) then
+        call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' incorrect range')
+        return
+      endif
       if (index(dummy, ' ') == 1) exit
     end do
 
@@ -2993,15 +3004,18 @@ contains
     if (.not. lcount) then
       do loop = 1, counter - 1
         do loop_r = loop + 1, counter
-          if (i_value(loop) == i_value(loop_r)) &
-            call io_error('Error parsing keyword '//trim(keyword)//' duplicate values', stdout, seedname)
+          if (i_value(loop) == i_value(loop_r)) then
+            call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' duplicate values')
+            return
+          endif
         end do
       end do
     end if
 
     return
 
-101 call io_error('Error parsing keyword '//trim(keyword), stdout, seedname)
+101 call set_error_input(error, 'Error parsing keyword '//trim(keyword))
+    return
 
   end subroutine w90_readwrite_get_range_vector
 
