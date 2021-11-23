@@ -3117,7 +3117,7 @@ contains
 
   !================================================!
   subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
-                                           inv_lattice, lcount, spinors, bohr, stdout, seedname)
+                                           inv_lattice, lcount, spinors, bohr, stdout, seedname, error)
     !================================================!
     !
     !!  Fills the projection data block
@@ -3126,7 +3126,7 @@ contains
 
     use w90_constants, only: eps6, eps2
     use w90_utility, only: utility_cart_to_frac, utility_string_to_coord, utility_strip
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_input
 
     implicit none
 
@@ -3134,6 +3134,7 @@ contains
     type(atom_data_type), intent(in) :: atom_data
     type(proj_input_type), intent(inout) :: input_proj
     type(proj_input_type), intent(inout) :: proj ! intent(out)?
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
@@ -3188,45 +3189,99 @@ contains
 
     if (.not. lcount) then
       allocate (input_proj%site(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_site in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_site in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%l(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_l in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_l in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%m(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_m in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_m in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%z(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_z in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_z in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%x(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_x in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_x in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%radial(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_radial in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_radial in w90_readwrite_get_projections')
+        return
+      endif
       allocate (input_proj%zona(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_zona in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj_zona in w90_readwrite_get_projections')
+        return
+      endif
       if (spinors) then
         allocate (input_proj%s(num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s in w90_readwrite_get_projections', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating input_proj_s in w90_readwrite_get_projections')
+          return
+        endif
         allocate (input_proj%s_qaxis(3, num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in w90_readwrite_get_projections', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating input_proj_s_qaxis in w90_readwrite_get_projections')
+          return
+        endif
       endif
 
       allocate (proj%site(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_site in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_site in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%l(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_l in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_l in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%m(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_m in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_m in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%z(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_z in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_z in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%x(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_x in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_x in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%radial(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_radial in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_radial in w90_readwrite_get_projections')
+        return
+      endif
       allocate (proj%zona(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_zona in w90_readwrite_get_projections', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating proj_zona in w90_readwrite_get_projections')
+        return
+      endif
       if (spinors) then
         allocate (proj%s(num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s in w90_readwrite_get_projections', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating proj_s in w90_readwrite_get_projections')
+          return
+        endif
         allocate (proj%s_qaxis(3, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in w90_readwrite_get_projections', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating proj_s_qaxis in w90_readwrite_get_projections')
+          return
+        endif
       endif
     endif
 
@@ -3237,7 +3292,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -3249,19 +3305,23 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('w90_readwrite_get_projections: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, &
+                             'w90_readwrite_get_projections: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('w90_readwrite_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, &
-                    seedname)
+      call set_error_input(error, &
+                           'w90_readwrite_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, &
-                    seedname)
+      call set_error_input(error, &
+                           'w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      return
     end if
 
     dummy = in_data(line_s + 1)
@@ -3314,9 +3374,10 @@ contains
         dummy = utility_strip(in_data(line))
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
-        if (pos1 == 0) &
-          call io_error('w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy), stdout, &
-                        seedname)
+        if (pos1 == 0) then
+          call set_error_input(error, 'w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy))
+          return
+        endif
         sites = 0
         ctemp = dummy(:pos1 - 1)
         ! Read the atomic site
@@ -3331,9 +3392,11 @@ contains
           ctemp = ctemp(3:)
           call utility_string_to_coord(ctemp, pos_frac, stdout, seedname)
         else
-          if (atom_data%num_species == 0) &
-            call io_error('w90_wannier90_readwrite_read_projection: Atom centred projection requested but no atoms defined', &
-                          stdout, seedname)
+          if (atom_data%num_species == 0) then
+            call set_error_input(error, &
+                                 'w90_wannier90_readwrite_read_projection: Atom centred projection requested but no atoms defined')
+            return
+          endif
           do loop = 1, atom_data%num_species
             if (trim(ctemp) == atom_data%label(loop)) then
               species = loop
@@ -3341,8 +3404,8 @@ contains
               exit
             end if
             if (loop == atom_data%num_species) then
-              call io_error('w90_wannier90_readwrite_read_projection: Atom site not recognised '//trim(ctemp), &
-                            stdout, seedname)
+              call set_error_input(error, 'w90_wannier90_readwrite_read_projection: Atom site not recognised '//trim(ctemp))
+              return
             endif
           end do
         end if
@@ -3355,14 +3418,19 @@ contains
           if (pos1 > 0) then
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ']')
-            if (pos2 == 0) call io_error &
-              ('w90_readwrite_get_projections: no closing square bracket for spin quantisation dir', stdout, seedname)
+            if (pos2 == 0) then
+              call set_error_input(error, 'w90_readwrite_get_projections: no closing square bracket for spin quantisation dir')
+              return
+            endif
             ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, stdout, seedname)
             dummy = dummy(:pos1 - 1) ! remove [ ] section
           endif
         else
-          if (pos1 > 0) call io_error('w90_readwrite_get_projections: spin qdir is defined but spinors=.false.', stdout, seedname)
+          if (pos1 > 0) then
+            call set_error_input(error, 'w90_readwrite_get_projections: spin qdir is defined but spinors=.false.')
+            return
+          endif
         endif
 
         ! scan for up or down
@@ -3372,21 +3440,28 @@ contains
             proj_u_tmp = .false.; proj_d_tmp = .false.
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ')')
-            if (pos2 == 0) call io_error('w90_readwrite_get_projections: no closing bracket for spin', stdout, seedname)
+            if (pos2 == 0) then
+              call set_error_input(error, 'w90_readwrite_get_projections: no closing bracket for spin')
+              return
+            endif
             ctemp = ctemp(:pos2 - 1)
             if (index(ctemp, 'u') > 0) proj_u_tmp = .true.
             if (index(ctemp, 'd') > 0) proj_d_tmp = .true.
             if (proj_u_tmp .and. proj_d_tmp) then
               spn_counter = 2
             elseif (.not. proj_u_tmp .and. .not. proj_d_tmp) then
-              call io_error('w90_readwrite_get_projections: found brackets but neither u or d', stdout, seedname)
+              call set_error_input(error, 'w90_readwrite_get_projections: found brackets but neither u or d')
+              return
             else
               spn_counter = 1
             endif
             dummy = dummy(:pos1 - 1) ! remove ( ) section
           endif
         else
-          if (pos1 > 0) call io_error('w90_readwrite_get_projections: spin is defined but spinors=.false.', stdout, seedname)
+          if (pos1 > 0) then
+            call set_error_input(error, 'w90_readwrite_get_projections: spin is defined but spinors=.false.')
+            return
+          endif
         endif
 
         !Now we know the sites for this line. Get the angular momentum states
@@ -3411,8 +3486,10 @@ contains
             else
               read (ctemp3(3:), *, err=101, end=101) l_tmp
             end if
-            if (l_tmp < -5 .or. l_tmp > 3) call io_error('w90_readwrite_get_projections: Incorrect l state requested', stdout, &
-                                                         seedname)
+            if (l_tmp < -5 .or. l_tmp > 3) then
+              call set_error_input(error, 'w90_readwrite_get_projections: Incorrect l state requested')
+              return
+            endif
             if (mstate == 0) then
               if (l_tmp >= 0) then
                 do loop_m = 1, 2*l_tmp + 1
@@ -3430,8 +3507,10 @@ contains
                 ang_states(1:6, l_tmp) = 1
               endif
             else
-              if (index(ctemp3, 'mr=') /= mstate + 1) &
-                call io_error('w90_readwrite_get_projections: Problem reading m state', stdout, seedname)
+              if (index(ctemp3, 'mr=') /= mstate + 1) then
+                call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state')
+                return
+              endif
               ctemp4 = ctemp3(mstate + 4:)
               do
                 pos3 = index(ctemp4, ',')
@@ -3442,18 +3521,25 @@ contains
                 endif
                 read (ctemp5(1:), *, err=102, end=102) m_tmp
                 if (l_tmp >= 0) then
-                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) call io_error('w90_readwrite_get_projections: m is > l !', &
-                                                                             stdout, seedname)
+                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) then
+                    call set_error_input(error, 'w90_readwrite_get_projections: m is > l !')
+                    return
+                  endif
                 elseif (l_tmp == -1 .and. (m_tmp > 2 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (1)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (1)')
+                  return
                 elseif (l_tmp == -2 .and. (m_tmp > 3 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (2)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (2)')
+                  return
                 elseif (l_tmp == -3 .and. (m_tmp > 4 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (3)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (3)')
+                  return
                 elseif (l_tmp == -4 .and. (m_tmp > 5 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (4)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (4)')
+                  return
                 elseif (l_tmp == -5 .and. (m_tmp > 6 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (5)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (5)')
+                  return
                 endif
                 ang_states(m_tmp, l_tmp) = 1
                 if (pos3 == 0) exit
@@ -3559,7 +3645,8 @@ contains
               case ('sp3d2-6')
                 ang_states(6, -5) = 1
               case default
-                call io_error('w90_readwrite_get_projections: Problem reading l state '//trim(ctemp3), stdout, seedname)
+                call set_error_input(error, 'w90_readwrite_get_projections: Problem reading l state '//trim(ctemp3))
+                return
               end select
               if (pos3 == 0) exit
               ctemp3 = ctemp3(pos3 + 1:)
@@ -3648,8 +3735,8 @@ contains
                   do loop_s = 1, spn_counter
                     counter = counter + 1
                     if (lcount) cycle
-                    call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), pos_frac, &
-                                              inv_lattice)
+                    call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), &
+                                              pos_frac, inv_lattice)
                     input_proj%site(:, counter) = pos_frac(:)
                     input_proj%l(counter) = loop_l
                     input_proj%m(counter) = loop_m
@@ -3678,8 +3765,10 @@ contains
 
       ! check there are enough projections and add random projections if required
       if (.not. lpartrandom) then
-        if (counter .lt. num_wann) call io_error( &
-          'w90_readwrite_get_projections: too few projection functions defined', stdout, seedname)
+        if (counter .lt. num_wann) then
+          call set_error_input(error, 'w90_readwrite_get_projections: too few projection functions defined')
+          return
+        endif
       end if
     end if ! .not. lrandom
 
@@ -3760,7 +3849,8 @@ contains
         ! user may have made a mistake and should check
         if (abs(cosphi) .gt. eps2) then
           write (stdout, *) ' Projection:', loop
-          call io_error(' Error in projections: z and x axes are not orthogonal', stdout, seedname)
+          call set_error_input(error, ' Error in projections: z and x axes are not orthogonal')
+          return
         endif
 
         ! If projection axes are "reasonably orthogonal", project x-axis
@@ -3775,7 +3865,8 @@ contains
 555     cosphi_new = sum(input_proj%z(:, loop)*input_proj%x(:, loop))
         if (abs(cosphi_new) .gt. eps6) then
           write (stdout, *) ' Projection:', loop
-          call io_error(' Error: z and x axes are still not orthogonal after projection', stdout, seedname)
+          call set_error_input(error, ' Error: z and x axes are still not orthogonal after projection')
+          return
         endif
 
       endif
@@ -3784,11 +3875,16 @@ contains
 
     return
 
-101 call io_error('w90_readwrite_get_projections: Problem reading l state into integer '//trim(ctemp3), stdout, seedname)
-102 call io_error('w90_readwrite_get_projections: Problem reading m state into integer '//trim(ctemp3), stdout, seedname)
-104 call io_error('w90_readwrite_get_projections: Problem reading zona into real '//trim(ctemp), stdout, seedname)
-105 call io_error('w90_readwrite_get_projections: Problem reading radial state into integer '//trim(ctemp), stdout, seedname)
-106 call io_error('w90_readwrite_get_projections: Problem reading m state into string '//trim(ctemp3), stdout, seedname)
+101 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading l state into integer '//trim(ctemp3))
+    return
+102 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state into integer '//trim(ctemp3))
+    return
+104 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading zona into real '//trim(ctemp))
+    return
+105 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading radial state into integer '//trim(ctemp))
+    return
+106 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state into string '//trim(ctemp3))
+    return
 
   end subroutine w90_readwrite_get_projections
 

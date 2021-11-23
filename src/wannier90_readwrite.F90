@@ -1103,6 +1103,7 @@ contains
                                                       bohr, stdout, seedname)
     !================================================!
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -1110,6 +1111,7 @@ contains
     type(proj_input_type), intent(inout) :: proj
     type(proj_input_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
+    type(w90_error_type), allocatable :: error !BGS FIXME
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     real(kind=dp), intent(in) :: bohr
@@ -1138,8 +1140,9 @@ contains
       if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
                                                      stdout, seedname)
       lhasproj = .true.
-      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, &
-                                         proj, recip_lattice, .true., spinors, bohr, stdout, seedname)
+      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, proj, &
+                                         recip_lattice, .true., spinors, bohr, stdout, seedname, error)
+      if (allocated(error)) return
     else
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
         call io_error('w90_wannier90_readwrite_read: Guiding centres requested, but no projection block found', stdout, seedname)
@@ -1189,8 +1192,9 @@ contains
     endif
 
     if (lhasproj) then
-      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, &
-                                         proj, recip_lattice, .false., spinors, bohr, stdout, seedname)
+      call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, proj, &
+                                         recip_lattice, .false., spinors, bohr, stdout, seedname, error)
+      if (allocated(error)) return
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj%site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
