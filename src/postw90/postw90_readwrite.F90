@@ -298,12 +298,14 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: kslicel
     type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: i
     logical :: found
@@ -326,7 +328,8 @@ contains
       ("Error: kslice_task cannot include both 'shc' and 'curv'", stdout, seedname)
 
     pw90_kslice%kmesh2d(1:2) = 50
-    call w90_readwrite_get_vector_length(stdout, seedname, 'kslice_2dkmesh', found, length=i)
+    call w90_readwrite_get_vector_length('kslice_2dkmesh', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (i == 1) then
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 1, &
@@ -1313,6 +1316,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -1322,6 +1326,7 @@ contains
     logical, intent(out) :: global_kmesh_set
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error ! BGS FIXME
 
     integer :: i
     logical :: found
@@ -1344,7 +1349,8 @@ contains
 
       call w90_readwrite_set_kmesh(kmesh%spacing, recip_lattice, kmesh%mesh)
     end if
-    call w90_readwrite_get_vector_length(stdout, seedname, 'kmesh', found, length=i)
+    call w90_readwrite_get_vector_length('kmesh', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (global_kmesh_set) &
         call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout, seedname)
@@ -1424,6 +1430,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -1442,6 +1449,7 @@ contains
     logical, intent(in) :: global_kmesh_set
     type(kmesh_spacing_type), intent(in) :: global_kmesh
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found, found2
     integer :: i
@@ -1458,7 +1466,8 @@ contains
 
       call w90_readwrite_set_kmesh(module_kmesh%spacing, recip_lattice, module_kmesh%mesh)
     end if
-    call w90_readwrite_get_vector_length(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, length=i)
+    call w90_readwrite_get_vector_length(trim(moduleprefix)//'_kmesh', found2, i, error)
+    if (allocated(error)) return
     if (found2) then
       if (found) &
         call io_error('Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &

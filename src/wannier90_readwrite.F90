@@ -848,7 +848,8 @@ contains
 
     wann_plot%supercell = 2
 
-    call w90_readwrite_get_vector_length(stdout, seedname, 'wannier_plot_supercell', found, length=i)
+    call w90_readwrite_get_vector_length('wannier_plot_supercell', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 1, &

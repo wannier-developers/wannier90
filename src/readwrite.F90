@@ -500,7 +500,8 @@ contains
 
     ws_region%ws_search_size = 2
 
-    call w90_readwrite_get_vector_length(stdout, seedname, 'ws_search_size', found, length=i)
+    call w90_readwrite_get_vector_length('ws_search_size', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 1, &
@@ -2301,25 +2302,24 @@ contains
   end subroutine w90_readwrite_get_keyword_vector
 
 !================================================!
-  subroutine w90_readwrite_get_vector_length(stdout, seedname, keyword, found, length)
+  subroutine w90_readwrite_get_vector_length(keyword, found, length, error)
     !================================================!
     !
     !! Returns the length of a keyword vector
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
     !! Is keyword present
     integer, intent(out)  :: length
     !! length of vector
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
@@ -2332,7 +2332,8 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file')
+        return
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -2345,7 +2346,10 @@ contains
 
     length = 0
     if (found) then
-      if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout, seedname)
+      if (len_trim(dummy) == 0) then
+        call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank')
+        return
+      endif
       length = 1
       dummy = adjustl(dummy)
       do
