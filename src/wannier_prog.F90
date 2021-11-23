@@ -328,7 +328,11 @@ program wannier
     endif
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, &
-                                  checkpoint, have_disentangled, seedname, stdout, comm)
+                                  checkpoint, have_disentangled, seedname, stdout, err, comm)
+    if (allocated(err)) then
+      call prterr(err, stdout)
+      call exit(err%code)
+    end if
     if (lsitesymmetry) then
       call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, err)
       ! update this to read on root and bcast - JRY

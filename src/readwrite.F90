@@ -1966,9 +1966,9 @@ contains
   end subroutine w90_readwrite_read_chkpt
 
 !================================================!
-  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, omega_invariant, &
-                                      num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
-                                      seedname, stdout, comm)
+  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
+                                      omega_invariant, num_bands, num_kpts, num_wann, checkpoint, &
+                                      have_disentangled, seedname, stdout, error, comm)
     !================================================!
     !
     !! Distribute the chk files
@@ -1976,14 +1976,16 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch => io_stopwatch_new
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_error, only: w90_error_type, set_error_alloc
 
     implicit none
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout
@@ -2010,8 +2012,10 @@ contains
 
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) &
-        call io_error('Error allocating u_matrix in w90_readwrite_chkpt_dist', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_chkpt_dist')
+        return
+      endif
     endif
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
 
@@ -2029,20 +2033,26 @@ contains
 
         if (.not. allocated(u_matrix_opt)) then
           allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating u_matrix_opt in w90_readwrite_chkpt_dist', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_chkpt_dist')
+            return
+          endif
         endif
 
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating lwindow in w90_readwrite_chkpt_dist', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_chkpt_dist')
+            return
+          endif
         endif
 
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating ndimwin in w90_readwrite_chkpt_dist', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_chkpt_dist')
+            return
+          endif
         endif
 
       end if
