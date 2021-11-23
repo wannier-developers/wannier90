@@ -1976,7 +1976,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_date, io_time
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_error, only: w90_error_type, set_error_alloc
 
@@ -2068,7 +2068,7 @@ contains
   end subroutine w90_readwrite_chkpt_dist
 
 !================================================!
-  subroutine w90_readwrite_in_file(seedname, stdout)
+  subroutine w90_readwrite_in_file(seedname, error)
     !================================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
@@ -2077,12 +2077,13 @@ contains
     !================================================!
 
     use w90_utility, only: utility_lowercase
-    use w90_io, only: io_file_unit, io_error
+    use w90_io, only: io_file_unit
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file
 
     implicit none
 
-    integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer           :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
@@ -2110,13 +2111,18 @@ contains
 
     end do
 
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.win', stdout, seedname)
-200 call io_error('Error: Problem reading input file '//trim(seedname)//'.win', stdout, seedname)
+101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.win')
+    return
+200 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.win')
+    return
 210 continue
     rewind (in_unit)
 
     allocate (in_data(num_lines), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating in_data in w90_readwrite_in_file', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating in_data in w90_readwrite_in_file')
+      return
+    endif
 
     line_counter = 0
     do loop = 1, tot_num_lines

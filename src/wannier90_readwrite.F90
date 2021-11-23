@@ -139,7 +139,8 @@ contains
     logical :: disentanglement
 
     disentanglement = .false.
-    call w90_readwrite_in_file(seedname, stdout)
+    call w90_readwrite_in_file(seedname, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout)
 
     call w90_readwrite_read_verbosity(print_output, stdout, seedname)
