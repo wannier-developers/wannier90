@@ -167,7 +167,7 @@ contains
       call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                                    stdout, seedname)
       !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
-      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, seedname, error)
+      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, error)
       if (allocated(error)) return
       call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
       if (allocated(error)) return
@@ -852,13 +852,15 @@ contains
     if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 1, &
+        call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 1, error, &
                                               i_value=wann_plot%supercell)
+        if (allocated(error)) return
         wann_plot%supercell(2) = wann_plot%supercell(1)
         wann_plot%supercell(3) = wann_plot%supercell(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 3, &
+        call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 3, error, &
                                               i_value=wann_plot%supercell)
+        if (allocated(error)) return
       else
         call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
@@ -992,11 +994,13 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: hamiltonian
     real(kind=dp) :: rv_temp(3)
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
@@ -1006,8 +1010,9 @@ contains
 
     hamiltonian%automatic_translation = .true.
     hamiltonian%translation_centre_frac = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 3, &
+    call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 3, error, &
                                           r_value=rv_temp)
+    if (allocated(error)) return
     if (found) then
       hamiltonian%translation_centre_frac = rv_temp
       hamiltonian%automatic_translation = .false.

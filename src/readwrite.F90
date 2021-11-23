@@ -268,19 +268,19 @@ contains
   end subroutine w90_readwrite_read_gamma_only
 
   subroutine w90_readwrite_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, &
-                                        seedname, error)
+                                        error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: pw90_effective_model, library
     integer, intent(inout) :: mp_grid(3), num_kpts
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: iv_temp(3)
     logical :: found
 
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'mp_grid', found, 3, i_value=iv_temp)
+    call w90_readwrite_get_keyword_vector('mp_grid', found, 3, error, i_value=iv_temp)
+    if (allocated(error)) return
     if (found .and. library) write (stdout, '(a)') ' Ignoring <mp_grid> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
@@ -504,13 +504,15 @@ contains
     if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 1, &
+        call w90_readwrite_get_keyword_vector('ws_search_size', found, 1, error, &
                                               i_value=ws_region%ws_search_size)
+        if (allocated(error)) return
         ws_region%ws_search_size(2) = ws_region%ws_search_size(1)
         ws_region%ws_search_size(3) = ws_region%ws_search_size(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
+        call w90_readwrite_get_keyword_vector('ws_search_size', found, 3, error, &
                                               i_value=ws_region%ws_search_size)
+        if (allocated(error)) return
       else
         call set_error_input(error, &
                              'Error: ws_search_size must be provided as either one integer or a vector of three integers')
@@ -982,11 +984,11 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'write_xyz', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'wvfn_formatted', found)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 0) ! the absent arrays have zero length ;-)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'mp_grid', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 0)
+    call w90_readwrite_get_keyword_vector('kmesh', found, 0, error) ! the absent arrays have zero length ;-)
+    call w90_readwrite_get_keyword_vector('mp_grid', found, 0, error)
+    call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 0, error)
+    call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 0, error)
+    call w90_readwrite_get_keyword_vector('ws_search_size', found, 0, error)
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
@@ -1094,20 +1096,20 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'uhu_formatted', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'use_degen_pert', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'wanint_kpoint_file', found)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'berry_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'boltz_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'dos_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b1', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b2', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b3', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'spin_kmesh', found, 0)
+    call w90_readwrite_get_keyword_vector('berry_kmesh', found, 0, error)
+    call w90_readwrite_get_keyword_vector('boltz_kmesh', found, 0, error)
+    call w90_readwrite_get_keyword_vector('dos_kmesh', found, 0, error)
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_b1', found, 0, error)
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_b2', found, 0, error)
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_b3', found, 0, error)
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_center', found, 0, error)
+    call w90_readwrite_get_keyword_vector('gyrotropic_kmesh', found, 0, error)
+    call w90_readwrite_get_keyword_vector('kdotp_kpoint', found, 0, error)
+    call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 0, error)
+    call w90_readwrite_get_keyword_vector('kslice_b1', found, 0, error)
+    call w90_readwrite_get_keyword_vector('kslice_b2', found, 0, error)
+    call w90_readwrite_get_keyword_vector('kslice_corner', found, 0, error)
+    call w90_readwrite_get_keyword_vector('spin_kmesh', found, 0, error)
     ! BGS what about get_range_vectors and gyrotropic_band_list, kdotp_bands etc?
     ! ends list of postw90 keywords
     if (allocated(error)) deallocate (error)
@@ -2232,18 +2234,19 @@ contains
   end subroutine w90_readwrite_get_keyword
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_vector(stdout, seedname, keyword, found, length, c_value, &
-                                              l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword_vector(keyword, found, length, error, &
+                                              c_value, l_value, i_value, r_value)
     !================================================!
     !
     !! Finds the values of the required keyword vector
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2258,8 +2261,6 @@ contains
     !! Keyword data
     real(kind=dp), optional, intent(inout) :: r_value(length)
     !! Keyword data
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     integer           :: kl, in, loop, i
     character(len=maxlen) :: dummy
@@ -2272,7 +2273,8 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file')
+        return
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -2289,7 +2291,8 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-        call io_error('w90_readwrite_get_keyword_vector unimplemented for logicals', stdout, seedname)
+        call set_error_input(error, 'w90_readwrite_get_keyword_vector unimplemented for logicals')
+        return
       endif
       if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
       if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
@@ -2297,7 +2300,8 @@ contains
 
     return
 
-230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in w90_readwrite_get_keyword_vector', stdout, seedname)
+230 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword)//' in w90_readwrite_get_keyword_vector')
+    return
 
   end subroutine w90_readwrite_get_keyword_vector
 

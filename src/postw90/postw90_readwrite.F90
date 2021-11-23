@@ -158,8 +158,7 @@ contains
     if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
     !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
-    call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, &
-                                    stdout, seedname, error)
+    call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname, error)
     if (allocated(error)) return
@@ -332,12 +331,14 @@ contains
     if (allocated(error)) return
     if (found) then
       if (i == 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 1, &
+        call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 1, error, &
                                               i_value=pw90_kslice%kmesh2d)
+        if (allocated(error)) return
         pw90_kslice%kmesh2d(2) = pw90_kslice%kmesh2d(1)
       elseif (i == 2) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 2, &
+        call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 2, error, &
                                               i_value=pw90_kslice%kmesh2d)
+        if (allocated(error)) return
       else
         call io_error('Error: kslice_2dkmesh must be provided as either' &
                       //' one integer or a vector of two integers', stdout, seedname)
@@ -348,18 +349,21 @@ contains
     endif
 
     pw90_kslice%corner = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 3, &
+    call w90_readwrite_get_keyword_vector('kslice_corner', found, 3, error, &
                                           r_value=pw90_kslice%corner)
+    if (allocated(error)) return
 
     pw90_kslice%b1(1) = 1.0_dp
     pw90_kslice%b1(2) = 0.0_dp
     pw90_kslice%b1(3) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 3, r_value=pw90_kslice%b1)
+    call w90_readwrite_get_keyword_vector('kslice_b1', found, 3, error, r_value=pw90_kslice%b1)
+    if (allocated(error)) return
 
     pw90_kslice%b2(1) = 0.0_dp
     pw90_kslice%b2(2) = 1.0_dp
     pw90_kslice%b2(3) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 3, r_value=pw90_kslice%b2)
+    call w90_readwrite_get_keyword_vector('kslice_b2', found, 3, error, r_value=pw90_kslice%b2)
+    if (allocated(error)) return
 
     pw90_kslice%fermi_lines_colour = 'none'
     call w90_readwrite_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found, &
@@ -507,13 +511,15 @@ contains
     do i = 1, 3
       pw90_gyrotropic%box(i, i) = 1.0_dp
       gyrotropic_box_tmp(:) = 0.0_dp
-      call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b'//achar(48 + i), found, 3, &
+      call w90_readwrite_get_keyword_vector('gyrotropic_box_b'//achar(48 + i), found, 3, error, &
                                             r_value=gyrotropic_box_tmp)
+      if (allocated(error)) return
       if (found) pw90_gyrotropic%box(i, :) = gyrotropic_box_tmp(:)
     enddo
     pw90_gyrotropic%box_corner(:) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 3, &
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_center', found, 3, error, &
                                           r_value=gyrotropic_box_tmp)
+    if (allocated(error)) return
     if (found) pw90_gyrotropic%box_corner(:) = &
       gyrotropic_box_tmp(:) - 0.5*(pw90_gyrotropic%box(1, :) + pw90_gyrotropic%box(2, :) + &
                                    pw90_gyrotropic%box(3, :))
@@ -685,8 +691,9 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'sc_w_thr', found, r_value=pw90_berry%sc_w_thr)
 
     pw90_berry%kdotp_kpoint(:) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 3, &
+    call w90_readwrite_get_keyword_vector('kdotp_kpoint', found, 3, error, &
                                           r_value=pw90_berry%kdotp_kpoint)
+    if (allocated(error)) return
 
     kdotp_num_bands = 0
     call w90_readwrite_get_keyword(stdout, seedname, 'kdotp_num_bands', found, i_value=kdotp_num_bands)
@@ -1356,12 +1363,14 @@ contains
         call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
         global_kmesh_set = .true.
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 1, i_value=kmesh%mesh)
+        call w90_readwrite_get_keyword_vector('kmesh', found, 1, error, i_value=kmesh%mesh)
+        if (allocated(error)) return
         kmesh%mesh(2) = kmesh%mesh(1)
         kmesh%mesh(3) = kmesh%mesh(1)
       elseif (i .eq. 3) then
         global_kmesh_set = .true.
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 3, i_value=kmesh%mesh)
+        call w90_readwrite_get_keyword_vector('kmesh', found, 3, error, i_value=kmesh%mesh)
+        if (allocated(error)) return
       else
         call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
@@ -1473,13 +1482,15 @@ contains
         call io_error('Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
                       //trim(moduleprefix)//'_kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
-                                              1, i_value=module_kmesh%mesh)
+        call w90_readwrite_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, &
+                                              1, error, i_value=module_kmesh%mesh)
+        if (allocated(error)) return
         module_kmesh%mesh(2) = module_kmesh%mesh(1)
         module_kmesh%mesh(3) = module_kmesh%mesh(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
-                                              3, i_value=module_kmesh%mesh)
+        call w90_readwrite_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, &
+                                              3, error, i_value=module_kmesh%mesh)
+        if (allocated(error)) return
       else
         call io_error('Error: '//trim(moduleprefix)// &
                       '_kmesh must be provided as either one integer or a vector of 3 integers', &
