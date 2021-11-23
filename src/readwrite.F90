@@ -2791,8 +2791,8 @@ contains
   end subroutine readwrite_get_atoms
 
   !================================================!
-  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
-                                         stdout, seedname)
+  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
+                                         real_lattice, error)
     !================================================!
     !
     !!   Fills the atom data block during a library call
@@ -2800,18 +2800,17 @@ contains
     !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat, utility_lowercase
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc
 
     implicit none
 
-    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atom_data
+    type(w90_error_type), allocatable, intent(out) :: error
     character(len=*), intent(in) :: atoms_label_tmp(atom_data%num_atoms)
     !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     !! Atom positions
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
 
     real(kind=dp)     :: inv_lattice(3, 3)
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
@@ -2839,11 +2838,20 @@ contains
     end do
 
     allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_species_num in w90_readwrite_lib_set_atoms')
+      return
+    endif
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_label in w90_readwrite_lib_set_atoms')
+      return
+    endif
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_symbol in w90_readwrite_lib_set_atoms')
+      return
+    endif
     atom_data%species_num(:) = 0
 
     do loop = 1, atom_data%num_species
@@ -2857,7 +2865,10 @@ contains
 
     max_sites = maxval(atom_data%species_num)
     allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms')
+      return
+    endif
 
     do loop = 1, atom_data%num_species
       counter = 0
