@@ -359,7 +359,8 @@ contains
     logical :: found
 
     bands_num_spec_points = 0
-    call w90_readwrite_get_block_length(stdout, seedname, 'kpoint_path', found, i_temp, library)
+    call w90_readwrite_get_block_length('kpoint_path', found, i_temp, library, error)
+    if (allocated(error)) return
     if (found) then
       ok = .true.
       bands_num_spec_points = i_temp*2
@@ -797,8 +798,7 @@ contains
     end if
   end subroutine w90_readwrite_read_lattice
 
-  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, &
-                                      error)
+  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: library
@@ -806,7 +806,6 @@ contains
     type(atom_data_type), intent(inout) :: atom_data
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i_temp, i_temp2
@@ -814,10 +813,11 @@ contains
 
     ! Atoms
     if (.not. library) atom_data%num_atoms = 0
-    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_frac', found, i_temp, library)
+    call w90_readwrite_get_block_length('atoms_frac', found, i_temp, library, error)
+    if (allocated(error)) return
     if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_cart', found2, i_temp2, library, &
-                                        lunits)
+    call w90_readwrite_get_block_length('atoms_cart', found2, i_temp2, library, error, lunits)
+    if (allocated(error)) return
     if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
     if (.not. library) then
       if (found .and. found2) then
@@ -832,8 +832,7 @@ contains
         if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
       end if
       if (atom_data%num_atoms > 0) then
-        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname, &
-                                 error)
+        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, error)
         if (allocated(error)) return
       end if
     endif
@@ -2510,19 +2509,18 @@ contains
   end subroutine w90_readwrite_get_keyword_block
 
   !================================================!
-  subroutine w90_readwrite_get_block_length(stdout, seedname, keyword, found, rows, library, lunits)
+  subroutine w90_readwrite_get_block_length(keyword, found, rows, library, error, lunits)
     !================================================!
     !
     !! Finds the length of the data block
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2553,7 +2551,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -2570,17 +2569,20 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      return
     end if
 
     rows = line_e - line_s - 1
@@ -2619,7 +2621,7 @@ contains
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
-  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname, error)
+  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, error)
     !================================================!
     !
     !!   Fills the atom data block
@@ -2632,13 +2634,11 @@ contains
 
     type(atom_data_type), intent(inout) :: atom_data
     type(w90_error_type), allocatable, intent(out) :: error
-    integer, intent(in) :: stdout
     logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
 
     real(kind=dp)     :: inv_lattice(3, 3)
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
@@ -2654,7 +2654,8 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
-    call w90_readwrite_get_block_length(stdout, seedname, "atoms_frac", found, i_temp, library)
+    call w90_readwrite_get_block_length("atoms_frac", found, i_temp, library, error)
+    if (allocated(error)) return
     if (found) then
       keyword = "atoms_frac"
       frac = .true.

@@ -217,7 +217,7 @@ contains
                                                   pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
                                                   pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                   stdout, seedname)
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, error) !pw90_write
+    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error) !pw90_write
     if (allocated(error)) return
     call w90_readwrite_clean_infile(stdout, seedname, error)
     if (allocated(error)) return

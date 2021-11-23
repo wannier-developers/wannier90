@@ -224,7 +224,7 @@ contains
                                                       seedname)
       !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
       !                             stdout, seedname)
-      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname, error)
+      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error)
       if (allocated(error)) return
       call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                     wann_control%guiding_centres%enable, &
@@ -1034,6 +1034,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
     use w90_utility, only: utility_recip_lattice
 
     implicit none
@@ -1046,6 +1047,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: library
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     ! local variables
     integer, allocatable :: nnkpts_block(:, :)
@@ -1054,8 +1056,8 @@ contains
     logical :: found
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call w90_readwrite_get_block_length(stdout, seedname, 'nnkpts', kmesh_info%explicit_nnkpts, &
-                                        rows, library)
+    call w90_readwrite_get_block_length('nnkpts', kmesh_info%explicit_nnkpts, rows, library, error)
+    if (allocated(error)) return
     if (kmesh_info%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
@@ -1139,7 +1141,8 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found, &
                                    l_value=proj_input%auto_projections)
     num_proj = 0
-    call w90_readwrite_get_block_length(stdout, seedname, 'projections', found, i_temp, library)
+    call w90_readwrite_get_block_length('projections', found, i_temp, library, error)
+    if (allocated(error)) return
     ! check to see that there are no unrecognised keywords
     if (found) then
       if (proj_input%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block', &
@@ -1244,7 +1247,8 @@ contains
     logical :: found
 
     ! Constrained centres
-    call w90_readwrite_get_block_length(stdout, seedname, 'slwf_centres', found, i_temp, library)
+    call w90_readwrite_get_block_length('slwf_centres', found, i_temp, library, error)
+    if (allocated(error)) return
     if (found) then
       if (wann_control%constrain%constrain) then
         ! Allocate array for constrained centres
