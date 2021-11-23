@@ -832,7 +832,9 @@ contains
         if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
       end if
       if (atom_data%num_atoms > 0) then
-        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
+        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname, &
+                                 error)
+        if (allocated(error)) return
       end if
     endif
   end subroutine w90_readwrite_read_atoms
@@ -2617,7 +2619,7 @@ contains
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
-  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
+  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname, error)
     !================================================!
     !
     !!   Fills the atom data block
@@ -2625,10 +2627,11 @@ contains
     !================================================!
 
     use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac, utility_inverse_mat
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
     type(atom_data_type), intent(inout) :: atom_data
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: stdout
     logical, intent(in) :: library
     logical, intent(in) :: lunits
@@ -2670,7 +2673,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -2682,17 +2686,20 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      return
     end if
 
     lconvert = .false.
@@ -2703,7 +2710,8 @@ contains
       elseif (index(dummy, 'bohr') .ne. 0) then
         lconvert = .true.
       else
-        call io_error('Error: Units in block atoms_cart not recognised in readwrite_get_atoms', stdout, seedname)
+        call set_error_input(error, 'Error: Units in block atoms_cart not recognised in readwrite_get_atoms')
+        return
       endif
       in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
@@ -2748,11 +2756,20 @@ contains
     end do
 
     allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_species_num in readwrite_get_atoms')
+      return
+    endif
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_label in readwrite_get_atoms')
+      return
+    endif
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_symbol in readwrite_get_atoms')
+      return
+    endif
     atom_data%species_num(:) = 0
 
     do loop = 1, atom_data%num_species
@@ -2766,7 +2783,10 @@ contains
 
     max_sites = maxval(atom_data%species_num)
     allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_pos_cart in readwrite_get_atoms')
+      return
+    endif
 
     do loop = 1, atom_data%num_species
       counter = 0
@@ -2789,7 +2809,8 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout, seedname)
+240 call set_error_alloc(error, 'Error: Problem reading block keyword '//trim(keyword))
+    return
 
   end subroutine readwrite_get_atoms
 
