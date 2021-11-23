@@ -719,11 +719,10 @@ contains
   end subroutine w90_readwrite_read_kmesh_data
 
   subroutine w90_readwrite_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
-                                        bohr, stdout, seedname, error)
+                                        bohr, stdout, error)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
-    character(len=50), intent(in)  :: seedname
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     logical, intent(in) :: pw90_effective_model, library
@@ -748,8 +747,9 @@ contains
       endif
     end if
 
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, &
+    call w90_readwrite_get_keyword_block('kpoints', found, num_kpts, 3, bohr, error, &
                                          r_value=kpt_cart)
+    if (allocated(error)) return
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       kpt_latt = kpt_cart
@@ -773,7 +773,7 @@ contains
 
   end subroutine w90_readwrite_read_kpoints
 
-  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: library
@@ -781,13 +781,13 @@ contains
     real(kind=dp), intent(out) :: real_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
 
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 3, 3, bohr, &
+    call w90_readwrite_get_keyword_block('unit_cell_cart', found, 3, 3, bohr, error, &
                                          r_value=real_lattice_tmp)
+    if (allocated(error)) return
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
       real_lattice = transpose(real_lattice_tmp)
@@ -864,10 +864,10 @@ contains
     logical :: found
 
     ! keywords for wannier.x
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'dis_spheres', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'nnkpts', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 0, 0, 0.0_dp)
+    call w90_readwrite_get_keyword_block('dis_spheres', found, 0, 0, 0.0_dp, error)
+    call w90_readwrite_get_keyword_block('kpoints', found, 0, 0, 0.0_dp, error)
+    call w90_readwrite_get_keyword_block('nnkpts', found, 0, 0, 0.0_dp, error)
+    call w90_readwrite_get_keyword_block('unit_cell_cart', found, 0, 0, 0.0_dp, error)
     call clear_block('projections', error)
     call clear_block('kpoint_path', error)
     call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found)
@@ -2367,20 +2367,18 @@ contains
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_block(stdout, seedname, keyword, found, rows, columns, &
-                                             bohr, c_value, l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword_block(keyword, found, rows, columns, bohr, error, &
+                                             c_value, l_value, i_value, r_value)
     !================================================!
     !
     !!   Finds the values of the required data block
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2398,6 +2396,7 @@ contains
     real(kind=dp), optional, intent(inout) :: r_value(columns, rows)
     !! keyword block data
     real(kind=dp), intent(in) :: bohr
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter, blen
     logical           :: found_e, found_s, lconvert
@@ -2416,7 +2415,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -2433,17 +2433,20 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      return
     end if
 
     ! number of lines of data in block
@@ -2457,11 +2460,16 @@ contains
     !       endif
     !    endif
 
-    if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
+    if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) then
+      call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword))
+      return
+    endif
 
-    if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. (index(trim(keyword), 'unit_cell_cart') .eq. 0)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
+    if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. &
+        (index(trim(keyword), 'unit_cell_cart') .eq. 0)) then
+      call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword))
+      return
+    endif
 
     found = .true.
 
@@ -2473,7 +2481,8 @@ contains
       elseif (index(dummy, 'bohr') .ne. 0) then
         lconvert = .true.
       else
-        call io_error('Error: Units in block '//trim(keyword)//' not recognised', stdout, seedname)
+        call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised')
+        return
       endif
       in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
@@ -2488,7 +2497,8 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-        call io_error('w90_readwrite_get_keyword_block unimplemented for logicals', stdout, seedname)
+        call set_error_input(error, 'w90_readwrite_get_keyword_block unimplemented for logicals')
+        return
       endif
       if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
       if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
@@ -2504,7 +2514,8 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout, seedname)
+240 call set_error_input(error, 'Error: Problem reading block keyword '//trim(keyword))
+    return
 
   end subroutine w90_readwrite_get_keyword_block
 

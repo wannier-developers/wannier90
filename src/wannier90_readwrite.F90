@@ -162,7 +162,7 @@ contains
                                         error)
       if (allocated(error)) return
       disentanglement = (num_bands > num_wann)
-      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
       if (allocated(error)) return
       call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                                    stdout, seedname)
@@ -217,8 +217,7 @@ contains
       if (allocated(error)) return
       call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
       call utility_inverse_mat(real_lattice, inv_lattice)
-      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, &
-                                      seedname, error)
+      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, error)
       if (allocated(error)) return
       call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, &
                                                       seedname)
@@ -575,6 +574,7 @@ contains
                                                       num_wann, bohr, stdout, seedname)
     !================================================!
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     type(dis_control_type), intent(inout) :: dis_control
@@ -582,6 +582,7 @@ contains
     integer, intent(in) :: num_bands, num_wann
     real(kind=dp), intent(in) :: bohr
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error ! BGS FIXME
 
     integer :: nkp, ierr
     logical :: found
@@ -615,8 +616,9 @@ contains
     if (dis_spheres%num > 0) then
       allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dis_spheres in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_keyword_block(stdout, seedname, 'dis_spheres', found, dis_spheres%num, 4, &
-                                           bohr, r_value=dis_spheres%spheres)
+      call w90_readwrite_get_keyword_block('dis_spheres', found, dis_spheres%num, 4, &
+                                           bohr, error, r_value=dis_spheres%spheres)
+      if (allocated(error)) return
       if (.not. found) call io_error('Error: Did not find dis_spheres in the input file', stdout, seedname)
       do nkp = 1, dis_spheres%num
         if (dis_spheres%spheres(4, nkp) < 1.0e-15_dp) &
@@ -1066,7 +1068,9 @@ contains
       if (allocated(nnkpts_block)) deallocate (nnkpts_block)
       allocate (nnkpts_block(5, rows), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating nnkpts_block in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_keyword_block(stdout, seedname, 'nnkpts', found, rows, 5, bohr, i_value=nnkpts_block)
+      call w90_readwrite_get_keyword_block('nnkpts', found, rows, 5, bohr, error, &
+                                           i_value=nnkpts_block)
+      if (allocated(error)) return
       ! check that postproc_setup is true
       if (.not. w90_calculation%postproc_setup) &
         call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.', stdout, seedname)

@@ -203,13 +203,13 @@ contains
                                                 seedname)
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                    fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
-    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname, error)
+    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname, error)
     if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
-                                    bohr, stdout, seedname, error)
+                                    bohr, stdout, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                    recip_lattice, stdout, seedname)
