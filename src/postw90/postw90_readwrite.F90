@@ -415,7 +415,7 @@ contains
     pw90_smearing%type_index = 0
     call w90_readwrite_get_keyword('smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', stdout, seedname)
+    if (found) pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', error)
 
     ! By default: adaptive smearing
     pw90_smearing%use_adaptive = .true.
@@ -614,7 +614,7 @@ contains
     call w90_readwrite_get_keyword('gyrotropic_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
     if (found) pw90_gyrotropic%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                      'gyrotropic_smr_type', stdout, seedname)
+                                                                                      'gyrotropic_smr_type', error)
 
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
@@ -734,7 +734,7 @@ contains
     call w90_readwrite_get_keyword('kubo_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
     if (found) pw90_berry%kubo_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'kubo_smr_type', &
-                                                                                      stdout, seedname)
+                                                                                      error)
 
     pw90_berry%sc_eta = 0.04
     call w90_readwrite_get_keyword('sc_eta', found, error, r_value=pw90_berry%sc_eta)
@@ -1046,8 +1046,8 @@ contains
     pw90_dos%smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('dos_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', stdout, &
-                                                                               seedname)
+    if (found) pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', &
+                                                                               error)
 
   end subroutine w90_wannier90_readwrite_read_dos
 
@@ -1267,14 +1267,14 @@ contains
     call w90_readwrite_get_keyword('boltz_tdf_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
     if (found) pw90_boltzwann%tdf_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_tdf_smr_type', stdout, seedname)
+                                                                                         'boltz_tdf_smr_type', error)
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%dos_smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('boltz_dos_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
     if (found) pw90_boltzwann%dos_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_dos_smr_type', stdout, seedname)
+                                                                                         'boltz_dos_smr_type', error)
 
     ! By default: 10 fs relaxation time
     pw90_boltzwann%relax_time = 10._dp

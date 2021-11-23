@@ -1285,18 +1285,17 @@ contains
 
   end function w90_readwrite_get_convention_type
 
-  function w90_readwrite_get_smearing_index(string, keyword, stdout, seedname)
+  function w90_readwrite_get_smearing_index(string, keyword, error)
     !! This function parses a string containing the type of
     !! smearing and returns the correct index for the smearing_index variable
     !
     !! If the string is not valid, an io_error is issued
-    use w90_io, only: io_error
-    integer, intent(in) :: stdout
+    use w90_error, only: w90_error_type, set_error_input
     character(len=*), intent(in) :: string
     !! The string read from input
     character(len=*), intent(in) :: keyword
     !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
     integer :: w90_readwrite_get_smearing_index
 
     integer :: pos
@@ -1312,8 +1311,10 @@ contains
         w90_readwrite_get_smearing_index = 1
       else
         read (string(pos + 3:), *, err=337) w90_readwrite_get_smearing_index
-        if (w90_readwrite_get_smearing_index < 0) &
-          call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout, seedname)
+        if (w90_readwrite_get_smearing_index < 0) then
+          call set_error_input(error, 'Wrong m-p smearing order in keyword '//trim(keyword))
+          return
+        endif
       end if
     elseif (index(string, 'f-d') > 0) then
       w90_readwrite_get_smearing_index = -99
@@ -1324,12 +1325,14 @@ contains
       w90_readwrite_get_smearing_index = 0
       ! Unrecognised keyword
     else
-      call io_error('Unrecognised value for keyword '//trim(keyword), stdout, seedname)
+      call set_error_input(error, 'Unrecognised value for keyword '//trim(keyword))
+      return
     end if
 
     return
 
-337 call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout, seedname)
+337 call set_error_input(error, 'Wrong m-p smearing order in keyword '//trim(keyword))
+    return
 
   end function w90_readwrite_get_smearing_index
 
