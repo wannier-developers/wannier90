@@ -377,7 +377,8 @@ contains
         call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read')
         return
       endif
-      call w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
+      call w90_readwrite_get_keyword_kpath(kpoint_path, error)
+      if (allocated(error)) return
     else
       ok = .false.
     end if
@@ -3792,19 +3793,18 @@ contains
   end subroutine w90_readwrite_get_projections
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
+  subroutine w90_readwrite_get_keyword_kpath(kpoint_path, error)
     !================================================!
     !
     !!  Fills the kpath data block
     !
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
@@ -3826,7 +3826,8 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file')
+        return
       endif
       found_s = .true.
     end do
@@ -3838,17 +3839,20 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file')
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      return
     end if
 
     counter = 0
@@ -3865,7 +3869,8 @@ contains
 
     return
 
-240 call io_error('w90_readwrite_get_keyword_kpath: Problem reading kpath '//trim(dummy), stdout, seedname)
+240 call set_error_input(error, 'w90_readwrite_get_keyword_kpath: Problem reading kpath '//trim(dummy))
+    return
 
   end subroutine w90_readwrite_get_keyword_kpath
 
