@@ -92,7 +92,7 @@ contains
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90comm_type), intent(in)           :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands
@@ -1693,9 +1693,9 @@ contains
       implicit none
 
       type(kmesh_info_type), intent(in) :: kmesh_info
-
       type(sitesym_type), intent(in) :: sitesym
-      type(w90_error_type), allocatable :: error !BGS FIXME
+      type(w90_error_type), allocatable, intent(out) :: error !BGS FIXME
+
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -2390,7 +2390,7 @@ contains
     type(wann_slwf_type), intent(inout) :: wann_slwf
     type(sitesym_type), intent(in) :: sitesym
     type(w90comm_type), intent(in) :: comm
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
@@ -2747,7 +2747,7 @@ contains
 
     type(atom_data_type), intent(in) :: atom_data
     type(print_output_type), intent(in) :: print_output
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     logical, intent(in) :: translate_home_cell
     integer, intent(in) :: num_wann
@@ -2823,7 +2823,7 @@ contains
 
     type(wannier_data_type), intent(in) :: wannier_data
     type(w90_system_type), intent(in) :: w90_system
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatabl, intent(out)  :: error
 
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -2991,7 +2991,7 @@ contains
     integer, intent(in) :: num_kpts, num_wann, timing_level, iprint, stdout
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     character(len=50), intent(in)  :: seedname
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
     integer :: nkp, i, j, m
@@ -3059,7 +3059,7 @@ contains
     implicit none
 
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts, num_wann
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3113,7 +3113,7 @@ contains
 
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3280,7 +3280,7 @@ contains
     type(output_file_type), intent(in) :: output_file
     type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
     type(atom_data_type), intent(in) :: atom_data
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
@@ -3955,7 +3955,7 @@ contains
 
     ! arguments
     type(localisation_vars_type), intent(out)  :: wann_spread
-    type(w90_error_type), allocatable :: error
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
