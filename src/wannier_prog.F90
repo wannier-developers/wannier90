@@ -449,7 +449,7 @@ program wannier
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &
                          m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
-                         real_space_ham%translate_home_cell, seedname, stdout, comm)
+                         real_space_ham%translate_home_cell, seedname, stdout, err, comm)
   end if
 
   ! handle errors
