@@ -24,6 +24,9 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
+    set_error_input, set_error_fatal, set_error_open
+
   implicit none
 
   private
@@ -66,11 +69,11 @@ contains
   end subroutine internal_write_header
 
   !==================================================
-  subroutine geninterp_main(dis_manifold, pw90_geninterp, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, &
-                            wannier_data, ws_distance, wigner_seitz, HH_R, v_matrix, u_matrix, eigval, &
-                            real_lattice, scissors_shift, mp_grid, num_bands, &
-                            num_kpts, num_wann, num_valence_bands, effective_model, &
-                            have_disentangled, seedname, stdout, comm)
+  subroutine geninterp_main(dis_manifold, pw90_geninterp, kpt_latt, pw90_band_deriv_degen, &
+                            ws_region, print_output, wannier_data, ws_distance, wigner_seitz, &
+                            HH_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
+                            mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                            effective_model, have_disentangled, seedname, stdout, error, comm)
     !==================================================
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
@@ -86,7 +89,7 @@ contains
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
+    use w90_io, only: io_stopwatch, io_file_unit, io_stopwatch
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -104,6 +107,7 @@ contains
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
     type(w90comm_type), intent(in)               :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), intent(in) :: v_matrix(:, :, :), u_matrix(:, :, :)
@@ -174,8 +178,9 @@ contains
       elseif (index(cdum, 'abs') > 0) then
         absoluteCoords = .true.
       else
-        call io_error('Error on second line of file '//trim(seedname)//'_geninterp.kpt: '// &
-                      'unable to recognize keyword', stdout, seedname)
+        call set_error_input(error, 'Error on second line of file '//trim(seedname) &
+                             //'_geninterp.kpt: unable to recognize keyword')
+        return
       end if
 
       ! Third line: number of following kpoints
@@ -185,46 +190,76 @@ contains
     call comms_bcast(nkinterp, 1, stdout, seedname, comm)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating HH in calcTDF')
+      return
+    endif
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating UU in calcTDF')
+      return
+    endif
     if (pw90_geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating delHH in calcTDF')
+        return
+      endif
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+                  effective_model, have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
 
     if (on_root) then
       allocate (kpointidx(nkinterp), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.')
+        return
+      endif
       allocate (kpoints(3, nkinterp), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.')
+        return
+      endif
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, nkinterp), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
-                                     seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.')
+          return
+        endif
         allocate (globaldeleig(num_wann, 3, nkinterp), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, &
-                                     seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.')
+          return
+        endif
       end if
     else
       ! On the other nodes, I still allocate them with size 1 to avoid
       ! that some compilers still try to access the memory
       allocate (kpointidx(1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.')
+        return
+      endif
       allocate (kpoints(1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.')
+        return
+      endif
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, &
-                                     seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.')
+          return
+        endif
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, &
-                                     seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.')
+          return
+        endif
       end if
     end if
 
@@ -232,13 +267,20 @@ contains
     call comms_array_split(nkinterp, counts, displs, comm)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, &
-                                 seedname)
-
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating localkpoints in geinterp_main.')
+      return
+    endif
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating localeig in geinterp_main.')
+      return
+    endif
     allocate (localdeleig(num_wann, 3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localdeleig in geinterp_main.', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating localdeleig in geinterp_main.')
+      return
+    endif
 
     ! On root, I read numpoints_thischunk points
     if (on_root) then
@@ -268,8 +310,10 @@ contains
     if (.not. pw90_geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, &
-                                   seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating localkpointidx in geinterp_main.')
+        return
+      endif
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout, &
                           seedname, comm)
     end if
@@ -307,11 +351,15 @@ contains
                                  localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, &
-                                 seedname, stdout, comm)
+                                 seedname, stdout, error, comm)
+        if (allocated(error)) return
+
       else
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                        real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
+        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, error)
+        if (allocated(error)) return
+
       end if
     end do
 
@@ -401,11 +449,13 @@ contains
 
     return
 
-105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', &
-                  stdout, seedname)
-106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', &
-                  stdout, seedname)
-107 call io_error('Error: Problem opening output file '//trim(outdat_filename), stdout, seedname)
+105 call set_error_open(error, 'Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt')
+    return
+106 call set_error_open(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt')
+    return
+107 call set_error_open(error, 'Error: Problem opening output file '//trim(outdat_filename))
+    return !fixme JJ restructure these away
+
   end subroutine geninterp_main
 
 end module w90_geninterp

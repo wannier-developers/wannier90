@@ -213,7 +213,7 @@ contains
       call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname)
       call w90_readwrite_read_kmesh_data(kmesh_input, error)
       if (allocated(error)) return
-      call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
+      call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
       call utility_inverse_mat(real_lattice, inv_lattice)
       call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, error)
       if (allocated(error)) return

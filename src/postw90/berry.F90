@@ -36,6 +36,8 @@ module w90_berry
   !                                 reading k-points and weights from file
 
   use w90_constants, only: dp
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
+    set_error_input, set_error_fatal, set_error_open
 
   implicit none
 
@@ -83,7 +85,8 @@ contains
                         print_output, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, &
                         SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         fermi_n, num_wann, num_kpts, num_bands, num_valence_bands, &
-                        effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
+                        effective_model, have_disentangled, spin_decomp, seedname, stdout, error, &
+                        comm)
     !================================================!
     !
     !! Computes the following quantities:
@@ -100,7 +103,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R, &
       get_SAA_R, get_SBB_R
-    use w90_io, only: io_error, io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch
     use w90_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_mod_type, &
@@ -125,6 +128,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
@@ -217,8 +221,10 @@ contains
     my_node_id = mpirank(comm)
     num_nodes = mpisize(comm)
 
-    if (fermi_n == 0) call io_error( &
-      'Must specify one or more Fermi levels when berry=true', stdout, seedname)
+    if (fermi_n == 0) then
+      call set_error_input(error, 'Must specify one or more Fermi levels when berry=true')
+      return
+    endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('berry: prelims', 1, stdout, seedname)
@@ -255,10 +261,13 @@ contains
     if (eval_ahc) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       imf_list = 0.0_dp
       adpt_counter_list = 0
     endif
@@ -266,17 +275,21 @@ contains
     if (eval_morb) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                     scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, comm)
-
+                    num_wann, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
                     v_matrix, eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, &
-                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, comm)
+                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
 
       imf_list2 = 0.0_dp
       img_list = 0.0_dp
@@ -286,17 +299,22 @@ contains
     ! List here berry_tasks that assume nfermi=1
     !
     not_scannable = eval_kubo .or. (eval_shc .and. pw90_spin_hall%freq_scan)
-    if (not_scannable .and. fermi_n .ne. 1) call io_error( &
-      'The berry_task(s) you chose require that you specify a single ' &
-      //'Fermi energy: scanning the Fermi energy is not implemented', stdout, seedname)
+    if (not_scannable .and. fermi_n .ne. 1) then
+      call set_error_input(error, 'The berry_task(s) you chose require that you specify a single ' &
+                           //'Fermi energy: scanning the Fermi energy is not implemented')
+      return
+    endif
 
     if (eval_kubo) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       allocate (kubo_H_k(3, 3, pw90_berry%kubo_nfreq))
       allocate (kubo_H(3, 3, pw90_berry%kubo_nfreq))
       allocate (kubo_AH_k(3, 3, pw90_berry%kubo_nfreq))
@@ -310,13 +328,15 @@ contains
 
         call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, &
                       eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                      num_wann, have_disentangled, seedname, stdout, comm)
+                      num_wann, have_disentangled, seedname, stdout, error, comm)
+        if (allocated(error)) return
         allocate (kubo_H_k_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (kubo_H_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (kubo_AH_k_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (kubo_AH_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (jdos_k_spn(3, pw90_berry%kubo_nfreq))
         allocate (jdos_spn(3, pw90_berry%kubo_nfreq))
+        ! fixme, shouldn't we pedantically check these allocs also JJ
         kubo_H_spn = cmplx_0
         kubo_AH_spn = cmplx_0
         jdos_spn = 0.0_dp
@@ -326,10 +346,13 @@ contains
     if (eval_sc) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       allocate (sc_k_list(3, 6, pw90_berry%kubo_nfreq))
       allocate (sc_list(3, 6, pw90_berry%kubo_nfreq))
       sc_k_list = 0.0_dp
@@ -340,26 +363,33 @@ contains
 
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, comm)
+                    have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
 
       if (index(pw90_spin_hall%method, 'qiao') > 0) then
         call get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
                        pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, &
                        wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                       num_valence_bands, have_disentangled, seedname, stdout, comm)
+                       num_valence_bands, have_disentangled, seedname, stdout, error, comm)
+        if (allocated(error)) return
       else
         call get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, eigval, &
-                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                       have_disentangled, seedname, stdout, comm)
+                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, &
+                       num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
+        if (allocated(error)) return
         call get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, eigval, &
-                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                       have_disentangled, seedname, stdout, comm)
+                       scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, &
+                       num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
+        if (allocated(error)) return
       endif
 
       if (pw90_spin_hall%freq_scan) then
@@ -383,7 +413,9 @@ contains
     if (eval_kdotp) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, comm)
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    error, comm)
+      if (allocated(error)) return
       kdotp_nbands = size(pw90_berry%kdotp_bands); 
       allocate (kdotp(kdotp_nbands, kdotp_nbands, 3, 3, 3))
       kdotp = cmplx_0
@@ -433,12 +465,12 @@ contains
       if (eval_kdotp) write (stdout, '(/,3x,a)') '* k.p expansion coefficients'
 
       if (pw90_berry%transl_inv) then
-        if (eval_morb) &
-          call io_error('transl_inv=T disabled for morb', stdout, seedname)
-        write (stdout, '(/,1x,a)') &
-          'Using a translationally-invariant discretization for the'
-        write (stdout, '(1x,a)') &
-          'band-diagonal Wannier matrix elements of r, etc.'
+        if (eval_morb) then
+          call set_error_input(error, 'transl_inv=T disabled for morb')
+          return
+        endif
+        write (stdout, '(/,1x,a)') 'Using a translationally-invariant discretization for the'
+        write (stdout, '(1x,a)') 'band-diagonal Wannier matrix elements of r, etc.'
       endif
 
       if (print_output%timing_level > 1) then
@@ -455,14 +487,18 @@ contains
                              ws_region, HH_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              num_valence_bands, effective_model, have_disentangled, seedname, &
-                             stdout, comm)
+                             stdout, error, comm)
+        if (allocated(error)) return
       end if
     end if ! print_output%iprint > 0, aka "on_root"
 
     ! Set up adaptive refinement mesh
     !
     allocate (adkpt(3, pw90_berry%curv_adpt_kmesh**3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating adkpt in berry', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating adkpt in berry')
+      return
+    endif
     ikpt = 0
     !
     ! OLD VERSION (only works correctly for odd grids including original point)
@@ -520,7 +556,9 @@ contains
                                    BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                    real_lattice, imf_k_list, scissors_shift, mp_grid, num_bands, &
                                    num_kpts, num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, comm)
+                                   have_disentangled, seedname, stdout, error, comm)
+          if (allocated(error)) return
+
           ladpt = .false.
           do if = 1, fermi_n
             vdum(1) = sum(imf_k_list(:, 1, if))
@@ -545,7 +583,10 @@ contains
                                        kpt(:) + adkpt(:, loop_adpt), real_lattice, &
                                        imf_k_list_dummy, scissors_shift, mp_grid, num_bands, &
                                        num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, comm, ladpt=ladpt)
+                                       have_disentangled, seedname, stdout, error, comm, &
+                                       ladpt=ladpt)
+              if (allocated(error)) return
+
               do if = 1, fermi_n
                 if (ladpt(if)) then
                   imf_list(:, :, if) = imf_list(:, :, if) &
@@ -562,8 +603,10 @@ contains
                                      BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                      real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                      num_kpts, num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                     have_disentangled, seedname, stdout, error, comm, imf_k_list, &
                                      img_k_list, imh_k_list)
+          if (allocated(error)) return
+
           imf_list2 = imf_list2 + imf_k_list*kweight
           img_list = img_list + img_k_list*kweight
           imh_list = imh_list + imh_k_List*kweight
@@ -577,8 +620,9 @@ contains
                                   kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   jdos_k, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                   num_valence_bands, effective_model, have_disentangled, &
-                                  spin_decomp, seedname, stdout, comm, kubo_AH_k_spn, &
+                                  spin_decomp, seedname, stdout, error, comm, kubo_AH_k_spn, &
                                   kubo_H_k_spn, jdos_k_spn)
+            if (allocated(error)) return
           else
             call berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   pw90_band_deriv_degen, pw90_spin, ws_region, print_output, &
@@ -586,7 +630,8 @@ contains
                                   kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   jdos_k, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                   num_valence_bands, effective_model, have_disentangled, &
-                                  spin_decomp, seedname, stdout, comm)
+                                  spin_decomp, seedname, stdout, error, comm)
+            if (allocated(error)) return
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -604,7 +649,8 @@ contains
                                   wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, &
                                   v_matrix, eigval, kpt, real_lattice, sc_k_list, scissors_shift, &
                                   mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                  effective_model, have_disentangled, seedname, stdout, comm)
+                                  effective_model, have_disentangled, seedname, stdout, error, comm)
+          if (allocated(error)) return
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -627,8 +673,10 @@ contains
                                      HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                      fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                     effective_model, have_disentangled, seedname, stdout, comm, &
-                                     shc_k_fermi=shc_k_fermi)
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm, shc_k_fermi=shc_k_fermi)
+            if (allocated(error)) return
+
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -664,7 +712,9 @@ contains
                                          real_lattice, scissors_shift, mp_grid, fermi_n, &
                                          num_bands, num_kpts, num_wann, num_valence_bands, &
                                          effective_model, have_disentangled, seedname, stdout, &
-                                         comm, shc_k_fermi=shc_k_fermi_dummy)
+                                         error, comm, shc_k_fermi=shc_k_fermi_dummy)
+                if (allocated(error)) return
+
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
@@ -677,8 +727,10 @@ contains
                                      HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                      fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                     effective_model, have_disentangled, seedname, stdout, comm, &
-                                     shc_k_freq=shc_k_freq)
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm, shc_k_freq=shc_k_freq)
+            if (allocated(error)) return
+
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -708,7 +760,9 @@ contains
                                    BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                    real_lattice, imf_k_list, scissors_shift, mp_grid, num_bands, &
                                    num_kpts, num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, comm)
+                                   have_disentangled, seedname, stdout, error, comm)
+          if (allocated(error)) return
+
           ladpt = .false.
           do if = 1, fermi_n
             vdum(1) = sum(imf_k_list(:, 1, if))
@@ -733,7 +787,10 @@ contains
                                        kpt(:) + adkpt(:, loop_adpt), real_lattice, &
                                        imf_k_list_dummy, scissors_shift, mp_grid, num_bands, &
                                        num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, comm, ladpt=ladpt)
+                                       have_disentangled, seedname, stdout, error, comm, &
+                                       ladpt=ladpt)
+              if (allocated(error)) return
+
               do if = 1, fermi_n
                 if (ladpt(if)) then
                   imf_list(:, :, if) = imf_list(:, :, if) &
@@ -750,8 +807,10 @@ contains
                                      BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                      real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                      num_kpts, num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                     have_disentangled, seedname, stdout, error, comm, imf_k_list, &
                                      img_k_list, imh_k_list)
+          if (allocated(error)) return
+
           imf_list2 = imf_list2 + imf_k_list*kweight
           img_list = img_list + img_k_list*kweight
           imh_list = imh_list + imh_k_List*kweight
@@ -765,8 +824,10 @@ contains
                                   kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   jdos_k, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                   num_valence_bands, effective_model, have_disentangled, &
-                                  spin_decomp, seedname, stdout, comm, kubo_AH_k_spn, &
+                                  spin_decomp, seedname, stdout, error, comm, kubo_AH_k_spn, &
                                   kubo_H_k_spn, jdos_k_spn)
+            if (allocated(error)) return
+
           else
             call berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   pw90_band_deriv_degen, pw90_spin, ws_region, print_output, &
@@ -774,7 +835,9 @@ contains
                                   kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                   jdos_k, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                   num_valence_bands, effective_model, have_disentangled, &
-                                  spin_decomp, seedname, stdout, comm)
+                                  spin_decomp, seedname, stdout, error, comm)
+            if (allocated(error)) return
+
           endif
           kubo_H = kubo_H + kubo_H_k*kweight
           kubo_AH = kubo_AH + kubo_AH_k*kweight
@@ -792,7 +855,9 @@ contains
                                   wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, &
                                   v_matrix, eigval, kpt, real_lattice, sc_k_list, scissors_shift, &
                                   mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                  effective_model, have_disentangled, seedname, stdout, comm)
+                                  effective_model, have_disentangled, seedname, stdout, error, comm)
+          if (allocated(error)) return
+
           sc_list = sc_list + sc_k_list*kweight
         end if
 
@@ -815,8 +880,10 @@ contains
                                      HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                      fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                     effective_model, have_disentangled, seedname, stdout, comm, &
-                                     shc_k_fermi=shc_k_fermi)
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm, shc_k_fermi=shc_k_fermi)
+            if (allocated(error)) return
+
             !check whether needs to tigger adpt kmesh or not.
             !Since the calculated shc_k at one Fermi energy can be reused
             !by all the Fermi energies, if we find out that at a specific
@@ -851,8 +918,10 @@ contains
                                          u_matrix, v_matrix, eigval, kpt(:) + adkpt(:, loop_adpt), &
                                          real_lattice, scissors_shift, mp_grid, fermi_n, &
                                          num_bands, num_kpts, num_wann, num_valence_bands, &
-                                         effective_model, have_disentangled, &
-                                         seedname, stdout, comm, shc_k_fermi=shc_k_fermi_dummy)
+                                         effective_model, have_disentangled, seedname, stdout, &
+                                         error, comm, shc_k_fermi=shc_k_fermi_dummy)
+                if (allocated(error)) return
+
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
@@ -865,8 +934,10 @@ contains
                                      HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, &
                                      v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                      fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                     effective_model, have_disentangled, seedname, stdout, comm, &
-                                     shc_k_freq=shc_k_freq)
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm, shc_k_freq=shc_k_freq)
+            if (allocated(error)) return
+
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -1464,7 +1535,7 @@ contains
                                  v_matrix, eigval, kpt, real_lattice, imf_k_list, scissors_shift, &
                                  mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
                                  effective_model, have_disentangled, seedname, &
-                                 stdout, comm, occ, ladpt)
+                                 stdout, error, comm, occ, ladpt)
     !================================================!
     !
     !! Calculates the Berry curvature traced over the occupied
@@ -1490,6 +1561,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
     integer, intent(in) :: mp_grid(3)
@@ -1525,7 +1597,9 @@ contains
                                  v_matrix, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                  fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
                                  effective_model, have_disentangled, seedname, &
-                                 stdout, comm, imf_k_list, occ=occ)
+                                 stdout, error, comm, imf_k_list, occ=occ)
+      if (allocated(error)) return
+
     else
       if (present(ladpt)) then
         call berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
@@ -1533,14 +1607,18 @@ contains
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                                    num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm, imf_k_list, ladpt=ladpt)
+                                   seedname, stdout, error, comm, imf_k_list, ladpt=ladpt)
+        if (allocated(error)) return
+
       else
         call berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
                                    wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, scissors_shift, &
                                    mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                                    num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm, imf_k_list)
+                                   seedname, stdout, error, comm, imf_k_list)
+        if (allocated(error)) return
+
       endif
     endif
 
@@ -1552,7 +1630,7 @@ contains
                                    u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                    scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
                                    num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, comm, imf_k_list, &
+                                   have_disentangled, seedname, stdout, error, comm, imf_k_list, &
                                    img_k_list, imh_k_list, occ, ladpt)
     !================================================!
     !
@@ -1593,6 +1671,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, fermi_n
     integer, intent(in) :: mp_grid(3)
@@ -1665,24 +1744,31 @@ contains
     !
 
     if (present(occ)) then
-      call wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
-                                     wannier_data, ws_distance, wigner_seitz, HH, HH_R, JJm_list, JJp_list, &
-                                     u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
-                                     scissors_shift, mp_grid, num_bands, num_kpts, &
-                                     num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, comm, occ=occ)
+      call wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                     print_output, wannier_data, ws_distance, wigner_seitz, HH, &
+                                     HH_R, JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, &
+                                     eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                                     num_bands, num_kpts, num_wann, num_valence_bands, &
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm, occ=occ)
+      if (allocated(error)) return
       call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
-                                 stdout, occ=occ)
+                                 stdout, error, occ=occ)
+      if (allocated(error)) return
 
     else
-      call wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
-                                     wannier_data, ws_distance, wigner_seitz, HH, HH_R, JJm_list, JJp_list, &
-                                     u_matrix, UU, v_matrix, eig, eigval, kpt, real_lattice, &
-                                     scissors_shift, mp_grid, num_bands, num_kpts, &
-                                     num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, comm)
+      call wham_get_eig_UU_HH_JJlist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                     print_output, wannier_data, ws_distance, wigner_seitz, HH, &
+                                     HH_R, JJm_list, JJp_list, u_matrix, UU, v_matrix, eig, &
+                                     eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                                     num_bands, num_kpts, num_wann, num_valence_bands, &
+                                     effective_model, have_disentangled, seedname, stdout, error, &
+                                     comm)
+      if (allocated(error)) return
       call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
-                                 stdout, eig=eig)
+                                 stdout, error, eig=eig)
+      if (allocated(error)) return
+
     endif
 
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
@@ -1804,13 +1890,14 @@ contains
   !                   PRIVATE PROCEDURES
   !================================================!
 
-  subroutine berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, pw90_band_deriv_degen, pw90_spin, &
-                              ws_region, print_output, wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, &
-                              kubo_AH_k, kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, &
-                              real_lattice, jdos_k, scissors_shift, mp_grid, &
-                              num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                              have_disentangled, spin_decomp, seedname, stdout, comm, &
-                              kubo_AH_k_spn, kubo_H_k_spn, jdos_k_spn)
+  subroutine berry_get_kubo_k(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                              pw90_band_deriv_degen, pw90_spin, ws_region, print_output, &
+                              wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, kubo_AH_k, &
+                              kubo_H_k, SS_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
+                              jdos_k, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                              num_valence_bands, effective_model, have_disentangled, spin_decomp, &
+                              seedname, stdout, error, comm, kubo_AH_k_spn, kubo_H_k_spn, &
+                              jdos_k_spn)
     !================================================!
     !
     !! Contribution from point k to the complex interband optical
@@ -1847,6 +1934,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
     integer, intent(in) :: mp_grid(3)
@@ -1902,7 +1990,8 @@ contains
                                ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                               have_disentangled, seedname, stdout, comm)
+                               have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
 
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
@@ -1912,7 +2001,8 @@ contains
                                          OO=HH, OO_dx=delHH(:, :, 1), &
                                          OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
 
-      call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+      call utility_diagonalize(HH, num_wann, eig, UU, error)
+      if (allocated(error)) return
     endif
     call pw90common_get_occ(fermi_energy_list(1), eig, occ, num_wann)
 
@@ -1936,7 +2026,9 @@ contains
     jdos_k = 0.0_dp
     if (spin_decomp) then
       call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
-                       real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+                       real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout, error)
+      if (allocated(error)) return
+
       kubo_H_k_spn = cmplx_0
       kubo_AH_k_spn = cmplx_0
       jdos_k_spn = 0.0_dp
@@ -1980,11 +2072,12 @@ contains
           arg = (eig(m) - eig(n) - real(omega, dp))/eta_smr
           ! If only Hermitean part were computed, could speed up
           ! by inserting here 'if(abs(arg)>10.0_dp) cycle'
-          delta = utility_w0gauss(arg, pw90_berry%kubo_smearing%type_index, stdout, seedname)/eta_smr
+          delta = utility_w0gauss(arg, pw90_berry%kubo_smearing%type_index, error)/eta_smr
+          if (allocated(error)) return
           !
           ! Lorentzian shape (for testing purposes)
-!             delta=1.0_dp/(1.0_dp+arg*arg)/pi
-!             delta=delta/eta_smr
+          ! delta=1.0_dp/(1.0_dp+arg*arg)/pi
+          ! delta=delta/eta_smr
           !
           jdos_k(ifreq) = jdos_k(ifreq) + occ_prod*delta
           if (spin_decomp) &
@@ -2014,11 +2107,11 @@ contains
   end subroutine berry_get_kubo_k
 
   subroutine berry_get_sc_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, &
-                                ws_region, print_output, pw90_band_deriv_degen, wannier_data, ws_distance, wigner_seitz, &
-                                AA_R, HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                sc_k_list, scissors_shift, mp_grid, num_bands, &
+                                ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                kpt, real_lattice, sc_k_list, scissors_shift, mp_grid, num_bands, &
                                 num_kpts, num_wann, num_valence_bands, effective_model, &
-                                have_disentangled, seedname, stdout, comm)
+                                have_disentangled, seedname, stdout, error, comm)
     !================================================!
     !
     !  Contribution from point k to the nonlinear shift current
@@ -2063,6 +2156,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
     integer, intent(in) :: mp_grid(3)
@@ -2137,7 +2231,8 @@ contains
                                             eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                             num_bands, num_kpts, num_wann, num_valence_bands, &
                                             effective_model, have_disentangled, seedname, stdout, &
-                                            comm)
+                                            error, comm)
+      if (allocated(error)) return
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
       call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, wigner_seitz, &
@@ -2145,14 +2240,18 @@ contains
                                                       seedname, stdout, OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
       call wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, HH_da, UU, eig, eig_da, num_wann, seedname, &
-                                       stdout)
+                                       stdout, error)
+      if (allocated(error)) return
     elseif (pw90_berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
       call wham_get_eig_UU_HH_AA_sc(dis_manifold, kpt_latt, ws_region, print_output, wannier_data, &
                                     ws_distance, wigner_seitz, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
                                     v_matrix, eig, eigval, kpt, real_lattice, scissors_shift, &
                                     mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                    effective_model, have_disentangled, seedname, stdout, comm)
+                                    effective_model, have_disentangled, seedname, stdout, error, &
+                                    comm)
+      if (allocated(error)) return
+
       call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
                                               kpt, real_lattice, mp_grid, num_wann, &
                                               seedname, stdout, OO_da=AA, OO_dadb=AA_da)
@@ -2160,7 +2259,9 @@ contains
                                ws_distance, wigner_seitz, HH_da, HH, HH_R, u_matrix, UU, v_matrix, &
                                eig_da, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                               have_disentangled, seedname, stdout, comm)
+                               have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
+
     end if
 
     ! get electronic occupations
@@ -2295,7 +2396,8 @@ contains
           delta = 0.0
           delta(istart:iend) = &
             utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, &
-                                pw90_berry%kubo_smearing%type_index, stdout, seedname)/eta_smr
+                                pw90_berry%kubo_smearing%type_index, error)/eta_smr
+          if (allocated(error)) return
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
         ! same for delta(E_mn-w)
@@ -2305,7 +2407,8 @@ contains
           delta = 0.0
           delta(istart:iend) = &
             utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, &
-                                pw90_berry%kubo_smearing%type_index, stdout, seedname)/eta_smr
+                                pw90_berry%kubo_smearing%type_index, error)/eta_smr
+          if (allocated(error)) return
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
 
@@ -2318,11 +2421,11 @@ contains
   subroutine berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                  pw90_band_deriv_degen, ws_region, pw90_spin_hall, print_output, &
                                  wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, SH_R, SHR_R, &
-                                 SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, &
-                                 kpt, real_lattice, scissors_shift, mp_grid, &
-                                 fermi_n, num_bands, num_kpts, num_wann, num_valence_bands, &
-                                 effective_model, have_disentangled, seedname, stdout, comm, &
-                                 shc_k_fermi, shc_k_freq, shc_k_band)
+                                 SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, kpt, &
+                                 real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                 num_kpts, num_wann, num_valence_bands, effective_model, &
+                                 have_disentangled, seedname, stdout, error, comm, shc_k_fermi, &
+                                 shc_k_freq, shc_k_band)
     !================================================!
     !
     ! Contribution from a k-point to the spin Hall conductivity on a list
@@ -2371,6 +2474,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, fermi_n
     integer, intent(in) :: mp_grid(3)
@@ -2447,7 +2551,9 @@ contains
                              ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                              del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                              num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                             have_disentangled, seedname, stdout, comm)
+                             have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
+
     call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -2787,7 +2893,7 @@ contains
                              ws_region, HH_R, u_matrix, v_matrix, eigval, real_lattice, &
                              scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              num_valence_bands, effective_model, have_disentangled, seedname, &
-                             stdout, comm)
+                             stdout, error, comm)
     !================================================!
     !  Extracts k.p expansion coefficients using quasi-degenerate
     !  (Lowdin) perturbation theory, adapted to the Wannier formalism,
@@ -2817,6 +2923,7 @@ contains
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), intent(out), dimension(:, :, :, :, :)     :: kdotp
     !complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
@@ -2869,14 +2976,18 @@ contains
                                   HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, eigval, &
                                   pw90_berry%kdotp_kpoint, real_lattice, scissors_shift, mp_grid, &
                                   num_bands, num_kpts, num_wann, num_valence_bands, &
-                                  effective_model, have_disentangled, seedname, stdout, comm)
+                                  effective_model, have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
+
     ! get eigenvalues and their k-derivatives
     call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
                              print_output, wannier_data, ws_distance, wigner_seitz, HH_da, HH, &
                              HH_R, u_matrix, UU, v_matrix, eig_da, eig, eigval, &
                              pw90_berry%kdotp_kpoint, real_lattice, scissors_shift, mp_grid, &
                              num_bands, num_kpts, num_wann, num_valence_bands, &
-                             effective_model, have_disentangled, seedname, stdout, comm)
+                             effective_model, have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
+
     ! get D_h (Eq. (24) WYSV06)
     call wham_get_D_h_P_value(pw90_berry, HH_da, D_h, UU, eig, num_wann)
 

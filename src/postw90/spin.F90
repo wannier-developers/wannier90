@@ -21,6 +21,8 @@ module w90_spin
   !! Module to compute spin
 
   use w90_constants, only: dp
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
+    set_error_input, set_error_fatal, set_error_open
 
   implicit none
 
@@ -36,12 +38,12 @@ contains
   !                   PUBLIC PROCEDURES
   !================================================!
 
-  subroutine spin_get_moment(dis_manifold, fermi_energy_list, kpoint_dist, kpt_latt, pw90_oper_read, &
-                             pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                             SS_R, u_matrix, v_matrix, eigval, real_lattice, &
-                             scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
+  subroutine spin_get_moment(dis_manifold, fermi_energy_list, kpoint_dist, kpt_latt, &
+                             pw90_oper_read, pw90_spin, ws_region, print_output, wannier_data, &
+                             ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, eigval, &
+                             real_lattice, scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                              num_valence_bands, effective_model, have_disentangled, &
-                             wanint_kpoint_file, seedname, stdout, comm)
+                             wanint_kpoint_file, seedname, stdout, error, comm)
     !================================================!
     !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -50,7 +52,6 @@ contains
 
     use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
-    use w90_io, only: io_error
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, &
@@ -70,6 +71,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -103,15 +105,21 @@ contains
     num_nodes = mpisize(comm); 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
-    if (fermi_n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout, seedname)
+    if (fermi_n > 1) then
+      call set_error_input(error, 'Routine spin_get_moment requires nfermi=1')
+      return
+    endif
 
-    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
+                  comm)
+    if (allocated(error)) return
 
     call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
-                  wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                  seedname, stdout, comm)
+                  wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                  have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
 
     if (print_output%iprint > 0) then
       write (stdout, '(/,/,1x,a)') '------------'
@@ -139,7 +147,9 @@ contains
         kweight = kpoint_dist%weight(loop_tot)
         call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, wannier_data, &
                                real_lattice, mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, &
-                               seedname)
+                               seedname, error)
+        if (allocated(error)) return
+
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -158,7 +168,9 @@ contains
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%kmesh%mesh(3), dp))
         call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, wannier_data, &
                                real_lattice, mp_grid, ws_distance, HH_R, SS_R, &
-                               wigner_seitz, stdout, seedname)
+                               wigner_seitz, stdout, seedname, error)
+        if (allocated(error)) return
+
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -193,8 +205,9 @@ contains
   end subroutine spin_get_moment
 
   !================================================!
-  subroutine spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
-                         real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+  subroutine spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                         SS_R, kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout, &
+                         error)
     !================================================!
     !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -218,6 +231,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -252,7 +266,8 @@ contains
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                    real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+    call utility_diagonalize(HH, num_wann, eig, UU, error)
+    if (allocated(error)) return
 
     do is = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, is), &
@@ -280,7 +295,8 @@ contains
   !================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, ws_region, wannier_data, real_lattice, &
-                               mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
+                               mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, &
+                               error)
     !================================================!
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
@@ -298,6 +314,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -332,7 +349,9 @@ contains
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                    real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+    call utility_diagonalize(HH, num_wann, eig, UU, error)
+    if (allocated(error)) return
+
     call pw90common_get_occ(ef, eig, occ, num_wann)
 
     spn_k(1:3) = 0.0_dp
@@ -349,8 +368,8 @@ contains
   end subroutine spin_get_moment_k
 
   !================================================!
-  subroutine spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, &
-                        mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
+  subroutine spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, mp_grid, &
+                        ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, error)
     !================================================!
     !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann)
@@ -370,6 +389,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout, num_wann
@@ -399,7 +419,8 @@ contains
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                    real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+    call utility_diagonalize(HH, num_wann, eig, UU, error)
+    if (allocated(error)) return
 
     do i = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, i), &

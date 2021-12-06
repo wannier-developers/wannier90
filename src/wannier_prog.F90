@@ -277,7 +277,7 @@ program wannier
 
     if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_input, kmesh_info, print_output, &
                                                          kpt_latt, real_lattice, &
-                                                         num_kpts, gamma_only, seedname, stdout)
+                                                         num_kpts, gamma_only, seedname, stdout, err)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
@@ -371,7 +371,7 @@ program wannier
     if (on_root) call kmesh_write(exclude_bands, kmesh_info, input_proj, print_output, &
                                   kpt_latt, real_lattice, num_kpts, &
                                   num_proj, calc_only_A, w90_system%spinors, seedname, stdout)
-    call kmesh_dealloc(kmesh_info, stdout, seedname)
+    call kmesh_dealloc(kmesh_info, err)
     call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                              kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
                                              select_projection, kpoint_path, wannier_data, wannier_plot, &
@@ -518,7 +518,7 @@ program wannier
     call prterr(err, stdout)
     call exit(err%code)
   end if
-  call kmesh_dealloc(kmesh_info, stdout, seedname)
+  call kmesh_dealloc(kmesh_info, err)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                            kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
                                            select_projection, kpoint_path, wannier_data, wannier_plot, &

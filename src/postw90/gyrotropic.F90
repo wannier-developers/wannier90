@@ -25,6 +25,8 @@ module w90_gyrotropic
 
   use w90_constants, only: dp
   use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
+    set_error_input, set_error_fatal, set_error_open
 
   implicit none
 
@@ -59,12 +61,13 @@ contains
   !                   PUBLIC PROCEDURES
   !================================================!
 
-  subroutine gyrotropic_main(pw90_berry, dis_manifold, fermi_energy_list, pw90_gyrotropic, kmesh_info, &
-                             kpt_latt, physics, pw90_oper_read, pw90_band_deriv_degen, ws_region, w90_system, &
-                             print_output, wannier_data, wigner_seitz, ws_distance, AA_R, BB_R, CC_R, HH_R, &
-                             SS_R, u_matrix, v_matrix, eigval, real_lattice, &
-                             scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                             effective_model, have_disentangled, seedname, stdout, comm)
+  subroutine gyrotropic_main(pw90_berry, dis_manifold, fermi_energy_list, pw90_gyrotropic, &
+                             kmesh_info, kpt_latt, physics, pw90_oper_read, pw90_band_deriv_degen, &
+                             ws_region, w90_system, print_output, wannier_data, wigner_seitz, &
+                             ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
+                             eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                             num_wann, effective_model, have_disentangled, seedname, stdout, &
+                             error, comm)
     !================================================!
     !
     !! Computes the following quantities:
@@ -79,7 +82,7 @@ contains
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
-    use w90_io, only: io_error, io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
@@ -103,6 +106,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :)
@@ -150,8 +154,10 @@ contains
     my_node_id = mpirank(comm)
     num_nodes = mpisize(comm)
 
-    if (.not. allocated(fermi_energy_list)) call io_error( &
-      'Must specify one or more Fermi levels when gyrotropic=true', stdout, seedname)
+    if (.not. allocated(fermi_energy_list)) then
+      call set_error_input(error, 'Must specify one or more Fermi levels when gyrotropic=true')
+      return
+    endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
@@ -192,29 +198,35 @@ contains
 
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
-    if ((.not. w90_system%spinors) .and. eval_spn) call io_error( &
-      "spin contribution requested for gyrotropic, but the wavefunctions are not spinors", &
-      stdout, seedname)
+    if ((.not. w90_system%spinors) .and. eval_spn) then
+      call set_error_input(error, "spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
+      return
+    endif
 
     ! Wannier matrix elements, allocations and initializations
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
                   real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                   w90_system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
-                  comm)
+                  error, comm)
+    if (allocated(error)) return
 
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, v_matrix, &
                     eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    effective_model, have_disentangled, seedname, stdout, comm)
+                    effective_model, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
+
     endif
 
     if (eval_spn) then
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, comm)
+                    seedname, stdout, error, comm)
+      if (allocated(error)) return
+
     endif
 
     ! not allocated was tested at start of routine
@@ -222,10 +234,14 @@ contains
     if (eval_K) then
       call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                     scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, comm)
+                    have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
+
       call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, v_matrix, &
                     eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, comm)
+                    num_wann, have_disentangled, seedname, stdout, error, comm)
+      if (allocated(error)) return
+
       allocate (gyro_K_orb(3, 3, fermi_n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
@@ -295,8 +311,10 @@ contains
       endif
 
       if (pw90_berry%transl_inv) then
-        if (eval_K) &
-          call io_error('transl_inv=T disabled for K-tensor', stdout, seedname)
+        if (eval_K) then
+          call set_error_input(error, 'transl_inv=T disabled for K-tensor')
+          return
+        endif
         write (stdout, '(/,1x,a)') &
           'Using a translationally-invariant discretization for the'
         write (stdout, '(1x,a)') &
@@ -335,9 +353,10 @@ contains
                                  eval_NOA, eval_spn, eval_C, eval_dos, num_wann, print_output, &
                                  fermi_energy_list, wannier_data, eigval, real_lattice, mp_grid, &
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_manifold, kpt_latt, &
-                                 pw90_gyrotropic, scissors_shift, effective_model, pw90_band_deriv_degen, &
-                                 ws_distance, wigner_seitz, stdout, seedname, comm, HH_R, AA_R, &
-                                 BB_R, CC_R, SS_R)
+                                 pw90_gyrotropic, scissors_shift, effective_model, &
+                                 pw90_band_deriv_degen, ws_distance, wigner_seitz, stdout, &
+                                 seedname, error, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
+      if (allocated(error)) return
 
     end do !loop_xyz
 
@@ -526,7 +545,7 @@ contains
                                    fermi_energy_list, wannier_data, eigval, real_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_manifold, kpt_latt, &
                                    pw90_gyrotropic, scissors_shift, effective_model, pw90_band_deriv_degen, &
-                                   ws_distance, wigner_seitz, stdout, seedname, comm, &
+                                   ws_distance, wigner_seitz, stdout, seedname, error, comm, &
                                    HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
@@ -560,7 +579,7 @@ contains
 
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_io, only: io_stopwatch, io_file_unit
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type
@@ -585,6 +604,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands
@@ -635,7 +655,7 @@ contains
     logical          :: got_spin, got_orb_n
 
     if (pw90_gyrotropic%smearing%use_adaptive) then
-      call io_error('Adaptive smearing not allowed in Gyrotropic', stdout, seedname)
+      call set_error_input(error, 'Adaptive smearing not allowed in Gyrotropic')
     endif
 
     allocate (UU(num_wann, num_wann))
@@ -649,7 +669,8 @@ contains
                              ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                              del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                              num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                             have_disentangled, seedname, stdout, comm)
+                             have_disentangled, seedname, stdout, error, comm)
+    if (allocated(error)) return
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
@@ -697,7 +718,8 @@ contains
         !
         if (eval_spn .and. .not. got_spin) then
           call spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, &
-                          mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname)
+                          mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, error)
+          if (allocated(error)) return
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
         ! Orbital quantities are computed for each band separately
@@ -708,12 +730,14 @@ contains
             occ(n) = 1.0_dp
 
             call berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
-                                       print_output, wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, &
-                                       HH_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                       scissors_shift, mp_grid, fermi_n, num_bands, &
+                                       print_output, wannier_data, ws_distance, wigner_seitz, &
+                                       AA_R, BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                       real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                        num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, comm, imf_k, img_k, &
-                                       imh_k, occ)
+                                       have_disentangled, seedname, stdout, error, comm, imf_k, &
+                                       img_k, imh_k, occ)
+            if (allocated(error)) return
+
             do i = 1, 3
               orb_nk(i) = sum(imh_k(:, i, 1)) - sum(img_k(:, i, 1))
               curv_nk(i) = sum(imf_k(:, i, 1))
@@ -722,12 +746,14 @@ contains
             occ = 0.0_dp
             occ(n) = 1.0_dp
 
-            call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
-                                     wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
-                                     u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                     imf_k, scissors_shift, mp_grid, num_bands, num_kpts, &
-                                     num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, comm, occ)
+            call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                     print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                     BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                     real_lattice, imf_k, scissors_shift, mp_grid, num_bands, &
+                                     num_kpts, num_wann, num_valence_bands, effective_model, &
+                                     have_disentangled, seedname, stdout, error, comm, occ)
+            if (allocated(error)) return
+
             do i = 1, 3
               curv_nk(i) = sum(imf_k(:, i, 1))
             enddo
@@ -739,8 +765,10 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, stdout, seedname) &
+        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, error) &
                 /eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        if (allocated(error)) return
+
         !
         ! Loop over Cartesian tensor components
         !
@@ -851,7 +879,7 @@ contains
 
     use w90_postw90_types, only: pw90_gyrotropic_type, wigner_seitz_type
     use w90_constants, only: dp, cmplx_1
-    use w90_io, only: io_time, io_error
+    use w90_io, only: io_time
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new

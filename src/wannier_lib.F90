@@ -366,7 +366,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
 
-  call kmesh_dealloc(kmesh_info, stdout, seedname)
+  call kmesh_dealloc(kmesh_info, error)
 
   call w90_wannier90_readwrite_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
                                            kpt_latt, wannierise, proj, input_proj, select_proj, spec_points, &
@@ -731,7 +731,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, err, comm)
   if (allocated(err)) return
-  call kmesh_dealloc(kmesh_info, stdout, seedname)
+  call kmesh_dealloc(kmesh_info, error)
   call w90_wannier90_readwrite_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, exclude_bands, kmesh_data, &
                                            kpt_latt, wannierise, proj, input_proj, select_proj, spec_points, &
                                            wann_data, wann_plot, write_data, eigval, seedname, stdout)

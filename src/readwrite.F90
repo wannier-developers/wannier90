@@ -1841,7 +1841,7 @@ contains
         endif
       enddo
     enddo
-    call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
       do i = 1, 3
@@ -3461,13 +3461,13 @@ contains
         if (index(ctemp, 'c=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_cart, stdout, seedname)
+          call utility_string_to_coord(ctemp, pos_cart, error)
           if (lconvert) pos_cart = pos_cart*bohr
           call utility_cart_to_frac(pos_cart(:), pos_frac(:), inv_lattice)
         elseif (index(ctemp, 'f=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_frac, stdout, seedname)
+          call utility_string_to_coord(ctemp, pos_frac, error)
         else
           if (atom_data%num_species == 0) then
             call set_error_input(error, &
@@ -3500,7 +3500,7 @@ contains
               return
             endif
             ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, error)
             dummy = dummy(:pos1 - 1) ! remove [ ] section
           endif
         else
@@ -3741,7 +3741,7 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_z_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_z_tmp, error)
           endif
           ! x axis
           pos1 = index(dummy, 'x=')
@@ -3749,7 +3749,7 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_x_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_x_tmp, error)
           endif
           ! diffusivity of orbital
           pos1 = index(dummy, 'zona=')

@@ -610,7 +610,7 @@ contains
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, &
                                      kmesh_info%wbtot, cdq_loc, cdodq_loc, counts, stdout)
-      if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann)
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -641,7 +641,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
+                                  comm)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
@@ -700,7 +701,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
+                                  comm)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -807,7 +809,7 @@ contains
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                        conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                       wann_control)
+                                       wann_control, error)
       endif
 
       if (lconverged) then
@@ -1156,7 +1158,7 @@ contains
     !================================================!
     subroutine internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                          conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                         wann_control)
+                                         wann_control, error)
       !================================================!
       !
       !! Determine whether minimisation of non-gauge
@@ -1168,11 +1170,11 @@ contains
 
       implicit none
 
-      type(wann_control_type), intent(in) :: wann_control
-
       ! arguments
       type(localisation_vars_type), intent(in) :: old_spread
       type(localisation_vars_type), intent(in) :: wann_spread
+      type(w90_error_type), allocatable, intent(out) :: error
+      type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
       integer, intent(in) :: iter
@@ -1472,29 +1474,29 @@ contains
 
       implicit none
 
+      ! argumetns
       type(wann_control_type), intent(in) :: wann_control
 
-      complex(kind=dp), allocatable, intent(inout) :: cdodq_precond_loc(:, :, :)
-      complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
       integer, intent(in) :: iter
+      integer, intent(in) :: noise_count
+      integer, intent(in) :: num_wann
+      integer, intent(inout) :: ncg
+      integer, intent(in) :: stdout
+
+      complex(kind=dp), allocatable, intent(inout) :: cdodq_precond_loc(:, :, :)
+      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+
+      real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
+      real(kind=dp), intent(in) :: wbtot
+      real(kind=dp), intent(out) :: doda0
+      real(kind=dp), intent(out) :: gcfac
+
       logical, intent(in) :: lprint
       logical, intent(inout) :: lrandom
-      integer, intent(in) :: noise_count
-      integer, intent(inout) :: ncg
-      real(kind=dp), intent(out) :: gcfac
-      real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
-      real(kind=dp), intent(out) :: doda0
-      integer, intent(in) :: num_wann
-      !real(kind=dp), intent(in) :: kpt_latt(:, :)
-      !real(kind=dp), intent(in) :: real_lattice(3, 3)
-      real(kind=dp), intent(in) :: wbtot
-      !integer, intent(in) :: nrpts
-      !integer, intent(in) :: irvec(:, :)
-      !integer, intent(in) :: ndegen(:)
-      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
-      integer, intent(in) :: counts(0:)
-      integer, intent(in) :: stdout
+
       ! local
       complex(kind=dp), external :: zdotc
 
@@ -1675,7 +1677,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                    m_matrix_loc, timing_level, stdout, sitesym, comm)
+                                    m_matrix_loc, timing_level, stdout, sitesym, error, comm)
       !================================================!
       !
       !! Update U and M matrices after a trial step
@@ -1694,7 +1696,7 @@ contains
 
       type(kmesh_info_type), intent(in) :: kmesh_info
       type(sitesym_type), intent(in) :: sitesym
-      type(w90_error_type), allocatable, intent(out) :: error !BGS FIXME
+      type(w90_error_type), allocatable, intent(out) :: error
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
@@ -2823,7 +2825,7 @@ contains
 
     type(wannier_data_type), intent(in) :: wannier_data
     type(w90_system_type), intent(in) :: w90_system
-    type(w90_error_type), allocatabl, intent(out)  :: error
+    type(w90_error_type), allocatable, intent(out)  :: error
 
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
