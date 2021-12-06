@@ -965,7 +965,7 @@ contains
         index(pw90_kpath%task, 'curv') == 0 .and. &
         index(pw90_kpath%task, 'morb') == 0 .and. &
         index(pw90_kpath%task, 'shc') == 0) then
-      call set_input_error(error, 'Error: value of kpath_task not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of kpath_task not recognised in w90_wannier90_readwrite_read')
       return
     endif
     if (.not. allocated(kpoint_path%labels) .and. pw90_calculation%kpath) then

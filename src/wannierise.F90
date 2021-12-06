@@ -643,6 +643,7 @@ contains
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
                                   m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
                                   comm)
+        if (allocated(error)) return
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
@@ -703,6 +704,7 @@ contains
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
                                   m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
                                   comm)
+        if (allocated(error)) return
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -810,6 +812,7 @@ contains
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                        conv_count, noise_count, lconverged, lrandom, lfirst, &
                                        wann_control, error)
+        if (allocated(error)) return
       endif
 
       if (lconverged) then
