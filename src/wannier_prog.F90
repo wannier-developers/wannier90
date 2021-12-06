@@ -319,15 +319,20 @@ program wannier
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, &
-                                    m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                                    omega%invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                                    num_wann, checkpoint, have_disentangled, .false., &
-                                    seedname, stdout)
+      call w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
+                                    wannier_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                                    omega%invariant, mp_grid, num_bands, num_exclude_bands, &
+                                    num_kpts, num_wann, checkpoint, have_disentangled, .false., &
+                                    seedname, stdout, err)
+      if (allocated(err)) call prterr(err, stdout)
     endif
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, &
-                                  checkpoint, have_disentangled, seedname, stdout, comm)
+                                  checkpoint, have_disentangled, seedname, stdout, err, comm)
+    if (allocated(err)) then
+      call prterr(err, stdout)
+      call exit(err%code)
+    end if
     if (lsitesymmetry) then
       call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, err)
       ! update this to read on root and bcast - JRY
@@ -444,7 +449,7 @@ program wannier
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &
                          m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
-                         real_space_ham%translate_home_cell, seedname, stdout, comm)
+                         real_space_ham%translate_home_cell, seedname, stdout, err, comm)
   end if
 
   ! handle errors
@@ -488,12 +493,16 @@ program wannier
     if (w90_calculation%transport) then
       time2 = io_time()
 
-      call tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, output_file, &
-                     real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                     u_matrix, u_matrix_opt, eigval, real_lattice, &
-                     wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                     num_bands, num_kpts, num_wann, rpt_origin, band_plot%mode, &
-                     have_disentangled, lsitesymmetry, seedname, stdout)
+      call tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, &
+                     output_file, real_space_ham, transport, print_output, wannier_data, &
+                     ws_region, w90_calculation, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
+                     real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
+                     nrpts, num_bands, num_kpts, num_wann, rpt_origin, band_plot%mode, &
+                     have_disentangled, lsitesymmetry, seedname, stdout, err)
+      if (allocated(err)) then
+        call prterr(err, stdout)
+        call exit(err%code)
+      end if
       time1 = io_time()
 
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'

@@ -82,6 +82,7 @@ contains
     !
     !================================================
     use w90_utility, only: utility_recip_lattice
+    use w90_error, only: w90_error_type
     implicit none
 
     ! arguments
@@ -106,6 +107,7 @@ contains
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(inout) :: w90_system
     type(wannier_data_type), intent(inout) :: wannier_data
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_bands
@@ -137,26 +139,35 @@ contains
     character(len=20) :: energy_unit
 
     library = .false.
-    call w90_readwrite_in_file(seedname, stdout)
-    call w90_readwrite_read_verbosity(print_output, stdout, seedname)
-    call w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
+    call w90_readwrite_in_file(seedname, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_verbosity(print_output, error)
+    call w90_readwrite_read_algorithm_control(optimisation, error)
     call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname)
     call w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname)
-    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
-                                  stdout, seedname)
+    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
+                                  bohr, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
-    call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
-    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname) !for read_chkpt
-    call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, num_wann, &
-                                      .false., stdout, seedname)
+    call w90_readwrite_read_num_wann(num_wann, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error) !for read_chkpt
+    if (allocated(error)) return
+    call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, &
+                                      num_wann, .false., stdout, error)
+    if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
     !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
-    call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, &
-                                    stdout, seedname)
-    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-    call w90_readwrite_read_system(library, w90_system, stdout, seedname)
-    call w90_readwrite_read_kpath(library, kpoint_path, ok, .false., stdout, seedname)
-    call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
+    call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, stdout, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_system(library, w90_system, stdout, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_kpath(library, kpoint_path, ok, .false., error)
+    if (allocated(error)) return
+    call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, stdout, seedname)
     call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, stdout, seedname)
     call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname)
@@ -171,103 +182,129 @@ contains
     call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, stdout, seedname)
     call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
                                           pw90_extra_io%smear, dos_plot, stdout, seedname)
-    call w90_readwrite_read_ws_data(ws_region, stdout, seedname)
+    call w90_readwrite_read_ws_data(ws_region, error)
+    if (allocated(error)) return
     call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
-                                    pw90_calculation%geninterp, dos_plot, disentanglement, eig_found, &
-                                    eigval, library, .false., num_bands, num_kpts, stdout, seedname)
+                                    pw90_calculation%geninterp, dos_plot, disentanglement, &
+                                    eig_found, eigval, library, .false., num_bands, num_kpts, &
+                                    stdout, seedname, error)
+    if (allocated(error)) return
     dis_manifold%win_min = -1.0_dp
     dis_manifold%win_max = 0.0_dp
     if (eig_found) dis_manifold%win_min = minval(eigval)
     if (eig_found) dis_manifold%win_max = maxval(eigval)
-    call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
+    call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, stdout, seedname)
     call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
                                                 pw90_calculation%boltzwann, pw90_extra_io%boltz_2d_dir, stdout, &
                                                 seedname)
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                    fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
-    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
-    call w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
+    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
+    if (allocated(error)) return
+    call w90_readwrite_read_kmesh_data(kmesh_input, error)
+    if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
     call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
-                                    bohr, stdout, seedname)
+                                    bohr, stdout, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                    recip_lattice, stdout, seedname)
     call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
                                                   pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
                                                   pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                   stdout, seedname)
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname) !pw90_write
-    call w90_readwrite_clean_infile(stdout, seedname)
+    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error) !pw90_write
+    if (allocated(error)) return
+    call w90_readwrite_clean_infile(stdout, seedname, error)
+    if (allocated(error)) return
     ! For aesthetic purposes, convert some things to uppercase
     call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
-    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, num_bands, &
-                                        num_kpts, stdout, seedname)
+    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                        num_bands, num_kpts, error)
+    if (allocated(error)) return
   end subroutine w90_postw90_readwrite_read
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(out) :: pw90_calculation
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
     logical :: found
 
     pw90_calculation%dos = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos', found, l_value=pw90_calculation%dos)
+    call w90_readwrite_get_keyword('dos', found, error, l_value=pw90_calculation%dos)
+    if (allocated(error)) return
 
     pw90_calculation%berry = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry', found, l_value=pw90_calculation%berry)
+    call w90_readwrite_get_keyword('berry', found, error, l_value=pw90_calculation%berry)
+    if (allocated(error)) return
 
     pw90_calculation%kpath = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath', found, l_value=pw90_calculation%kpath)
+    call w90_readwrite_get_keyword('kpath', found, error, l_value=pw90_calculation%kpath)
+    if (allocated(error)) return
 
     pw90_calculation%kslice = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice', found, l_value=pw90_calculation%kslice)
+    call w90_readwrite_get_keyword('kslice', found, error, l_value=pw90_calculation%kslice)
+    if (allocated(error)) return
 
     pw90_calculation%gyrotropic = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic', found, &
+    call w90_readwrite_get_keyword('gyrotropic', found, error, &
                                    l_value=pw90_calculation%gyrotropic)
+    if (allocated(error)) return
 
     pw90_calculation%geninterp = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp', found, l_value=pw90_calculation%geninterp)
+    call w90_readwrite_get_keyword('geninterp', found, error, l_value=pw90_calculation%geninterp)
+    if (allocated(error)) return
     pw90_calculation%boltzwann = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltzwann', found, l_value=pw90_calculation%boltzwann)
+    call w90_readwrite_get_keyword('boltzwann', found, error, l_value=pw90_calculation%boltzwann)
+    if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_pw90_calcs
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     logical, intent(inout) :: effective_model
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
     !ivo
-    call w90_readwrite_get_keyword(stdout, seedname, 'effective_model', found, l_value=effective_model)
+    call w90_readwrite_get_keyword('effective_model', found, error, l_value=effective_model)
+    if (allocated(error)) return
   end subroutine w90_wannier90_readwrite_read_effective_model
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
     pw90_oper_read%spn_formatted = .false.       ! formatted or "binary" file
-    call w90_readwrite_get_keyword(stdout, seedname, 'spn_formatted', found, &
+    call w90_readwrite_get_keyword('spn_formatted', found, error, &
                                    l_value=pw90_oper_read%spn_formatted)
+    if (allocated(error)) return
 
     pw90_oper_read%uHu_formatted = .false.       ! formatted or "binary" file
-    call w90_readwrite_get_keyword(stdout, seedname, 'uhu_formatted', found, &
+    call w90_readwrite_get_keyword('uhu_formatted', found, error, &
                                    l_value=pw90_oper_read%uHu_formatted)
+    if (allocated(error)) return
   end subroutine w90_wannier90_readwrite_read_oper
 
   !================================================!
@@ -275,18 +312,21 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
     logical, intent(in) :: kslicel
     type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: i
     logical :: found
 
     pw90_kslice%task = 'fermi_lines'
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_task', found, c_value=pw90_kslice%task)
+    call w90_readwrite_get_keyword('kslice_task', found, error, c_value=pw90_kslice%task)
+    if (allocated(error)) return
     if (kslicel .and. index(pw90_kslice%task, 'fermi_lines') == 0 .and. &
         index(pw90_kslice%task, 'curv') == 0 .and. &
         index(pw90_kslice%task, 'morb') == 0 .and. &
@@ -303,15 +343,18 @@ contains
       ("Error: kslice_task cannot include both 'shc' and 'curv'", stdout, seedname)
 
     pw90_kslice%kmesh2d(1:2) = 50
-    call w90_readwrite_get_vector_length(stdout, seedname, 'kslice_2dkmesh', found, length=i)
+    call w90_readwrite_get_vector_length('kslice_2dkmesh', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (i == 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 1, &
+        call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 1, error, &
                                               i_value=pw90_kslice%kmesh2d)
+        if (allocated(error)) return
         pw90_kslice%kmesh2d(2) = pw90_kslice%kmesh2d(1)
       elseif (i == 2) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 2, &
+        call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 2, error, &
                                               i_value=pw90_kslice%kmesh2d)
+        if (allocated(error)) return
       else
         call io_error('Error: kslice_2dkmesh must be provided as either' &
                       //' one integer or a vector of two integers', stdout, seedname)
@@ -322,22 +365,26 @@ contains
     endif
 
     pw90_kslice%corner = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 3, &
+    call w90_readwrite_get_keyword_vector('kslice_corner', found, 3, error, &
                                           r_value=pw90_kslice%corner)
+    if (allocated(error)) return
 
     pw90_kslice%b1(1) = 1.0_dp
     pw90_kslice%b1(2) = 0.0_dp
     pw90_kslice%b1(3) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 3, r_value=pw90_kslice%b1)
+    call w90_readwrite_get_keyword_vector('kslice_b1', found, 3, error, r_value=pw90_kslice%b1)
+    if (allocated(error)) return
 
     pw90_kslice%b2(1) = 0.0_dp
     pw90_kslice%b2(2) = 1.0_dp
     pw90_kslice%b2(3) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 3, r_value=pw90_kslice%b2)
+    call w90_readwrite_get_keyword_vector('kslice_b2', found, 3, error, r_value=pw90_kslice%b2)
+    if (allocated(error)) return
 
     pw90_kslice%fermi_lines_colour = 'none'
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found, &
+    call w90_readwrite_get_keyword('kslice_fermi_lines_colour', found, error, &
                                    c_value=pw90_kslice%fermi_lines_colour)
+    if (allocated(error)) return
     if (kslicel .and. index(pw90_kslice%fermi_lines_colour, 'none') == 0 .and. &
         index(pw90_kslice%fermi_lines_colour, 'spin') == 0) call io_error &
       ('Error: value of kslice_fermi_lines_colour not recognised ' &
@@ -352,11 +399,13 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     type(pw90_smearing_type), intent(out) :: pw90_smearing
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
     character(len=maxlen)              :: ctmp
@@ -364,32 +413,37 @@ contains
 
     ! By default: Gaussian
     pw90_smearing%type_index = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_type', found, c_value=ctmp)
-    if (found) pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', stdout, seedname)
+    call w90_readwrite_get_keyword('smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
+    if (found) pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', error)
 
     ! By default: adaptive smearing
     pw90_smearing%use_adaptive = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr', found, l_value=pw90_smearing%use_adaptive)
+    call w90_readwrite_get_keyword('adpt_smr', found, error, l_value=pw90_smearing%use_adaptive)
+    if (allocated(error)) return
 
     ! By default: a=sqrt(2)
     pw90_smearing%adaptive_prefactor = sqrt(2.0_dp)
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_fac', found, &
+    call w90_readwrite_get_keyword('adpt_smr_fac', found, error, &
                                    r_value=pw90_smearing%adaptive_prefactor)
+    if (allocated(error)) return
     if (found .and. (pw90_smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: adpt_smr_fac must be greater than zero', stdout, seedname)
 
     ! By default: 1 eV
     pw90_smearing%adaptive_max_width = 1.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_max', found, &
+    call w90_readwrite_get_keyword('adpt_smr_max', found, error, &
                                    r_value=pw90_smearing%adaptive_max_width)
+    if (allocated(error)) return
     if (pw90_smearing%adaptive_max_width <= 0._dp) &
       call io_error('Error: adpt_smr_max must be greater than zero', stdout, seedname)
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
     pw90_smearing%fixed_width = 0.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('smr_fixed_en_width', found, error, &
                                    r_value=pw90_smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_smearing%fixed_width < 0._dp)) &
       call io_error('Error: smr_fixed_en_width must be greater than or equal to zero', stdout, &
                     seedname)
@@ -399,15 +453,18 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: scissors_shift
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
     scissors_shift = 0.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'scissors_shift', found, r_value=scissors_shift)
+    call w90_readwrite_get_keyword('scissors_shift', found, error, r_value=scissors_shift)
+    if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_scissors_shift
 
@@ -417,6 +474,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
@@ -425,21 +483,26 @@ contains
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     integer, intent(in) :: num_elec_per_state
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
     spin_moment = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_moment', found, l_value=spin_moment)
+    call w90_readwrite_get_keyword('spin_moment', found, error, l_value=spin_moment)
+    if (allocated(error)) return
 
     pw90_spin%axis_polar = 0.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_polar', found, r_value=pw90_spin%axis_polar)
+    call w90_readwrite_get_keyword('spin_axis_polar', found, error, r_value=pw90_spin%axis_polar)
+    if (allocated(error)) return
 
     pw90_spin%axis_azimuth = 0.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_azimuth', found, &
+    call w90_readwrite_get_keyword('spin_axis_azimuth', found, error, &
                                    r_value=pw90_spin%axis_azimuth)
+    if (allocated(error)) return
 
     spin_decomp = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_decomp', found, l_value=spin_decomp)
+    call w90_readwrite_get_keyword('spin_decomp', found, error, l_value=spin_decomp)
+    if (allocated(error)) return
 
     if (spin_decomp .and. (num_elec_per_state .ne. 1)) then
       call io_error('spin_decomp can be true only if num_elec_per_state is 1', stdout, seedname)
@@ -453,6 +516,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
@@ -461,6 +525,7 @@ contains
     real(kind=dp), intent(in) :: smr_fixed_en_width
     integer, intent(in) :: smr_index
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     real(kind=dp) :: smr_max_arg
     real(kind=dp)                   :: gyrotropic_box_tmp(3)
@@ -470,28 +535,33 @@ contains
 
     ! Stepan
     pw90_gyrotropic%task = 'all'
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_task', found, c_value=pw90_gyrotropic%task)
+    call w90_readwrite_get_keyword('gyrotropic_task', found, error, c_value=pw90_gyrotropic%task)
+    if (allocated(error)) return
     pw90_gyrotropic%box(:, :) = 0.0
     pw90_gyrotropic%degen_thresh = 0.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_degen_thresh', found, &
+    call w90_readwrite_get_keyword('gyrotropic_degen_thresh', found, error, &
                                    r_value=pw90_gyrotropic%degen_thresh)
+    if (allocated(error)) return
 
     do i = 1, 3
       pw90_gyrotropic%box(i, i) = 1.0_dp
       gyrotropic_box_tmp(:) = 0.0_dp
-      call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b'//achar(48 + i), found, 3, &
+      call w90_readwrite_get_keyword_vector('gyrotropic_box_b'//achar(48 + i), found, 3, error, &
                                             r_value=gyrotropic_box_tmp)
+      if (allocated(error)) return
       if (found) pw90_gyrotropic%box(i, :) = gyrotropic_box_tmp(:)
     enddo
     pw90_gyrotropic%box_corner(:) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 3, &
+    call w90_readwrite_get_keyword_vector('gyrotropic_box_center', found, 3, error, &
                                           r_value=gyrotropic_box_tmp)
+    if (allocated(error)) return
     if (found) pw90_gyrotropic%box_corner(:) = &
       gyrotropic_box_tmp(:) - 0.5*(pw90_gyrotropic%box(1, :) + pw90_gyrotropic%box(2, :) + &
                                    pw90_gyrotropic%box(3, :))
 
-    call w90_readwrite_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, &
-                                        pw90_gyrotropic%num_bands, lcount=.true.)
+    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, pw90_gyrotropic%num_bands, &
+                                        .true., error)
+    if (allocated(error)) return
     if (found) then
       if (pw90_gyrotropic%num_bands < 1) &
         call io_error('Error: problem reading gyrotropic_band_list', stdout, seedname)
@@ -499,8 +569,10 @@ contains
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', stdout, &
                                    seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'gyrotropic_band_list', found, &
-                                          pw90_gyrotropic%num_bands, .false., pw90_gyrotropic%band_list)
+      call w90_readwrite_get_range_vector('gyrotropic_band_list', found, &
+                                          pw90_gyrotropic%num_bands, .false., error, &
+                                          pw90_gyrotropic%band_list)
+      if (allocated(error)) return
       if (any(pw90_gyrotropic%band_list < 1) .or. any(pw90_gyrotropic%band_list > num_wann)) &
         call io_error('Error: gyrotropic_band_list asks for a non-valid bands', stdout, seedname)
     else
@@ -517,28 +589,32 @@ contains
 
     pw90_gyrotropic%smearing%use_adaptive = .false.
     smr_max_arg = 5.0
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_max_arg', found, r_value=smr_max_arg)
+    call w90_readwrite_get_keyword('smr_max_arg', found, error, r_value=smr_max_arg)
+    if (allocated(error)) return
     if (found .and. (smr_max_arg <= 0._dp)) &
       call io_error('Error: smr_max_arg must be greater than zero', stdout, seedname)
 
     pw90_gyrotropic%smearing%max_arg = smr_max_arg
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found, &
+    call w90_readwrite_get_keyword('gyrotropic_smr_max_arg', found, error, &
                                    r_value=pw90_gyrotropic%smearing%max_arg)
+    if (allocated(error)) return
     if (found .and. (pw90_gyrotropic%smearing%max_arg <= 0._dp)) call io_error &
       ('Error: gyrotropic_smr_max_arg must be greater than zero', stdout, seedname)
 
     pw90_gyrotropic%smearing%fixed_width = smr_fixed_en_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('gyrotropic_smr_fixed_en_width', found, error, &
                                    r_value=pw90_gyrotropic%smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_gyrotropic%smearing%fixed_width < 0._dp)) call io_error &
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', stdout, &
        seedname)
 
     ! By default: use the "global" smearing index
     pw90_gyrotropic%smearing%type_index = smr_index
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found, c_value=ctmp)
+    call w90_readwrite_get_keyword('gyrotropic_smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
     if (found) pw90_gyrotropic%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                      'gyrotropic_smr_type', stdout, seedname)
+                                                                                      'gyrotropic_smr_type', error)
 
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
@@ -547,6 +623,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     integer, intent(in) :: stdout
@@ -554,6 +631,7 @@ contains
     type(pw90_berry_mod_type), intent(out) :: pw90_berry
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
     integer :: kdotp_num_bands, ierr
@@ -571,10 +649,12 @@ contains
 !-------------------------------------------------------
 
     pw90_berry%transl_inv = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'transl_inv', found, l_value=pw90_berry%transl_inv)
+    call w90_readwrite_get_keyword('transl_inv', found, error, l_value=pw90_berry%transl_inv)
+    if (allocated(error)) return
 
     pw90_berry%task = ' '
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_task', found, c_value=pw90_berry%task)
+    call w90_readwrite_get_keyword('berry_task', found, error, c_value=pw90_berry%task)
+    if (allocated(error)) return
     if (pw90_calculation%berry .and. .not. found) call io_error &
       ('Error: berry=T and berry_task is not set', stdout, seedname)
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
@@ -584,87 +664,103 @@ contains
       call io_error('Error: value of berry_task not recognised in w90_wannier90_readwrite_read', stdout, seedname)
 
     pw90_berry%curv_adpt_kmesh = 1
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found, &
+    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh', found, error, &
                                    i_value=pw90_berry%curv_adpt_kmesh)
+    if (allocated(error)) return
     if (pw90_berry%curv_adpt_kmesh < 1) &
       call io_error( &
       'Error:  berry_curv_adpt_kmesh must be a positive integer', stdout, seedname)
 
     pw90_berry%curv_adpt_kmesh_thresh = 100.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh_thresh', found, &
+    if (allocated(error)) return
+    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh_thresh', found, error, &
                                    r_value=pw90_berry%curv_adpt_kmesh_thresh)
 
     pw90_berry%curv_unit = 'ang2'
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_unit', found, c_value=pw90_berry%curv_unit)
+    call w90_readwrite_get_keyword('berry_curv_unit', found, error, c_value=pw90_berry%curv_unit)
+    if (allocated(error)) return
     if (pw90_berry%curv_unit .ne. 'ang2' .and. pw90_berry%curv_unit .ne. 'bohr2') &
       call io_error &
       ('Error: value of berry_curv_unit not recognised in w90_wannier90_readwrite_read', stdout, seedname)
 
     pw90_berry%wanint_kpoint_file = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'wanint_kpoint_file', found, &
+    call w90_readwrite_get_keyword('wanint_kpoint_file', found, error, &
                                    l_value=pw90_berry%wanint_kpoint_file)
+    if (allocated(error)) return
 
 !    smear_temp = -1.0_dp
 !    call w90_readwrite_get_keyword('smear_temp',found,r_value=smear_temp)
 
     pw90_berry%kubo_smearing%use_adaptive = pw90_smearing%use_adaptive
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr', found, &
+    call w90_readwrite_get_keyword('kubo_adpt_smr', found, error, &
                                    l_value=pw90_berry%kubo_smearing%use_adaptive)
+    if (allocated(error)) return
 
     pw90_berry%kubo_smearing%adaptive_prefactor = pw90_smearing%adaptive_prefactor
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found, &
+    call w90_readwrite_get_keyword('kubo_adpt_smr_fac', found, error, &
                                    r_value=pw90_berry%kubo_smearing%adaptive_prefactor)
+    if (allocated(error)) return
     if (found .and. (pw90_berry%kubo_smearing%adaptive_prefactor <= 0._dp)) call io_error &
       ('Error: kubo_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     pw90_berry%kubo_smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found, &
+    call w90_readwrite_get_keyword('kubo_adpt_smr_max', found, error, &
                                    r_value=pw90_berry%kubo_smearing%adaptive_max_width)
+    if (allocated(error)) return
     if (pw90_berry%kubo_smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: kubo_adpt_smr_max must be greater than zero', stdout, seedname)
 
     pw90_berry%kubo_smearing%fixed_width = pw90_smearing%fixed_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('kubo_smr_fixed_en_width', found, error, &
                                    r_value=pw90_berry%kubo_smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_berry%kubo_smearing%fixed_width < 0._dp)) call io_error &
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero', stdout, seedname)
 
     pw90_berry%sc_phase_conv = 1
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_phase_conv', found, &
+    call w90_readwrite_get_keyword('sc_phase_conv', found, error, &
                                    i_value=pw90_berry%sc_phase_conv)
+    if (allocated(error)) return
     if ((pw90_berry%sc_phase_conv .ne. 1) .and. ((pw90_berry%sc_phase_conv .ne. 2))) &
       call io_error('Error: sc_phase_conv must be either 1 or 2', stdout, seedname)
 
     pw90_berry%sc_use_eta_corr = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_use_eta_corr', found, &
+    call w90_readwrite_get_keyword('sc_use_eta_corr', found, error, &
                                    l_value=pw90_berry%sc_use_eta_corr)
+    if (allocated(error)) return
 
     ! By default: use the "global" smearing index
     pw90_berry%kubo_smearing%type_index = pw90_smearing%type_index
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_type', found, c_value=ctmp)
+    call w90_readwrite_get_keyword('kubo_smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
     if (found) pw90_berry%kubo_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'kubo_smr_type', &
-                                                                                      stdout, seedname)
+                                                                                      error)
 
     pw90_berry%sc_eta = 0.04
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_eta', found, r_value=pw90_berry%sc_eta)
+    call w90_readwrite_get_keyword('sc_eta', found, error, r_value=pw90_berry%sc_eta)
+    if (allocated(error)) return
 
     pw90_berry%sc_w_thr = 5.0d0
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_w_thr', found, r_value=pw90_berry%sc_w_thr)
+    call w90_readwrite_get_keyword('sc_w_thr', found, error, r_value=pw90_berry%sc_w_thr)
+    if (allocated(error)) return
 
     pw90_berry%kdotp_kpoint(:) = 0.0_dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 3, &
+    call w90_readwrite_get_keyword_vector('kdotp_kpoint', found, 3, error, &
                                           r_value=pw90_berry%kdotp_kpoint)
+    if (allocated(error)) return
 
     kdotp_num_bands = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'kdotp_num_bands', found, i_value=kdotp_num_bands)
+    call w90_readwrite_get_keyword('kdotp_num_bands', found, error, i_value=kdotp_num_bands)
+    if (allocated(error)) return
     if (found) then
       if (kdotp_num_bands < 1) call io_error('Error: problem reading kdotp_num_bands', stdout, &
                                              seedname)
       allocate (pw90_berry%kdotp_bands(kdotp_num_bands), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kdotp_num_bands in w90_wannier90_readwrite_read', stdout, &
                                    seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'kdotp_bands', found, kdotp_num_bands, &
-                                          .false., pw90_berry%kdotp_bands)
+      call w90_readwrite_get_range_vector('kdotp_bands', found, kdotp_num_bands, &
+                                          .false., error, pw90_berry%kdotp_bands)
+      if (allocated(error)) return
       if (any(pw90_berry%kdotp_bands < 1)) &
         call io_error('Error: kdotp_bands must contain positive numbers', stdout, seedname)
     end if
@@ -677,11 +773,13 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
     type(pw90_spin_hall_type), intent(out) :: pw90_spin_hall
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: scissors_shift
@@ -692,27 +790,32 @@ contains
     logical :: found
 
     pw90_spin_hall%freq_scan = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_freq_scan', found, &
+    call w90_readwrite_get_keyword('shc_freq_scan', found, error, &
                                    l_value=pw90_spin_hall%freq_scan)
+    if (allocated(error)) return
 
     pw90_spin_hall%alpha = 1
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_alpha', found, i_value=pw90_spin_hall%alpha)
+    call w90_readwrite_get_keyword('shc_alpha', found, error, i_value=pw90_spin_hall%alpha)
+    if (allocated(error)) return
     if (found .and. (pw90_spin_hall%alpha < 1 .or. pw90_spin_hall%alpha > 3)) call io_error &
       ('Error:  shc_alpha must be 1, 2 or 3', stdout, seedname)
 
     pw90_spin_hall%beta = 2
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_beta', found, i_value=pw90_spin_hall%beta)
+    call w90_readwrite_get_keyword('shc_beta', found, error, i_value=pw90_spin_hall%beta)
+    if (allocated(error)) return
     if (found .and. (pw90_spin_hall%beta < 1 .or. pw90_spin_hall%beta > 3)) call io_error &
       ('Error:  shc_beta must be 1, 2 or 3', stdout, seedname)
 
     pw90_spin_hall%gamma = 3
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_gamma', found, i_value=pw90_spin_hall%gamma)
+    call w90_readwrite_get_keyword('shc_gamma', found, error, i_value=pw90_spin_hall%gamma)
+    if (allocated(error)) return
     if (found .and. (pw90_spin_hall%gamma < 1 .or. pw90_spin_hall%gamma > 3)) call io_error &
       ('Error:  shc_gamma must be 1, 2 or 3', stdout, seedname)
 
     pw90_spin_hall%bandshift = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift', found, &
+    call w90_readwrite_get_keyword('shc_bandshift', found, error, &
                                    l_value=pw90_spin_hall%bandshift)
+    if (allocated(error)) return
     pw90_spin_hall%bandshift = pw90_spin_hall%bandshift .and. pw90_calculation%berry .and. &
                                .not. (index(berry_task, 'shc') == 0)
     if ((abs(scissors_shift) > 1.0e-7_dp) .and. pw90_spin_hall%bandshift) &
@@ -720,8 +823,9 @@ contains
                     stdout, seedname)
 
     pw90_spin_hall%bandshift_firstband = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_firstband', found, &
+    call w90_readwrite_get_keyword('shc_bandshift_firstband', found, error, &
                                    i_value=pw90_spin_hall%bandshift_firstband)
+    if (allocated(error)) return
     if (pw90_spin_hall%bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided', &
                     stdout, seedname)
@@ -729,14 +833,16 @@ contains
       call io_error('Error: shc_bandshift_firstband must >= 1', stdout, seedname)
 
     pw90_spin_hall%bandshift_energyshift = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found, &
+    call w90_readwrite_get_keyword('shc_bandshift_energyshift', found, error, &
                                    r_value=pw90_spin_hall%bandshift_energyshift)
+    if (allocated(error)) return
     if (pw90_spin_hall%bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided', &
                     stdout, seedname)
 
     pw90_spin_hall%method = ' '
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_method', found, c_value=pw90_spin_hall%method)
+    call w90_readwrite_get_keyword('shc_method', found, error, c_value=pw90_spin_hall%method)
+    if (allocated(error)) return
     if (index(berry_task, 'shc') > 0 .and. .not. found) call io_error &
       ('Error: berry_task=shc and shc_method is not set', stdout, seedname)
     if (index(berry_task, 'shc') > 0 .and. index(pw90_spin_hall%method, 'qiao') == 0 &
@@ -748,20 +854,24 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, stdout, seedname)
     !================================================!
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(in) :: stdout
     type(pw90_band_deriv_degen_type), intent(out) :: pw90_band_deriv_degen
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found
 
     pw90_band_deriv_degen%use_degen_pert = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_degen_pert', found, &
+    call w90_readwrite_get_keyword('use_degen_pert', found, error, &
                                    l_value=pw90_band_deriv_degen%use_degen_pert)
+    if (allocated(error)) return
 
     pw90_band_deriv_degen%degen_thr = 1.0d-4
-    call w90_readwrite_get_keyword(stdout, seedname, 'degen_thr', found, &
+    call w90_readwrite_get_keyword('degen_thr', found, error, &
                                    r_value=pw90_band_deriv_degen%degen_thr)
+    if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_pw90ham
 
@@ -770,12 +880,14 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
     type(pw90_kpath_mod_type), intent(out) :: pw90_kpath
     type(kpoint_path_type), intent(in) :: kpoint_path
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -783,7 +895,8 @@ contains
     logical :: found
 
     pw90_kpath%task = 'bands'
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_task', found, c_value=pw90_kpath%task)
+    call w90_readwrite_get_keyword('kpath_task', found, error, c_value=pw90_kpath%task)
+    if (allocated(error)) return
     if (pw90_calculation%kpath .and. index(pw90_kpath%task, 'bands') == 0 .and. &
         index(pw90_kpath%task, 'curv') == 0 .and. &
         index(pw90_kpath%task, 'morb') == 0 .and. &
@@ -794,14 +907,16 @@ contains
                     stdout, seedname)
 
     pw90_kpath%num_points = 100
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_num_points', found, &
+    call w90_readwrite_get_keyword('kpath_num_points', found, error, &
                                    i_value=pw90_kpath%num_points)
+    if (allocated(error)) return
     if (pw90_kpath%num_points < 0) &
       call io_error('Error: kpath_num_points must be positive', stdout, seedname)
 
     pw90_kpath%bands_colour = 'none'
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_bands_colour', found, &
+    call w90_readwrite_get_keyword('kpath_bands_colour', found, error, &
                                    c_value=pw90_kpath%bands_colour)
+    if (allocated(error)) return
     if (pw90_calculation%kpath .and. index(pw90_kpath%bands_colour, 'none') == 0 .and. &
         index(pw90_kpath%bands_colour, 'spin') == 0 .and. &
         index(pw90_kpath%bands_colour, 'shc') == 0) call io_error &
@@ -818,6 +933,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -830,6 +946,7 @@ contains
     logical, intent(out) :: dos_plot
     logical, intent(in) :: found_fermi_energy
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer :: i, ierr
     logical :: found
@@ -841,7 +958,8 @@ contains
     else
       dos_plot = .false.
     endif
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_task', found, c_value=pw90_dos%task)
+    call w90_readwrite_get_keyword('dos_task', found, error, c_value=pw90_dos%task)
+    if (allocated(error)) return
     if (pw90_calculation%dos) then
       if (index(pw90_dos%task, 'dos_plot') == 0 .and. &
           index(pw90_dos%task, 'find_fermi_energy') == 0) call io_error &
@@ -861,28 +979,33 @@ contains
     !IVO_END
 
     pw90_dos%energy_step = 0.01_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_step', found, &
+    call w90_readwrite_get_keyword('dos_energy_step', found, error, &
                                    r_value=pw90_dos%energy_step)
+    if (allocated(error)) return
 
     pw90_dos%smearing%use_adaptive = pw90_smearing%use_adaptive
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr', found, &
+    call w90_readwrite_get_keyword('dos_adpt_smr', found, error, &
                                    l_value=pw90_dos%smearing%use_adaptive)
+    if (allocated(error)) return
 
     pw90_dos%smearing%adaptive_prefactor = pw90_smearing%adaptive_prefactor
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found, &
+    call w90_readwrite_get_keyword('dos_adpt_smr_fac', found, error, &
                                    r_value=pw90_dos%smearing%adaptive_prefactor)
+    if (allocated(error)) return
     if (found .and. (pw90_dos%smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     pw90_dos%smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found, &
+    call w90_readwrite_get_keyword('dos_adpt_smr_max', found, error, &
                                    r_value=pw90_dos%smearing%adaptive_max_width)
+    if (allocated(error)) return
     if (pw90_dos%smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
     pw90_dos%smearing%fixed_width = pw90_smearing%fixed_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('dos_smr_fixed_en_width', found, error, &
                                    r_value=pw90_dos%smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_dos%smearing%fixed_width < 0._dp)) &
       call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero', stdout, &
                     seedname)
@@ -893,17 +1016,17 @@ contains
 !    dos_plot_format           = 'gnuplot'
 !    call w90_readwrite_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
-    call w90_readwrite_get_range_vector(stdout, seedname, 'dos_project', found, &
-                                        pw90_dos%num_project, lcount=.true.)
+    call w90_readwrite_get_range_vector('dos_project', found, pw90_dos%num_project, .true., error)
+    if (allocated(error)) return
     if (found) then
       if (pw90_dos%num_project < 1) call io_error('Error: problem reading dos_project', stdout, &
                                                   seedname)
       if (allocated(pw90_dos%project)) deallocate (pw90_dos%project)
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dos_project in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'dos_project', found, &
-                                          pw90_dos%num_project, .false., &
-                                          pw90_dos%project)
+      call w90_readwrite_get_range_vector('dos_project', found, pw90_dos%num_project, .false., &
+                                          error, pw90_dos%project)
+      if (allocated(error)) return
       if (any(pw90_dos%project < 1) .or. &
           any(pw90_dos%project > num_wann)) &
         call io_error('Error: dos_project asks for out-of-range Wannier functions', stdout, &
@@ -921,9 +1044,10 @@ contains
 
     ! By default: use the "global" smearing index
     pw90_dos%smearing%type_index = pw90_smearing%type_index
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_type', found, c_value=ctmp)
-    if (found) pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', stdout, &
-                                                                               seedname)
+    call w90_readwrite_get_keyword('dos_smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
+    if (found) pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', &
+                                                                               error)
 
   end subroutine w90_wannier90_readwrite_read_dos
 
@@ -934,9 +1058,11 @@ contains
     ! General band interpolator (pw90_geninterp)
     !================================================!
 
+    use w90_error, only: w90_error_type
     implicit none
 
     type(pw90_geninterp_mod_type), intent(out) :: pw90_geninterp
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
@@ -944,11 +1070,13 @@ contains
     logical :: found
 
     pw90_geninterp%alsofirstder = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_alsofirstder', found, &
+    call w90_readwrite_get_keyword('geninterp_alsofirstder', found, error, &
                                    l_value=pw90_geninterp%alsofirstder)
+    if (allocated(error)) return
     pw90_geninterp%single_file = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_single_file', found, &
+    call w90_readwrite_get_keyword('geninterp_single_file', found, error, &
                                    l_value=pw90_geninterp%single_file)
+    if (allocated(error)) return
     ! [gp-end, Jun 1, 2012]
 
   end subroutine w90_wannier90_readwrite_read_geninterp
@@ -962,10 +1090,12 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
     type(pw90_smearing_type), intent(in) :: pw90_smearing
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
@@ -984,15 +1114,17 @@ contains
     pw90_boltzwann%TDF_smearing%use_adaptive = .false.
 
     pw90_boltzwann%calc_also_dos = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found, &
+    call w90_readwrite_get_keyword('boltz_calc_also_dos', found, error, &
                                    l_value=pw90_boltzwann%calc_also_dos)
+    if (allocated(error)) return
 
     pw90_boltzwann%calc_also_dos = pw90_boltzwann%calc_also_dos .and. do_boltzwann
 
     ! 0 means the normal 3d case for the calculation of the Seebeck coefficient
     ! The other valid possibilities are 1,2,3 for x,y,z respectively
     pw90_boltzwann%dir_num_2d = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_2d_dir', found, c_value=boltz_2d_dir)
+    call w90_readwrite_get_keyword('boltz_2d_dir', found, error, c_value=boltz_2d_dir)
+    if (allocated(error)) return
     if (found) then
       if (trim(boltz_2d_dir) == 'no') then
         pw90_boltzwann%dir_num_2d = 0
@@ -1008,8 +1140,9 @@ contains
     end if
 
     pw90_boltzwann%dos_energy_step = 0.001_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_step', found, &
+    call w90_readwrite_get_keyword('boltz_dos_energy_step', found, error, &
                                    r_value=pw90_boltzwann%dos_energy_step)
+    if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_energy_step <= 0._dp)) &
       call io_error('Error: boltz_dos_energy_step must be positive', stdout, seedname)
 
@@ -1020,8 +1153,9 @@ contains
       ! We just set here a default numerical value.
       pw90_boltzwann%dos_energy_min = -1.0_dp
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_min', found, &
+    call w90_readwrite_get_keyword('boltz_dos_energy_min', found, error, &
                                    r_value=pw90_boltzwann%dos_energy_min)
+    if (allocated(error)) return
     if (allocated(eigval)) then
       pw90_boltzwann%dos_energy_max = maxval(eigval) + 0.6667_dp
     else
@@ -1029,60 +1163,70 @@ contains
       ! We just set here a default numerical value.
       pw90_boltzwann%dos_energy_max = 0.0_dp
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_max', found, &
+    call w90_readwrite_get_keyword('boltz_dos_energy_max', found, error, &
                                    r_value=pw90_boltzwann%dos_energy_max)
+    if (allocated(error)) return
     if (pw90_boltzwann%dos_energy_max <= pw90_boltzwann%dos_energy_min) &
       call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', &
                     stdout, seedname)
 
     pw90_boltzwann%dos_smearing%use_adaptive = pw90_smearing%use_adaptive
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found, &
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr', found, error, &
                                    l_value=pw90_boltzwann%dos_smearing%use_adaptive)
+    if (allocated(error)) return
 
     pw90_boltzwann%dos_smearing%adaptive_prefactor = pw90_smearing%adaptive_prefactor
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found, &
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_fac', found, error, &
                                    r_value=pw90_boltzwann%dos_smearing%adaptive_prefactor)
+    if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_smearing%adaptive_prefactor <= 0._dp)) &
       call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero', stdout, seedname)
 
     pw90_boltzwann%dos_smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found, &
+    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_max', found, error, &
                                    r_value=pw90_boltzwann%dos_smearing%adaptive_max_width)
+    if (allocated(error)) return
     if (pw90_boltzwann%dos_smearing%adaptive_max_width <= 0._dp) call io_error &
       ('Error: boltz_dos_adpt_smr_max must be greater than zero', stdout, seedname)
 
     pw90_boltzwann%dos_smearing%fixed_width = pw90_smearing%fixed_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('boltz_dos_smr_fixed_en_width', found, error, &
                                    r_value=pw90_boltzwann%dos_smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_smearing%fixed_width < 0._dp)) &
       call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', &
                     stdout, seedname)
 
     pw90_boltzwann%mu_min = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_min', found, r_value=pw90_boltzwann%mu_min)
+    call w90_readwrite_get_keyword('boltz_mu_min', found, error, r_value=pw90_boltzwann%mu_min)
+    if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_min provided', stdout, seedname)
     pw90_boltzwann%mu_max = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_max', found2, r_value=pw90_boltzwann%mu_max)
+    call w90_readwrite_get_keyword('boltz_mu_max', found2, error, r_value=pw90_boltzwann%mu_max)
+    if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_max provided', stdout, seedname)
     if (found .and. found2 .and. (pw90_boltzwann%mu_max < pw90_boltzwann%mu_min)) &
       call io_error('Error: boltz_mu_max must be greater than boltz_mu_min', stdout, seedname)
     pw90_boltzwann%mu_step = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_step', found, r_value=pw90_boltzwann%mu_step)
+    call w90_readwrite_get_keyword('boltz_mu_step', found, error, r_value=pw90_boltzwann%mu_step)
+    if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_mu_step provided', stdout, seedname)
     if (found .and. (pw90_boltzwann%mu_step <= 0._dp)) &
       call io_error('Error: boltz_mu_step must be greater than zero', stdout, seedname)
 
     pw90_boltzwann%temp_min = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_min', found, &
+    call w90_readwrite_get_keyword('boltz_temp_min', found, error, &
                                    r_value=pw90_boltzwann%temp_min)
+    if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_min provided', stdout, seedname)
     pw90_boltzwann%temp_max = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_max', found2, &
+    call w90_readwrite_get_keyword('boltz_temp_max', found2, error, &
                                    r_value=pw90_boltzwann%temp_max)
+    if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_max provided', stdout, seedname)
     if (found .and. found2 .and. (pw90_boltzwann%temp_max < pw90_boltzwann%temp_min)) &
@@ -1090,8 +1234,9 @@ contains
     if (found .and. (pw90_boltzwann%temp_min <= 0._dp)) &
       call io_error('Error: boltz_temp_min must be greater than zero', stdout, seedname)
     pw90_boltzwann%temp_step = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_step', found, &
+    call w90_readwrite_get_keyword('boltz_temp_step', found, error, &
                                    r_value=pw90_boltzwann%temp_step)
+    if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) &
       call io_error('Error: BoltzWann required but no boltz_temp_step provided', stdout, seedname)
     if (found .and. (pw90_boltzwann%temp_step <= 0._dp)) &
@@ -1101,51 +1246,59 @@ contains
 
     ! By default, the energy step for the TDF is 1 meV
     pw90_boltzwann%tdf_energy_step = 0.001_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_energy_step', found, &
+    call w90_readwrite_get_keyword('boltz_tdf_energy_step', found, error, &
                                    r_value=pw90_boltzwann%tdf_energy_step)
+    if (allocated(error)) return
     if (pw90_boltzwann%tdf_energy_step <= 0._dp) &
       call io_error('Error: boltz_tdf_energy_step must be greater than zero', stdout, seedname)
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
     pw90_boltzwann%tdf_smearing%fixed_width = pw90_smearing%fixed_width
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found, &
+    call w90_readwrite_get_keyword('boltz_tdf_smr_fixed_en_width', found, error, &
                                    r_value=pw90_boltzwann%tdf_smearing%fixed_width)
+    if (allocated(error)) return
     if (found .and. (pw90_boltzwann%tdf_smearing%fixed_width < 0._dp)) &
       call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', &
                     stdout, seedname)
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%tdf_smearing%type_index = pw90_smearing%type_index
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found, c_value=ctmp)
+    call w90_readwrite_get_keyword('boltz_tdf_smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
     if (found) pw90_boltzwann%tdf_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_tdf_smr_type', stdout, seedname)
+                                                                                         'boltz_tdf_smr_type', error)
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%dos_smearing%type_index = pw90_smearing%type_index
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found, c_value=ctmp)
+    call w90_readwrite_get_keyword('boltz_dos_smr_type', found, error, c_value=ctmp)
+    if (allocated(error)) return
     if (found) pw90_boltzwann%dos_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_dos_smr_type', stdout, seedname)
+                                                                                         'boltz_dos_smr_type', error)
 
     ! By default: 10 fs relaxation time
     pw90_boltzwann%relax_time = 10._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_relax_time', found, &
+    call w90_readwrite_get_keyword('boltz_relax_time', found, error, &
                                    r_value=pw90_boltzwann%relax_time)
+    if (allocated(error)) return
 
     pw90_boltzwann%bandshift = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift', found, &
+    call w90_readwrite_get_keyword('boltz_bandshift', found, error, &
                                    l_value=pw90_boltzwann%bandshift)
+    if (allocated(error)) return
     pw90_boltzwann%bandshift = pw90_boltzwann%bandshift .and. do_boltzwann
 
     pw90_boltzwann%bandshift_firstband = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found, &
+    call w90_readwrite_get_keyword('boltz_bandshift_firstband', found, error, &
                                    i_value=pw90_boltzwann%bandshift_firstband)
+    if (allocated(error)) return
     if (pw90_boltzwann%bandshift .and. (.not. found)) &
       call io_error('Error: boltz_bandshift required but no boltz_bandshift_firstband provided', &
                     stdout, seedname)
     pw90_boltzwann%bandshift_energyshift = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_energyshift', found, &
+    call w90_readwrite_get_keyword('boltz_bandshift_energyshift', found, error, &
                                    r_value=pw90_boltzwann%bandshift_energyshift)
+    if (allocated(error)) return
     if (pw90_boltzwann%bandshift .and. (.not. found)) &
       call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided', &
                     stdout, seedname)
@@ -1159,6 +1312,7 @@ contains
 
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -1166,6 +1320,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(dis_manifold_type), intent(in) :: dis_manifold
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
@@ -1183,21 +1338,24 @@ contains
     else
       pw90_dos%energy_max = dis_manifold%win_max + 0.6667_dp
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_max', found, &
+    call w90_readwrite_get_keyword('dos_energy_max', found, error, &
                                    r_value=pw90_dos%energy_max)
+    if (allocated(error)) return
 
     if (allocated(eigval)) then
       pw90_dos%energy_min = minval(eigval) - 0.6667_dp
     else
       pw90_dos%energy_min = dis_manifold%win_min - 0.6667_dp
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_min', found, &
+    call w90_readwrite_get_keyword('dos_energy_min', found, error, &
                                    r_value=pw90_dos%energy_min)
+    if (allocated(error)) return
 
     pw90_extra_io%kubo_freq_min = 0.0_dp
     pw90_extra_io%gyrotropic_freq_min = pw90_extra_io%kubo_freq_min
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_min', found, &
+    call w90_readwrite_get_keyword('kubo_freq_min', found, error, &
                                    r_value=pw90_extra_io%kubo_freq_min)
+    if (allocated(error)) return
 
     if (dis_manifold%frozen_states) then
       pw90_extra_io%kubo_freq_max = dis_manifold%froz_max - fermi_energy_list(1) + 0.6667_dp
@@ -1207,12 +1365,14 @@ contains
       pw90_extra_io%kubo_freq_max = dis_manifold%win_max - dis_manifold%win_min + 0.6667_dp
     end if
     pw90_extra_io%gyrotropic_freq_max = pw90_extra_io%kubo_freq_max
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_max', found, &
+    call w90_readwrite_get_keyword('kubo_freq_max', found, error, &
                                    r_value=pw90_extra_io%kubo_freq_max)
+    if (allocated(error)) return
 
     pw90_extra_io%kubo_freq_step = 0.01_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_step', found, &
+    call w90_readwrite_get_keyword('kubo_freq_step', found, error, &
                                    r_value=pw90_extra_io%kubo_freq_step)
+    if (allocated(error)) return
     if (found .and. pw90_extra_io%kubo_freq_step < 0.0_dp) call io_error( &
       'Error: kubo_freq_step must be positive', stdout, seedname)
 
@@ -1236,12 +1396,15 @@ contains
     !       the length of the list
 
     pw90_extra_io%gyrotropic_freq_step = 0.01_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found, &
+    call w90_readwrite_get_keyword('gyrotropic_freq_min', found, error, &
                                    r_value=pw90_extra_io%gyrotropic_freq_min)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found, &
+    if (allocated(error)) return
+    call w90_readwrite_get_keyword('gyrotropic_freq_max', found, error, &
                                    r_value=pw90_extra_io%gyrotropic_freq_max)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found, &
+    if (allocated(error)) return
+    call w90_readwrite_get_keyword('gyrotropic_freq_step', found, error, &
                                    r_value=pw90_extra_io%gyrotropic_freq_step)
+    if (allocated(error)) return
     pw90_gyrotropic%nfreq = nint((pw90_extra_io%gyrotropic_freq_max - &
                                   pw90_extra_io%gyrotropic_freq_min)/ &
                                  pw90_extra_io%gyrotropic_freq_step) + 1
@@ -1269,10 +1432,12 @@ contains
     end if
     pw90_gyrotropic%eigval_max = pw90_berry%kubo_eigval_max
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_eigval_max', found, &
+    call w90_readwrite_get_keyword('kubo_eigval_max', found, error, &
                                    r_value=pw90_berry%kubo_eigval_max)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found, &
+    if (allocated(error)) return
+    call w90_readwrite_get_keyword('gyrotropic_eigval_max', found, error, &
                                    r_value=pw90_gyrotropic%eigval_max)
+    if (allocated(error)) return
   end subroutine w90_wannier90_readwrite_read_energy_range
 
   !================================================!
@@ -1280,6 +1445,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
@@ -1289,6 +1455,7 @@ contains
     logical, intent(out) :: global_kmesh_set
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error ! BGS FIXME
 
     integer :: i
     logical :: found
@@ -1303,7 +1470,8 @@ contains
     global_kmesh_set = .false.
     kmesh%spacing = -1._dp
     kmesh%mesh = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_spacing', found, r_value=kmesh%spacing)
+    call w90_readwrite_get_keyword('kmesh_spacing', found, error, r_value=kmesh%spacing)
+    if (allocated(error)) return
     if (found) then
       if (kmesh%spacing .le. 0._dp) &
         call io_error('Error: kmesh_spacing must be greater than zero', stdout, seedname)
@@ -1311,18 +1479,21 @@ contains
 
       call w90_readwrite_set_kmesh(kmesh%spacing, recip_lattice, kmesh%mesh)
     end if
-    call w90_readwrite_get_vector_length(stdout, seedname, 'kmesh', found, length=i)
+    call w90_readwrite_get_vector_length('kmesh', found, i, error)
+    if (allocated(error)) return
     if (found) then
       if (global_kmesh_set) &
         call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
         global_kmesh_set = .true.
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 1, i_value=kmesh%mesh)
+        call w90_readwrite_get_keyword_vector('kmesh', found, 1, error, i_value=kmesh%mesh)
+        if (allocated(error)) return
         kmesh%mesh(2) = kmesh%mesh(1)
         kmesh%mesh(3) = kmesh%mesh(1)
       elseif (i .eq. 3) then
         global_kmesh_set = .true.
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 3, i_value=kmesh%mesh)
+        call w90_readwrite_get_keyword_vector('kmesh', found, 3, error, i_value=kmesh%mesh)
+        if (allocated(error)) return
       else
         call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', &
                       stdout, seedname)
@@ -1391,6 +1562,7 @@ contains
     !================================================!
 
     use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -1409,6 +1581,7 @@ contains
     logical, intent(in) :: global_kmesh_set
     type(kmesh_spacing_type), intent(in) :: global_kmesh
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     logical :: found, found2
     integer :: i
@@ -1416,8 +1589,9 @@ contains
     ! Default values
     module_kmesh%spacing = -1._dp
     module_kmesh%mesh = 0
-    call w90_readwrite_get_keyword(stdout, seedname, trim(moduleprefix)//'_kmesh_spacing', found, &
+    call w90_readwrite_get_keyword(trim(moduleprefix)//'_kmesh_spacing', found, error, &
                                    r_value=module_kmesh%spacing)
+    if (allocated(error)) return
     if (found) then
       if (module_kmesh%spacing .le. 0._dp) &
         call io_error('Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero', &
@@ -1425,19 +1599,22 @@ contains
 
       call w90_readwrite_set_kmesh(module_kmesh%spacing, recip_lattice, module_kmesh%mesh)
     end if
-    call w90_readwrite_get_vector_length(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, length=i)
+    call w90_readwrite_get_vector_length(trim(moduleprefix)//'_kmesh', found2, i, error)
+    if (allocated(error)) return
     if (found2) then
       if (found) &
         call io_error('Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
                       //trim(moduleprefix)//'_kmesh_spacing', stdout, seedname)
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
-                                              1, i_value=module_kmesh%mesh)
+        call w90_readwrite_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, &
+                                              1, error, i_value=module_kmesh%mesh)
+        if (allocated(error)) return
         module_kmesh%mesh(2) = module_kmesh%mesh(1)
         module_kmesh%mesh(3) = module_kmesh%mesh(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, trim(moduleprefix)//'_kmesh', found2, &
-                                              3, i_value=module_kmesh%mesh)
+        call w90_readwrite_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, &
+                                              3, error, i_value=module_kmesh%mesh)
+        if (allocated(error)) return
       else
         call io_error('Error: '//trim(moduleprefix)// &
                       '_kmesh must be provided as either one integer or a vector of 3 integers', &
@@ -2017,6 +2194,7 @@ contains
                                            pw90_berry, proj_input, stdout, seedname)
     !================================================!
 
+    use w90_error, only: w90_error_type
     use w90_io, only: io_error
 
     implicit none
@@ -2029,6 +2207,7 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
+    type(w90_error_type), allocatable :: error !BGS FIXME
 
     integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
@@ -2040,7 +2219,7 @@ contains
     integer :: ierr
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
-                               dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+                               dis_manifold, atom_data, eigval, kpoint_path, error)
     if (allocated(pw90_dos%project)) then
       deallocate (pw90_dos%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dos_project in w90_postw90_readwrite_dealloc', &

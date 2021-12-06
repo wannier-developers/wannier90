@@ -183,6 +183,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
     w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
   use w90_wannier90_libv1_types
+  use w90_error, only: w90_error_type
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -231,6 +232,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   integer, dimension(num_bands_tot), intent(out) :: exclude_bands_loc
   integer, dimension(num_bands_tot), optional, intent(out) :: proj_s_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
+  type(w90_error_type), allocatable :: err ! FIXME
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
@@ -285,7 +287,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout, seedname)
   kpt_latt = kpt_latt_loc
   atoms%num_atoms = num_atoms_loc
-  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, stdout, seedname)
+  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, err)
+  if (allocated(err)) return
   gamma_only = gamma_only_loc
   system%spinors = spinors_loc
 
@@ -494,7 +497,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   logical :: disentanglement
   logical :: mpiinitalready
 
-  type(w90_error_type), allocatable :: err
+  type(w90_error_type), allocatable :: err ! FIXME
 
   ! CORRECT ONLY FOR SERIAL CASE!!!
   ! THESE LIBRARY ROUTINES ARE OBSOLETE
@@ -559,7 +562,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   atoms%num_atoms = num_atoms_loc
   gamma_only = gamma_only_loc
 
-  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, stdout, seedname)
+  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, err)
+  if (allocated(err)) return
 
   call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
                                     fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
@@ -690,7 +694,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
                    rpt_origin, band_plot%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout)
+                   stdout, err)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if

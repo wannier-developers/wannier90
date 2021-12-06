@@ -22,6 +22,7 @@ program postw90
 
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_types
+  use w90_error, only: w90_error_type
   use w90_postw90_types
   use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header
   use w90_postw90_readwrite
@@ -124,6 +125,7 @@ program postw90
   real(kind=dp), allocatable :: fermi_energy_list(:)
   integer :: fermi_n
   type(atom_data_type) :: atoms
+  type(w90_error_type), allocatable :: err
 
   integer :: num_bands
   !! Number of bands
@@ -336,7 +338,8 @@ program postw90
       call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
                                     u_matrix, u_matrix_opt, real_lattice, omega_invariant, &
                                     mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
-                                    have_disentangled, .true., seedname, stdout)
+                                    have_disentangled, .true., seedname, stdout, err)
+      ! BGS FIXME - if (allocated(err)) prterr?
     endif
 
     ! Distribute the information in the um and chk files to the other nodes
