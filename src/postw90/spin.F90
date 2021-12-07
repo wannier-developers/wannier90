@@ -265,14 +265,15 @@ contains
     allocate (SS_n(num_wann, num_wann))
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 
     do is = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, is), &
                                      SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout)
+                                     0, num_wann, seedname, stdout, error)
+      if (allocated(error)) return
     enddo
 
     ! Unit vector along the magnetization direction
@@ -348,7 +349,9 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+    if (allocated(error)) return
+
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 
@@ -358,7 +361,9 @@ contains
     do is = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, is), &
                                      SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout)
+                                     0, num_wann, seedname, stdout, error)
+      if (allocated(error)) return
+
       spn_nk(:, is) = aimag(cmplx_i*utility_rotate_diag(SS(:, :, is), UU, num_wann))
       do i = 1, num_wann
         spn_k(is) = spn_k(is) + occ(i)*spn_nk(i, is)
@@ -418,14 +423,18 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+    if (allocated(error)) return
+
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 
     do i = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, i), &
                                      SS_R(:, :, :, i), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout)
+                                     0, num_wann, seedname, stdout, error)
+      if (allocated(error)) return
+
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)
     enddo
 

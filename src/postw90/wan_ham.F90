@@ -501,18 +501,21 @@ contains
     if (allocated(error)) return
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
-                                   kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+                                   kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 1), HH_R, kpt, real_lattice, mp_grid, 1, num_wann, &
-                                   seedname, stdout)
+                                   seedname, stdout, error)
+    if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 2), HH_R, kpt, real_lattice, mp_grid, 2, num_wann, &
-                                   seedname, stdout)
+                                   seedname, stdout, error)
+    if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 3), HH_R, kpt, real_lattice, mp_grid, 3, num_wann, &
-                                   seedname, stdout)
+                                   seedname, stdout, error)
+    if (allocated(error)) return
     call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_band_deriv_degen, &
                            stdout, seedname, error)
     if (allocated(error)) return
@@ -641,8 +644,8 @@ contains
     allocate (delHH(num_wann, num_wann, 3))
     call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, &
                                        kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, OO=HH, OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
-                                       OO_dz=delHH(:, :, 3))
+                                       stdout, error, OO=HH, OO_dx=delHH(:, :, 1), &
+                                       OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
 
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
@@ -734,7 +737,8 @@ contains
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, ws_region, &
                                                         wannier_data, real_lattice, mp_grid, &
                                                         ws_distance, wigner_seitz, stdout, &
-                                                        seedname, OO=HH, OO_da=HH_da(:, :, :), &
+                                                        seedname, error, OO=HH, &
+                                                        OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
@@ -803,8 +807,8 @@ contains
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
                                                 real_lattice, mp_grid, ws_distance, wigner_seitz, &
-                                                stdout, seedname, OO=HH, OO_da=HH_da(:, :, :), &
-                                                OO_dadb=HH_dadb(:, :, :, :))
+                                                stdout, seedname, error, OO=HH, &
+                                                OO_da=HH_da(:, :, :), OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 

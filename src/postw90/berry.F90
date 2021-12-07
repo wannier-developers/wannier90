@@ -1773,7 +1773,9 @@ contains
 
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
                                        real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, OO_true=AA, OO_pseudo=OOmega)
+                                       stdout, error, OO_true=AA, OO_pseudo=OOmega)
+    if (allocated(error)) return
+
     if (present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
       !
@@ -1816,12 +1818,17 @@ contains
 
       call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, BB_R, kpt, &
                                          real_lattice, mp_grid, num_wann, seedname, &
-                                         stdout, OO_true=BB)
+                                         stdout, error, OO_true=BB)
+      if (allocated(error)) return
+
       do j = 1, 3
         do i = 1, j
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, &
                                          wigner_seitz, CC(:, :, i, j), CC_R(:, :, :, i, j), kpt, &
-                                         real_lattice, mp_grid, 0, num_wann, seedname, stdout)
+                                         real_lattice, mp_grid, 0, num_wann, seedname, stdout, &
+                                         error)
+          if (allocated(error)) return
+
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
         end do
       end do
@@ -1997,9 +2004,10 @@ contains
       Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
     else
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, kpt, &
-                                         real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         real_lattice, mp_grid, num_wann, seedname, stdout, error, &
                                          OO=HH, OO_dx=delHH(:, :, 1), &
                                          OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
+      if (allocated(error)) return
 
       call utility_diagonalize(HH, num_wann, eig, UU, error)
       if (allocated(error)) return
@@ -2010,7 +2018,9 @@ contains
 
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
                                        real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, OO_true=AA)
+                                       stdout, error, OO_true=AA)
+    if (allocated(error)) return
+
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -2237,7 +2247,9 @@ contains
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
       call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                                       AA_R, kpt, real_lattice, mp_grid, num_wann, &
-                                                      seedname, stdout, OO_da=AA, OO_dadb=AA_da)
+                                                      seedname, stdout, error, OO_da=AA, OO_dadb=AA_da)
+      if (allocated(error)) return
+
       ! get eigenvalues and their k-derivatives
       call wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, HH_da, UU, eig, eig_da, num_wann, seedname, &
                                        stdout, error)
@@ -2254,7 +2266,9 @@ contains
 
       call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
                                               kpt, real_lattice, mp_grid, num_wann, &
-                                              seedname, stdout, OO_da=AA, OO_dadb=AA_da)
+                                              seedname, stdout, error, OO_da=AA, OO_dadb=AA_da)
+      if (allocated(error)) return
+
       call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
                                ws_distance, wigner_seitz, HH_da, HH, HH_R, u_matrix, UU, v_matrix, &
                                eig_da, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
@@ -2563,7 +2577,9 @@ contains
 
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
                                        real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, OO_true=AA)
+                                       stdout, error, OO_true=AA)
+    if (allocated(error)) return
+
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -2731,7 +2747,9 @@ contains
       ! QZYZ18 Eq.(36)
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SS_R(:, :, :, pw90_spin_hall%gamma), kpt, real_lattice, &
-                                         mp_grid, num_wann, seedname, stdout, OO=S_w)
+                                         mp_grid, num_wann, seedname, stdout, error, OO=S_w)
+      if (allocated(error)) return
+
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
@@ -2742,7 +2760,9 @@ contains
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SR_R(:, :, :, pw90_spin_hall%gamma, :), kpt, &
                                            real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           OO_true=SR_w)
+                                           error, OO_true=SR_w)
+        if (allocated(error)) return
+
         ! QZYZ18 Eq.(31)
         SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, pw90_spin_hall%alpha), UU, num_wann)
         K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
@@ -2753,13 +2773,15 @@ contains
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SHR_R(:, :, :, pw90_spin_hall%gamma, :), kpt, &
                                            real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           OO_true=SHR_w)
+                                           error, OO_true=SHR_w)
         ! QZYZ18 Eq.(32)
         SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, pw90_spin_hall%alpha), UU, num_wann)
         ! QZYZ18 Eq.(39)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SH_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, OO_true=SH_w)
+                                           stdout, error, OO_true=SH_w)
+        if (allocated(error)) return
+
         ! QZYZ18 Eq.(32)
         SH_k = utility_rotate(SH_w(:, :, pw90_spin_hall%gamma), UU, num_wann)
         L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
@@ -2787,18 +2809,22 @@ contains
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SAA_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
                                            kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
+                                           error, OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
+        if (allocated(error)) return
+
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SBB_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
                                            kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
+                                           stdout, error, OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
 
+        if (allocated(error)) return
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            HH_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, OO=HH, &
+                                           stdout, error, OO=HH, &
                                            OO_dx=delHH(:, :, 1), &
                                            OO_dy=delHH(:, :, 2), &
                                            OO_dz=delHH(:, :, 3))
+        if (allocated(error)) return
 
         VV0(:, :) = utility_rotate(delHH_alpha(:, :), UU, num_wann)
         SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha) = &

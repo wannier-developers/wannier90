@@ -360,7 +360,9 @@ contains
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
                                          HH_R, kpt, real_lattice, mp_grid, 0, num_wann, seedname, &
-                                         stdout)
+                                         stdout, error)
+          if (allocated(error)) return
+
           call utility_diagonalize(HH, num_wann, eig, UU, error)
           if (allocated(error)) return
 

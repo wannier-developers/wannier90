@@ -675,9 +675,11 @@ contains
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
-      call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
-                                         real_lattice, mp_grid, num_wann, seedname, &
-                                         stdout, OO_true=AA)
+      call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         error, OO_true=AA)
+      if (allocated(error)) return
+
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
       enddo
@@ -796,13 +798,16 @@ contains
     if (eval_NOA) then
       if (eval_spn) then
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, print_output, fermi_energy_list, wannier_data, real_lattice, &
-                                  mp_grid, pw90_gyrotropic, ws_distance, wigner_seitz, stdout, &
-                                  seedname, SS_R, gyro_NOA_spn)
+                                  num_wann, print_output, fermi_energy_list, wannier_data, &
+                                  real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
+                                  wigner_seitz, stdout, seedname, error, SS_R, gyro_NOA_spn)
+        if (allocated(error)) return
       else
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, print_output, fermi_energy_list, wannier_data, real_lattice, &
-                                  mp_grid, pw90_gyrotropic, ws_distance, wigner_seitz, stdout, seedname, SS_R)
+                                  num_wann, print_output, fermi_energy_list, wannier_data, &
+                                  real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
+                                  wigner_seitz, stdout, seedname, error, SS_R)
+        if (allocated(error)) return
       endif
     endif
 
@@ -857,7 +862,7 @@ contains
   subroutine gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, real_lattice, &
                                   mp_grid, pw90_gyrotropic, ws_distance, wigner_seitz, stdout, seedname, &
-                                  SS_R, gyro_NOA_spn)
+                                  error, SS_R, gyro_NOA_spn)
     !================================================!
     !
     ! Contribution from point k to the real (antisymmetric) part
@@ -896,6 +901,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -931,8 +937,10 @@ contains
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           SS_R(:, :, :, j), kpt, real_lattice, &
-                                           mp_grid, num_wann, seedname, stdout, OO=SS(:, :, j))
+                                           SS_R(:, :, :, j), kpt, real_lattice, mp_grid, num_wann, &
+                                           seedname, stdout, error, OO=SS(:, :, j))
+        if (allocated(error)) return
+
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
       enddo
     endif

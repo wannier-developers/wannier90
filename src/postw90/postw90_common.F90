@@ -839,7 +839,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, OO, &
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
-                                       seedname, stdout)
+                                       seedname, stdout, error)
     !================================================!
     !
     !! For alpha=0:
@@ -864,6 +864,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -883,9 +884,9 @@ contains
     complex(kind=dp) :: phase_fac
 
     if (ws_region%use_ws_distance) then
-      CALL ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
+      call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                              wannier_data%centres, real_lattice, mp_grid, wigner_seitz%nrpts, &
-                             wigner_seitz%irvec)
+                             wigner_seitz%irvec, error)
     endif
 
     OO(:, :) = cmplx_0
@@ -930,7 +931,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, OO, OO_dx, OO_dy, OO_dz)
+                                           stdout, error, OO, OO_dx, OO_dy, OO_dz)
     !================================================!
     !
     !! For OO:
@@ -953,6 +954,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -973,11 +975,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -1024,8 +1026,8 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, ws_region, wannier_data, &
                                                     real_lattice, mp_grid, ws_distance, &
-                                                    wigner_seitz, stdout, seedname, OO, OO_da, &
-                                                    OO_dadb)
+                                                    wigner_seitz, stdout, seedname, error, OO, &
+                                                    OO_da, OO_dadb)
     !================================================!
     !
     !! For OO:
@@ -1051,6 +1053,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1069,11 +1072,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -1138,7 +1141,7 @@ contains
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             ws_region, wannier_data, real_lattice, &
                                                             mp_grid, ws_distance, wigner_seitz, &
-                                                            stdout, seedname, OO, OO_da, OO_dadb)
+                                                            stdout, seedname, error, OO, OO_da, OO_dadb)
     !================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1167,6 +1170,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1192,11 +1196,11 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1296,7 +1300,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, OO_true, OO_pseudo)
+                                           stdout, error, OO_true, OO_pseudo)
     !================================================!
     !
     !! For OO_true (true vector):
@@ -1316,6 +1320,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1334,11 +1339,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
@@ -1404,7 +1409,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
                                                 wigner_seitz, OO_R, kpt, real_lattice, mp_grid, &
-                                                num_wann, seedname, stdout, OO_da, OO_dadb)
+                                                num_wann, seedname, stdout, error, OO_da, OO_dadb)
     !================================================!
     !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1427,6 +1432,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1445,11 +1451,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1507,7 +1513,7 @@ contains
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
                                                         wigner_seitz, OO_R, kpt, real_lattice, &
                                                         mp_grid, num_wann, seedname, stdout, &
-                                                        OO_da, OO_dadb)
+                                                        error, OO_da, OO_dadb)
     !================================================!
     !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1535,6 +1541,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1558,11 +1565,11 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) CALL ws_translate_dist(ws_distance, stdout, seedname, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                           ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec)
+                                                          wigner_seitz%irvec, error)
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0

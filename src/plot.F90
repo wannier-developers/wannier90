@@ -199,9 +199,9 @@ contains
           if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
                                                              ws_region, num_wann, &
                                                              wannier_data%centres, real_lattice, &
-                                                             mp_grid, nrpts, irvec)
+                                                             mp_grid, nrpts, irvec, error)
           call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
-                            stdout, seedname)
+                            stdout, seedname, error)
         end if
       end if
     end if !on_root
@@ -541,11 +541,11 @@ contains
       if (index(band_plot%mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts, &
-                               irvec, force_recompute=.true.)
+                               irvec, error, force_recompute=.true.)
       elseif (index(band_plot%mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts_cut, &
-                               irvec_cut, force_recompute=.true.)
+                               irvec_cut, error, force_recompute=.true.)
       else
         call set_error_plot(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
         return
