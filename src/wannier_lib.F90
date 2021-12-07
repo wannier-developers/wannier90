@@ -611,11 +611,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     call comms_scatterv(m_matrix_orig_local, &
                         num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), m_matrix_orig, &
                         num_bands*num_bands*kmesh_info%nntot*counts, &
-                        num_bands*num_bands*kmesh_info%nntot*displs, stdout, seedname, comm)
+                        num_bands*num_bands*kmesh_info%nntot*displs, error, comm)
   else
     call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann* &
-                        kmesh_info%nntot*displs, stdout, seedname, comm)
+                        kmesh_info%nntot*displs, error, comm)
   endif
 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case

@@ -153,7 +153,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) &
-      call io_stopwatch('geninterp_main', 1, stdout, seedname)
+      call io_stopwatch('geninterp_main', 1, error)
 
     if (on_root) then
       write (stdout, *)
@@ -187,7 +187,7 @@ contains
       read (kpt_unit, *, err=106, end=106) nkinterp
     end if
 
-    call comms_bcast(nkinterp, 1, stdout, seedname, comm)
+    call comms_bcast(nkinterp, 1, error, comm)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -305,8 +305,7 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout, &
-                        seedname, comm)
+    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, error, comm)
     if (.not. pw90_geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
@@ -314,8 +313,7 @@ contains
         call set_error_alloc(error, 'Error allocating localkpointidx in geinterp_main.')
         return
       endif
-      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout, &
-                          seedname, comm)
+      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, error, comm)
     end if
 
     ! I open the output file(s)
@@ -336,7 +334,7 @@ contains
       outdat_unit = io_file_unit()
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-      call comms_bcast(commentline, len(commentline), stdout, seedname, comm)
+      call comms_bcast(commentline, len(commentline), error, comm)
 
       call internal_write_header(outdat_unit, commentline, pw90_geninterp)
     end if
@@ -370,11 +368,11 @@ contains
     if (pw90_geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
-                         num_wann*counts, num_wann*displs, stdout, seedname, comm)
+                         num_wann*counts, num_wann*displs, error, comm)
 
       if (pw90_geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
-                           3*num_wann*counts, 3*num_wann*displs, stdout, seedname, comm)
+                           3*num_wann*counts, 3*num_wann*displs, error, comm)
       end if
 
       ! Now the printing, only on root node
@@ -447,8 +445,7 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('geninterp_main', 2, &
-                                                                         stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('geninterp_main', 2, error)
 
     return
 

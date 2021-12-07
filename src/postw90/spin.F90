@@ -178,7 +178,7 @@ contains
 
     ! Collect contributions from all nodes
 
-    call comms_reduce(spn_all(1), 3, 'SUM', stdout, seedname, comm)
+    call comms_reduce(spn_all(1), 3, 'SUM', error, comm)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)

@@ -97,13 +97,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_HH_R', 1, error)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, wigner_seitz%nrpts))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_HH_R', 2, error)
       return
     end if
 
@@ -176,12 +176,12 @@ contains
                                //'effective_model=T')
         endif
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*wigner_seitz%nrpts, stdout, seedname, comm)
-      call comms_bcast(wigner_seitz%ndegen(1), wigner_seitz%nrpts, stdout, seedname, comm)
-      call comms_bcast(wigner_seitz%irvec(1, 1), 3*wigner_seitz%nrpts, stdout, seedname, comm)
-      call comms_bcast(wigner_seitz%crvec(1, 1), 3*wigner_seitz%nrpts, stdout, seedname, comm)
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*wigner_seitz%nrpts, error, comm)
+      call comms_bcast(wigner_seitz%ndegen(1), wigner_seitz%nrpts, error, comm)
+      call comms_bcast(wigner_seitz%irvec(1, 1), 3*wigner_seitz%nrpts, error, comm)
+      call comms_bcast(wigner_seitz%crvec(1, 1), 3*wigner_seitz%nrpts, error, comm)
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_HH_R', 2, error)
       return
     endif
 
@@ -246,7 +246,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_HH_R', 2, error)
     return
 
 101 call set_error_open(error, 'Error in get_HH_R: problem opening file '// &
@@ -313,13 +313,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_AA_R', 1, error)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_AA_R', 2, error)
       return
     end if
 
@@ -371,9 +371,9 @@ contains
           return
         endif
       endif
-      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_AA_R', 2, error)
       return
     endif
 
@@ -529,10 +529,10 @@ contains
 
     endif !on_root
 
-    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_AA_R', 2, error)
     return
 
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -597,12 +597,12 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_BB_R', 1, error)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_BB_R', 2, error)
       return
     end if
 
@@ -711,10 +711,10 @@ contains
 
     endif !on_root
 
-    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_BB_R', 2, error)
     return
 
 103 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -773,13 +773,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_CC_R', 1, error)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_CC_R', 2, error)
       return
     end if
 
@@ -897,10 +897,10 @@ contains
 
     endif !on_root
 
-    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_CC_R', 2, error)
     return
 
 105 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu')
@@ -957,13 +957,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_FF_R', 1, error)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_FF_R', 2, error)
       return
     end if
 
@@ -1072,10 +1072,10 @@ contains
 
     endif !on_root
 
-    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_FF_R', 2, error)
     return
 
 107 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
@@ -1129,7 +1129,7 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_SS_R', 1, error)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -1245,9 +1245,9 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
+    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, error)
     return
 
 109 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
@@ -1332,27 +1332,27 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_SHC_R', 1, error)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_SHC_R', 2, error)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_SHC_R', 2, error)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_SHC_R', 2, error)
       return
     end if
 
@@ -1636,14 +1636,14 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname, comm)
-    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
-    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
 
     ! end copying from get_AA_R, Junfeng Qiao
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_SHC_R', 2, error)
     return
 
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -1705,13 +1705,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SBB_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_SBB_R', 1, error)
 
     if (.not. allocated(SBB_R)) then
       allocate (SBB_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SBB_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_SBB_R', 2, error)
       return
     end if
 
@@ -1807,10 +1807,10 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SBB_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(SBB_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SBB_R', 2, stdout, seedname)
+      call io_stopwatch('get_oper: get_SBB_R', 2, error)
     return
 
 111 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu')
@@ -1868,13 +1868,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SAA_R', 1, stdout, seedname)
+      call io_stopwatch('get_oper: get_SAA_R', 1, error)
 
     if (.not. allocated(SAA_R)) then
       allocate (SAA_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SAA_R', 2, stdout, seedname)
+        call io_stopwatch('get_oper: get_SAA_R', 2, error)
       return
     end if
 
@@ -1970,9 +1970,9 @@ contains
       enddo
     endif !on_root
 
-    call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname, comm)
+    call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SAA_R', 2, stdout, seedname)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SAA_R', 2, error)
     return
 
 113 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu')

@@ -185,7 +185,7 @@ contains
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
-    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
+    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch('boltzwann_main', 1, error)
 
     if (print_output%iprint > 0) then
       write (stdout, *)
@@ -326,7 +326,7 @@ contains
     ! *********************************************************************************
     ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, error)
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
@@ -506,7 +506,7 @@ contains
       ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
-    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout, seedname, comm)
+    call comms_reduce(NumberZeroDet, 1, 'SUM', error, comm)
     if (on_root) then
       if ((NumberZeroDet .gt. 0)) then
         write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumberZeroDet, " (mu,T) pairs for which the electrical"
@@ -603,16 +603,12 @@ contains
 
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
-    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
+    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, error, comm)
+    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, error, comm)
+    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, error, comm)
+    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, error, comm)
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, error)
 
     ! Open files and print
     if (on_root) then
@@ -759,7 +755,7 @@ contains
       return
     endif
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, error)
 
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
@@ -895,7 +891,7 @@ contains
     num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
-    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
+    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 1, error)
     if (print_output%iprint > 0) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
@@ -1151,15 +1147,15 @@ contains
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (pw90_boltzwann%calc_also_dos) then
-      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout, seedname, comm)
-      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout, seedname, comm)
-      call comms_reduce(min_spacing, 1, 'MIN', stdout, seedname, comm)
-      call comms_reduce(max_spacing, 1, 'MAX', stdout, seedname, comm)
+      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', error, comm)
+      call comms_reduce(NumPtsRefined, 1, 'SUM', error, comm)
+      call comms_reduce(min_spacing, 1, 'MIN', error, comm)
+      call comms_reduce(max_spacing, 1, 'MAX', error, comm)
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
-    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout, seedname, comm)
+    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', error, comm)
 
     if (pw90_boltzwann%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
@@ -1196,7 +1192,7 @@ contains
       end do
     end if
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 2, error)
     if (on_root) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "TDF and DOS calculated."

@@ -49,7 +49,7 @@ contains
     use w90_constants, only: eps6, dp
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_types, only: kmesh_info_type, wannier_data_type, atom_data_type, dis_manifold_type, &
       kpoint_path_type, print_output_type, ws_region_type, ws_distance_type
     use w90_utility, only: utility_recip_lattice_base
@@ -124,7 +124,7 @@ contains
     if (my_node_id == 0) on_root = .true.
 
     if (on_root) then
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, error)
+      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, error)
 
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       ! Print the header only if there is something to plot
@@ -234,7 +234,7 @@ contains
                              num_kpts, num_bands, seedname)
       endif
 
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, error)
+      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, error)
     end if
 
   end subroutine plot_main
@@ -256,7 +256,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_time, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, ws_region_type, &
@@ -329,7 +329,7 @@ contains
 
     !
     if (print_output%timing_level > 1) then
-      call io_stopwatch('plot: interpolate_bands', 1, stdout, error)
+      call io_stopwatch('plot: interpolate_bands', 1, error)
     endif
     !
     time0 = io_time()
@@ -676,10 +676,9 @@ contains
         return
       endif
     endif
-    !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, &
-                                                         stdout, error)
-    !
+
+    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, error)
+
     if (allocated(idx_special_points)) then
       deallocate (idx_special_points, stat=ierr)
       if (ierr /= 0) then
@@ -1106,7 +1105,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch
     use w90_wannier90_types, only: fermi_surface_plot_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv
 
@@ -1141,7 +1140,7 @@ contains
     integer              :: fermi_n
     character(len=9)     :: cdate, ctime
     !
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, error)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
@@ -1274,7 +1273,7 @@ contains
       io_time() - time0, ' (sec)'
     write (stdout, *)
     !
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, error)
     !
     return
 
@@ -1292,7 +1291,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90comm_type
@@ -1365,7 +1364,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, error)
     !
     associate (ngs=>wannier_plot%supercell)
       !
@@ -1633,10 +1632,10 @@ contains
 
       if (spinors) then
         call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1, 1), &
-                          size(wann_func_nc), 'SUM', stdout, seedname, comm)
+                          size(wann_func_nc), 'SUM', error, comm)
       else
         call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
-                          size(wann_func), 'SUM', stdout, seedname, comm)
+                          size(wann_func), 'SUM', error, comm)
       endif
 
       if (on_root) then
@@ -1733,7 +1732,7 @@ contains
           return
         endif
 
-        if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, error)
+        if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, error)
       end if !on_root
 
     end associate

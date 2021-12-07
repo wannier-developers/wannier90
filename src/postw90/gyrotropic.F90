@@ -160,7 +160,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('gyrotropic: prelims', 1, stdout, seedname)
+      call io_stopwatch('gyrotropic: prelims', 1, error)
 
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
@@ -322,8 +322,8 @@ contains
       endif
 
       if (print_output%timing_level > 1) then
-        call io_stopwatch('gyrotropic: prelims', 2, stdout, seedname)
-        call io_stopwatch('gyrotropic: k-interpolation', 1, stdout, seedname)
+        call io_stopwatch('gyrotropic: prelims', 2, error)
+        call io_stopwatch('gyrotropic: k-interpolation', 1, error)
       endif
 
       write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', pw90_gyrotropic%kmesh%mesh(1:3)
@@ -362,35 +362,31 @@ contains
 
     ! Collect contributions from all nodes
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, &
-                                      seedname, comm)
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', stdout, &
-                        seedname, comm)
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', error, comm)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi_n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(gyro_DOS(1), fermi_n, 'SUM', error, comm)
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', stdout, &
-                        seedname, comm)
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', error, comm)
       if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, &
-                                      'SUM', stdout, seedname, comm)
+                                      'SUM', error, comm)
     endif
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, &
-                                                           stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, error)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)

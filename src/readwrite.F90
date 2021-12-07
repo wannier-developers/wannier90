@@ -2024,7 +2024,7 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    call comms_bcast(checkpoint, len(checkpoint), stdout, seedname, comm)
+    call comms_bcast(checkpoint, len(checkpoint), error, comm)
 
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
@@ -2033,7 +2033,7 @@ contains
         return
       endif
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
 
 !    if (.not.on_root .and. .not.allocated(m_matrix)) then
 !       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
@@ -2042,7 +2042,7 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
+    call comms_bcast(have_disentangled, 1, error, comm)
 
     if (have_disentangled) then
       if (.not. on_root) then
@@ -2073,13 +2073,13 @@ contains
 
       end if
 
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_manifold%ndimwin(1), num_kpts, stdout, seedname, comm)
-      call comms_bcast(omega_invariant, 1, stdout, seedname, comm)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+      call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, error, comm)
+      call comms_bcast(dis_manifold%ndimwin(1), num_kpts, error, comm)
+      call comms_bcast(omega_invariant, 1, error, comm)
     end if
-    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
-    call comms_bcast(wannier_data%spreads(1), num_wann, stdout, seedname, comm)
+    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+    call comms_bcast(wannier_data%spreads(1), num_wann, error, comm)
 
   end subroutine w90_readwrite_chkpt_dist
 

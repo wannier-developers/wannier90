@@ -47,7 +47,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_error
 
     ! arguments
@@ -86,7 +86,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, stdout, error)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -155,7 +155,7 @@ contains
 
     endif
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, stdout, error)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, error)
 
   end subroutine overlap_allocate
 
@@ -171,7 +171,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_stopwatch
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
     use w90_error
@@ -231,7 +231,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 1, stdout, error)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 1, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -330,11 +330,11 @@ contains
     if (disentanglement) then
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
                           m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, &
-                          num_bands*num_bands*kmesh_info%nntot*displs, stdout, seedname, comm)
+                          num_bands*num_bands*kmesh_info%nntot*displs, error, comm)
     else
       call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                           m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                          num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname, comm)
+                          num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
     endif
 
     if (.not. use_bloch_phases) then
@@ -391,9 +391,9 @@ contains
       endif
 
       if (disentanglement) then
-        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
+        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
       else
-        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
+        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
       endif
 
     else
@@ -454,7 +454,7 @@ contains
     !~      end if
 ![ysl-e]
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 2, stdout, error)
+    if (timing_level > 0) call io_stopwatch('overlap: read', 2, error)
 
     return
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -625,7 +625,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_stopwatch
     use w90_error, only: w90_error_type, set_error_lapack
 
     implicit none
@@ -644,7 +644,7 @@ contains
     real(kind=DP) :: AP(num_bands*(num_bands + 1)/2)
     real(kind=DP) :: eig(num_bands), work(3*num_bands)
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, error)
 
     lam_unit = io_file_unit()
     open (unit=lam_unit, file='lambda.dat', &
@@ -698,7 +698,7 @@ contains
 !~    enddo
 !~    stop
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, error)
 
     return
 
@@ -805,7 +805,7 @@ contains
     !
     !================================================!
     use w90_constants
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
       set_error_not_unitary
     use w90_utility, only: utility_zgemm
@@ -855,7 +855,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 1, error)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -958,7 +958,7 @@ contains
     end do
     call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
                        m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs, &
-                       stdout, seedname, comm)
+                       error, comm)
 
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) then
@@ -981,7 +981,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 2, error)
 
     return
 
@@ -999,7 +999,7 @@ contains
     !
     !================================================!
     use w90_constants
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
       set_error_not_unitary
     use w90_utility, only: utility_zgemm
@@ -1031,7 +1031,7 @@ contains
 !~ integer :: n,mdev, ndev, nndev,p(1)
 !~ real(kind=dp)                 :: dev, dev_tmp
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, error)
 
 !~    allocate(ph_g(num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_project_gamma')
@@ -1224,7 +1224,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, error)
 
     return
 

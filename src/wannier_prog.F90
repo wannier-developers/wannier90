@@ -203,7 +203,11 @@ program wannier
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
   seedname = "wannier"
-  if (ierr .ne. 0) call io_error('MPI initialisation error', 0, seedname)  ! stdout, seedname not yet known!
+  if (ierr .ne. 0) then
+    call set_error_mpi(error, 'MPI initialisation error')  ! stdout, seedname not yet known!
+    call prterr(error, stdout)
+    call exit(error%code)
+  endif
 #endif
 
   num_nodes = mpisize(comm)
@@ -217,9 +221,9 @@ program wannier
     call io_commandline(prog, dryrun, seedname)
     len_seedname = len(seedname)
   end if
-  call comms_bcast(len_seedname, 1, stdout, seedname, comm)
-  call comms_bcast(seedname, len_seedname, stdout, seedname, comm)
-  call comms_bcast(dryrun, 1, stdout, seedname, comm)
+  call comms_bcast(len_seedname, 1, error, comm)
+  call comms_bcast(seedname, len_seedname, error, comm)
+  call comms_bcast(dryrun, 1, error, comm)
 
   if (on_root) then
     stdout = io_file_unit()
@@ -322,8 +326,11 @@ program wannier
   end if
 
   disentanglement = (num_bands > num_wann)
-  if (gamma_only .and. num_nodes > 1) &
-    call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
+  if (gamma_only .and. num_nodes > 1) then
+    call set_error_fatal(error, 'Gamma point branch is serial only at the moment')
+    call prterr(error, stdout)
+    call exit(error%code)
+  endif
 
   if (w90_calculation%transport .and. transport%read_ht) goto 3003
 
@@ -366,7 +373,9 @@ program wannier
         goto 2002         ! go to plot_main
       else
         if (on_root) write (stdout, '(/a/)')
-        call io_error('Value of checkpoint not recognised in wann_prog', stdout, seedname)
+        call set_error_input(error, 'Value of checkpoint not recognised in wann_prog')
+        call prterr(error, stdout)
+        call exit(error%code)
       endif
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -378,14 +387,16 @@ program wannier
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
       goto 3003
     case default        ! for completeness... (it is already trapped in w90_wannier90_readwrite_read)
-      call io_error('Value of restart not recognised in wann_prog', stdout, seedname)
+      call set_error_input(error, 'Value of restart not recognised in wann_prog')
+      call prterr(error, stdout)
+      call exit(error%code)
     end select
   endif
 
   if (w90_calculation%postproc_setup) then
-    if (on_root) call kmesh_write(exclude_bands, kmesh_info, input_proj, print_output, &
-                                  kpt_latt, real_lattice, num_kpts, &
-                                  num_proj, calc_only_A, w90_system%spinors, seedname, stdout)
+    if (on_root) call kmesh_write(exclude_bands, kmesh_info, input_proj, print_output, kpt_latt, &
+                                  real_lattice, num_kpts, num_proj, calc_only_A, &
+                                  w90_system%spinors, seedname, stdout, error)
     if (allocated(error)) then
       call prterr(error, stdout)
       call exit(error%code)

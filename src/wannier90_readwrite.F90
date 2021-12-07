@@ -2609,16 +2609,16 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     !call comms_bcast(pw90_common%effective_model, 1)
-    call comms_bcast(eig_found, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calculation%postproc_setup, 1, stdout, seedname, comm)
-    call comms_bcast(cp_pp, 1, stdout, seedname, comm)
+    call comms_bcast(eig_found, 1, error, comm)
+    call comms_bcast(w90_calculation%postproc_setup, 1, error, comm)
+    call comms_bcast(cp_pp, 1, error, comm)
     !if (.not. pw90_common%effective_model) then
-    call comms_bcast(mp_grid(1), 3, stdout, seedname, comm)
-    call comms_bcast(num_kpts, 1, stdout, seedname, comm)
-    call comms_bcast(num_bands, 1, stdout, seedname, comm)
+    call comms_bcast(mp_grid(1), 3, error, comm)
+    call comms_bcast(num_kpts, 1, error, comm)
+    call comms_bcast(num_bands, 1, error, comm)
     !endif
-    call comms_bcast(num_wann, 1, stdout, seedname, comm)
-    call comms_bcast(print_output%timing_level, 1, stdout, seedname, comm)
+    call comms_bcast(num_wann, 1, error, comm)
+    call comms_bcast(print_output%timing_level, 1, error, comm)
 
     disentanglement = (num_bands > num_wann)
 
@@ -2626,23 +2626,23 @@ contains
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
     iprintroot = print_output%iprint
     print_output%iprint = 0
-    call comms_bcast(print_output%iprint, 1, stdout, seedname, comm)
+    call comms_bcast(print_output%iprint, 1, error, comm)
     if (on_root) print_output%iprint = iprintroot
     !______________________________________
 
-    !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
-    call comms_bcast(print_output%length_unit, 1, stdout, seedname, comm)
-    call comms_bcast(wvfn_read%formatted, 1, stdout, seedname, comm)
+    !call comms_bcast(energy_unit, 1, error, comm)
+    call comms_bcast(print_output%length_unit, 1, error, comm)
+    call comms_bcast(wvfn_read%formatted, 1, error, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
     !call comms_bcast(berry_uHu_formatted, 1)
-    call comms_bcast(wvfn_read%spin_channel, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%num_dump_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%num_print_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(atom_data%num_atoms, 1, stdout, seedname, comm)   ! Ivo: not used in postw90, right?
-    call comms_bcast(atom_data%num_species, 1, stdout, seedname, comm) ! Ivo: not used in postw90, right?
-    call comms_bcast(real_lattice(1, 1), 9, stdout, seedname, comm)
-    !call comms_bcast(recip_lattice(1, 1), 9, stdout, seedname, comm)
+    call comms_bcast(wvfn_read%spin_channel, 1, error, comm)
+    call comms_bcast(wann_control%num_dump_cycles, 1, error, comm)
+    call comms_bcast(wann_control%num_print_cycles, 1, error, comm)
+    call comms_bcast(atom_data%num_atoms, 1, error, comm)   ! Ivo: not used in postw90, right?
+    call comms_bcast(atom_data%num_species, 1, error, comm) ! Ivo: not used in postw90, right?
+    call comms_bcast(real_lattice(1, 1), 9, error, comm)
+    !call comms_bcast(recip_lattice(1, 1), 9, error, comm)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1)
@@ -2659,7 +2659,7 @@ contains
     if (on_root) then
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
     endif
-    call comms_bcast(num_exclude_bands, 1, stdout, seedname, comm)
+    call comms_bcast(num_exclude_bands, 1, error, comm)
     if (num_exclude_bands > 0) then
       if (.not. on_root) then
         allocate (exclude_bands(num_exclude_bands), stat=ierr)
@@ -2669,20 +2669,20 @@ contains
         endif
       endif
 
-      call comms_bcast(exclude_bands(1), num_exclude_bands, stdout, seedname, comm)
+      call comms_bcast(exclude_bands(1), num_exclude_bands, error, comm)
     end if
 
-    call comms_bcast(gamma_only, 1, stdout, seedname, comm)
-    call comms_bcast(dis_manifold%win_min, 1, stdout, seedname, comm)
-    call comms_bcast(dis_manifold%win_max, 1, stdout, seedname, comm)
-    call comms_bcast(dis_manifold%froz_min, 1, stdout, seedname, comm)
-    call comms_bcast(dis_manifold%froz_max, 1, stdout, seedname, comm)
-    call comms_bcast(dis_control%num_iter, 1, stdout, seedname, comm)
-    call comms_bcast(dis_control%mix_ratio, 1, stdout, seedname, comm)
-    call comms_bcast(dis_control%conv_tol, 1, stdout, seedname, comm)
-    call comms_bcast(dis_control%conv_window, 1, stdout, seedname, comm)
-    call comms_bcast(dis_spheres%first_wann, 1, stdout, seedname, comm)
-    call comms_bcast(dis_spheres%num, 1, stdout, seedname, comm)
+    call comms_bcast(gamma_only, 1, error, comm)
+    call comms_bcast(dis_manifold%win_min, 1, error, comm)
+    call comms_bcast(dis_manifold%win_max, 1, error, comm)
+    call comms_bcast(dis_manifold%froz_min, 1, error, comm)
+    call comms_bcast(dis_manifold%froz_max, 1, error, comm)
+    call comms_bcast(dis_control%num_iter, 1, error, comm)
+    call comms_bcast(dis_control%mix_ratio, 1, error, comm)
+    call comms_bcast(dis_control%conv_tol, 1, error, comm)
+    call comms_bcast(dis_control%conv_window, 1, error, comm)
+    call comms_bcast(dis_spheres%first_wann, 1, error, comm)
+    call comms_bcast(dis_spheres%num, 1, error, comm)
     if (dis_spheres%num > 0) then
       if (.not. on_root) then
         allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
@@ -2691,19 +2691,19 @@ contains
           return
         endif
       endif
-      call comms_bcast(dis_spheres%spheres(1, 1), 4*dis_spheres%num, stdout, seedname, comm)
+      call comms_bcast(dis_spheres%spheres(1, 1), 4*dis_spheres%num, error, comm)
     end if
-    call comms_bcast(wann_control%num_iter, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%num_cg_steps, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%conv_tol, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%conv_window, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%guiding_centres%enable, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calculation%wannier_plot, 1, stdout, seedname, comm)
+    call comms_bcast(wann_control%num_iter, 1, error, comm)
+    call comms_bcast(wann_control%num_cg_steps, 1, error, comm)
+    call comms_bcast(wann_control%conv_tol, 1, error, comm)
+    call comms_bcast(wann_control%conv_window, 1, error, comm)
+    call comms_bcast(wann_control%guiding_centres%enable, 1, error, comm)
+    call comms_bcast(w90_calculation%wannier_plot, 1, error, comm)
     wann_plot_num = 0
     if (on_root) then
       if (allocated(wann_plot%list)) wann_plot_num = size(wann_plot%list)
     endif
-    call comms_bcast(wann_plot_num, 1, stdout, seedname, comm)
+    call comms_bcast(wann_plot_num, 1, error, comm)
     if (wann_plot_num > 0) then
       if (.not. on_root) then
         allocate (wann_plot%list(wann_plot_num), stat=ierr)
@@ -2712,28 +2712,23 @@ contains
           return
         endif
       endif
-      call comms_bcast(wann_plot%list(1), wann_plot_num, stdout, seedname, comm)
+      call comms_bcast(wann_plot%list(1), wann_plot_num, error, comm)
     end if
-    call comms_bcast(wann_plot%supercell(1), 3, stdout, seedname, comm)
-    call comms_bcast(wann_plot%format, len(wann_plot%format), stdout, &
-                     seedname, comm)
-    call comms_bcast(wann_plot%mode, len(wann_plot%mode), stdout, &
-                     seedname, comm)
-    call comms_bcast(wann_plot%spinor_mode, len(wann_plot%spinor_mode), &
-                     stdout, seedname, comm)
-    call comms_bcast(output_file%write_u_matrices, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calculation%bands_plot, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_bvec, 1, stdout, seedname, comm)
-    call comms_bcast(first_segment, 1, stdout, seedname, comm)
-    call comms_bcast(band_plot%format, len(band_plot%format), stdout, &
-                     seedname, comm)
-    call comms_bcast(band_plot%mode, len(band_plot%mode), stdout, &
-                     seedname, comm)
+    call comms_bcast(wann_plot%supercell(1), 3, error, comm)
+    call comms_bcast(wann_plot%format, len(wann_plot%format), error, comm)
+    call comms_bcast(wann_plot%mode, len(wann_plot%mode), error, comm)
+    call comms_bcast(wann_plot%spinor_mode, len(wann_plot%spinor_mode), error, comm)
+    call comms_bcast(output_file%write_u_matrices, 1, error, comm)
+    call comms_bcast(w90_calculation%bands_plot, 1, error, comm)
+    call comms_bcast(output_file%write_bvec, 1, error, comm)
+    call comms_bcast(first_segment, 1, error, comm)
+    call comms_bcast(band_plot%format, len(band_plot%format), error, comm)
+    call comms_bcast(band_plot%mode, len(band_plot%mode), error, comm)
     num_project = 0
     if (on_root) then
       if (allocated(band_plot%project)) num_project = size(band_plot%project)
     endif
-    call comms_bcast(num_project, 1, stdout, seedname, comm)
+    call comms_bcast(num_project, 1, error, comm)
 
     if (num_project > 0) then
       if (.not. on_root) then
@@ -2743,25 +2738,23 @@ contains
           return
         endif
       endif
-      call comms_bcast(band_plot%project(1), num_project, stdout, seedname, comm)
+      call comms_bcast(band_plot%project(1), num_project, error, comm)
     end if
-    call comms_bcast(real_space_ham%system_dim, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_hr, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_rmn, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_tb, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%hr_cutoff, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%dist_cutoff, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), &
-                     stdout, seedname, comm)
-    call comms_bcast(real_space_ham%dist_cutoff_hc, 1, stdout, seedname, comm)
-    !call comms_bcast(one_dim_axis, len(one_dim_axis), stdout, seedname, comm)
-    call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
-    call comms_bcast(ws_region%ws_distance_tol, 1, stdout, seedname, comm)
-    call comms_bcast(ws_region%ws_search_size(1), 3, stdout, seedname, comm)
-    call comms_bcast(w90_calculation%fermi_surface_plot, 1, stdout, seedname, comm)
-    call comms_bcast(fermi_surface_data%num_points, 1, stdout, seedname, comm)
-    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), stdout, &
-                     seedname, comm)
+    call comms_bcast(real_space_ham%system_dim, 1, error, comm)
+    call comms_bcast(output_file%write_hr, 1, error, comm)
+    call comms_bcast(output_file%write_rmn, 1, error, comm)
+    call comms_bcast(output_file%write_tb, 1, error, comm)
+    call comms_bcast(real_space_ham%hr_cutoff, 1, error, comm)
+    call comms_bcast(real_space_ham%dist_cutoff, 1, error, comm)
+    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), error, comm)
+    call comms_bcast(real_space_ham%dist_cutoff_hc, 1, error, comm)
+    !call comms_bcast(one_dim_axis, len(one_dim_axis), error, comm)
+    call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
+    call comms_bcast(ws_region%ws_distance_tol, 1, error, comm)
+    call comms_bcast(ws_region%ws_search_size(1), 3, error, comm)
+    call comms_bcast(w90_calculation%fermi_surface_plot, 1, error, comm)
+    call comms_bcast(fermi_surface_data%num_points, 1, error, comm)
+    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), error, comm)
     !call comms_bcast(fermi_energy, 1) !! used?
 
     !call comms_bcast(pw90_calcs%berry, 1)
@@ -2799,7 +2792,7 @@ contains
     if (on_root) then
       if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     endif
-    call comms_bcast(fermi_n, 1, stdout, seedname, comm)
+    call comms_bcast(fermi_n, 1, error, comm)
     !call comms_bcast(dos_data%energy_min, 1)
     !call comms_bcast(dos_data%energy_max, 1)
     !call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
@@ -2814,14 +2807,14 @@ contains
     !call comms_bcast(spin_hall%bandshift_firstband, 1)
     !call comms_bcast(spin_hall%bandshift_energyshift, 1)
 
-    !call comms_bcast(print_output%devel_flag, len(print_output%devel_flag), stdout, seedname, comm)
+    !call comms_bcast(print_output%devel_flag, len(print_output%devel_flag), error, comm)
     !call comms_bcast(pw90_common%spin_moment, 1)
     !call comms_bcast(pw90_spin%spin_axis_polar, 1)
     !call comms_bcast(pw90_spin%spin_axis_azimuth, 1)
     !call comms_bcast(pw90_common%spin_decomp, 1)
     !call comms_bcast(pw90_ham%use_degen_pert, 1)
     !call comms_bcast(pw90_ham%degen_thr, 1)
-    call comms_bcast(w90_system%num_valence_bands, 1, stdout, seedname, comm)
+    call comms_bcast(w90_system%num_valence_bands, 1, error, comm)
     !call comms_bcast(pw90_calcs%dos, 1)
     !call comms_bcast(dos_data%task, len(dos_data%task))
     !call comms_bcast(pw90_calcs%kpath, 1)
@@ -2830,7 +2823,7 @@ contains
     !call comms_bcast(pw90_calcs%kslice, 1)
     !call comms_bcast(kslice%task, len(kslice%task))
     !call comms_bcast(berry%transl_inv, 1)
-    call comms_bcast(w90_system%num_elec_per_state, 1, stdout, seedname, comm)
+    call comms_bcast(w90_system%num_elec_per_state, 1, error, comm)
     !call comms_bcast(pw90_common%scissors_shift, 1)
 
 ! ----------------------------------------------
@@ -2867,67 +2860,67 @@ contains
     !call comms_bcast(boltz%bandshift_energyshift, 1)
     ! [gp-end]
 
-    call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
-    !call comms_bcast(w90_calculation%disentanglement, 1, stdout, seedname, comm)
+    call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
+    !call comms_bcast(w90_calculation%disentanglement, 1, error, comm)
 
-    call comms_bcast(w90_calculation%transport, 1, stdout, seedname, comm)
-    call comms_bcast(tran%easy_fix, 1, stdout, seedname, comm)
-    call comms_bcast(tran%mode, len(tran%mode), stdout, seedname, comm)
-    call comms_bcast(tran%win_min, 1, stdout, seedname, comm)
-    call comms_bcast(tran%win_max, 1, stdout, seedname, comm)
-    call comms_bcast(tran%energy_step, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_bb, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_ll, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_rr, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_cc, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_lc, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_cr, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_bandc, 1, stdout, seedname, comm)
-    call comms_bcast(tran%write_ht, 1, stdout, seedname, comm)
-    call comms_bcast(tran%read_ht, 1, stdout, seedname, comm)
-    call comms_bcast(tran%use_same_lead, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_cell_ll, 1, stdout, seedname, comm)
-    call comms_bcast(tran%num_cell_rr, 1, stdout, seedname, comm)
-    call comms_bcast(tran%group_threshold, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%translation_centre_frac(1), 3, stdout, seedname, comm)
-    call comms_bcast(kmesh_input%num_shells, 1, stdout, seedname, comm)
-    call comms_bcast(kmesh_input%skip_B1_tests, 1, stdout, seedname, comm)
-    call comms_bcast(kmesh_info%explicit_nnkpts, 1, stdout, seedname, comm)
+    call comms_bcast(w90_calculation%transport, 1, error, comm)
+    call comms_bcast(tran%easy_fix, 1, error, comm)
+    call comms_bcast(tran%mode, len(tran%mode), error, comm)
+    call comms_bcast(tran%win_min, 1, error, comm)
+    call comms_bcast(tran%win_max, 1, error, comm)
+    call comms_bcast(tran%energy_step, 1, error, comm)
+    call comms_bcast(tran%num_bb, 1, error, comm)
+    call comms_bcast(tran%num_ll, 1, error, comm)
+    call comms_bcast(tran%num_rr, 1, error, comm)
+    call comms_bcast(tran%num_cc, 1, error, comm)
+    call comms_bcast(tran%num_lc, 1, error, comm)
+    call comms_bcast(tran%num_cr, 1, error, comm)
+    call comms_bcast(tran%num_bandc, 1, error, comm)
+    call comms_bcast(tran%write_ht, 1, error, comm)
+    call comms_bcast(tran%read_ht, 1, error, comm)
+    call comms_bcast(tran%use_same_lead, 1, error, comm)
+    call comms_bcast(tran%num_cell_ll, 1, error, comm)
+    call comms_bcast(tran%num_cell_rr, 1, error, comm)
+    call comms_bcast(tran%group_threshold, 1, error, comm)
+    call comms_bcast(real_space_ham%translation_centre_frac(1), 3, error, comm)
+    call comms_bcast(kmesh_input%num_shells, 1, error, comm)
+    call comms_bcast(kmesh_input%skip_B1_tests, 1, error, comm)
+    call comms_bcast(kmesh_info%explicit_nnkpts, 1, error, comm)
 
-    !call comms_bcast(calc_only_A, 1, stdout, seedname, comm) ! only used on_root
-    call comms_bcast(use_bloch_phases, 1, stdout, seedname, comm)
-    call comms_bcast(w90_calculation%restart, len(w90_calculation%restart), stdout, seedname, comm)
-    call comms_bcast(output_file%write_r2mn, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%guiding_centres%num_guide_cycles, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%guiding_centres%num_no_guide_iter, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%fixed_step, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%trial_step, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%precond, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_proj, 1, stdout, seedname, comm)
-    call comms_bcast(print_output%timing_level, 1, stdout, seedname, comm)
-    call comms_bcast(w90_system%spinors, 1, stdout, seedname, comm)
-    call comms_bcast(w90_system%num_elec_per_state, 1, stdout, seedname, comm)
-    call comms_bcast(real_space_ham%translate_home_cell, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_xyz, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_hr_diag, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%conv_noise_amp, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%conv_noise_num, 1, stdout, seedname, comm)
-    call comms_bcast(wann_plot%radius, 1, stdout, seedname, comm)
-    call comms_bcast(wann_plot%scale, 1, stdout, seedname, comm)
-    call comms_bcast(kmesh_input%tol, 1, stdout, seedname, comm)
-    call comms_bcast(optimisation, 1, stdout, seedname, comm)
-    call comms_bcast(output_file%write_vdw_data, 1, stdout, seedname, comm)
-    call comms_bcast(print_output%lenconfac, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%lfixstep, 1, stdout, seedname, comm)
-    call comms_bcast(lsitesymmetry, 1, stdout, seedname, comm)
-    call comms_bcast(dis_manifold%frozen_states, 1, stdout, seedname, comm)
-    call comms_bcast(symmetrize_eps, 1, stdout, seedname, comm)
+    !call comms_bcast(calc_only_A, 1, error, comm) ! only used on_root
+    call comms_bcast(use_bloch_phases, 1, error, comm)
+    call comms_bcast(w90_calculation%restart, len(w90_calculation%restart), error, comm)
+    call comms_bcast(output_file%write_r2mn, 1, error, comm)
+    call comms_bcast(wann_control%guiding_centres%num_guide_cycles, 1, error, comm)
+    call comms_bcast(wann_control%guiding_centres%num_no_guide_iter, 1, error, comm)
+    call comms_bcast(wann_control%fixed_step, 1, error, comm)
+    call comms_bcast(wann_control%trial_step, 1, error, comm)
+    call comms_bcast(wann_control%precond, 1, error, comm)
+    call comms_bcast(output_file%write_proj, 1, error, comm)
+    call comms_bcast(print_output%timing_level, 1, error, comm)
+    call comms_bcast(w90_system%spinors, 1, error, comm)
+    call comms_bcast(w90_system%num_elec_per_state, 1, error, comm)
+    call comms_bcast(real_space_ham%translate_home_cell, 1, error, comm)
+    call comms_bcast(output_file%write_xyz, 1, error, comm)
+    call comms_bcast(output_file%write_hr_diag, 1, error, comm)
+    call comms_bcast(wann_control%conv_noise_amp, 1, error, comm)
+    call comms_bcast(wann_control%conv_noise_num, 1, error, comm)
+    call comms_bcast(wann_plot%radius, 1, error, comm)
+    call comms_bcast(wann_plot%scale, 1, error, comm)
+    call comms_bcast(kmesh_input%tol, 1, error, comm)
+    call comms_bcast(optimisation, 1, error, comm)
+    call comms_bcast(output_file%write_vdw_data, 1, error, comm)
+    call comms_bcast(print_output%lenconfac, 1, error, comm)
+    call comms_bcast(wann_control%lfixstep, 1, error, comm)
+    call comms_bcast(lsitesymmetry, 1, error, comm)
+    call comms_bcast(dis_manifold%frozen_states, 1, error, comm)
+    call comms_bcast(symmetrize_eps, 1, error, comm)
 
     !vv: Constrained centres
-    call comms_bcast(wann_control%constrain%slwf_num, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%constrain%constrain, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%constrain%lambda, 1, stdout, seedname, comm)
-    call comms_bcast(wann_control%constrain%selective_loc, 1, stdout, seedname, comm)
+    call comms_bcast(wann_control%constrain%slwf_num, 1, error, comm)
+    call comms_bcast(wann_control%constrain%constrain, 1, error, comm)
+    call comms_bcast(wann_control%constrain%lambda, 1, error, comm)
+    call comms_bcast(wann_control%constrain%selective_loc, 1, error, comm)
     if (wann_control%constrain%selective_loc .and. wann_control%constrain%constrain) then
       if (.not. on_root) then
         !allocate (ccentres_frac(num_wann, 3), stat=ierr)
@@ -2941,15 +2934,15 @@ contains
           return
         endif
       endif
-      !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, stdout, seedname, comm)
-      call comms_bcast(wann_control%constrain%centres(1, 1), 3*num_wann, stdout, seedname, comm)
+      !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, error, comm)
+      call comms_bcast(wann_control%constrain%centres(1, 1), 3*num_wann, error, comm)
     end if
 
     ! vv: automatic projections
-    call comms_bcast(proj_input%auto_projections, 1, stdout, seedname, comm)
+    call comms_bcast(proj_input%auto_projections, 1, error, comm)
 
-    call comms_bcast(num_proj, 1, stdout, seedname, comm)
-    call comms_bcast(lhasproj, 1, stdout, seedname, comm)
+    call comms_bcast(num_proj, 1, error, comm)
+    call comms_bcast(lhasproj, 1, error, comm)
     if (lhasproj) then
       if (.not. on_root) then
         allocate (proj_input%site(3, num_proj), stat=ierr)
@@ -2963,8 +2956,8 @@ contains
           return
         endif
       endif
-      call comms_bcast(proj_input%site(1, 1), 3*num_proj, stdout, seedname, comm)
-      call comms_bcast(wann_control%guiding_centres%centres(1, 1), 3*num_wann, stdout, seedname, comm)
+      call comms_bcast(proj_input%site(1, 1), 3*num_proj, error, comm)
+      call comms_bcast(wann_control%guiding_centres%centres(1, 1), 3*num_wann, error, comm)
     endif
 
     ! These variables are different from the ones above in that they are
@@ -3008,7 +3001,7 @@ contains
       !  'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist')
     end if
 
-    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, stdout, seedname, comm)
+    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
     !if (berry%kubo_nfreq > 0) call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
     !call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
     !call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)
@@ -3016,17 +3009,17 @@ contains
     !  call comms_bcast(dos_data%project(1), dos_data%num_project)
     !if (.not. pw90_common%effective_model) then
     if (eig_found) then
-      call comms_bcast(eigval(1, 1), num_bands*num_kpts, stdout, seedname, comm)
+      call comms_bcast(eigval(1, 1), num_bands*num_kpts, error, comm)
     end if
-    call comms_bcast(kpt_latt(1, 1), 3*num_kpts, stdout, seedname, comm)
+    call comms_bcast(kpt_latt(1, 1), 3*num_kpts, error, comm)
     !endif
 
     !if (.not. pw90_common%effective_model .and. .not. w90_calculation%explicit_nnkpts) then
     if (.not. kmesh_info%explicit_nnkpts) then
 
-      call comms_bcast(kmesh_info%nnh, 1, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%nntot, 1, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%wbtot, 1, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%nnh, 1, error, comm)
+      call comms_bcast(kmesh_info%nntot, 1, error, comm)
+      call comms_bcast(kmesh_info%wbtot, 1, error, comm)
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -3061,20 +3054,19 @@ contains
         endif
       end if
 
-      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, stdout, seedname, &
-                       comm)
-      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, stdout, seedname, comm)
-      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, stdout, seedname, comm)
+      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, error, comm)
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, error, comm)
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, error, comm)
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, error, comm)
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, error, comm)
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, error, comm)
 
     endif
 
-    call comms_bcast(wann_omega%total, 1, stdout, seedname, comm)
-    call comms_bcast(wann_omega%tilde, 1, stdout, seedname, comm)
-    call comms_bcast(wann_omega%invariant, 1, stdout, seedname, comm)
-    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
+    call comms_bcast(wann_omega%total, 1, error, comm)
+    call comms_bcast(wann_omega%tilde, 1, error, comm)
+    call comms_bcast(wann_omega%invariant, 1, error, comm)
+    call comms_bcast(have_disentangled, 1, error, comm)
 
     if (.not. on_root) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)

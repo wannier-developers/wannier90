@@ -863,6 +863,7 @@ contains
     integer, intent(in) :: counts(0:)                     !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr

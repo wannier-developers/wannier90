@@ -42,10 +42,8 @@ module w90_io
   integer, save :: nnames = 0                                    !! Number of active stopwatches
 
   public :: io_stopwatch
-  public :: io_stopwatch_new
   public :: io_commandline
   public :: io_date
-  public :: io_error
   public :: io_file_unit
   public :: io_get_seedname
   public :: io_print_timings
@@ -56,7 +54,7 @@ contains
 
   !BGS this should be renamed to io_stopwatch and the original one deleted
   !=====================================
-  subroutine io_stopwatch_new(tag, mode, stdout, error)
+  subroutine io_stopwatch(tag, mode, error)
     !=====================================
     !! Stopwatch to time parts of the code
     !=====================================
@@ -71,7 +69,7 @@ contains
     !! Action  1=start 2=stop
 
     integer :: i
-    integer :: stdout
+    !integer :: stdout
     real(kind=dp) :: t
 
     call cpu_time(t)
@@ -106,76 +104,14 @@ contains
         endif
       end do
 
-      write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
+      ! jj we dont' need to pass stdout here
+      !write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
 
     case default
 
-      write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
+      ! jj we dont' need to pass stdout here
+      !write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
       call set_warning(error, 'Value of mode not recognised in io_stopwatch')
-
-    end select
-
-    return
-
-  end subroutine io_stopwatch_new
-
-  !================================================
-  subroutine io_stopwatch(tag, mode, stdout, seedname)
-    !================================================
-    !
-    !! Stopwatch to time parts of the code
-    !
-    !================================================
-
-    implicit none
-
-    character(len=*), intent(in) :: tag
-    !! Which stopwatch to act upon
-    integer, intent(in)          :: mode
-    character(len=50), intent(in)  :: seedname
-    !! Action  1=start 2=stop
-
-    integer :: i
-    integer :: stdout
-    real(kind=dp) :: t
-
-    call cpu_time(t)
-
-    select case (mode)
-
-    case (1)
-
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ptime = t
-          clocks(i)%ncalls = clocks(i)%ncalls + 1
-          return
-        endif
-      enddo
-
-      nnames = nnames + 1
-      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded', stdout, seedname)
-
-      clocks(nnames)%label = tag
-      clocks(nnames)%ctime = 0.0_dp
-      clocks(nnames)%ptime = t
-      clocks(nnames)%ncalls = 1
-
-    case (2)
-
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ctime = clocks(i)%ctime + t - clocks(i)%ptime
-          return
-        endif
-      end do
-
-      write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
-
-    case default
-
-      write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
-      call io_error('Value of mode not recognised in io_stopwatch', stdout, seedname)
 
     end select
 
@@ -367,34 +303,34 @@ contains
 
   end subroutine io_commandline
 
-  !================================================
-  subroutine io_error(error_msg, stdout, seedname)
-    !================================================
-    !
-    !! Abort the code giving an error message
-    !
-    !================================================
-
-    implicit none
-
-    character(len=*), intent(in) :: error_msg
-    character(len=50), intent(in)  :: seedname
-    integer :: stdout
-
-    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
-    call comms_abort(seedname, error_msg, stdout)
-    close (stdout)
-
-    write (*, '(1x,a)') trim(error_msg)
-    write (*, '(A)') "Error: examine the output/error file for details"
-
-#ifdef EXIT_FLAG
-    call exit(1)
-#else
-    STOP
-#endif
-
-  end subroutine io_error
+!  !================================================
+!  subroutine io_error(error_msg, stdout, seedname)
+!    !================================================
+!    !
+!    !! Abort the code giving an error message
+!    !
+!    !================================================
+!
+!    implicit none
+!
+!    character(len=*), intent(in) :: error_msg
+!    character(len=50), intent(in)  :: seedname
+!    integer :: stdout
+!
+!    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
+!    call comms_abort(seedname, error_msg, stdout)
+!    close (stdout)
+!
+!    write (*, '(1x,a)') trim(error_msg)
+!    write (*, '(A)') "Error: examine the output/error file for details"
+!
+!#ifdef EXIT_FLAG
+!    call exit(1)
+!#else
+!    STOP
+!#endif
+!
+!  end subroutine io_error
 
   !================================================
   subroutine io_date(cdate, ctime)

@@ -227,7 +227,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('berry: prelims', 1, stdout, seedname)
+      call io_stopwatch('berry: prelims', 1, error)
 
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - &
                                       real_lattice(3, 2)*real_lattice(2, 3)) + &
@@ -474,8 +474,8 @@ contains
       endif
 
       if (print_output%timing_level > 1) then
-        call io_stopwatch('berry: prelims', 2, stdout, seedname)
-        call io_stopwatch('berry: k-interpolation', 1, stdout, seedname)
+        call io_stopwatch('berry: prelims', 2, error)
+        call io_stopwatch('berry: k-interpolation', 1, error)
       endif
 
       if (eval_kdotp) then
@@ -948,46 +948,43 @@ contains
 
     ! Collect contributions from all nodes
     if (eval_ahc) then
-      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
-      call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', error, comm)
     endif
 
     if (eval_morb) then
-      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
-      call comms_reduce(img_list(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
-      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi_n, 'SUM', stdout, seedname, comm)
+      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      call comms_reduce(img_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
     end if
 
     if (eval_kubo) then
-      call comms_reduce(kubo_H(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
-      call comms_reduce(kubo_AH(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
-      call comms_reduce(jdos(1), pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
+      call comms_reduce(kubo_H(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      call comms_reduce(kubo_AH(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      call comms_reduce(jdos(1), pw90_berry%kubo_nfreq, 'SUM', error, comm)
       if (spin_decomp) then
-        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', stdout, &
-                          seedname, comm)
-        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', stdout, &
-                          seedname, comm)
-        call comms_reduce(jdos_spn(1, 1), 3*pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
+        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        call comms_reduce(jdos_spn(1, 1), 3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
       endif
     endif
 
     if (eval_sc) then
-      call comms_reduce(sc_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
+      call comms_reduce(sc_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
     end if
 
     if (eval_shc) then
       if (pw90_spin_hall%freq_scan) then
-        call comms_reduce(shc_freq(1), pw90_berry%kubo_nfreq, 'SUM', stdout, seedname, comm)
+        call comms_reduce(shc_freq(1), pw90_berry%kubo_nfreq, 'SUM', error, comm)
       else
-        call comms_reduce(shc_fermi(1), fermi_n, 'SUM', stdout, seedname, comm)
-        call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', stdout, seedname, comm)
+        call comms_reduce(shc_fermi(1), fermi_n, 'SUM', error, comm)
+        call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', error, comm)
       end if
     end if
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2, stdout, &
-                                                           seedname)
+      if (print_output%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2, error)
       write (stdout, '(1x,a)') ' '
       if (eval_ahc .and. pw90_berry%curv_adpt_kmesh .ne. 1) then
         if (.not. pw90_berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &

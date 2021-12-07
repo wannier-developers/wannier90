@@ -289,7 +289,7 @@ contains
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
     complex(kind=dp)     :: fac
 
-    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, error)
 
     if (ham_logical%have_ham_r) then
       if (ham_logical%have_translated .eqv. ham_logical%use_translation) then
@@ -460,7 +460,7 @@ contains
       endif
     end if
 
-    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, error)
 
     return
 
@@ -616,7 +616,7 @@ contains
 
     if (ham_logical%hr_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1, error)
 
     ! write the  whole matrix with all the indices
 
@@ -644,7 +644,7 @@ contains
 
     ham_logical%hr_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2, error)
 
     return
 
@@ -700,7 +700,7 @@ contains
     real(kind=dp)              :: real_metric(3, 3)
 
     if (print_output%timing_level > 1) &
-      call io_stopwatch('hamiltonian: wigner_seitz', 1, stdout, seedname)
+      call io_stopwatch('hamiltonian: wigner_seitz', 1, error)
 
     call utility_metric(real_lattice, real_metric)
     dist_dim = 1
@@ -789,7 +789,7 @@ contains
     endif
     if (count_pts) then
       if (print_output%timing_level > 1) &
-        call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout, seedname)
+        call io_stopwatch('hamiltonian: wigner_seitz', 2, error)
       return
     end if
 
@@ -814,7 +814,7 @@ contains
     endif
 
     if (print_output%timing_level > 1) &
-      call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout, seedname)
+      call io_stopwatch('hamiltonian: wigner_seitz', 2, error)
 
     return
 
@@ -953,7 +953,7 @@ contains
 
     if (ham_logical%tb_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1, error)
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_tb.dat', form='formatted', &
@@ -1022,7 +1022,7 @@ contains
 
     ham_logical%tb_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2, stdout, seedname)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2, error)
 
     return
 

@@ -183,7 +183,7 @@ contains
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 1, stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch('dos', 1, error)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -321,7 +321,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, comm)
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', error, comm)
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
@@ -334,7 +334,7 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 2, stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch('dos', 2, error)
     end if
 
     deallocate (HH, stat=ierr)

@@ -104,14 +104,14 @@ contains
     integer :: nnsh, nn, nnx, loop, i, j
     integer :: stdout
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 1, error)
 
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
     if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout)
+    call kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout, error)
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -723,7 +723,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 2, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 2, error)
 
     return
 
@@ -731,7 +731,8 @@ contains
 
   !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
-                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout)
+                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout, &
+                         error)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -772,6 +773,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(proj_input_type), intent(in) :: proj_input
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -786,7 +788,7 @@ contains
     integer           :: i, nkp, nn, nnkpout, num_exclude_bands
     character(len=9) :: cdate, ctime
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 1, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 1, error)
 
     nnkpout = io_file_unit()
     open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
@@ -899,7 +901,7 @@ contains
 
     close (nnkpout)
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 2, stdout, seedname)
+    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 2, error)
 
     return
 
@@ -973,7 +975,7 @@ contains
   end subroutine kmesh_dealloc
 
   !================================================
-  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout)
+  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout, error)
     !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
@@ -992,6 +994,7 @@ contains
     integer, intent(inout) :: lmn(:, :)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: counter, l, m, n, loop
 
@@ -1001,7 +1004,7 @@ contains
     real(kind=dp) :: dist((2*nsupcell + 1)**3)
     real(kind=dp) :: dist_cp((2*nsupcell + 1)**3)
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, error)
 
     counter = 1
     lmn(:, counter) = 0
@@ -1028,7 +1031,7 @@ contains
     lmn = lmn_cp
     dist = dist_cp
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, error)
 
   end subroutine kmesh_supercell_sort
 
@@ -1068,7 +1071,7 @@ contains
     integer :: loop, nkp2, num_bvec
     real(kind=dp) :: dist, vkpp2(3), vkpp(3)
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, error)
 
     bvector = 0.0_dp
 
@@ -1093,7 +1096,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, error)
 
     return
 
@@ -1148,7 +1151,7 @@ contains
 
     integer :: loop, shell
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, error)
 
     allocate (bvector(3, maxval(multi), max_shells), stat=ierr)
     if (ierr /= 0) then
@@ -1415,7 +1418,7 @@ contains
       return
     end if
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, error)
 
     return
 
@@ -1470,7 +1473,7 @@ contains
 
     integer :: loop, shell
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, error)
 
     allocate (bvector(3, maxval(multi), kmesh_input%num_shells), stat=ierr)
     if (ierr /= 0) then
@@ -1574,7 +1577,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, error)
 
     return
 
@@ -1631,7 +1634,7 @@ contains
     integer :: loop, shell, pos, kshell_in, counter, length, i, loop2, num_lines, tot_num_lines
     character(len=maxlen) :: dummy, dummy2
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, error)
 
     allocate (bvector(3, sum(multi)), stat=ierr)
     if (ierr /= 0) then
@@ -1817,7 +1820,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, error)
 
     return
 

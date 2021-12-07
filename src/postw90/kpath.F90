@@ -261,7 +261,7 @@ contains
     end if
 
     ! Broadcast number of k-points on the path
-    call comms_bcast(total_pts, 1, stdout, seedname, comm)
+    call comms_bcast(total_pts, 1, error, comm)
 
     ! Partition set of k-points into junks
 !   call comms_array_split(total_pts, counts, displs);
@@ -273,7 +273,7 @@ contains
     ! Distribute coordinates
     allocate (my_plot_kpoint(3, my_num_pts))
     call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
-                        plot_kpoint, 3*counts, 3*displs, stdout, seedname, comm)
+                        plot_kpoint, 3*counts, 3*displs, error, comm)
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -393,11 +393,11 @@ contains
     if (plot_bands) then
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
-                         eig, num_wann*counts, num_wann*displs, stdout, seedname, comm)
+                         eig, num_wann*counts, num_wann*displs, error, comm)
       if (pw90_kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
-                           color, num_wann*counts, num_wann*displs, stdout, seedname, comm)
+                           color, num_wann*counts, num_wann*displs, error, comm)
       end if
     end if
 
@@ -405,7 +405,7 @@ contains
       allocate (curv(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_curv(:, i), my_num_pts, &
-                           curv(:, i), counts, displs, stdout, seedname, comm)
+                           curv(:, i), counts, displs, error, comm)
       end do
     end if
 
@@ -413,13 +413,13 @@ contains
       allocate (morb(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_morb(:, i), my_num_pts, &
-                           morb(:, i), counts, displs, stdout, seedname, comm)
+                           morb(:, i), counts, displs, error, comm)
       end do
     end if
 
     if (plot_shc) then
       allocate (shc(total_pts))
-      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, stdout, seedname, comm)
+      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, error, comm)
     end if
 
     if (on_root) then

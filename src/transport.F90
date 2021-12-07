@@ -67,6 +67,7 @@ module w90_transport
   !!  (1999)
 
   use w90_constants, only: dp
+  use w90_error
 
   implicit none
 
@@ -94,7 +95,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_error, only: w90_error_type, set_error_dealloc
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
     use w90_types, only: wannier_data_type, print_output_type, ws_region_type, &
@@ -174,7 +175,7 @@ contains
 
     logical :: pl_warning
 
-    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 1, stdout, error)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 1, error)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, '(1x,a)') '|                              TRANSPORT                                    |'
@@ -211,10 +212,13 @@ contains
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout)
+                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
+        if (allocated(error)) return
+
         call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
                          num_wann, print_output%timing_level, seedname, stdout, error)
         if (allocated(error)) return
+
         if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
                                                        wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
@@ -253,7 +257,9 @@ contains
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout)
+                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
+        if (allocated(error)) return
+
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
         call tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, &
@@ -286,7 +292,7 @@ contains
       if (allocated(error)) return
     end if
 
-    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, stdout, error)
+    if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, error)
 
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
@@ -344,7 +350,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps8
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_wannier90_types, only: real_space_ham_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
 
@@ -375,7 +381,7 @@ contains
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
-    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, error)
 
     ! Find one_dim_vec which is parallel to one_dim_dir
     ! two_dim_vec - the other two lattice vectors
@@ -443,7 +449,7 @@ contains
       return
     end if
 
-    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, error)
 
     return
 
@@ -452,7 +458,7 @@ contains
   !================================================!
   subroutine tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout)
+                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
     !================================================!
 
     use w90_constants, only: dp
@@ -467,6 +473,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(print_output_type), intent(in) :: print_output
     type(transport_type), intent(inout) :: transport
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: irvec_max
@@ -490,7 +497,7 @@ contains
     real(kind=dp) :: shift_vec(3, -irvec_max:irvec_max)
     real(kind=dp) :: hr_tmp(num_wann, num_wann)
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, error)
 
     !irvec_max = nrpts_one_dim/2 ! now passed as arg
     ! maximum possible dist_cutoff
@@ -613,7 +620,7 @@ contains
       end do
     end do
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout, seedname)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, error)
 
     return
 
@@ -629,7 +636,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
+    use w90_io, only: io_stopwatch, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
 
@@ -658,7 +665,7 @@ contains
     integer :: fermi_n
     character(len=9) :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 1, error)
 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
@@ -726,7 +733,7 @@ contains
 
     end if
 
-    if (timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: get_ht', 2, error)
 
     return
 
@@ -737,7 +744,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
+    use w90_io, only: io_stopwatch, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
@@ -769,7 +776,7 @@ contains
     character(len=50) :: filename
     character(len=9)  :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 1, error)
 
     allocate (tot(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
@@ -975,7 +982,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: bulk', 2, error)
 
     return
 
@@ -987,7 +994,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_stopwatch => io_stopwatch_new, io_date, io_file_unit
+    use w90_io, only: io_stopwatch, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack
 
@@ -1034,7 +1041,7 @@ contains
     character(len=50) :: filename
     character(len=9) :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 1, error)
 
     call io_date(cdate, ctime)
 
@@ -1490,7 +1497,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout, error)
+    if (timing_level > 1) call io_stopwatch('tran: lcr', 2, error)
 
     return
 
@@ -2125,7 +2132,7 @@ contains
     ! type and 'parity' of each wannier function.
     !================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_types, only: print_output_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
       set_error_dealloc
@@ -2154,7 +2161,7 @@ contains
     complex(kind=dp) :: phase_factor, signature_basis(32)
     logical :: have_file
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, error)
 
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
@@ -2395,7 +2402,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, error)
 
     return
 
@@ -2420,7 +2427,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_types, only: wannier_data_type, atom_data_type, print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
@@ -2485,7 +2492,7 @@ contains
 
     num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, error)
 
     sort_iterator = 0
 
@@ -2903,9 +2910,12 @@ contains
                           irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
                           print_output%timing_level, stdout, error)
       if (allocated(error)) return
+
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
-                               one_dim_vec, seedname, stdout)
+                               one_dim_vec, seedname, stdout, error)
+      if (allocated(error)) return
+
       write (stdout, *) ' '
       write (stdout, *) ' Restarting sorting...'
       write (stdout, *) ' '
@@ -3105,7 +3115,7 @@ contains
     endif
     ! End MS.
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, error)
 
     return
 
@@ -3124,7 +3134,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_types, only: print_output_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
@@ -3154,7 +3164,7 @@ contains
                                                                subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout, error)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, error)
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
     if (ierr /= 0) then
@@ -3290,7 +3300,7 @@ contains
       endif
     enddo
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout, error)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, error)
 
     return
 
@@ -3481,7 +3491,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_types, only: atom_data_type, print_output_type
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
@@ -3513,7 +3523,7 @@ contains
     integer :: iterator, max_position(1), p, num_wf_cell_iter
     real(kind=dp), allocatable :: dot_p(:)
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout, error)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, error)
 
     num_wann_cell_ll = transport%num_ll/transport%num_cell_ll
 
@@ -3844,7 +3854,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout, error)
+    if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, error)
 
     return
 
@@ -3924,7 +3934,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_stopwatch
     use w90_types, only: print_output_type
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type
@@ -3948,7 +3958,7 @@ contains
     integer :: i, j, k, wf_idx, num_wann_cell_ll
     real(kind=dp) :: signature_dot_p
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, error)
 
     ! NP: special "easy" fix of the parities by switching the sign
     ! of the Wannier Functions if the first element of the signature
@@ -4002,7 +4012,7 @@ contains
       enddo
     enddo
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, error)
 
     return
 
@@ -4025,7 +4035,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps5
-    use w90_io, only: io_file_unit, io_date, io_stopwatch => io_stopwatch_new
+    use w90_io, only: io_file_unit, io_date, io_stopwatch
     use w90_types, only: print_output_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
     use w90_error, only: w90_error_type, set_error_tran, set_error_alloc, set_error_dealloc
@@ -4076,7 +4086,7 @@ contains
     real(kind=dp)          :: PL_length, dist, dist_vec(3)
     character(len=9)       :: cdate, ctime
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, error)
 
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
@@ -4340,9 +4350,12 @@ contains
                           irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
                           print_output%timing_level, stdout, error)
       if (allocated(error)) return
+
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
-                               one_dim_vec, seedname, stdout)
+                               one_dim_vec, seedname, stdout, error)
+      if (allocated(error)) return
+
     endif
 
     do i = transport%num_ll + 1, num_wann - transport%num_ll
@@ -4520,7 +4533,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout, error)
+    if (print_output%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, error)
 
     return
 
