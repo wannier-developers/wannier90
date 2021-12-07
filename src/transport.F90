@@ -187,21 +187,28 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, seedname, transport%mode)
+                               stdout, seedname, error, transport%mode)
+        if (allocated(error)) return
+
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, have_disentangled, stdout, seedname, &
+                                num_kpts, num_wann, have_disentangled, stdout, seedname, error, &
                                 lsitesymmetry)
+        if (allocated(error)) return
+
         if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
                                                             nrpts, num_wann, &
                                                             print_output%timing_level, &
-                                                            seedname, stdout)
+                                                            seedname, stdout, error)
+        if (allocated(error)) return
+
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
                             print_output%timing_level, stdout, error)
         if (allocated(error)) return
+
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)
@@ -222,21 +229,28 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, seedname, transport%mode)
+                               stdout, seedname, error, transport%mode)
+        if (allocated(error)) return
+
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, have_disentangled, stdout, seedname, &
+                                num_kpts, num_wann, have_disentangled, stdout, seedname, error, &
                                 lsitesymmetry)
-        if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
-                                                            nrpts, num_wann, &
-                                                            print_output%timing_level, &
-                                                            seedname, stdout)
+        if (allocated(error)) return
+
+        if (output_file%write_hr) then
+          call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
+                                    print_output%timing_level, seedname, stdout, error)
+          if (allocated(error)) return
+        endif
+
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
                             print_output%timing_level, stdout, error)
         if (allocated(error)) return
+
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
                                  num_pl, num_wann, one_dim_vec, seedname, stdout)

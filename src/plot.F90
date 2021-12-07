@@ -152,13 +152,15 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
-                               seedname, transport_mode)
+                               seedname, error, transport_mode)
+        if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                                 ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, wannier_centres_translated, &
                                 irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                                have_disentangled, stdout, seedname, lsitesymmetry)
+                                have_disentangled, stdout, seedname, error, lsitesymmetry)
+        if (allocated(error)) return
 
         bands_num_spec_points = 0
 
@@ -180,28 +182,35 @@ contains
           if (allocated(error)) return
         endif
 
-        if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
-                                                            nrpts, num_wann, &
-                                                            print_output%timing_level, seedname, &
-                                                            stdout)
+        if (output_file%write_hr) then
+          call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
+                                    print_output%timing_level, seedname, stdout, error)
+          if (allocated(error)) return
+        endif
 
-        if (output_file%write_rmn) call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, &
-                                                              irvec, nrpts, num_kpts, num_wann, &
-                                                              stdout, seedname)
+        if (output_file%write_rmn) then
+          call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
+                                     num_wann, stdout, seedname, error)
+          if (allocated(error)) return
+        endif
 
-        if (output_file%write_tb) call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, &
-                                                            m_matrix, kpt_latt, real_lattice, &
-                                                            irvec, ndegen, nrpts, num_kpts, &
-                                                            num_wann, stdout, &
-                                                            print_output%timing_level, seedname)
+        if (output_file%write_tb) then
+          call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
+                                    real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
+                                    stdout, print_output%timing_level, seedname, error)
+          if (allocated(error)) return
+        endif
 
         if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
-          if (.not. ws_distance%done) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                             ws_region, num_wann, &
-                                                             wannier_data%centres, real_lattice, &
-                                                             mp_grid, nrpts, irvec, error)
+          if (.not. ws_distance%done) then
+            call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
+                                   wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, error)
+            if (allocated(error)) return
+          endif
+
           call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
                             stdout, seedname, error)
+          if (allocated(error)) return
         end if
       end if
     end if !on_root

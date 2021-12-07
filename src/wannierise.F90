@@ -274,7 +274,9 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             seedname, transport_mode)
+                             seedname, error, transport_mode)
+      if (allocated(error)) return
+
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_r in wann_main')
@@ -910,12 +912,16 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             seedname, transport_mode)
+                             seedname, error, transport_mode)
+      if (allocated(error)) return
+
       call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                               ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                               real_lattice, wannier_data%centres, wannier_centres_translated, &
                               irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                              have_disentangled, stdout, seedname, lsitesymmetry)
+                              have_disentangled, stdout, seedname, error, lsitesymmetry)
+      if (allocated(error)) return
+
       if (print_output%iprint > 0) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'

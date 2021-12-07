@@ -531,13 +531,19 @@ program wannier
   endif
 
   call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
-                           stdout, seedname)
+                           stdout, seedname, error)
+  if (allocated(error)) then
+    call prterr(error, stdout)
+    call exit(error%code)
+  end if
+
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, error, comm)
   if (allocated(error)) then
     call prterr(error, stdout)
     call exit(error%code)
   end if
+
   call kmesh_dealloc(kmesh_info, error)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
                                            kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
