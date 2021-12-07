@@ -22,7 +22,7 @@ module w90_comms
   !! This module handles all of the communications
 
   use w90_constants, only: dp
-  use w90_io, only: io_error
+  use w90_error
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -230,15 +230,14 @@ contains
 
   end subroutine comms_barrier
 
-  subroutine comms_bcast_int(array, size, stdout, seedname, comm)
+  subroutine comms_bcast_int(array, size, error, comm)
     !! Send integar array from root node to all nodes
     implicit none
 
     integer, intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -246,20 +245,20 @@ contains
     call mpi_bcast(array, size, MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_bcast_int', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_bcast_int')
+      return
     end if
 #endif
   end subroutine comms_bcast_int
 
-  subroutine comms_bcast_real(array, size, stdout, seedname, comm)
+  subroutine comms_bcast_real(array, size, error, comm)
     !! Send real array from root node to all nodes
     implicit none
 
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -267,21 +266,21 @@ contains
     call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_bcast_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_bcast_real')
+      return
     end if
 #endif
 
   end subroutine comms_bcast_real
 
-  subroutine comms_bcast_logical(array, size, stdout, seedname, comm)
+  subroutine comms_bcast_logical(array, size, error, comm)
     !! Send logical array from root node to all nodes
     implicit none
 
     logical, intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -289,21 +288,21 @@ contains
     call mpi_bcast(array, size, MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_bcast_logical', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_bcast_logical')
+      return
     end if
 #endif
 
   end subroutine comms_bcast_logical
 
-  subroutine comms_bcast_char(array, size, stdout, seedname, comm)
+  subroutine comms_bcast_char(array, size, error, comm)
     !! Send character array from root node to all nodes
     implicit none
 
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -311,22 +310,22 @@ contains
     call mpi_bcast(array, size, MPI_CHARACTER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_bcast_char', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_bcast_char')
+      return
     end if
 #endif
 
   end subroutine comms_bcast_char
 
-  subroutine comms_bcast_cmplx(array, size, stdout, seedname, comm)
+  subroutine comms_bcast_cmplx(array, size, error, comm)
     !! Send character array from root node to all nodes
 
     implicit none
 
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -334,7 +333,8 @@ contains
     call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_bcast_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_bcast_cmplx')
+      return
     end if
 #endif
 
@@ -342,7 +342,7 @@ contains
 
   !--------- SEND ----------------
 
-  subroutine comms_send_logical(array, size, to, stdout, seedname, comm)
+  subroutine comms_send_logical(array, size, to, error, comm)
     !! Send logical array to specified node
 
     implicit none
@@ -350,9 +350,8 @@ contains
     logical, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -360,22 +359,22 @@ contains
     call mpi_send(array, size, MPI_LOGICAL, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_send_logical', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_send_logical')
+      return
     end if
 #endif
 
   end subroutine comms_send_logical
 
-  subroutine comms_send_int(array, size, to, stdout, seedname, comm)
+  subroutine comms_send_int(array, size, to, error, comm)
     !! Send integer array to specified node
     implicit none
 
     integer, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -383,22 +382,22 @@ contains
     call mpi_send(array, size, MPI_INTEGER, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_send_int', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_send_int')
+      return
     end if
 #endif
 
   end subroutine comms_send_int
 
-  subroutine comms_send_char(array, size, to, stdout, seedname, comm)
+  subroutine comms_send_char(array, size, to, error, comm)
     !! Send character array to specified node
     implicit none
 
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -406,22 +405,22 @@ contains
     call mpi_send(array, size, MPI_CHARACTER, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_send_char', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_send_char')
+      return
     end if
 #endif
 
   end subroutine comms_send_char
 
-  subroutine comms_send_real(array, size, to, stdout, seedname, comm)
+  subroutine comms_send_real(array, size, to, error, comm)
     !! Send real array to specified node
     implicit none
 
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -429,22 +428,22 @@ contains
     call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_send_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_send_real')
+      return
     end if
 #endif
 
   end subroutine comms_send_real
 
-  subroutine comms_send_cmplx(array, size, to, stdout, seedname, comm)
+  subroutine comms_send_cmplx(array, size, to, error, comm)
     !! Send complex array to specified node
     implicit none
 
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: to
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -452,7 +451,8 @@ contains
     call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_send_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_send_cmplx')
+      return
     end if
 #endif
 
@@ -460,16 +460,15 @@ contains
 
   !--------- RECV ----------------
 
-  subroutine comms_recv_logical(array, size, from, stdout, seedname, comm)
+  subroutine comms_recv_logical(array, size, from, error, comm)
     !! Receive logical array from specified node
     implicit none
 
     logical, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     type(w90stat_type) :: status
@@ -478,22 +477,22 @@ contains
     call mpi_recv(array, size, MPI_LOGICAL, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_recv_logical', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_recv_logical')
+      return
     end if
 #endif
 
   end subroutine comms_recv_logical
 
-  subroutine comms_recv_int(array, size, from, stdout, seedname, comm)
+  subroutine comms_recv_int(array, size, from, error, comm)
     !! Receive integer array from specified node
     implicit none
 
     integer, intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     type(w90stat_type) :: status
@@ -502,22 +501,22 @@ contains
     call mpi_recv(array, size, MPI_INTEGER, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_recv_int', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_recv_int')
+      return
     end if
 #endif
 
   end subroutine comms_recv_int
 
-  subroutine comms_recv_char(array, size, from, stdout, seedname, comm)
+  subroutine comms_recv_char(array, size, from, error, comm)
     !! Receive character array from specified node
     implicit none
 
     character(len=*), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     type(w90stat_type) :: status
@@ -526,22 +525,22 @@ contains
     call mpi_recv(array, size, MPI_CHARACTER, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_recv_char', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_recv_char')
+      return
     end if
 #endif
 
   end subroutine comms_recv_char
 
-  subroutine comms_recv_real(array, size, from, stdout, seedname, comm)
+  subroutine comms_recv_real(array, size, from, error, comm)
     !! Receive real array from specified node
     implicit none
 
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     type(w90stat_type) :: status
@@ -551,22 +550,22 @@ contains
                   status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_recv_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_recv_real')
+      return
     end if
 #endif
 
   end subroutine comms_recv_real
 
-  subroutine comms_recv_cmplx(array, size, from, stdout, seedname, comm)
+  subroutine comms_recv_cmplx(array, size, from, error, comm)
     !! Receive complex array from specified node
     implicit none
 
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     integer, intent(in) :: from
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     type(w90stat_type) :: status
@@ -576,13 +575,14 @@ contains
                   status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_recv_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_recv_cmplx')
+      return
     end if
 #endif
 
   end subroutine comms_recv_cmplx
 
-  subroutine comms_reduce_int(array, size, op, stdout, seedname, comm)
+  subroutine comms_reduce_int(array, size, op, error, comm)
     !! Reduce integer data to root node
     implicit none
 
@@ -590,8 +590,7 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90comm_type), intent(in) :: comm
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -623,17 +622,19 @@ contains
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_PROD, root_id, comm%comm, ierr)
       endif
     case default
-      call io_error('Unknown operation in comms_reduce_int', stdout, seedname)
+      call set_error_mpi(error, 'Unknown operation in comms_reduce_int')
+      return
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_reduce_int', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_reduce_int')
+      return
     end if
 #endif
 
   end subroutine comms_reduce_int
 
-  subroutine comms_reduce_real(array, size, op, stdout, seedname, comm)
+  subroutine comms_reduce_real(array, size, op, error, comm)
     !! Reduce real data to root node
 
     implicit none
@@ -642,8 +643,7 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90comm_type), intent(in) :: comm
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -685,18 +685,20 @@ contains
                         ierr)
       endif
     case default
-      call io_error('Unknown operation in comms_reduce_real', stdout, seedname)
+      call set_error_mpi(error, 'Unknown operation in comms_reduce_real')
+      return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_reduce_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_reduce_real')
+      return
     end if
 #endif
 
   end subroutine comms_reduce_real
 
-  subroutine comms_reduce_cmplx(array, size, op, stdout, seedname, comm)
+  subroutine comms_reduce_cmplx(array, size, op, error, comm)
     !! Reduce complex data to root node
 
     implicit none
@@ -705,8 +707,7 @@ contains
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90comm_type), intent(in) :: comm
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -732,19 +733,21 @@ contains
                         ierr)
       end if
     case default
-      call io_error('Unknown operation in comms_reduce_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Unknown operation in comms_reduce_cmplx')
+      return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_reduce_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_reduce_cmplx')
+      return
     end if
 
 #endif
 
   end subroutine comms_reduce_cmplx
 
-  subroutine comms_allreduce_real(array, size, op, stdout, seedname, comm)
+  subroutine comms_allreduce_real(array, size, op, error, comm)
     !! Reduce real data to all nodes
 
     implicit none
@@ -752,9 +755,8 @@ contains
     real(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -774,27 +776,28 @@ contains
       call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, comm%comm, &
                          ierr)
     case default
-      call io_error('Unknown operation in comms_allreduce_real', stdout, seedname)
+      call set_error_mpi(error, 'Unknown operation in comms_allreduce_real')
+      return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_allreduce_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_allreduce_real')
+      return
     end if
 #endif
 
   end subroutine comms_allreduce_real
 
-  subroutine comms_allreduce_cmplx(array, size, op, stdout, seedname, comm)
+  subroutine comms_allreduce_cmplx(array, size, op, error, comm)
     !! Reduce complex data to all nodes
     implicit none
 
     complex(kind=dp), intent(inout) :: array
     integer, intent(in) :: size
     character(len=*), intent(in) :: op
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -808,19 +811,20 @@ contains
       call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, comm%comm, &
                          ierr)
     case default
-      call io_error('Unknown operation in comms_allreduce_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Unknown operation in comms_allreduce_cmplx')
+      return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_allreduce_cmplx', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_allreduce_cmplx')
+      return
     end if
 #endif
 
   end subroutine comms_allreduce_cmplx
 
-  subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                  seedname, comm)
+  subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 1)
     implicit none
 
@@ -829,9 +833,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node to which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -840,7 +843,8 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_real_1', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_real_1')
+      return
     end if
 #else
     !call dcopy(localcount, array, 1, rootglobalarray, 1)
@@ -849,8 +853,7 @@ contains
 
   end subroutine comms_gatherv_real_1
 
-  subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, &
-                                  stdout, seedname, comm)
+  subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 2)
     implicit none
 
@@ -859,8 +862,6 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node to which data will be sent
     integer, intent(in) :: counts(0:)                     !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
 
 #ifdef MPI
@@ -870,7 +871,8 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_real_2', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_real_2')
+      return
     end if
 #else
     !call dcopy(localcount, array, 1, rootglobalarray, 1)
@@ -879,8 +881,7 @@ contains
 
   end subroutine comms_gatherv_real_2
 
-  subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                  seedname, comm)
+  subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 3)
     implicit none
 
@@ -889,9 +890,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
     integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -900,7 +900,8 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_real_3', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_real_3')
+      return
     end if
 
 #else
@@ -910,8 +911,7 @@ contains
 
   end subroutine comms_gatherv_real_3
 
-  subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                    seedname, comm)
+  subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
     implicit none
 
@@ -920,9 +920,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
     integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -931,7 +930,8 @@ contains
                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_real_2_3', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_real_2_3')
+      return
     end if
 
 #else
@@ -947,8 +947,7 @@ contains
   ! counts, displs : how data should be partitioned, see MPI documentation or
   !                  function comms_array_split
 
-  subroutine comms_gatherv_cmplx_1(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_gatherv_cmplx_1(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather complex data to root node (for arrays of rank 1)
     implicit none
 
@@ -957,9 +956,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:)
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -968,7 +966,8 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_cmplx_1', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_1')
+      return
     end if
 
 #else
@@ -978,8 +977,7 @@ contains
 
   end subroutine comms_gatherv_cmplx_1
 
-  subroutine comms_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather complex data to root node (for arrays of rank 2)
     implicit none
 
@@ -988,9 +986,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :)
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -999,7 +996,8 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_cmplx_2', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_2')
+      return
     end if
 
 #else
@@ -1009,8 +1007,7 @@ contains
 
   end subroutine comms_gatherv_cmplx_2
 
-  subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather complex data to root node (for arrays of rank 3)
     implicit none
 
@@ -1019,9 +1016,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1030,7 +1026,8 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_cmplx_3', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_3')
+      return
     end if
 
 #else
@@ -1040,8 +1037,7 @@ contains
 
   end subroutine comms_gatherv_cmplx_3
 
-  subroutine comms_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                     seedname, comm)
+  subroutine comms_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather complex data to root node (for arrays of rank 3 and 4, respectively)
     implicit none
 
@@ -1050,9 +1046,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1061,7 +1056,8 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_cmplx_3_4', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_3_4')
+      return
     end if
 
 #else
@@ -1071,8 +1067,7 @@ contains
 
   end subroutine comms_gatherv_cmplx_3_4
 
-  subroutine comms_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather complex data to root node (for arrays of rank 4)
     implicit none
 
@@ -1081,9 +1076,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1092,7 +1086,8 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_cmplx_4', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_4')
+      return
     end if
 
 #else
@@ -1102,8 +1097,7 @@ contains
 
   end subroutine comms_gatherv_cmplx_4
 
-  subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node
     implicit none
 
@@ -1112,9 +1106,8 @@ contains
     logical, intent(inout) :: rootglobalarray !! array on the root node to which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1123,7 +1116,8 @@ contains
                      MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_gatherv_logical', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_gatherv_logical')
+      return
     end if
 #else
 !    rootglobalarray(1:localcount)=array(1:localcount)
@@ -1131,8 +1125,7 @@ contains
 
   end subroutine comms_gatherv_logical
 
-  subroutine comms_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter real data from root node (array of rank 1)
     implicit none
 
@@ -1141,9 +1134,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1152,7 +1144,8 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_real_1', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_real_1')
+      return
     end if
 
 #else
@@ -1162,8 +1155,7 @@ contains
 
   end subroutine comms_scatterv_real_1
 
-  subroutine comms_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter real data from root node (array of rank 2)
     implicit none
 
@@ -1172,9 +1164,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1183,7 +1174,8 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_real_2', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_real_2')
+      return
     end if
 
 #else
@@ -1193,8 +1185,7 @@ contains
 
   end subroutine comms_scatterv_real_2
 
-  subroutine comms_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                   seedname, comm)
+  subroutine comms_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter real data from root node (array of rank 3)
     implicit none
 
@@ -1203,9 +1194,8 @@ contains
     real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1214,7 +1204,8 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_real_3', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_real_3')
+      return
     end if
 
 #else
@@ -1224,7 +1215,7 @@ contains
 
   end subroutine comms_scatterv_real_3
 
-  subroutine comms_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, stdout, seedname, comm)
+  subroutine comms_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter complex data from root node (array of rank 4)
     implicit none
 
@@ -1233,9 +1224,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :) !! array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1244,7 +1234,8 @@ contains
                       MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_cmplx_4', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_cmplx_4')
+      return
     end if
 
 #else
@@ -1254,8 +1245,7 @@ contains
 
   end subroutine comms_scatterv_cmplx_4
 
-  subroutine comms_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                  seedname, comm)
+  subroutine comms_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter integer data from root node (array of rank 1)
     implicit none
 
@@ -1264,9 +1254,8 @@ contains
     integer, intent(inout) :: rootglobalarray(:) !!  array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1275,7 +1264,8 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_real', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_real')
+      return
     end if
 
 #else
@@ -1285,8 +1275,7 @@ contains
 
   end subroutine comms_scatterv_int_1
 
-  subroutine comms_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                  seedname, comm)
+  subroutine comms_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter integer data from root node (array of rank 2)
 
     implicit none
@@ -1296,9 +1285,8 @@ contains
     integer, intent(inout) :: rootglobalarray(:, :) !!  array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1307,7 +1295,8 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_int_2', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_int_2')
+      return
     end if
 
 #else
@@ -1317,8 +1306,7 @@ contains
 
   end subroutine comms_scatterv_int_2
 
-  subroutine comms_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, stdout, &
-                                  seedname, comm)
+  subroutine comms_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Scatter integer data from root node (array of rank 3)
 
     implicit none
@@ -1328,9 +1316,8 @@ contains
     integer, intent(inout) :: rootglobalarray(:, :, :) !!  array on the root node from which data will be sent
     integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, intent(in) :: displs(0:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
 #ifdef MPI
     integer :: ierr
@@ -1339,7 +1326,8 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call io_error('Error in comms_scatterv_int_3', stdout, seedname)
+      call set_error_mpi(error, 'Error in comms_scatterv_int_3')
+      return
     end if
 
 #else
