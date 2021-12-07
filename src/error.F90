@@ -58,14 +58,6 @@ contains
     stop
   end subroutine untrapped_error
 
-  ! print out error message, should be called in main() only
-  ! what about parallel case?
-  subroutine catch_error(err)
-    type(w90_error_type), intent(in) :: err
-    write (0, *) err%message
-    call exit(err%code)
-  end subroutine catch_error
-
   subroutine set_error_alloc(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg

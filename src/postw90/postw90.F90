@@ -525,5 +525,16 @@ program postw90
 
   call comms_end
 
+contains
+
+  ! fixme jj consider pllel exit
+  subroutine catch_error(error)
+    implicit none
+    type(w90_error_type), allocatable, intent(in) :: error
+    write (stdout, *) "ERROR CODE: ", error%code
+    write (stdout, *) "ERROR CONDITION: ", error%message
+    call exit(error%code)
+  end subroutine catch_error
+
 end program postw90
 
