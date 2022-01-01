@@ -199,11 +199,13 @@ contains
     use wannchk_data
 
     implicit none
+
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
     character(len=*), intent(out) :: checkpoint
-    integer :: chk_unit, i, j, k, l, nkp, ierr
     type(w90_error_type), allocatable, intent(out) :: error
+
+    integer :: chk_unit, i, j, k, l, nkp, ierr
 
     write (stdout, '(1x,3a)') 'Reading information from file ', trim(seedname), '.chk :'
 

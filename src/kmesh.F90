@@ -27,7 +27,7 @@ module w90_kmesh
   !!  Vanderbilt  PRB 56 12847 (1997)
 
   use w90_constants, only: dp
-  use w90_types, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
+  use w90_types, only: max_shells, num_nnmax ! used for dimensioning
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
     set_error_input, set_error_fatal, set_error_open
 
@@ -57,8 +57,8 @@ module w90_kmesh
 contains
 
   !================================================
-  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, &
-                       num_kpts, gamma_only, seedname, stdout, error)
+  subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, num_kpts, &
+                       gamma_only, stdout, error)
     !================================================
     !
     !! Main routine to calculate the b-vectors
@@ -80,7 +80,6 @@ contains
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: gamma_only
 
     ! local variables
@@ -111,7 +110,7 @@ contains
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout, error)
+    call kmesh_supercell_sort(print_output, recip_lattice, lmn, error)
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -192,7 +191,9 @@ contains
       do shell = 1, kmesh_input%search_shells
         call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
                                 recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                                seedname, stdout, error)
+                                error)
+        if (allocated(error)) return
+
         do loop = 1, multi(shell)
           counter = counter + 1
           if (print_output%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
@@ -215,10 +216,13 @@ contains
     !else
     if (kmesh_input%num_shells == 0) then
       call kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
-                                 lmn, multi, num_kpts, seedname, stdout, error)
+                                 lmn, multi, num_kpts, stdout, error)
+      if (allocated(error)) return
+
     elseif (kmesh_input%num_shells > 0) then
-      call kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, lmn, &
-                             multi, num_kpts, seedname, stdout, error)
+      call kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
+                             lmn, multi, num_kpts, stdout, error)
+      if (allocated(error)) return
     end if
 
     if (print_output%iprint > 0) then
@@ -275,8 +279,7 @@ contains
     counter = 0
     do shell = 1, kmesh_input%search_shells
       call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
-                              recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                              seedname, stdout, error)
+                              recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, error)
       do loop = 1, multi(shell)
         counter = counter + 1
         if (print_output%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
@@ -731,8 +734,7 @@ contains
 
   !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
-                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, stdout, &
-                         error)
+                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, error)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -776,7 +778,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
     integer, intent(inout) :: num_proj
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -832,7 +833,6 @@ contains
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
             proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
             proj_input%l(i), proj_input%m(i), proj_input%radial(i)
-!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
             proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
             proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
@@ -855,7 +855,6 @@ contains
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
             proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
             proj_input%l(i), proj_input%m(i), proj_input%radial(i)
-!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
             proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
             proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
@@ -975,7 +974,7 @@ contains
   end subroutine kmesh_dealloc
 
   !================================================
-  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, seedname, stdout, error)
+  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, error)
     !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
@@ -989,15 +988,11 @@ contains
     implicit none
 
     type(print_output_type), intent(in) :: print_output
-
-    integer, intent(in) :: stdout
     integer, intent(inout) :: lmn(:, :)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: counter, l, m, n, loop
-
     !! Order in which to search the cells (ordered in dist from origin)
     integer :: lmn_cp(3, (2*nsupcell + 1)**3), indx(1)
     real(kind=dp) :: pos(3)
@@ -1036,8 +1031,8 @@ contains
   end subroutine kmesh_supercell_sort
 
   !================================================
-  subroutine kmesh_get_bvectors(kmesh_input, print_output, bvector, kpt_cart, recip_lattice, shell_dist, &
-                                lmn, kpt, multi, num_kpts, seedname, stdout, error)
+  subroutine kmesh_get_bvectors(kmesh_input, print_output, bvector, kpt_cart, recip_lattice, &
+                                shell_dist, lmn, kpt, multi, num_kpts, error)
     !================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
@@ -1055,7 +1050,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
     integer, intent(in) :: lmn(:, :)
     integer, intent(in) :: multi   ! the number of kpoints in the shell
     integer, intent(in) :: kpt     ! which kpt is our 'origin'
@@ -1064,8 +1058,6 @@ contains
     real(kind=dp), intent(in) ::kpt_cart(:, :)
     real(kind=dp), intent(in) :: shell_dist ! the bvectors
     real(kind=dp), intent(out) :: bvector(3, multi) ! the bvectors
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: loop, nkp2, num_bvec
@@ -1103,8 +1095,8 @@ contains
   end subroutine kmesh_get_bvectors
 
   !================================================
-  subroutine kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
-                                   lmn, multi, num_kpts, seedname, stdout, error)
+  subroutine kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, &
+                                   recip_lattice, lmn, multi, num_kpts, stdout, error)
     !================================================
     !! Find the correct set of shells to satisfy B1
     !!  The stratagy is:
@@ -1134,8 +1126,6 @@ contains
     real(kind=dp), intent(in) ::kpt_cart(:, :)
     real(kind=dp), intent(in) :: dnn(kmesh_input%search_shells) ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     real(kind=dp), allocatable     :: bvector(:, :, :) ! the bvectors
@@ -1171,7 +1161,8 @@ contains
       ! get the b vectors for the new shell
       call kmesh_get_bvectors(kmesh_input, print_output, bvector(:, 1:multi(shell), cur_shell), &
                               kpt_cart, recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                              seedname, stdout, error)
+                              error)
+      if (allocated(error)) return
 
       if (print_output%iprint >= 3) then
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(shell), '|'
@@ -1425,8 +1416,8 @@ contains
   end subroutine kmesh_shell_automatic
 
   !================================================
-  subroutine kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, lmn, &
-                               multi, num_kpts, seedname, stdout, error)
+  subroutine kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
+                               lmn, multi, num_kpts, stdout, error)
     !================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
@@ -1453,8 +1444,6 @@ contains
     real(kind=dp), intent(in) ::kpt_cart(:, :)
     real(kind=dp), intent(in) :: dnn(kmesh_input%search_shells) ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     real(kind=dp), allocatable     :: bvector(:, :, :)
@@ -1492,7 +1481,8 @@ contains
       call kmesh_get_bvectors(kmesh_input, print_output, &
                               bvector(:, 1:multi(kmesh_input%shell_list(shell)), shell), kpt_cart, &
                               recip_lattice, dnn(kmesh_input%shell_list(shell)), lmn, 1, &
-                              multi(kmesh_input%shell_list(shell)), num_kpts, seedname, stdout, error)
+                              multi(kmesh_input%shell_list(shell)), num_kpts, error)
+      if (allocated(error)) return
     end do
 
     if (print_output%iprint >= 3) then
@@ -1604,8 +1594,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
+    integer, intent(in) :: num_kpts, stdout
     integer, intent(in) :: lmn(:, :)
     integer, intent(inout) :: multi(kmesh_input%search_shells)   ! the number of kpoints in the shell
 
@@ -1652,7 +1641,8 @@ contains
       ! get the b vectors
       call kmesh_get_bvectors(kmesh_input, print_output, bvector(:, counter:counter + multi(shell) - 1), &
                               kpt_cart, recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                              seedname, stdout, error)
+                              error)
+      if (allocated(error)) return
 
       counter = counter + multi(shell)
     end do

@@ -152,14 +152,14 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
-                               seedname, error, transport_mode)
+                               error, transport_mode)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                                 ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, wannier_centres_translated, &
                                 irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                                have_disentangled, stdout, seedname, error, lsitesymmetry)
+                                have_disentangled, stdout, error, lsitesymmetry)
         if (allocated(error)) return
 
         bands_num_spec_points = 0
@@ -184,32 +184,32 @@ contains
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, stdout, error)
+                                    print_output%timing_level, seedname, error)
           if (allocated(error)) return
         endif
 
         if (output_file%write_rmn) then
           call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                                     num_wann, stdout, seedname, error)
+                                     num_wann, seedname, error)
           if (allocated(error)) return
         endif
 
         if (output_file%write_tb) then
           call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
                                     real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
-                                    stdout, print_output%timing_level, seedname, error)
+                                    print_output%timing_level, seedname, error)
           if (allocated(error)) return
         endif
 
         if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
           if (.not. ws_distance%done) then
-            call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
+            call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                    wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, error)
             if (allocated(error)) return
           endif
 
           call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
-                            stdout, seedname, error)
+                            seedname, error)
           if (allocated(error)) return
         end if
       end if
@@ -548,13 +548,17 @@ contains
     !
     if (ws_region%use_ws_distance) then
       if (index(band_plot%mode, 's-k') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
+        call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts, &
                                irvec, error, force_recompute=.true.)
+        if (allocated(error)) return
+
       elseif (index(band_plot%mode, 'cut') .ne. 0) then
-        call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
+        call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts_cut, &
                                irvec_cut, error, force_recompute=.true.)
+        if (allocated(error)) return
+
       else
         call set_error_plot(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
         return
@@ -651,13 +655,12 @@ contains
     emin = minval(eig_int) - 1.0_dp
     emax = maxval(eig_int) + 1.0_dp
 
-    if (index(band_plot%format, 'gnu') > 0) call plot_interpolate_gnuplot(band_plot, &
-                                                                          kpoint_path, &
-                                                                          bands_num_spec_points, &
-                                                                          num_wann)
-    if (index(band_plot%format, 'xmgr') > 0) call plot_interpolate_xmgrace(kpoint_path, &
-                                                                           bands_num_spec_points, &
-                                                                           num_wann)
+    if (index(band_plot%format, 'gnu') > 0) then
+      call plot_interpolate_gnuplot(band_plot, kpoint_path, bands_num_spec_points, num_wann)
+    endif
+    if (index(band_plot%format, 'xmgr') > 0) then
+      call plot_interpolate_xmgrace(kpoint_path, bands_num_spec_points, num_wann)
+    endif
     write (stdout, '(1x,a,f11.3,a)') &
       'Time to calculate interpolated band structure ', io_time() - time0, ' (sec)'
     write (stdout, *)
@@ -1139,13 +1142,13 @@ contains
     integer              :: irpt, nfound, npts_plot, loop_kpt, bxsf_unit
     integer              :: fermi_n
     character(len=9)     :: cdate, ctime
-    !
+
     if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, error)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
     write (stdout, *)
-    !
+
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
@@ -1153,7 +1156,7 @@ contains
                            //"using the input parameter 'fermi_level'")
       return
     endif
-    !
+
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ham_pack plot_fermi_surface')
@@ -1189,7 +1192,7 @@ contains
       call set_error_alloc(error, 'Error in allocating ifail in plot_fermi_surface')
       return
     endif
-    !
+
     npts_plot = (fermi_surface_plot%num_points + 1)**3
     allocate (eig_int(num_wann, npts_plot), stat=ierr)
     if (ierr /= 0) then
@@ -1198,7 +1201,7 @@ contains
     endif
     eig_int = 0.0_dp
     U_int = (0.0_dp, 0.0_dp)
-    !
+
     ikp = 0
     do loop_x = 1, fermi_surface_plot%num_points + 1
       do loop_y = 1, fermi_surface_plot%num_points + 1
@@ -1272,9 +1275,9 @@ contains
     write (stdout, '(1x,a,f11.3,a)') 'Time to calculate interpolated Fermi surface ', &
       io_time() - time0, ' (sec)'
     write (stdout, *)
-    !
+
     if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, error)
-    !
+
     return
 
   end subroutine plot_fermi_surface
@@ -2159,8 +2162,8 @@ contains
   end subroutine plot_wannier
 
   !================================================!
-  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, &
-                             num_wann, num_kpts, num_bands, seedname)
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, num_wann, &
+                             num_kpts, num_bands, seedname)
     !================================================!
     !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
@@ -2237,18 +2240,18 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    !integer, intent(in) :: stdout
-    integer            :: nkp, nn, file_unit
+
+    integer :: nkp, nn, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
     integer, intent(in) :: num_kpts
     character(len=50), intent(in)  :: seedname
-    !
+
     file_unit = io_file_unit()
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
-    !
+
     open (file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
     write (file_unit, *) header ! Date and time
     write (file_unit, *) num_kpts, kmesh_info%nntot
@@ -2258,13 +2261,12 @@ contains
       enddo
     enddo
     close (file_unit)
-    !
+
     return
-    !
+
 101 call set_error_open(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
     return
 
   end subroutine plot_bvec
 
 end module w90_plot
-

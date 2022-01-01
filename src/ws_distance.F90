@@ -54,9 +54,8 @@ contains
 
   !================================================!
 
-  subroutine ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wannier_centres, real_lattice, mp_grid, nrpts, irvec, &
-                               error, force_recompute)
+  subroutine ws_translate_dist(ws_distance, ws_region, num_wann, wannier_centres, real_lattice, &
+                               mp_grid, nrpts, irvec, error, force_recompute)
     !================================================!
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
@@ -78,7 +77,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
@@ -88,9 +86,7 @@ contains
 
     logical, optional, intent(in):: force_recompute ! set to true to force recomputing everything
 
-    character(len=50), intent(in)  :: seedname
-
-    ! <<<local variables>>>
+    ! local variables
     real(kind=dp) :: inv_lattice(3, 3)
     integer  :: iw, jw, ideg, ir, ierr
     integer :: shifts(3, ndegenx)
@@ -145,11 +141,12 @@ contains
           ! calculate instead crdist_ws, that is the Bravais lattice vector
           ! between two supercell lattices, that is the only one we need
           ! later for interpolation etc.
-          CALL R_wz_sc(-wannier_centres(:, iw) &
+          call r_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
                        ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, real_lattice, &
-                       inv_lattice, ws_region%ws_search_size, ws_region%ws_distance_tol, &
-                       stdout, seedname, error)
+                       inv_lattice, ws_region%ws_search_size, ws_region%ws_distance_tol, error)
+          if (allocated(error)) return
+
           do ideg = 1, ws_distance%ndeg(iw, jw, ir)
             ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
             tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)
@@ -163,7 +160,7 @@ contains
 
   !================================================!
   subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, real_lattice, inv_lattice, &
-                     ws_search_size, ws_distance_tol, stdout, seedname, error)
+                     ws_search_size, ws_distance_tol, error)
     !================================================!
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
@@ -178,7 +175,6 @@ contains
 
     ! arguments
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
     integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: inv_lattice(3, 3)
@@ -188,7 +184,6 @@ contains
     integer, intent(out) :: ndeg
     real(DP), intent(out) :: R_out(3, ndegenx)
     integer, intent(out) :: shifts(3, ndegenx)
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
@@ -270,6 +265,7 @@ contains
             ndeg = ndeg + 1
             if (ndeg > ndegenx) then
               call set_error_fatal(error, "surprising ndeg, I wouldn't expect a degeneracy larger than 8...")
+              return
             end if
             R_out(:, ndeg) = R
             ! I return/update also the shifts. Note that I have to sum these
@@ -289,7 +285,7 @@ contains
   !================================================!
 
   !================================================!
-  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, stdout, seedname, error)
+  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, seedname, error)
     !================================================!
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
@@ -305,7 +301,6 @@ contains
     type(ws_distance_type), intent(in) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     logical, intent(in) :: use_ws_distance
     character(len=50), intent(in)  :: seedname
 

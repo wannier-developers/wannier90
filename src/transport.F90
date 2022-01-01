@@ -88,7 +88,6 @@ contains
                        real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout, error)
-
     !================================================!
     !
     !! Main transport subroutine
@@ -188,21 +187,22 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, seedname, error, transport%mode)
+                               stdout, error, transport%mode)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, have_disentangled, stdout, seedname, error, &
+                                num_kpts, num_wann, have_disentangled, stdout, error, &
                                 lsitesymmetry)
         if (allocated(error)) return
 
-        if (output_file%write_hr) call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, &
-                                                            nrpts, num_wann, &
-                                                            print_output%timing_level, &
-                                                            seedname, stdout, error)
+        if (output_file%write_hr) then
+          call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
+                                    print_output%timing_level, seedname, error)
+        endif
+
         if (allocated(error)) return
 
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
@@ -212,16 +212,17 @@ contains
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
+                                 num_pl, num_wann, one_dim_vec, stdout, error)
         if (allocated(error)) return
 
         call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, print_output%timing_level, seedname, stdout, error)
+                         num_wann, print_output%timing_level, seedname, error)
         if (allocated(error)) return
 
-        if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
-                                                       wannier_centres_translated, &
-                                                       tran_sorted_idx, num_wann, seedname, stdout)
+        if (output_file%write_xyz) then
+          call tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, &
+                              num_wann, seedname, stdout)
+        endif
       end if
       call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname, error)
       if (allocated(error)) return
@@ -233,20 +234,20 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, seedname, error, transport%mode)
+                               stdout, error, transport%mode)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, have_disentangled, stdout, seedname, error, &
+                                num_kpts, num_wann, have_disentangled, stdout, error, &
                                 lsitesymmetry)
         if (allocated(error)) return
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, stdout, error)
+                                    print_output%timing_level, seedname, error)
           if (allocated(error)) return
         endif
 
@@ -257,7 +258,7 @@ contains
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
+                                 num_pl, num_wann, one_dim_vec, stdout, error)
         if (allocated(error)) return
 
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
@@ -266,19 +267,23 @@ contains
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            have_disentangled, wannier_centres_translated, stdout, &
                                            seedname, error)
+        if (allocated(error)) return
+
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, &
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
                                irvec_max, output_file%write_xyz, stdout, seedname, error)
         if (allocated(error)) return
+
         if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
                                                        wannier_centres_translated, &
                                                        tran_sorted_idx, num_wann, seedname, stdout)
 
         call tran_parity_enforce(signatures, print_output, transport, num_wann, tran_sorted_idx, &
                                  hr_one_dim, irvec_max, stdout, error)
-        if (allocated(error)) return ! BGS only io_stopwatch, may not be needed... FIXME
+        if (allocated(error)) return
+
         call tran_lcr_2c2_build_ham(pl_warning, real_space_ham, fermi_energy_list, kpt_latt, &
                                     num_wann, transport, print_output, real_lattice, mp_grid, &
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
@@ -290,6 +295,7 @@ contains
       call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, &
                     stdout, seedname, error)
       if (allocated(error)) return
+
     end if
 
     if (print_output%timing_level > 0) call io_stopwatch('tran: main', 2, error)
@@ -458,7 +464,7 @@ contains
   !================================================!
   subroutine tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
                                  real_lattice, wannier_centres_translated, mp_grid, irvec_max, &
-                                 num_pl, num_wann, one_dim_vec, seedname, stdout, error)
+                                 num_pl, num_wann, one_dim_vec, stdout, error)
     !================================================!
 
     use w90_constants, only: dp
@@ -485,8 +491,6 @@ contains
     real(kind=dp), intent(inout) :: hr_one_dim(:, :, -irvec_max:)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: i, j, n1
@@ -628,7 +632,7 @@ contains
 
   !================================================!
   subroutine tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, timing_level, seedname, stdout, error)
+                         num_wann, timing_level, seedname, error)
     !================================================!
     !
     !!  Construct h00 and h01
@@ -649,7 +653,6 @@ contains
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     integer, intent(in) :: irvec_max
     integer, intent(in) :: timing_level
 
@@ -989,8 +992,8 @@ contains
   end subroutine tran_bulk
 
   !================================================!
-  subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, &
-                      seedname, error)
+  subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname, &
+                      error)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -1268,6 +1271,7 @@ contains
       ! Surface green function for the left lead : g_surf_L
       call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, error)
       if (allocated(error)) return
+
       call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, &
                       error)
       if (allocated(error)) return
@@ -1285,9 +1289,11 @@ contains
         call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
                         error)
         if (allocated(error)) return
+
       else
         call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, error)
         if (allocated(error)) return
+
         call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
                         error)
         if (allocated(error)) return
@@ -1332,8 +1338,8 @@ contains
         g_C(i, i) = cmplx_1
       end do
 
-      call ZGBSV(transport%num_cc, KL, KU, transport%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, transport%num_cc, &
-                 info)
+      call zgbsv(transport%num_cc, KL, KU, transport%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, &
+                 transport%num_cc, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
         call set_error_lapack(error, 'tran_lcr: problem in ZGBSV')
@@ -2913,7 +2919,7 @@ contains
 
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
-                               one_dim_vec, seedname, stdout, error)
+                               one_dim_vec, stdout, error)
       if (allocated(error)) return
 
       write (stdout, *) ' '
@@ -3140,29 +3146,23 @@ contains
 
     implicit none
 
+    ! arguments
     type(print_output_type), intent(in) :: print_output
     type(w90_error_type), allocatable, intent(out) :: error
 
-    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
-    integer, intent(in) :: coord(3)
-    integer, intent(in) :: stdout
+    integer, intent(in) :: Array_size, stdout
+    integer, intent(in) :: Array_groups(:), coord(3)
+    integer, intent(out), allocatable :: subgroup_info(:, :)
 
-    real(kind=dp), intent(in) :: tran_group_threshold
+    real(kind=dp), intent(inout) :: Array(:, :) !(2, Array_size)
+    real(kind=dp), intent(in) :: tran_group_threshold, wannier_centres_translated(:, :)
 
-    integer, intent(in), dimension(:)                 :: Array_groups
-    integer, intent(in)                              :: Array_size
-
-    integer, intent(out), allocatable, dimension(:, :)  :: subgroup_info
-
-    real(kind=dp), intent(inout), dimension(2, Array_size)  :: Array
-
-    integer                                         :: i, j, k, Array_num_groups, increment, ierr, &
-                                                       subgroup_increment, group_num_subgroups
-    integer, allocatable, dimension(:)                :: group_subgroups
-
-    real(kind=dp), allocatable, dimension(:, :)             :: group_array, sorted_group_array, &
-                                                               subgroup_array, sorted_subgroup_array
-    character(30)                                   :: fmt_2
+    ! local variables
+    integer :: i, j, k, Array_num_groups, increment, ierr, subgroup_increment, group_num_subgroups
+    integer, allocatable :: group_subgroups(:)
+    real(kind=dp), allocatable :: group_array(:, :), sorted_group_array(:, :)
+    real(kind=dp), allocatable :: subgroup_array(:, :), sorted_subgroup_array(:, :)
+    character(30) :: fmt_2
 
     if (print_output%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, error)
 
@@ -3355,15 +3355,16 @@ contains
 
     implicit none
 
+    ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
     real(kind=dp), intent(in) :: tran_group_threshold
+    real(kind=dp), intent(in) :: array(:, :)
+    integer, intent(out), allocatable :: array_groups(:)
 
-    real(kind=dp), intent(in), dimension(:, :)           :: array
-    integer, intent(out), allocatable, dimension(:) :: array_groups
-
-    integer, allocatable, dimension(:)             :: dummy_array
-    logical, allocatable, dimension(:)             :: logic
-    integer                                      :: array_idx, i, j, group_number, array_size, ierr
+    ! local variables
+    integer, allocatable :: dummy_array(:)
+    integer :: array_idx, i, j, group_number, array_size, ierr
+    logical, allocatable :: logic(:)
 
     array_size = size(array, 2)
 
@@ -3379,39 +3380,30 @@ contains
     endif
 
     !Initialise dummy array
-
     dummy_array = 0
 
     !Initialise logic to false
-
     logic = .false.
 
     !Define counter of number of groups
-
     array_idx = 1
 
     !Loop over columns of array (ie array_size)
-
     do i = 1, array_size
 
       !If an element of logic is true then it means the wannier function has already been grouped
-
       if (logic(i) .eqv. .false.) then
 
         !Create a group for the wannier function
-
         logic(i) = .true.
 
         !Initialise the number of wannier functions in this group to be 1
-
         group_number = 1
 
         !Loop over the rest of wannier functions in array
-
         do j = min(i + 1, array_size), array_size
 
           !Special termination cases
-
           if ((j .eq. 1) .or. (i .eq. array_size)) then
             dummy_array(array_idx) = group_number
             exit
@@ -3424,7 +3416,6 @@ contains
           endif
 
           !Check distance between wannier function_i and wannier function_j
-
           if (abs(array(2, j) - array(2, i)) .le. tran_group_threshold) then
 
             !Increment number of wannier functions in group
@@ -3437,11 +3428,9 @@ contains
           else
 
             !Group is finished and store number of wanniers in the group to dummy_array
-
             dummy_array(array_idx) = group_number
 
             !Increment number of groups
-
             array_idx = array_idx + 1
             exit
           endif
@@ -3861,8 +3850,8 @@ contains
   end subroutine check_and_sort_similar_centres
 
   !================================================!
-  subroutine tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, num_wann, &
-                            seedname, stdout)
+  subroutine tran_write_xyz(atom_data, transport, wannier_centres_translated, tran_sorted_idx, &
+                            num_wann, seedname, stdout)
     !================================================!
     !
     ! Write xyz file with Wannier centres
@@ -4070,8 +4059,9 @@ contains
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(real_space_ham_type), intent(inout) :: real_space_ham
+
     type(print_output_type), intent(in) :: print_output
+    type(real_space_ham_type), intent(inout) :: real_space_ham
     type(transport_type), intent(inout) :: transport
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -4353,7 +4343,7 @@ contains
 
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
                                wannier_centres_translated, mp_grid, irvec_max, num_pl, num_wann, &
-                               one_dim_vec, seedname, stdout, error)
+                               one_dim_vec, stdout, error)
       if (allocated(error)) return
 
     endif

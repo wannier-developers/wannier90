@@ -40,7 +40,7 @@ contains
 
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, stdout, error, comm)
+                              num_kpts, num_wann, timing_level, error, comm)
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -55,7 +55,6 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     integer, intent(in) :: timing_level
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
@@ -331,10 +330,12 @@ contains
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
                           m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, &
                           num_bands*num_bands*kmesh_info%nntot*displs, error, comm)
+      if (allocated(error)) return
     else
       call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                           m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                           num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
+      if (allocated(error)) return
     endif
 
     if (.not. use_bloch_phases) then
@@ -409,7 +410,7 @@ contains
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
     if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
-                                   timing_level, stdout, error)
+                                   timing_level, error)
     if (allocated(error)) return
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -436,8 +437,8 @@ contains
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
         call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
-                             kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                             timing_level, lsitesymmetry, seedname, stdout, error, comm)
+                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
+                             lsitesymmetry, stdout, error, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
                                    timing_level, stdout, error)
@@ -616,8 +617,7 @@ contains
 !~![ysl-e]
 
   !================================================!
-  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, &
-                            stdout, error)
+  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, error)
     !================================================!
     !
     !! Only used when interfaced to the CP code
@@ -630,28 +630,28 @@ contains
 
     implicit none
 
+    ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
+
     integer, intent(in) :: nntot
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands
     integer, intent(in) :: timing_level
 
     complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
 
+    ! local variables
     integer       :: lam_unit, info, inn, i, j
-    real(kind=DP) :: lambda(num_bands, num_bands)
-    real(kind=DP) :: AP(num_bands*(num_bands + 1)/2)
-    real(kind=DP) :: eig(num_bands), work(3*num_bands)
+    real(kind=dp) :: lambda(num_bands, num_bands)
+    real(kind=dp) :: AP(num_bands*(num_bands + 1)/2)
+    real(kind=dp) :: eig(num_bands), work(3*num_bands)
 
     if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, error)
 
     lam_unit = io_file_unit()
     open (unit=lam_unit, file='lambda.dat', &
           form='unformatted', status='old', action='read')
-!~    write(stdout,*) ' Reading lambda.dat...'
     read (lam_unit) lambda
-!~    write(stdout,*) ' done'
     close (lam_unit)
 
     do j = 1, num_bands
@@ -749,7 +749,6 @@ contains
         return
       endif
     end if
-!    if (on_root) then
     if (allocated(m_matrix_orig)) then
       deallocate (m_matrix_orig, stat=ierr)
       if (ierr /= 0) then
@@ -757,7 +756,6 @@ contains
         return
       endif
     endif
-!    endif
     if (allocated(m_matrix_orig_local)) then
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) then
@@ -795,8 +793,8 @@ contains
 
   !================================================!
   subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
-                             num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, &
-                             seedname, stdout, error, comm)
+                             num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, stdout, &
+                             error, comm)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -814,6 +812,7 @@ contains
 
     implicit none
 
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
@@ -823,16 +822,14 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
 
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
 
     logical, intent(in) :: lsitesymmetry
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
@@ -887,9 +884,8 @@ contains
       !
       ! SINGULAR VALUE DECOMPOSITION
       !
-      call ZGESVD('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), &
-                  num_bands, svals, cz, num_bands, cvdag, num_bands, cwork, &
-                  4*num_bands, rwork, info)
+      call zgesvd('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), num_bands, svals, cz, &
+                  num_bands, cvdag, num_bands, cwork, 4*num_bands, rwork, info)
       if (info .ne. 0) then
         write (stdout, *) ' ERROR: IN ZGESVD IN overlap_project'
         write (stdout, *) ' K-POINT NKP=', nkp, ' INFO=', info
@@ -900,7 +896,7 @@ contains
         return
       endif
 
-!       u_matrix(:,:,nkp)=matmul(cz,cvdag)
+      ! u_matrix(:,:,nkp)=matmul(cz,cvdag)
       call utility_zgemm(u_matrix(:, :, nkp), cz, 'N', cvdag, 'N', num_wann)
 
       !
@@ -959,6 +955,7 @@ contains
     call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
                        m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs, &
                        error, comm)
+    if (allocated(error)) return
 
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) then
@@ -1006,6 +1003,7 @@ contains
 
     implicit none
 
+    ! arguments
     integer, intent(in) :: nntot
     integer, intent(in) :: stdout
     integer, intent(in) :: timing_level
@@ -1016,33 +1014,22 @@ contains
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn
-    real(kind=dp)                 :: rtmp2
+    real(kind=dp) :: rtmp2
     real(kind=dp), allocatable :: u_matrix_r(:, :)
-!~    real(kind=dp),    allocatable :: u_cmp(:)
     real(kind=dp), allocatable :: svals(:)
     real(kind=dp), allocatable :: work(:)
     real(kind=dp), allocatable :: rz(:, :)
     real(kind=dp), allocatable :: rv(:, :)
-!~    complex(kind=dp), allocatable :: ph(:)
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cvdag(:, :)
 
-!~ real(kind=dp),    allocatable :: u_cmp(:)
-!~ integer :: n,mdev, ndev, nndev,p(1)
-!~ real(kind=dp)                 :: dev, dev_tmp
-
     if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, error)
 
-!~    allocate(ph_g(num_wann),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_project_gamma')
-    ! internal variables
     allocate (u_matrix_r(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_r in overlap_project_gamma')
       return
     endif
-!~    allocate(u_cmp(num_wann),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating u_cmp in overlap_project_gamma')
     allocate (svals(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating svals in overlap_project_gamma')
@@ -1130,8 +1117,8 @@ contains
     !
     ! SINGULAR VALUE DECOMPOSITION
     !
-    call DGESVD('A', 'A', num_wann, num_wann, u_matrix_r, num_wann, &
-                svals, rz, num_wann, rv, num_wann, work, 5*num_wann, info)
+    call dgesvd('A', 'A', num_wann, num_wann, u_matrix_r, num_wann, svals, rz, num_wann, rv, &
+                num_wann, work, 5*num_wann, info)
     if (info .ne. 0) then
       write (stdout, *) ' ERROR: IN DGESVD IN overlap_project_gamma'
       if (info .lt. 0) then
@@ -1141,8 +1128,8 @@ contains
       return
     endif
 
-    call dgemm('N', 'N', num_wann, num_wann, num_wann, 1.0_dp, &
-               rz, num_wann, rv, num_wann, 0.0_dp, u_matrix_r, num_wann)
+    call dgemm('N', 'N', num_wann, num_wann, num_wann, 1.0_dp, rz, num_wann, rv, num_wann, 0.0_dp, &
+               u_matrix_r, num_wann)
     !
     ! CHECK UNITARITY
     !
@@ -1216,8 +1203,6 @@ contains
       call set_error_dealloc(error, 'Error in deallocating svals in overlap_project_gamma')
       return
     endif
-!~    deallocate(u_cmp,stat=ierr)
-!~    if (ierr/=0) call io_error('Error in deallocating u_cmp in overlap_project_gamma')
     deallocate (u_matrix_r, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u_matrix_r in overlap_project_gamma')

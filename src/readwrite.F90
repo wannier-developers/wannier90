@@ -42,7 +42,6 @@ module w90_readwrite
   public :: w90_readwrite_lib_set_atoms
   public :: w90_readwrite_read_chkpt
   public :: w90_readwrite_write_header
-  ! for postw90 parameters
   public :: w90_readwrite_get_block_length
   public :: w90_readwrite_get_centre_constraints
   public :: w90_readwrite_get_keyword
@@ -55,12 +54,10 @@ module w90_readwrite
   public :: w90_readwrite_in_file
   public :: w90_readwrite_set_kmesh
   public :: w90_readwrite_uppercase
-  ! common read routines
   public :: w90_readwrite_clean_infile
   public :: w90_readwrite_clear_keywords
   public :: w90_readwrite_read_algorithm_control
   public :: w90_readwrite_read_atoms
-  !public :: w90_readwrite_read_devel
   public :: w90_readwrite_read_dis_manifold
   public :: w90_readwrite_read_eigvals
   public :: w90_readwrite_read_exclude_bands
@@ -150,6 +147,7 @@ contains
     num_wann = -99
     call w90_readwrite_get_keyword('num_wann', found, error, i_value=num_wann)
     if (allocated(error)) return
+
     if (.not. found) then
       call set_error_input(error, 'Error: You must specify num_wann')
       return
@@ -174,6 +172,7 @@ contains
     num_exclude_bands = 0
     call w90_readwrite_get_range_vector('exclude_bands', found, num_exclude_bands, .true., error)
     if (allocated(error)) return
+
     if (found) then
       if (num_exclude_bands < 1) then
         call set_error_input(error, 'Error: problem reading exclude_bands')
@@ -230,19 +229,6 @@ contains
       endif
     endif
   end subroutine w90_readwrite_read_num_bands
-
-!  subroutine w90_readwrite_read_devel(devel_flag, error)
-!    use w90_error, only: w90_error_type
-!    implicit none
-!    character(len=*), intent(out) :: devel_flag
-!    type(w90_error_type), allocatable, intent(out) :: error
-
-!    logical :: found
-
-!    devel_flag = ' '
-!    call w90_readwrite_get_keyword('devel_flag', found, error, c_value=devel_flag)
-!    if (allocated(error)) return
-!  end subroutine w90_readwrite_read_devel
 
   subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error)
     use w90_error, only: w90_error_type, set_error_input
@@ -1155,8 +1141,8 @@ contains
 
   end subroutine w90_readwrite_clean_infile
 
-  subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, &
-                                            num_wann, num_bands, num_kpts, error)
+  subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                            num_bands, num_kpts, error)
     !================================================== !
     ! Some checks and initialisations !
     !================================================== !
@@ -1984,7 +1970,7 @@ contains
 !================================================!
   subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                       omega_invariant, num_bands, num_kpts, num_wann, checkpoint, &
-                                      have_disentangled, seedname, stdout, error, comm)
+                                      have_disentangled, error, comm)
     !================================================!
     !
     !! Distribute the chk files
@@ -2004,7 +1990,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
-    integer, intent(in) :: stdout
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     integer, intent(inout) :: num_kpts
@@ -2013,7 +1998,6 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
     real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=50), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
@@ -3194,7 +3178,7 @@ contains
 
   !================================================!
   subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
-                                           inv_lattice, lcount, spinors, bohr, stdout, seedname, error)
+                                           inv_lattice, lcount, spinors, bohr, stdout, error)
     !================================================!
     !
     !!  Fills the projection data block
@@ -3217,7 +3201,6 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: inv_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
     logical, intent(in)    :: lcount
     logical, intent(in) :: spinors
 

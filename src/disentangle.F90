@@ -25,8 +25,7 @@ module w90_disentangle
     w90comm_type, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_stopwatch
-  use w90_error !, only: w90_error_type, set_error_lapack, set_error_alloc, set_error_dealloc, &
-  !set_error_not_unitary, set_error_sym, set_error_dis
+  use w90_error
   use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
   use w90_wannier90_types, only: dis_control_type, dis_spheres_type, sitesym_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
@@ -45,7 +44,7 @@ contains
                       print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                       m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
                       omega_invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
-                      lsitesymmetry, stdout, error, seedname, comm)
+                      lsitesymmetry, stdout, error, comm)
     !================================================!
     !
     !! Main disentanglement routine
@@ -65,8 +64,9 @@ contains
     logical, intent(in) :: gamma_only
 
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
@@ -77,16 +77,13 @@ contains
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
     type(dis_control_type), intent(inout)  :: dis_control
-    type(dis_spheres_type), intent(in)     :: dis_spheres
     type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(dis_spheres_type), intent(in)     :: dis_spheres
     type(kmesh_info_type), intent(in)      :: kmesh_info
-    real(kind=dp), intent(in)              :: kpt_latt(:, :)
     type(print_output_type), intent(in)    :: print_output
     type(sitesym_type), intent(inout)      :: sitesym
-    type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in)         :: comm
-
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
 
     ! internal variables
     real(kind=dp) :: recip_lattice(3, 3), volume
@@ -117,6 +114,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     if (print_output%timing_level > 0) call io_stopwatch('dis: main', 1, error)
+    if (allocated(error)) return
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     call comms_array_split(num_kpts, counts, displs, comm)
@@ -135,12 +133,13 @@ contains
     ! Set up energy windows
     call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
                      indxnfroz, ndimfroz, nfirstwin, print_output%iprint, num_bands, num_kpts, &
-                     num_wann, print_output%timing_level, lfrozen, linner, on_root, seedname, &
+                     num_wann, print_output%timing_level, lfrozen, linner, on_root, &
                      stdout, error)
+    if (allocated(error)) return
 
     ! Construct the unitarized projection
     call dis_project(a_matrix, u_matrix_opt, dis_manifold%ndimwin, nfirstwin, num_bands, num_kpts, &
-                     num_wann, print_output%timing_level, on_root, error, seedname, stdout)
+                     num_wann, print_output%timing_level, on_root, error, stdout)
     if (allocated(error)) return
 
     ! If there is an inner window, need to modify projection procedure
@@ -154,7 +153,7 @@ contains
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, dis_manifold%ndimwin, &
                          print_output%iprint, num_bands, num_kpts, num_wann, &
-                         print_output%timing_level, lfrozen, on_root, error, seedname, stdout)
+                         print_output%timing_level, lfrozen, on_root, error, stdout)
       if (allocated(error)) return
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
@@ -162,12 +161,13 @@ contains
 
     ! Debug
     call internal_check_orthonorm(u_matrix_opt, dis_manifold%ndimwin, num_kpts, num_wann, &
-                                  print_output%timing_level, on_root, error, seedname, stdout)
+                                  print_output%timing_level, on_root, error, stdout)
     if (allocated(error)) return
+
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
-                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, &
-                         error, seedname, stdout, comm)
+                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, error, &
+                         comm)
     if (allocated(error)) return
 
     dis_manifold%lwindow = .false.
@@ -190,13 +190,13 @@ contains
       call dis_extract_gamma(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                              m_matrix_orig, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
                              ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
-                             lsitesymmetry, on_root, error, seedname, stdout)
+                             lsitesymmetry, on_root, error, stdout)
       if (allocated(error)) return
     else
       call dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                        m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
                        ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
-                       lsitesymmetry, on_root, error, seedname, stdout, comm)
+                       lsitesymmetry, on_root, error, stdout, comm)
       if (allocated(error)) return
     end if
 
@@ -229,16 +229,17 @@ contains
 
     ! Find the initial u_matrix
     if (lsitesymmetry) call sitesym_replace_d_matrix_band(sitesym, num_wann) !RS: replace d_matrix_band here
-![ysl-b]
+
     if (gamma_only) then
       call internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, num_wann, &
-                                 print_output%timing_level, seedname, stdout, error)
+                                 print_output%timing_level, stdout, error)
+      if (allocated(error)) return
     else
       call internal_find_u(sitesym, a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, &
                            num_bands, num_kpts, num_wann, print_output%timing_level, &
-                           lsitesymmetry, on_root, seedname, stdout, error, comm)
+                           lsitesymmetry, on_root, stdout, error, comm)
+      if (allocated(error)) return
     end if
-![ysl-e]
 
     if (optimisation <= 0) then
       page_unit = io_file_unit()
@@ -284,6 +285,7 @@ contains
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                          num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
+      if (allocated(error)) return
       close (page_unit)
 
     else
@@ -318,6 +320,7 @@ contains
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
                          num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
+      if (allocated(error)) return
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating m_matrix_orig_local in dis_main')
@@ -363,14 +366,17 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (print_output%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, error)
+    if (print_output%timing_level > 0 .and. on_root) then
+      call io_stopwatch('dis: main', 2, error)
+      if (allocated(error)) return
+    endif
 
     return
     !================================================!
   end subroutine dis_main
 
   subroutine internal_check_orthonorm(u_matrix_opt, ndimwin, num_kpts, num_wann, timing_level, &
-                                      on_root, error, seedname, stdout)
+                                      on_root, error, stdout)
     !================================================!
     !
     !! This subroutine checks that the states in the columns of the
@@ -397,8 +403,6 @@ contains
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
-    character(len=50), intent(in)  :: seedname
-
     logical, intent(in) :: on_root
 
     ! local variables
@@ -447,7 +451,7 @@ contains
   end subroutine internal_check_orthonorm
 
   subroutine internal_slim_m(m_matrix_orig_local, ndimwin, nfirstwin, nnlist, nntot, num_bands, &
-                             num_kpts, timing_level, error, seedname, stdout, comm)
+                             num_kpts, timing_level, error, comm)
     !================================================!
     !
     !! This subroutine slims down the original Mmn(k,b), removing
@@ -464,14 +468,11 @@ contains
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts
-    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts) index of lowest band inside outer window at nkp-th
 
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: nkp, nkp2, nn, i, j, m, n, ierr
@@ -532,8 +533,8 @@ contains
   end subroutine internal_slim_m
 
   subroutine internal_find_u(sitesym, a_matrix, u_matrix, u_matrix_opt, ndimwin, num_bands, &
-                             num_kpts, num_wann, timing_level, lsitesymmetry, on_root, seedname, &
-                             stdout, error, comm)
+                             num_kpts, num_wann, timing_level, lsitesymmetry, on_root, stdout, &
+                             error, comm)
     !================================================!
     !
     !! This subroutine finds the initial guess for the square unitary
@@ -573,8 +574,6 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: nkp, info, ierr
@@ -630,7 +629,7 @@ contains
         call zgemm('C', 'N', num_wann, num_wann, ndimwin(nkp), cmplx_1, u_matrix_opt(:, :, nkp), &
                    num_bands, a_matrix(:, :, nkp), num_bands, cmplx_0, caa(:, :, nkp), num_wann)
         ! Singular-value decomposition
-        call ZGESVD('A', 'A', num_wann, num_wann, caa(:, :, nkp), num_wann, svals, cz, num_wann, &
+        call zgesvd('A', 'A', num_wann, num_wann, caa(:, :, nkp), num_wann, svals, cz, num_wann, &
                     cv, num_wann, cwork, 4*num_wann, rwork, info)
         if (info .ne. 0) then
           if (on_root) write (stdout, *) ' ERROR: IN ZGESVD IN dis_main'
@@ -698,7 +697,7 @@ contains
 
 ![ysl-b]
   subroutine internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, ndimwin, num_wann, &
-                                   timing_level, seedname, stdout, error)
+                                   timing_level, stdout, error)
     !================================================!
     !
     !! Make initial u_matrix real
@@ -718,8 +717,6 @@ contains
     complex(kind=dp), intent(in) :: a_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: info, ierr
@@ -843,11 +840,10 @@ contains
     return
     !================================================!
   end subroutine internal_find_u_gamma
-![ysl-e]
 
-  subroutine dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, &
-                         indxfroz, indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, &
-                         num_wann, timing_level, lfrozen, linner, on_root, seedname, stdout, error)
+  subroutine dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
+                         indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, num_wann, &
+                         timing_level, lfrozen, linner, on_root, stdout, error)
     !================================================!
     !
     !! This subroutine selects the states that are inside the outer
@@ -898,8 +894,6 @@ contains
 
     real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: eigval_opt(:, :)
-
-    character(len=50), intent(in)  :: seedname
 
     logical, intent(in) :: on_root
     logical, intent(inout) :: linner
@@ -1162,7 +1156,7 @@ contains
   end subroutine dis_windows
 
   subroutine dis_project(a_matrix, u_matrix_opt, ndimwin, nfirstwin, num_bands, num_kpts, &
-                         num_wann, timing_level, on_root, error, seedname, stdout)
+                         num_wann, timing_level, on_root, error, stdout)
     !================================================!
     !
     !! Construct projections for the start of the disentanglement routine
@@ -1226,7 +1220,6 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: i, j, l, m, nkp, info, ierr
@@ -1419,8 +1412,8 @@ contains
     !================================================!
   end subroutine dis_project
 
-  subroutine dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, ndimwin, iprint, num_bands, &
-                           num_kpts, num_wann, timing_level, lfrozen, on_root, error, seedname, stdout)
+  subroutine dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, ndimwin, iprint, num_bands, num_kpts, &
+                           num_wann, timing_level, lfrozen, on_root, error, stdout)
     !================================================!
     !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
@@ -1449,8 +1442,6 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lfrozen(:, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
     ! MODIFIED: u_matrix_opt (At input it contains the gaussians projected onto
@@ -1629,7 +1620,7 @@ contains
         enddo
         il = ndimwin(nkp) - (num_wann - ndimfroz(nkp)) + 1
         iu = ndimwin(nkp)
-        call ZHPEVX('V', 'A', 'U', ndimwin(nkp), cap, 0.0_dp, 0.0_dp, il, iu, -1.0_dp, m, w, cz, &
+        call zhpevx('V', 'A', 'U', ndimwin(nkp), cap, 0.0_dp, 0.0_dp, il, iu, -1.0_dp, m, w, cz, &
                     num_bands, cwork, rwork, iwork, ifail, info)
 
 !~            write(stdout,*) 'w:'
@@ -1889,7 +1880,7 @@ contains
   subroutine dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                          m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, &
                          indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
-                         num_wann, lsitesymmetry, on_root, error, seedname, stdout, comm)
+                         num_wann, lsitesymmetry, on_root, error, stdout, comm)
     !================================================!
     !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -1959,7 +1950,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry
-    character(len=50), intent(in)  :: seedname
+
     ! Internal variables
     integer :: i, j, l, m, n, nn, nkp, nkp2, info, ierr, ndimk, p
     integer :: icompflag, iter, ndiff
@@ -2183,14 +2174,17 @@ contains
                                   u_matrix_opt, kmesh_info%wb, indxnfroz, ndimfroz, &
                                   dis_manifold%ndimwin, kmesh_info%nnlist, nkp, nkp_loc, &
                                   kmesh_info%nntot, num_bands, num_wann, print_output%timing_level, &
-                                  on_root, seedname, stdout, error)
+                                  on_root, error)
+            if (allocated(error)) return
           endif
         enddo
 
         if (lsitesymmetry) then
           call comms_gatherv(czmat_in_loc, num_bands*num_bands*counts(my_node_id), czmat_in, &
                              num_bands*num_bands*counts, num_bands*num_bands*displs, error, comm)
+          if (allocated(error)) return
           call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, error, comm)
+          if (allocated(error)) return
           call sitesym_symmetrize_zmatrix(sitesym, czmat_in, num_bands, num_kpts, &
                                           dis_manifold%lwindow) !RS:
           do nkp_loc = 1, counts(my_node_id)
@@ -2221,9 +2215,8 @@ contains
           endif
         enddo
       endif
-      ! [if iter=1]
-      if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2, error)
 
+      if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2, error)
       if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 1, error)
 
       womegai1 = 0.0_dp
@@ -2233,12 +2226,12 @@ contains
       ! non-frozen neighboring states from the previous iteration
 
       wkomegai1 = real(num_wann, dp)*kmesh_info%wbtot
-      if (lsitesymmetry) then                                                                        !RS:
-        do nkp = 1, sitesym%nkptirr                                                                            !RS:
+      if (lsitesymmetry) then
+        do nkp = 1, sitesym%nkptirr
           wkomegai1(sitesym%ir2ik(nkp)) = wkomegai1(sitesym%ir2ik(nkp))* &
-                                          sitesym%nsymmetry/count(sitesym%kptsym(:, nkp) .eq. sitesym%ir2ik(nkp)) !RS:
-        enddo                                                                                       !RS:
-      endif                                                                                          !RS:
+                                          sitesym%nsymmetry/count(sitesym%kptsym(:, nkp) .eq. sitesym%ir2ik(nkp))
+        enddo
+      endif
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         wkomegai1_loc(nkp_loc) = wkomegai1(nkp)
@@ -2268,8 +2261,8 @@ contains
           enddo
         endif
       enddo
-      if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2, error)
 
+      if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2, error)
       if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1, error)
 
       !! ! send chunks of wkomegai1 to root node
@@ -2387,24 +2380,20 @@ contains
       !! call comms_bcast(wkomegai1(1), num_kpts)
 
       call comms_allreduce(womegai1, 1, 'SUM', error, comm)
+      if (allocated(error)) return
 
       call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), u_matrix_opt, &
                          num_bands*num_wann*counts, num_bands*num_wann*displs, error, comm)
+      if (allocated(error)) return
+
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+      if (allocated(error)) return
+
       if (lsitesymmetry) then
         call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
                                          num_wann, stdout, error, dis_manifold%lwindow) !RS:
         if (allocated(error)) return
       endif
-      !if (index(print_output%devel_flag, 'compspace') > 0) then
-      !  if (iter .eq. dis_control%num_iter) then
-      !    call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
-      !                       num_bands*num_bands*counts, num_bands*num_bands*displs, stdout, &
-      !                       seedname, comm)
-
-      !    call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts, error, comm)
-      !  endif
-      !endif
 
       if (print_output%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2, error)
 
@@ -2494,15 +2483,20 @@ contains
                                 u_matrix_opt, kmesh_info%wb, indxnfroz, ndimfroz, &
                                 dis_manifold%ndimwin, kmesh_info%nnlist, nkp, nkp_loc, &
                                 kmesh_info%nntot, num_bands, num_wann, print_output%timing_level, &
-                                on_root, seedname, stdout, error)
+                                on_root, error)
+          if (allocated(error)) return
         endif
       enddo
 
       if (lsitesymmetry) then
         call comms_gatherv(czmat_out_loc, num_bands*num_bands*counts(my_node_id), czmat_out, &
                            num_bands*num_bands*counts, num_bands*num_bands*displs, error, comm)
+        if (allocated(error)) return
+
         call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, error, comm)
-        call sitesym_symmetrize_zmatrix(sitesym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow) !RS:
+        if (allocated(error)) return
+
+        call sitesym_symmetrize_zmatrix(sitesym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow)
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           czmat_out_loc(:, :, nkp_loc) = czmat_out(:, :, nkp)
@@ -2510,7 +2504,8 @@ contains
       end if
 
       call internal_test_convergence(history, delta_womegai, dis_control%conv_tol, iter, &
-                                     dis_control%conv_window, dis_converged, error, seedname, stdout)
+                                     dis_control%conv_window, dis_converged, error)
+      if (allocated(error)) return
 
       if (dis_converged) then
         if (on_root) then
@@ -2680,6 +2675,7 @@ contains
     endif
     call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, error, comm)
     call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+    if (allocated(error)) return
 
     !if (index(print_output%devel_flag, 'compspace') > 0) then
 
@@ -2856,7 +2852,7 @@ contains
   end subroutine dis_extract
 
   subroutine internal_test_convergence(history, delta_womegai, dis_conv_tol, iter, &
-                                       dis_conv_window, dis_converged, error, seedname, stdout)
+                                       dis_conv_window, dis_converged, error)
     !================================================!
     !
     !! Check if we have converged
@@ -2869,14 +2865,11 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: iter, dis_conv_window
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(inout) :: history(:)
     real(kind=dp), intent(in) :: delta_womegai, dis_conv_tol
 
     logical, intent(inout) :: dis_converged
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: ierr
@@ -2912,7 +2905,7 @@ contains
 
   subroutine internal_zmatrix(cbw, cmtrx, m_matrix_orig_local, u_matrix_opt, wb, indxnfroz, &
                               ndimfroz, ndimwin, nnlist, nkp, nkp_loc, nntot, num_bands, num_wann, &
-                              timing_level, on_root, seedname, stdout, error)
+                              timing_level, on_root, error)
     !================================================!
     !
     !! Compute the Z-matrix
@@ -2926,7 +2919,6 @@ contains
 
     integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: timing_level
-    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:)
     integer, intent(in) :: nntot, nnlist(:, :)
     integer, intent(in) :: indxnfroz(:, :)
@@ -2942,8 +2934,6 @@ contains
     complex(kind=dp), intent(out) :: cmtrx(:, :)
     !! (M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
     !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
-
-    character(len=50), intent(in)  :: seedname
 
     logical, intent(in) :: on_root
     ! local variables
@@ -2983,7 +2973,7 @@ contains
   subroutine dis_extract_gamma(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                                m_matrix_orig, u_matrix_opt, eigval_opt, omega_invariant, &
                                indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
-                               num_wann, lsitesymmetry, on_root, error, seedname, stdout)
+                               num_wann, lsitesymmetry, on_root, error, stdout)
     !================================================!
     !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -2997,11 +2987,11 @@ contains
     implicit none
 
     ! arguments
-    type(dis_control_type), intent(in)      :: dis_control
-    type(dis_manifold_type), intent(in)   :: dis_manifold
-    type(kmesh_info_type), intent(in)             :: kmesh_info
-    type(print_output_type), intent(in)          :: print_output
-    type(sitesym_type), intent(in)            :: sitesym
+    type(dis_control_type), intent(in) :: dis_control
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_nodes, my_node_id
@@ -3017,8 +3007,6 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry ! lsitesym not yet used
-
-    character(len=50), intent(in)  :: seedname
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optimal
@@ -3227,7 +3215,8 @@ contains
             call internal_zmatrix_gamma(cbw, m_matrix_orig, u_matrix_opt, rzmat_in(:, :, nkp), &
                                         kmesh_info%wb, indxnfroz, ndimfroz, dis_manifold%ndimwin, &
                                         kmesh_info%nnlist, nkp, kmesh_info%nntot, num_bands, &
-                                        num_wann, print_output%timing_level, seedname, stdout, error)
+                                        num_wann, print_output%timing_level, error)
+            if (allocated(error)) return
           endif
         enddo
       else
@@ -3434,12 +3423,13 @@ contains
           call internal_zmatrix_gamma(cbw, m_matrix_orig, u_matrix_opt, rzmat_out(:, :, nkp), &
                                       kmesh_info%wb, indxnfroz, ndimfroz, dis_manifold%ndimwin, &
                                       kmesh_info%nnlist, nkp, kmesh_info%nntot, num_bands, &
-                                      num_wann, print_output%timing_level, seedname, stdout, error)
+                                      num_wann, print_output%timing_level, error)
+          if (allocated(error)) return
         endif
       enddo
 
       call internal_test_convergence(history, delta_womegai, dis_control%conv_tol, iter, &
-                                     dis_control%conv_window, dis_converged, error, seedname, stdout)
+                                     dis_control%conv_window, dis_converged, error)
       if (allocated(error)) return
       if (dis_converged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
@@ -3743,7 +3733,7 @@ contains
 
   subroutine internal_zmatrix_gamma(cbw, m_matrix_orig, u_matrix_opt, rmtrx, wb, indxnfroz, &
                                     ndimfroz, ndimwin, nnlist, nkp, nntot, num_bands, num_wann, &
-                                    timing_level, seedname, stdout, error)
+                                    timing_level, error)
     !================================================!
     !
     !! Compute Z-matrix (Gamma point routine)
@@ -3755,7 +3745,7 @@ contains
     ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: timing_level, stdout
+    integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_wann, nkp, nntot
     integer, intent(in) :: ndimwin(:)
     integer, intent(in) :: nnlist(:, :)
@@ -3768,8 +3758,6 @@ contains
     complex(kind=dp), intent(in) :: cbw(:, :)
     complex(kind=dp), intent(in) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! Internal variables
     integer :: l, m, n, p, q, nn, nkp2, ndimk

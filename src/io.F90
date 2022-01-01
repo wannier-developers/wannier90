@@ -60,16 +60,19 @@ contains
     !=====================================
 
     use w90_error, only: w90_error_type, set_warning, set_error_unconv
+
     implicit none
+
+    ! arguments
+    type(w90_error_type), allocatable, intent(out) :: error
 
     character(len=*), intent(in) :: tag
     !! Which stopwatch to act upon
-    integer, intent(in)          :: mode
-    type(w90_error_type), allocatable, intent(out) :: error
+    integer, intent(in)  :: mode
     !! Action  1=start 2=stop
 
+    ! local variables
     integer :: i
-    !integer :: stdout
     real(kind=dp) :: t
 
     call cpu_time(t)
@@ -87,8 +90,9 @@ contains
       enddo
 
       nnames = nnames + 1
-      if (nnames .gt. nmax) &
+      if (nnames .gt. nmax) then
         call set_error_unconv(error, 'Maximum number of calls to io_stopwatch exceeded')
+      endif
 
       clocks(nnames)%label = tag
       clocks(nnames)%ctime = 0.0_dp
@@ -214,9 +218,18 @@ contains
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
 
-    help_flag(1) = '-h    '; help_flag(2) = '-help '; help_flag(3) = '--help '; 
-    version_flag(1) = '-v    '; version_flag(2) = '-version '; version_flag(3) = '--version '; 
-    dryrun_flag(1) = '-d    '; dryrun_flag(2) = '-dryrun '; dryrun_flag(3) = '--dryrun '; 
+    help_flag(1) = '-h    '
+    help_flag(2) = '-help '
+    help_flag(3) = '--help '
+
+    version_flag(1) = '-v    '
+    version_flag(2) = '-version '
+    version_flag(3) = '--version '
+
+    dryrun_flag(1) = '-d    '
+    dryrun_flag(2) = '-dryrun '
+    dryrun_flag(3) = '--dryrun '
+
     post_proc_flag = .false.
     print_help = .false.
     print_version = .false.

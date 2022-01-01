@@ -165,7 +165,7 @@ contains
   end subroutine utility_zgemm_new
   !================================================!
   function utility_zdotu(a, b)
-    complex(kind=dp), intent(in), dimension(:)  :: a, b
+    complex(kind=dp), intent(in) :: a(:), b(:)
     complex(kind=dp) :: utility_zdotu
     utility_zdotu = sum(a*b)
     return
@@ -184,15 +184,13 @@ contains
     ! is returned.
     !================================================!
 
-    complex(kind=dp), dimension(:, :), intent(in)  :: a, b, c
-    character(len=1), intent(in)                  :: transa, transb, transc
-    real(kind=dp), dimension(:), optional, &
-      intent(in)       :: eigval
-    complex(kind=dp), dimension(:, :), optional, &
-      intent(out) :: prod1, prod2
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :), c(:, :)
+    character(len=1), intent(in) :: transa, transb, transc
+    real(kind=dp), intent(in), optional :: eigval(:)
+    complex(kind=dp), intent(out), optional :: prod1(:, :), prod2(:, :)
 
-    complex(kind=dp), dimension(:, :), allocatable :: tmp
-    integer                                       :: nb, mc, i, j
+    complex(kind=dp), allocatable :: tmp(:, :)
+    integer :: nb, mc, i, j
 
     ! query matrix sizes
     ! naming convention:
@@ -334,7 +332,7 @@ contains
 
   end subroutine utility_recip_lattice_base
 
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error)  !
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error)
     !================================================!
     !
     !!  Calculates the reciprical lattice vectors and the cell volume
@@ -641,14 +639,14 @@ contains
     use w90_error, only: w90_error_type, set_error_fatal
 
     integer, intent(in) :: dim
-    complex(kind=dp), intent(in)  :: mat(dim, dim)
-    real(kind=dp), intent(out)    :: eig(dim)
+    complex(kind=dp), intent(in) :: mat(dim, dim)
+    real(kind=dp), intent(out) :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)
     type(w90_error_type), allocatable, intent(out) :: error
 
-    complex(kind=dp)   :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
-    real(kind=dp)      :: rwork(7*dim)
-    integer            :: i, j, info, nfound, iwork(5*dim), ifail(dim)
+    complex(kind=dp) :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
+    real(kind=dp) :: rwork(7*dim)
+    integer :: i, j, info, nfound, iwork(5*dim), ifail(dim)
     character(len=120) :: errormsg
 
     do j = 1, dim
@@ -810,7 +808,7 @@ contains
     !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
     real(kind=dp) :: utility_re_tr_prod
     real(kind=dp) :: s
     integer       :: i, j, n, m
@@ -837,7 +835,7 @@ contains
     !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
 
     real(kind=dp) :: utility_im_tr_prod
     real(kind=dp) :: s
@@ -865,8 +863,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    real(kind=dp)                    :: utility_re_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_re_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum
@@ -890,8 +888,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0
 
-    real(kind=dp)                    :: utility_im_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_im_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum

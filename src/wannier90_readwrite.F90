@@ -49,12 +49,14 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
-                                          dis_manifold, exclude_bands, fermi_energy_list, fermi_surface_data, &
-                                          kmesh_input, kmesh_info, kpt_latt, output_file, wvfn_read, wann_control, &
-                                          wann_omega, proj, proj_input, real_space_ham, select_proj, kpoint_path, &
-                                          w90_system, tran, print_output, wannier_data, wann_plot, w90_extra_io, &
-                                          ws_region, w90_calculation, eigval, real_lattice, bohr, symmetrize_eps, &
-                                          mp_grid, num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
+                                          dis_manifold, exclude_bands, fermi_energy_list, &
+                                          fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
+                                          output_file, wvfn_read, wann_control, wann_omega, proj, &
+                                          proj_input, real_space_ham, select_proj, kpoint_path, &
+                                          w90_system, tran, print_output, wannier_data, wann_plot, &
+                                          w90_extra_io, ws_region, w90_calculation, eigval, &
+                                          real_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
+                                          num_kpts, num_proj, num_wann, optimisation, eig_found, &
                                           calc_only_A, cp_pp, gamma_only, lhasproj, library, &
                                           library_param_read_first_pass, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout, error)
@@ -141,61 +143,100 @@ contains
     disentanglement = .false.
     call w90_readwrite_in_file(seedname, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout, error)
+
+    call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, error)
+    if (allocated(error)) return
 
     call w90_readwrite_read_verbosity(print_output, error)
+    if (allocated(error)) return
+
     call w90_readwrite_read_algorithm_control(optimisation, error)
-    call w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_transport(w90_calculation%transport, tran, w90_calculation%restart, stdout, &
-                                                seedname, error)
-    call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname, error)
+    if (allocated(error)) return
+
+    call w90_wannier90_readwrite_read_w90_calcs(w90_calculation, error)
+    if (allocated(error)) return
+
+    call w90_wannier90_readwrite_read_transport(w90_calculation%transport, tran, w90_calculation%restart, &
+                                                error)
+    if (allocated(error)) return
+
+    call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, error)
+    if (allocated(error)) return
+
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
                                     bohr, error)
       if (allocated(error)) return
+
       call w90_readwrite_read_num_wann(num_wann, error)
       if (allocated(error)) return
+
       call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error)
       if (allocated(error)) return
+
       call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
                                         num_wann, library_param_read_first_pass, stdout, error)
       if (allocated(error)) return
       disentanglement = (num_bands > num_wann)
+
       call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
       if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
-                                                   stdout, seedname, error)
-      !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname, error)
+                                                   stdout, error)
+      if (allocated(error)) return
+
       call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, error)
       if (allocated(error)) return
+
       call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error)
       if (allocated(error)) return
-      call w90_wannier90_readwrite_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, stdout, &
-                                                  seedname, error)
-      call w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname, error)
+
+      call w90_wannier90_readwrite_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, &
+                                                  error)
+      if (allocated(error)) return
+
+      call w90_wannier90_readwrite_read_restart(w90_calculation, seedname, error)
+      if (allocated(error)) return
+
       call w90_readwrite_read_system(library, w90_system, stdout, error)
       if (allocated(error)) return
+
       call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, &
                                     error)
       if (allocated(error)) return
-      call w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname, error)
-      call w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, w90_calculation%bands_plot, &
-                                                  stdout, seedname, error)
+
+      call w90_wannier90_readwrite_read_plot_info(wvfn_read, error)
+      if (allocated(error)) return
+
+      call w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, &
+                                                  w90_calculation%bands_plot, error)
+      if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, &
-                                                  w90_calculation%wannier_plot, stdout, seedname, &
-                                                  error)
+                                                  w90_calculation%wannier_plot, error)
+      if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, w90_calculation%fermi_surface_plot, &
-                                                      stdout, seedname, error)
+                                                      error)
+      if (allocated(error)) return
+
       call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error)
       if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, w90_system%num_valence_bands, &
-                                                 disentanglement, gamma_only, stdout, seedname, error)
+                                                 disentanglement, gamma_only, error)
+      if (allocated(error)) return
+
     endif
     ! BGS tran/plot related stuff...
-    call w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, w90_extra_io%one_dim_axis, &
-                                              tran%read_ht, stdout, seedname, error)
+    call w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, &
+                                              w90_extra_io%one_dim_axis, tran%read_ht, error)
+    if (allocated(error)) return
+
     call w90_readwrite_read_ws_data(ws_region, error) !ws_search etc
     if (allocated(error)) return
+
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_eigvals(.false., .false., .false., &
                                       w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
@@ -203,35 +244,52 @@ contains
                                       eigval, library, w90_calculation%postproc_setup, num_bands, &
                                       num_kpts, stdout, seedname, error)
       if (allocated(error)) return
+
       dis_manifold%win_min = -1.0_dp
       dis_manifold%win_max = 0.0_dp
       if (eig_found) dis_manifold%win_min = minval(eigval)
       if (eig_found) dis_manifold%win_max = maxval(eigval)
       call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error)
       if (allocated(error)) return
-      call w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, num_wann, bohr, &
-                                                    stdout, seedname, error)
-      call w90_wannier90_readwrite_read_hamil(real_space_ham, stdout, seedname, error)
-      call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, &
-                                                    seedname, error)
+
+      call w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, num_wann, &
+                                                    bohr, error)
+      if (allocated(error)) return
+
+      call w90_wannier90_readwrite_read_hamil(real_space_ham, error)
+      if (allocated(error)) return
+
+      call w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, error)
+      if (allocated(error)) return
+
       call w90_readwrite_read_kmesh_data(kmesh_input, error)
       if (allocated(error)) return
+
       call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
+      if (allocated(error)) return
+
       call utility_inverse_mat(real_lattice, inv_lattice)
+
       call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, error)
       if (allocated(error)) return
-      call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, num_kpts, bohr, stdout, &
-                                                      seedname, error)
+
+      call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, &
+                                                      num_kpts, bohr, error)
+      if (allocated(error)) return
+
       !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
       !                             stdout, seedname)
       call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error)
       if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                     wann_control%guiding_centres%enable, &
                                                     proj_input, select_proj, num_proj, &
                                                     atom_data, inv_lattice, num_wann, gamma_only, &
                                                     w90_system%spinors, library, bohr, stdout, &
-                                                    seedname, error)
+                                                    error)
+      if (allocated(error)) return
+
       if (allocated(proj%site)) then
         if (allocated(wann_control%guiding_centres%centres)) &
           deallocate (wann_control%guiding_centres%centres)
@@ -242,12 +300,15 @@ contains
       if (wann_control%constrain%constrain) then
         call w90_wannier90_readwrite_read_constrained_centres(w90_extra_io%ccentres_frac, &
                                                               wann_control, real_lattice, &
-                                                              num_wann, library, stdout, seedname, &
+                                                              num_wann, library, stdout, &
                                                               error)
+        if (allocated(error)) return
+
       endif
     endif
     call w90_readwrite_clean_infile(stdout, seedname, error)
     if (allocated(error)) return
+
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
       call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
@@ -262,7 +323,7 @@ contains
   end subroutine w90_wannier90_readwrite_read
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, seedname, stdout, error)
+  subroutine w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, error)
     !================================================!
     ! Site symmetry
     !================================================!
@@ -270,8 +331,6 @@ contains
     implicit none
     logical, intent(inout) :: lsitesymmetry
     real(kind=dp), intent(inout) :: symmetrize_eps
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -283,54 +342,47 @@ contains
     ! default value is symmetrize_eps=0.001
     call w90_readwrite_get_keyword('symmetrize_eps', found, error, r_value=symmetrize_eps)!YN:
     if (allocated(error)) return
+
   end subroutine w90_wannier90_readwrite_read_sym
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_w90_calcs(w90_calculation, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_w90_calcs(w90_calculation, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(w90_calculation_type), intent(out) :: w90_calculation
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
 
     w90_calculation%transport = .false.
-    call w90_readwrite_get_keyword('transport', found, error, &
-                                   l_value=w90_calculation%transport)
+    call w90_readwrite_get_keyword('transport', found, error, l_value=w90_calculation%transport)
     if (allocated(error)) return
 
     w90_calculation%wannier_plot = .false.
-    call w90_readwrite_get_keyword('wannier_plot', found, error, &
-                                   l_value=w90_calculation%wannier_plot)
+    call w90_readwrite_get_keyword('wannier_plot', found, error, l_value=w90_calculation%wannier_plot)
     if (allocated(error)) return
 
     w90_calculation%bands_plot = .false.
-    call w90_readwrite_get_keyword('bands_plot', found, error, &
-                                   l_value=w90_calculation%bands_plot)
+    call w90_readwrite_get_keyword('bands_plot', found, error, l_value=w90_calculation%bands_plot)
     if (allocated(error)) return
 
     w90_calculation%fermi_surface_plot = .false.
-    call w90_readwrite_get_keyword('fermi_surface_plot', found, error, &
-                                   l_value=w90_calculation%fermi_surface_plot)
+    call w90_readwrite_get_keyword('fermi_surface_plot', found, error, l_value=w90_calculation%fermi_surface_plot)
     if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_w90_calcs
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_transport(transport, tran, restart, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_transport(transport, tran, restart, error)
     !================================================!
     ! Transport
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(in) :: transport
     type(transport_type), intent(out) :: tran
     character(len=*), intent(inout) :: restart
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -411,8 +463,7 @@ contains
     if (allocated(error)) return
 
     tran%group_threshold = 0.15_dp
-    call w90_readwrite_get_keyword('tran_group_threshold', found, error, &
-                                   r_value=tran%group_threshold)
+    call w90_readwrite_get_keyword('tran_group_threshold', found, error, r_value=tran%group_threshold)
     if (allocated(error)) return
 
     ! checks
@@ -466,13 +517,11 @@ contains
   end subroutine w90_wannier90_readwrite_read_transport
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: real_space_ham
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -503,14 +552,13 @@ contains
     if (allocated(error)) return
 
     real_space_ham%system_dim = 3
-    call w90_readwrite_get_keyword('bands_plot_dim', found, error, &
-                                   i_value=real_space_ham%system_dim)
+    call w90_readwrite_get_keyword('bands_plot_dim', found, error, i_value=real_space_ham%system_dim)
     if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_dist_cutoff
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, ccentres_frac, stdout, error)
     !================================================!
     ! Wannierise
     !================================================!
@@ -520,7 +568,6 @@ contains
     integer, intent(in) :: num_wann
     real(kind=dp), allocatable, intent(inout) :: ccentres_frac(:, :)
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr
@@ -530,6 +577,7 @@ contains
     call w90_readwrite_get_keyword('num_dump_cycles', found, error, &
                                    i_value=wann_control%num_dump_cycles)
     if (allocated(error)) return
+
     if (wann_control%num_dump_cycles < 0) then
       call set_error_input(error, 'Error: num_dump_cycles must be positive')
       return
@@ -539,6 +587,7 @@ contains
     call w90_readwrite_get_keyword('num_print_cycles', found, error, &
                                    i_value=wann_control%num_print_cycles)
     if (allocated(error)) return
+
     if (wann_control%num_print_cycles < 0) then
       call set_error_input(error, 'Error: num_print_cycles must be positive')
       return
@@ -548,6 +597,7 @@ contains
     call w90_readwrite_get_keyword('num_iter', found, error, &
                                    i_value=wann_control%num_iter)
     if (allocated(error)) return
+
     if (wann_control%num_iter < 0) then
       call set_error_input(error, 'Error: num_iter must be positive')
       return
@@ -557,6 +607,7 @@ contains
     call w90_readwrite_get_keyword('num_cg_steps', found, error, &
                                    i_value=wann_control%num_cg_steps)
     if (allocated(error)) return
+
     if (wann_control%num_cg_steps < 0) then
       call set_error_input(error, 'Error: num_cg_steps must be positive')
       return
@@ -566,6 +617,7 @@ contains
     call w90_readwrite_get_keyword('conv_tol', found, error, &
                                    r_value=wann_control%conv_tol)
     if (allocated(error)) return
+
     if (wann_control%conv_tol < 0.0_dp) then
       call set_error_input(error, 'Error: conv_tol must be positive')
       return
@@ -587,6 +639,7 @@ contains
     call w90_readwrite_get_keyword('conv_noise_num', found, error, &
                                    i_value=wann_control%conv_noise_num)
     if (allocated(error)) return
+
     if (wann_control%conv_noise_num < 0) then
       call set_error_input(error, 'Error: conv_noise_num must be positive')
       return
@@ -601,6 +654,7 @@ contains
     call w90_readwrite_get_keyword('num_guide_cycles', found, error, &
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
+
     if (wann_control%guiding_centres%num_guide_cycles < 0) then
       call set_error_input(error, 'Error: num_guide_cycles must be >= 0')
       return
@@ -610,6 +664,7 @@ contains
     call w90_readwrite_get_keyword('num_no_guide_iter', found, error, &
                                    i_value=wann_control%guiding_centres%num_no_guide_iter)
     if (allocated(error)) return
+
     if (wann_control%guiding_centres%num_no_guide_iter < 0) then
       call set_error_input(error, 'Error: num_no_guide_iter must be >= 0')
       return
@@ -620,6 +675,7 @@ contains
     call w90_readwrite_get_keyword('fixed_step', found, error, &
                                    r_value=wann_control%fixed_step)
     if (allocated(error)) return
+
     if (found .and. (wann_control%fixed_step < 0.0_dp)) then
       call set_error_input(error, 'Error: fixed_step must be > 0')
       return
@@ -630,6 +686,7 @@ contains
     call w90_readwrite_get_keyword('trial_step', found, error, &
                                    r_value=wann_control%trial_step)
     if (allocated(error)) return
+
     if (found .and. wann_control%lfixstep) then
       call set_error_input(error, 'Error: cannot specify both fixed_step and trial_step')
       return
@@ -645,6 +702,7 @@ contains
     call w90_readwrite_get_keyword('slwf_num', found, error, &
                                    i_value=wann_control%constrain%slwf_num)
     if (allocated(error)) return
+
     if (found) then
       if (wann_control%constrain%slwf_num .gt. num_wann .or. &
           wann_control%constrain%slwf_num .lt. 1) then
@@ -659,6 +717,7 @@ contains
     call w90_readwrite_get_keyword('slwf_constrain', found, error, &
                                    l_value=wann_control%constrain%constrain)
     if (allocated(error)) return
+
     if (found .and. wann_control%constrain%constrain) then
       if (wann_control%constrain%selective_loc) then
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
@@ -681,6 +740,7 @@ contains
     call w90_readwrite_get_keyword('slwf_lambda', found, error, &
                                    r_value=wann_control%constrain%lambda)
     if (allocated(error)) return
+
     if (found) then
       if (wann_control%constrain%lambda < 0.0_dp) then
         call set_error_input(error, 'Error: slwf_lambda  must be positive.')
@@ -691,16 +751,14 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, &
-                                                      num_wann, bohr, stdout, seedname, error)
+                                                      num_wann, bohr, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(dis_control_type), intent(inout) :: dis_control
     type(dis_spheres_type), intent(inout) :: dis_spheres
     integer, intent(in) :: num_bands, num_wann
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: nkp, ierr
@@ -781,14 +839,12 @@ contains
   end subroutine w90_wannier90_readwrite_read_disentangle
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, error)
     !================================================!
     use w90_io, only: post_proc_flag
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(out) :: cp_pp, pp_only_A, postproc_setup
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -806,14 +862,14 @@ contains
     pp_only_A = .false.
     call w90_readwrite_get_keyword('calc_only_A', found, error, l_value=pp_only_A)
     if (allocated(error)) return
+
   end subroutine w90_wannier90_readwrite_read_post_proc
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_restart(w90_calculation, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_restart(w90_calculation, seedname, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(w90_calculation_type), intent(inout) :: w90_calculation
     character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
@@ -842,16 +898,14 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_outfiles(output_file, num_kpts, num_valence_bands, disentanglement, &
-                                                   gamma_only, stdout, seedname, error)
+                                                   gamma_only, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
     type(output_file_type), intent(inout) :: output_file
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_valence_bands
     logical, intent(in) :: disentanglement, gamma_only
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, hr_plot
@@ -924,15 +978,13 @@ contains
   end subroutine w90_wannier90_readwrite_read_outfiles
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_plot_info(wvfn_read, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_plot_info(wvfn_read, error)
     !================================================!
     ! Plotting
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
     type(wvfn_read_type), intent(out) :: wvfn_read
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -959,18 +1011,16 @@ contains
   end subroutine w90_wannier90_readwrite_read_plot_info
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_band_plot(band_plot, num_wann, has_kpath, bands_plot, error)
     !================================================!
     ! Plotting
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
     type(band_plot_type), intent(out) :: band_plot
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     logical, intent(in) :: has_kpath
     logical, intent(in) :: bands_plot
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: ierr, num_project
@@ -1028,17 +1078,15 @@ contains
   end subroutine w90_wannier90_readwrite_read_band_plot
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, wannier_plot, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_wann_plot(wann_plot, num_wann, wannier_plot, error)
     !================================================!
     ! Plotting
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
     type(wannier_plot_type), intent(out) :: wann_plot
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     logical, intent(in) :: wannier_plot
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i, loop, ierr, wann_plot_num
@@ -1048,17 +1096,20 @@ contains
 
     call w90_readwrite_get_vector_length('wannier_plot_supercell', found, i, error)
     if (allocated(error)) return
+
     if (found) then
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 1, error, &
                                               i_value=wann_plot%supercell)
         if (allocated(error)) return
+
         wann_plot%supercell(2) = wann_plot%supercell(1)
         wann_plot%supercell(3) = wann_plot%supercell(1)
       elseif (i .eq. 3) then
         call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 3, error, &
                                               i_value=wann_plot%supercell)
         if (allocated(error)) return
+
       else
         call set_error_input(error, 'Error: wannier_plot_supercell must be provided as either' &
                              //'one integer or a vector of three integers')
@@ -1158,14 +1209,12 @@ contains
   end subroutine w90_wannier90_readwrite_read_wann_plot
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, fermi_surface_plot, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_fermi_surface(fermi_surface_data, fermi_surface_plot, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(fermi_surface_plot_type), intent(out) :: fermi_surface_data
     logical, intent(in) :: fermi_surface_plot
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -1194,17 +1243,15 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_one_dim(w90_calculation, band_plot, real_space_ham, one_dim_axis, &
-                                                  tran_read_ht, stdout, seedname, error)
+                                                  tran_read_ht, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(w90_calculation_type), intent(in) :: w90_calculation
     type(band_plot_type), intent(in) :: band_plot
     type(real_space_ham_type), intent(inout) :: real_space_ham
     character(len=*), intent(out) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -1212,6 +1259,7 @@ contains
     one_dim_axis = 'none'
     call w90_readwrite_get_keyword('one_dim_axis', found, error, c_value=one_dim_axis)
     if (allocated(error)) return
+
     real_space_ham%one_dim_dir = 0
     if (index(one_dim_axis, 'x') > 0) real_space_ham%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) real_space_ham%one_dim_dir = 2
@@ -1232,14 +1280,12 @@ contains
   end subroutine w90_wannier90_readwrite_read_one_dim
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_hamil(hamiltonian, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(real_space_ham_type), intent(inout) :: hamiltonian
     real(kind=dp) :: rv_temp(3)
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -1254,6 +1300,7 @@ contains
     call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 3, error, &
                                           r_value=rv_temp)
     if (allocated(error)) return
+
     if (found) then
       hamiltonian%translation_centre_frac = rv_temp
       hamiltonian%automatic_translation = .false.
@@ -1261,14 +1308,12 @@ contains
   end subroutine w90_wannier90_readwrite_read_hamil
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_bloch_phase(use_bloch_phases, disentanglement, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(out) :: use_bloch_phases
     logical, intent(in) :: disentanglement
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -1276,6 +1321,7 @@ contains
     use_bloch_phases = .false.
     call w90_readwrite_get_keyword('use_bloch_phases', found, error, l_value=use_bloch_phases)
     if (allocated(error)) return
+
     if (disentanglement .and. use_bloch_phases) then
       call set_error_input(error, 'Error: Cannot use bloch phases for disentanglement')
       return
@@ -1284,7 +1330,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, &
-                                                        num_kpts, bohr, stdout, seedname, error)
+                                                        num_kpts, bohr, error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -1296,9 +1342,7 @@ contains
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(w90_calculation_type), intent(in) :: w90_calculation
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: library
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -1311,6 +1355,7 @@ contains
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call w90_readwrite_get_block_length('nnkpts', kmesh_info%explicit_nnkpts, rows, library, error)
     if (allocated(error)) return
+
     if (kmesh_info%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
@@ -1326,6 +1371,7 @@ contains
       call w90_readwrite_get_keyword_block('nnkpts', found, rows, 5, bohr, error, &
                                            i_value=nnkpts_block)
       if (allocated(error)) return
+
       ! check that postproc_setup is true
       if (.not. w90_calculation%postproc_setup) then
         call set_error_input(error, 'Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
@@ -1385,7 +1431,7 @@ contains
                                                       guiding_centres, proj_input, select_proj, &
                                                       num_proj, atom_data, recip_lattice, &
                                                       num_wann, gamma_only, spinors, library, &
-                                                      bohr, stdout, seedname, error)
+                                                      bohr, stdout, error)
     !================================================!
     use w90_error, only: w90_error_type
 
@@ -1400,7 +1446,6 @@ contains
     integer, intent(inout) :: num_proj
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: gamma_only
     logical, intent(in) :: spinors
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
@@ -1418,6 +1463,7 @@ contains
     call w90_readwrite_get_keyword('auto_projections', found, error, &
                                    l_value=proj_input%auto_projections)
     if (allocated(error)) return
+
     num_proj = 0
     call w90_readwrite_get_block_length('projections', found, i_temp, library, error)
     if (allocated(error)) return
@@ -1429,7 +1475,7 @@ contains
       endif
       lhasproj = .true.
       call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, proj, &
-                                         recip_lattice, .true., spinors, bohr, stdout, seedname, error)
+                                         recip_lattice, .true., spinors, bohr, stdout, error)
       if (allocated(error)) return
     else
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) then
@@ -1445,6 +1491,7 @@ contains
     call w90_readwrite_get_range_vector('select_projections', found, num_select_projections, &
                                         .true., error)
     if (allocated(error)) return
+
     if (found) then
       if (num_select_projections < 1) then
         call set_error_input(error, 'Error: problem reading select_projections')
@@ -1459,6 +1506,7 @@ contains
       call w90_readwrite_get_range_vector('select_projections', found, num_select_projections, &
                                           .false., error, select_projections)
       if (allocated(error)) return
+
       if (any(select_projections < 1)) then
         call set_error_input(error, 'Error: select_projections must contain positive numbers')
         return
@@ -1504,8 +1552,9 @@ contains
 
     if (lhasproj) then
       call w90_readwrite_get_projections(num_proj, atom_data, num_wann, proj_input, proj, &
-                                         recip_lattice, .false., spinors, bohr, stdout, seedname, error)
+                                         recip_lattice, .false., spinors, bohr, stdout, error)
       if (allocated(error)) return
+
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj%site(:, select_proj%proj2wann_map(loop)) = proj_input%site(:, loop)
@@ -1529,8 +1578,9 @@ contains
   end subroutine w90_wannier90_readwrite_read_projections
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, real_lattice, &
-                                                              num_wann, library, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, &
+                                                              real_lattice, num_wann, library, &
+                                                              stdout, error)
     !================================================!
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
@@ -1540,7 +1590,6 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     logical, intent(in) :: library
-    character(len=50), intent(in)  :: seedname
 
     integer :: i_temp
     logical :: found
@@ -1548,6 +1597,7 @@ contains
     ! Constrained centres
     call w90_readwrite_get_block_length('slwf_centres', found, i_temp, library, error)
     if (allocated(error)) return
+
     if (found) then
       if (wann_control%constrain%constrain) then
         ! Allocate array for constrained centres
@@ -1556,6 +1606,7 @@ contains
                                                   wann_control%guiding_centres%centres, &
                                                   num_wann, real_lattice, error)
         if (allocated(error)) return
+
       else
         write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
       end if
@@ -1573,10 +1624,12 @@ contains
                                                     wann_control%guiding_centres%centres, &
                                                     num_wann, real_lattice, error)
           if (allocated(error)) return
+
         end if
       end if
     end if
     ! Warning
+!jj fixme
     if (wann_control%constrain%constrain .and. allocated(wann_control%guiding_centres%centres) &
         .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
@@ -1584,13 +1637,15 @@ contains
   end subroutine w90_wannier90_readwrite_read_constrained_centres
 
   !================================================!
-  subroutine w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
-                                           fermi_surface_data, kpt_latt, output_file, wvfn_read, wann_control, proj, &
-                                           proj_input, real_space_ham, select_proj, kpoint_path, tran, print_output, &
-                                           wannier_data, wann_plot, w90_extra_io, w90_calculation, real_lattice, &
-                                           symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                                           optimisation, cp_pp, gamma_only, lsitesymmetry, spinors, &
-                                           use_bloch_phases, stdout, error)
+  subroutine w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, &
+                                           fermi_energy_list, fermi_surface_data, kpt_latt, &
+                                           output_file, wvfn_read, wann_control, proj, proj_input, &
+                                           real_space_ham, select_proj, kpoint_path, tran, &
+                                           print_output, wannier_data, wann_plot, w90_extra_io, &
+                                           w90_calculation, real_lattice, symmetrize_eps, mp_grid, &
+                                           num_bands, num_kpts, num_proj, num_wann, optimisation, &
+                                           cp_pp, gamma_only, lsitesymmetry, spinors, &
+                                           use_bloch_phases, stdout)
     !================================================!
     !
     !! write wannier90 parameters to stdout
@@ -1621,7 +1676,6 @@ contains
     type(w90_extra_io_type), intent(in) :: w90_extra_io
     type(wannier_plot_type), intent(in) :: wann_plot
     type(proj_input_type), intent(in) :: proj
-    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -2048,10 +2102,11 @@ contains
   end subroutine w90_wannier90_readwrite_write
 
   !================================================!
-  subroutine w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
-                                                 kmesh_input, kpt_latt, wann_control, proj, proj_input, select_proj, &
-                                                 kpoint_path, wannier_data, wann_plot, w90_extra_io, eigval, &
-                                                 seedname, stdout, error)
+  subroutine w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
+                                                 exclude_bands, kmesh_input, kpt_latt, &
+                                                 wann_control, proj, proj_input, select_proj, &
+                                                 kpoint_path, wannier_data, wann_plot, &
+                                                 w90_extra_io, eigval, error)
     !================================================!
     use w90_error, only: w90_error_type
 
@@ -2073,19 +2128,18 @@ contains
     type(proj_input_type), intent(inout) :: proj_input
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
 
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: ierr
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
                                dis_manifold, atom_data, eigval, kpoint_path, error)
+    if (allocated(error)) return
+
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
       if (ierr /= 0) then
@@ -2201,8 +2255,9 @@ contains
   end subroutine w90_wannier90_readwrite_w90_dealloc
 
   !================================================!
-  subroutine w90_wannier90_readwrite_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, kpt_latt, num_kpts, &
-                                                 dis_manifold, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
+  subroutine w90_wannier90_readwrite_write_chkpt(chkpt, exclude_bands, wannier_data, kmesh_info, &
+                                                 kpt_latt, num_kpts, dis_manifold, num_bands, &
+                                                 num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                                  mp_grid, real_lattice, omega_invariant, &
                                                  have_disentangled, stdout, seedname)
     !================================================!
@@ -2535,7 +2590,7 @@ contains
                                           mp_grid, first_segment, num_bands, num_kpts, num_proj, &
                                           num_wann, optimisation, eig_found, cp_pp, gamma_only, &
                                           have_disentangled, lhasproj, lsitesymmetry, &
-                                          use_bloch_phases, seedname, stdout, error, comm)
+                                          use_bloch_phases, error, comm)
     !================================================!
     !
     !! Distribute the various parameters across processors
@@ -2577,7 +2632,6 @@ contains
     integer, intent(inout) :: first_segment
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
-    integer, intent(inout) :: stdout
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_proj
     integer, intent(inout) :: num_kpts
@@ -2588,8 +2642,6 @@ contains
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: symmetrize_eps
-
-    character(len=50), intent(in)  :: seedname
 
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: cp_pp
@@ -2608,17 +2660,29 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_calculation%postproc_setup, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(cp_pp, 1, error, comm)
-    !if (.not. pw90_common%effective_model) then
+    if (allocated(error)) return
+
     call comms_bcast(mp_grid(1), 3, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(num_kpts, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(num_bands, 1, error, comm)
-    !endif
+    if (allocated(error)) return
+
     call comms_bcast(num_wann, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(print_output%timing_level, 1, error, comm)
+    if (allocated(error)) return
 
     disentanglement = (num_bands > num_wann)
 
@@ -2627,39 +2691,51 @@ contains
     iprintroot = print_output%iprint
     print_output%iprint = 0
     call comms_bcast(print_output%iprint, 1, error, comm)
+    if (allocated(error)) return
     if (on_root) print_output%iprint = iprintroot
     !______________________________________
 
     !call comms_bcast(energy_unit, 1, error, comm)
     call comms_bcast(print_output%length_unit, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wvfn_read%formatted, 1, error, comm)
+    if (allocated(error)) return
+
     !call comms_bcast(postw90_oper%spn_formatted, 1)
+    !if (allocated(error)) return
+
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
+    !if (allocated(error)) return
+
     !call comms_bcast(berry_uHu_formatted, 1)
+    !if (allocated(error)) return
+
     call comms_bcast(wvfn_read%spin_channel, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%num_dump_cycles, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%num_print_cycles, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(atom_data%num_atoms, 1, error, comm)   ! Ivo: not used in postw90, right?
+    if (allocated(error)) return
+
     call comms_bcast(atom_data%num_species, 1, error, comm) ! Ivo: not used in postw90, right?
+    if (allocated(error)) return
+
     call comms_bcast(real_lattice(1, 1), 9, error, comm)
-    !call comms_bcast(recip_lattice(1, 1), 9, error, comm)
-    !call comms_bcast(real_metric(1, 1), 9)
-    !call comms_bcast(recip_metric(1, 1), 9)
-    !call comms_bcast(cell_volume, 1)
-    !call comms_bcast(dos_data%energy_step, 1)
-    !call comms_bcast(dos_data%adpt_smr, 1)
-    !call comms_bcast(dos_data%smr_index, 1)
-    !call comms_bcast(dos_data%kmesh_spacing, 1)
-    !call comms_bcast(dos_data%kmesh(1), 3)
-    !call comms_bcast(dos_data%adpt_smr_max, 1)
-    !call comms_bcast(dos_data%smr_fixed_en_width, 1)
-    !call comms_bcast(dos_data%adpt_smr_fac, 1)
-    !call comms_bcast(dos_data%num_project, 1)
+    if (allocated(error)) return
+
     num_exclude_bands = 0
     if (on_root) then
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
     endif
     call comms_bcast(num_exclude_bands, 1, error, comm)
+    if (allocated(error)) return
+
     if (num_exclude_bands > 0) then
       if (.not. on_root) then
         allocate (exclude_bands(num_exclude_bands), stat=ierr)
@@ -2670,19 +2746,42 @@ contains
       endif
 
       call comms_bcast(exclude_bands(1), num_exclude_bands, error, comm)
+      if (allocated(error)) return
     end if
 
     call comms_bcast(gamma_only, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_manifold%win_min, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_manifold%win_max, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_manifold%froz_min, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_manifold%froz_max, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_control%num_iter, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_control%mix_ratio, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_control%conv_tol, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_control%conv_window, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_spheres%first_wann, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_spheres%num, 1, error, comm)
+    if (allocated(error)) return
+
     if (dis_spheres%num > 0) then
       if (.not. on_root) then
         allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
@@ -2692,18 +2791,34 @@ contains
         endif
       endif
       call comms_bcast(dis_spheres%spheres(1, 1), 4*dis_spheres%num, error, comm)
+      if (allocated(error)) return
+
     end if
     call comms_bcast(wann_control%num_iter, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%num_cg_steps, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%conv_tol, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%conv_window, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%guiding_centres%enable, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_calculation%wannier_plot, 1, error, comm)
+    if (allocated(error)) return
+
     wann_plot_num = 0
     if (on_root) then
       if (allocated(wann_plot%list)) wann_plot_num = size(wann_plot%list)
     endif
     call comms_bcast(wann_plot_num, 1, error, comm)
+    if (allocated(error)) return
+
     if (wann_plot_num > 0) then
       if (.not. on_root) then
         allocate (wann_plot%list(wann_plot_num), stat=ierr)
@@ -2713,22 +2828,45 @@ contains
         endif
       endif
       call comms_bcast(wann_plot%list(1), wann_plot_num, error, comm)
+      if (allocated(error)) return
+
     end if
     call comms_bcast(wann_plot%supercell(1), 3, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_plot%format, len(wann_plot%format), error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_plot%mode, len(wann_plot%mode), error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_plot%spinor_mode, len(wann_plot%spinor_mode), error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_u_matrices, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_calculation%bands_plot, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_bvec, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(first_segment, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(band_plot%format, len(band_plot%format), error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(band_plot%mode, len(band_plot%mode), error, comm)
+    if (allocated(error)) return
+
     num_project = 0
     if (on_root) then
       if (allocated(band_plot%project)) num_project = size(band_plot%project)
     endif
     call comms_bcast(num_project, 1, error, comm)
+    if (allocated(error)) return
 
     if (num_project > 0) then
       if (.not. on_root) then
@@ -2739,24 +2877,56 @@ contains
         endif
       endif
       call comms_bcast(band_plot%project(1), num_project, error, comm)
-    end if
-    call comms_bcast(real_space_ham%system_dim, 1, error, comm)
-    call comms_bcast(output_file%write_hr, 1, error, comm)
-    call comms_bcast(output_file%write_rmn, 1, error, comm)
-    call comms_bcast(output_file%write_tb, 1, error, comm)
-    call comms_bcast(real_space_ham%hr_cutoff, 1, error, comm)
-    call comms_bcast(real_space_ham%dist_cutoff, 1, error, comm)
-    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), error, comm)
-    call comms_bcast(real_space_ham%dist_cutoff_hc, 1, error, comm)
-    !call comms_bcast(one_dim_axis, len(one_dim_axis), error, comm)
-    call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
-    call comms_bcast(ws_region%ws_distance_tol, 1, error, comm)
-    call comms_bcast(ws_region%ws_search_size(1), 3, error, comm)
-    call comms_bcast(w90_calculation%fermi_surface_plot, 1, error, comm)
-    call comms_bcast(fermi_surface_data%num_points, 1, error, comm)
-    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), error, comm)
-    !call comms_bcast(fermi_energy, 1) !! used?
+      if (allocated(error)) return
 
+    end if
+
+    call comms_bcast(real_space_ham%system_dim, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(output_file%write_hr, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(output_file%write_rmn, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(output_file%write_tb, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(real_space_ham%hr_cutoff, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(real_space_ham%dist_cutoff, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(real_space_ham%dist_cutoff_mode, len(real_space_ham%dist_cutoff_mode), error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(real_space_ham%dist_cutoff_hc, 1, error, comm)
+    if (allocated(error)) return
+
+    !call comms_bcast(one_dim_axis, len(one_dim_axis), error, comm)
+    !if (allocated(error)) return
+
+    call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(ws_region%ws_distance_tol, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(ws_region%ws_search_size(1), 3, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(w90_calculation%fermi_surface_plot, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(fermi_surface_data%num_points, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), error, comm)
+    if (allocated(error)) return
+
+    !call comms_bcast(fermi_energy, 1) !! used?
     !call comms_bcast(pw90_calcs%berry, 1)
     !call comms_bcast(berry%task, len(berry%task))
     !call comms_bcast(berry%kmesh_spacing, 1)
@@ -2793,6 +2963,8 @@ contains
       if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     endif
     call comms_bcast(fermi_n, 1, error, comm)
+    if (allocated(error)) return
+
     !call comms_bcast(dos_data%energy_min, 1)
     !call comms_bcast(dos_data%energy_max, 1)
     !call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
@@ -2815,6 +2987,8 @@ contains
     !call comms_bcast(pw90_ham%use_degen_pert, 1)
     !call comms_bcast(pw90_ham%degen_thr, 1)
     call comms_bcast(w90_system%num_valence_bands, 1, error, comm)
+    if (allocated(error)) return
+
     !call comms_bcast(pw90_calcs%dos, 1)
     !call comms_bcast(dos_data%task, len(dos_data%task))
     !call comms_bcast(pw90_calcs%kpath, 1)
@@ -2861,66 +3035,174 @@ contains
     ! [gp-end]
 
     call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
+    if (allocated(error)) return
+
     !call comms_bcast(w90_calculation%disentanglement, 1, error, comm)
+    !if (allocated(error)) return
 
     call comms_bcast(w90_calculation%transport, 1, error, comm)
-    call comms_bcast(tran%easy_fix, 1, error, comm)
-    call comms_bcast(tran%mode, len(tran%mode), error, comm)
-    call comms_bcast(tran%win_min, 1, error, comm)
-    call comms_bcast(tran%win_max, 1, error, comm)
-    call comms_bcast(tran%energy_step, 1, error, comm)
-    call comms_bcast(tran%num_bb, 1, error, comm)
-    call comms_bcast(tran%num_ll, 1, error, comm)
-    call comms_bcast(tran%num_rr, 1, error, comm)
-    call comms_bcast(tran%num_cc, 1, error, comm)
-    call comms_bcast(tran%num_lc, 1, error, comm)
-    call comms_bcast(tran%num_cr, 1, error, comm)
-    call comms_bcast(tran%num_bandc, 1, error, comm)
-    call comms_bcast(tran%write_ht, 1, error, comm)
-    call comms_bcast(tran%read_ht, 1, error, comm)
-    call comms_bcast(tran%use_same_lead, 1, error, comm)
-    call comms_bcast(tran%num_cell_ll, 1, error, comm)
-    call comms_bcast(tran%num_cell_rr, 1, error, comm)
-    call comms_bcast(tran%group_threshold, 1, error, comm)
-    call comms_bcast(real_space_ham%translation_centre_frac(1), 3, error, comm)
-    call comms_bcast(kmesh_input%num_shells, 1, error, comm)
-    call comms_bcast(kmesh_input%skip_B1_tests, 1, error, comm)
-    call comms_bcast(kmesh_info%explicit_nnkpts, 1, error, comm)
+    if (allocated(error)) return
 
-    !call comms_bcast(calc_only_A, 1, error, comm) ! only used on_root
+    call comms_bcast(tran%easy_fix, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%mode, len(tran%mode), error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%win_min, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%win_max, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%energy_step, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_bb, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_ll, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_rr, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_cc, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_lc, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_cr, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_bandc, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%write_ht, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%read_ht, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%use_same_lead, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_cell_ll, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%num_cell_rr, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(tran%group_threshold, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(real_space_ham%translation_centre_frac(1), 3, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(kmesh_input%num_shells, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(kmesh_input%skip_B1_tests, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(kmesh_info%explicit_nnkpts, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(use_bloch_phases, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_calculation%restart, len(w90_calculation%restart), error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_r2mn, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%guiding_centres%num_guide_cycles, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%guiding_centres%num_no_guide_iter, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%fixed_step, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%trial_step, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%precond, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_proj, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(print_output%timing_level, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_system%spinors, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(w90_system%num_elec_per_state, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(real_space_ham%translate_home_cell, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_xyz, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_hr_diag, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%conv_noise_amp, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%conv_noise_num, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_plot%radius, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_plot%scale, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(kmesh_input%tol, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(optimisation, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(output_file%write_vdw_data, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(print_output%lenconfac, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%lfixstep, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(lsitesymmetry, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_manifold%frozen_states, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(symmetrize_eps, 1, error, comm)
+    if (allocated(error)) return
 
     !vv: Constrained centres
     call comms_bcast(wann_control%constrain%slwf_num, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%constrain%constrain, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%constrain%lambda, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_control%constrain%selective_loc, 1, error, comm)
+    if (allocated(error)) return
+
     if (wann_control%constrain%selective_loc .and. wann_control%constrain%constrain) then
       if (.not. on_root) then
         !allocate (ccentres_frac(num_wann, 3), stat=ierr)
@@ -2934,15 +3216,20 @@ contains
           return
         endif
       endif
-      !call comms_bcast(ccentres_frac(1, 1), 3*num_wann, error, comm)
       call comms_bcast(wann_control%constrain%centres(1, 1), 3*num_wann, error, comm)
+      if (allocated(error)) return
     end if
 
     ! vv: automatic projections
     call comms_bcast(proj_input%auto_projections, 1, error, comm)
+    if (allocated(error)) return
 
     call comms_bcast(num_proj, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(lhasproj, 1, error, comm)
+    if (allocated(error)) return
+
     if (lhasproj) then
       if (.not. on_root) then
         allocate (proj_input%site(3, num_proj), stat=ierr)
@@ -2957,7 +3244,10 @@ contains
         endif
       endif
       call comms_bcast(proj_input%site(1, 1), 3*num_proj, error, comm)
+      if (allocated(error)) return
+
       call comms_bcast(wann_control%guiding_centres%centres(1, 1), 3*num_wann, error, comm)
+      if (allocated(error)) return
     endif
 
     ! These variables are different from the ones above in that they are
@@ -3010,16 +3300,22 @@ contains
     !if (.not. pw90_common%effective_model) then
     if (eig_found) then
       call comms_bcast(eigval(1, 1), num_bands*num_kpts, error, comm)
+      if (allocated(error)) return
     end if
     call comms_bcast(kpt_latt(1, 1), 3*num_kpts, error, comm)
-    !endif
+    if (allocated(error)) return
 
     !if (.not. pw90_common%effective_model .and. .not. w90_calculation%explicit_nnkpts) then
     if (.not. kmesh_info%explicit_nnkpts) then
 
       call comms_bcast(kmesh_info%nnh, 1, error, comm)
+      if (allocated(error)) return
+
       call comms_bcast(kmesh_info%nntot, 1, error, comm)
+      if (allocated(error)) return
+
       call comms_bcast(kmesh_info%wbtot, 1, error, comm)
+      if (allocated(error)) return
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -3055,18 +3351,35 @@ contains
       end if
 
       call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, error, comm)
-      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, error, comm)
-      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, error, comm)
-      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, error, comm)
-      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, error, comm)
-      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, error, comm)
+      if (allocated(error)) return
 
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, error, comm)
+      if (allocated(error)) return
+
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, error, comm)
+      if (allocated(error)) return
+
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, error, comm)
+      if (allocated(error)) return
+
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, error, comm)
+      if (allocated(error)) return
+
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, error, comm)
+      if (allocated(error)) return
     endif
 
     call comms_bcast(wann_omega%total, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_omega%tilde, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(wann_omega%invariant, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(have_disentangled, 1, error, comm)
+    if (allocated(error)) return
 
     if (.not. on_root) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)

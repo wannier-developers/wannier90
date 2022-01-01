@@ -116,6 +116,7 @@ contains
 
     use w90_wannier90_types, only: sitesym_type
     use w90_error, only: w90_error_type, set_error_sym
+
     implicit none
 
     ! arguments
@@ -128,9 +129,9 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: ndim
 
-    complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: umat(:, :, :) !(ndim, num_wann, num_kpts)
 
-    logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
+    logical, optional, intent(in) :: lwindow_in(:, :) !(num_bands, num_kpts)
 
     ! local variables
     integer :: ik, ir, isym, irk, n
@@ -165,6 +166,7 @@ contains
                               error)
       endif
       if (allocated(error)) return
+
       do isym = 2, sitesym%nsymmetry
         irk = sitesym%kptsym(isym, ir)
         if (ldone(irk)) cycle
@@ -442,13 +444,12 @@ contains
         ! size of umat: umat(ndim,num_wann)
         !
         ! cmat_sub = U(k) D(R,k)
-        call zgemm('N', 'N', ntmp, num_wann, num_wann, cmplx_1, &
-                   umat, ndim, sitesym%d_matrix_wann(:, :, isym, ir), num_wann, &
-                   cmplx_0, cmat_sub, ndim)
+        call zgemm('N', 'N', ntmp, num_wann, num_wann, cmplx_1, umat, ndim, &
+                   sitesym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, cmat_sub, ndim)
         ! cmat = d^{+}(R,k) * cmat_sub
-        call zgemm('C', 'N', ntmp, num_wann, ntmp, cmplx_1, &
-                   sitesym%d_matrix_band(:, :, isym, ir), ndim, cmat_sub, ndim, &
-                   cmplx_0, cmat, ndim)
+        call zgemm('C', 'N', ntmp, num_wann, ntmp, cmplx_1, sitesym%d_matrix_band(:, :, isym, ir), &
+                   ndim, cmat_sub, ndim, cmplx_0, cmat, ndim)
+
         usum(:, :) = usum(:, :) + cmat(:, :)
         ! check
         cmat2(:, :) = cmat2(:, :) - &
@@ -467,6 +468,7 @@ contains
       usum = usum/ngk
       call orthogonalize_u(ndim, num_wann, usum, ntmp, error)
       if (allocated(error)) return
+
       umat(:, :) = usum
     enddo ! iter
 
@@ -478,6 +480,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type, set_error_sym, set_error_lapack
+
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
@@ -504,8 +507,7 @@ contains
     allocate (WORK(LWORK))
 
     ! Singular-value decomposition
-    call ZGESVD('A', 'A', n, m, smat, n, &
-                eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
+    call zgesvd('A', 'A', n, m, smat, n, eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
       call set_error_lapack(error, ' ERROR: IN ZGESVD IN orthogonalize_u')
       return
@@ -541,6 +543,7 @@ contains
 
     use w90_wannier90_types, only: sitesym_type
     use w90_error, only: w90_error_type, set_error_lapack
+
     implicit none
 
     ! arguments
@@ -552,12 +555,12 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: ik, n
 
-    complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
-    complex(kind=dp), intent(out) :: lambda(num_wann, num_wann)
-    complex(kind=dp), intent(inout) :: umat(num_bands, num_wann)
+    complex(kind=dp), intent(in) :: zmat(:, :) !(num_bands, num_bands)
+    complex(kind=dp), intent(out) :: lambda(:, :) !(num_wann, num_wann)
+    complex(kind=dp), intent(inout) :: umat(:, :) !(num_bands, num_wann)
 
     ! local variables
-    complex(kind=dp) :: umatnew(num_bands, num_wann)
+    complex(kind=dp) :: umatnew(num_bands, num_wann) !jj normally don't we alloc explicitly?
     complex(kind=dp) :: ZU(num_bands, num_wann)
     complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
     integer :: i, m, INFO, IFAIL(2), IWORK(5*2)
@@ -568,16 +571,15 @@ contains
 
     do iter = 1, niter
       !  Z*U
-      call zgemm('N', 'N', n, num_wann, n, cmplx_1, &
-                 zmat, num_bands, umat, num_bands, &
-                 cmplx_0, ZU, num_bands)
+      call zgemm('N', 'N', n, num_wann, n, cmplx_1, zmat, num_bands, umat, num_bands, cmplx_0, ZU, &
+                 num_bands)
       ! lambda = U^{+}*Z*U
-      call zgemm('C', 'N', num_wann, num_wann, n, cmplx_1, &
-                 umat, num_bands, ZU, num_bands, &
+      call zgemm('C', 'N', num_wann, num_wann, n, cmplx_1, umat, num_bands, ZU, num_bands, &
                  cmplx_0, lambda, num_wann)
 
       deltaU(:, :) = ZU(:, :) - matmul(umat, lambda)
       if (sum(abs(deltaU(:n, :))) .lt. 1e-10) return
+
       ! band-by-band minimization
       do i = 1, num_wann
         ! diagonalize 2x2 matrix
@@ -617,6 +619,7 @@ contains
       call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
                             stdout, error, n)
       if (allocated(error)) return
+
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 
@@ -737,4 +740,3 @@ contains
   end subroutine sitesym_dealloc
 
 end module w90_sitesym
-
