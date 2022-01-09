@@ -185,7 +185,7 @@ contains
     end if
 
     call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, &
-                           pw90_kpath, pw90_berry%curv_unit, stdout, seedname, error, comm)
+                           pw90_kpath, pw90_berry%curv_unit, stdout, error, comm)
     if (allocated(error)) return
 
     ! Set up the needed Wannier matrix elements
@@ -297,8 +297,7 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, seedname, &
-                                       stdout, error)
+                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
         if (allocated(error)) return
 
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, error)
@@ -309,8 +308,8 @@ contains
         ! chosen spin quantization axis
         !
         if (pw90_kpath%bands_colour == 'spin') then
-          call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
-                           real_lattice, spn_k, mp_grid, num_wann, seedname, stdout, error)
+          call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error)
           if (allocated(error)) return
 
           my_color(:, loop_kpt) = spn_k(:)
@@ -1131,7 +1130,7 @@ contains
   !                   PRIVATE PROCEDURES                      !
   !================================================!
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, fermi_energy_list, &
-                               pw90_kpath, berry_curv_unit, stdout, seedname, error, comm)
+                               pw90_kpath, berry_curv_unit, stdout, error, comm)
     !================================================!
 
     use w90_postw90_types, only: pw90_kpath_mod_type
@@ -1143,7 +1142,6 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(len=*), intent(in) :: berry_curv_unit
     logical, intent(in) :: plot_bands, plot_curv, plot_morb, plot_shc
 

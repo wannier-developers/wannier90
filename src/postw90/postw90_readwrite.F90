@@ -66,15 +66,16 @@ contains
 
   !================================================!
 
-  subroutine w90_postw90_readwrite_read(ws_region, w90_system, exclude_bands, print_output, wannier_data, &
-                                        kmesh_input, kpt_latt, num_kpts, dis_manifold, fermi_energy_list, &
-                                        atom_data, num_bands, num_wann, eigval, mp_grid, real_lattice, &
-                                        kpoint_path, pw90_calculation, pw90_oper_read, scissors_shift, &
-                                        effective_model, pw90_spin, pw90_band_deriv_degen, pw90_kpath, &
-                                        pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
-                                        pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, eig_found, &
-                                        pw90_extra_io, gamma_only, bohr, optimisation, stdout, seedname, &
-                                        error)
+  subroutine w90_postw90_readwrite_read(ws_region, w90_system, exclude_bands, print_output, &
+                                        wannier_data, kmesh_input, kpt_latt, num_kpts, &
+                                        dis_manifold, fermi_energy_list, atom_data, num_bands, &
+                                        num_wann, eigval, mp_grid, real_lattice, kpoint_path, &
+                                        pw90_calculation, pw90_oper_read, scissors_shift, &
+                                        effective_model, pw90_spin, pw90_band_deriv_degen, &
+                                        pw90_kpath, pw90_kslice, pw90_dos, pw90_berry, &
+                                        pw90_spin_hall, pw90_gyrotropic, pw90_geninterp, &
+                                        pw90_boltzwann, eig_found, pw90_extra_io, gamma_only, &
+                                        bohr, optimisation, stdout, seedname, error)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -148,12 +149,12 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_algorithm_control(optimisation, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname, error)
+    call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error)
+    call w90_wannier90_readwrite_read_effective_model(effective_model, error)
     call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
                                   bohr, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname, error)
+    call w90_wannier90_readwrite_read_oper(pw90_oper_read, error)
     call w90_readwrite_read_num_wann(num_wann, error)
     if (allocated(error)) return
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error) !for read_chkpt
@@ -173,20 +174,23 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_pw90spin(pw90_calculation%spin_moment, pw90_calculation%spin_decomp, &
-                                               pw90_spin, w90_system%num_elec_per_state, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, pw90_extra_io%smear%fixed_width, &
-                                                 pw90_extra_io%smear%type_index, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_extra_io%smear, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, pw90_spin_hall, pw90_berry%task, &
-                                                stdout, seedname, error)
-    call w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
-                                          pw90_extra_io%smear, dos_plot, stdout, seedname, error)
+    call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, error)
+    call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, error)
+    call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, error)
+    call w90_wannier90_readwrite_read_pw90spin(pw90_calculation%spin_moment, &
+                                               pw90_calculation%spin_decomp, pw90_spin, &
+                                               w90_system%num_elec_per_state, error)
+    call w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, &
+                                                 pw90_extra_io%smear%fixed_width, &
+                                                 pw90_extra_io%smear%type_index, error)
+    call w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_extra_io%smear, &
+                                            error)
+    call w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, pw90_spin_hall, &
+                                                pw90_berry%task, error)
+    call w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, error)
+    call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, error)
+    call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, &
+                                          num_wann, pw90_extra_io%smear, dos_plot, error)
     call w90_readwrite_read_ws_data(ws_region, error)
     if (allocated(error)) return
     call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
@@ -200,12 +204,13 @@ contains
     if (eig_found) dis_manifold%win_max = maxval(eigval)
     call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, stdout, seedname, error)
+    call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, error)
     call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
-                                                pw90_calculation%boltzwann, pw90_extra_io%boltz_2d_dir, stdout, &
-                                                seedname, error)
-    call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
-                                                   fermi_energy_list, eigval, pw90_extra_io, stdout, seedname, error)
+                                                pw90_calculation%boltzwann, &
+                                                pw90_extra_io%boltz_2d_dir, error)
+    call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, &
+                                                   dis_manifold, fermi_energy_list, eigval, &
+                                                   pw90_extra_io, error)
     call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_read_kmesh_data(kmesh_input, error)
@@ -214,13 +219,13 @@ contains
     call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
                                     bohr, stdout, error)
     if (allocated(error)) return
-    call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
-                                                   recip_lattice, stdout, seedname, error)
-    call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
-                                                  pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
-                                                  pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
-                                                  stdout, seedname, error)
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error) !pw90_write
+    call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, &
+                                                   pw90_extra_io%global_kmesh, recip_lattice, error)
+    call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, &
+                                                  pw90_spin, pw90_gyrotropic, pw90_boltzwann, &
+                                                  recip_lattice, pw90_extra_io%global_kmesh_set, &
+                                                  pw90_extra_io%global_kmesh, error)
+    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_clean_infile(stdout, seedname, error)
     if (allocated(error)) return
@@ -232,13 +237,11 @@ contains
   end subroutine w90_postw90_readwrite_read
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(out) :: pw90_calculation
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     logical :: found
 
@@ -259,8 +262,7 @@ contains
     if (allocated(error)) return
 
     pw90_calculation%gyrotropic = .false.
-    call w90_readwrite_get_keyword('gyrotropic', found, error, &
-                                   l_value=pw90_calculation%gyrotropic)
+    call w90_readwrite_get_keyword('gyrotropic', found, error, l_value=pw90_calculation%gyrotropic)
     if (allocated(error)) return
 
     pw90_calculation%geninterp = .false.
@@ -273,13 +275,11 @@ contains
   end subroutine w90_wannier90_readwrite_read_pw90_calcs
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_effective_model(effective_model, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(inout) :: effective_model
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -289,13 +289,11 @@ contains
   end subroutine w90_wannier90_readwrite_read_effective_model
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_oper(pw90_oper_read, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -312,16 +310,14 @@ contains
   end subroutine w90_wannier90_readwrite_read_oper
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_kslice(kslicel, pw90_kslice, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_kslice(kslicel, pw90_kslice, error)
     !================================================!
 
     use w90_error, only: w90_error_type
 
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(in) :: kslicel
     type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i
@@ -409,15 +405,13 @@ contains
   end subroutine w90_wannier90_readwrite_read_kslice
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_smearing(pw90_smearing, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_smearing(pw90_smearing, error)
     !================================================!
 
     use w90_error, only: w90_error_type
 
     implicit none
     type(pw90_smearing_type), intent(out) :: pw90_smearing
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -468,13 +462,11 @@ contains
   end subroutine w90_wannier90_readwrite_read_smearing
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_scissors_shift(scissors_shift, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_scissors_shift(scissors_shift, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: scissors_shift
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -486,19 +478,17 @@ contains
   end subroutine w90_wannier90_readwrite_read_scissors_shift
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_pw90spin(spin_moment, spin_decomp, pw90_spin, num_elec_per_state, &
-                                                   stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_pw90spin(spin_moment, spin_decomp, pw90_spin, &
+                                                   num_elec_per_state, error)
     !================================================!
 
     use w90_error, only: w90_error_type
 
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(out) :: spin_moment ! from pw90_calculation
     logical, intent(out) :: spin_decomp ! from pw90_common
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     integer, intent(in) :: num_elec_per_state
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -528,19 +518,17 @@ contains
   end subroutine w90_wannier90_readwrite_read_pw90spin
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, smr_fixed_en_width, smr_index, &
-                                                     stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, &
+                                                     smr_fixed_en_width, smr_index, error)
     !================================================!
 
     use w90_error, only: w90_error_type
 
     implicit none
-    integer, intent(in) :: stdout
     type(pw90_gyrotropic_type), intent(out) :: pw90_gyrotropic
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: smr_fixed_en_width
     integer, intent(in) :: smr_index
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp) :: smr_max_arg
@@ -648,18 +636,15 @@ contains
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_smearing, &
-                                                stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_smearing, error)
     !================================================!
 
     use w90_error, only: w90_error_type
 
     implicit none
-    integer, intent(in) :: stdout
     type(pw90_calculation_type), intent(in) :: pw90_calculation
     type(pw90_berry_mod_type), intent(out) :: pw90_berry
     type(pw90_smearing_type), intent(in) :: pw90_smearing
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -819,8 +804,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, &
-                                                    pw90_spin_hall, berry_task, stdout, seedname, &
-                                                    error)
+                                                    pw90_spin_hall, berry_task, error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -831,11 +815,9 @@ contains
     type(pw90_spin_hall_type), intent(out) :: pw90_spin_hall
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: scissors_shift
 
     character(len=*), intent(in) :: berry_task
-    character(len=50), intent(in)  :: seedname
 
     logical :: found
 
@@ -916,13 +898,11 @@ contains
   end subroutine w90_wannier90_readwrite_read_spin_hall
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, error)
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    integer, intent(in) :: stdout
     type(pw90_band_deriv_degen_type), intent(out) :: pw90_band_deriv_degen
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
@@ -941,7 +921,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, &
-                                                     stdout, seedname, error)
+                                                     error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -952,9 +932,6 @@ contains
     type(pw90_kpath_mod_type), intent(out) :: pw90_kpath
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(w90_error_type), allocatable, intent(out) :: error
-
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     logical :: found
 
@@ -1001,8 +978,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_pw90_kpath
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
-                                              pw90_smearing, dos_plot, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, &
+                                              num_wann, pw90_smearing, dos_plot, error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -1013,11 +990,9 @@ contains
     type(pw90_dos_mod_type), intent(out) :: pw90_dos
     type(pw90_smearing_type), intent(in) :: pw90_smearing
 
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     logical, intent(out) :: dos_plot
     logical, intent(in) :: found_fermi_energy
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i, ierr
@@ -1134,13 +1109,14 @@ contains
     pw90_dos%smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('dos_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', &
-                                                                               error)
+    if (found) then
+      pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', error)
+    endif
 
   end subroutine w90_wannier90_readwrite_read_dos
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_geninterp(pw90_geninterp, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_geninterp(pw90_geninterp, error)
     !================================================!
     ! [gp-begin, Jun 1, 2012]
     ! General band interpolator (pw90_geninterp)
@@ -1151,9 +1127,6 @@ contains
 
     type(pw90_geninterp_mod_type), intent(out) :: pw90_geninterp
     type(w90_error_type), allocatable, intent(out) :: error
-
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     logical :: found
 
@@ -1170,8 +1143,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_geninterp
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_smearing, do_boltzwann, &
-                                                    boltz_2d_dir, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_smearing, &
+                                                    do_boltzwann, boltz_2d_dir, error)
     !================================================!
     ! [gp-begin, Jun 1, 2012]
     ! General band interpolator (pw90_geninterp)
@@ -1184,11 +1157,9 @@ contains
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     logical, intent(in) :: do_boltzwann
     character(len=4), intent(out) :: boltz_2d_dir
-    character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
     character(len=maxlen)              :: ctmp
@@ -1386,15 +1357,19 @@ contains
     pw90_boltzwann%tdf_smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('boltz_tdf_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_boltzwann%tdf_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_tdf_smr_type', error)
+    if (found) then
+      pw90_boltzwann%tdf_smearing%type_index = &
+        w90_readwrite_get_smearing_index(ctmp, 'boltz_tdf_smr_type', error)
+    endif
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%dos_smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('boltz_dos_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_boltzwann%dos_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                         'boltz_dos_smr_type', error)
+    if (found) then
+      pw90_boltzwann%dos_smearing%type_index = &
+        w90_readwrite_get_smearing_index(ctmp, 'boltz_dos_smr_type', error)
+    endif
 
     ! By default: 10 fs relaxation time
     pw90_boltzwann%relax_time = 10._dp
@@ -1427,8 +1402,9 @@ contains
   end subroutine w90_wannier90_readwrite_read_boltzwann
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
-                                                       fermi_energy_list, eigval, pw90_extra_io, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, &
+                                                       dis_manifold, fermi_energy_list, eigval, &
+                                                       pw90_extra_io, error)
     !================================================!
 
     use w90_constants, only: cmplx_i
@@ -1442,11 +1418,9 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     type(pw90_extra_io_type), intent(inout) :: pw90_extra_io
-    character(len=50), intent(in)  :: seedname
 
     integer :: i, ierr
     logical :: found
@@ -1567,7 +1541,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_energy_range
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh, recip_lattice, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh, recip_lattice, &
+                                                       error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -1576,10 +1551,8 @@ contains
 
     type(kmesh_spacing_type), intent(out) :: kmesh
 
-    integer, intent(in) :: stdout
     logical, intent(out) :: global_kmesh_set
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer :: i
@@ -1635,9 +1608,10 @@ contains
   end subroutine w90_wannier90_readwrite_read_global_kmesh
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
-                                                      pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
-                                                      global_kmesh_set, global_kmesh, stdout, seedname, error)
+  subroutine w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, &
+                                                      pw90_spin, pw90_gyrotropic, pw90_boltzwann, &
+                                                      recip_lattice, global_kmesh_set, &
+                                                      global_kmesh, error)
     !================================================!
     implicit none
 
@@ -1650,35 +1624,32 @@ contains
     type(kmesh_spacing_type), intent(in) :: global_kmesh
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: global_kmesh_set
 
-    character(len=50), intent(in)  :: seedname
-
     ! To be called after having read the global flag
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, error, &
+    call get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, &
                           moduleprefix='boltz', should_be_defined=pw90_calculation%boltzwann, &
                           module_kmesh=pw90_boltzwann%kmesh)
     if (allocated(error)) return
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, error, &
+    call get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, &
                           moduleprefix='berry', should_be_defined=pw90_calculation%berry, &
                           module_kmesh=pw90_berry%kmesh)
     if (allocated(error)) return
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, error, &
+    call get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, &
                           moduleprefix='gyrotropic', &
                           should_be_defined=pw90_calculation%gyrotropic, &
                           module_kmesh=pw90_gyrotropic%kmesh)
     if (allocated(error)) return
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, error, &
+    call get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, &
                           moduleprefix='spin', should_be_defined=pw90_calculation%spin_moment, &
                           module_kmesh=pw90_spin%kmesh)
     if (allocated(error)) return
 
-    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, error, &
+    call get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, &
                           moduleprefix='dos', should_be_defined=pw90_calculation%dos, &
                           module_kmesh=pw90_dos%kmesh)
     if (allocated(error)) return
@@ -1686,8 +1657,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_local_kmesh
 
   !================================================!
-  subroutine get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
-                              error, moduleprefix, should_be_defined, module_kmesh)
+  subroutine get_module_kmesh(recip_lattice, global_kmesh_set, global_kmesh, error, moduleprefix, &
+                              should_be_defined, module_kmesh)
     !================================================!
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
@@ -1700,7 +1671,6 @@ contains
 
     use w90_error, only: w90_error_type
 
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=*), intent(in)       :: moduleprefix
     !!The prefix that is appended before the name of the variables. In particular,
@@ -1716,7 +1686,6 @@ contains
     !!user specifies in input the mesh and not the mesh_spacing
     logical, intent(in) :: global_kmesh_set
     type(kmesh_spacing_type), intent(in) :: global_kmesh
-    character(len=50), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, found2
@@ -1781,11 +1750,12 @@ contains
   end subroutine get_module_kmesh
 
   !================================================
-  subroutine w90_postw90_readwrite_write(print_output, w90_system, fermi_energy_list, atom_data, num_wann, &
-                                         real_lattice, kpoint_path, pw90_calculation, pw90_oper_read, &
-                                         scissors_shift, pw90_spin, pw90_kpath, pw90_kslice, pw90_dos, &
-                                         pw90_berry, pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
-                                         pw90_extra_io, optimisation, stdout)
+  subroutine w90_postw90_readwrite_write(print_output, w90_system, fermi_energy_list, atom_data, &
+                                         num_wann, real_lattice, kpoint_path, pw90_calculation, &
+                                         pw90_oper_read, scissors_shift, pw90_spin, pw90_kpath, &
+                                         pw90_kslice, pw90_dos, pw90_berry, pw90_gyrotropic, &
+                                         pw90_geninterp, pw90_boltzwann, pw90_extra_io, &
+                                         optimisation, stdout)
     !================================================!
     !
     !! write postw90 parameters to stdout
@@ -2329,9 +2299,9 @@ contains
   end subroutine w90_postw90_readwrite_write
 
   !================================================!
-  subroutine w90_postw90_readwrite_dealloc(exclude_bands, wannier_data, kmesh_input, kpt_latt, dis_manifold, &
-                                           fermi_energy_list, atom_data, eigval, kpoint_path, pw90_dos, &
-                                           pw90_berry, proj_input, stdout, seedname, error)
+  subroutine w90_postw90_readwrite_dealloc(exclude_bands, wannier_data, kmesh_input, kpt_latt, &
+                                           dis_manifold, fermi_energy_list, atom_data, eigval, &
+                                           kpoint_path, pw90_dos, pw90_berry, proj_input, error)
     !================================================!
 
     use w90_error, only: w90_error_type
@@ -2348,12 +2318,10 @@ contains
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    character(len=50), intent(in)  :: seedname
 
     integer :: ierr
 

@@ -185,7 +185,7 @@ contains
 
     if (on_root) then
       call kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, &
-                             stdout, seedname, pw90_berry, fermi_energy_list, error)
+                             stdout, pw90_berry, fermi_energy_list, error)
       if (allocated(error)) return
     end if
 
@@ -336,8 +336,7 @@ contains
       if (plot_fermi_lines) then
         if (fermi_lines_color) then
           call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, seedname, stdout, &
-                           error)
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error)
           if (allocated(error)) return
 
           do n = 1, num_wann
@@ -359,8 +358,7 @@ contains
           Delta_k = max(b1mod/pw90_kslice%kmesh2d(1), b2mod/pw90_kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, seedname, &
-                                         stdout, error)
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
           if (allocated(error)) return
 
           call utility_diagonalize(HH, num_wann, eig, UU, error)
@@ -955,7 +953,7 @@ contains
   !================================================!
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
-                               plot_shc, stdout, seedname, pw90_berry, fermi_energy_list, error)
+                               plot_shc, stdout, pw90_berry, fermi_energy_list, error)
     !================================================!
 
     use w90_constants, only: dp
@@ -966,7 +964,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: stdout
     logical, intent(in) :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
-    character(len=50), intent(in)  :: seedname
 
     integer :: fermi_n
 

@@ -344,9 +344,10 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (pw90_geninterp%alsofirstder) then
-        call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
-                                 ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                 localdeleig(:, :, i), localeig(:, i), eigval, kpt, real_lattice, &
+        call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                 print_output, wannier_data, ws_distance, wigner_seitz, delHH, HH, &
+                                 HH_R, u_matrix, UU, v_matrix, localdeleig(:, :, i), &
+                                 localeig(:, i), eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, &
                                  seedname, stdout, error, comm)
@@ -354,8 +355,7 @@ contains
 
       else
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, seedname, &
-                                       stdout, error)
+                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
         if (allocated(error)) return
 
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, error)

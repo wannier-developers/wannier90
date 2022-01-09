@@ -1064,9 +1064,9 @@ contains
         eig(pw90_boltzwann%bandshift_firstband:) = eig(pw90_boltzwann%bandshift_firstband:) + pw90_boltzwann%bandshift_energyshift
       end if
 
-      call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                   del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
-                   num_wann, num_elec_per_state, spin_decomp, seedname, stdout, error)
+      call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, &
+                   HH_R, SS_R, del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
+                   num_wann, num_elec_per_state, spin_decomp, error)
       if (allocated(error)) return
 
       ! As above, the sum of TDF_k * kweight amounts to calculate
@@ -1108,9 +1108,8 @@ contains
                                             num_wann, recip_lattice)
                   call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
-                                 spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, &
-                                 seedname, HH_R, SS_R, pw90_boltzwann%dos_smearing, error, &
-                                 levelspacing_k=levelspacing_k)
+                                 spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                                 pw90_boltzwann%dos_smearing, error, levelspacing_k=levelspacing_k)
                   if (allocated(error)) return
 
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
@@ -1121,7 +1120,7 @@ contains
           else
             call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
-                           pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
+                           pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
                            pw90_boltzwann%dos_smearing, error, levelspacing_k=levelspacing_k)
             if (allocated(error)) return
 
@@ -1130,7 +1129,7 @@ contains
         else
           call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
-                         pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
+                         pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
                          pw90_boltzwann%dos_smearing, error)
           if (allocated(error)) return
 
@@ -1280,8 +1279,7 @@ contains
   !================================================!
   subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, &
                      wigner_seitz, HH_R, SS_R, deleig_k, eig_k, EnergyArray, kpt, real_lattice, &
-                     TDF_k, mp_grid, num_wann, num_elec_per_state, spin_decomp, seedname, stdout, &
-                     error)
+                     TDF_k, mp_grid, num_wann, num_elec_per_state, spin_decomp, error)
     !================================================!
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
@@ -1327,7 +1325,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3)
     !! the three coordinates of the k point vector whose DOS contribution we
@@ -1356,8 +1353,6 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
 
-    character(len=50), intent(in) :: seedname
-
     logical, intent(in) :: spin_decomp
     integer, intent(in) :: num_elec_per_state
 
@@ -1374,7 +1369,7 @@ contains
     !
     if (spin_decomp) then
       call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                       kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout, error)
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error)
       if (allocated(error)) return
     endif
 

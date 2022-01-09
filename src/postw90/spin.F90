@@ -145,9 +145,9 @@ contains
       do loop_tot = 1, kpoint_dist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kpoint_dist%int_kpts(:, loop_tot)
         kweight = kpoint_dist%weight(loop_tot)
-        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, wannier_data, &
-                               real_lattice, mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, &
-                               seedname, error)
+        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, &
+                               wannier_data, real_lattice, mp_grid, ws_distance, HH_R, SS_R, &
+                               wigner_seitz, error)
         if (allocated(error)) return
 
         spn_all = spn_all + spn_k*kweight
@@ -166,9 +166,9 @@ contains
         kpt(1) = (real(loop_x, dp)/real(pw90_spin%kmesh%mesh(1), dp))
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%kmesh%mesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%kmesh%mesh(3), dp))
-        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, wannier_data, &
-                               real_lattice, mp_grid, ws_distance, HH_R, SS_R, &
-                               wigner_seitz, stdout, seedname, error)
+        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k, num_wann, ws_region, &
+                               wannier_data, real_lattice, mp_grid, ws_distance, HH_R, SS_R, &
+                               wigner_seitz, error)
         if (allocated(error)) return
 
         spn_all = spn_all + spn_k*kweight
@@ -206,8 +206,7 @@ contains
 
   !================================================!
   subroutine spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                         SS_R, kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout, &
-                         error)
+                         SS_R, kpt, real_lattice, spn_nk, mp_grid, num_wann, error)
     !================================================!
     !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -235,7 +234,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: spn_nk(num_wann)
@@ -244,10 +242,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
 
-    character(len=50), intent(in)  :: seedname
-
     ! local variables
-
     ! Physics
 
     complex(kind=dp), allocatable :: HH(:, :)
@@ -265,14 +260,14 @@ contains
     allocate (SS_n(num_wann, num_wann))
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+                                   real_lattice, mp_grid, 0, num_wann, error)
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 
     do is = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, is), &
                                      SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout, error)
+                                     0, num_wann, error)
       if (allocated(error)) return
     enddo
 
@@ -296,8 +291,7 @@ contains
   !================================================!
 
   subroutine spin_get_moment_k(kpt, ef, spn_k, num_wann, ws_region, wannier_data, real_lattice, &
-                               mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, &
-                               error)
+                               mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, error)
     !================================================!
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
@@ -319,7 +313,6 @@ contains
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: ef
     real(kind=dp), intent(in) :: kpt(3)
@@ -328,8 +321,6 @@ contains
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     ! Physics
@@ -348,8 +339,8 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+    call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
+                                   kpt, real_lattice, mp_grid, 0, num_wann, error)
     if (allocated(error)) return
 
     call utility_diagonalize(HH, num_wann, eig, UU, error)
@@ -359,9 +350,9 @@ contains
 
     spn_k(1:3) = 0.0_dp
     do is = 1, 3
-      call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, is), &
-                                     SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout, error)
+      call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                     SS(:, :, is), SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
+                                     0, num_wann, error)
       if (allocated(error)) return
 
       spn_nk(:, is) = aimag(cmplx_i*utility_rotate_diag(SS(:, :, is), UU, num_wann))
@@ -374,7 +365,7 @@ contains
 
   !================================================!
   subroutine spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, mp_grid, &
-                        ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, error)
+                        ws_distance, HH_R, SS_R, wigner_seitz, error)
     !================================================!
     !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann)
@@ -397,7 +388,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout, num_wann
+    integer, intent(in) :: num_wann
 
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -405,8 +396,6 @@ contains
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     ! Physics
@@ -423,7 +412,7 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
-                                   real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+                                   real_lattice, mp_grid, 0, num_wann, error)
     if (allocated(error)) return
 
     call utility_diagonalize(HH, num_wann, eig, UU, error)
@@ -432,7 +421,7 @@ contains
     do i = 1, 3
       call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, SS(:, :, i), &
                                      SS_R(:, :, :, i), kpt, real_lattice, mp_grid, &
-                                     0, num_wann, seedname, stdout, error)
+                                     0, num_wann, error)
       if (allocated(error)) return
 
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)

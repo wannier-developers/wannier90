@@ -294,7 +294,7 @@ program postw90
       ! the orbital magnetization
 
       call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                     num_kpts, gamma_only, seedname, stdout, error)
+                     num_kpts, gamma_only, stdout, error)
       if (allocated(error)) call catch_error(error)
 
       time2 = io_time()
@@ -328,7 +328,7 @@ program postw90
                                                       eigval, mp_grid, real_lattice, pw90_calcs, &
                                                       scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, &
                                                       kslice, dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                                      boltz, eig_found, stdout, seedname, error, comm)
+                                                      boltz, eig_found, error, comm)
   if (allocated(error)) call catch_error(error)
 
   fermi_n = 0
@@ -357,8 +357,7 @@ program postw90
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_window, wann_data, scissors_shift, v_matrix, &
-                                     system%num_valence_bands, have_disentangled, stdout, &
-                                     seedname, error, comm)
+                                     system%num_valence_bands, have_disentangled, error, comm)
     if (allocated(error)) call catch_error(error)
 
   end if
@@ -367,7 +366,7 @@ program postw90
   ! Should this be done on root node only?
   !
   if (berry%wanint_kpoint_file) then
-    call pw90common_wanint_get_kpoint_file(kpt_dist, stdout, seedname, error, comm)
+    call pw90common_wanint_get_kpoint_file(kpt_dist, error, comm)
     if (allocated(error)) call catch_error(error)
   endif
 

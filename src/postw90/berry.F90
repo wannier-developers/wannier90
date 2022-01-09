@@ -1749,8 +1749,7 @@ contains
                                      effective_model, have_disentangled, seedname, stdout, error, &
                                      comm, occ=occ)
       if (allocated(error)) return
-      call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
-                                 stdout, error, occ=occ)
+      call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, error, occ=occ)
       if (allocated(error)) return
 
     else
@@ -1762,15 +1761,14 @@ contains
                                      effective_model, have_disentangled, seedname, stdout, error, &
                                      comm)
       if (allocated(error)) return
-      call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
-                                 stdout, error, eig=eig)
+      call wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, error, eig=eig)
       if (allocated(error)) return
 
     endif
 
-    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, error, OO_true=AA, OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                       kpt, real_lattice, mp_grid, num_wann, error, OO_true=AA, &
+                                       OO_pseudo=OOmega)
     if (allocated(error)) return
 
     if (present(imf_k_list)) then
@@ -1813,17 +1811,15 @@ contains
       ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
       ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
-      call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, BB_R, kpt, &
-                                         real_lattice, mp_grid, num_wann, seedname, &
-                                         stdout, error, OO_true=BB)
+      call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, BB_R, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, OO_true=BB)
       if (allocated(error)) return
 
       do j = 1, 3
         do i = 1, j
-          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, &
-                                         wigner_seitz, CC(:, :, i, j), CC_R(:, :, :, i, j), kpt, &
-                                         real_lattice, mp_grid, 0, num_wann, seedname, stdout, &
-                                         error)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                         CC(:, :, i, j), CC_R(:, :, :, i, j), kpt, real_lattice, &
+                                         mp_grid, 0, num_wann, error)
           if (allocated(error)) return
 
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
@@ -2000,10 +1996,10 @@ contains
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
     else
-      call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, kpt, &
-                                         real_lattice, mp_grid, num_wann, seedname, stdout, error, &
-                                         OO=HH, OO_dx=delHH(:, :, 1), &
-                                         OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
+      call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, OO=HH, &
+                                         OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
+                                         OO_dz=delHH(:, :, 3))
       if (allocated(error)) return
 
       call utility_diagonalize(HH, num_wann, eig, UU, error)
@@ -2013,9 +2009,8 @@ contains
 
     call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
 
-    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, error, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                       kpt, real_lattice, mp_grid, num_wann, error, OO_true=AA)
     if (allocated(error)) return
 
     do i = 1, 3
@@ -2032,8 +2027,8 @@ contains
     kubo_AH_k = cmplx_0
     jdos_k = 0.0_dp
     if (spin_decomp) then
-      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, kpt, &
-                       real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout, error)
+      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error)
       if (allocated(error)) return
 
       kubo_H_k_spn = cmplx_0
@@ -2232,24 +2227,26 @@ contains
       ! get Hamiltonian and its first and second derivatives
       ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
       ! maintaining the gauge-covariance of the whole matrix element
-      call wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, ws_region, &
-                                            print_output, wannier_data, ws_distance, wigner_seitz, AA_R, HH, &
-                                            HH_da, HH_dadb, HH_R, u_matrix, UU, v_matrix, eig, &
-                                            eigval, kpt, real_lattice, scissors_shift, mp_grid, &
-                                            num_bands, num_kpts, num_wann, num_valence_bands, &
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, &
+                                            ws_region, print_output, wannier_data, ws_distance, &
+                                            wigner_seitz, AA_R, HH, HH_da, HH_dadb, HH_R, &
+                                            u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                            real_lattice, scissors_shift, mp_grid, num_bands, &
+                                            num_kpts, num_wann, num_valence_bands, &
                                             effective_model, have_disentangled, seedname, stdout, &
                                             error, comm)
       if (allocated(error)) return
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
-      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                                      AA_R, kpt, real_lattice, mp_grid, num_wann, &
-                                                      seedname, stdout, error, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
+                                                      wigner_seitz, AA_R, kpt, real_lattice, &
+                                                      mp_grid, num_wann, error, OO_da=AA, &
+                                                      OO_dadb=AA_da)
       if (allocated(error)) return
 
       ! get eigenvalues and their k-derivatives
-      call wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, HH_da, UU, eig, eig_da, num_wann, seedname, &
-                                       stdout, error)
+      call wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, HH_da, UU, eig, eig_da, num_wann, &
+                                       error)
       if (allocated(error)) return
     elseif (pw90_berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
@@ -2261,9 +2258,9 @@ contains
                                     comm)
       if (allocated(error)) return
 
-      call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
-                                              kpt, real_lattice, mp_grid, num_wann, &
-                                              seedname, stdout, error, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                              AA_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                              OO_da=AA, OO_dadb=AA_da)
       if (allocated(error)) return
 
       call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
@@ -2558,11 +2555,12 @@ contains
       lband = .true.
     endif
 
-    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
-                             ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                             del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
-                             num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                             have_disentangled, seedname, stdout, error, comm)
+    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                             print_output, wannier_data, ws_distance, wigner_seitz, delHH, HH, &
+                             HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                             real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                             num_valence_bands, effective_model, have_disentangled, seedname, &
+                             stdout, error, comm)
     if (allocated(error)) return
 
     call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
@@ -2572,9 +2570,8 @@ contains
       eig(pw90_spin_hall%bandshift_firstband:) = eig(pw90_spin_hall%bandshift_firstband:) + pw90_spin_hall%bandshift_energyshift
     end if
 
-    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, error, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                       kpt, real_lattice, mp_grid, num_wann, error, OO_true=AA)
     if (allocated(error)) return
 
     do i = 1, 3
@@ -2585,8 +2582,7 @@ contains
     call berry_get_js_k(ws_region, pw90_spin_hall, wannier_data, ws_distance, wigner_seitz, &
                         D_h(:, :, pw90_spin_hall%alpha), js_k, SH_R, SHR_R, SR_R, SS_R, SAA_R, &
                         SBB_R, UU, eig, del_eig(:, pw90_spin_hall%alpha), &
-                        delHH(:, :, pw90_spin_hall%alpha), kpt, real_lattice, mp_grid, num_wann, &
-                        seedname, stdout)
+                        delHH(:, :, pw90_spin_hall%alpha), kpt, real_lattice, mp_grid, num_wann)
 
     ! adpt_smr only works with pw90_berry_kmesh, so do not use
     ! adpt_smr in kpath or kslice plots.
@@ -2663,8 +2659,7 @@ contains
     !================================================!
     subroutine berry_get_js_k(ws_region, pw90_spin_hall, wannier_data, ws_distance, wigner_seitz, &
                               D_alpha_h, js_k, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, UU, eig, &
-                              del_alpha_eig, delHH_alpha, kpt, real_lattice, mp_grid, num_wann, &
-                              seedname, stdout)
+                              del_alpha_eig, delHH_alpha, kpt, real_lattice, mp_grid, num_wann)
       !================================================!
       !
       ! Contribution from point k to the
@@ -2694,7 +2689,6 @@ contains
 
       integer, intent(in) :: mp_grid(3)
       integer, intent(in) :: num_wann
-      integer, intent(in) :: stdout
 
       real(kind=dp), intent(in) :: kpt(3)
       real(kind=dp), intent(in) :: eig(:)
@@ -2711,8 +2705,6 @@ contains
       complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
       complex(kind=dp), allocatable, intent(inout) :: SAA_R(:, :, :, :, :)
       complex(kind=dp), allocatable, intent(inout) :: SBB_R(:, :, :, :, :)
-
-      character(len=50), intent(in) :: seedname
 
       ! internal vars
       complex(kind=dp) :: B_k(num_wann, num_wann)
@@ -2744,7 +2736,7 @@ contains
       ! QZYZ18 Eq.(36)
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SS_R(:, :, :, pw90_spin_hall%gamma), kpt, real_lattice, &
-                                         mp_grid, num_wann, seedname, stdout, error, OO=S_w)
+                                         mp_grid, num_wann, error, OO=S_w)
       if (allocated(error)) return
 
       ! QZYZ18 Eq.(30)
@@ -2756,8 +2748,7 @@ contains
         ! QZYZ18 Eq.(37)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SR_R(:, :, :, pw90_spin_hall%gamma, :), kpt, &
-                                           real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           error, OO_true=SR_w)
+                                           real_lattice, mp_grid, num_wann, error, OO_true=SR_w)
         if (allocated(error)) return
 
         ! QZYZ18 Eq.(31)
@@ -2769,14 +2760,13 @@ contains
         ! QZYZ18 Eq.(38)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SHR_R(:, :, :, pw90_spin_hall%gamma, :), kpt, &
-                                           real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           error, OO_true=SHR_w)
+                                           real_lattice, mp_grid, num_wann, error, OO_true=SHR_w)
         ! QZYZ18 Eq.(32)
         SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, pw90_spin_hall%alpha), UU, num_wann)
         ! QZYZ18 Eq.(39)
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           SH_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, error, OO_true=SH_w)
+                                           SH_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                           OO_true=SH_w)
         if (allocated(error)) return
 
         ! QZYZ18 Eq.(32)
@@ -2804,22 +2794,21 @@ contains
       else !if Ryoo  (PRB RPS19 Eq.(21))
         !RPS19 Eqs.(37)-(40)
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           SAA_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                           kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                           error, OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
-        if (allocated(error)) return
-
-        call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           SBB_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                           kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, error, OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
-
+                                           SAA_R(:, :, :, pw90_spin_hall%gamma, &
+                                                 pw90_spin_hall%alpha), kpt, real_lattice, mp_grid, &
+                                           num_wann, error, OO=SAA(:, :, pw90_spin_hall%gamma, &
+                                                                   pw90_spin_hall%alpha))
         if (allocated(error)) return
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           HH_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, error, OO=HH, &
-                                           OO_dx=delHH(:, :, 1), &
-                                           OO_dy=delHH(:, :, 2), &
+                                           SBB_R(:, :, :, pw90_spin_hall%gamma, &
+                                                 pw90_spin_hall%alpha), kpt, real_lattice, mp_grid, &
+                                           num_wann, error, &
+                                           OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
+
+        if (allocated(error)) return
+        call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                           HH_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                           OO=HH, OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
                                            OO_dz=delHH(:, :, 3))
         if (allocated(error)) return
 

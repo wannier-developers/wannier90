@@ -251,8 +251,7 @@ contains
   end subroutine wham_get_JJp_JJm_list
 
   !================================================!
-  subroutine wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, seedname, &
-                                   stdout, error, eig, occ)
+  subroutine wham_get_occ_mat_list(fermi_energy_list, f_list, g_list, UU, num_wann, error, eig, occ)
     !================================================!
     !
     !! Occupation matrix f, and g=1-f
@@ -269,7 +268,6 @@ contains
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
 
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
 
     real(kind=dp), intent(in), optional :: eig(:)
@@ -278,8 +276,6 @@ contains
     complex(kind=dp), intent(in)  :: UU(:, :)
     complex(kind=dp), intent(out) :: f_list(:, :, :)
     complex(kind=dp), intent(out) :: g_list(:, :, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer       :: n, m, i, if, nfermi_loc
@@ -326,8 +322,7 @@ contains
   end subroutine wham_get_occ_mat_list
 
   !================================================!
-  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_band_deriv_degen, &
-                               stdout, seedname, error)
+  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, num_wann, pw90_band_deriv_degen, error)
     !================================================!
     !
     !! Band derivatives dE/dk_a
@@ -341,12 +336,10 @@ contains
     ! arguments
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: eig(num_wann)
     real(kind=dp), intent(out) :: deleig_a(num_wann)
     complex(kind=dp), intent(in) :: delHH_a(:, :)
     complex(kind=dp), intent(in) :: UU(:, :)
-    character(len=50), intent(in) :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
@@ -501,36 +494,36 @@ contains
     if (allocated(error)) return
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
-                                   kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout, error)
+                                   kpt, real_lattice, mp_grid, 0, num_wann, error)
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 1), HH_R, kpt, real_lattice, mp_grid, 1, num_wann, &
-                                   seedname, stdout, error)
+                                   error)
     if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 2), HH_R, kpt, real_lattice, mp_grid, 2, num_wann, &
-                                   seedname, stdout, error)
+                                   error)
     if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                    delHH(:, :, 3), HH_R, kpt, real_lattice, mp_grid, 3, num_wann, &
-                                   seedname, stdout, error)
+                                   error)
     if (allocated(error)) return
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
 
   end subroutine wham_get_eig_deleig
 
   !================================================!
   subroutine wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, delHH, UU, eig, del_eig, num_wann, &
-                                         seedname, stdout, error)
+                                         error)
     !================================================!
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
@@ -547,7 +540,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(out) :: del_eig(num_wann, 3)
     real(kind=dp), intent(in) :: eig(num_wann)
@@ -557,16 +549,14 @@ contains
     complex(kind=dp), intent(in) :: UU(:, :)
     !! the rotation matrix that gives the eigenvectors of HH
 
-    character(len=50), intent(in)  :: seedname
-
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, pw90_band_deriv_degen, &
-                           stdout, seedname, error)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, &
+                           pw90_band_deriv_degen, error)
     if (allocated(error)) return
 
   end subroutine wham_get_eig_deleig_TB_conv
@@ -643,9 +633,9 @@ contains
 
     allocate (delHH(num_wann, num_wann, 3))
     call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                                       kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                       stdout, error, OO=HH, OO_dx=delHH(:, :, 1), &
-                                       OO_dy=delHH(:, :, 2), OO_dz=delHH(:, :, 3))
+                                       kpt, real_lattice, mp_grid, num_wann, error, OO=HH, &
+                                       OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
+                                       OO_dz=delHH(:, :, 3))
 
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
@@ -736,8 +726,7 @@ contains
 
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, ws_region, &
                                                         wannier_data, real_lattice, mp_grid, &
-                                                        ws_distance, wigner_seitz, stdout, &
-                                                        seedname, error, OO=HH, &
+                                                        ws_distance, wigner_seitz, error, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, error)
@@ -807,8 +796,8 @@ contains
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
                                                 real_lattice, mp_grid, ws_distance, wigner_seitz, &
-                                                stdout, seedname, error, OO=HH, &
-                                                OO_da=HH_da(:, :, :), OO_dadb=HH_dadb(:, :, :, :))
+                                                error, OO=HH, OO_da=HH_da(:, :, :), &
+                                                OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 

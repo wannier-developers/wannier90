@@ -105,8 +105,8 @@ contains
       endif
       call comms_bcast(wigner_seitz%nrpts, 1, error, comm)
     else
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, seedname, &
-                       .true., error, comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .true., error, &
+                       comm)
       if (allocated(error)) return
     endif
 
@@ -139,8 +139,8 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
 
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, seedname, &
-                       .false., error, comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .false., error, &
+                       comm)
       if (allocated(error)) return
 
       ! Convert from reduced to Cartesian coordinates
@@ -160,7 +160,7 @@ contains
   end subroutine pw90common_wanint_setup
 
   !================================================!
-  subroutine pw90common_wanint_get_kpoint_file(kpoint_dist, stdout, seedname, error, comm)
+  subroutine pw90common_wanint_get_kpoint_file(kpoint_dist, error, comm)
     !================================================!
     !
     !! read kpoints from kpoint.dat and distribute
@@ -176,9 +176,6 @@ contains
     type(kpoint_dist_type), intent(inout) :: kpoint_dist
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
-
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
@@ -259,8 +256,7 @@ contains
                                                             pw90_spin, pw90_band_deriv_degen, pw90_kpath, &
                                                             pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
                                                             pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
-                                                            eig_found, stdout, seedname, error, &
-                                                            comm)
+                                                            eig_found, error, comm)
     !================================================!
     !
     !! distribute the parameters across processors
@@ -308,8 +304,6 @@ contains
     integer, intent(inout) :: mp_grid(3)
     logical, intent(inout) :: eig_found
     logical, intent(inout) :: effective_model
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
     integer :: ierr
     integer :: iprintroot
@@ -598,8 +592,7 @@ contains
   !================================================!
   subroutine pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                          dis_manifold, wannier_data, scissors_shift, v_matrix, &
-                                         num_valence_bands, have_disentangled, stdout, seedname, &
-                                         error, comm)
+                                         num_valence_bands, have_disentangled, error, comm)
     !================================================!
     !
     !! Distribute the um and chk files
@@ -621,13 +614,10 @@ contains
 
     integer, intent(in) :: num_valence_bands
     integer, intent(in) :: num_wann, num_kpts, num_bands
-    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: scissors_shift
     complex(kind=dp), allocatable :: v_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :), u_matrix(:, :, :)
     logical, intent(inout) :: have_disentangled
-
-    character(len=50), intent(in)  :: seedname
 
     integer :: ierr, loop_kpt, m, i, j
     logical :: on_root = .false.
@@ -835,7 +825,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, OO, &
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
-                                       seedname, stdout, error)
+                                       error)
     !================================================!
     !
     !! For alpha=0:
@@ -864,7 +854,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
     integer, intent(in) :: alpha
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
@@ -872,17 +861,14 @@ contains
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
     complex(kind=dp), intent(out) :: OO(:, :)
 
-    character(len=50), intent(in)  :: seedname
-
     ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
     if (ws_region%use_ws_distance) then
-      call ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                             wannier_data%centres, real_lattice, mp_grid, wigner_seitz%nrpts, &
-                             wigner_seitz%irvec, error)
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
     endif
 
     OO(:, :) = cmplx_0
@@ -926,8 +912,8 @@ contains
 
   !================================================!
   subroutine pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, error, OO, OO_dx, OO_dy, OO_dz)
+                                           OO_R, kpt, real_lattice, mp_grid, num_wann, error, OO, &
+                                           OO_dx, OO_dy, OO_dz)
     !================================================!
     !
     !! For OO:
@@ -954,7 +940,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
@@ -964,15 +949,12 @@ contains
     complex(kind=dp), optional, intent(out) :: OO_dy(:, :)
     complex(kind=dp), optional, intent(out) :: OO_dz(:, :)
 
-    character(len=50), intent(in)  :: seedname
-
     ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1022,8 +1004,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, ws_region, wannier_data, &
                                                     real_lattice, mp_grid, ws_distance, &
-                                                    wigner_seitz, stdout, seedname, error, OO, &
-                                                    OO_da, OO_dadb)
+                                                    wigner_seitz, error, OO, OO_da, OO_dadb)
     !================================================!
     !
     !! For OO:
@@ -1053,11 +1034,9 @@ contains
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
-    character(len=50), intent(in)  :: seedname
     complex(kind=dp), intent(in) :: OO_R(:, :, :)
     complex(kind=dp), optional, intent(out) :: OO(:, :)
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
@@ -1068,8 +1047,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1137,7 +1115,7 @@ contains
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             ws_region, wannier_data, real_lattice, &
                                                             mp_grid, ws_distance, wigner_seitz, &
-                                                            stdout, seedname, error, OO, OO_da, OO_dadb)
+                                                            error, OO, OO_da, OO_dadb)
     !================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1170,7 +1148,6 @@ contains
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
@@ -1179,8 +1156,6 @@ contains
     complex(kind=dp), optional, intent(out) :: OO(:, :)
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
     complex(kind=dp), optional, intent(out) :: OO_dadb(:, :, :, :)
-
-    character(len=50), intent(in)  :: seedname
 
     ! local variables
     real(kind=dp) :: inv_lattice(3, 3)
@@ -1192,8 +1167,7 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1295,8 +1269,8 @@ contains
 
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           OO_R, kpt, real_lattice, mp_grid, num_wann, seedname, &
-                                           stdout, error, OO_true, OO_pseudo)
+                                           OO_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                           OO_true, OO_pseudo)
     !================================================!
     !
     !! For OO_true (true vector):
@@ -1320,7 +1294,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
@@ -1328,15 +1301,12 @@ contains
     complex(kind=dp), optional, intent(out) :: OO_true(:, :, :)
     complex(kind=dp), optional, intent(out) :: OO_pseudo(:, :, :)
 
-    character(len=50), intent(in) :: seedname
-
     ! local variables
     integer          :: ir, i, j, ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1405,7 +1375,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
                                                 wigner_seitz, OO_R, kpt, real_lattice, mp_grid, &
-                                                num_wann, seedname, stdout, error, OO_da, OO_dadb)
+                                                num_wann, error, OO_da, OO_dadb)
     !================================================!
     !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1432,7 +1402,6 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
@@ -1440,15 +1409,12 @@ contains
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
     complex(kind=dp), optional, intent(out) :: OO_dadb(:, :, :, :)
 
-    character(len=50), intent(in) :: seedname
-
     ! local variables
     integer          :: ir, i, j, ideg, a, b
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1508,8 +1474,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
                                                         wigner_seitz, OO_R, kpt, real_lattice, &
-                                                        mp_grid, num_wann, seedname, stdout, &
-                                                        error, OO_da, OO_dadb)
+                                                        mp_grid, num_wann, error, OO_da, OO_dadb)
     !================================================!
     !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1541,15 +1506,12 @@ contains
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3), real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: OO_R(:, :, :, :)
     complex(kind=dp), optional, intent(out) :: OO_da(:, :, :)
     complex(kind=dp), optional, intent(out)   :: OO_dadb(:, :, :, :)
-
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     real(kind=dp)    :: inv_lattice(3, 3)
@@ -1561,8 +1523,7 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, stdout, seedname, &
-                                                          ws_region, num_wann, &
+    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                                           wannier_data%centres, real_lattice, &
                                                           mp_grid, wigner_seitz%nrpts, &
                                                           wigner_seitz%irvec, error)
@@ -1721,8 +1682,8 @@ contains
   !================================================!
 
   !================================================!
-  subroutine wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, seedname, &
-                         count_pts, error, comm)
+  subroutine wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, count_pts, &
+                         error, comm)
     !================================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1752,7 +1713,6 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: count_pts
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     integer       :: ndiff(3)

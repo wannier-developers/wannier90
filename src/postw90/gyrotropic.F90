@@ -661,19 +661,19 @@ contains
 
     if (eval_spn) allocate (SS(num_wann, num_wann, 3))
 
-    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
-                             ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                             del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
-                             num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                             have_disentangled, seedname, stdout, error, comm)
+    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                             print_output, wannier_data, ws_distance, wigner_seitz, delHH, HH, &
+                             HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                             real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                             num_valence_bands, effective_model, have_disentangled, seedname, &
+                             stdout, error, comm)
     if (allocated(error)) return
 
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
       call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
-                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                         error, OO_true=AA)
+                                         kpt, real_lattice, mp_grid, num_wann, error, OO_true=AA)
       if (allocated(error)) return
 
       do i = 1, 3
@@ -715,8 +715,8 @@ contains
         ! Spin is computed for all bands simultaneously
         !
         if (eval_spn .and. .not. got_spin) then
-          call spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, &
-                          mp_grid, ws_distance, HH_R, SS_R, wigner_seitz, stdout, seedname, error)
+          call spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, mp_grid, &
+                          ws_distance, HH_R, SS_R, wigner_seitz, error)
           if (allocated(error)) return
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
@@ -796,13 +796,13 @@ contains
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, &
                                   real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
-                                  wigner_seitz, stdout, seedname, error, SS_R, gyro_NOA_spn)
+                                  wigner_seitz, stdout, error, SS_R, gyro_NOA_spn)
         if (allocated(error)) return
       else
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, &
                                   real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
-                                  wigner_seitz, stdout, seedname, error, SS_R)
+                                  wigner_seitz, stdout, error, SS_R)
         if (allocated(error)) return
       endif
     endif
@@ -856,9 +856,9 @@ contains
   end subroutine gyrotropic_get_curv_w_k
 
   subroutine gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
-                                  num_wann, print_output, fermi_energy_list, wannier_data, real_lattice, &
-                                  mp_grid, pw90_gyrotropic, ws_distance, wigner_seitz, stdout, seedname, &
-                                  error, SS_R, gyro_NOA_spn)
+                                  num_wann, print_output, fermi_energy_list, wannier_data, &
+                                  real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
+                                  wigner_seitz, stdout, error, SS_R, gyro_NOA_spn)
     !================================================!
     !
     ! Contribution from point k to the real (antisymmetric) part
@@ -910,7 +910,6 @@ contains
     real(kind=dp), intent(in) :: kpt(3), kweight
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    character(len=50), intent(in)  :: seedname
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
     complex(kind=dp), intent(in) :: AA(:, :, :)
     complex(kind=dp), intent(in) :: UU(:, :)
@@ -934,7 +933,7 @@ contains
       do j = 1, 3 ! spin direction
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SS_R(:, :, :, j), kpt, real_lattice, mp_grid, num_wann, &
-                                           seedname, stdout, error, OO=SS(:, :, j))
+                                           error, OO=SS(:, :, j))
         if (allocated(error)) return
 
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
