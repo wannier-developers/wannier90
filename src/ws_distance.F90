@@ -104,6 +104,7 @@ contains
 
     if (ndegenx*num_wann*nrpts <= 0) then
       call set_error_fatal(error, "unexpected dimensions in ws_translate_dist")
+      return
     end if
 
     allocate (ws_distance%irdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)

@@ -1545,6 +1545,7 @@ contains
         gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdodq_loc, 1), dp)
       end if
       call comms_allreduce(gcnorm1, 1, 'SUM', error, comm)
+      if (allocated(error)) return
 
       ! calculate cg_coefficient
       if ((iter .eq. 1) .or. (ncg .ge. wann_control%num_cg_steps)) then
@@ -1634,7 +1635,7 @@ contains
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch('wann: main: search_direction', 2, error)
-        if (allocated(error)) return
+        !if (allocated(error)) return
       endif
 
       lrandom = .false.
