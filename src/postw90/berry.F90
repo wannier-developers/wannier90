@@ -382,11 +382,11 @@ contains
                        num_valence_bands, have_disentangled, seedname, stdout, error, comm)
         if (allocated(error)) return
       else
-        call get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, eigval, &
+        call get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, &
                        scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, &
                        num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
         if (allocated(error)) return
-        call get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, eigval, &
+        call get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, &
                        scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, &
                        num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
         if (allocated(error)) return

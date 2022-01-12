@@ -1658,7 +1658,7 @@ contains
   end subroutine get_SHC_R
 
   !================================================
-  subroutine get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, eigval, &
+  subroutine get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, &
                        scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                        have_disentangled, seedname, stdout, error, comm)
     !================================================!
@@ -1681,7 +1681,7 @@ contains
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
-    real(kind=dp), intent(in) :: eigval(:, :)
+    !real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: scissors_shift
     real(kind=dp), intent(in) :: kpt_latt(:, :)
 
@@ -1821,7 +1821,7 @@ contains
   end subroutine get_SBB_R
 
   !================================================
-  subroutine get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, eigval, &
+  subroutine get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, &
                        scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
                        have_disentangled, seedname, stdout, error, comm)
     !================================================!
@@ -1844,7 +1844,7 @@ contains
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
 
-    real(kind=dp), intent(in) :: eigval(:, :)
+    !real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: scissors_shift
     real(kind=dp), intent(in) :: kpt_latt(:, :)
 
