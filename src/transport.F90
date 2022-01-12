@@ -2619,9 +2619,8 @@ contains
         call set_error_alloc(error, 'Error in allocating PL_subgroup_info in tran_lcr_2c2_sort')
         return
       endif
-      call master_sort_and_group(PL, PL_groups, transport%num_ll, PL_subgroup_info, &
-                                 transport%group_threshold, print_output, &
-                                 wannier_centres_translated, coord, stdout, error)
+      call master_sort_and_group(PL, PL_groups, PL_subgroup_info, transport%group_threshold, &
+                                 print_output, wannier_centres_translated, coord, stdout, error)
       if (allocated(error)) return
 
       select case (PL_selector)
@@ -2747,8 +2746,7 @@ contains
       call set_error_alloc(error, 'Error in allocating central_group_info in tran_lcr_2c2_sort')
       return
     endif
-    call master_sort_and_group(central_region, central_region_groups, &
-                               num_wann - (4*transport%num_ll), central_subgroup_info, &
+    call master_sort_and_group(central_region, central_region_groups, central_subgroup_info, &
                                transport%group_threshold, print_output, &
                                wannier_centres_translated, coord, stdout, error)
     if (allocated(error)) return
@@ -3128,9 +3126,8 @@ contains
   end subroutine tran_lcr_2c2_sort
 
   !================================================!
-  subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
-                                   tran_group_threshold, print_output, wannier_centres_translated, &
-                                   coord, stdout, error)
+  subroutine master_sort_and_group(Array, Array_groups, subgroup_info, tran_group_threshold, &
+                                   print_output, wannier_centres_translated, coord, stdout, error)
     !================================================!
     ! General sorting and grouping subroutine which takes Array,
     ! an ordered in conduction direction array of wannier function
@@ -3150,7 +3147,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: Array_size, stdout
+    integer, intent(in) :: stdout !, Array_size => size(Array_groups) so not needed
     integer, intent(in) :: Array_groups(:), coord(3)
     integer, intent(out), allocatable :: subgroup_info(:, :)
 
