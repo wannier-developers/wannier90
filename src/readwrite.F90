@@ -277,6 +277,7 @@ contains
         return
       elseif (any(mp_grid < 1)) then
         call set_error_input(error, 'Error: mp_grid must be greater than zero')
+        return
       end if
       num_kpts = mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
@@ -2009,6 +2010,7 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     call comms_bcast(checkpoint, len(checkpoint), error, comm)
+    if (allocated(error)) return
 
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
@@ -2027,6 +2029,7 @@ contains
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
     call comms_bcast(have_disentangled, 1, error, comm)
+    if (allocated(error)) return
 
     if (have_disentangled) then
       if (.not. on_root) then
@@ -2058,12 +2061,18 @@ contains
       end if
 
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(dis_manifold%ndimwin(1), num_kpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(omega_invariant, 1, error, comm)
+      if (allocated(error)) return
     end if
     call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+    if (allocated(error)) return
     call comms_bcast(wannier_data%spreads(1), num_wann, error, comm)
+    if (allocated(error)) return
 
   end subroutine w90_readwrite_chkpt_dist
 
@@ -3445,12 +3454,14 @@ contains
           sites = -1
           ctemp = ctemp(3:)
           call utility_string_to_coord(ctemp, pos_cart, error)
+          if (allocated(error)) return
           if (lconvert) pos_cart = pos_cart*bohr
           call utility_cart_to_frac(pos_cart(:), pos_frac(:), inv_lattice)
         elseif (index(ctemp, 'f=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
           call utility_string_to_coord(ctemp, pos_frac, error)
+          if (allocated(error)) return
         else
           if (atom_data%num_species == 0) then
             call set_error_input(error, &
@@ -3725,6 +3736,7 @@ contains
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_z_tmp, error)
+            if (allocated(error)) return
           endif
           ! x axis
           pos1 = index(dummy, 'x=')
@@ -3733,6 +3745,7 @@ contains
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_x_tmp, error)
+            if (allocated(error)) return
           endif
           ! diffusivity of orbital
           pos1 = index(dummy, 'zona=')

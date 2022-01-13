@@ -1640,6 +1640,7 @@ contains
         call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
                           size(wann_func), 'SUM', error, comm)
       endif
+      if (allocated(error)) return
 
       if (on_root) then
         if (spinors) then

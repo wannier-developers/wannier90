@@ -396,6 +396,7 @@ contains
       else
         call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
       endif
+      if (allocated(error)) return
 
     else
 
