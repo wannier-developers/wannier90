@@ -1117,6 +1117,7 @@ contains
       end if
       if (any(wann_plot%supercell <= 0)) then
         call set_error_input(error, 'Error: wannier_plot_supercell elements must be greater than zero')
+        return
       endif
     end if
 
@@ -2998,6 +2999,7 @@ contains
     !call comms_bcast(kslice%task, len(kslice%task))
     !call comms_bcast(berry%transl_inv, 1)
     call comms_bcast(w90_system%num_elec_per_state, 1, error, comm)
+    if (allocated(error)) return
     !call comms_bcast(pw90_common%scissors_shift, 1)
 
 ! ----------------------------------------------
@@ -3291,7 +3293,10 @@ contains
       !  'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist')
     end if
 
-    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
+    if (fermi_n > 0) then
+      call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
+      if (allocated(error)) return
+    endif
     !if (berry%kubo_nfreq > 0) call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
     !call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
     !call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)
