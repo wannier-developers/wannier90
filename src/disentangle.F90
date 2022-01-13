@@ -368,7 +368,7 @@ contains
 
     if (print_output%timing_level > 0 .and. on_root) then
       call io_stopwatch('dis: main', 2, error)
-      if (allocated(error)) return
+      !if (allocated(error)) return
     endif
 
     return
@@ -647,6 +647,7 @@ contains
       enddo
     endif
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+    if (allocated(error)) return
 !      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS:
 
     if (on_root) then
@@ -2461,6 +2462,7 @@ contains
       enddo
 
       call comms_allreduce(womegai, 1, 'SUM', error, comm)
+      if (allocated(error)) return
 
       womegai = womegai/real(num_kpts, dp)
       ! [Loop over k (nkp)]
@@ -2674,6 +2676,7 @@ contains
       endif                                                                                                        !YN:
     endif
     call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, error, comm)
+    if (allocated(error)) return
     call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
     if (allocated(error)) return
 

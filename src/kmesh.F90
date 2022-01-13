@@ -111,6 +111,7 @@ contains
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
     call kmesh_supercell_sort(print_output, recip_lattice, lmn, error)
+    if (allocated(error)) return
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -247,53 +248,55 @@ contains
     end do
 
     if (kmesh_info%nntot > num_nnmax) then
-    if (print_output%iprint > 0) then
-      write (stdout, '(a,i2,a)') ' **WARNING: kmesh has found >', num_nnmax, ' nearest neighbours**'
-      write (stdout, '(a)') ' '
-      write (stdout, '(a)') ' This is probably caused by an error in your unit cell specification'
-      write (stdout, '(a)') ' '
-      write (stdout, '(a)') ' If you think this is not the problem; please send your *.win file to the '
-      write (stdout, '(a)') ' wannier90 developers'
-      write (stdout, '(a)') ' '
-      write (stdout, '(a)') ' The problem may be caused by having accidentally degenerate shells of '
-      write (stdout, '(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '
-      write (stdout, '(a)') ' in each shell.  Give devel_flag=kmesh_degen in the *.win file'
-      write (stdout, '(a)') ' and create a *.kshell file:'
-      write (stdout, '(a)') ' '
-      write (stdout, '(a)') ' $>   cat hexagonal.kshell'
-      write (stdout, '(a)') ' $>   1 2'
-      write (stdout, '(a)') ' $>   5 6 7 8'
-      write (stdout, '(a)') ' '
-      write (stdout, '(a)') ' Where each line is a new shell (so num_shells in total)'
-      write (stdout, '(a)') ' The elements are the bvectors labelled according to the following '
-      write (stdout, '(a)') ' list (last column is distance)'
-      write (stdout, '(a)') ' '
-    endif
+      if (print_output%iprint > 0) then
+        write (stdout, '(a,i2,a)') ' **WARNING: kmesh has found >', num_nnmax, ' nearest neighbours**'
+        write (stdout, '(a)') ' '
+        write (stdout, '(a)') ' This is probably caused by an error in your unit cell specification'
+        write (stdout, '(a)') ' '
+        write (stdout, '(a)') ' If you think this is not the problem; please send your *.win file to the '
+        write (stdout, '(a)') ' wannier90 developers'
+        write (stdout, '(a)') ' '
+        write (stdout, '(a)') ' The problem may be caused by having accidentally degenerate shells of '
+        write (stdout, '(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '
+        write (stdout, '(a)') ' in each shell.  Give devel_flag=kmesh_degen in the *.win file'
+        write (stdout, '(a)') ' and create a *.kshell file:'
+        write (stdout, '(a)') ' '
+        write (stdout, '(a)') ' $>   cat hexagonal.kshell'
+        write (stdout, '(a)') ' $>   1 2'
+        write (stdout, '(a)') ' $>   5 6 7 8'
+        write (stdout, '(a)') ' '
+        write (stdout, '(a)') ' Where each line is a new shell (so num_shells in total)'
+        write (stdout, '(a)') ' The elements are the bvectors labelled according to the following '
+        write (stdout, '(a)') ' list (last column is distance)'
+        write (stdout, '(a)') ' '
+      endif
 
-    allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating bvec_tmp in kmesh_get')
-      return
-    endif
-    bvec_tmp = 0.0_dp
-    counter = 0
-    do shell = 1, kmesh_input%search_shells
-      call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
-                              recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, error)
-      do loop = 1, multi(shell)
-        counter = counter + 1
-        if (print_output%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
-          bvec_tmp(:, loop)/print_output%lenconfac, ')', dnn(shell)/print_output%lenconfac, '  |'
+      allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating bvec_tmp in kmesh_get')
+        return
+      endif
+      bvec_tmp = 0.0_dp
+      counter = 0
+      do shell = 1, kmesh_input%search_shells
+        call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
+                                recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, error)
+        if (allocated(error)) return
+        do loop = 1, multi(shell)
+          counter = counter + 1
+          if (print_output%iprint > 0) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
+            bvec_tmp(:, loop)/print_output%lenconfac, ')', dnn(shell)/print_output%lenconfac, '  |'
+        end do
       end do
-    end do
-    if (print_output%iprint > 0) write (stdout, '(a)') ' '
-    deallocate (bvec_tmp)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating bvec_tmp in kmesh_get')
-      return
-    endif
+      if (print_output%iprint > 0) write (stdout, '(a)') ' '
+      deallocate (bvec_tmp)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating bvec_tmp in kmesh_get')
+        return
+      endif
 
-    call set_error_fatal(error, 'kmesh_get: something wrong, found too many nearest neighbours')
+      call set_error_fatal(error, 'kmesh_get: something wrong, found too many nearest neighbours')
+      return
     end if
 
     allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
