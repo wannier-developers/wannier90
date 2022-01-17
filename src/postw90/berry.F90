@@ -949,36 +949,51 @@ contains
     ! Collect contributions from all nodes
     if (eval_ahc) then
       call comms_reduce(imf_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
     endif
 
     if (eval_morb) then
       call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(img_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(imh_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
     end if
 
     if (eval_kubo) then
       call comms_reduce(kubo_H(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(kubo_AH(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(jdos(1), pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
       if (spin_decomp) then
         call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        if (allocated(error)) return
         call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        if (allocated(error)) return
         call comms_reduce(jdos_spn(1, 1), 3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        if (allocated(error)) return
       endif
     endif
 
     if (eval_sc) then
       call comms_reduce(sc_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
     end if
 
     if (eval_shc) then
       if (pw90_spin_hall%freq_scan) then
         call comms_reduce(shc_freq(1), pw90_berry%kubo_nfreq, 'SUM', error, comm)
+        if (allocated(error)) return
       else
         call comms_reduce(shc_fermi(1), fermi_n, 'SUM', error, comm)
+        if (allocated(error)) return
         call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', error, comm)
+        if (allocated(error)) return
       end if
     end if
 
@@ -2761,6 +2776,7 @@ contains
         call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SHR_R(:, :, :, pw90_spin_hall%gamma, :), kpt, &
                                            real_lattice, mp_grid, num_wann, error, OO_true=SHR_w)
+        if (allocated(error)) return
         ! QZYZ18 Eq.(32)
         SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, pw90_spin_hall%alpha), UU, num_wann)
         ! QZYZ18 Eq.(39)

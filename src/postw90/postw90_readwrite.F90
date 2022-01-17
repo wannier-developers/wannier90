@@ -150,11 +150,14 @@ contains
     call w90_readwrite_read_algorithm_control(optimisation, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_effective_model(effective_model, error)
+    if (allocated(error)) return
     call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
                                   bohr, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(pw90_oper_read, error)
+    if (allocated(error)) return
     call w90_readwrite_read_num_wann(num_wann, error)
     if (allocated(error)) return
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error) !for read_chkpt
@@ -175,22 +178,32 @@ contains
     call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_pw90spin(pw90_calculation%spin_moment, &
                                                pw90_calculation%spin_decomp, pw90_spin, &
                                                w90_system%num_elec_per_state, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, &
                                                  pw90_extra_io%smear%fixed_width, &
                                                  pw90_extra_io%smear%type_index, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_extra_io%smear, &
                                             error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, pw90_spin_hall, &
                                                 pw90_berry%task, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, &
                                           num_wann, pw90_extra_io%smear, dos_plot, error)
+    if (allocated(error)) return
     call w90_readwrite_read_ws_data(ws_region, error)
     if (allocated(error)) return
     call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
@@ -205,26 +218,32 @@ contains
     call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
                                                 pw90_calculation%boltzwann, &
                                                 pw90_extra_io%boltz_2d_dir, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, &
                                                    dis_manifold, fermi_energy_list, eigval, &
                                                    pw90_extra_io, error)
+    if (allocated(error)) return
     call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_read_kmesh_data(kmesh_input, error)
     if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
+    if (allocated(error)) return
     call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
                                     bohr, stdout, error)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, &
                                                    pw90_extra_io%global_kmesh, recip_lattice, error)
+    if (allocated(error)) return
     call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, &
                                                   pw90_spin, pw90_gyrotropic, pw90_boltzwann, &
                                                   recip_lattice, pw90_extra_io%global_kmesh_set, &
                                                   pw90_extra_io%global_kmesh, error)
+    if (allocated(error)) return
     call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error)
     if (allocated(error)) return
     call w90_readwrite_clean_infile(stdout, seedname, error)
@@ -422,7 +441,10 @@ contains
     pw90_smearing%type_index = 0
     call w90_readwrite_get_keyword('smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', error)
+    if (found) then
+      pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', error)
+      if (allocated(error)) return
+    endif
 
     ! By default: adaptive smearing
     pw90_smearing%use_adaptive = .true.
@@ -630,8 +652,11 @@ contains
     pw90_gyrotropic%smearing%type_index = smr_index
     call w90_readwrite_get_keyword('gyrotropic_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_gyrotropic%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
-                                                                                      'gyrotropic_smr_type', error)
+    if (found) then
+      pw90_gyrotropic%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, &
+                                                                             'gyrotropic_smr_type', error)
+      if (allocated(error)) return
+    endif
 
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
@@ -692,9 +717,9 @@ contains
     endif
 
     pw90_berry%curv_adpt_kmesh_thresh = 100.0_dp
-    if (allocated(error)) return
     call w90_readwrite_get_keyword('berry_curv_adpt_kmesh_thresh', found, error, &
                                    r_value=pw90_berry%curv_adpt_kmesh_thresh)
+    if (allocated(error)) return
 
     pw90_berry%curv_unit = 'ang2'
     call w90_readwrite_get_keyword('berry_curv_unit', found, error, c_value=pw90_berry%curv_unit)
@@ -762,8 +787,11 @@ contains
     pw90_berry%kubo_smearing%type_index = pw90_smearing%type_index
     call w90_readwrite_get_keyword('kubo_smr_type', found, error, c_value=ctmp)
     if (allocated(error)) return
-    if (found) pw90_berry%kubo_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'kubo_smr_type', &
-                                                                                      error)
+    if (found) then
+      pw90_berry%kubo_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'kubo_smr_type', &
+                                                                             error)
+      if (allocated(error)) return
+    endif
 
     pw90_berry%sc_eta = 0.04
     call w90_readwrite_get_keyword('sc_eta', found, error, r_value=pw90_berry%sc_eta)
@@ -1111,6 +1139,7 @@ contains
     if (allocated(error)) return
     if (found) then
       pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', error)
+      if (allocated(error)) return
     endif
 
   end subroutine w90_wannier90_readwrite_read_dos
@@ -1269,6 +1298,7 @@ contains
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_min provided')
+      return
     endif
     pw90_boltzwann%mu_max = -999._dp
     call w90_readwrite_get_keyword('boltz_mu_max', found2, error, r_value=pw90_boltzwann%mu_max)
@@ -1360,6 +1390,7 @@ contains
     if (found) then
       pw90_boltzwann%tdf_smearing%type_index = &
         w90_readwrite_get_smearing_index(ctmp, 'boltz_tdf_smr_type', error)
+      if (allocated(error)) return
     endif
 
     ! By default: use the "global" smearing index
@@ -1584,6 +1615,7 @@ contains
     if (found) then
       if (global_kmesh_set) then
         call set_error_input(error, 'Error: cannot set both kmesh and kmesh_spacing')
+        return
       endif
       if (i .eq. 1) then
         global_kmesh_set = .true.
@@ -1711,6 +1743,7 @@ contains
       if (found) then
         call set_error_input(error, 'Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
                              //trim(moduleprefix)//'_kmesh_spacing')
+        return
       endif
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector(trim(moduleprefix)//'_kmesh', found2, &
@@ -2327,6 +2360,7 @@ contains
 
     call w90_readwrite_dealloc(exclude_bands, wannier_data, proj_input, kmesh_input, kpt_latt, &
                                dis_manifold, atom_data, eigval, kpoint_path, error)
+    if (allocated(error)) return
     if (allocated(pw90_dos%project)) then
       deallocate (pw90_dos%project, stat=ierr)
       if (ierr /= 0) then

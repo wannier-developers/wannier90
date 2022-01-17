@@ -435,8 +435,8 @@ contains
     else
       allocate (coords(1, 1))
     end if
-    call comms_gatherv(my_coords, 2*my_nkpts, &
-                       coords, 2*counts, 2*displs, error, comm)
+    call comms_gatherv(my_coords, 2*my_nkpts, coords, 2*counts, 2*displs, error, comm)
+    if (allocated(error)) return
 
     if (allocated(my_spndata)) then
       if (on_root) then
@@ -446,6 +446,7 @@ contains
       end if
       call comms_gatherv(my_spndata, num_wann*my_nkpts, &
                          spndata, num_wann*counts, num_wann*displs, error, comm)
+      if (allocated(error)) return
     end if
 
     if (allocated(my_spnmask)) then
@@ -456,6 +457,7 @@ contains
       end if
       call comms_gatherv(my_spnmask(1, 1), num_wann*my_nkpts, &
                          spnmask(1, 1), num_wann*counts, num_wann*displs, error, comm)
+      if (allocated(error)) return
     end if
 
     if (allocated(my_bandsdata)) then
@@ -466,6 +468,7 @@ contains
       end if
       call comms_gatherv(my_bandsdata, num_wann*my_nkpts, &
                          bandsdata, num_wann*counts, num_wann*displs, error, comm)
+      if (allocated(error)) return
     end if
 
     ! This holds either -curv or morb
@@ -477,6 +480,7 @@ contains
       end if
       call comms_gatherv(my_zdata, 3*my_nkpts, &
                          zdata, 3*counts, 3*displs, error, comm)
+      if (allocated(error)) return
     end if
 
     ! Write output files

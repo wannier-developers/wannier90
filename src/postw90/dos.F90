@@ -320,6 +320,7 @@ contains
     ! Collect contributions from all nodes
     !
     call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'

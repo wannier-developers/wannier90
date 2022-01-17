@@ -495,6 +495,7 @@ contains
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
                                    kpt, real_lattice, mp_grid, 0, num_wann, error)
+    if (allocated(error)) return
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, &
@@ -636,6 +637,7 @@ contains
                                        kpt, real_lattice, mp_grid, num_wann, error, OO=HH, &
                                        OO_dx=delHH(:, :, 1), OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
+    if (allocated(error)) return
 
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
@@ -729,6 +731,7 @@ contains
                                                         ws_distance, wigner_seitz, error, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
+    if (allocated(error)) return
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 
@@ -798,6 +801,7 @@ contains
                                                 real_lattice, mp_grid, ws_distance, wigner_seitz, &
                                                 error, OO=HH, OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
+    if (allocated(error)) return
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 

@@ -363,25 +363,42 @@ contains
     ! Collect contributions from all nodes
     if (eval_K) then
       call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+      if (eval_spn) then
+        call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+        if (allocated(error)) return
+      endif
     endif
 
-    if (eval_D) &
+    if (eval_D) then
       call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+    endif
 
-    if (eval_C) &
+    if (eval_C) then
       call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+    endif
 
-    if (eval_Dw) &
+    if (eval_Dw) then
       call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+    endif
 
-    if (eval_dos) &
+    if (eval_dos) then
       call comms_reduce(gyro_DOS(1), fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+    endif
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, 'SUM', error, comm)
-      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, &
-                                      'SUM', error, comm)
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, &
+                        'SUM', error, comm)
+      if (allocated(error)) return
+      if (eval_spn) then
+        call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi_n*pw90_gyrotropic%nfreq, &
+                          'SUM', error, comm)
+        if (allocated(error)) return
+      endif
     endif
 
     if (print_output%iprint > 0) then
@@ -652,6 +669,7 @@ contains
 
     if (pw90_gyrotropic%smearing%use_adaptive) then
       call set_error_input(error, 'Adaptive smearing not allowed in Gyrotropic')
+      return
     endif
 
     allocate (UU(num_wann, num_wann))

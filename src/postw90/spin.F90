@@ -179,6 +179,7 @@ contains
     ! Collect contributions from all nodes
 
     call comms_reduce(spn_all(1), 3, 'SUM', error, comm)
+    if (allocated(error)) return
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
@@ -261,6 +262,7 @@ contains
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, kpt, &
                                    real_lattice, mp_grid, 0, num_wann, error)
+    if (allocated(error)) return
     call utility_diagonalize(HH, num_wann, eig, UU, error)
     if (allocated(error)) return
 

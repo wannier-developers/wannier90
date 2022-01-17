@@ -188,6 +188,7 @@ contains
     end if
 
     call comms_bcast(nkinterp, 1, error, comm)
+    if (allocated(error)) return
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -306,6 +307,7 @@ contains
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
     call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, error, comm)
+    if (allocated(error)) return
     if (.not. pw90_geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
@@ -314,6 +316,7 @@ contains
         return
       endif
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, error, comm)
+      if (allocated(error)) return
     end if
 
     ! I open the output file(s)
@@ -335,6 +338,7 @@ contains
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
       call comms_bcast(commentline, len(commentline), error, comm)
+      if (allocated(error)) return
 
       call internal_write_header(outdat_unit, commentline, pw90_geninterp)
     end if
@@ -369,10 +373,12 @@ contains
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
                          num_wann*counts, num_wann*displs, error, comm)
+      if (allocated(error)) return
 
       if (pw90_geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
                            3*num_wann*counts, 3*num_wann*displs, error, comm)
+        if (allocated(error)) return
       end if
 
       ! Now the printing, only on root node

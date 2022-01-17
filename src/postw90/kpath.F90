@@ -262,6 +262,7 @@ contains
 
     ! Broadcast number of k-points on the path
     call comms_bcast(total_pts, 1, error, comm)
+    if (allocated(error)) return
 
     ! Partition set of k-points into junks
 !   call comms_array_split(total_pts, counts, displs);
@@ -274,6 +275,7 @@ contains
     allocate (my_plot_kpoint(3, my_num_pts))
     call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
                         plot_kpoint, 3*counts, 3*displs, error, comm)
+    if (allocated(error)) return
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -393,10 +395,12 @@ contains
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
                          eig, num_wann*counts, num_wann*displs, error, comm)
+      if (allocated(error)) return
       if (pw90_kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
                            color, num_wann*counts, num_wann*displs, error, comm)
+        if (allocated(error)) return
       end if
     end if
 
@@ -405,6 +409,7 @@ contains
       do i = 1, 3
         call comms_gatherv(my_curv(:, i), my_num_pts, &
                            curv(:, i), counts, displs, error, comm)
+        if (allocated(error)) return
       end do
     end if
 
@@ -413,12 +418,14 @@ contains
       do i = 1, 3
         call comms_gatherv(my_morb(:, i), my_num_pts, &
                            morb(:, i), counts, displs, error, comm)
+        if (allocated(error)) return
       end do
     end if
 
     if (plot_shc) then
       allocate (shc(total_pts))
       call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, error, comm)
+      if (allocated(error)) return
     end if
 
     if (on_root) then

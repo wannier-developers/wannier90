@@ -131,6 +131,7 @@ contains
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
             call set_error_fatal(error, 'Error in get_HH_R: orbital indices out of bounds')
+            return
           endif
           if (n > 1) then
             if (ivdum(1) /= ivdum_old(1) .or. ivdum(2) /= ivdum_old(2) .or. &
@@ -158,6 +159,7 @@ contains
         if (ir /= wigner_seitz%nrpts) then
           write (stdout, *) 'ir=', ir, '  nrpts=', wigner_seitz%nrpts
           call set_error_fatal(error, 'Error in get_HH_R: inconsistent nrpts values')
+          return
         endif
         do ir = 1, wigner_seitz%nrpts
           wigner_seitz%crvec(:, ir) = matmul(transpose(real_lattice), wigner_seitz%irvec(:, ir))
@@ -174,12 +176,17 @@ contains
         if (abs(scissors_shift) > 1.0e-7_dp) then
           call set_error_input(error, 'Error in get_HH_R: scissors shift not implemented for ' &
                                //'effective_model=T')
+          return
         endif
       endif
       call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*wigner_seitz%nrpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(wigner_seitz%ndegen(1), wigner_seitz%nrpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(wigner_seitz%irvec(1, 1), 3*wigner_seitz%nrpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(wigner_seitz%crvec(1, 1), 3*wigner_seitz%nrpts, error, comm)
+      if (allocated(error)) return
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_HH_R', 2, error)
       return
@@ -372,6 +379,7 @@ contains
         endif
       endif
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+      if (allocated(error)) return
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
         call io_stopwatch('get_oper: get_AA_R', 2, error)
       return
@@ -530,6 +538,7 @@ contains
     endif !on_root
 
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_AA_R', 2, error)
@@ -712,13 +721,16 @@ contains
     endif !on_root
 
     call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_BB_R', 2, error)
     return
 
 103 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+    return
 104 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+    return
 
   end subroutine get_BB_R
 
@@ -785,8 +797,10 @@ contains
 
     if (on_root) then
 
-      if (abs(scissors_shift) > 1.0e-7_dp) &
+      if (abs(scissors_shift) > 1.0e-7_dp) then
         call set_error_fatal(error, 'Error: scissors correction not yet implemented for CC_R')
+        return
+      endif
 
       allocate (Ho_qb1_q_qb2(num_bands, num_bands))
       allocate (H_qb1_q_qb2(num_wann, num_wann))
@@ -898,6 +912,7 @@ contains
     endif !on_root
 
     call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_CC_R', 2, error)
@@ -1073,13 +1088,16 @@ contains
     endif !on_root
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_FF_R', 2, error)
     return
 
 107 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
+    return
 108 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.uIu')
+    return
 
   end subroutine get_FF_R
 
@@ -1246,6 +1264,7 @@ contains
     endif !on_root
 
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, error)
     return
@@ -1637,8 +1656,11 @@ contains
     endif !on_root
 
     call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
 
     ! end copying from get_AA_R, Junfeng Qiao
 
@@ -1808,6 +1830,7 @@ contains
     endif !on_root
 
     call comms_bcast(SBB_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch('get_oper: get_SBB_R', 2, error)
@@ -1882,6 +1905,7 @@ contains
 
       if (abs(scissors_shift) > 1.0e-7_dp) then
         call set_error_fatal(error, 'Error: scissors correction not yet implemented for SAA_R')
+        return
       endif
 
       allocate (Ho_q_qb2(num_bands, num_bands, 3))
@@ -1971,6 +1995,7 @@ contains
     endif !on_root
 
     call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
+    if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SAA_R', 2, error)
     return

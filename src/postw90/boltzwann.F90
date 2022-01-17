@@ -507,6 +507,7 @@ contains
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
     call comms_reduce(NumberZeroDet, 1, 'SUM', error, comm)
+    if (allocated(error)) return
     if (on_root) then
       if ((NumberZeroDet .gt. 0)) then
         write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumberZeroDet, " (mu,T) pairs for which the electrical"
@@ -604,9 +605,13 @@ contains
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
     call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
     call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
     call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, error, comm)
+    if (allocated(error)) return
     call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
 
     if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, error)
 
@@ -1147,14 +1152,19 @@ contains
     ! (I have to print the results only)
     if (pw90_boltzwann%calc_also_dos) then
       call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(NumPtsRefined, 1, 'SUM', error, comm)
+      if (allocated(error)) return
       call comms_reduce(min_spacing, 1, 'MIN', error, comm)
+      if (allocated(error)) return
       call comms_reduce(max_spacing, 1, 'MAX', error, comm)
+      if (allocated(error)) return
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
     call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (pw90_boltzwann%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."

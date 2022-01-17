@@ -104,6 +104,7 @@ contains
         close (file_unit)
       endif
       call comms_bcast(wigner_seitz%nrpts, 1, error, comm)
+      if (allocated(error)) return
     else
       call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .true., error, &
                        comm)
@@ -193,6 +194,7 @@ contains
       read (k_unit, *) kpoint_dist%num_int_kpts
     end if
     call comms_bcast(kpoint_dist%num_int_kpts, 1, error, comm)
+    if (allocated(error)) return
 
     allocate (kpoint_dist%num_int_kpts_on_node(0:num_nodes - 1))
     kpoint_dist%num_int_kpts_on_node(:) = kpoint_dist%num_int_kpts/num_nodes
@@ -224,8 +226,10 @@ contains
 
         call comms_send(kpoint_dist%int_kpts(1, 1), &
                         3*kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
+        if (allocated(error)) return
         call comms_send(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(loop_nodes), &
                         loop_nodes, error, comm)
+        if (allocated(error)) return
       end do
       do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(0)
         read (k_unit, *) (kpoint_dist%int_kpts(i, loop_kpt), i=1, 3), kpoint_dist%weight(loop_kpt)
@@ -237,8 +241,10 @@ contains
     if (.not. on_root) then
       call comms_recv(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(my_node_id), &
                       0, error, comm)
+      if (allocated(error)) return
       call comms_recv(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(my_node_id), 0, &
                       error, comm)
+      if (allocated(error)) return
     end if
 
     return
@@ -313,128 +319,219 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     call comms_bcast(effective_model, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(eig_found, 1, error, comm)
+    if (allocated(error)) return
 
     if (.not. effective_model) then
       call comms_bcast(mp_grid(1), 3, error, comm)
+      if (allocated(error)) return
       call comms_bcast(num_kpts, 1, error, comm)
+      if (allocated(error)) return
       call comms_bcast(num_bands, 1, error, comm)
+      if (allocated(error)) return
     endif
     call comms_bcast(num_wann, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(print_output%timing_level, 1, error, comm)
+    if (allocated(error)) return
 
     !______________________________________
     !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
     iprintroot = print_output%iprint
     print_output%iprint = 0
     call comms_bcast(print_output%iprint, 1, error, comm)
+    if (allocated(error)) return
     if (on_root) print_output%iprint = iprintroot
     !______________________________________
 
     call comms_bcast(ws_region%ws_distance_tol, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(ws_region%ws_search_size(1), 3, error, comm)
+    if (allocated(error)) return
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9, error, comm)
+    if (allocated(error)) return
     !call comms_bcast(recip_lattice(1, 1), 9, error, comm)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1, error, comm)
     call comms_bcast(pw90_dos%energy_step, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%smearing%use_adaptive, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%smearing%type_index, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%kmesh%spacing, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%kmesh%mesh(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%smearing%adaptive_max_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%smearing%fixed_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%smearing%adaptive_prefactor, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%num_project, 1, error, comm)
+    if (allocated(error)) return
 
     call comms_bcast(pw90_calculation%berry, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%task, len(pw90_berry%task), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kmesh%spacing, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kmesh%mesh(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%curv_adpt_kmesh, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%curv_adpt_kmesh_thresh, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%curv_unit, len(pw90_berry%curv_unit), error, comm)
+    if (allocated(error)) return
 
 ! Tsirkin
     call comms_bcast(pw90_calculation%gyrotropic, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%task, len(pw90_gyrotropic%task), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%kmesh%spacing, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%kmesh%mesh(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%eigval_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%nfreq, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%degen_thresh, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%num_bands, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%box(1, 1), 9, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%box_corner(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%smearing%use_adaptive, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%smearing%fixed_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%smearing%type_index, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%smearing%max_arg, 1, error, comm)
+    if (allocated(error)) return
 
     call comms_bcast(w90_system%spinors, 1, error, comm)
+    if (allocated(error)) return
 
     call comms_bcast(pw90_spin_hall%freq_scan, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%alpha, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%beta, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%gamma, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%bandshift, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%bandshift_firstband, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%bandshift_energyshift, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin_hall%method, len(pw90_spin_hall%method), error, comm)
+    if (allocated(error)) return
 
     call comms_bcast(pw90_berry%kubo_smearing%use_adaptive, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_smearing%adaptive_prefactor, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_smearing%adaptive_max_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_smearing%fixed_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_smearing%type_index, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_eigval_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_nfreq, 1, error, comm)
+    if (allocated(error)) return
     fermi_n = 0
     if (on_root) then
       if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     endif
     call comms_bcast(fermi_n, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%energy_min, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%energy_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin%kmesh%spacing, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin%kmesh%mesh(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%wanint_kpoint_file, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(dis_manifold%win_min, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(dis_manifold%win_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_eta, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_w_thr, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_phase_conv, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_use_eta_corr, 1, error, comm)
+    if (allocated(error)) return
 ! ----------------------------------------------
 !
 ! New input variables in development
 !
     !call comms_bcast(print_output%devel_flag, len(print_output%devel_flag), error, comm)
     call comms_bcast(pw90_calculation%spin_moment, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin%axis_polar, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_spin%axis_azimuth, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_calculation%spin_decomp, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_band_deriv_degen%use_degen_pert, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_band_deriv_degen%degen_thr, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(w90_system%num_valence_bands, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_calculation%dos, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%task, len(pw90_dos%task), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_calculation%kpath, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kpath%task, len(pw90_kpath%task), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kpath%bands_colour, len(pw90_kpath%bands_colour), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_calculation%kslice, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%task, len(pw90_kslice%task), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%corner(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%b1(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%b2(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%kmesh2d(1), 2, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_kslice%fermi_lines_colour, len(pw90_kslice%fermi_lines_colour), error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%transl_inv, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(w90_system%num_elec_per_state, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(scissors_shift, 1, error, comm)
+    if (allocated(error)) return
 
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -446,37 +543,68 @@ contains
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points)
 ! ----------------------------------------------
     call comms_bcast(pw90_calculation%geninterp, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_geninterp%alsofirstder, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_geninterp%single_file, 1, error, comm)
+    if (allocated(error)) return
     ! BoltzWann variables
     call comms_bcast(pw90_calculation%boltzwann, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%calc_also_dos, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dir_num_2d, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_energy_step, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_energy_min, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_energy_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_smearing%use_adaptive, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_smearing%fixed_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_smearing%adaptive_prefactor, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_smearing%adaptive_max_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%mu_min, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%mu_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%mu_step, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%temp_min, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%temp_max, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%temp_step, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%kmesh%spacing, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%kmesh%mesh(1), 3, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%tdf_energy_step, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%relax_time, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%tdf_smearing%use_adaptive, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%tdf_smearing%fixed_width, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%tdf_smearing%type_index, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%dos_smearing%type_index, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%bandshift, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%bandshift_firstband, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_boltzwann%bandshift_energyshift, 1, error, comm)
+    if (allocated(error)) return
     call comms_bcast(ws_region%use_ws_distance, 1, error, comm)
+    if (allocated(error)) return
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in w90_wannier90_readwrite_read they were allocated on the root node only
@@ -523,16 +651,25 @@ contains
       endif
     end if
 
-    if (fermi_n > 0) call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
+    if (fermi_n > 0) then
+      call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
+      if (allocated(error)) return
+    endif
     call comms_bcast(pw90_gyrotropic%freq_list(1), pw90_gyrotropic%nfreq, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%band_list(1), pw90_gyrotropic%num_bands, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_berry%kubo_freq_list(1), pw90_berry%kubo_nfreq, error, comm)
+    if (allocated(error)) return
     call comms_bcast(pw90_dos%project(1), pw90_dos%num_project, error, comm)
+    if (allocated(error)) return
     if (.not. effective_model) then
       if (eig_found) then
         call comms_bcast(eigval(1, 1), num_bands*num_kpts, error, comm)
+        if (allocated(error)) return
       end if
       call comms_bcast(kpt_latt(1, 1), 3*num_kpts, error, comm)
+      if (allocated(error)) return
     endif
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix
@@ -543,7 +680,9 @@ contains
     if (.not. effective_model) then
 
       call comms_bcast(kmesh_info%nnh, 1, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%nntot, 1, error, comm)
+      if (allocated(error)) return
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -579,11 +718,17 @@ contains
       end if
 
       call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, error, comm)
+      if (allocated(error)) return
       call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, error, comm)
+      if (allocated(error)) return
 
     endif
 
@@ -635,6 +780,7 @@ contains
       endif
     end if
     call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+    if (allocated(error)) return
 
     ! -------------------
     ! Ivo: added 8april11
@@ -673,6 +819,7 @@ contains
       endif
     endif
     call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+    if (allocated(error)) return
 
     if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
@@ -693,6 +840,7 @@ contains
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
     call comms_bcast(have_disentangled, 1, error, comm)
+    if (allocated(error)) return
 
     if (have_disentangled) then
       if (.not. on_root) then
@@ -726,7 +874,9 @@ contains
 
 !       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
       call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, error, comm)
+      if (allocated(error)) return
       call comms_bcast(dis_manifold%ndimwin(1), num_kpts, error, comm)
+      if (allocated(error)) return
     end if
 
   end subroutine pw90common_wanint_data_dist
@@ -869,6 +1019,7 @@ contains
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
                              mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
     endif
 
     OO(:, :) = cmplx_0
@@ -954,10 +1105,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -1047,10 +1199,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -1167,10 +1320,11 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -1306,10 +1460,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
@@ -1414,10 +1569,11 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1523,10 +1679,11 @@ contains
 
     r_sum = 0.d0
 
-    if (ws_region%use_ws_distance) call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                                          wannier_data%centres, real_lattice, &
-                                                          mp_grid, wigner_seitz%nrpts, &
-                                                          wigner_seitz%irvec, error)
+    if (ws_region%use_ws_distance) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+      if (allocated(error)) return
+    endif
 
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
