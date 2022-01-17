@@ -221,8 +221,11 @@ program wannier
     len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname, 1, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
   call comms_bcast(seedname, len_seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
   call comms_bcast(dryrun, 1, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
 
   if (on_root) then
     stdout = io_file_unit()
@@ -400,6 +403,7 @@ program wannier
     if (allocated(error)) call prterr(error, stdout)
 
     call kmesh_dealloc(kmesh_info, error)
+    if (allocated(error)) call prterr(error, stdout)
     call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                              exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                              proj_input, input_proj, select_projection, &
@@ -546,6 +550,7 @@ program wannier
   if (allocated(error)) call prterr(error, stdout)
 
   call kmesh_dealloc(kmesh_info, error)
+  if (allocated(error)) call prterr(error, stdout)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                            exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                            proj_input, input_proj, select_projection, kpoint_path, &
