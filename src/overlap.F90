@@ -40,14 +40,15 @@ contains
 
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, error, comm)
+                              num_kpts, num_wann, timing_level, timer, error, comm)
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: timer_list_type
     use w90_error
 
     ! arguments
@@ -65,6 +66,7 @@ contains
     complex(kind=dp), allocatable :: u_matrix(:, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
 
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -85,7 +87,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, error)
+    if (timing_level > 0) call io_stopwatch_start('overlap: allocate', timer)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -154,7 +156,7 @@ contains
 
     endif
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, error)
+    if (timing_level > 0) call io_stopwatch_stop('overlap: allocate', timer)
 
   end subroutine overlap_allocate
 
@@ -163,15 +165,15 @@ contains
                           m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                           u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
                           cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                          error, comm)
+                          timer, error, comm)
     !================================================!
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch
-    use w90_types, only: kmesh_info_type
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_info_type, timer_list_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
     use w90_error
 
@@ -181,6 +183,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -230,7 +233,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 1, error)
+    if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -411,7 +414,7 @@ contains
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
     if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
-                                   timing_level, error)
+                                   timing_level, timer, error)
     if (allocated(error)) return
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -439,10 +442,10 @@ contains
       if (.not. gamma_only) then
         call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
-                             lsitesymmetry, stdout, error, comm)
+                             lsitesymmetry, stdout, timer, error, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                   timing_level, stdout, error)
+                                   timing_level, stdout, timer, error)
       endif
       if (allocated(error)) return
     endif
@@ -456,7 +459,7 @@ contains
     !~      end if
 ![ysl-e]
 
-    if (timing_level > 0) call io_stopwatch('overlap: read', 2, error)
+    if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -618,7 +621,7 @@ contains
 !~![ysl-e]
 
   !================================================!
-  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, error)
+  subroutine overlap_rotate(a_matrix, m_matrix_orig, nntot, num_bands, timing_level, timer, error)
     !================================================!
     !
     !! Only used when interfaced to the CP code
@@ -626,12 +629,14 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_lapack
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: nntot
@@ -647,7 +652,7 @@ contains
     real(kind=dp) :: AP(num_bands*(num_bands + 1)/2)
     real(kind=dp) :: eig(num_bands), work(3*num_bands)
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('overlap: rotate', timer)
 
     lam_unit = io_file_unit()
     open (unit=lam_unit, file='lambda.dat', &
@@ -699,7 +704,7 @@ contains
 !~    enddo
 !~    stop
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('overlap: rotate', timer)
 
     return
 
@@ -795,7 +800,7 @@ contains
   !================================================!
   subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
                              num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, stdout, &
-                             error, comm)
+                             timer, error, comm)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -804,17 +809,19 @@ contains
     !
     !================================================!
     use w90_constants
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
       set_error_not_unitary
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
     use w90_wannier90_types, only: sitesym_type
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -853,7 +860,7 @@ contains
     allocate (counts(0:num_nodes - 1))
     allocate (displs(0:num_nodes - 1))
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('overlap: project', timer)
 
     call comms_array_split(num_kpts, counts, displs, comm)
 
@@ -979,7 +986,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('overlap: project', timer)
 
     return
 
@@ -987,7 +994,8 @@ contains
 
 ![ysl-b]
   !================================================!
-  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, stdout, error)
+  subroutine overlap_project_gamma(m_matrix, u_matrix, nntot, num_wann, timing_level, stdout, &
+                                   timer, error)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -997,10 +1005,11 @@ contains
     !
     !================================================!
     use w90_constants
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
       set_error_not_unitary
     use w90_utility, only: utility_zgemm
+    use w90_types, only: timer_list_type
 
     implicit none
 
@@ -1011,6 +1020,7 @@ contains
     integer, intent(in) :: num_wann
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! internal variables
@@ -1024,7 +1034,7 @@ contains
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cvdag(:, :)
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('overlap: project_gamma', timer)
 
     allocate (u_matrix_r(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -1210,7 +1220,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('overlap: project_gamma', timer)
 
     return
 

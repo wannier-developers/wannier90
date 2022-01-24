@@ -42,7 +42,7 @@ contains
   subroutine hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, error, transport_mode)
+                               stdout, timer, error, transport_mode)
     !================================================!
     !
     !! Allocate arrays and setup data
@@ -50,7 +50,7 @@ contains
     !================================================!
 
     use w90_constants, only: cmplx_0
-    use w90_types, only: print_output_type, ws_region_type
+    use w90_types, only: print_output_type, ws_region_type, timer_list_type
     use w90_wannier90_types, only: w90_calculation_type, ham_logical_type
 
     implicit none
@@ -59,6 +59,7 @@ contains
     type(ham_logical_type), intent(inout) :: ham_logical
     type(print_output_type), intent(in) :: print_output
     type(w90_calculation_type), intent(in) :: w90_calculation
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(ws_region_type), intent(in) :: ws_region
 
@@ -97,7 +98,7 @@ contains
     ! Set up Wigner-Seitz vectors
     !
     call hamiltonian_wigner_seitz(ws_region, print_output, real_lattice, irvec, mp_grid, ndegen, &
-                                  nrpts, rpt_origin, stdout, error, count_pts=.true.)
+                                  nrpts, rpt_origin, stdout, timer, error, count_pts=.true.)
     if (allocated(error)) return
 
     allocate (irvec(3, nrpts), stat=ierr)
@@ -130,8 +131,8 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(ws_region, print_output, real_lattice, irvec, mp_grid, &
-                                  ndegen, nrpts, rpt_origin, stdout, error, count_pts=.false.)
+    call hamiltonian_wigner_seitz(ws_region, print_output, real_lattice, irvec, mp_grid, ndegen, &
+                                  nrpts, rpt_origin, stdout, timer, error, count_pts=.false.)
     if (allocated(error)) return
 
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
@@ -227,7 +228,8 @@ contains
                                 print_output, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                                 kpt_latt, real_lattice, wannier_centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
-                                num_kpts, num_wann, have_disentangled, stdout, error, lsitesymmetry)
+                                num_kpts, num_wann, have_disentangled, stdout, timer, error, &
+                                lsitesymmetry)
     !================================================!
     !
     !!  Calculate the Hamiltonian in the WF basis
@@ -235,8 +237,8 @@ contains
     !================================================!
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_stopwatch
-    use w90_types, only: atom_data_type, dis_manifold_type, print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: atom_data_type, dis_manifold_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: real_space_ham_type, ham_logical_type
 
     implicit none
@@ -248,6 +250,7 @@ contains
     type(print_output_type), intent(in)      :: print_output
     type(dis_manifold_type), intent(in)      :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
+    type(timer_list_type), intent(inout)     :: timer
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout)              :: irvec(:, :)
@@ -280,7 +283,7 @@ contains
     complex(kind=dp) :: utmp(num_bands, num_wann)
     complex(kind=dp) :: fac
 
-    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('hamiltonian: get_hr', timer)
 
     if (ham_logical%have_ham_r) then
       if (ham_logical%have_translated .eqv. ham_logical%use_translation) then
@@ -446,7 +449,7 @@ contains
       endif
     end if
 
-    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('hamiltonian: get_hr', timer)
 
     return
 
@@ -569,18 +572,20 @@ contains
 
   !================================================!
   subroutine hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                  timing_level, seedname, error)
+                                  timing_level, seedname, timer, error)
     !================================================!
     !
     !!  Write the Hamiltonian in the WF basis
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch, io_file_unit, io_date
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit, io_date
+    use w90_types, only: timer_list_type
     use w90_wannier90_types, only: ham_logical_type
 
     ! arguments
     type(ham_logical_type), intent(inout) :: ham_logical
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(inout) :: nrpts
@@ -598,7 +603,7 @@ contains
 
     if (ham_logical%hr_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('hamiltonian: write_hr', timer)
 
     ! write the  whole matrix with all the indices
 
@@ -626,7 +631,7 @@ contains
 
     ham_logical%hr_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_hr', timer)
 
     return
 
@@ -637,7 +642,7 @@ contains
 
   !================================================!
   subroutine hamiltonian_wigner_seitz(ws_region, print_output, real_lattice, irvec, mp_grid, &
-                                      ndegen, nrpts, rpt_origin, stdout, error, count_pts)
+                                      ndegen, nrpts, rpt_origin, stdout, timer, error, count_pts)
     !================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -645,9 +650,9 @@ contains
     !================================================!
 
     use w90_constants, only: eps8
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_metric
-    use w90_types, only: print_output_type, ws_region_type
+    use w90_types, only: print_output_type, ws_region_type, timer_list_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -659,6 +664,7 @@ contains
     ! arguments
     type(ws_region_type), intent(in)    :: ws_region
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(inout)              :: nrpts
@@ -680,7 +686,7 @@ contains
     real(kind=dp)              :: real_metric(3, 3)
 
     if (print_output%timing_level > 1) &
-      call io_stopwatch('hamiltonian: wigner_seitz', 1, error)
+      call io_stopwatch_start('hamiltonian: wigner_seitz', timer)
 
     call utility_metric(real_lattice, real_metric)
     dist_dim = 1
@@ -769,7 +775,7 @@ contains
     endif
     if (count_pts) then
       if (print_output%timing_level > 1) &
-        call io_stopwatch('hamiltonian: wigner_seitz', 2, error)
+        call io_stopwatch_stop('hamiltonian: wigner_seitz', timer)
       return
     end if
 
@@ -793,7 +799,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('hamiltonian: wigner_seitz', timer)
 
     return
 
@@ -886,7 +892,7 @@ contains
   !================================================!
   subroutine hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
                                   real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
-                                  timing_level, seedname, error)
+                                  timing_level, seedname, timer, error)
     !================================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -896,7 +902,7 @@ contains
     !! * <0n|r|Rn>
     !================================================!
 
-    use w90_io, only: io_stopwatch, io_file_unit, io_date
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit, io_date
     use w90_constants, only: twopi, cmplx_i
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: ham_logical_type
@@ -904,6 +910,7 @@ contains
     ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(ham_logical_type), intent(inout) :: ham_logical
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
@@ -930,7 +937,7 @@ contains
 
     if (ham_logical%tb_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('hamiltonian: write_tb', timer)
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_tb.dat', form='formatted', &
@@ -999,7 +1006,7 @@ contains
 
     ham_logical%tb_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_tb', timer)
 
     return
 

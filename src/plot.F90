@@ -39,7 +39,7 @@ contains
                        real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        transport_mode, have_disentangled, lsitesymmetry, spinors, seedname, &
-                       stdout, error, comm)
+                       stdout, timer, error, comm)
     !================================================!
     !
     !! Main plotting routine
@@ -49,9 +49,9 @@ contains
     use w90_constants, only: eps6, dp
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_info_type, wannier_data_type, atom_data_type, dis_manifold_type, &
-      kpoint_path_type, print_output_type, ws_region_type, ws_distance_type
+      kpoint_path_type, print_output_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_utility, only: utility_recip_lattice_base
     use w90_wannier90_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
       fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
@@ -78,6 +78,7 @@ contains
     type(wannier_plot_type), intent(in)       :: wannier_plot
     type(ws_region_type), intent(in)          :: ws_region
     type(wvfn_read_type), intent(in)          :: wvfn_read
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), intent(in)                 :: m_matrix(:, :, :, :)
@@ -124,7 +125,7 @@ contains
     if (my_node_id == 0) on_root = .true.
 
     if (on_root) then
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 1, error)
+      if (print_output%timing_level > 0) call io_stopwatch_start('plot: main', timer)
 
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       ! Print the header only if there is something to plot
@@ -152,14 +153,14 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
-                               error, transport_mode)
+                               timer, error, transport_mode)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                                 ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, wannier_centres_translated, &
                                 irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                                have_disentangled, stdout, error, lsitesymmetry)
+                                have_disentangled, stdout, timer, error, lsitesymmetry)
         if (allocated(error)) return
 
         bands_num_spec_points = 0
@@ -171,20 +172,20 @@ contains
                                       real_space_ham, ws_region, print_output, recip_lattice, &
                                       num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
                                       wannier_centres_translated, ws_distance, &
-                                      bands_num_spec_points, stdout, seedname, error)
+                                      bands_num_spec_points, stdout, seedname, timer, error)
           if (allocated(error)) return
         endif
 
         if (w90_calculation%fermi_surface_plot) then
           call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                   ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
-                                  seedname, error)
+                                  seedname, timer, error)
           if (allocated(error)) return
         endif
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, error)
+                                    print_output%timing_level, seedname, timer, error)
           if (allocated(error)) return
         endif
 
@@ -197,7 +198,7 @@ contains
         if (output_file%write_tb) then
           call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
                                     real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
-                                    print_output%timing_level, seedname, error)
+                                    print_output%timing_level, seedname, timer, error)
           if (allocated(error)) return
         endif
 
@@ -219,7 +220,7 @@ contains
       call plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                         dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                         num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
-                        error, comm)
+                        timer, error, comm)
       if (allocated(error)) return
     endif
 
@@ -234,7 +235,7 @@ contains
                              num_kpts, num_bands, seedname)
       endif
 
-      if (print_output%timing_level > 0) call io_stopwatch('plot: main', 2, error)
+      if (print_output%timing_level > 0) call io_stopwatch_stop('plot: main', timer)
     end if
 
   end subroutine plot_main
@@ -248,7 +249,7 @@ contains
                                     ws_region, print_output, recip_lattice, num_wann, &
                                     wannier_data, ham_r, irvec, ndegen, nrpts, &
                                     wannier_centres_translated, ws_distance, &
-                                    bands_num_spec_points, stdout, seedname, error)
+                                    bands_num_spec_points, stdout, seedname, timer, error)
     !================================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -256,11 +257,11 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, ws_region_type, &
-      ws_distance_type
+      ws_distance_type, timer_list_type
     use w90_wannier90_types, only: band_plot_type, real_space_ham_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack, &
       set_error_unconv, set_error_plot
@@ -275,6 +276,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(ws_region_type), intent(in) :: ws_region
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(inout) :: nrpts
@@ -329,7 +331,7 @@ contains
 
     !
     if (print_output%timing_level > 1) then
-      call io_stopwatch('plot: interpolate_bands', 1, error)
+      call io_stopwatch_start('plot: interpolate_bands', timer)
     endif
     !
     time0 = io_time()
@@ -680,7 +682,7 @@ contains
       endif
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('plot: interpolate_bands', timer)
 
     if (allocated(idx_special_points)) then
       deallocate (idx_special_points, stat=ierr)
@@ -1100,7 +1102,8 @@ contains
 
   !================================================!
   subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
-                                ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname, error)
+                                ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname, &
+                                timer, error)
     !================================================!
     !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -1108,14 +1111,16 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: fermi_surface_plot_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
@@ -1143,7 +1148,7 @@ contains
     integer              :: fermi_n
     character(len=9)     :: cdate, ctime
 
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('plot: fermi_surface', timer)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
@@ -1276,7 +1281,7 @@ contains
       io_time() - time0, ' (sec)'
     write (stdout, *)
 
-    if (timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('plot: fermi_surface', timer)
 
     return
 
@@ -1286,7 +1291,7 @@ contains
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                           dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
-                          error, comm)
+                          timer, error, comm)
     !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
@@ -1294,8 +1299,9 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_file_unit, io_date, io_stopwatch
-    use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type
+    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type, &
+      timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90comm_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
@@ -1310,6 +1316,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wannier_plot_type), intent(in) :: wannier_plot
     type(wvfn_read_type), intent(in) :: wvfn_read
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -1367,7 +1374,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     !
-    if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('plot: wannier', timer)
     !
     associate (ngs=>wannier_plot%supercell)
       !
@@ -1736,7 +1743,7 @@ contains
           return
         endif
 
-        if (print_output%timing_level > 1) call io_stopwatch('plot: wannier', 2, error)
+        if (print_output%timing_level > 1) call io_stopwatch_stop('plot: wannier', timer)
       end if !on_root
 
     end associate

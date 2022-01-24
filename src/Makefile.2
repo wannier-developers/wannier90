@@ -99,7 +99,7 @@ constants.o: ../constants.F90
 comms-abort.o: ../comms-abort.F90 ../../make.inc
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms-abort.F90
 
-io.o: ../io.F90 constants.o comms-abort.o error.o
+io.o: ../io.F90 types.o constants.o comms-abort.o error.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../io.F90
 
 utility.o: ../utility.F90 constants.o io.o
@@ -114,7 +114,7 @@ wannier90_readwrite.o: ../wannier90_readwrite.F90 constants.o io.o types.o wanni
 readwrite.o: ../readwrite.F90 types.o constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../readwrite.F90
 
-types.o: ../types.F90 constants.o io.o
+types.o: ../types.F90 constants.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../types.F90
 
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o types.o wannier90_types.o

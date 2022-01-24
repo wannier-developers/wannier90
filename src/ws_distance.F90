@@ -294,7 +294,7 @@ contains
     !! of the first one.
     !================================================!
 
-    use w90_io, only: io_stopwatch, io_file_unit, io_date
+    use w90_io, only: io_file_unit, io_date
     use w90_types, only: ws_distance_type
 
     implicit none

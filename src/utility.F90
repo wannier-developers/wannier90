@@ -475,7 +475,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -512,7 +512,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -547,7 +547,7 @@ contains
     !! and returns an array of the real num
     !
     !================================================!
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
     use w90_error, only: w90_error_type, set_error_input
 
     implicit none

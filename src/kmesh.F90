@@ -58,16 +58,16 @@ contains
 
   !================================================
   subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, num_kpts, &
-                       gamma_only, stdout, error)
+                       gamma_only, stdout, timer, error)
     !================================================
     !
     !! Main routine to calculate the b-vectors
     !
     !================================================
 
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart
-    use w90_types, only: kmesh_info_type, kmesh_input_type, print_output_type
+    use w90_types, only: kmesh_info_type, kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -75,6 +75,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
@@ -103,15 +104,14 @@ contains
     integer :: nnsh, nn, nnx, loop, i, j
     integer :: stdout
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 1, error)
+    if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: get', timer)
 
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error)
     if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(print_output, recip_lattice, lmn, error)
-    if (allocated(error)) return
+    call kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -192,7 +192,7 @@ contains
       do shell = 1, kmesh_input%search_shells
         call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
                                 recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                                error)
+                                timer, error)
         if (allocated(error)) return
 
         do loop = 1, multi(shell)
@@ -217,12 +217,12 @@ contains
     !else
     if (kmesh_input%num_shells == 0) then
       call kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
-                                 lmn, multi, num_kpts, stdout, error)
+                                 lmn, multi, num_kpts, stdout, timer, error)
       if (allocated(error)) return
 
     elseif (kmesh_input%num_shells > 0) then
       call kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
-                             lmn, multi, num_kpts, stdout, error)
+                             lmn, multi, num_kpts, stdout, timer, error)
       if (allocated(error)) return
     end if
 
@@ -280,7 +280,8 @@ contains
       counter = 0
       do shell = 1, kmesh_input%search_shells
         call kmesh_get_bvectors(kmesh_input, print_output, bvec_tmp(:, 1:multi(shell)), kpt_cart, &
-                                recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, error)
+                                recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, timer, &
+                                error)
         if (allocated(error)) return
         do loop = 1, multi(shell)
           counter = counter + 1
@@ -729,7 +730,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: get', 2, error)
+    if (print_output%timing_level > 0) call io_stopwatch_stop('kmesh: get', timer)
 
     return
 
@@ -737,7 +738,7 @@ contains
 
   !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
-                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, error)
+                         real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, timer)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -767,10 +768,10 @@ contains
     ! m and n.                                                         !
     !==================================================================!
 
-    use w90_io, only: io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_types, only: kmesh_info_type, kmesh_input_type, &
-      proj_input_type, print_output_type
+      proj_input_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -778,7 +779,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(proj_input_type), intent(in) :: proj_input
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(timer_list_type), intent(inout) :: timer
 
     integer, intent(in) :: num_kpts
     integer, intent(inout) :: num_proj
@@ -792,7 +793,7 @@ contains
     integer           :: i, nkp, nn, nnkpout, num_exclude_bands
     character(len=9) :: cdate, ctime
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 1, error)
+    if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: write', timer)
 
     nnkpout = io_file_unit()
     open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
@@ -903,7 +904,7 @@ contains
 
     close (nnkpout)
 
-    if (print_output%timing_level > 0) call io_stopwatch('kmesh: write', 2, error)
+    if (print_output%timing_level > 0) call io_stopwatch_stop('kmesh: write', timer)
 
     return
 
@@ -977,7 +978,7 @@ contains
   end subroutine kmesh_dealloc
 
   !================================================
-  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, error)
+  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
     !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
@@ -985,15 +986,15 @@ contains
     !! Doing the search in this order gives a dramatic speed up
     !================================================
 
-    use w90_io, only: io_stopwatch
-    use w90_types, only: print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: print_output_type, timer_list_type
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
     integer, intent(inout) :: lmn(:, :)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(timer_list_type), intent(inout) :: timer
 
     integer :: counter, l, m, n, loop
     !! Order in which to search the cells (ordered in dist from origin)
@@ -1002,7 +1003,7 @@ contains
     real(kind=dp) :: dist((2*nsupcell + 1)**3)
     real(kind=dp) :: dist_cp((2*nsupcell + 1)**3)
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: supercell_sort', timer)
 
     counter = 1
     lmn(:, counter) = 0
@@ -1029,27 +1030,28 @@ contains
     lmn = lmn_cp
     dist = dist_cp
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: supercell_sort', timer)
 
   end subroutine kmesh_supercell_sort
 
   !================================================
   subroutine kmesh_get_bvectors(kmesh_input, print_output, bvector, kpt_cart, recip_lattice, &
-                                shell_dist, lmn, kpt, multi, num_kpts, error)
+                                shell_dist, lmn, kpt, multi, num_kpts, timer, error)
     !================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
     !
     !================================================
 
-    use w90_io, only: io_stopwatch
-    use w90_types, only: kmesh_input_type, print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
 
     ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(in)  :: kmesh_input
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
@@ -1066,7 +1068,7 @@ contains
     integer :: loop, nkp2, num_bvec
     real(kind=dp) :: dist, vkpp2(3), vkpp(3)
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: get_bvectors', timer)
 
     bvector = 0.0_dp
 
@@ -1091,7 +1093,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: get_bvectors', timer)
 
     return
 
@@ -1099,7 +1101,7 @@ contains
 
   !================================================
   subroutine kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, &
-                                   recip_lattice, lmn, multi, num_kpts, stdout, error)
+                                   recip_lattice, lmn, multi, num_kpts, stdout, timer, error)
     !================================================
     !! Find the correct set of shells to satisfy B1
     !!  The stratagy is:
@@ -1110,14 +1112,15 @@ contains
     !================================================
 
     use w90_constants, only: eps5, eps6
-    use w90_io, only: io_stopwatch
-    use w90_types, only: kmesh_input_type, print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
 
     ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
@@ -1144,7 +1147,7 @@ contains
 
     integer :: loop, shell
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: shell_automatic', timer)
 
     allocate (bvector(3, maxval(multi), max_shells), stat=ierr)
     if (ierr /= 0) then
@@ -1164,7 +1167,7 @@ contains
       ! get the b vectors for the new shell
       call kmesh_get_bvectors(kmesh_input, print_output, bvector(:, 1:multi(shell), cur_shell), &
                               kpt_cart, recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                              error)
+                              timer, error)
       if (allocated(error)) return
 
       if (print_output%iprint >= 3) then
@@ -1412,7 +1415,7 @@ contains
       return
     end if
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_automatic', timer)
 
     return
 
@@ -1420,7 +1423,7 @@ contains
 
   !================================================
   subroutine kmesh_shell_fixed(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
-                               lmn, multi, num_kpts, stdout, error)
+                               lmn, multi, num_kpts, stdout, timer, error)
     !================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
@@ -1428,14 +1431,15 @@ contains
     !================================================
 
     use w90_constants, only: eps7
-    use w90_io, only: io_stopwatch
-    use w90_types, only: kmesh_input_type, print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
 
     ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(in) :: kmesh_input
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts
@@ -1465,7 +1469,7 @@ contains
 
     integer :: loop, shell
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: shell_fixed', timer)
 
     allocate (bvector(3, maxval(multi), kmesh_input%num_shells), stat=ierr)
     if (ierr /= 0) then
@@ -1484,7 +1488,7 @@ contains
       call kmesh_get_bvectors(kmesh_input, print_output, &
                               bvector(:, 1:multi(kmesh_input%shell_list(shell)), shell), kpt_cart, &
                               recip_lattice, dnn(kmesh_input%shell_list(shell)), lmn, 1, &
-                              multi(kmesh_input%shell_list(shell)), num_kpts, error)
+                              multi(kmesh_input%shell_list(shell)), num_kpts, timer, error)
       if (allocated(error)) return
     end do
 
@@ -1570,7 +1574,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_fixed', timer)
 
     return
 
@@ -1578,7 +1582,8 @@ contains
 
   !================================================
   subroutine kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
-                                   recip_lattice, lmn, multi, num_kpts, seedname, stdout, error)
+                                   recip_lattice, lmn, multi, num_kpts, seedname, stdout, timer, &
+                                   error)
     !================================================
     !!  Find the B1 weights for a set of b-vectors given in a file.
     !!  This routine is only activated via a devel_flag and is not
@@ -1586,15 +1591,16 @@ contains
     !
     !================================================
 
-    use w90_constants, only: eps7
-    use w90_io, only: io_stopwatch, io_file_unit, maxlen
-    use w90_types, only: kmesh_input_type, print_output_type
+    use w90_constants, only: eps7, maxlen
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
+    use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
 
     ! arguments
     type(print_output_type), intent(in) :: print_output
     type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_kpts, stdout
@@ -1626,7 +1632,7 @@ contains
     integer :: loop, shell, pos, kshell_in, counter, length, i, loop2, num_lines, tot_num_lines
     character(len=maxlen) :: dummy, dummy2
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, error)
+    if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: shell_fixed', timer)
 
     allocate (bvector(3, sum(multi)), stat=ierr)
     if (ierr /= 0) then
@@ -1644,7 +1650,7 @@ contains
       ! get the b vectors
       call kmesh_get_bvectors(kmesh_input, print_output, bvector(:, counter:counter + multi(shell) - 1), &
                               kpt_cart, recip_lattice, dnn(shell), lmn, 1, multi(shell), num_kpts, &
-                              error)
+                              timer, error)
       if (allocated(error)) return
 
       counter = counter + multi(shell)
@@ -1813,7 +1819,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, error)
+    if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_fixed', timer)
 
     return
 

@@ -51,19 +51,19 @@ contains
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                        bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
-                       seedname, stdout, error, comm)
+                       seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !
     !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_wallclocktime, io_stopwatch, io_file_unit
+    use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop, io_file_unit
     use w90_wannier90_types, only: wann_control_type, output_file_type, &
       w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
       ham_logical_type
     use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
-      atom_data_type, dis_manifold_type, w90_system_type, ws_region_type
+      atom_data_type, dis_manifold_type, w90_system_type, ws_region_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
@@ -92,6 +92,7 @@ contains
     type(w90_calculation_type), intent(in)   :: w90_calculation
     type(w90comm_type), intent(in)           :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
+    type(timer_list_type), intent(inout)     :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
@@ -204,7 +205,7 @@ contains
     if (my_node_id == 0) on_root = .true.
 
     if (print_output%timing_level > 0 .and. print_output%iprint > 0) then
-      call io_stopwatch('wann: main', 1, error)
+      call io_stopwatch_start('wann: main', timer)
     endif
 
     first_pass = .true.
@@ -276,7 +277,7 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             error, transport_mode)
+                             timer, error, transport_mode)
       if (allocated(error)) return
 
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
@@ -475,7 +476,7 @@ contains
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, error, comm)
+                       print_output%iprint, timer, error, comm)
       if (allocated(error)) return
 
       irguide = 1
@@ -490,7 +491,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, print_output, wann_control%constrain, omega%invariant, counts, &
-                    displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, error, comm)
+                    displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
     if (allocated(error)) return
 
     ! public variables
@@ -583,7 +584,7 @@ contains
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                         print_output%iprint, error, comm)
+                         print_output%iprint, timer, error, comm)
         if (allocated(error)) return
 
         irguide = 1
@@ -595,14 +596,14 @@ contains
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
                          m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         sitesym, error, comm, print_output%iprint, cdodq)
+                         sitesym, timer, error, comm, print_output%iprint, cdodq)
         if (allocated(error)) return
 
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
                          m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         sitesym, error, comm, print_output%iprint)
+                         sitesym, timer, error, comm, print_output%iprint)
         if (allocated(error)) return
 
       endif
@@ -614,12 +615,12 @@ contains
       if (wann_control%precond) then
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
                                       wann_spread, num_wann, num_kpts, kpt_latt, real_lattice, &
-                                      nrpts, irvec, ndegen, counts, displs, optimisation)
+                                      nrpts, irvec, ndegen, counts, displs, optimisation, timer)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
-                                     counts, stdout, error)
+                                     counts, stdout, timer, error)
       if (allocated(error)) return
 
       if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann)
@@ -653,19 +654,20 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
-                                  comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, timer, &
+                                  error, comm)
         if (allocated(error)) return
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, omega%invariant, counts, &
-                        displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, error, comm)
+                        displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, &
+                        comm)
         if (allocated(error)) return
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
-                                   lprint, wann_control%trial_step, stdout)
+                                   lprint, wann_control%trial_step, stdout, timer)
       endif
 
       ! print line search information
@@ -713,8 +715,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, error, &
-                                  comm)
+                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, timer, &
+                                  error, comm)
         if (allocated(error)) return
 
         call wann_spread_copy(wann_spread, old_spread)
@@ -723,7 +725,7 @@ contains
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, &
                         omega%invariant, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, error, comm)
+                        m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
         if (allocated(error)) return
 
         ! parabolic line search was unsuccessful, use trial step already taken
@@ -932,14 +934,14 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             error, transport_mode)
+                             timer, error, transport_mode)
       if (allocated(error)) return
 
       call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                               ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                               real_lattice, wannier_data%centres, wannier_centres_translated, &
                               irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                              have_disentangled, stdout, error, lsitesymmetry)
+                              have_disentangled, stdout, timer, error, lsitesymmetry)
       if (allocated(error)) return
 
       if (print_output%iprint > 0) then
@@ -957,18 +959,19 @@ contains
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, error, comm)
+                       print_output%iprint, timer, error, comm)
       if (allocated(error)) return
     endif
 
     ! unitarity is checked
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
-                              print_output%iprint, stdout, error)
+                              print_output%iprint, stdout, timer, error)
     if (allocated(error)) return
 
     ! write extra info regarding omega_invariant
     if (print_output%iprint > 2 .and. on_root) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, error, stdout)
+      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+                            error, stdout)
       if (allocated(error)) return
     endif
 
@@ -982,8 +985,7 @@ contains
     if (have_disentangled .and. output_file%write_proj) then
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, error)
-      if (allocated(error)) return
+                                print_output%iprint, stdout, timer)
     endif
 
     ! aam: write data required for vdW utility
@@ -1174,7 +1176,7 @@ contains
     endif
 
     if (print_output%timing_level > 0 .and. print_output%iprint > 0) then
-      call io_stopwatch('wann: main', 2, error)
+      call io_stopwatch_stop('wann: main', timer)
     endif
 
     return
@@ -1368,7 +1370,7 @@ contains
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                         k_to_r, wann_spread, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                        counts, displs, optimisation)
+                                        counts, displs, optimisation, timer)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1379,12 +1381,14 @@ contains
       !================================================!
 
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
-      use w90_io, only: io_stopwatch
+      use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+      use w90_types, only: timer_list_type
 
       implicit none
 
       ! arguments
       type(localisation_vars_type), intent(in) :: wann_spread
+      type(timer_list_type), intent(inout) :: timer
 
       complex(kind=dp), intent(in) :: cdodq(:, :, :)
       complex(kind=dp), intent(inout) :: cdodq_r(:, :, :)
@@ -1412,7 +1416,7 @@ contains
       integer :: irpt, loop_kpt
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch('wann: main: search_direction', 1, error)
+        call io_stopwatch_start('wann: main: search_direction', timer)
       endif
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
@@ -1489,7 +1493,7 @@ contains
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                          wann_control, num_wann, wbtot, cdq_loc, cdodq_loc, &
-                                         counts, stdout, error)
+                                         counts, stdout, timer, error)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1499,14 +1503,16 @@ contains
       !
       !================================================!
 
-      use w90_io, only: io_stopwatch
+      use w90_io, only: io_stopwatch_start, io_stopwatch_stop
       use w90_comms, only: comms_allreduce, w90comm_type
       use w90_wannier90_types, only: wann_control_type
+      use w90_types, only: timer_list_type
 
       implicit none
 
       ! argumetns
       type(wann_control_type), intent(in) :: wann_control
+      type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
 
       integer, intent(in) :: counts(0:)
@@ -1533,7 +1539,7 @@ contains
       complex(kind=dp), external :: zdotc
 
       if ((.not. wann_control%precond) .and. print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch('wann: main: search_direction', 1, error)
+        call io_stopwatch_start('wann: main: search_direction', timer)
       endif
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
@@ -1634,7 +1640,7 @@ contains
       !~     cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch('wann: main: search_direction', 2, error)
+        call io_stopwatch_stop('wann: main: search_direction', timer)
         !if (allocated(error)) return
       endif
 
@@ -1646,20 +1652,22 @@ contains
 
     !================================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
-                                     lprint, trial_step, stdout)
+                                     lprint, trial_step, stdout, timer)
       !================================================!
       !
       !! Calculate the optimal step length based on a
       !! parabolic line search
       !
       !================================================!
-      use w90_io, only: io_stopwatch
+      use w90_io, only: io_stopwatch_start, io_stopwatch_stop
       use w90_comms, only: w90comm_type
+      use w90_types, only: timer_list_type
 
       implicit none
 
       type(localisation_vars_type), intent(in) :: trial_spread
       type(localisation_vars_type), intent(in) :: wann_spread
+      type(timer_list_type), intent(inout) :: timer
       integer, intent(in) :: stdout
       real(kind=dp), intent(in) :: doda0
       real(kind=dp), intent(in) :: trial_step
@@ -1671,7 +1679,7 @@ contains
       real(kind=dp) :: fac, shift, eqa, eqb
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch('wann: main: optimal_step', 1, error) !fixme!!!! JJ, neither passed nor local??
+        call io_stopwatch_start('wann: main: optimal_step', timer) !fixme!!!! JJ, neither passed nor local??
       endif
 
       fac = trial_spread%om_tot - wann_spread%om_tot
@@ -1706,7 +1714,7 @@ contains
       endif
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch('wann: main: optimal_step', 2, error)
+        call io_stopwatch_stop('wann: main: optimal_step', timer)
       endif
 
       return
@@ -1717,7 +1725,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                    m_matrix_loc, timing_level, stdout, sitesym, error, comm)
+                                    m_matrix_loc, timing_level, stdout, sitesym, timer, error, comm)
       !================================================!
       !
       !! Update U and M matrices after a trial step
@@ -1727,15 +1735,16 @@ contains
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation
       use w90_wannier90_types, only: sitesym_type
-      use w90_io, only: io_stopwatch
+      use w90_io, only: io_stopwatch_start, io_stopwatch_stop
       use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
       use w90_utility, only: utility_zgemm
-      use w90_types, only: kmesh_info_type
+      use w90_types, only: kmesh_info_type, timer_list_type
 
       implicit none
 
       type(kmesh_info_type), intent(in) :: kmesh_info
       type(sitesym_type), intent(in) :: sitesym
+      type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
@@ -1764,7 +1773,7 @@ contains
 
       my_node_id = mpirank(comm)
 
-      if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('wann: main: u_and_m', 1, error)
+      if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: main: u_and_m', timer)
 
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
@@ -1860,7 +1869,7 @@ contains
         enddo
       enddo
 
-      if (timing_level > 1) call io_stopwatch('wann: main: u_and_m', 2, error)
+      if (timing_level > 1) call io_stopwatch_stop('wann: main: u_and_m', timer)
     end subroutine internal_new_u_and_m
   end subroutine wann_main
 
@@ -1868,7 +1877,7 @@ contains
 
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, &
-                         iprint, error, comm, m_w)
+                         iprint, timer, error, comm, m_w)
     !================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1876,16 +1885,17 @@ contains
     !================================================
 
     use w90_constants, only: eps6, cmplx_0, cmplx_i
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_inv3
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
-    use w90_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type, timer_list_type
 
     implicit none
 
     ! arguments
     type(w90comm_type), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: timing_level
@@ -1918,7 +1928,7 @@ contains
 
     my_node_id = mpirank(comm)
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: phases', 1, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: phases', timer)
 
     csum = cmplx_0; xx = 0.0_dp
 
@@ -2095,7 +2105,7 @@ contains
 !       enddo
 !    enddo
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: phases', 2, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: phases', timer)
 
     return
 
@@ -2104,7 +2114,7 @@ contains
   !================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_slwf, omega_invariant, counts, displs, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, error, comm)
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
     !================================================!
     !
     !!   Calculate the Wannier Function spread
@@ -2114,9 +2124,9 @@ contains
     ! Radu Miron at Implerial College London
     !================================================
 
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: comms_allreduce, w90comm_type, mpirank
-    use w90_types, only: kmesh_info_type, print_output_type
+    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: wann_slwf_type
 
     implicit none
@@ -2127,6 +2137,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(w90comm_type), intent(in) :: comm
     type(wann_slwf_type), intent(in) :: wann_slwf
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: counts(0:), displs(0:)
@@ -2154,7 +2165,7 @@ contains
 
     my_node_id = mpirank(comm)
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('wann: omega', 1, error)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: omega', timer)
 
     do nkp_loc = 1, counts(my_node_id)
       nkp = nkp_loc + displs(my_node_id)
@@ -2403,7 +2414,7 @@ contains
       wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
     end if
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('wann: omega', 2, error)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('wann: omega', timer)
 
     return
 
@@ -2412,7 +2423,7 @@ contains
   !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, sitesym, error, &
+                         cdodq_loc, lambda_loc, timing_level, sitesym, timer, error, &
                          comm, iprint, cdodq)
     !================================================!
     !
@@ -2424,11 +2435,11 @@ contains
     !================================================
 
     use w90_constants, only: cmplx_0
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
     use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90comm_type, mpirank
-    use w90_types, only: kmesh_info_type
+    use w90_types, only: kmesh_info_type, timer_list_type
     use w90_wannier90_types, only: wann_slwf_type, sitesym_type
 
     implicit none
@@ -2436,6 +2447,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(wann_slwf_type), intent(inout) :: wann_slwf
     type(sitesym_type), intent(in) :: sitesym
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -2469,7 +2481,7 @@ contains
 
     my_node_id = mpirank(comm)
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: domega', 1, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: domega', timer)
 
     allocate (cr(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -2683,7 +2695,7 @@ contains
       return
     endif
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: domega', 2, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: domega', timer)
 
     return
 
@@ -2717,7 +2729,7 @@ contains
 
   !================================================!
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
-                                  timing_level, iprint, stdout, error)
+                                  timing_level, iprint, stdout, timer)
     !================================================!
     !
     ! Calculates and writes the projection of each Wannier function
@@ -2725,13 +2737,14 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: w90comm_type
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(timer_list_type), intent(inout) :: timer
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
@@ -2745,7 +2758,7 @@ contains
     integer :: nw, nb, nkp, counter
     real(kind=dp) :: summ
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: calc_projection', 1, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: calc_projection', timer)
 
     if (iprint > 0) then
       write (stdout, '(/1x,a78)') repeat('-', 78)
@@ -2772,7 +2785,7 @@ contains
     enddo
     if (iprint > 0) write (stdout, '(1x,a78/)') repeat('-', 78)
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: calc_projection', 2, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: calc_projection', timer)
 
     return
 
@@ -3025,25 +3038,28 @@ contains
   end subroutine wann_write_vdw_data
 
   !================================================!
-  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, error)
+  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
+                                  timer, error)
     !================================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: w90comm_type
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
     integer, intent(in) :: num_kpts, num_wann, timing_level, iprint, stdout
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
     integer :: nkp, i, j, m
     complex(kind=dp) :: ctmp1, ctmp2
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: check_unitarity', 1, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: check_unitarity', timer)
 
     do nkp = 1, num_kpts
       do i = 1, num_wann
@@ -3084,7 +3100,7 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch('wann: check_unitarity', 2, error)
+    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: check_unitarity', timer)
 
     return
 
@@ -3147,18 +3163,20 @@ contains
   end subroutine wann_write_r2mn
 
   !================================================!
-  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, error, stdout)
+  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+                              error, stdout)
     !================================================!
 
     use w90_comms, only: w90comm_type
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_stopwatch
-    use w90_types, only: kmesh_info_type, print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
@@ -3174,7 +3192,7 @@ contains
     real(kind=dp) :: omt1, omt2, omt3
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch('wann: svd_omega_i', 1, error)
+      call io_stopwatch_start('wann: svd_omega_i', timer)
     endif
 
     allocate (cw1(10*num_wann), stat=ierr)
@@ -3281,7 +3299,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch('wann: svd_omega_i', 2, error)
+      call io_stopwatch_stop('wann: svd_omega_i', timer)
     endif
 
     return
@@ -3293,7 +3311,7 @@ contains
                              output_file, wann_control, omega, w90_system, print_output, &
                              wannier_data, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
                              mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
-                             translate_home_cell, seedname, stdout, error, comm)
+                             translate_home_cell, seedname, stdout, timer, error, comm)
     !================================================!
     !
     ! Calculate the Unitary Rotations to give
@@ -3302,10 +3320,10 @@ contains
     !================================================
 
     use w90_constants, only: dp, cmplx_1, cmplx_0
-    use w90_io, only: io_time, io_stopwatch
+    use w90_io, only: io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
     use w90_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type
+      wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90comm_type
@@ -3325,6 +3343,7 @@ contains
     type(output_file_type), intent(in) :: output_file
     type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
     type(atom_data_type), intent(in) :: atom_data
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout
@@ -3379,7 +3398,7 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical :: lconverged
 
-    if (print_output%timing_level > 0) call io_stopwatch('wann: main_gamma', 1, error)
+    if (print_output%timing_level > 0) call io_stopwatch_start('wann: main_gamma', timer)
 
     first_pass = .true.
 
@@ -3519,7 +3538,7 @@ contains
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, error, comm)
+                       print_output%iprint, timer, error, comm)
       if (allocated(error)) return
       irguide = 1
     endif
@@ -3536,7 +3555,7 @@ contains
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                           kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
                           omega%invariant, ln_tmp, first_pass, &
-                          print_output%timing_level, error)
+                          print_output%timing_level, timer, error)
     if (allocated(error)) return
 
     ! public variables
@@ -3606,19 +3625,21 @@ contains
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                         print_output%iprint, error, comm, m_w)
+                         print_output%iprint, timer, error, comm, m_w)
         if (allocated(error)) return
         irguide = 1
       endif
 
-      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, print_output%timing_level)
+      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, print_output%timing_level, &
+                                      timer)
 
       call wann_spread_copy(wann_spread, old_spread)
 
       ! calculate the new centers and spread
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                             kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
-                            omega%invariant, ln_tmp, first_pass, print_output%timing_level, error)
+                            omega%invariant, ln_tmp, first_pass, print_output%timing_level, &
+                            timer, error)
       if (allocated(error)) return
 
       ! print the new centers and spreads
@@ -3715,18 +3736,19 @@ contains
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, error, comm)
+                       print_output%iprint, timer, error, comm)
       if (allocated(error)) return
     endif
 
     ! unitarity is checked
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
-                              print_output%iprint, stdout, error)
+                              print_output%iprint, stdout, timer, error)
     if (allocated(error)) return
 
     ! write extra info regarding omega_invariant
     if (print_output%iprint > 2) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, error, stdout)
+      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+                            error, stdout)
       if (allocated(error)) return
     endif
 
@@ -3740,8 +3762,7 @@ contains
     if (have_disentangled .and. output_file%write_proj) then
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
                                 dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, error)
-      if (allocated(error)) return
+                                print_output%iprint, stdout, timer)
     endif
 
     ! aam: write data required for vdW utility
@@ -3823,7 +3844,7 @@ contains
       return
     endif
 
-    if (print_output%timing_level > 0) call io_stopwatch('wann: main_gamma', 2, error)
+    if (print_output%timing_level > 0) call io_stopwatch_stop('wann: main_gamma', timer)
 
     return
 
@@ -3836,11 +3857,12 @@ contains
   contains
 
     !================================================!
-    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, timing_level)
+    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, timing_level, timer)
       !================================================!
 
       use w90_constants, only: pi, eps10
-      use w90_io, only: io_stopwatch
+      use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+      use w90_types, only: timer_list_type
 
       implicit none
 
@@ -3850,6 +3872,7 @@ contains
       integer, intent(in) :: tnntot
       integer, intent(in) :: num_wann
       integer, intent(in) :: timing_level
+      type(timer_list_type), intent(inout) :: timer
 
       ! local variables
       real(kind=dp) :: theta, twotheta
@@ -3858,7 +3881,7 @@ contains
       real(kind=dp), parameter :: pifour = 0.25_dp*pi
       integer       :: nn, nw1, nw2, nw3
 
-      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 1, error)
+      if (timing_level > 1) call io_stopwatch_start('wann: main_gamma: new_u_and_m_gamma', timer)
 
       loop_nw1: do nw1 = 1, num_wann
       loop_nw2: do nw2 = nw1 + 1, num_wann
@@ -3910,7 +3933,7 @@ contains
       end do loop_nw2
       end do loop_nw1
 
-      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 2, error)
+      if (timing_level > 1) call io_stopwatch_stop('wann: main_gamma: new_u_and_m_gamma', timer)
 
       return
 
@@ -3981,19 +4004,21 @@ contains
   !================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                               nntot, wbtot, wb, bk, omega_invariant, ln_tmp, first_pass, &
-                              timing_level, error)
+                              timing_level, timer, error)
     !================================================!
     !
     !   Calculate the Wannier Function spread
     !
     !================================================
 
-    use w90_io, only: io_stopwatch
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: timer_list_type
 
     implicit none
 
     ! arguments
     type(localisation_vars_type), intent(out)  :: wann_spread
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: timing_level
@@ -4020,7 +4045,7 @@ contains
     real(kind=dp), allocatable :: m_w_nn2(:)
     integer :: ind, nn, m, n, iw, rn, cn, ierr
 
-    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 1, error)
+    if (timing_level > 1) call io_stopwatch_start('wann: omega_gamma', timer)
 
     allocate (m_w_nn2(num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -4113,7 +4138,7 @@ contains
       return
     endif
 
-    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 2, error)
+    if (timing_level > 1) call io_stopwatch_stop('wann: omega_gamma', timer)
 
     return
 

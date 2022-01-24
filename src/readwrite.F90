@@ -23,8 +23,7 @@ module w90_readwrite
   !! Common read/write routines for data needed by both
   !! wannier90.x and postw90.x executables
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
   use w90_types
 
   implicit none
