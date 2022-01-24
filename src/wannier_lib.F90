@@ -127,8 +127,8 @@ end module w90_libv1_types
 module w90_wannier90_libv1_types
   ! global type instances (of w90_wannier90_types) to allow legacy library
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
+  !use w90_io, only: maxlen
   use w90_wannier90_types
 
   implicit none
@@ -241,6 +241,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   integer, dimension(num_bands_tot), intent(out) :: exclude_bands_loc
   integer, dimension(num_bands_tot), optional, intent(out) :: proj_s_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
+  type(timer_list_type) :: timer
   type(w90_error_type), allocatable :: error
 
   type(w90_extra_io_type) :: write_data
@@ -330,7 +331,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 
   if (.not. kmesh_info%explicit_nnkpts) then
     call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, num_kpts, gamma_only, &
-                   stdout, error)
+                   stdout, timer, error)
   endif
   ! Now we zero all of the local output data, then copy in the data
   ! from the parameters module
@@ -371,7 +372,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 
   if (w90_calcs%postproc_setup) then
     call kmesh_write(exclude_bands, kmesh_info, input_proj, verbose, kpt_latt, real_lattice, &
-                     num_kpts, num_proj, calc_only_A, system%spinors, seedname, error)
+                     num_kpts, num_proj, calc_only_A, system%spinors, seedname, timer)
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
@@ -507,6 +508,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   logical :: disentanglement
   logical :: mpiinitalready
 
+  type(timer_list_type) :: timer
   type(w90_error_type), allocatable :: error
 
   ! CORRECT ONLY FOR SERIAL CASE!!!
@@ -596,7 +598,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
   call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, num_kpts, gamma_only, &
-                 stdout, error)
+                 stdout, timer, error)
 
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
@@ -604,7 +606,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call comms_array_split(num_kpts, counts, displs, comm)
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        verbose%timing_level, error, comm)
+                        verbose%timing_level, timer, error, comm)
   if (allocated(error)) return
   if (disentanglement) then
     m_matrix_orig = m_matrix_loc
@@ -639,7 +641,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
                   num_bands, num_kpts, num_wann, optimisation, gamma_only, lsitesymmetry, &
-                  stdout, error, comm)
+                  stdout, timer, error, comm)
     have_disentangled = .true.
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                                              kpt_latt, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
@@ -651,11 +653,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   else
     if (gamma_only) then
       call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                 verbose%timing_level, stdout, error)
+                                 verbose%timing_level, stdout, timer, error)
     else
       call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                            kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                           verbose%timing_level, lsitesymmetry, stdout, error, comm)
+                           verbose%timing_level, lsitesymmetry, stdout, timer, error, comm)
     endif
     if (allocated(error)) return
     time1 = io_time()
@@ -667,7 +669,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
                          u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
-                         rs_region%translate_home_cell, seedname, stdout, error, comm)
+                         rs_region%translate_home_cell, seedname, stdout, timer, error, comm)
   else
     call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
@@ -675,7 +677,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, error, comm)
+                   seedname, stdout, timer, error, comm)
   endif
 
   call w90_wannier90_readwrite_write_chkpt('postwann', exclude_bands, wann_data, kmesh_info, kpt_latt, &
@@ -693,7 +695,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix, u_matrix_opt, eigval, real_lattice, &
                    wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_wann, rpt_origin, tran%mode, have_disentangled, &
-                   lsitesymmetry, system%spinors, seedname, stdout, error, comm)
+                   lsitesymmetry, system%spinors, seedname, stdout, timer, error, comm)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
   end if
@@ -705,7 +707,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
                    rpt_origin, band_plot%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout, error)
+                   stdout, timer, error)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
   end if
@@ -748,7 +750,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                            wann_plot, write_data, eigval, error)
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
-  if (verbose%timing_level > 0) call io_print_timings(stdout)
+  if (verbose%timing_level > 0) call io_print_timings(timer, stdout)
 
   write (stdout, *)
   write (stdout, '(1x,a)') 'All done: wannier90 exiting'
