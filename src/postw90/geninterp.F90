@@ -73,7 +73,8 @@ contains
                             ws_region, print_output, wannier_data, ws_distance, wigner_seitz, &
                             HH_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
                             mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
-                            effective_model, have_disentangled, seedname, stdout, error, comm)
+                            effective_model, have_disentangled, seedname, stdout, timer, error, &
+                            comm)
     !==================================================
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
@@ -88,8 +89,8 @@ contains
     use w90_postw90_types, only: pw90_geninterp_mod_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
-      wannier_data_type, ws_region_type, ws_distance_type
-    use w90_io, only: io_stopwatch, io_file_unit, io_stopwatch
+      wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -106,6 +107,7 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
+    type(timer_list_type), intent(inout)         :: timer
     type(w90comm_type), intent(in)               :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -153,7 +155,7 @@ contains
     allocate (displs(0:num_nodes - 1))
 
     if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) &
-      call io_stopwatch('geninterp_main', 1, error)
+      call io_stopwatch_start('geninterp_main', timer)
 
     if (on_root) then
       write (stdout, *)
@@ -209,9 +211,10 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, error, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     if (on_root) then
@@ -354,7 +357,7 @@ contains
                                  localeig(:, i), eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, &
-                                 seedname, stdout, error, comm)
+                                 seedname, stdout, timer, error, comm)
         if (allocated(error)) return
 
       else
@@ -451,7 +454,7 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('geninterp_main', 2, error)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('geninterp_main', timer)
 
     return
 

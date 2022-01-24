@@ -43,7 +43,7 @@ contains
                       wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, &
                       eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                       num_wann, effective_model, have_disentangled, spin_decomp, seedname, stdout, &
-                      error, comm)
+                      timer, error, comm)
     !================================================!
     !
     !! Computes the electronic density of states. Can
@@ -59,9 +59,9 @@ contains
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, w90_system_type, ws_distance_type
+      ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_io, only: io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
 
@@ -81,6 +81,7 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
+    type(timer_list_type), intent(inout)         :: timer
     type(w90comm_type), intent(in)               :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -162,7 +163,7 @@ contains
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                   w90_system%num_valence_bands, effective_model, have_disentangled, seedname, &
-                  stdout, error, comm)
+                  stdout, timer, error, comm)
 
     if (allocated(error)) return
 
@@ -170,7 +171,7 @@ contains
       ndim = 3
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
 
       if (allocated(error)) return
 
@@ -183,7 +184,7 @@ contains
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 1, error)
+      if (print_output%timing_level > 1) call io_stopwatch_start('dos', timer)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -237,7 +238,7 @@ contains
                                    HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                    num_wann, w90_system%num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm)
+                                   have_disentangled, seedname, stdout, timer, error, comm)
           if (allocated(error)) return
 
           call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
@@ -286,7 +287,7 @@ contains
                                    HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                    num_wann, w90_system%num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm)
+                                   have_disentangled, seedname, stdout, timer, error, comm)
           if (allocated(error)) return
 
           call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
@@ -333,7 +334,7 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 2, error)
+      if (print_output%timing_level > 1) call io_stopwatch_stop('dos', timer)
     end if
 
     deallocate (HH, stat=ierr)

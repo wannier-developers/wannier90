@@ -67,7 +67,7 @@ contains
                              ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
                              eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                              num_wann, effective_model, have_disentangled, seedname, stdout, &
-                             error, comm)
+                             timer, error, comm)
     !================================================!
     !
     !! Computes the following quantities:
@@ -82,10 +82,10 @@ contains
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
-    use w90_io, only: io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
-    use w90_types, only: dis_manifold_type, print_output_type, &
+    use w90_types, only: dis_manifold_type, print_output_type, timer_list_type, &
       kmesh_info_type, wannier_data_type, ws_region_type, w90_system_type, ws_distance_type
     use w90_utility, only: utility_det3
 
@@ -106,6 +106,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
@@ -160,7 +161,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('gyrotropic: prelims', 1, error)
+      call io_stopwatch_start('gyrotropic: prelims', timer)
 
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
@@ -205,17 +206,17 @@ contains
 
     ! Wannier matrix elements, allocations and initializations
 
-    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  w90_system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
-                  error, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  w90_system%num_valence_bands, effective_model, have_disentangled, seedname, &
+                  stdout, timer, error, comm)
     if (allocated(error)) return
 
     if (eval_D .or. eval_Dw .or. eval_K .or. eval_NOA) then
 
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, v_matrix, &
                     eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    effective_model, have_disentangled, seedname, stdout, error, comm)
+                    effective_model, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     endif
@@ -224,7 +225,7 @@ contains
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, error, comm)
+                    seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     endif
@@ -234,12 +235,12 @@ contains
     if (eval_K) then
       call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                     scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, v_matrix, &
                     eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, error, comm)
+                    num_wann, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
       allocate (gyro_K_orb(3, 3, fermi_n))
@@ -322,8 +323,8 @@ contains
       endif
 
       if (print_output%timing_level > 1) then
-        call io_stopwatch('gyrotropic: prelims', 2, error)
-        call io_stopwatch('gyrotropic: k-interpolation', 1, error)
+        call io_stopwatch_stop('gyrotropic: prelims', timer)
+        call io_stopwatch_start('gyrotropic: k-interpolation', timer)
       endif
 
       write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', pw90_gyrotropic%kmesh%mesh(1:3)
@@ -355,7 +356,7 @@ contains
                                  num_bands, num_kpts, u_matrix, v_matrix, dis_manifold, kpt_latt, &
                                  pw90_gyrotropic, scissors_shift, effective_model, &
                                  pw90_band_deriv_degen, ws_distance, wigner_seitz, stdout, &
-                                 seedname, error, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
+                                 seedname, timer, error, comm, HH_R, AA_R, BB_R, CC_R, SS_R)
       if (allocated(error)) return
 
     end do !loop_xyz
@@ -403,7 +404,7 @@ contains
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, error)
+      if (print_output%timing_level > 1) call io_stopwatch_stop('gyrotropic: k-interpolation', timer)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)
@@ -558,8 +559,8 @@ contains
                                    fermi_energy_list, wannier_data, eigval, real_lattice, mp_grid, &
                                    num_bands, num_kpts, u_matrix, v_matrix, dis_manifold, kpt_latt, &
                                    pw90_gyrotropic, scissors_shift, effective_model, pw90_band_deriv_degen, &
-                                   ws_distance, wigner_seitz, stdout, seedname, error, comm, &
-                                   HH_R, AA_R, BB_R, CC_R, SS_R)
+                                   ws_distance, wigner_seitz, stdout, seedname, timer, error, &
+                                   comm, HH_R, AA_R, BB_R, CC_R, SS_R)
     !======================================================================!
     !                                                                      !
     ! Contribution from point k to the GME tensor, Eq.(9) of ZMS16,        !
@@ -592,10 +593,10 @@ contains
 
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_stopwatch, io_file_unit
+    use w90_io, only: io_file_unit
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
-      wannier_data_type, ws_region_type, ws_distance_type
+      wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k_vec
     use w90_spin, only: spin_get_S
@@ -617,6 +618,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
@@ -684,7 +686,7 @@ contains
                              HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                              real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                              num_valence_bands, effective_model, have_disentangled, seedname, &
-                             stdout, error, comm)
+                             stdout, timer, error, comm)
     if (allocated(error)) return
 
     if (eval_Dw .or. eval_NOA) then
@@ -750,8 +752,8 @@ contains
                                        AA_R, BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                        real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                        num_kpts, num_wann, num_valence_bands, effective_model, &
-                                       have_disentangled, seedname, stdout, error, comm, imf_k, &
-                                       img_k, imh_k, occ)
+                                       have_disentangled, seedname, stdout, timer, error, comm, &
+                                       imf_k, img_k, imh_k, occ)
             if (allocated(error)) return
 
             do i = 1, 3
@@ -767,7 +769,7 @@ contains
                                      BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                      real_lattice, imf_k, scissors_shift, mp_grid, num_bands, &
                                      num_kpts, num_wann, num_valence_bands, effective_model, &
-                                     have_disentangled, seedname, stdout, error, comm, occ)
+                                     have_disentangled, seedname, stdout, timer, error, comm, occ)
             if (allocated(error)) return
 
             do i = 1, 3

@@ -424,7 +424,7 @@ contains
                                  HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                  real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                  num_wann, num_valence_bands, effective_model, have_disentangled, &
-                                 seedname, stdout, error, comm)
+                                 seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Given a k point, this function returns eigenvalues E and
@@ -437,9 +437,9 @@ contains
     use w90_comms, only: w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
-    use w90_io, only: io_stopwatch, io_file_unit
+    use w90_io, only: io_file_unit
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      ws_region_type, ws_distance_type
+      ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
       pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize
@@ -456,6 +456,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -489,8 +490,8 @@ contains
     ! Further calls should return very fast.
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
@@ -569,7 +570,7 @@ contains
                                        eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                        num_bands, num_kpts, num_wann, num_valence_bands, &
                                        effective_model, have_disentangled, seedname, stdout, &
-                                       error, comm, occ)
+                                       timer, error, comm, occ)
     !================================================!
     !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -583,7 +584,7 @@ contains
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type
+      ws_region_type, ws_distance_type, timer_list_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -599,6 +600,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -629,7 +631,7 @@ contains
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                   num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
-                  error, comm)
+                  timer, error, comm)
     if (allocated(error)) return
 
     allocate (delHH(num_wann, num_wann, 3))
@@ -662,7 +664,7 @@ contains
                                               real_lattice, scissors_shift, mp_grid, &
                                               num_bands, num_kpts, num_wann, num_valence_bands, &
                                               effective_model, have_disentangled, seedname, &
-                                              stdout, error, comm)
+                                              stdout, timer, error, comm)
     !================================================!
     !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -674,7 +676,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      kmesh_info_type, ws_region_type, ws_distance_type
+      kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_utility, only: utility_diagonalize
     use w90_postw90_types, only: pw90_berry_mod_type, wigner_seitz_type
     use w90_comms, only: w90comm_type, mpirank
@@ -692,6 +694,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -717,13 +720,14 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                   v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                  num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+                  num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                  comm)
     if (allocated(error)) return
 
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, num_wann, ws_region, &
@@ -742,7 +746,7 @@ contains
                                       HH_R, u_matrix, UU, v_matrix, eig, eigval, kpt, &
                                       real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                       num_wann, num_valence_bands, effective_model, &
-                                      have_disentangled, seedname, stdout, error, comm)
+                                      have_disentangled, seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -755,7 +759,7 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_comms, only: w90comm_type, mpirank
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type
+      ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: wigner_seitz_type
 
     implicit none
@@ -769,6 +773,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
@@ -793,8 +798,8 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &

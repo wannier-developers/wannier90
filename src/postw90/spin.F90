@@ -43,7 +43,7 @@ contains
                              ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, eigval, &
                              real_lattice, scissors_shift, mp_grid, num_wann, num_bands, num_kpts, &
                              num_valence_bands, effective_model, have_disentangled, &
-                             wanint_kpoint_file, seedname, stdout, error, comm)
+                             wanint_kpoint_file, seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -55,7 +55,7 @@ contains
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, ws_region_type, ws_distance_type
+      dis_manifold_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
     implicit none
@@ -71,6 +71,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -112,13 +113,13 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                   wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                  have_disentangled, seedname, stdout, error, comm)
+                  have_disentangled, seedname, stdout, timer, error, comm)
     if (allocated(error)) return
 
     if (print_output%iprint > 0) then

@@ -43,7 +43,7 @@ module w90_boltzwann
     comms_allreduce, w90comm_type
   use w90_constants, only: dp, pw90_physical_constants_type, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
-  use w90_io, only: io_stopwatch, io_file_unit
+  use w90_io, only: io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
     set_error_input, set_error_fatal, set_error_open
@@ -80,7 +80,7 @@ contains
                             w90_system, wannier_data, ws_distance, wigner_seitz, print_output, &
                             HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
                             mp_grid, num_wann, num_bands, num_kpts, effective_model, &
-                            have_disentangled, spin_decomp, seedname, stdout, error, comm)
+                            have_disentangled, spin_decomp, seedname, stdout, timer, error, comm)
     !================================================!
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
@@ -99,10 +99,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      ws_region_type, w90_system_type, ws_distance_type
+      ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
 
@@ -123,6 +123,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
@@ -185,7 +186,7 @@ contains
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
-    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch('boltzwann_main', 1, error)
+    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch_start('boltzwann_main', timer)
 
     if (print_output%iprint > 0) then
       write (stdout, *)
@@ -296,7 +297,7 @@ contains
                        real_lattice, TDF, TDFEnergyArray, cell_volume, scissors_shift, mp_grid, &
                        num_bands, num_kpts, num_wann, w90_system%num_valence_bands, &
                        w90_system%num_elec_per_state, effective_model, have_disentangled, &
-                       spin_decomp, seedname, stdout, error, comm)
+                       spin_decomp, seedname, stdout, timer, error, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -326,7 +327,7 @@ contains
     ! *********************************************************************************
     ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, error)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_start('boltzwann_main: calc_props', timer)
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
@@ -613,7 +614,7 @@ contains
     call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, error, comm)
     if (allocated(error)) return
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, error)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('boltzwann_main: calc_props', timer)
 
     ! Open files and print
     if (on_root) then
@@ -760,7 +761,7 @@ contains
       return
     endif
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, error)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('boltzwann_main', timer)
 
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
@@ -776,7 +777,7 @@ contains
                            v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, cell_volume, &
                            scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                            num_valence_bands, num_elec_per_state, effective_model, &
-                           have_disentangled, spin_decomp, seedname, stdout, error, comm)
+                           have_disentangled, spin_decomp, seedname, stdout, timer, error, comm)
     !================================================!
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
@@ -803,11 +804,11 @@ contains
 
     use w90_constants, only: dp
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_io, only: io_file_unit, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type
+      ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
     use w90_readwrite, only: w90_readwrite_get_smearing_type
@@ -829,6 +830,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, num_elec_per_state
@@ -896,7 +898,7 @@ contains
     num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
-    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 1, error)
+    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch_start('calcTDF', timer)
     if (print_output%iprint > 0) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
@@ -909,8 +911,8 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     if (spin_decomp) then
@@ -918,7 +920,7 @@ contains
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, postw90_oper, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     else
@@ -1059,7 +1061,7 @@ contains
                                ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                               have_disentangled, seedname, stdout, error, comm)
+                               have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, num_wann, recip_lattice)
@@ -1106,7 +1108,7 @@ contains
                                            del_eig, eig, eigval, kpt, real_lattice, &
                                            scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                            num_valence_bands, effective_model, have_disentangled, &
-                                           seedname, stdout, error, comm)
+                                           seedname, stdout, timer, error, comm)
                   if (allocated(error)) return
 
                   call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, &
@@ -1201,7 +1203,7 @@ contains
       end do
     end if
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 2, error)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('calcTDF', timer)
     if (on_root) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "TDF and DOS calculated."

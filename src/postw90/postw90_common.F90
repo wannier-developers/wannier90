@@ -56,7 +56,8 @@ contains
   !================================================!
 
   subroutine pw90common_wanint_setup(num_wann, print_output, real_lattice, mp_grid, &
-                                     effective_model, wigner_seitz, stdout, seedname, error, comm)
+                                     effective_model, wigner_seitz, stdout, seedname, timer, &
+                                     error, comm)
     !================================================!
     !
     !! Setup data ready for interpolation
@@ -64,13 +65,14 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit
-    use w90_types, only: print_output_type
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: print_output_type, timer_list_type
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
 
     type(print_output_type), intent(in) :: print_output
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -106,8 +108,8 @@ contains
       call comms_bcast(wigner_seitz%nrpts, 1, error, comm)
       if (allocated(error)) return
     else
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .true., error, &
-                       comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .true., timer, &
+                       error, comm)
       if (allocated(error)) return
     endif
 
@@ -140,8 +142,8 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
 
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .false., error, &
-                       comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .false., timer, &
+                       error, comm)
       if (allocated(error)) return
 
       ! Convert from reduced to Cartesian coordinates
@@ -169,7 +171,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time
     use w90_comms, only: mpirank, mpisize, w90comm_type, comms_send, comms_recv, comms_bcast
     use w90_postw90_types, only: kpoint_dist_type
 
@@ -271,8 +273,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time, &
-      io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time
     use w90_comms, only: mpirank, w90comm_type, comms_bcast
     use w90_types
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
@@ -745,8 +746,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_file_unit, &
-      io_date, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_date, io_time
     use w90_types, only: dis_manifold_type, wannier_data_type
     use w90_comms, only: w90comm_type, mpirank, comms_bcast
 
@@ -1840,7 +1840,7 @@ contains
 
   !================================================!
   subroutine wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, count_pts, &
-                         error, comm)
+                         timer, error, comm)
     !================================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1849,8 +1849,8 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch
-    use w90_types, only: print_output_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: print_output_type, timer_list_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
@@ -1862,6 +1862,7 @@ contains
 
     ! arguments
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
@@ -1880,7 +1881,7 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. on_root) &
-      call io_stopwatch('postw90_common: wigner_seitz', 1, error)
+      call io_stopwatch_start('postw90_common: wigner_seitz', timer)
 
     call utility_metric(real_lattice, real_metric)
     ! The Wannier functions live in a periodic supercell of the real space unit
@@ -1951,7 +1952,7 @@ contains
 
     if (count_pts) then
       if (print_output%timing_level > 1 .and. on_root) &
-        call io_stopwatch('postw90_common: wigner_seitz', 2, error)
+        call io_stopwatch_stop('postw90_common: wigner_seitz', timer)
       return
     end if
 
@@ -1978,7 +1979,7 @@ contains
       return
     endif
     if (print_output%timing_level > 1 .and. on_root) &
-      call io_stopwatch('postw90_common: wigner_seitz', 2, error)
+      call io_stopwatch_stop('postw90_common: wigner_seitz', timer)
 
     return
   end subroutine wignerseitz

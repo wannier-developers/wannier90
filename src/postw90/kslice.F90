@@ -53,7 +53,7 @@ contains
                      BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, u_matrix, &
                      bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                      num_kpts, num_wann, num_valence_bands, effective_model, have_disentangled, &
-                     seedname, stdout, error, comm)
+                     seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Main routine
@@ -66,9 +66,9 @@ contains
     use w90_comms, only: comms_bcast, w90comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
-    use w90_io, only: io_file_unit, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_time
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, &
-      wannier_data_type, ws_region_type, ws_distance_type
+      wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice, utility_recip_lattice_base
@@ -93,6 +93,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :)
@@ -191,26 +192,28 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_Valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_Valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     if (plot_curv .or. plot_morb) then
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
+                    error, comm)
       if (allocated(error)) return
 
     endif
     if (plot_morb) then
       call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                     scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, error, comm)
+                    num_wann, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
                     v_matrix, eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, &
-                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, error, comm)
+                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, timer, &
+                    error, comm)
       if (allocated(error)) return
 
     endif
@@ -218,18 +221,19 @@ contains
     if (plot_shc) then
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
+                    error, comm)
       if (allocated(error)) return
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
                      pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, &
                      wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                     num_valence_bands, have_disentangled, seedname, stdout, error, comm)
+                     num_valence_bands, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     end if
@@ -237,7 +241,7 @@ contains
     if (fermi_lines_color) then
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     endif
@@ -352,7 +356,7 @@ contains
                                    HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
                                    real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                                    num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm)
+                                   have_disentangled, seedname, stdout, timer, error, comm)
           if (allocated(error)) return
 
           Delta_k = max(b1mod/pw90_kslice%kmesh2d(1), b2mod/pw90_kslice%kmesh2d(2))
@@ -388,7 +392,7 @@ contains
                                  u_matrix, v_matrix, eigval, kpt, real_lattice, imf_k_list, &
                                  scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, seedname, &
-                                 stdout, error, comm)
+                                 stdout, timer, error, comm)
         if (allocated(error)) return
 
         curv(1) = sum(imf_k_list(:, 1, 1))
@@ -403,8 +407,8 @@ contains
                                    BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
                                    real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                    num_kpts, num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm, imf_k_list, &
-                                   img_k_list, imh_k_list)
+                                   have_disentangled, seedname, stdout, timer, error, comm, &
+                                   imf_k_list, img_k_list, imh_k_list)
         if (allocated(error)) return
 
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
@@ -421,7 +425,7 @@ contains
                                  SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, kpt, real_lattice, &
                                  scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, num_wann, &
                                  num_valence_bands, effective_model, have_disentangled, seedname, &
-                                 stdout, error, comm, shc_k_fermi=shc_k_fermi)
+                                 stdout, timer, error, comm, shc_k_fermi=shc_k_fermi)
         if (allocated(error)) return
 
         my_zdata(1, iloc) = shc_k_fermi(1)

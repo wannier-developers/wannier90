@@ -27,7 +27,7 @@ module w90_get_oper
 
   use w90_comms, only: comms_bcast, w90comm_type, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-  use w90_io, only: io_stopwatch, io_file_unit
+  use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
     set_error_input, set_error_fatal, set_error_open
 
@@ -48,7 +48,7 @@ contains
   subroutine get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, &
                       v_matrix, eigval, real_lattice, scissors_shift, num_bands, num_kpts, &
                       num_wann, num_valence_bands, effective_model, have_disentangled, seedname, &
-                      stdout, error, comm)
+                      stdout, timer, error, comm)
     !================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -57,7 +57,7 @@ contains
     !================================================
 
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_types, only: dis_manifold_type, print_output_type
+    use w90_types, only: dis_manifold_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -66,6 +66,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(w90comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, num_valence_bands, stdout
@@ -97,13 +98,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_HH_R', 1, error)
+      call io_stopwatch_start('get_oper: get_HH_R', timer)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, wigner_seitz%nrpts))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_HH_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_HH_R', timer)
       return
     end if
 
@@ -188,7 +189,7 @@ contains
       call comms_bcast(wigner_seitz%crvec(1, 1), 3*wigner_seitz%nrpts, error, comm)
       if (allocated(error)) return
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_HH_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_HH_R', timer)
       return
     endif
 
@@ -253,7 +254,7 @@ contains
     endif
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_HH_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_HH_R', timer)
     return
 
 101 call set_error_open(error, 'Error in get_HH_R: problem opening file '// &
@@ -265,7 +266,7 @@ contains
   !================================================
   subroutine get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                       v_matrix, eigval, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                      effective_model, have_disentangled, seedname, stdout, error, comm)
+                      effective_model, have_disentangled, seedname, stdout, timer, error, comm)
     !================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -275,7 +276,7 @@ contains
     !================================================
 
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_oper_read_type, pw90_spin_hall_type
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -284,6 +285,7 @@ contains
     type(dis_manifold_type), intent(in)   :: dis_manifold
     type(kmesh_info_type), intent(in)     :: kmesh_info
     type(print_output_type), intent(in)   :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in)         :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -320,13 +322,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_AA_R', 1, error)
+      call io_stopwatch_start('get_oper: get_AA_R', timer)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_AA_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_AA_R', timer)
       return
     end if
 
@@ -381,7 +383,7 @@ contains
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
       if (allocated(error)) return
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_AA_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_AA_R', timer)
       return
     endif
 
@@ -541,7 +543,7 @@ contains
     if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_AA_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_AA_R', timer)
     return
 
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -556,7 +558,7 @@ contains
   !================================================
   subroutine get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
                       scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                      have_disentangled, seedname, stdout, error, comm)
+                      have_disentangled, seedname, stdout, timer, error, comm)
     !================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -564,7 +566,7 @@ contains
     !
     !================================================
 
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -572,6 +574,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -606,12 +609,12 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_BB_R', 1, error)
+      call io_stopwatch_start('get_oper: get_BB_R', timer)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_BB_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_BB_R', timer)
       return
     end if
 
@@ -724,7 +727,7 @@ contains
     if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_BB_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_BB_R', timer)
     return
 
 103 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -737,7 +740,7 @@ contains
   !================================================
   subroutine get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
                       v_matrix, eigval, scissors_shift, irvec, nrpts, num_bands, num_kpts, &
-                      num_wann, have_disentangled, seedname, stdout, error, comm)
+                      num_wann, have_disentangled, seedname, stdout, timer, error, comm)
     !================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -746,7 +749,7 @@ contains
     !================================================
 
     use w90_postw90_types, only: pw90_oper_read_type
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -755,7 +758,8 @@ contains
     type(kmesh_info_type), intent(in)     :: kmesh_info
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in)   :: print_output
-    type(w90comm_type), intent(in)         :: comm
+    type(timer_list_type), intent(inout)  :: timer
+    type(w90comm_type), intent(in)        :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -785,13 +789,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_CC_R', 1, error)
+      call io_stopwatch_start('get_oper: get_CC_R', timer)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_CC_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_CC_R', timer)
       return
     end if
 
@@ -915,7 +919,7 @@ contains
     if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_CC_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_CC_R', timer)
     return
 
 105 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu')
@@ -928,7 +932,7 @@ contains
   !================================================
   subroutine get_FF_R(num_bands, num_kpts, num_wann, nrpts, irvec, v_matrix, FF_R, dis_manifold, &
                       kmesh_info, kpt_latt, print_output, have_disentangled, stdout, seedname, &
-                      error, comm)
+                      timer, error, comm)
     !================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -936,7 +940,7 @@ contains
     !
     !================================================
 
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -944,6 +948,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -972,13 +977,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_FF_R', 1, error)
+      call io_stopwatch_start('get_oper: get_FF_R', timer)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_FF_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_FF_R', timer)
       return
     end if
 
@@ -1091,7 +1096,7 @@ contains
     if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_FF_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_FF_R', timer)
     return
 
 107 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
@@ -1104,7 +1109,7 @@ contains
   !================================================
   subroutine get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, &
                       eigval, irvec, nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                      seedname, stdout, error, comm)
+                      seedname, stdout, timer, error, comm)
     !================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -1113,7 +1118,7 @@ contains
     !================================================
 
     use w90_postw90_types, only: pw90_oper_read_type
-    use w90_types, only: dis_manifold_type, print_output_type
+    use w90_types, only: dis_manifold_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -1121,6 +1126,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -1147,7 +1153,7 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SS_R', 1, error)
+      call io_stopwatch_start('get_oper: get_SS_R', timer)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -1266,7 +1272,7 @@ contains
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
     if (allocated(error)) return
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SS_R', 2, error)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SS_R', timer)
     return
 
 109 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
@@ -1280,7 +1286,7 @@ contains
   subroutine get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
                        pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, irvec, &
                        nrpts, num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
-                       seedname, stdout, error, comm)
+                       seedname, stdout, timer, error, comm)
     !================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1291,7 +1297,7 @@ contains
     !================================================
 
     use w90_postw90_types, only: pw90_oper_read_type, pw90_spin_hall_type
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -1301,6 +1307,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -1351,27 +1358,27 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SHC_R', 1, error)
+      call io_stopwatch_start('get_oper: get_SHC_R', timer)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_SHC_R', timer)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_SHC_R', timer)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SHC_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_SHC_R', timer)
       return
     end if
 
@@ -1665,7 +1672,7 @@ contains
     ! end copying from get_AA_R, Junfeng Qiao
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SHC_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_SHC_R', timer)
     return
 
 101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -1682,7 +1689,7 @@ contains
   !================================================
   subroutine get_SBB_R(dis_manifold, kmesh_info, kpt_latt, print_output, SBB_R, v_matrix, &
                        scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                       have_disentangled, seedname, stdout, error, comm)
+                       have_disentangled, seedname, stdout, timer, error, comm)
     !================================================!
     !
     ! SBB_ab(R) = <0|s_a.H.(r-R)_b|R> is the Fourier transform of
@@ -1690,7 +1697,7 @@ contains
     !
     !================================================!
 
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -1698,6 +1705,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -1727,13 +1735,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SBB_R', 1, error)
+      call io_stopwatch_start('get_oper: get_SBB_R', timer)
 
     if (.not. allocated(SBB_R)) then
       allocate (SBB_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SBB_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_SBB_R', timer)
       return
     end if
 
@@ -1833,7 +1841,7 @@ contains
     if (allocated(error)) return
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SBB_R', 2, error)
+      call io_stopwatch_stop('get_oper: get_SBB_R', timer)
     return
 
 111 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu')
@@ -1846,7 +1854,7 @@ contains
   !================================================
   subroutine get_SAA_R(dis_manifold, kmesh_info, kpt_latt, print_output, SAA_R, v_matrix, &
                        scissors_shift, irvec, nrpts, num_bands, num_kpts, num_wann, &
-                       have_disentangled, seedname, stdout, error, comm)
+                       have_disentangled, seedname, stdout, timer, error, comm)
     !================================================!
     !
     ! SAA_ab(R) = <0|s_a.(r-R)_b|R> is the Fourier transform of
@@ -1854,7 +1862,7 @@ contains
     !
     !================================================!
 
-    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type
+    use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -1862,6 +1870,7 @@ contains
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
     type(w90comm_type), intent(in)      :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
@@ -1891,13 +1900,13 @@ contains
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-      call io_stopwatch('get_oper: get_SAA_R', 1, error)
+      call io_stopwatch_start('get_oper: get_SAA_R', timer)
 
     if (.not. allocated(SAA_R)) then
       allocate (SAA_R(num_wann, num_wann, nrpts, 3, 3))
     else
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
-        call io_stopwatch('get_oper: get_SAA_R', 2, error)
+        call io_stopwatch_stop('get_oper: get_SAA_R', timer)
       return
     end if
 
@@ -1997,7 +2006,7 @@ contains
     call comms_bcast(SAA_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, error, comm)
     if (allocated(error)) return
 
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch('get_oper: get_SAA_R', 2, error)
+    if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SAA_R', timer)
     return
 
 113 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu')

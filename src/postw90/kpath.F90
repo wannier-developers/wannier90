@@ -52,7 +52,7 @@ contains
                     BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, u_matrix, &
                     bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, num_wann, &
                     num_bands, num_kpts, num_valence_bands, effective_model, have_disentangled, &
-                    seedname, stdout, error, comm)
+                    seedname, stdout, timer, error, comm)
     !================================================!
     !
     !! Main routine
@@ -63,10 +63,10 @@ contains
       comms_gatherv, comms_bcast
     use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
-    use w90_io, only: io_file_unit, io_time, io_stopwatch
+    use w90_io, only: io_file_unit, io_time
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, pw90_kpath_mod_type, &
       pw90_spin_mod_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
@@ -91,6 +91,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
@@ -192,55 +193,58 @@ contains
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, error, &
-                  comm)
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
     if (allocated(error)) return
 
     if (plot_curv .or. plot_morb) then
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
                     v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, effective_model, have_disentangled, seedname, stdout, error, comm)
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
+                    error, comm)
       if (allocated(error)) return
 
     endif
     if (plot_morb) then
 
       call get_BB_R(dis_manifold, kmesh_info, kpt_latt, print_output, BB_R, v_matrix, eigval, &
-                    scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, error, comm)
+                    scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
-      call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, v_matrix, &
-                    eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
-                    num_wann, have_disentangled, seedname, stdout, error, comm)
+      call get_CC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, CC_R, &
+                    v_matrix, eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, &
+                    num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, timer, &
+                    error, comm)
       if (allocated(error)) return
 
     endif
 
     if (plot_shc .or. (plot_bands .and. pw90_kpath%bands_colour == 'shc')) then
 
-      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, v_matrix, &
-                    eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    effective_model, have_disentangled, seedname, stdout, error, comm)
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                    comm)
       if (allocated(error)) return
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
-                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, error, comm)
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
-      call get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, pw90_spin_hall, SH_R, &
-                     SHR_R, SR_R, v_matrix, eigval, scissors_shift, wigner_seitz%irvec, wigner_seitz%nrpts, &
-                     num_bands, num_kpts, num_wann, num_valence_bands, have_disentangled, &
-                     seedname, stdout, error, comm)
+      call get_SHC_R(dis_manifold, kmesh_info, kpt_latt, print_output, pw90_oper_read, &
+                     pw90_spin_hall, SH_R, SHR_R, SR_R, v_matrix, eigval, scissors_shift, &
+                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                     num_valence_bands, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     endif
 
     if (plot_bands .and. pw90_kpath%bands_colour == 'spin') then
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
-                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, &
-                    seedname, stdout, error, comm)
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
     end if
@@ -334,7 +338,7 @@ contains
                                    SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, &
                                    kpt, real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                    num_kpts, num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm, &
+                                   have_disentangled, seedname, stdout, timer, error, comm, &
                                    shc_k_band=shc_k_band)
           if (allocated(error)) return
 
@@ -346,10 +350,10 @@ contains
         call berry_get_imfgh_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
                                    print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
                                    BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
-                                   real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, num_kpts, &
-                                   num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm, imf_k_list, &
-                                   img_k_list, imh_k_list)
+                                   real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
+                                   num_kpts, num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm, &
+                                   imf_k_list, img_k_list, imh_k_list)
         if (allocated(error)) return
 
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
@@ -362,12 +366,12 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, print_output, &
-                                   wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, &
-                                   u_matrix, v_matrix, eigval, kpt, real_lattice, &
-                                   imf_k_list, scissors_shift, mp_grid, num_bands, num_kpts, &
-                                   num_wann, num_valence_bands, effective_model, &
-                                   have_disentangled, seedname, stdout, error, comm)
+          call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                   BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                   real_lattice, imf_k_list, scissors_shift, mp_grid, num_bands, &
+                                   num_kpts, num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm)
           if (allocated(error)) return
 
         end if
@@ -383,7 +387,7 @@ contains
                                  SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, eigval, kpt, &
                                  real_lattice, scissors_shift, mp_grid, fermi_n, num_bands, &
                                  num_kpts, num_wann, num_valence_bands, effective_model, &
-                                 have_disentangled, seedname, stdout, error, comm, &
+                                 have_disentangled, seedname, stdout, timer, error, comm, &
                                  shc_k_fermi=shc_k_fermi)
         if (allocated(error)) return
         my_shc(loop_kpt) = shc_k_fermi(1)

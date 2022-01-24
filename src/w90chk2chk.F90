@@ -60,7 +60,6 @@ module w90chk_parameters
   !! Dimensions of the Monkhorst-Pack grid
 
   integer, save :: num_proj
-  !BGS used by stuff in driver/kmesh/wannier - keep separate or duplicate?
 
   real(kind=dp), save :: real_lattice(3, 3)
 
@@ -73,8 +72,7 @@ end module w90chk_parameters
 
 module wannchk_data
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
 
   use w90_wannier90_types
 

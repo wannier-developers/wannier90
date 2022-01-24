@@ -123,6 +123,7 @@ program postw90
   real(kind=dp), allocatable :: fermi_energy_list(:)
   integer :: fermi_n
   type(atom_data_type) :: atoms
+  type(timer_list_type) :: timer
   type(w90_error_type), allocatable :: err
 
   integer :: num_bands
@@ -300,7 +301,7 @@ program postw90
       ! the orbital magnetization
 
       call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                     num_kpts, gamma_only, stdout, error)
+                     num_kpts, gamma_only, stdout, timer, error)
       if (allocated(error)) call catch_error(error)
 
       time2 = io_time()
@@ -379,7 +380,7 @@ program postw90
   ! Setup a number of common variables for all interpolation tasks
 
   call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
-                               ws_vec, stdout, seedname, error, comm)
+                               ws_vec, stdout, seedname, timer, error, comm)
   if (allocated(error)) call catch_error(error)
 
   if (on_root) then
@@ -399,7 +400,7 @@ program postw90
                   pw90_spin, ws_region, system, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                   SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                   mp_grid, num_bands, num_kpts, num_wann, effective_model, have_disentangled, &
-                  pw90_calcs%spin_decomp, seedname, stdout, error, comm)
+                  pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
     if (allocated(error)) call catch_error(error)
   endif
 
@@ -415,7 +416,7 @@ program postw90
                 ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, &
                 SBB_R, v_matrix, u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, &
                 mp_grid, fermi_n, num_wann, num_bands, num_kpts, system%num_valence_bands, &
-                effective_model, have_disentangled, seedname, stdout, error, comm)
+                effective_model, have_disentangled, seedname, stdout, timer, error, comm)
     if (allocated(error)) call catch_error(error)
   end if
 
@@ -429,7 +430,7 @@ program postw90
                  ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, &
                  u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, &
                  num_bands, num_kpts, num_wann, system%num_valence_bands, effective_model, &
-                 have_disentangled, seedname, stdout, error, comm)
+                 have_disentangled, seedname, stdout, timer, error, comm)
     if (allocated(error)) call catch_error(error)
   end if
 
@@ -442,7 +443,8 @@ program postw90
                          pw90_spin, ws_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                          SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                          num_wann, num_bands, num_kpts, system%num_valence_bands, effective_model, &
-                         have_disentangled, berry%wanint_kpoint_file, seedname, stdout, error, comm)
+                         have_disentangled, berry%wanint_kpoint_file, seedname, stdout, timer, &
+                         error, comm)
     if (allocated(error)) call catch_error(error)
   end if
 
@@ -471,7 +473,7 @@ program postw90
                     SAA_R, SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                     mp_grid, fermi_n, num_wann, num_kpts, num_bands, system%num_valence_bands, &
                     effective_model, have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, &
-                    error, comm)
+                    timer, error, comm)
     if (allocated(error)) call catch_error(error)
   end if
   ! -----------------------------------------------------------------
@@ -487,7 +489,7 @@ program postw90
                         ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, real_lattice, &
                         scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                         system%num_valence_bands, effective_model, have_disentangled, seedname, &
-                        stdout, error, comm)
+                        stdout, timer, error, comm)
     if (allocated(error)) call catch_error(error)
   end if
 
@@ -496,7 +498,7 @@ program postw90
                         physics, ws_region, system, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                         SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         num_wann, num_bands, num_kpts, effective_model, have_disentangled, &
-                        pw90_calcs%spin_decomp, seedname, stdout, error, comm)
+                        pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
     if (allocated(error)) call catch_error(error)
   end if
 
@@ -505,8 +507,8 @@ program postw90
                          physics, postw90_oper, pw90_ham, ws_region, system, verbose, wann_data, &
                          ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
                          eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
-                         num_wann, effective_model, have_disentangled, seedname, stdout, error, &
-                         comm)
+                         num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
+                         error, comm)
     if (allocated(error)) call catch_error(error)
   endif
 
@@ -522,7 +524,7 @@ program postw90
   if (on_root) then
     write (stdout, '(/,1x,a25,f11.3,a)') &
       'Total Execution Time     ', io_time(), ' (sec)'
-    if (verbose%timing_level > 0) call io_print_timings(stdout)
+    if (verbose%timing_level > 0) call io_print_timings(timer, stdout)
     write (stdout, *)
     write (stdout, '(/,1x,a)') 'All done: postw90 exiting'
     close (stdout)
