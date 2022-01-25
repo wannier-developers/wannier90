@@ -583,8 +583,11 @@ contains
   subroutine prterr(error, stdout)
     type(w90_error_type), intent(in) :: error
     integer, intent(in) :: stdout
-    write (stdout, *) "ERROR CODE: ", error%code
-    write (stdout, *) "ERROR CONDITION: ", error%message
+    !write (stdout, *) "ERROR CODE: ", error%code
+    !write (stdout, *) "ERROR CONDITION: ", error%message
+    ! rep old behaviour for a moment while testing...
+    write (stdout, *) 'Exiting.......'
+    write (stdout, *) error%message
     call exit(error%code)
   end subroutine prterr
 end program wannier
