@@ -28,8 +28,8 @@ module w90_get_oper
   use w90_comms, only: comms_bcast, w90comm_type, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
   use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -257,7 +257,7 @@ contains
       call io_stopwatch_stop('get_oper: get_HH_R', timer)
     return
 
-101 call set_error_open(error, 'Error in get_HH_R: problem opening file '// &
+101 call set_error_file(error, 'Error in get_HH_R: problem opening file '// &
                         trim(seedname)//'_HH_R.dat')
     return !fixme restructure
 
@@ -546,11 +546,11 @@ contains
       call io_stopwatch_stop('get_oper: get_AA_R', timer)
     return
 
-101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
     return
-102 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
     return
-103 call set_error_open(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat')
+103 call set_error_file(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat')
     return !fixme jj restructure
 
   end subroutine get_AA_R
@@ -730,9 +730,9 @@ contains
       call io_stopwatch_stop('get_oper: get_BB_R', timer)
     return
 
-103 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+103 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
     return
-104 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
     return
 
   end subroutine get_BB_R
@@ -922,9 +922,9 @@ contains
       call io_stopwatch_stop('get_oper: get_CC_R', timer)
     return
 
-105 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu')
+105 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu')
     return
-106 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.uHu')
+106 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uHu')
     return !jj fixme restructure
 
   end subroutine get_CC_R
@@ -1099,9 +1099,9 @@ contains
       call io_stopwatch_stop('get_oper: get_FF_R', timer)
     return
 
-107 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
+107 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
     return
-108 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.uIu')
+108 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uIu')
     return
 
   end subroutine get_FF_R
@@ -1275,9 +1275,9 @@ contains
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SS_R', timer)
     return
 
-109 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
+109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
     return
-110 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
+110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
     return
 
   end subroutine get_SS_R
@@ -1675,13 +1675,13 @@ contains
       call io_stopwatch_stop('get_oper: get_SHC_R', timer)
     return
 
-101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
     return
-102 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
     return
-109 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
+109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
     return
-110 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
+110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
     return
 
   end subroutine get_SHC_R
@@ -1844,9 +1844,9 @@ contains
       call io_stopwatch_stop('get_oper: get_SBB_R', timer)
     return
 
-111 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu')
+111 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu')
     return
-112 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.sHu')
+112 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sHu')
     return !fixme jj restructure
 
   end subroutine get_SBB_R
@@ -2009,9 +2009,9 @@ contains
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SAA_R', timer)
     return
 
-113 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu')
+113 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu')
     return
-114 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.sIu')
+114 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sIu')
     return !jj fixme restructure
 
   end subroutine get_SAA_R

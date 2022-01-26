@@ -263,8 +263,8 @@ contains
     use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, ws_region_type, &
       ws_distance_type, timer_list_type
     use w90_wannier90_types, only: band_plot_type, real_space_ham_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack, &
-      set_error_unconv, set_error_plot
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+      set_error_unconv, set_error_warn
 
     implicit none
 
@@ -562,7 +562,7 @@ contains
         if (allocated(error)) return
 
       else
-        call set_error_plot(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+        call set_error_warn(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
         return
       endif
     endif
@@ -629,7 +629,7 @@ contains
                   nfound, eig_int(1, loop_kpt), U_int, num_wann, cwork, rwork, iwork, ifail, info)
       if (info < 0) then
         write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-        call set_error_lapack(error, 'Error in plot_interpolate_bands')
+        call set_error_fatal(error, 'Error in plot_interpolate_bands')
         return
       endif
       if (info > 0) then
@@ -726,7 +726,7 @@ contains
 
       use w90_constants, only: dp, cmplx_0, eps8
       use w90_wannier90_types, only: band_plot_type, real_space_ham_type
-      use w90_error, only: w90_error_type, set_error_alloc, set_error_plot
+      use w90_error, only: w90_error_type, set_error_alloc, set_error_warn
 
       implicit none
 
@@ -773,7 +773,7 @@ contains
           end if
         end do
         if (j .ne. 1) then
-          call set_error_plot(error, 'Error: 1-d lattice vector not defined in plot_cut_hr')
+          call set_error_warn(error, 'Error: 1-d lattice vector not defined in plot_cut_hr')
           return
         endif
         j = 0
@@ -830,7 +830,7 @@ contains
 
       if (nrpts_tmp .ne. nrpts_cut) then
         write (stdout, '(a)') 'FAILED TO EXPAND ham_r'
-        call set_error_plot(error, 'Error in plot_cut_hr')
+        call set_error_warn(error, 'Error in plot_cut_hr')
         return
       end if
 
@@ -1113,7 +1113,7 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi
     use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: fermi_surface_plot_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_unconv
     use w90_types, only: timer_list_type
 
     implicit none
@@ -1231,7 +1231,7 @@ contains
                       nfound, eig_int(1, ikp), U_int, num_wann, cwork, rwork, iwork, ifail, info)
           if (info < 0) then
             write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call set_error_lapack(error, 'Error in plot_fermi_surface')
+            call set_error_fatal(error, 'Error in plot_fermi_surface')
             return
           endif
           if (info > 0) then
@@ -1304,8 +1304,8 @@ contains
       timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90comm_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
-      set_error_plot
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file, &
+      set_error_warn
 
     implicit none
 
@@ -1385,7 +1385,7 @@ contains
       endif
       inquire (file=wfnname, exist=have_file)
       if (.not. have_file) then
-        call set_error_open(error, 'plot_wannier: file '//wfnname//' not found')
+        call set_error_file(error, 'plot_wannier: file '//wfnname//' not found')
         return
       endif
 
@@ -1739,7 +1739,7 @@ contains
                                     real_lattice, bohr, error)
           if (allocated(error)) return
         else
-          call set_error_plot(error, 'wannier_plot_format not recognised in wannier_plot')
+          call set_error_warn(error, 'wannier_plot_format not recognised in wannier_plot')
           return
         endif
 
@@ -1765,7 +1765,7 @@ contains
         utility_inverse_mat, utility_recip_lattice_base
       use w90_types, only: wannier_data_type, atom_data_type
       use w90_wannier90_types, only: wvfn_read_type
-      use w90_error, only: w90_error_type, set_error_alloc, set_error_plot, set_error_dealloc
+      use w90_error, only: w90_error_type, set_error_alloc, set_error_warn, set_error_dealloc
 
       implicit none
 
@@ -1926,7 +1926,7 @@ contains
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
               write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-              call set_error_plot(error, 'Error plotting WF cube.')
+              call set_error_warn(error, 'Error plotting WF cube.')
               return
             endif
             do nyy = 1, ilength(2)
@@ -1940,7 +1940,7 @@ contains
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
                 write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                call set_error_plot(error, 'Error plotting WF cube.')
+                call set_error_warn(error, 'Error plotting WF cube.')
                 return
               endif
               do nxx = 1, ilength(1)
@@ -1954,7 +1954,7 @@ contains
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
                   write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                  call set_error_plot(error, 'Error plotting WF cube.')
+                  call set_error_warn(error, 'Error plotting WF cube.')
                   return
                 endif
                 wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
@@ -2242,7 +2242,7 @@ contains
     use w90_io, only: io_file_unit, io_date
     use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
-    use w90_error, only: w90_error_type, set_error_open
+    use w90_error, only: w90_error_type, set_error_file
 
     implicit none
 
@@ -2272,7 +2272,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
+101 call set_error_file(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
     return
 
   end subroutine plot_bvec

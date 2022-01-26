@@ -635,7 +635,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat')
+101 call set_error_file(error, 'Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat')
     return !fixme jj restructure
 
   end subroutine hamiltonian_write_hr
@@ -884,7 +884,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r')
+101 call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r')
     return !fixme jj restructure
 
   end subroutine hamiltonian_write_rmn
@@ -1010,7 +1010,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: hamiltonian_write_tb: problem opening file ' &
+101 call set_error_file(error, 'Error: hamiltonian_write_tb: problem opening file ' &
                         //trim(seedname)//'_tb.dat')
     return !jj fixme restructure
 

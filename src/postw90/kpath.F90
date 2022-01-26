@@ -31,8 +31,8 @@ module w90_kpath
   !!  - Integrand of orbital magnetization Morb=LCtil+ICtil
 
   use w90_constants, only: dp
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 

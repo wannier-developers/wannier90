@@ -147,7 +147,7 @@ contains
     ! (Sec. III.G SMV)
     if (linner) then
       if (lsitesymmetry) then
-        call set_error_sym(error, 'in symmetry-adapted mode, frozen window not implemented yet') !YN: RS:
+        call set_error_fatal(error, 'in symmetry-adapted mode, frozen window not implemented yet') !YN: RS:
         return
 
       endif
@@ -428,7 +428,7 @@ contains
                 write (stdout, '(1x,a)') &
                   'The trial orbitals for disentanglement are not orthonormal'
               endif
-              call set_error_dis(error, 'Error in dis_main: orthonormal error 1')
+              call set_error_fatal(error, 'Error in dis_main: orthonormal error 1')
               return
             endif
           else
@@ -438,7 +438,7 @@ contains
                 write (stdout, '(1x,a)') &
                   'The trial orbitals for disentanglement are not orthonormal'
               endif
-              call set_error_dis(error, 'Error in dis_main: orthonormal error 2')
+              call set_error_fatal(error, 'Error in dis_main: orthonormal error 2')
               return
             endif
           endif
@@ -1314,7 +1314,7 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
         endif
-        call set_error_lapack(error, 'dis_project: problem in ZGESVD 1')
+        call set_error_fatal(error, 'dis_project: problem in ZGESVD 1')
         return
       endif
 
@@ -1368,7 +1368,7 @@ contains
             if (on_root) write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call set_error_not_unitary(error, 'dis_project: Error in unitarity of initial U in dis_project')
+            call set_error_fatal(error, 'dis_project: Error in unitarity of initial U in dis_project')
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
@@ -1378,7 +1378,7 @@ contains
             if (on_root) write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call set_error_not_unitary(error, 'dis_project: Error in unitarity of initial U in dis_project')
+            call set_error_fatal(error, 'dis_project: Error in unitarity of initial U in dis_project')
             return
           endif
         enddo
@@ -1614,7 +1614,7 @@ contains
             if (abs(cqpq(m, n) - conjg(cqpq(n, m))) .gt. eps8) then
               if (on_root) write (stdout, *) ' matrix CQPQ is not hermitian'
               if (on_root) write (stdout, *) ' k-point ', nkp
-              call set_error_dis(error, 'dis_proj_froz: error')
+              call set_error_fatal(error, 'dis_proj_froz: error')
               return
             endif
           enddo
@@ -1645,12 +1645,12 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-          call set_error_lapack(error, 'dis_proj_frozen: error')
+          call set_error_fatal(error, 'dis_proj_frozen: error')
           return
         elseif (info .gt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-          call set_error_lapack(error, 'dis_proj_frozen: error')
+          call set_error_fatal(error, 'dis_proj_frozen: error')
           return
         endif
         ! ENDDEBUG
@@ -1660,7 +1660,7 @@ contains
           if (on_root) write (stdout, *) ' *** ERROR *** in dis_proj_froz'
           if (on_root) write (stdout, *) ' Number of eigenvalues/vectors obtained is', &
             m, ' not equal to the number asked,', ndimwin(nkp)
-          call set_error_dis(error, 'dis_proj_frozen: error')
+          call set_error_fatal(error, 'dis_proj_frozen: error')
           return
         endif
         ! ENDDEBUG
@@ -1676,7 +1676,7 @@ contains
           if (iprint > 2 .and. on_root) write (stdout, '(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)
 !~[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
           if ((w(j) .lt. -eps8) .or. (w(j) .gt. 1.0_dp + eps8)) then
-            call set_error_dis(error, 'dis_proj_frozen: error - Eigenvalues not between 0 and 1')
+            call set_error_fatal(error, 'dis_proj_frozen: error - Eigenvalues not between 0 and 1')
             return
           endif
         enddo
@@ -1762,7 +1762,7 @@ contains
           end if
           do l = 1, num_wann - ndimfroz(nkp)
             if (vmap(l) == 0) then
-              call set_error_dis(error, 'dis_proj_froz: Ortho-fix failed to find enough vectors')
+              call set_error_fatal(error, 'dis_proj_froz: Ortho-fix failed to find enough vectors')
               return
             endif
           end do
@@ -1782,7 +1782,7 @@ contains
           enddo
 
           if (il - 1 .ne. iu) then
-            call set_error_dis(error, 'dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)')
+            call set_error_fatal(error, 'dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)')
             return
           endif
 
@@ -2250,7 +2250,7 @@ contains
         nkp = nkp_loc + displs(my_node_id)
         if (ndimfroz(nkp) .gt. 0) then
           if (lsitesymmetry) then
-            call set_error_sym(error, 'not implemented in symmetry-adapted mode')
+            call set_error_fatal(error, 'not implemented in symmetry-adapted mode')
             return
           endif
           do nn = 1, kmesh_info%nntot
@@ -2311,13 +2311,13 @@ contains
                 write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
                 write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
               endif
-              call set_error_lapack(error, ' dis_extract: error')
+              call set_error_fatal(error, ' dis_extract: error')
               return
             endif
             if (info .gt. 0) then
               if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
               if (on_root) write (stdout, *) info, ' EIGENVECTORS FAILED TO CONVERGE'
-              call set_error_lapack(error, ' dis_extract: error')
+              call set_error_fatal(error, ' dis_extract: error')
               return
             endif
 
@@ -2631,13 +2631,13 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
           if (on_root) write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-          call set_error_lapack(error, ' dis_extract: error')
+          call set_error_fatal(error, ' dis_extract: error')
           return
         endif
         if (info .gt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
           if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-          call set_error_lapack(error, ' dis_extract: error')
+          call set_error_fatal(error, ' dis_extract: error')
           return
         endif
 
@@ -3291,13 +3291,13 @@ contains
           if (info .lt. 0) then
             write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING Z MATRIX'
             write (stdout, *) ' THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-            call set_error_lapack(error, ' dis_extract_gamma: error')
+            call set_error_fatal(error, ' dis_extract_gamma: error')
             return
           endif
           if (info .gt. 0) then
             write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING Z MATRIX'
             write (stdout, *) info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call set_error_lapack(error, '  dis_extract_gamma: error')
+            call set_error_fatal(error, '  dis_extract_gamma: error')
             return
           endif
           cz(:, :) = cmplx(rz(:, :), 0.0_dp, dp)
@@ -3533,13 +3533,13 @@ contains
       if (info .lt. 0) then
         write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
         write (stdout, *) ' THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-        call set_error_lapack(error, ' dis_extract_gamma: error')
+        call set_error_fatal(error, ' dis_extract_gamma: error')
         return
       endif
       if (info .gt. 0) then
         write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
         write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-        call set_error_lapack(error, ' dis_extract_gamma: error')
+        call set_error_fatal(error, ' dis_extract_gamma: error')
         return
       endif
 

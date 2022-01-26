@@ -462,13 +462,13 @@ contains
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return
-101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
     return
-102 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.amn')
+102 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.amn')
     return
-103 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+103 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
     return
-104 call set_error_open(error, 'Error: Problem reading input file '//trim(seedname)//'.amn')
+104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.amn')
     return
 
   end subroutine overlap_read
@@ -630,7 +630,7 @@ contains
     !================================================!
 
     use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
-    use w90_error, only: w90_error_type, set_error_lapack
+    use w90_error, only: w90_error_type, set_error_fatal
     use w90_types, only: timer_list_type
 
     implicit none
@@ -668,7 +668,7 @@ contains
 
     CALL DSPEV('V', 'U', num_bands, AP, eig, lambda, num_bands, work, info)
     if (info .ne. 0) then
-      call set_error_lapack(error, 'Diagonalization of lambda in overlap_rotate failed')
+      call set_error_fatal(error, 'Diagonalization of lambda in overlap_rotate failed')
       return
     endif
 
@@ -810,8 +810,8 @@ contains
     !================================================!
     use w90_constants
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
-      set_error_not_unitary
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_dealloc, &
+      set_error_fatal
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
     use w90_wannier90_types, only: sitesym_type
@@ -900,7 +900,7 @@ contains
         if (info .lt. 0) then
           write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
         endif
-        call set_error_lapack(error, 'Error in ZGESVD in overlap_project')
+        call set_error_fatal(error, 'Error in ZGESVD in overlap_project')
         return
       endif
 
@@ -923,7 +923,7 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project')
+            call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project')
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
@@ -933,7 +933,7 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project')
+            call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project')
             return
           endif
         enddo
@@ -1006,8 +1006,8 @@ contains
     !================================================!
     use w90_constants
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc, &
-      set_error_not_unitary
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_dealloc, &
+      set_error_fatal
     use w90_utility, only: utility_zgemm
     use w90_types, only: timer_list_type
 
@@ -1135,7 +1135,7 @@ contains
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
       endif
-      call set_error_lapack(error, 'overlap_project_gamma: problem in DGESVD 1')
+      call set_error_fatal(error, 'overlap_project_gamma: problem in DGESVD 1')
       return
     endif
 
@@ -1156,7 +1156,7 @@ contains
           write (stdout, '(1x,a,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project_gamma')
+          call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project_gamma')
           return
         endif
         if ((i .ne. j) .and. (abs(rtmp2) .gt. eps5)) then
@@ -1165,7 +1165,7 @@ contains
           write (stdout, '(1x,a,f12.6,1x,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call set_error_not_unitary(error, 'Error in unitarity of initial U in overlap_project_gamma')
+          call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project_gamma')
           return
         endif
       enddo

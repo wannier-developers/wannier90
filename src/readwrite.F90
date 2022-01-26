@@ -521,7 +521,7 @@ contains
                                         error)
 
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_file, set_error_open, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
     integer, intent(in) :: num_bands, num_kpts
@@ -543,10 +543,10 @@ contains
         inquire (file=trim(seedname)//'.eig', exist=eig_found)
         if (.not. eig_found) then
           if (disentanglement) then
-            call set_error_open(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+            call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement')
             return
           else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
-            call set_error_open(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation')
+            call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation')
             return
           end if
         else
@@ -586,7 +586,7 @@ contains
 
     return
 
-105 call set_error_open(error, 'Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
+105 call set_error_file(error, 'Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
     return
 106 call set_error_file(error, 'Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
     return
@@ -1752,7 +1752,7 @@ contains
 
     use w90_constants, only: eps6
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_file, set_error_open, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
     implicit none
@@ -1944,10 +1944,10 @@ contains
     return
 
 121 if (ispostw90) then
-      call set_error_open(error, &
+      call set_error_file(error, &
                           'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?')
     else
-      call set_error_open(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
+      call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
     end if
     return
 122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt')
@@ -2086,7 +2086,7 @@ contains
 
     use w90_utility, only: utility_lowercase
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file
 
     implicit none
 
@@ -2119,7 +2119,7 @@ contains
 
     end do
 
-101 call set_error_open(error, 'Error: Problem opening input file '//trim(seedname)//'.win')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.win')
     return
 200 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.win')
     return

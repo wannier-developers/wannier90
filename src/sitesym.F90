@@ -115,7 +115,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_sym
+    use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
 
@@ -139,12 +139,12 @@ contains
     complex(kind=dp) :: cmat(ndim, num_wann)
 
     if (present(lwindow_in) .and. (ndim .ne. num_bands)) then
-      call set_error_sym(error, 'ndim!=num_bands')
+      call set_error_fatal(error, 'ndim!=num_bands')
       return
     endif
     if (.not. present(lwindow_in)) then
       if (ndim .ne. num_wann) then
-        call set_error_sym(error, 'ndim!=num_wann')
+        call set_error_fatal(error, 'ndim!=num_wann')
         return
       endif
     endif
@@ -182,7 +182,7 @@ contains
       enddo
     enddo
     if (any(.not. ldone)) then
-      call set_error_sym(error, 'error in sitesym_symmetrize_u_matrix')
+      call set_error_fatal(error, 'error in sitesym_symmetrize_u_matrix')
       return
     endif
 
@@ -271,7 +271,7 @@ contains
     !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_sym
+    use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
 
@@ -308,7 +308,7 @@ contains
       enddo
     enddo
     if (any(.not. ldone)) then
-      call set_error_sym(error, 'error in sitesym_symmetrize_rotation')
+      call set_error_fatal(error, 'error in sitesym_symmetrize_rotation')
       return
     endif
 
@@ -390,7 +390,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_sym, set_error_unconv
+    use w90_error, only: w90_error_type, set_error_fatal, set_error_unconv
     implicit none
 
     integer, intent(in) :: num_bands
@@ -413,13 +413,13 @@ contains
     !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
       if (ndim .ne. num_bands) then
-        call set_error_sym(error, 'ndim!=num_bands')
+        call set_error_fatal(error, 'ndim!=num_bands')
         return
       endif
       ntmp = n
     else
       if (ndim .ne. num_wann) then
-        call set_error_sym(error, 'ndim!=num_wann')
+        call set_error_fatal(error, 'ndim!=num_wann')
         return
       endif
       ntmp = ndim
@@ -479,7 +479,7 @@ contains
   subroutine orthogonalize_u(ndim, m, u, n, error)
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_sym, set_error_lapack
+    use w90_error, only: w90_error_type, set_error_fatal, set_error_fatal
 
     implicit none
 
@@ -495,7 +495,7 @@ contains
     integer :: LWORK
 
     if (n .lt. m) then
-      call set_error_sym(error, 'n<m')
+      call set_error_fatal(error, 'n<m')
       return
     endif
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
@@ -509,7 +509,7 @@ contains
     ! Singular-value decomposition
     call zgesvd('A', 'A', n, m, smat, n, eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
-      call set_error_lapack(error, ' ERROR: IN ZGESVD IN orthogonalize_u')
+      call set_error_fatal(error, ' ERROR: IN ZGESVD IN orthogonalize_u')
       return
     endif
     deallocate (smat, eig, WORK, RWORK)
@@ -542,7 +542,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_lapack
+    use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
 
@@ -609,7 +609,7 @@ contains
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
             endif
-            call set_error_lapack(error, 'error at sitesym_dis_extract_symmetry')
+            call set_error_fatal(error, 'error at sitesym_dis_extract_symmetry')
             return
           endif
         endif

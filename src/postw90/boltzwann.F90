@@ -45,8 +45,8 @@ module w90_boltzwann
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 

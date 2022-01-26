@@ -84,6 +84,7 @@ program postw90
   complex(kind=dp), allocatable :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
 
+  ! why is this variable unused? JJ
   complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
 
@@ -124,7 +125,6 @@ program postw90
   integer :: fermi_n
   type(atom_data_type) :: atoms
   type(timer_list_type) :: timer
-  type(w90_error_type), allocatable :: err
 
   integer :: num_bands
   !! Number of bands
@@ -151,8 +151,6 @@ program postw90
   integer :: mp_grid(3)
   !! Dimensions of the Monkhorst-Pack grid
 
-  integer :: num_proj
-
   real(kind=dp) :: real_lattice(3, 3)
 
   !parameters derived from input
@@ -172,9 +170,6 @@ program postw90
   type(pw90_kslice_mod_type) :: kslice
 
   ! module  d o s
-  ! No need to save 'dos_plot', only used here (introduced 'dos_task')
-  logical :: dos_plot
-
   type(pw90_dos_mod_type) :: dos_data
   type(pw90_berry_mod_type) :: berry
   type(pw90_spin_hall_type) :: spin_hall

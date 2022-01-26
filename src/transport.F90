@@ -357,7 +357,7 @@ contains
     use w90_constants, only: dp, eps8
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: real_space_ham_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal
     use w90_types, only: timer_list_type
 
     implicit none
@@ -402,7 +402,7 @@ contains
     end do
     if (j .ne. 1) then
       write (stdout, '(i3,a)') j, ' : 1-D LATTICE VECTOR NOT DEFINED'
-      call set_error_tran(error, 'Error: 1-d lattice vector not defined in tran_reduce_hr')
+      call set_error_fatal(error, 'Error: 1-d lattice vector not defined in tran_reduce_hr')
       return
     end if
 
@@ -452,7 +452,7 @@ contains
 
     if (nrpts_tmp .ne. nrpts_one_dim) then
       write (stdout, '(a)') 'FAILED TO EXTRACT 1-D HAMILTONIAN'
-      call set_error_tran(error, 'Error: cannot extract 1d hamiltonian in tran_reduce_hr')
+      call set_error_fatal(error, 'Error: cannot extract 1d hamiltonian in tran_reduce_hr')
       return
     end if
 
@@ -642,7 +642,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_tran
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal
     use w90_types, only: timer_list_type
 
     implicit none
@@ -675,8 +675,8 @@ contains
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
-      call set_error_tran(error, "Error in tran_get_ht: nfermi>1. " &
-                          //"Set the fermi level using the input parameter 'fermi_evel'")
+      call set_error_fatal(error, "Error in tran_get_ht: nfermi>1. " &
+                           //"Set the fermi level using the input parameter 'fermi_evel'")
       return
     endif
 
@@ -1003,7 +1003,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date, io_file_unit
     use w90_wannier90_types, only: transport_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_lapack
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal
     use w90_types, only: timer_list_type
 
     implicit none
@@ -1348,7 +1348,7 @@ contains
                  transport%num_cc, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
-        call set_error_lapack(error, 'tran_lcr: problem in ZGBSV')
+        call set_error_fatal(error, 'tran_lcr: problem in ZGBSV')
         return
       end if
 
@@ -1526,7 +1526,7 @@ contains
     !================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, eps7
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_unconv, &
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_unconv, &
       set_error_dealloc
 
     implicit none
@@ -1617,7 +1617,7 @@ contains
     call ZGESV(nxx, nxx, t12, nxx, ipiv, t11, nxx, info)
     if (info .ne. 0) then
       write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-      call set_error_lapack(error, 'tran_transfer: problem in ZGESV 1')
+      call set_error_fatal(error, 'tran_transfer: problem in ZGESV 1')
       return
     end if
 
@@ -1666,7 +1666,7 @@ contains
       call ZGESV(nxx, nxx, s1, nxx, ipiv, s2, nxx, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-        call set_error_lapack(error, 'tran_transfer: problem in ZGESV 2')
+        call set_error_fatal(error, 'tran_transfer: problem in ZGESV 2')
         return
       end if
 
@@ -1792,7 +1792,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_lapack, set_error_dealloc
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_dealloc
 
     implicit none
 
@@ -1874,7 +1874,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_lapack(error, 'tran_green: problem in ZGESV 1')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 1')
           return
         end if
       end if
@@ -1906,7 +1906,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_lapack(error, 'tran_green: problem in ZGESV 2')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 2')
           return
         end if
       end if
@@ -1940,7 +1940,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_lapack(error, 'tran_green: problem in ZGESV 3')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 3')
           return
         end if
       end if
@@ -1988,7 +1988,7 @@ contains
 
     use w90_constants, only: dp, maxlen
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_file, set_error_open
+    use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
@@ -2028,7 +2028,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
     return
 102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
     return
@@ -2041,7 +2041,7 @@ contains
 
     use w90_constants, only: dp, maxlen
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_file, set_error_open
+    use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
@@ -2075,7 +2075,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
     return
 102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
     return
@@ -2088,7 +2088,7 @@ contains
 
     use w90_constants, only: dp, maxlen
     use w90_io, only: io_file_unit
-    use w90_error, only: w90_error_type, set_error_file, set_error_open
+    use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
@@ -2124,7 +2124,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
     return
 102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
     return
@@ -2146,7 +2146,7 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_open, set_error_file, &
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file, &
       set_error_dealloc
 
     implicit none
@@ -2179,7 +2179,7 @@ contains
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
     if (.not. have_file) then
-      call set_error_open(error, 'tran_hr_parity_unkg: file '//trim(seedname)// &
+      call set_error_file(error, 'tran_hr_parity_unkg: file '//trim(seedname)// &
                           '.unkg not found')
       return
     endif
@@ -2443,7 +2443,7 @@ contains
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: wannier_data_type, atom_data_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal
 
     implicit none
 
@@ -2513,7 +2513,7 @@ contains
     !Check translated centres have been found
 
     if (size(wannier_centres_translated) .eq. 0) then
-      call set_error_tran(error, 'Translated centres not known : required perform lcr transport, &
+      call set_error_fatal(error, 'Translated centres not known : required perform lcr transport, &
                           &try restart=plot')
       return
     endif
@@ -2540,7 +2540,7 @@ contains
 
     if (((real_lattice(coord(1), coord(2)) .ne. 0) .or. (real_lattice(coord(1), coord(3)) .ne. 0)) .or. &
         ((real_lattice(coord(2), coord(1)) .ne. 0) .or. (real_lattice(coord(3), coord(1)) .ne. 0))) then
-      call set_error_tran(error, &
+      call set_error_fatal(error, &
       'Lattice vector in conduction direction must point along x,y or z &
       & direction and be orthogonal to the remaining lattice vectors.')
       return
@@ -2549,7 +2549,7 @@ contains
     !Check
 
     if (num_wann .le. 4*transport%num_ll) then
-      call set_error_tran(error, 'Principle layers are too big.')
+      call set_error_fatal(error, 'Principle layers are too big.')
       return
     endif
 
@@ -2785,7 +2785,7 @@ contains
       if (sort_iterator .ge. 2) then
         if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                            tran_sorted_idx, num_wann, seedname, stdout)
-        call set_error_tran(error, 'Sorting techniques exhausted:&
+        call set_error_fatal(error, 'Sorting techniques exhausted:&
           & Inconsistent number of groups among principal layers')
         return
       endif
@@ -2840,7 +2840,7 @@ contains
         if (sort_iterator .ge. 2) then
           if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
-          call set_error_tran(error, &
+          call set_error_fatal(error, &
            'Sorting techniques exhausted: Inconsitent number of wannier function among &
              & similar groups within principal layers')
           return
@@ -3000,8 +3000,8 @@ contains
                                                  wannier_centres_translated, &
                                                  tran_sorted_idx, num_wann, seedname, &
                                                  stdout)
-              call set_error_tran(error, &
-                                  'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+              call set_error_fatal(error, &
+                                   'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
               return
             endif
             write (stdout, *) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
@@ -3491,7 +3491,7 @@ contains
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: atom_data_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: transport_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_tran
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal
 
     implicit none
 
@@ -3666,7 +3666,7 @@ contains
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
           if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
-          call set_error_tran(error, 'Inconsistent number of groups of similar centred wannier functions between unit cells')
+          call set_error_fatal(error, 'Inconsistent number of groups of similar centred wannier functions between unit cells')
           return
         elseif (i .eq. 4*transport%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
@@ -3695,7 +3695,7 @@ contains
             j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) then
-              call set_error_tran(error, 'Inconsistent number of wannier &
+              call set_error_fatal(error, 'Inconsistent number of wannier &
                   &functions between equivalent groups of similar &
                   &centred wannier functions')
               return
@@ -3802,7 +3802,7 @@ contains
         enddo
 
         if ((iterator .ge. 2) .or. (iterator .eq. 0)) then
-          call set_error_tran(error, &
+          call set_error_fatal(error, &
               'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
               &poor wannierisation and/or disentanglement')
           return
@@ -4035,7 +4035,7 @@ contains
     use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
-    use w90_error, only: w90_error_type, set_error_tran, set_error_alloc, set_error_dealloc
+    use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -4090,8 +4090,8 @@ contains
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
-      call set_error_tran(error, "Error in tran_lcr_2c2_build_ham: nfermi>1. " &
-                          //"Set the fermi level using the input parameter 'fermi_evel'")
+      call set_error_fatal(error, "Error in tran_lcr_2c2_build_ham: nfermi>1. " &
+                           //"Set the fermi level using the input parameter 'fermi_evel'")
       return
     endif
 
@@ -4137,7 +4137,7 @@ contains
     !BGS, I think (0, 0, 0) in kpt_latt should work as well as in kpt_cart
     if ((size(kpt_latt, 2) .ne. 1) .and. (kpt_latt(1, 1) .eq. 0.0_dp) &
         .and. (kpt_latt(2, 1) .eq. 0.0_dp) .and. (kpt_latt(3, 1) .eq. 0.0_dp)) then
-      call set_error_tran(error, 'Calculation must be performed at gamma only')
+      call set_error_fatal(error, 'Calculation must be performed at gamma only')
       return
     endif
 

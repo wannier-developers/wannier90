@@ -23,25 +23,21 @@ module w90_error
   public
 
   integer, parameter :: code_ok = 0
+
   integer, parameter :: code_fatal = 1
   integer, parameter :: code_alloc = 2
   integer, parameter :: code_dealloc = 3
   integer, parameter :: code_mpi = 4
-  integer, parameter :: code_input_command = 5 !BGS is it a warning?
-  integer, parameter :: code_file_read = 6
-  integer, parameter :: code_file_open = 7
-  integer, parameter :: code_matrix_lib = 8
-  integer, parameter :: code_not_unitary = 9
-  integer, parameter :: code_sitesym = 10 !BGS should probably just be fatal?
-  integer, parameter :: code_disentangle = 11
-  integer, parameter :: code_transport = 15 !BGS should probably just be fatal?
+  integer, parameter :: code_input_command = 5
+  integer, parameter :: code_file = 6
+
   integer, parameter :: code_unconv = -1
-  integer, parameter :: code_plot = -2 ! failing to plot something isn't fatal?
+  integer, parameter :: code_warning = -2 ! mostly for failing to plot something
 
   type w90_error_type
     !! Codify error state with integer code and human readable string
     integer :: code
-    character(len=120) :: message
+    character(len=:), allocatable :: message ! fixme? what kind of length do we want here?
   contains
     final :: untrapped_error
   end type w90_error_type
@@ -61,7 +57,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_alloc
   end subroutine set_error_alloc
 
@@ -69,7 +65,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_fatal
   end subroutine set_error_fatal
 
@@ -77,7 +73,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_dealloc
   end subroutine set_error_dealloc
 
@@ -85,7 +81,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_mpi
   end subroutine set_error_mpi
 
@@ -93,7 +89,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_input_command
   end subroutine set_error_input
 
@@ -101,78 +97,26 @@ contains
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_file_read
+    err%message = mesg
+    err%code = code_file
   end subroutine set_error_file
-
-  subroutine set_error_open(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_file_open
-  end subroutine set_error_open
-
-  ! BGS should this just be unconv if lapack ierr /= 0?
-  subroutine set_error_lapack(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_matrix_lib
-  end subroutine set_error_lapack
-
-  ! BGS what should this be? fatal?
-  subroutine set_error_not_unitary(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_not_unitary
-  end subroutine set_error_not_unitary
-
-  ! BGS what should this be? fatal?
-  subroutine set_error_sym(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_sitesym
-  end subroutine set_error_sym
-
-  ! BGS what should this be? fatal?
-  subroutine set_error_tran(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_transport
-  end subroutine set_error_tran
-
-  subroutine set_error_dis(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_disentangle
-  end subroutine set_error_dis
 
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
     ! BGS should io_stopwatch call this or something else?
-    err%message = mesg !FIXME, trim to 120
+    err%message = mesg
     err%code = code_unconv
   end subroutine set_error_unconv
 
-  subroutine set_error_plot(err, mesg)
+  subroutine set_error_warn(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_plot
-  end subroutine set_error_plot
+    err%message = mesg
+    err%code = code_warning
+  end subroutine set_error_warn
 
 end module w90_error
 

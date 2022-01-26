@@ -21,8 +21,8 @@ module w90_wannierise
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -2842,7 +2842,7 @@ contains
     xyz_unit = io_file_unit()
     open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
     if (ierr /= 0) then
-      call set_error_open(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz')
+      call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz')
       return
     endif
     write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
@@ -3074,26 +3074,26 @@ contains
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call set_error_not_unitary(error, 'wann_check_unitarity: error 1')
+            call set_error_fatal(error, 'wann_check_unitarity: error 1')
             return
           endif
           if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) &
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call set_error_not_unitary(error, 'wann_check_unitarity: error 2')
+            call set_error_fatal(error, 'wann_check_unitarity: error 2')
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp1) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call set_error_not_unitary(error, 'wann_check_unitarity: error 3')
+            call set_error_fatal(error, 'wann_check_unitarity: error 3')
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call set_error_not_unitary(error, 'wann_check_unitarity: error 4')
+            call set_error_fatal(error, 'wann_check_unitarity: error 4')
             return
           endif
         enddo
@@ -3135,7 +3135,7 @@ contains
     r2mnunit = io_file_unit()
     open (r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
     if (ierr /= 0) then
-      call set_error_open(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn')
+      call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn')
       return
     endif
     do nw1 = 1, num_wann

@@ -205,9 +205,9 @@ contains
 
     return
 
-109 call set_error_open(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn')
+109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn')
     return
-110 call set_error_open(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn')
+110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn')
     return
 
   end subroutine conv_read_spn
@@ -285,9 +285,9 @@ contains
 
     return
 
-109 call set_error_open(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
+109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
     return
-110 call set_error_open(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
+110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
     return
 
   end subroutine conv_read_spn_fmt

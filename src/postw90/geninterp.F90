@@ -24,8 +24,8 @@ module w90_geninterp
   !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)
   !! June, 2012
 
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -458,11 +458,11 @@ contains
 
     return
 
-105 call set_error_open(error, 'Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt')
+105 call set_error_file(error, 'Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt')
     return
-106 call set_error_open(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt')
+106 call set_error_file(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt')
     return
-107 call set_error_open(error, 'Error: Problem opening output file '//trim(outdat_filename))
+107 call set_error_file(error, 'Error: Problem opening output file '//trim(outdat_filename))
     return !fixme JJ restructure these away
 
   end subroutine geninterp_main

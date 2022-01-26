@@ -28,8 +28,8 @@ module w90_kmesh
 
   use w90_constants, only: dp
   use w90_types, only: max_shells, num_nnmax ! used for dimensioning
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -1671,7 +1671,7 @@ contains
 
     end do
 
-200 call set_error_open(error, 'Error: Problem (1) reading input file '//trim(seedname)//'.kshell')
+200 call set_error_file(error, 'Error: Problem (1) reading input file '//trim(seedname)//'.kshell')
     return !JJ fixme, restructure
 
 210 continue

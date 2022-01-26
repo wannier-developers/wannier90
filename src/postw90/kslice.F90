@@ -32,8 +32,8 @@ module w90_kslice
   !!    pw90_kslice_corner(1:3) is the lower left corner
   !!    pw90_kslice_b1(1:3) and pw90_kslice_b2(1:3) are the vectors subtending the slice
 
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 

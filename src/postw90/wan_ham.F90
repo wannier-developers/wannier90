@@ -21,8 +21,8 @@ module w90_wan_ham
   !! This module contain operations on the Hamiltonian in the WF basis
 
   use w90_constants, only: dp
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 

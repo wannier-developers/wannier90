@@ -22,8 +22,8 @@ module w90_postw90_common
   !! interpolatation calculation for any physical property
 
   use w90_constants, only: dp
-  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_not_unitary, &
-    set_error_input, set_error_fatal, set_error_open
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -156,7 +156,7 @@ contains
 
     return
 
-101 call set_error_open(error, 'Error in pw90common_wanint_setup: problem opening file '// &
+101 call set_error_file(error, 'Error in pw90common_wanint_setup: problem opening file '// &
                         trim(seedname)//'_HH_R.dat')
     return !jj fixme restructure
 
@@ -251,7 +251,7 @@ contains
 
     return
 
-106 call set_error_open(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file')
+106 call set_error_file(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file')
     return
 
   end subroutine pw90common_wanint_get_kpoint_file
