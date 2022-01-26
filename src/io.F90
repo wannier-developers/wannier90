@@ -48,7 +48,7 @@ contains
     !! Stopwatch to time parts of the code
     !=====================================
 
-    use w90_error, only: w90_error_type, set_warning, set_error_unconv
+    use w90_error, only: w90_error_type
     use w90_types, only: timer_list_type, nmax
 
     implicit none

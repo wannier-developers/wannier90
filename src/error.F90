@@ -33,11 +33,10 @@ module w90_error
   integer, parameter :: code_matrix_lib = 8
   integer, parameter :: code_not_unitary = 9
   integer, parameter :: code_sitesym = 10 !BGS should probably just be fatal?
+  integer, parameter :: code_disentangle = 11
   integer, parameter :: code_transport = 15 !BGS should probably just be fatal?
   integer, parameter :: code_unconv = -1
   integer, parameter :: code_plot = -2 ! failing to plot something isn't fatal?
-  integer, parameter :: code_warning = -3
-  integer, parameter :: code_disentangle = 11
 
   type w90_error_type
     !! Codify error state with integer code and human readable string
@@ -150,6 +149,14 @@ contains
     err%code = code_transport
   end subroutine set_error_tran
 
+  subroutine set_error_dis(err, mesg)
+    type(w90_error_type), allocatable, intent(out) :: err
+    character(len=*), intent(in) :: mesg
+    allocate (err)
+    err%message = mesg !FIXME, trim to 120
+    err%code = code_disentangle
+  end subroutine set_error_dis
+
   subroutine set_error_unconv(err, mesg)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
@@ -166,22 +173,6 @@ contains
     err%message = mesg !FIXME, trim to 120
     err%code = code_plot
   end subroutine set_error_plot
-
-  subroutine set_warning(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_warning ! trivial coding error in io_stopwatch etc...
-  end subroutine set_warning
-
-  subroutine set_error_dis(err, mesg)
-    type(w90_error_type), allocatable, intent(out) :: err
-    character(len=*), intent(in) :: mesg
-    allocate (err)
-    err%message = mesg !FIXME, trim to 120
-    err%code = code_disentangle
-  end subroutine set_error_dis
 
 end module w90_error
 
