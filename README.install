@@ -85,6 +85,28 @@
   non-optimised BLAS.
      http://www.netlib.org/lapack/
 
+Parallel builds
+---------------
+
+ wannier90.x and postw90.x both support parallel execution using MPI.  wannier90
+ is paralellised over k-points: gamma-only mode is not currently parallelised.
+
+ There are three common ways for using MPI with fortran:
+ 1. "use mpi_f08" uses a complete fortran08 interface with custom types, this
+    allows detailed checking of arguments in MPI function calls
+ 2. "use mpi" uses a fortran90 style interface, limited checking
+ 3. "include 'mpif.h'" uses a legacy interface, no checking at all
+
+ Methods 1 and 2 require module files built by the same version of compiler that
+ is to be used to compile wannier90.
+
+ The specific interface to be used must be chosen by setting COMMS in make.inc
+ to one of "mpi08", "mpi90" or "mpih" (plain "mpi" is the same as "mpi90"). 
+
+ Particularly when wannier90 is to be used in library mode, the MPI interface
+ specified by COMMS must be the same as that used in the calling code; otherwise
+ using the fortran08 is recommended.
+ 
 
 Linux x86,x86-64
 ----------------
