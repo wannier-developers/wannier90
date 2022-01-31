@@ -105,10 +105,9 @@ program test_library
   real(kind=dp), allocatable :: wann_spreads_loc(:)
   real(kind=dp), dimension(3) :: spread_loc
 
-  integer :: i, j, k, l, ierr, mmn_in, amn_in, nn, inn
+  integer :: i, j, ierr, mmn_in, amn_in, nn, inn
   logical :: nn_found
   character(len=50) :: dummy, verbosity
-  real(kind=dp) :: re_tmp, im_tmp
 
   integer, parameter :: stdout = 6
   integer, parameter :: root_id = 0
