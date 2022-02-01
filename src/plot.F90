@@ -264,7 +264,7 @@ contains
       ws_distance_type, timer_list_type
     use w90_wannier90_types, only: band_plot_type, real_space_ham_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-      set_error_unconv, set_error_warn
+      set_error_warn
 
     implicit none
 
@@ -634,7 +634,7 @@ contains
       endif
       if (info > 0) then
         write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-        call set_error_unconv(error, 'Error in plot_interpolate_bands')
+        call set_error_warn(error, 'Error in plot_interpolate_bands')
         return
       endif
       ! Compute projection onto WF if requested
@@ -1113,7 +1113,7 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi
     use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: fermi_surface_plot_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_unconv
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_warn
     use w90_types, only: timer_list_type
 
     implicit none
@@ -1236,7 +1236,7 @@ contains
           endif
           if (info > 0) then
             write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call set_error_unconv(error, 'Error in plot_fermi_surface')
+            call set_error_warn(error, 'Error in plot_fermi_surface')
             return
           endif
         end do
