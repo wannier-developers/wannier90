@@ -22,7 +22,7 @@ module w90_comms
   !! This module handles all of the communications
 
   use w90_constants, only: dp
-  use w90_error
+  use w90_error_base
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -164,6 +164,15 @@ contains
 #endif
   end function
 
+  ! synchronise error condition between MPI processess
+  subroutine comms_sync_err(comm, error, ierr)
+    implicit none
+    integer :: mpiierr, abserr
+    abserr = abs(ierr) ! possibility of -ve values, use abs for safety
+    call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
+    if (abserr > 0) call recv_error(error)
+  end subroutine comms_sync_err
+
   subroutine comms_array_split(numpoints, counts, displs, comm)
     !! Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
     !! two arrays: count and displs.
@@ -205,6 +214,7 @@ contains
 
   end subroutine comms_array_split
 
+  ! this shouldn't really exist
   subroutine comms_end
     !! Called to finalise the comms
     implicit none
@@ -242,6 +252,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_syncerr(comm, 0, error)
+    if (allocated(error)) return
+
     call mpi_bcast(array, size, MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -262,6 +275,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -285,6 +301,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_bcast(array, size, MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -306,6 +325,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_bcast(array, size, MPI_CHARACTER, root_id, comm%comm, ierr)
 
@@ -329,6 +351,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
@@ -597,6 +622,9 @@ contains
     integer :: rank
     rank = mpirank(comm)
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     ! note, JJ 23/2/2021
     ! previously this routine alloc'd/used/dealloc'd a temp array
     ! to be used as receive buffer for MPI_reduce
@@ -649,6 +677,9 @@ contains
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     select case (op)
 
@@ -714,6 +745,9 @@ contains
     integer :: rank
     rank = mpirank(comm)
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     select case (op)
 
     case ('SUM')
@@ -761,6 +795,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     select case (op)
 
     case ('SUM')
@@ -802,6 +839,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     select case (op)
 
     case ('SUM')
@@ -839,6 +879,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -867,6 +910,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
@@ -897,6 +943,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -926,6 +975,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
@@ -963,6 +1015,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
@@ -992,6 +1047,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
@@ -1023,6 +1081,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
@@ -1052,6 +1113,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
@@ -1083,6 +1147,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
@@ -1113,6 +1180,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, displs, &
                      MPI_LOGICAL, root_id, comm%comm, ierr)
 
@@ -1140,6 +1210,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
@@ -1171,6 +1244,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -1200,6 +1276,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
@@ -1231,6 +1310,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
                       MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
@@ -1260,6 +1342,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
                       MPI_INTEGER, root_id, comm%comm, ierr)
@@ -1292,6 +1377,9 @@ contains
 #ifdef MPI
     integer :: ierr
 
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
@@ -1322,6 +1410,9 @@ contains
 
 #ifdef MPI
     integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
                       MPI_INTEGER, root_id, comm%comm, ierr)
