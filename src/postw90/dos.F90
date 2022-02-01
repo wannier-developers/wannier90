@@ -136,7 +136,7 @@ contains
 
     allocate (dos_energyarray(num_freq), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating dos_energyarray in dos subroutine')
+      call set_error_alloc(error, 'Error in allocating dos_energyarray in dos subroutine', comm)
       return
     endif
 
@@ -146,17 +146,17 @@ contains
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating HH in dos')
+      call set_error_alloc(error, 'Error in allocating HH in dos', comm)
       return
     endif
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating delHH in dos')
+      call set_error_alloc(error, 'Error in allocating delHH in dos', comm)
       return
     endif
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating UU in dos')
+      call set_error_alloc(error, 'Error in allocating UU in dos', comm)
       return
     endif
 
@@ -339,17 +339,17 @@ contains
 
     deallocate (HH, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating HH in dos_main')
+      call set_error_dealloc(error, 'Error in deallocating HH in dos_main', comm)
       return
     endif
     deallocate (delHH, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating delHH in dos_main')
+      call set_error_dealloc(error, 'Error in deallocating delHH in dos_main', comm)
       return
     endif
     deallocate (UU, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating UU in dos_main')
+      call set_error_dealloc(error, 'Error in deallocating UU in dos_main', comm)
       return
     endif
 

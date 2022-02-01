@@ -180,7 +180,7 @@ contains
       elseif (index(cdum, 'abs') > 0) then
         absoluteCoords = .true.
       else
-        call set_error_input(error, 'Error on second line of file '//trim(seedname) &
+        call set_error_input(error, 'Error on second line of file '//trim(seedname, comm) &
                              //'_geninterp.kpt: unable to recognize keyword')
         return
       end if
@@ -194,18 +194,18 @@ contains
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating HH in calcTDF')
+      call set_error_alloc(error, 'Error in allocating HH in calcTDF', comm)
       return
     endif
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating UU in calcTDF')
+      call set_error_alloc(error, 'Error in allocating UU in calcTDF', comm)
       return
     endif
     if (pw90_geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating delHH in calcTDF')
+        call set_error_alloc(error, 'Error in allocating delHH in calcTDF', comm)
         return
       endif
     end if
@@ -220,23 +220,23 @@ contains
     if (on_root) then
       allocate (kpointidx(nkinterp), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.')
+        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.', comm)
         return
       endif
       allocate (kpoints(3, nkinterp), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.')
+        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.', comm)
         return
       endif
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, nkinterp), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.')
+          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.', comm)
           return
         endif
         allocate (globaldeleig(num_wann, 3, nkinterp), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.')
+          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.', comm)
           return
         endif
       end if
@@ -245,23 +245,23 @@ contains
       ! that some compilers still try to access the memory
       allocate (kpointidx(1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.')
+        call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.', comm)
         return
       endif
       allocate (kpoints(1, 1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.')
+        call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.', comm)
         return
       endif
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.')
+          call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.', comm)
           return
         endif
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.')
+          call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.', comm)
           return
         endif
       end if
@@ -272,17 +272,17 @@ contains
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating localkpoints in geinterp_main.')
+      call set_error_alloc(error, 'Error allocating localkpoints in geinterp_main.', comm)
       return
     endif
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating localeig in geinterp_main.')
+      call set_error_alloc(error, 'Error allocating localeig in geinterp_main.', comm)
       return
     endif
     allocate (localdeleig(num_wann, 3, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating localdeleig in geinterp_main.')
+      call set_error_alloc(error, 'Error allocating localdeleig in geinterp_main.', comm)
       return
     endif
 
@@ -315,7 +315,7 @@ contains
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating localkpointidx in geinterp_main.')
+        call set_error_alloc(error, 'Error allocating localkpointidx in geinterp_main.', comm)
         return
       endif
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, error, comm)
@@ -458,11 +458,11 @@ contains
 
     return
 
-105 call set_error_file(error, 'Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt')
+105 call set_error_file(error, 'Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', comm)
     return
-106 call set_error_file(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt')
+106 call set_error_file(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', comm)
     return
-107 call set_error_file(error, 'Error: Problem opening output file '//trim(outdat_filename))
+107 call set_error_file(error, 'Error: Problem opening output file '//trim(outdat_filename), comm)
     return !fixme JJ restructure these away
 
   end subroutine geninterp_main

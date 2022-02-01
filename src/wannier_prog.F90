@@ -205,7 +205,7 @@ program wannier
   call mpi_init(ierr)
   seedname = "wannier"
   if (ierr .ne. 0) then
-    call set_error_mpi(error, 'MPI initialisation error')  ! stdout, seedname not yet known!
+    call set_error_mpi(error, 'MPI initialisation error', comm)  ! stdout, seedname not yet known!
     call prterr(error, stdout)
   endif
 #endif
@@ -245,7 +245,7 @@ program wannier
                                       mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                                       optimisation, eig_found, calc_only_A, cp_pp, gamma_only, &
                                       lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, &
-                                      seedname, stdout, error)
+                                      seedname, stdout, error, comm)
     if (allocated(error)) then
       call prterr(error, stdout)
     end if
@@ -296,7 +296,7 @@ program wannier
     if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_input, kmesh_info, print_output, &
                                                          kpt_latt, real_lattice, &
                                                          num_kpts, gamma_only, stdout, &
-                                                         timer, error)
+                                                         timer, error, comm)
     if (allocated(error)) then
       call prterr(error, stdout)
     end if
@@ -336,7 +336,7 @@ program wannier
 
   disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) then
-    call set_error_fatal(error, 'Gamma point branch is serial only at the moment')
+    call set_error_fatal(error, 'Gamma point branch is serial only at the moment', comm)
     call prterr(error, stdout)
   endif
 
@@ -353,7 +353,7 @@ program wannier
                                     wannier_data, m_matrix, u_matrix, u_matrix_opt, real_lattice, &
                                     omega%invariant, mp_grid, num_bands, num_exclude_bands, &
                                     num_kpts, num_wann, checkpoint, have_disentangled, .false., &
-                                    seedname, stdout, error)
+                                    seedname, stdout, error, comm)
       if (allocated(error)) call prterr(error, stdout)
     endif
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
@@ -362,7 +362,7 @@ program wannier
     if (allocated(error)) call prterr(error, stdout)
 
     if (lsitesymmetry) then
-      call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error)
+      call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
       ! update this to read on root and bcast - JRY
       if (allocated(error)) call prterr(error, stdout)
     endif
@@ -379,7 +379,7 @@ program wannier
         goto 2002         ! go to plot_main
       else
         if (on_root) write (stdout, '(/a/)')
-        call set_error_input(error, 'Value of checkpoint not recognised in wann_prog')
+        call set_error_input(error, 'Value of checkpoint not recognised in wann_prog', comm)
         call prterr(error, stdout)
       endif
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
@@ -392,7 +392,7 @@ program wannier
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
       goto 3003
     case default        ! for completeness... (it is already trapped in w90_wannier90_readwrite_read)
-      call set_error_input(error, 'Value of restart not recognised in wann_prog')
+      call set_error_input(error, 'Value of restart not recognised in wann_prog', comm)
       call prterr(error, stdout)
     end select
   endif
@@ -402,13 +402,13 @@ program wannier
                                   real_lattice, num_kpts, num_proj, calc_only_A, &
                                   w90_system%spinors, seedname, timer)
 
-    call kmesh_dealloc(kmesh_info, error)
+    call kmesh_dealloc(kmesh_info, error, comm)
     if (allocated(error)) call prterr(error, stdout)
     call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                              exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                              proj_input, input_proj, select_projection, &
                                              kpoint_path, wannier_data, wannier_plot, &
-                                             w90_extra_io, eigval, error)
+                                             w90_extra_io, eigval, error, comm)
     if (allocated(error)) call prterr(error, stdout)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
@@ -417,7 +417,7 @@ program wannier
   endif
 
   if (lsitesymmetry) then
-    call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error)
+    call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
     ! update this to read on root and bcast - JRY
     if (allocated(error)) call prterr(error, stdout)
   endif
@@ -532,7 +532,7 @@ program wannier
                      ws_region, w90_calculation, ham_k, ham_r, u_matrix, u_matrix_opt, eigval, &
                      real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                      nrpts, num_bands, num_kpts, num_wann, rpt_origin, band_plot%mode, &
-                     have_disentangled, lsitesymmetry, seedname, stdout, timer, error)
+                     have_disentangled, lsitesymmetry, seedname, stdout, timer, error, comm)
       if (allocated(error)) call prterr(error, stdout)
 
       time1 = io_time()
@@ -543,23 +543,24 @@ program wannier
   endif
 
   call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
-                           error)
+                           error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
-  call kmesh_dealloc(kmesh_info, error)
+  call kmesh_dealloc(kmesh_info, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                            exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                            proj_input, input_proj, select_projection, kpoint_path, &
-                                           wannier_data, wannier_plot, w90_extra_io, eigval, error)
+                                           wannier_data, wannier_plot, w90_extra_io, eigval, &
+                                           error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   if (lsitesymmetry) then
-    call sitesym_dealloc(sitesym, error)
+    call sitesym_dealloc(sitesym, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
 

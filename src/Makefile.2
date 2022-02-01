@@ -126,7 +126,7 @@ kmesh.o: ../kmesh.F90 constants.o io.o utility.o types.o
 error_base.o: ../error_base.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../error_base.F90
 
-error.o: ../error.F90 error_base.o
+error.o: ../error.F90 error_base.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../error.F90
 
 disentangle.o: ../disentangle.F90 constants.o io.o types.o sitesym.o comms.o wannier90_types.o
@@ -147,7 +147,7 @@ transport.o: ../transport.F90 constants.o io.o types.o hamiltonian.o wannier90_t
 sitesym.o : ../sitesym.F90 utility.o types.o constants.o wannier90_types.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
-comms.o: ../comms.F90 constants.o io.o error_base.o ../../make.inc
+comms.o: ../comms.F90 constants.o error_base.o ../../make.inc
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o types.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o postw90_types.o ws_distance.o

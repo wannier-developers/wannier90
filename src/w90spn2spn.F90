@@ -160,13 +160,13 @@ contains
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating spm_temp in conv_read_spn')
+      call set_error_alloc(error, 'Error in allocating spm_temp in conv_read_spn', comm)
       return
     endif
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating spm_temp in conv_read_spn')
+      call set_error_alloc(error, 'Error in allocating spm_temp in conv_read_spn', comm)
       return
     endif
     do ik = 1, num_kpts
@@ -197,7 +197,7 @@ contains
 
     deallocate (spn_temp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating spm_temp in conv_read_spn')
+      call set_error_dealloc(error, 'Error in deallocating spm_temp in conv_read_spn', comm)
       return
     endif
 
@@ -205,9 +205,9 @@ contains
 
     return
 
-109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn')
+109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn', comm)
     return
-110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn')
+110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn', comm)
     return
 
   end subroutine conv_read_spn
@@ -251,7 +251,7 @@ contains
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating spn_o in conv_read_spn_fmt')
+      call set_error_alloc(error, 'Error in allocating spn_o in conv_read_spn_fmt', comm)
       return
     endif
 
@@ -285,9 +285,9 @@ contains
 
     return
 
-109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
+109 call set_error_file(error, 'Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', comm)
     return
-110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt')
+110 call set_error_file(error, 'Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', comm)
     return
 
   end subroutine conv_read_spn_fmt
@@ -320,7 +320,7 @@ contains
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating spm_temp in conv_write_spn')
+      call set_error_alloc(error, 'Error in allocating spm_temp in conv_write_spn', comm)
       return
     endif
 

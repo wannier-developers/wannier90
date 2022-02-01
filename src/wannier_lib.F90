@@ -265,7 +265,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 #ifdef MPI
   call mpi_initialized(mpiinitalready, ierr)
   if (.not. mpiinitalready) then
-    call set_error_mpi(error, 'mpi_init must be called before wannier_setup() when libwannier is compiled with MPI support')
+    call set_error_mpi(error, 'mpi_init must be called before wannier_setup() when libwannier is compiled with MPI support', comm)
   endif
   if (allocated(error)) call prterr(error, stdout)
 #endif
@@ -296,7 +296,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   real_lattice = real_lattice_loc
   !recip_lattice = recip_lattice_loc
   allocate (kpt_latt(3, num_kpts), stat=ierr)
-  if (ierr /= 0) call set_error_alloc(error, 'Error allocating kpt_latt in wannier_setup')
+  if (ierr /= 0) call set_error_alloc(error, 'Error allocating kpt_latt in wannier_setup', comm)
   if (allocated(error)) call prterr(error, stdout)
   kpt_latt = kpt_latt_loc
   atoms%num_atoms = num_atoms_loc
@@ -535,7 +535,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 #ifdef MPI
   call mpi_initialized(mpiinitalready, ierr)
   if (.not. mpiinitalready) then
-    call set_error_mpi(error, 'mpi_init must be called before wannier_run() when libwannier is compiled with MPI support')
+    call set_error_mpi(error, 'mpi_init must be called before wannier_run() when libwannier is compiled with MPI support', comm)
   endif
   if (allocated(error)) call prterr(error, stdout)
   comm%comm = MPI_COMM_WORLD
@@ -573,12 +573,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   num_kpts = num_kpts_loc
   real_lattice = real_lattice_loc
   allocate (kpt_latt(3, num_kpts), stat=ierr)
-  if (ierr /= 0) call set_error_alloc(error, 'Error allocating kpt_latt in wannier_setup')
+  if (ierr /= 0) call set_error_alloc(error, 'Error allocating kpt_latt in wannier_setup', comm)
   if (allocated(error)) call prterr(error, stdout)
 
   kpt_latt = kpt_latt_loc
   allocate (eigval(num_bands, num_kpts), stat=ierr)
-  if (ierr /= 0) call set_error_alloc(error, 'Error allocating eigval in wannier_setup')
+  if (ierr /= 0) call set_error_alloc(error, 'Error allocating eigval in wannier_setup', comm)
   if (allocated(error)) call prterr(error, stdout)
   eigval = eigenvalues_loc
   atoms%num_atoms = num_atoms_loc

@@ -219,12 +219,12 @@ contains
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
     read (chk_unit) num_exclude_bands                   ! Number of excluded bands
     if (num_exclude_bands < 0) then
-      call set_error_input(error, 'Invalid value for num_exclude_bands')
+      call set_error_input(error, 'Invalid value for num_exclude_bands', comm)
       return
     endif
     allocate (exclude_bands(num_exclude_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating exclude_bands in conv_read_chkpt')
+      call set_error_alloc(error, 'Error allocating exclude_bands in conv_read_chkpt', comm)
       return
     endif
     read (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
@@ -248,7 +248,7 @@ contains
     if (.not. allocated(kpt_latt)) then
       allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpt_latt in conv_read_chkpt')
+        call set_error_alloc(error, 'Error allocating kpt_latt in conv_read_chkpt', comm)
         return
       endif
     endif
@@ -275,7 +275,7 @@ contains
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating lwindow in conv_read_chkpt')
+          call set_error_alloc(error, 'Error allocating lwindow in conv_read_chkpt', comm)
           return
         endif
       endif
@@ -286,7 +286,7 @@ contains
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating ndimwin in conv_read_chkpt')
+          call set_error_alloc(error, 'Error allocating ndimwin in conv_read_chkpt', comm)
           return
         endif
       endif
@@ -297,7 +297,7 @@ contains
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating u_matrix_opt in conv_read_chkpt')
+          call set_error_alloc(error, 'Error allocating u_matrix_opt in conv_read_chkpt', comm)
           return
         endif
       endif
@@ -312,7 +312,7 @@ contains
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in conv_read_chkpt')
+        call set_error_alloc(error, 'Error allocating u_matrix in conv_read_chkpt', comm)
         return
       endif
     endif
@@ -323,7 +323,7 @@ contains
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating m_matrix in conv_read_chkpt')
+        call set_error_alloc(error, 'Error allocating m_matrix in conv_read_chkpt', comm)
         return
       endif
     endif
@@ -334,7 +334,7 @@ contains
     if (.not. allocated(wannier_data%centres)) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt')
+        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt', comm)
         return
       endif
     end if
@@ -345,7 +345,7 @@ contains
     if (.not. allocated(wannier_data%spreads)) then
       allocate (wannier_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt')
+        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt', comm)
         return
       endif
     end if
@@ -358,21 +358,21 @@ contains
 
     return
 
-121 call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in conv_read_chkpt')
+121 call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in conv_read_chkpt')
+122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in conv_read_chkpt')
+123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in conv_read_chkpt')
+124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in conv_read_chkpt')
+125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in conv_read_chkpt')
+126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in conv_read_chkpt')
+127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
-128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in conv_read_chkpt')
+128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in conv_read_chkpt', comm)
     return
 
   end subroutine conv_read_chkpt
@@ -415,11 +415,11 @@ contains
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
     read (chk_unit, *) num_exclude_bands                   ! Number of excluded bands
     if (num_exclude_bands < 0) then
-      call set_error_input(error, 'Invalid value for num_exclude_bands')
+      call set_error_input(error, 'Invalid value for num_exclude_bands', comm)
     endif
     allocate (exclude_bands(num_exclude_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating exclude_bands in conv_read_chkpt_fmt')
+      call set_error_alloc(error, 'Error allocating exclude_bands in conv_read_chkpt_fmt', comm)
       return
     endif
     do i = 1, num_exclude_bands
@@ -445,7 +445,7 @@ contains
     if (.not. allocated(kpt_latt)) then
       allocate (kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpt_latt in conv_read_chkpt_fmt')
+        call set_error_alloc(error, 'Error allocating kpt_latt in conv_read_chkpt_fmt', comm)
         return
       endif
     endif
@@ -469,7 +469,7 @@ contains
       have_disentangled = .false.
     else
       write (cdum, '(I0)') idum
-      call set_error_fatal(error, 'Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum)
+      call set_error_fatal(error, 'Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum, comm)
       return
     end if
 
@@ -483,7 +483,7 @@ contains
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating lwindow in conv_read_chkpt_fmt')
+          call set_error_alloc(error, 'Error allocating lwindow in conv_read_chkpt_fmt', comm)
           return
         endif
       endif
@@ -496,7 +496,7 @@ contains
             dis_manifold%lwindow(i, nkp) = .false.
           else
             write (cdum, '(I0)') idum
-            call set_error_fatal(error, 'Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum)
+            call set_error_fatal(error, 'Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum, comm)
             return
           end if
         end do
@@ -507,7 +507,7 @@ contains
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating ndimwin in conv_read_chkpt_fmt')
+          call set_error_alloc(error, 'Error allocating ndimwin in conv_read_chkpt_fmt', comm)
           return
         endif
       endif
@@ -520,7 +520,7 @@ contains
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating u_matrix_opt in conv_read_chkpt_fmt')
+          call set_error_alloc(error, 'Error allocating u_matrix_opt in conv_read_chkpt_fmt', comm)
           return
         endif
       endif
@@ -542,7 +542,7 @@ contains
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in conv_read_chkpt_fmt')
+        call set_error_alloc(error, 'Error allocating u_matrix in conv_read_chkpt_fmt', comm)
         return
       endif
     endif
@@ -560,7 +560,7 @@ contains
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating m_matrix in conv_read_chkpt_fmt')
+        call set_error_alloc(error, 'Error allocating m_matrix in conv_read_chkpt_fmt', comm)
         return
       endif
     endif
@@ -580,7 +580,7 @@ contains
     if (.not. allocated(wannier_data%centres)) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt_fmt')
+        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt_fmt', comm)
         return
       endif
     end if
@@ -593,7 +593,7 @@ contains
     if (.not. allocated(wannier_data%spreads)) then
       allocate (wannier_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt_fmt')
+        call set_error_alloc(error, 'Error allocating wannier_centres in conv_read_chkpt_fmt', comm)
         return
       endif
     end if
@@ -608,23 +608,23 @@ contains
 
     return
 
-115 call set_error_file(error, 'Error reading variable from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+115 call set_error_file(error, 'Error reading variable from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-121 call set_error_file(error, 'Error opening '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+121 call set_error_file(error, 'Error opening '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
-128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt')
+128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', comm)
     return
 
   end subroutine conv_read_chkpt_fmt

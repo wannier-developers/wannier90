@@ -98,7 +98,7 @@ contains
         read (file_unit, *) !header
         read (file_unit, *) num_wann_loc
         if (num_wann_loc /= num_wann) then
-          call set_error_fatal(error, 'Inconsistent values of num_wann in '//trim(seedname) &
+          call set_error_fatal(error, 'Inconsistent values of num_wann in '//trim(seedname, comm) &
                                //'_HH_R.dat and '//trim(seedname)//'.win')
           return
         endif
@@ -116,19 +116,19 @@ contains
     ! Now can allocate several arrays
     allocate (wigner_seitz%irvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating irvec in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating irvec in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%irvec = 0
     allocate (wigner_seitz%crvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating crvec in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating crvec in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%crvec = 0.0_dp
     allocate (wigner_seitz%ndegen(wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ndegen in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating ndegen in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%ndegen = 0
@@ -207,13 +207,13 @@ contains
 
     allocate (kpoint_dist%int_kpts(3, kpoint_dist%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um')
+      call set_error_alloc(error, 'Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um', comm)
       return
     endif
     kpoint_dist%int_kpts = 0.0_dp
     allocate (kpoint_dist%weight(kpoint_dist%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating weight in w90_wannier90_readwrite_read_um')
+      call set_error_alloc(error, 'Error allocating weight in w90_wannier90_readwrite_read_um', comm)
       return
     endif
     kpoint_dist%weight = 0.0_dp
@@ -251,7 +251,7 @@ contains
 
     return
 
-106 call set_error_file(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file')
+106 call set_error_file(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file', comm)
     return
 
   end subroutine pw90common_wanint_get_kpoint_file
@@ -613,40 +613,40 @@ contains
     if (.not. on_root) then
       allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_gyrotropic%freq_list(pw90_gyrotropic%nfreq), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating dos_project in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating dos_project in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       if (.not. effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating eigval in postw90_w90_wannier90_readwrite_dist')
+            call set_error_alloc(error, 'Error allocating eigval in postw90_w90_wannier90_readwrite_dist', comm)
             return
           endif
         end if
         allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist', comm)
           return
         endif
       endif
@@ -688,32 +688,32 @@ contains
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
       end if
@@ -775,7 +775,7 @@ contains
       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist')
+        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
         return
       endif
     end if
@@ -793,7 +793,7 @@ contains
     ! Allocate on all nodes
     allocate (v_matrix(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating v_matrix in pw90common_wanint_data_dist')
+      call set_error_alloc(error, 'Error allocating v_matrix in pw90common_wanint_data_dist', comm)
       return
     endif
     ! u_matrix and u_matrix_opt are stored on root only
@@ -825,7 +825,7 @@ contains
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in pw90common_wanint_data_dist')
+        call set_error_alloc(error, 'Error allocating u_matrix in pw90common_wanint_data_dist', comm)
         return
       endif
     endif
@@ -857,7 +857,7 @@ contains
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating lwindow in pw90common_wanint_data_dist')
+            call set_error_alloc(error, 'Error allocating lwindow in pw90common_wanint_data_dist', comm)
             return
           endif
         endif
@@ -865,7 +865,7 @@ contains
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating ndimwin in pw90common_wanint_data_dist')
+            call set_error_alloc(error, 'Error allocating ndimwin in pw90common_wanint_data_dist', comm)
             return
           endif
         endif
@@ -1975,7 +1975,7 @@ contains
       tot = tot + 1.0_dp/real(wigner_seitz%ndegen(ir), dp)
     enddo
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) then
-      call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points')
+      call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points', comm)
       return
     endif
     if (print_output%timing_level > 1 .and. on_root) &

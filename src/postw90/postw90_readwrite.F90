@@ -348,22 +348,22 @@ contains
         index(pw90_kslice%task, 'curv') == 0 .and. &
         index(pw90_kslice%task, 'morb') == 0 .and. &
         index(pw90_kslice%task, 'shc') == 0) then
-      call set_error_input(error, 'Error: value of kslice_task not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of kslice_task not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
     if (kslicel .and. index(pw90_kslice%task, 'curv') > 0 .and. &
         index(pw90_kslice%task, 'morb') > 0) then
-      call set_error_input(error, "Error: kslice_task cannot include both 'curv' and 'morb'")
+      call set_error_input(error, "Error: kslice_task cannot include both 'curv' and 'morb'", comm)
       return
     endif
     if (kslicel .and. index(pw90_kslice%task, 'shc') > 0 .and. &
         index(pw90_kslice%task, 'morb') > 0) then
-      call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'morb'")
+      call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'morb'", comm)
       return
     endif
     if (kslicel .and. index(pw90_kslice%task, 'shc') > 0 .and. &
         index(pw90_kslice%task, 'curv') > 0) then
-      call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'curv'")
+      call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'curv'", comm)
       return
     endif
 
@@ -386,7 +386,7 @@ contains
         return
       endif
       if (any(pw90_kslice%kmesh2d <= 0)) then
-        call set_error_input(error, 'Error: kslice_2dkmesh elements must be greater than zero')
+        call set_error_input(error, 'Error: kslice_2dkmesh elements must be greater than zero', comm)
         return
       endif
     endif
@@ -456,7 +456,7 @@ contains
                                    r_value=pw90_smearing%adaptive_prefactor)
     if (allocated(error)) return
     if (found .and. (pw90_smearing%adaptive_prefactor <= 0._dp)) then
-      call set_error_input(error, 'Error: adpt_smr_fac must be greater than zero')
+      call set_error_input(error, 'Error: adpt_smr_fac must be greater than zero', comm)
       return
     endif
 
@@ -466,7 +466,7 @@ contains
                                    r_value=pw90_smearing%adaptive_max_width)
     if (allocated(error)) return
     if (pw90_smearing%adaptive_max_width <= 0._dp) then
-      call set_error_input(error, 'Error: adpt_smr_max must be greater than zero')
+      call set_error_input(error, 'Error: adpt_smr_max must be greater than zero', comm)
       return
     endif
 
@@ -477,7 +477,7 @@ contains
                                    r_value=pw90_smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
   end subroutine w90_wannier90_readwrite_read_smearing
@@ -532,7 +532,7 @@ contains
     if (allocated(error)) return
 
     if (spin_decomp .and. (num_elec_per_state .ne. 1)) then
-      call set_error_input(error, 'spin_decomp can be true only if num_elec_per_state is 1')
+      call set_error_input(error, 'spin_decomp can be true only if num_elec_per_state is 1', comm)
       return
     end if
 
@@ -589,13 +589,13 @@ contains
     if (allocated(error)) return
     if (found) then
       if (pw90_gyrotropic%num_bands < 1) then
-        call set_error_input(error, 'Error: problem reading gyrotropic_band_list')
+        call set_error_input(error, 'Error: problem reading gyrotropic_band_list', comm)
         return
       endif
       if (allocated(pw90_gyrotropic%band_list)) deallocate (pw90_gyrotropic%band_list)
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read')
+        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', comm)
         return
       endif
       call w90_readwrite_get_range_vector('gyrotropic_band_list', found, &
@@ -603,7 +603,7 @@ contains
                                           pw90_gyrotropic%band_list)
       if (allocated(error)) return
       if (any(pw90_gyrotropic%band_list < 1) .or. any(pw90_gyrotropic%band_list > num_wann)) then
-        call set_error_input(error, 'Error: gyrotropic_band_list asks for a non-valid bands')
+        call set_error_input(error, 'Error: gyrotropic_band_list asks for a non-valid bands', comm)
         return
       endif
     else
@@ -612,7 +612,7 @@ contains
       if (allocated(pw90_gyrotropic%band_list)) deallocate (pw90_gyrotropic%band_list)
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read')
+        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', comm)
         return
       endif
       do loop = 1, num_wann
@@ -625,7 +625,7 @@ contains
     call w90_readwrite_get_keyword('smr_max_arg', found, error, r_value=smr_max_arg)
     if (allocated(error)) return
     if (found .and. (smr_max_arg <= 0._dp)) then
-      call set_error_input(error, 'Error: smr_max_arg must be greater than zero')
+      call set_error_input(error, 'Error: smr_max_arg must be greater than zero', comm)
       return
     endif
 
@@ -634,7 +634,7 @@ contains
                                    r_value=pw90_gyrotropic%smearing%max_arg)
     if (allocated(error)) return
     if (found .and. (pw90_gyrotropic%smearing%max_arg <= 0._dp)) then
-      call set_error_input(error, 'Error: gyrotropic_smr_max_arg must be greater than zero')
+      call set_error_input(error, 'Error: gyrotropic_smr_max_arg must be greater than zero', comm)
       return
     endif
 
@@ -643,7 +643,7 @@ contains
                                    r_value=pw90_gyrotropic%smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_gyrotropic%smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
 
@@ -694,7 +694,7 @@ contains
     call w90_readwrite_get_keyword('berry_task', found, error, c_value=pw90_berry%task)
     if (allocated(error)) return
     if (pw90_calculation%berry .and. .not. found) then
-      call set_error_input(error, 'Error: berry=T and berry_task is not set')
+      call set_error_input(error, 'Error: berry=T and berry_task is not set', comm)
       return
     endif
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
@@ -702,7 +702,7 @@ contains
         .and. index(pw90_berry%task, 'kubo') == 0 .and. index(pw90_berry%task, 'sc') == 0 &
         .and. index(pw90_berry%task, 'shc') == 0 .and. index(pw90_berry%task, 'kdotp') == 0) then
 
-      call set_error_input(error, 'Error: value of berry_task not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of berry_task not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
 
@@ -711,7 +711,7 @@ contains
                                    i_value=pw90_berry%curv_adpt_kmesh)
     if (allocated(error)) return
     if (pw90_berry%curv_adpt_kmesh < 1) then
-      call set_error_input(error, 'Error:  berry_curv_adpt_kmesh must be a positive integer')
+      call set_error_input(error, 'Error:  berry_curv_adpt_kmesh must be a positive integer', comm)
       return
     endif
 
@@ -724,7 +724,7 @@ contains
     call w90_readwrite_get_keyword('berry_curv_unit', found, error, c_value=pw90_berry%curv_unit)
     if (allocated(error)) return
     if (pw90_berry%curv_unit .ne. 'ang2' .and. pw90_berry%curv_unit .ne. 'bohr2') then
-      call set_error_input(error, 'Error: value of berry_curv_unit not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of berry_curv_unit not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
 
@@ -746,7 +746,7 @@ contains
                                    r_value=pw90_berry%kubo_smearing%adaptive_prefactor)
     if (allocated(error)) return
     if (found .and. (pw90_berry%kubo_smearing%adaptive_prefactor <= 0._dp)) then
-      call set_error_input(error, 'Error: kubo_adpt_smr_fac must be greater than zero')
+      call set_error_input(error, 'Error: kubo_adpt_smr_fac must be greater than zero', comm)
       return
     endif
 
@@ -755,7 +755,7 @@ contains
                                    r_value=pw90_berry%kubo_smearing%adaptive_max_width)
     if (allocated(error)) return
     if (pw90_berry%kubo_smearing%adaptive_max_width <= 0._dp) then
-      call set_error_input(error, 'Error: kubo_adpt_smr_max must be greater than zero')
+      call set_error_input(error, 'Error: kubo_adpt_smr_max must be greater than zero', comm)
       return
     endif
 
@@ -764,7 +764,7 @@ contains
                                    r_value=pw90_berry%kubo_smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_berry%kubo_smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: kubo_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
 
@@ -773,7 +773,7 @@ contains
                                    i_value=pw90_berry%sc_phase_conv)
     if (allocated(error)) return
     if ((pw90_berry%sc_phase_conv .ne. 1) .and. ((pw90_berry%sc_phase_conv .ne. 2))) then
-      call set_error_input(error, 'Error: sc_phase_conv must be either 1 or 2')
+      call set_error_input(error, 'Error: sc_phase_conv must be either 1 or 2', comm)
       return
     endif
 
@@ -810,19 +810,19 @@ contains
     if (allocated(error)) return
     if (found) then
       if (kdotp_num_bands < 1) then
-        call set_error_input(error, 'Error: problem reading kdotp_num_bands')
+        call set_error_input(error, 'Error: problem reading kdotp_num_bands', comm)
         return
       endif
       allocate (pw90_berry%kdotp_bands(kdotp_num_bands), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kdotp_num_bands in w90_wannier90_readwrite_read')
+        call set_error_alloc(error, 'Error allocating kdotp_num_bands in w90_wannier90_readwrite_read', comm)
         return
       endif
       call w90_readwrite_get_range_vector('kdotp_bands', found, kdotp_num_bands, &
                                           .false., error, pw90_berry%kdotp_bands)
       if (allocated(error)) return
       if (any(pw90_berry%kdotp_bands < 1)) then
-        call set_error_input(error, 'Error: kdotp_bands must contain positive numbers')
+        call set_error_input(error, 'Error: kdotp_bands must contain positive numbers', comm)
         return
       endif
     end if
@@ -857,7 +857,7 @@ contains
     call w90_readwrite_get_keyword('shc_alpha', found, error, i_value=pw90_spin_hall%alpha)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%alpha < 1 .or. pw90_spin_hall%alpha > 3)) then
-      call set_error_input(error, 'Error:  shc_alpha must be 1, 2 or 3')
+      call set_error_input(error, 'Error:  shc_alpha must be 1, 2 or 3', comm)
       return
     endif
 
@@ -865,7 +865,7 @@ contains
     call w90_readwrite_get_keyword('shc_beta', found, error, i_value=pw90_spin_hall%beta)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%beta < 1 .or. pw90_spin_hall%beta > 3)) then
-      call set_error_input(error, 'Error:  shc_beta must be 1, 2 or 3')
+      call set_error_input(error, 'Error:  shc_beta must be 1, 2 or 3', comm)
       return
     endif
 
@@ -873,7 +873,7 @@ contains
     call w90_readwrite_get_keyword('shc_gamma', found, error, i_value=pw90_spin_hall%gamma)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%gamma < 1 .or. pw90_spin_hall%gamma > 3)) then
-      call set_error_input(error, 'Error:  shc_gamma must be 1, 2 or 3')
+      call set_error_input(error, 'Error:  shc_gamma must be 1, 2 or 3', comm)
       return
     endif
 
@@ -883,7 +883,7 @@ contains
     pw90_spin_hall%bandshift = pw90_spin_hall%bandshift .and. pw90_calculation%berry .and. &
                                .not. (index(berry_task, 'shc') == 0)
     if ((abs(scissors_shift) > 1.0e-7_dp) .and. pw90_spin_hall%bandshift) then
-      call set_error_input(error, 'Error: shc_bandshift and scissors_shift cannot be used simultaneously')
+      call set_error_input(error, 'Error: shc_bandshift and scissors_shift cannot be used simultaneously', comm)
       return
     endif
 
@@ -892,11 +892,11 @@ contains
                                    i_value=pw90_spin_hall%bandshift_firstband)
     if (allocated(error)) return
     if (pw90_spin_hall%bandshift .and. (.not. found)) then
-      call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_firstband provided')
+      call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_firstband provided', comm)
       return
     endif
     if ((pw90_spin_hall%bandshift_firstband < 1) .and. found) then
-      call set_error_input(error, 'Error: shc_bandshift_firstband must >= 1')
+      call set_error_input(error, 'Error: shc_bandshift_firstband must >= 1', comm)
       return
     endif
 
@@ -905,7 +905,7 @@ contains
                                    r_value=pw90_spin_hall%bandshift_energyshift)
     if (allocated(error)) return
     if (pw90_spin_hall%bandshift .and. (.not. found)) then
-      call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+      call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_energyshift provided', comm)
       return
     endif
 
@@ -913,12 +913,12 @@ contains
     call w90_readwrite_get_keyword('shc_method', found, error, c_value=pw90_spin_hall%method)
     if (allocated(error)) return
     if (index(berry_task, 'shc') > 0 .and. .not. found) then
-      call set_error_input(error, 'Error: berry_task=shc and shc_method is not set')
+      call set_error_input(error, 'Error: berry_task=shc and shc_method is not set', comm)
       return
     endif
     if (index(berry_task, 'shc') > 0 .and. index(pw90_spin_hall%method, 'qiao') == 0 &
         .and. index(pw90_spin_hall%method, 'ryoo') == 0) then
-      call set_error_input(error, 'Error: value of shc_method not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of shc_method not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
 
@@ -969,11 +969,11 @@ contains
         index(pw90_kpath%task, 'curv') == 0 .and. &
         index(pw90_kpath%task, 'morb') == 0 .and. &
         index(pw90_kpath%task, 'shc') == 0) then
-      call set_error_input(error, 'Error: value of kpath_task not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of kpath_task not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
     if (.not. allocated(kpoint_path%labels) .and. pw90_calculation%kpath) then
-      call set_error_input(error, 'Error: a kpath plot has been requested but there is no kpoint_path block')
+      call set_error_input(error, 'Error: a kpath plot has been requested but there is no kpoint_path block', comm)
       return
     endif
 
@@ -982,7 +982,7 @@ contains
                                    i_value=pw90_kpath%num_points)
     if (allocated(error)) return
     if (pw90_kpath%num_points < 0) then
-      call set_error_input(error, 'Error: kpath_num_points must be positive')
+      call set_error_input(error, 'Error: kpath_num_points must be positive', comm)
       return
     endif
 
@@ -993,12 +993,12 @@ contains
     if (pw90_calculation%kpath .and. index(pw90_kpath%bands_colour, 'none') == 0 .and. &
         index(pw90_kpath%bands_colour, 'spin') == 0 .and. &
         index(pw90_kpath%bands_colour, 'shc') == 0) then
-      call set_error_input(error, 'Error: value of kpath_bands_colour not recognised in w90_wannier90_readwrite_read')
+      call set_error_input(error, 'Error: value of kpath_bands_colour not recognised in w90_wannier90_readwrite_read', comm)
       return
     endif
     if (pw90_calculation%kpath .and. index(pw90_kpath%task, 'shc') > 0 .and. &
         index(pw90_kpath%task, 'spin') > 0) then
-      call set_error_input(error, "Error: kpath_task cannot include both 'shc' and 'spin'")
+      call set_error_input(error, "Error: kpath_task cannot include both 'shc' and 'spin'", comm)
       return
     endif
 
@@ -1037,12 +1037,12 @@ contains
     if (pw90_calculation%dos) then
       if (index(pw90_dos%task, 'dos_plot') == 0 .and. &
           index(pw90_dos%task, 'find_fermi_energy') == 0) then
-        call set_error_input(error, 'Error: value of dos_task not recognised in w90_wannier90_readwrite_read')
+        call set_error_input(error, 'Error: value of dos_task not recognised in w90_wannier90_readwrite_read', comm)
         return
       endif
       if (index(pw90_dos%task, 'dos_plot') > 0) dos_plot = .true.
       if (index(pw90_dos%task, 'find_fermi_energy') > 0 .and. found_fermi_energy) then
-        call set_error_input(error, 'Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"')
+        call set_error_input(error, 'Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"', comm)
         return
       endif
     end if
@@ -1069,7 +1069,7 @@ contains
                                    r_value=pw90_dos%smearing%adaptive_prefactor)
     if (allocated(error)) return
     if (found .and. (pw90_dos%smearing%adaptive_prefactor <= 0._dp)) then
-      call set_error_input(error, 'Error: dos_adpt_smr_fac must be greater than zero')
+      call set_error_input(error, 'Error: dos_adpt_smr_fac must be greater than zero', comm)
       return
     endif
 
@@ -1078,7 +1078,7 @@ contains
                                    r_value=pw90_dos%smearing%adaptive_max_width)
     if (allocated(error)) return
     if (pw90_dos%smearing%adaptive_max_width <= 0._dp) then
-      call set_error_input(error, 'Error: dos_adpt_smr_max must be greater than zero')
+      call set_error_input(error, 'Error: dos_adpt_smr_max must be greater than zero', comm)
       return
     endif
 
@@ -1087,7 +1087,7 @@ contains
                                    r_value=pw90_dos%smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_dos%smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: dos_smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: dos_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
 
@@ -1101,13 +1101,13 @@ contains
     if (allocated(error)) return
     if (found) then
       if (pw90_dos%num_project < 1) then
-        call set_error_input(error, 'Error: problem reading dos_project')
+        call set_error_input(error, 'Error: problem reading dos_project', comm)
         return
       endif
       if (allocated(pw90_dos%project)) deallocate (pw90_dos%project)
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read')
+        call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read', comm)
         return
       endif
       call w90_readwrite_get_range_vector('dos_project', found, pw90_dos%num_project, .false., &
@@ -1115,7 +1115,7 @@ contains
       if (allocated(error)) return
       if (any(pw90_dos%project < 1) .or. &
           any(pw90_dos%project > num_wann)) then
-        call set_error_input(error, 'Error: dos_project asks for out-of-range Wannier functions')
+        call set_error_input(error, 'Error: dos_project asks for out-of-range Wannier functions', comm)
         return
       endif
     else
@@ -1124,7 +1124,7 @@ contains
       if (allocated(pw90_dos%project)) deallocate (pw90_dos%project)
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read')
+        call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read', comm)
         return
       endif
       do i = 1, pw90_dos%num_project
@@ -1221,7 +1221,7 @@ contains
       elseif (trim(boltz_2d_dir) == 'z') then
         pw90_boltzwann%dir_num_2d = 3
       else
-        call set_error_input(error, 'Error: boltz_2d_dir can only be "no", "x", "y" or "z".')
+        call set_error_input(error, 'Error: boltz_2d_dir can only be "no", "x", "y" or "z".', comm)
         return
       end if
     end if
@@ -1231,7 +1231,7 @@ contains
                                    r_value=pw90_boltzwann%dos_energy_step)
     if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_energy_step <= 0._dp)) then
-      call set_error_input(error, 'Error: boltz_dos_energy_step must be positive')
+      call set_error_input(error, 'Error: boltz_dos_energy_step must be positive', comm)
       return
     endif
 
@@ -1256,7 +1256,7 @@ contains
                                    r_value=pw90_boltzwann%dos_energy_max)
     if (allocated(error)) return
     if (pw90_boltzwann%dos_energy_max <= pw90_boltzwann%dos_energy_min) then
-      call set_error_input(error, 'Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')
+      call set_error_input(error, 'Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', comm)
       return
     endif
 
@@ -1270,7 +1270,7 @@ contains
                                    r_value=pw90_boltzwann%dos_smearing%adaptive_prefactor)
     if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_smearing%adaptive_prefactor <= 0._dp)) then
-      call set_error_input(error, 'Error: boltz_dos_adpt_smr_fac must be greater than zero')
+      call set_error_input(error, 'Error: boltz_dos_adpt_smr_fac must be greater than zero', comm)
       return
     endif
 
@@ -1279,7 +1279,7 @@ contains
                                    r_value=pw90_boltzwann%dos_smearing%adaptive_max_width)
     if (allocated(error)) return
     if (pw90_boltzwann%dos_smearing%adaptive_max_width <= 0._dp) then
-      call set_error_input(error, 'Error: boltz_dos_adpt_smr_max must be greater than zero')
+      call set_error_input(error, 'Error: boltz_dos_adpt_smr_max must be greater than zero', comm)
       return
     endif
 
@@ -1288,7 +1288,7 @@ contains
                                    r_value=pw90_boltzwann%dos_smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_boltzwann%dos_smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
 
@@ -1296,29 +1296,29 @@ contains
     call w90_readwrite_get_keyword('boltz_mu_min', found, error, r_value=pw90_boltzwann%mu_min)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_min provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_min provided', comm)
       return
     endif
     pw90_boltzwann%mu_max = -999._dp
     call w90_readwrite_get_keyword('boltz_mu_max', found2, error, r_value=pw90_boltzwann%mu_max)
     if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_max provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_max provided', comm)
       return
     endif
     if (found .and. found2 .and. (pw90_boltzwann%mu_max < pw90_boltzwann%mu_min)) then
-      call set_error_input(error, 'Error: boltz_mu_max must be greater than boltz_mu_min')
+      call set_error_input(error, 'Error: boltz_mu_max must be greater than boltz_mu_min', comm)
       return
     endif
     pw90_boltzwann%mu_step = 0._dp
     call w90_readwrite_get_keyword('boltz_mu_step', found, error, r_value=pw90_boltzwann%mu_step)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_step provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_step provided', comm)
       return
     endif
     if (found .and. (pw90_boltzwann%mu_step <= 0._dp)) then
-      call set_error_input(error, 'Error: boltz_mu_step must be greater than zero')
+      call set_error_input(error, 'Error: boltz_mu_step must be greater than zero', comm)
       return
     endif
 
@@ -1327,7 +1327,7 @@ contains
                                    r_value=pw90_boltzwann%temp_min)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_min provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_min provided', comm)
       return
     endif
     pw90_boltzwann%temp_max = -999._dp
@@ -1335,15 +1335,15 @@ contains
                                    r_value=pw90_boltzwann%temp_max)
     if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_max provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_max provided', comm)
       return
     endif
     if (found .and. found2 .and. (pw90_boltzwann%temp_max < pw90_boltzwann%temp_min)) then
-      call set_error_input(error, 'Error: boltz_temp_max must be greater than boltz_temp_min')
+      call set_error_input(error, 'Error: boltz_temp_max must be greater than boltz_temp_min', comm)
       return
     endif
     if (found .and. (pw90_boltzwann%temp_min <= 0._dp)) then
-      call set_error_input(error, 'Error: boltz_temp_min must be greater than zero')
+      call set_error_input(error, 'Error: boltz_temp_min must be greater than zero', comm)
       return
     endif
     pw90_boltzwann%temp_step = 0._dp
@@ -1351,11 +1351,11 @@ contains
                                    r_value=pw90_boltzwann%temp_step)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
-      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_step provided')
+      call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_step provided', comm)
       return
     endif
     if (found .and. (pw90_boltzwann%temp_step <= 0._dp)) then
-      call set_error_input(error, 'Error: boltz_temp_step must be greater than zero')
+      call set_error_input(error, 'Error: boltz_temp_step must be greater than zero', comm)
       return
     endif
 
@@ -1367,7 +1367,7 @@ contains
                                    r_value=pw90_boltzwann%tdf_energy_step)
     if (allocated(error)) return
     if (pw90_boltzwann%tdf_energy_step <= 0._dp) then
-      call set_error_input(error, 'Error: boltz_tdf_energy_step must be greater than zero')
+      call set_error_input(error, 'Error: boltz_tdf_energy_step must be greater than zero', comm)
       return
     endif
 
@@ -1378,7 +1378,7 @@ contains
                                    r_value=pw90_boltzwann%tdf_smearing%fixed_width)
     if (allocated(error)) return
     if (found .and. (pw90_boltzwann%tdf_smearing%fixed_width < 0._dp)) then
-      call set_error_input(error, 'Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero')
+      call set_error_input(error, 'Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
     endif
 
@@ -1418,7 +1418,7 @@ contains
                                    i_value=pw90_boltzwann%bandshift_firstband)
     if (allocated(error)) return
     if (pw90_boltzwann%bandshift .and. (.not. found)) then
-      call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_firstband provided')
+      call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_firstband provided', comm)
       return
     endif
     pw90_boltzwann%bandshift_energyshift = 0._dp
@@ -1426,7 +1426,7 @@ contains
                                    r_value=pw90_boltzwann%bandshift_energyshift)
     if (allocated(error)) return
     if (pw90_boltzwann%bandshift .and. (.not. found)) then
-      call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_energyshift provided')
+      call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_energyshift provided', comm)
       return
     endif
   end subroutine w90_wannier90_readwrite_read_boltzwann
@@ -1498,7 +1498,7 @@ contains
                                    r_value=pw90_extra_io%kubo_freq_step)
     if (allocated(error)) return
     if (found .and. pw90_extra_io%kubo_freq_step < 0.0_dp) then
-      call set_error_input(error, 'Error: kubo_freq_step must be positive')
+      call set_error_input(error, 'Error: kubo_freq_step must be positive', comm)
       return
     endif
 
@@ -1511,7 +1511,7 @@ contains
     if (allocated(pw90_berry%kubo_freq_list)) deallocate (pw90_berry%kubo_freq_list)
     allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating kubo_freq_list in w90_wannier90_readwrite_read')
+      call set_error_alloc(error, 'Error allocating kubo_freq_list in w90_wannier90_readwrite_read', comm)
       return
     endif
     do i = 1, pw90_berry%kubo_nfreq
@@ -1543,7 +1543,7 @@ contains
     if (allocated(pw90_gyrotropic%freq_list)) deallocate (pw90_gyrotropic%freq_list)
     allocate (pw90_gyrotropic%freq_list(pw90_gyrotropic%nfreq), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in w90_wannier90_readwrite_read')
+      call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in w90_wannier90_readwrite_read', comm)
       return
     endif
     do i = 1, pw90_gyrotropic%nfreq
@@ -1602,7 +1602,7 @@ contains
     if (allocated(error)) return
     if (found) then
       if (kmesh%spacing .le. 0._dp) then
-        call set_error_input(error, 'Error: kmesh_spacing must be greater than zero')
+        call set_error_input(error, 'Error: kmesh_spacing must be greater than zero', comm)
         return
       endif
       global_kmesh_set = .true.
@@ -1613,7 +1613,7 @@ contains
     if (allocated(error)) return
     if (found) then
       if (global_kmesh_set) then
-        call set_error_input(error, 'Error: cannot set both kmesh and kmesh_spacing')
+        call set_error_input(error, 'Error: cannot set both kmesh and kmesh_spacing', comm)
         return
       endif
       if (i .eq. 1) then
@@ -1627,11 +1627,11 @@ contains
         call w90_readwrite_get_keyword_vector('kmesh', found, 3, error, i_value=kmesh%mesh)
         if (allocated(error)) return
       else
-        call set_error_input(error, 'Error: kmesh must be provided as either one integer or a vector of three integers')
+        call set_error_input(error, 'Error: kmesh must be provided as either one integer or a vector of three integers', comm)
         return
       end if
       if (any(kmesh%mesh <= 0)) then
-        call set_error_input(error, 'Error: kmesh elements must be greater than zero')
+        call set_error_input(error, 'Error: kmesh elements must be greater than zero', comm)
         return
       endif
     end if
@@ -1730,7 +1730,7 @@ contains
     if (allocated(error)) return
     if (found) then
       if (module_kmesh%spacing .le. 0._dp) then
-        call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero')
+        call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero', comm)
         return
       endif
 
@@ -1740,7 +1740,7 @@ contains
     if (allocated(error)) return
     if (found2) then
       if (found) then
-        call set_error_input(error, 'Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
+        call set_error_input(error, 'Error: cannot set both '//trim(moduleprefix, comm)//'_kmesh and ' &
                              //trim(moduleprefix)//'_kmesh_spacing')
         return
       endif
@@ -1755,12 +1755,12 @@ contains
                                               3, error, i_value=module_kmesh%mesh)
         if (allocated(error)) return
       else
-        call set_error_input(error, 'Error: '//trim(moduleprefix)// &
+        call set_error_input(error, 'Error: '//trim(moduleprefix, comm)// &
                              '_kmesh must be provided as either one integer or a vector of 3 integers')
         return
       end if
       if (any(module_kmesh%mesh <= 0)) then
-        call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero')
+        call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero', comm)
         return
       endif
     end if
@@ -1774,7 +1774,7 @@ contains
         module_kmesh%spacing = global_kmesh%spacing
       else
         if (should_be_defined) then
-          call set_error_input(error, 'Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.')
+          call set_error_input(error, 'Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', comm)
           return
         endif
       end if
@@ -2363,21 +2363,21 @@ contains
     if (allocated(pw90_dos%project)) then
       deallocate (pw90_dos%project, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating dos_project in w90_postw90_readwrite_dealloc')
+        call set_error_dealloc(error, 'Error in deallocating dos_project in w90_postw90_readwrite_dealloc', comm)
         return
       endif
     endif
     if (allocated(fermi_energy_list)) then
       deallocate (fermi_energy_list, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating fermi_energy_list in w90_postw90_readwrite_dealloc')
+        call set_error_dealloc(error, 'Error in deallocating fermi_energy_list in w90_postw90_readwrite_dealloc', comm)
         return
       endif
     endif
     if (allocated(pw90_berry%kubo_freq_list)) then
       deallocate (pw90_berry%kubo_freq_list, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating kubo_freq_list in w90_postw90_readwrite_dealloc')
+        call set_error_dealloc(error, 'Error in deallocating kubo_freq_list in w90_postw90_readwrite_dealloc', comm)
         return
       endif
     endif

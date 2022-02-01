@@ -200,7 +200,7 @@ program postw90
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
   if (ierr .ne. 0) then
-    call set_error_fatal(error, 'MPI initialisation error')
+    call set_error_fatal(error, 'MPI initialisation error', comm)
     if (allocated(error)) call catch_error(error)
   endif
 #endif

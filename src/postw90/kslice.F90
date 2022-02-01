@@ -171,11 +171,11 @@ contains
     end if
     if (plot_shc) then
       if (pw90_berry%kubo_smearing%use_adaptive) then
-        call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity')
+        call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity', comm)
         return
       end if
       if (fermi_n == 0) then
-        call set_error_input(error, 'Error: must specify Fermi energy')
+        call set_error_input(error, 'Error: must specify Fermi energy', comm)
         return
       else if (fermi_n /= 1) then
         call set_error_input(error, 'Error: kpath plot only accept one Fermi energy, ' &
@@ -984,7 +984,7 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (plot_fermi_lines) then
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=fermi_lines')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=fermi_lines', comm)
         return
       endif
       select case (fermi_lines_color)
@@ -1004,13 +1004,13 @@ contains
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
       endif
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=curv')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=curv', comm)
         return
       endif
     elseif (plot_morb) then
       write (stdout, '(/,3x,a)') '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=morb')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=morb', comm)
         return
       endif
     elseif (plot_shc) then
@@ -1022,7 +1022,7 @@ contains
           //'of spin Hall conductivity in Bohr^2'
       endif
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=shc')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=shc', comm)
         return
       endif
     endif

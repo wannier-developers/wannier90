@@ -107,7 +107,7 @@ contains
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
-      call set_error_input(error, 'Routine spin_get_moment requires nfermi=1')
+      call set_error_input(error, 'Routine spin_get_moment requires nfermi=1', comm)
       return
     endif
 

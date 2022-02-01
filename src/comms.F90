@@ -45,6 +45,8 @@ module w90_comms
 
   private
 
+  integer, parameter :: code_mpi = 4
+
   integer, parameter :: mpi_send_tag = 77 !arbitrary
   integer, parameter :: root_id = 0 !not arbitrary
 
@@ -60,6 +62,7 @@ module w90_comms
   public :: comms_send       ! send data from one node to another
   public :: mpirank
   public :: mpisize
+  public :: comms_sync_err
 
   type, public :: w90comm_type
 #ifdef MPI08
@@ -167,9 +170,13 @@ contains
   ! synchronise error condition between MPI processess
   subroutine comms_sync_err(comm, error, ierr)
     implicit none
-    integer :: mpiierr, abserr
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    integer :: ierr, mpiierr, abserr
+
     abserr = abs(ierr) ! possibility of -ve values, use abs for safety
     call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
+    ! you could check mpiierr, but it would be just too sad... fixme?
     if (abserr > 0) call recv_error(error)
   end subroutine comms_sync_err
 
@@ -188,7 +195,7 @@ contains
     !! on all nodes:
     !! do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
     !!
-    use w90_io
+
     integer, intent(in) :: numpoints  !! Number of elements of the array to be scattered
     integer, intent(inout) :: counts(0:) !! Array (of size num_nodes) with the number of elements of the array on each node
     integer, intent(inout) :: displs(0:) !! Array (of size num_nodes) with the displacement relative to the global array
@@ -252,13 +259,13 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_syncerr(comm, 0, error)
+    call comms_sync_err(comm, error, 0)
     if (allocated(error)) return
 
     call mpi_bcast(array, size, MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_bcast_int')
+      call set_base_error(error, 'Error in comms_bcast_int', code_mpi)
       return
     end if
 #endif
@@ -282,7 +289,7 @@ contains
     call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_bcast_real')
+      call set_base_error(error, 'Error in comms_bcast_real', code_mpi)
       return
     end if
 #endif
@@ -307,7 +314,7 @@ contains
     call mpi_bcast(array, size, MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_bcast_logical')
+      call set_base_error(error, 'Error in comms_bcast_logical', code_mpi)
       return
     end if
 #endif
@@ -332,7 +339,7 @@ contains
     call mpi_bcast(array, size, MPI_CHARACTER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_bcast_char')
+      call set_base_error(error, 'Error in comms_bcast_char', code_mpi)
       return
     end if
 #endif
@@ -358,7 +365,7 @@ contains
     call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_bcast_cmplx')
+      call set_base_error(error, 'Error in comms_bcast_cmplx', code_mpi)
       return
     end if
 #endif
@@ -384,7 +391,7 @@ contains
     call mpi_send(array, size, MPI_LOGICAL, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_send_logical')
+      call set_base_error(error, 'Error in comms_send_logical', code_mpi)
       return
     end if
 #endif
@@ -407,7 +414,7 @@ contains
     call mpi_send(array, size, MPI_INTEGER, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_send_int')
+      call set_base_error(error, 'Error in comms_send_int', code_mpi)
       return
     end if
 #endif
@@ -430,7 +437,7 @@ contains
     call mpi_send(array, size, MPI_CHARACTER, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_send_char')
+      call set_base_error(error, 'Error in comms_send_char', code_mpi)
       return
     end if
 #endif
@@ -453,7 +460,7 @@ contains
     call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_send_real')
+      call set_base_error(error, 'Error in comms_send_real', code_mpi)
       return
     end if
 #endif
@@ -476,7 +483,7 @@ contains
     call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, mpi_send_tag, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_send_cmplx')
+      call set_base_error(error, 'Error in comms_send_cmplx', code_mpi)
       return
     end if
 #endif
@@ -502,7 +509,7 @@ contains
     call mpi_recv(array, size, MPI_LOGICAL, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_recv_logical')
+      call set_base_error(error, 'Error in comms_recv_logical', code_mpi)
       return
     end if
 #endif
@@ -526,7 +533,7 @@ contains
     call mpi_recv(array, size, MPI_INTEGER, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_recv_int')
+      call set_base_error(error, 'Error in comms_recv_int', code_mpi)
       return
     end if
 #endif
@@ -550,7 +557,7 @@ contains
     call mpi_recv(array, size, MPI_CHARACTER, from, mpi_send_tag, comm%comm, status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_recv_char')
+      call set_base_error(error, 'Error in comms_recv_char', code_mpi)
       return
     end if
 #endif
@@ -575,7 +582,7 @@ contains
                   status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_recv_real')
+      call set_base_error(error, 'Error in comms_recv_real', code_mpi)
       return
     end if
 #endif
@@ -600,7 +607,7 @@ contains
                   status%stat, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_recv_cmplx')
+      call set_base_error(error, 'Error in comms_recv_cmplx', code_mpi)
       return
     end if
 #endif
@@ -650,12 +657,12 @@ contains
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_PROD, root_id, comm%comm, ierr)
       endif
     case default
-      call set_error_mpi(error, 'Unknown operation in comms_reduce_int')
+      call set_base_error(error, 'Unknown operation in comms_reduce_int', code_mpi)
       return
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_reduce_int')
+      call set_base_error(error, 'Error in comms_reduce_int', code_mpi)
       return
     end if
 #endif
@@ -716,13 +723,13 @@ contains
                         ierr)
       endif
     case default
-      call set_error_mpi(error, 'Unknown operation in comms_reduce_real')
+      call set_base_error(error, 'Unknown operation in comms_reduce_real', code_mpi)
       return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_reduce_real')
+      call set_base_error(error, 'Error in comms_reduce_real', code_mpi)
       return
     end if
 #endif
@@ -767,13 +774,13 @@ contains
                         ierr)
       end if
     case default
-      call set_error_mpi(error, 'Unknown operation in comms_reduce_cmplx')
+      call set_base_error(error, 'Unknown operation in comms_reduce_cmplx', code_mpi)
       return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_reduce_cmplx')
+      call set_base_error(error, 'Error in comms_reduce_cmplx', code_mpi)
       return
     end if
 
@@ -813,13 +820,13 @@ contains
       call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, comm%comm, &
                          ierr)
     case default
-      call set_error_mpi(error, 'Unknown operation in comms_allreduce_real')
+      call set_base_error(error, 'Unknown operation in comms_allreduce_real', code_mpi)
       return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_allreduce_real')
+      call set_base_error(error, 'Error in comms_allreduce_real', code_mpi)
       return
     end if
 #endif
@@ -851,13 +858,13 @@ contains
       call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, comm%comm, &
                          ierr)
     case default
-      call set_error_mpi(error, 'Unknown operation in comms_allreduce_cmplx')
+      call set_base_error(error, 'Unknown operation in comms_allreduce_cmplx', code_mpi)
       return
 
     end select
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_allreduce_cmplx')
+      call set_base_error(error, 'Error in comms_allreduce_cmplx', code_mpi)
       return
     end if
 #endif
@@ -886,7 +893,7 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_real_1')
+      call set_base_error(error, 'Error in comms_gatherv_real_1', code_mpi)
       return
     end if
 #else
@@ -918,7 +925,7 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_real_2')
+      call set_base_error(error, 'Error in comms_gatherv_real_2', code_mpi)
       return
     end if
 #else
@@ -950,7 +957,7 @@ contains
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_real_3')
+      call set_base_error(error, 'Error in comms_gatherv_real_3', code_mpi)
       return
     end if
 
@@ -983,7 +990,7 @@ contains
                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_real_2_3')
+      call set_base_error(error, 'Error in comms_gatherv_real_2_3', code_mpi)
       return
     end if
 
@@ -1022,7 +1029,7 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_1')
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_1', code_mpi)
       return
     end if
 
@@ -1055,7 +1062,7 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_2')
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_2', code_mpi)
       return
     end if
 
@@ -1088,7 +1095,7 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_3')
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_3', code_mpi)
       return
     end if
 
@@ -1121,7 +1128,7 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_3_4')
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_3_4', code_mpi)
       return
     end if
 
@@ -1154,7 +1161,7 @@ contains
                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_cmplx_4')
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_4', code_mpi)
       return
     end if
 
@@ -1187,7 +1194,7 @@ contains
                      MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_gatherv_logical')
+      call set_base_error(error, 'Error in comms_gatherv_logical', code_mpi)
       return
     end if
 #else
@@ -1218,7 +1225,7 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_real_1')
+      call set_base_error(error, 'Error in comms_scatterv_real_1', code_mpi)
       return
     end if
 
@@ -1251,7 +1258,7 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_real_2')
+      call set_base_error(error, 'Error in comms_scatterv_real_2', code_mpi)
       return
     end if
 
@@ -1284,7 +1291,7 @@ contains
                       MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_real_3')
+      call set_base_error(error, 'Error in comms_scatterv_real_3', code_mpi)
       return
     end if
 
@@ -1317,7 +1324,7 @@ contains
                       MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_cmplx_4')
+      call set_base_error(error, 'Error in comms_scatterv_cmplx_4', code_mpi)
       return
     end if
 
@@ -1350,7 +1357,7 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_real')
+      call set_base_error(error, 'Error in comms_scatterv_real', code_mpi)
       return
     end if
 
@@ -1384,7 +1391,7 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_int_2')
+      call set_base_error(error, 'Error in comms_scatterv_int_2', code_mpi)
       return
     end if
 
@@ -1418,7 +1425,7 @@ contains
                       MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
-      call set_error_mpi(error, 'Error in comms_scatterv_int_3')
+      call set_base_error(error, 'Error in comms_scatterv_int_3', code_mpi)
       return
     end if
 

@@ -153,14 +153,14 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                                num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
-                               timer, error, transport_mode)
+                               timer, error, transport_mode, comm)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                                 ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                                 real_lattice, wannier_data%centres, wannier_centres_translated, &
                                 irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                                have_disentangled, stdout, timer, error, lsitesymmetry)
+                                have_disentangled, stdout, timer, error, lsitesymmetry, comm)
         if (allocated(error)) return
 
         bands_num_spec_points = 0
@@ -172,45 +172,47 @@ contains
                                       real_space_ham, ws_region, print_output, recip_lattice, &
                                       num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
                                       wannier_centres_translated, ws_distance, &
-                                      bands_num_spec_points, stdout, seedname, timer, error)
+                                      bands_num_spec_points, stdout, seedname, timer, error, &
+                                      comm)
           if (allocated(error)) return
         endif
 
         if (w90_calculation%fermi_surface_plot) then
           call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                   ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
-                                  seedname, timer, error)
+                                  seedname, timer, error, comm)
           if (allocated(error)) return
         endif
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error)
+                                    print_output%timing_level, seedname, timer, error, comm)
           if (allocated(error)) return
         endif
 
         if (output_file%write_rmn) then
           call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                                     num_wann, seedname, error)
+                                     num_wann, seedname, error, comm)
           if (allocated(error)) return
         endif
 
         if (output_file%write_tb) then
           call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
                                     real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error)
+                                    print_output%timing_level, seedname, timer, error, comm)
           if (allocated(error)) return
         endif
 
         if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
           if (.not. ws_distance%done) then
             call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                   wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, error)
+                                   wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
+                                   error, comm, force_recompute=.false.)
             if (allocated(error)) return
           endif
 
           call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
-                            seedname, error)
+                            seedname, error, comm)
           if (allocated(error)) return
         end if
       end if
@@ -226,7 +228,7 @@ contains
 
     if (on_root) then
       if (output_file%write_bvec) then
-        call plot_bvec(kmesh_info, num_kpts, seedname, error)
+        call plot_bvec(kmesh_info, num_kpts, seedname, error, comm)
         if (allocated(error)) return
       endif
 
@@ -249,7 +251,7 @@ contains
                                     ws_region, print_output, recip_lattice, num_wann, &
                                     wannier_data, ham_r, irvec, ndegen, nrpts, &
                                     wannier_centres_translated, ws_distance, &
-                                    bands_num_spec_points, stdout, seedname, timer, error)
+                                    bands_num_spec_points, stdout, seedname, timer, error, comm)
     !================================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -278,6 +280,7 @@ contains
     type(ws_region_type), intent(in) :: ws_region
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -342,48 +345,48 @@ contains
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ham_pack in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating ham_pack in plot_interpolate_bands', comm)
       return
     endif
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ham_kprm in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating ham_kprm in plot_interpolate_bands', comm)
       return
     endif
     allocate (U_int(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating U_int in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating U_int in plot_interpolate_bands', comm)
       return
     endif
     allocate (cwork(2*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwork in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating cwork in plot_interpolate_bands', comm)
       return
     endif
     allocate (rwork(7*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rwork in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating rwork in plot_interpolate_bands', comm)
       return
     endif
     allocate (iwork(5*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating iwork in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating iwork in plot_interpolate_bands', comm)
       return
     endif
     allocate (ifail(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ifail in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating ifail in plot_interpolate_bands', comm)
       return
     endif
 
     allocate (idx_special_points(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating idx_special_points in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating idx_special_points in plot_interpolate_bands', comm)
       return
     endif
     allocate (xval_special_points(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating xval_special_points in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating xval_special_points in plot_interpolate_bands', comm)
       return
     endif
     idx_special_points = -1
@@ -435,37 +438,37 @@ contains
 
     allocate (plot_kpoint(3, total_pts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating plot_kpoint in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating plot_kpoint in plot_interpolate_bands', comm)
       return
     endif
     allocate (xval(total_pts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating xval in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating xval in plot_interpolate_bands', comm)
       return
     endif
     allocate (eig_int(num_wann, total_pts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating eig_int in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating eig_int in plot_interpolate_bands', comm)
       return
     endif
     allocate (bands_proj(num_wann, total_pts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating bands_proj in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating bands_proj in plot_interpolate_bands', comm)
       return
     endif
     allocate (glabel(num_spts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating num_spts in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating num_spts in plot_interpolate_bands', comm)
       return
     endif
     allocate (xlabel(num_spts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating xlabel in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating xlabel in plot_interpolate_bands', comm)
       return
     endif
     allocate (ctemp(bands_num_spec_points), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ctemp in plot_interpolate_bands')
+      call set_error_alloc(error, 'Error in allocating ctemp in plot_interpolate_bands', comm)
       return
     endif
     eig_int = 0.0_dp; bands_proj = 0.0_dp
@@ -552,17 +555,17 @@ contains
       if (index(band_plot%mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts, &
-                               irvec, error, force_recompute=.true.)
+                               irvec, error, comm, force_recompute=.true.)
         if (allocated(error)) return
 
       elseif (index(band_plot%mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                wannier_data%centres, real_lattice, mp_grid, nrpts_cut, &
-                               irvec_cut, error, force_recompute=.true.)
+                               irvec_cut, error, comm, force_recompute=.true.)
         if (allocated(error)) return
 
       else
-        call set_error_warn(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+        call set_error_warn(error, 'Error in plot_interpolate bands: value of bands_plot_mode not recognised', comm)
         return
       endif
     endif
@@ -629,12 +632,12 @@ contains
                   nfound, eig_int(1, loop_kpt), U_int, num_wann, cwork, rwork, iwork, ifail, info)
       if (info < 0) then
         write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-        call set_error_fatal(error, 'Error in plot_interpolate_bands')
+        call set_error_fatal(error, 'Error in plot_interpolate_bands', comm)
         return
       endif
       if (info > 0) then
         write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-        call set_error_unconv(error, 'Error in plot_interpolate_bands')
+        call set_error_unconv(error, 'Error in plot_interpolate_bands', comm)
         return
       endif
       ! Compute projection onto WF if requested
@@ -670,14 +673,14 @@ contains
     if (allocated(ham_r_cut)) then
       deallocate (ham_r_cut, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating ham_r_cut in plot_interpolate_bands')
+        call set_error_dealloc(error, 'Error in deallocating ham_r_cut in plot_interpolate_bands', comm)
         return
       endif
     endif
     if (allocated(irvec_cut)) then
       deallocate (irvec_cut, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating irvec_cut in plot_interpolate_bands')
+        call set_error_dealloc(error, 'Error in deallocating irvec_cut in plot_interpolate_bands', comm)
         return
       endif
     endif
@@ -688,7 +691,7 @@ contains
       deallocate (idx_special_points, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating idx_special_points in &
-            &plot_interpolate_bands')
+            &plot_interpolate_bands', comm)
         return
       endif
     endif
@@ -696,7 +699,7 @@ contains
       deallocate (xval_special_points, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating xval_special_points in &
-            &plot_interpolate_bands')
+            &plot_interpolate_bands', comm)
         return
       endif
     endif
@@ -754,7 +757,7 @@ contains
 
       allocate (ham_r_tmp(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ham_r_tmp in plot_cut_hr')
+        call set_error_alloc(error, 'Error in allocating ham_r_tmp in plot_cut_hr', comm)
         return
       endif
 
@@ -773,7 +776,7 @@ contains
           end if
         end do
         if (j .ne. 1) then
-          call set_error_warn(error, 'Error: 1-d lattice vector not defined in plot_cut_hr')
+          call set_error_warn(error, 'Error: 1-d lattice vector not defined in plot_cut_hr', comm)
           return
         endif
         j = 0
@@ -793,17 +796,17 @@ contains
       nrpts_cut = (2*irvec_max(1) + 1)*(2*irvec_max(2) + 1)*(2*irvec_max(3) + 1)
       allocate (ham_r_cut(num_wann, num_wann, nrpts_cut), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ham_r_cut in plot_cut_hr')
+        call set_error_alloc(error, 'Error in allocating ham_r_cut in plot_cut_hr', comm)
         return
       endif
       allocate (irvec_cut(3, nrpts_cut), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating irvec_cut in plot_cut_hr')
+        call set_error_alloc(error, 'Error in allocating irvec_cut in plot_cut_hr', comm)
         return
       endif
       allocate (shift_vec(3, nrpts_cut), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating shift_vec in plot_cut_hr')
+        call set_error_alloc(error, 'Error in allocating shift_vec in plot_cut_hr', comm)
         return
       endif
 
@@ -830,7 +833,7 @@ contains
 
       if (nrpts_tmp .ne. nrpts_cut) then
         write (stdout, '(a)') 'FAILED TO EXPAND ham_r'
-        call set_error_warn(error, 'Error in plot_cut_hr')
+        call set_error_warn(error, 'Error in plot_cut_hr', comm)
         return
       end if
 
@@ -1103,7 +1106,7 @@ contains
   !================================================!
   subroutine plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, timing_level, stdout, seedname, &
-                                timer, error)
+                                timer, error, comm)
     !================================================!
     !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -1122,6 +1125,7 @@ contains
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
@@ -1158,50 +1162,50 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
       call set_error_alloc(error, "Error in plot: nfermi>1. Set the fermi level " &
-                           //"using the input parameter 'fermi_level'")
+                           //"using the input parameter 'fermi_level'", comm)
       return
     endif
 
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ham_pack plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating ham_pack plot_fermi_surface', comm)
       return
     endif
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ham_kprm plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating ham_kprm plot_fermi_surface', comm)
       return
     endif
     allocate (U_int(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating U_int in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating U_int in plot_fermi_surface', comm)
       return
     endif
     allocate (cwork(2*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwork in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating cwork in plot_fermi_surface', comm)
       return
     endif
     allocate (rwork(7*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rwork in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating rwork in plot_fermi_surface', comm)
       return
     endif
     allocate (iwork(5*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating iwork in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating iwork in plot_fermi_surface', comm)
       return
     endif
     allocate (ifail(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ifail in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating ifail in plot_fermi_surface', comm)
       return
     endif
 
     npts_plot = (fermi_surface_plot%num_points + 1)**3
     allocate (eig_int(num_wann, npts_plot), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating eig_int in plot_fermi_surface')
+      call set_error_alloc(error, 'Error in allocating eig_int in plot_fermi_surface', comm)
       return
     endif
     eig_int = 0.0_dp
@@ -1231,12 +1235,12 @@ contains
                       nfound, eig_int(1, ikp), U_int, num_wann, cwork, rwork, iwork, ifail, info)
           if (info < 0) then
             write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call set_error_fatal(error, 'Error in plot_fermi_surface')
+            call set_error_fatal(error, 'Error in plot_fermi_surface', comm)
             return
           endif
           if (info > 0) then
             write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call set_error_unconv(error, 'Error in plot_fermi_surface')
+            call set_error_unconv(error, 'Error in plot_fermi_surface', comm)
             return
           endif
         end do
@@ -1385,7 +1389,7 @@ contains
       endif
       inquire (file=wfnname, exist=have_file)
       if (.not. have_file) then
-        call set_error_file(error, 'plot_wannier: file '//wfnname//' not found')
+        call set_error_file(error, 'plot_wannier: file '//wfnname//' not found', comm)
         return
       endif
 
@@ -1411,7 +1415,7 @@ contains
                           -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                           -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier')
+        call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
         return
       endif
       wann_func = cmplx_0
@@ -1421,7 +1425,7 @@ contains
                                -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot_num), &
                   stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier')
+          call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier', comm)
           return
         endif
         wann_func_nc = cmplx_0
@@ -1430,26 +1434,26 @@ contains
         if (have_disentangled) then
           allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_manifold%ndimwin)), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp in plot_wannier')
+            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp in plot_wannier', comm)
             return
           endif
         end if
         allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating r_wvfn in plot_wannier')
+          call set_error_alloc(error, 'Error in allocating r_wvfn in plot_wannier', comm)
           return
         endif
       else
         if (have_disentangled) then
           allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_manifold%ndimwin), 2), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp_nc in plot_wannier')
+            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp_nc in plot_wannier', comm)
             return
           endif
         end if
         allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier')
+          call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier', comm)
           return
         endif
       endif
@@ -1482,7 +1486,7 @@ contains
           write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
           write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
           write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call set_error_file(error, 'plot_wannier')
+          call set_error_file(error, 'plot_wannier', comm)
           return
         end if
 
@@ -1625,7 +1629,7 @@ contains
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
                         call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wannier_plot%spinor_mode))
+                            &//trim(wannier_plot%spinor_mode), comm)
                         return
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = &
@@ -1674,7 +1678,7 @@ contains
                     wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                   case default
                     call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode ' &
-                                        //trim(wannier_plot%spinor_mode))
+                                        //trim(wannier_plot%spinor_mode), comm)
                     return
                   end select
                   wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
@@ -1739,7 +1743,7 @@ contains
                                     real_lattice, bohr, error)
           if (allocated(error)) return
         else
-          call set_error_warn(error, 'wannier_plot_format not recognised in wannier_plot')
+          call set_error_warn(error, 'wannier_plot_format not recognised in wannier_plot', comm)
           return
         endif
 
@@ -1808,7 +1812,7 @@ contains
 
         allocate (atomic_Z(atom_data%num_species), stat=ierr)
         if (ierr .ne. 0) then
-          call set_error_alloc(error, 'Error: allocating atomic_Z in wannier_plot')
+          call set_error_alloc(error, 'Error: allocating atomic_Z in wannier_plot', comm)
           return
         endif
 
@@ -1908,7 +1912,7 @@ contains
 
           allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
           if (ierr .ne. 0) then
-            call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot')
+            call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot', comm)
             return
           endif
 
@@ -1926,7 +1930,7 @@ contains
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
               write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-              call set_error_warn(error, 'Error plotting WF cube.')
+              call set_error_warn(error, 'Error plotting WF cube.', comm)
               return
             endif
             do nyy = 1, ilength(2)
@@ -1940,7 +1944,7 @@ contains
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
                 write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                call set_error_warn(error, 'Error plotting WF cube.')
+                call set_error_warn(error, 'Error plotting WF cube.', comm)
                 return
               endif
               do nxx = 1, ilength(1)
@@ -1954,7 +1958,7 @@ contains
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
                   write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                  call set_error_warn(error, 'Error plotting WF cube.')
+                  call set_error_warn(error, 'Error plotting WF cube.', comm)
                   return
                 endif
                 wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
@@ -2070,7 +2074,7 @@ contains
 
           deallocate (wann_cube, stat=ierr)
           if (ierr .ne. 0) then
-            call set_error_dealloc(error, 'Error: deallocating wann_cube in wannier_plot')
+            call set_error_dealloc(error, 'Error: deallocating wann_cube in wannier_plot', comm)
             return
           endif
 
@@ -2078,7 +2082,7 @@ contains
 
         deallocate (atomic_Z, stat=ierr)
         if (ierr .ne. 0) then
-          call set_error_dealloc(error, 'Error: deallocating atomic_Z in wannier_plot')
+          call set_error_dealloc(error, 'Error: deallocating atomic_Z in wannier_plot', comm)
           return
         endif
 
@@ -2230,7 +2234,7 @@ contains
   end subroutine plot_u_matrices
 
   !================================================!
-  subroutine plot_bvec(kmesh_info, num_kpts, seedname, error)
+  subroutine plot_bvec(kmesh_info, num_kpts, seedname, error, comm)
     !================================================!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
@@ -2248,6 +2252,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer :: nkp, nn, file_unit
     character(len=33) :: header
@@ -2272,7 +2277,7 @@ contains
 
     return
 
-101 call set_error_file(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
+101 call set_error_file(error, 'Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec', comm)
     return
 
   end subroutine plot_bvec

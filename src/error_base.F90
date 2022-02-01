@@ -37,14 +37,14 @@ contains
     stop
   end subroutine untrapped_error
 
-  subroutine set_error_base(err, mesg, code)
+  subroutine set_base_error(err, mesg, code)
     type(w90_error_type), allocatable, intent(out) :: err
     character(len=*), intent(in) :: mesg
     integer, intent(in) :: code
     allocate (err)
     err%message = mesg
     err%code = code
-  end subroutine set_error_base
+  end subroutine set_base_error
 
   ! the following is required by subroutines of the comms module
   subroutine recv_error(err)

@@ -290,10 +290,10 @@ contains
     allocate (occ_list(num_wann, nfermi_loc))
 
     if (present(occ) .and. present(eig)) then
-      call set_error_input(error, 'occ_list and eig cannot be both arguments in get_occ_mat_list')
+      call set_error_input(error, 'occ_list and eig cannot be both arguments in get_occ_mat_list', comm)
       return
     elseif (.not. present(occ) .and. .not. present(eig)) then
-      call set_error_input(error, 'either occ_list or eig must be passed as arguments to get_occ_mat_list')
+      call set_error_input(error, 'either occ_list or eig must be passed as arguments to get_occ_mat_list', comm)
       return
     endif
 

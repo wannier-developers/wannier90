@@ -23,6 +23,7 @@ module w90_wannierise
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
+  use w90_comms, only: w90comm_type
 
   implicit none
 
@@ -213,23 +214,23 @@ contains
     ! Allocate stuff
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating history in wann_main')
+      call set_error_alloc(error, 'Error allocating history in wann_main', comm)
       return
     endif
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rnkb in wann_main')
+      call set_error_alloc(error, 'Error in allocating rnkb in wann_main', comm)
       return
     endif
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main')
+      call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main', comm)
       return
     endif
     if (wann_control%constrain%selective_loc) then
       allocate (rnr0n2(wann_control%constrain%slwf_num), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating rnr0n2 in wann_main')
+        call set_error_alloc(error, 'Error in allocating rnr0n2 in wann_main', comm)
         return
       endif
     end if
@@ -239,37 +240,37 @@ contains
     ! sub vars passed into other subs
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating csheet in wann_main')
+      call set_error_alloc(error, 'Error in allocating csheet in wann_main', comm)
       return
     endif
     allocate (cdodq(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cdodq in wann_main')
+      call set_error_alloc(error, 'Error in allocating cdodq in wann_main', comm)
       return
     endif
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sheet in wann_main')
+      call set_error_alloc(error, 'Error in allocating sheet in wann_main', comm)
       return
     endif
     allocate (rave(3, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rave in wann_main')
+      call set_error_alloc(error, 'Error in allocating rave in wann_main', comm)
       return
     endif
     allocate (r2ave(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating r2ave in wann_main')
+      call set_error_alloc(error, 'Error in allocating r2ave in wann_main', comm)
       return
     endif
     allocate (rave2(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rave2 in wann_main')
+      call set_error_alloc(error, 'Error in allocating rave2 in wann_main', comm)
       return
     endif
     allocate (rguide(3, num_wann))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rguide in wann_main')
+      call set_error_alloc(error, 'Error in allocating rguide in wann_main', comm)
       return
     endif
 
@@ -277,17 +278,17 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             timer, error, transport_mode)
+                             timer, error, transport_mode, comm)
       if (allocated(error)) return
 
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cdodq_r in wann_main')
+        call set_error_alloc(error, 'Error in allocating cdodq_r in wann_main', comm)
         return
       endif
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cdodq_precond in wann_main')
+        call set_error_alloc(error, 'Error in allocating cdodq_precond in wann_main', comm)
         return
       endif
 
@@ -295,7 +296,7 @@ contains
       if (optimisation >= 3) then
         allocate (k_to_r(num_kpts, nrpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating k_to_r in wann_main')
+          call set_error_alloc(error, 'Error in allocating k_to_r in wann_main', comm)
           return
         endif
 
@@ -314,17 +315,17 @@ contains
     ! sub vars not passed into other subs
     allocate (cwschur1(num_wann), cwschur2(10*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwshur1 in wann_main')
+      call set_error_alloc(error, 'Error in allocating cwshur1 in wann_main', comm)
       return
     endif
     allocate (cwschur3(num_wann), cwschur4(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwshur3 in wann_main')
+      call set_error_alloc(error, 'Error in allocating cwshur3 in wann_main', comm)
       return
     endif
     allocate (cdq(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cdq in wann_main')
+      call set_error_alloc(error, 'Error in allocating cdq in wann_main', comm)
       return
     endif
 
@@ -332,41 +333,41 @@ contains
     if (allocated(counts)) deallocate (counts)
     allocate (counts(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating counts in wann_main')
+      call set_error_alloc(error, 'Error in allocating counts in wann_main', comm)
       return
     end if
 
     if (allocated(displs)) deallocate (displs)
     allocate (displs(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating displs in wann_main')
+      call set_error_alloc(error, 'Error in allocating displs in wann_main', comm)
       return
     end if
     call comms_array_split(num_kpts, counts, displs, comm)
     allocate (rnkb_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rnkb_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating rnkb_loc in wann_main', comm)
       return
     endif
     allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ln_tmp_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating ln_tmp_loc in wann_main', comm)
       return
     endif
     allocate (u_matrix_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_matrix_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating u_matrix_loc in wann_main', comm)
       return
     endif
     allocate (m_matrix_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating m_matrix_loc in wann_main', comm)
       return
     endif
     if (wann_control%precond) then
       allocate (cdodq_precond_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cdodq_precond_loc in wann_main')
+        call set_error_alloc(error, 'Error in allocating cdodq_precond_loc in wann_main', comm)
         return
       endif
     end if
@@ -385,60 +386,60 @@ contains
 
     allocate (cdq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cdq_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating cdq_loc in wann_main', comm)
       return
     endif
     allocate (cdodq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cdodq_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating cdodq_loc in wann_main', comm)
       return
     endif
     allocate (cdqkeep_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cdqkeep_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating cdqkeep_loc in wann_main', comm)
       return
     endif
     if (optimisation > 0) then
       allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     end if
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m0_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating m0_loc in wann_main', comm)
       return
     endif
     allocate (u0_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u0_loc in wann_main')
+      call set_error_alloc(error, 'Error in allocating u0_loc in wann_main', comm)
       return
     endif
 
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cz in wann_main')
+      call set_error_alloc(error, 'Error in allocating cz in wann_main', comm)
       return
     endif
     allocate (cmtmp(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cmtmp in wann_main')
+      call set_error_alloc(error, 'Error in allocating cmtmp in wann_main', comm)
       return
     endif
     allocate (tmp_cdq(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tmp_cdq in wann_main')
+      call set_error_alloc(error, 'Error in allocating tmp_cdq in wann_main', comm)
       return
     endif
     allocate (evals(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating evals in wann_main')
+      call set_error_alloc(error, 'Error in allocating evals in wann_main', comm)
       return
     endif
     allocate (cwork(4*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwork in wann_main')
+      call set_error_alloc(error, 'Error in allocating cwork in wann_main', comm)
       return
     endif
     allocate (rwork(3*num_wann - 2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rwork in wann_main')
+      call set_error_alloc(error, 'Error in allocating rwork in wann_main', comm)
       return
     endif
 
@@ -620,7 +621,7 @@ contains
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
-                                     counts, stdout, timer, error)
+                                     counts, stdout, timer, error, comm)
       if (allocated(error)) return
 
       if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann)
@@ -831,7 +832,7 @@ contains
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                        conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                       wann_control, error)
+                                       wann_control, error, comm)
         if (allocated(error)) return
 
       endif
@@ -926,7 +927,7 @@ contains
 
     if (output_file%write_xyz .and. on_root) then
       call wann_write_xyz(real_space_ham%translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, stdout, seedname)
+                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
       if (allocated(error)) return
     endif
 
@@ -934,14 +935,14 @@ contains
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             timer, error, transport_mode)
+                             timer, error, transport_mode, comm)
       if (allocated(error)) return
 
       call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                               ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                               real_lattice, wannier_data%centres, wannier_centres_translated, &
                               irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                              have_disentangled, stdout, timer, error, lsitesymmetry)
+                              have_disentangled, stdout, timer, error, lsitesymmetry, comm)
       if (allocated(error)) return
 
       if (print_output%iprint > 0) then
@@ -965,19 +966,19 @@ contains
 
     ! unitarity is checked
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
-                              print_output%iprint, stdout, timer, error)
+                              print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
 
     ! write extra info regarding omega_invariant
     if (print_output%iprint > 2 .and. on_root) then
       call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, stdout)
+                            error, comm, stdout)
       if (allocated(error)) return
     endif
 
     ! write matrix elements <m|r^2|n> to file
     if (output_file%write_r2mn .and. on_root) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, seedname)
+      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
       if (allocated(error)) return
     endif
 
@@ -991,114 +992,115 @@ contains
     ! aam: write data required for vdW utility
     if (output_file%write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, &
-                               u_matrix_opt, have_disentangled, w90_system, error, stdout, seedname)
+                               u_matrix_opt, have_disentangled, w90_system, error, comm, stdout, &
+                               seedname)
       if (allocated(error)) return
     endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rwork in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rwork in wann_main', comm)
       return
     endif
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cwork in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cwork in wann_main', comm)
       return
     endif
     deallocate (evals, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating evals in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating evals in wann_main', comm)
       return
     endif
     deallocate (tmp_cdq, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tmp_cdq in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating tmp_cdq in wann_main', comm)
       return
     endif
     deallocate (cmtmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cmtmp in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cmtmp in wann_main', comm)
       return
     endif
     deallocate (cz, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cz in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cz in wann_main', comm)
       return
     endif
     deallocate (cdq, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cdq in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cdq in wann_main', comm)
       return
     endif
 
     ! for MPI
     deallocate (ln_tmp_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ln_tmp_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating ln_tmp_loc in wann_main', comm)
       return
     endif
     deallocate (rnkb_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rnkb_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rnkb_loc in wann_main', comm)
       return
     endif
     deallocate (u_matrix_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating u_matrix_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating u_matrix_loc in wann_main', comm)
       return
     endif
     deallocate (m_matrix_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating m_matrix_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating m_matrix_loc in wann_main', comm)
       return
     endif
     deallocate (cdq_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cdq_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cdq_loc in wann_main', comm)
       return
     endif
     deallocate (cdodq_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cdodq_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cdodq_loc in wann_main', comm)
       return
     endif
     deallocate (cdqkeep_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cdqkeep_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cdqkeep_loc in wann_main', comm)
       return
     endif
     deallocate (cwschur3, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cwschur3 in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cwschur3 in wann_main', comm)
       return
     endif
     deallocate (cwschur1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cwschur1 in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cwschur1 in wann_main', comm)
       return
     endif
     if (wann_control%precond) then
       if (optimisation >= 3) then
         deallocate (k_to_r, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error in deallocating k_to_r in wann_main')
+          call set_error_dealloc(error, 'Error in deallocating k_to_r in wann_main', comm)
           return
         endif
       end if
       deallocate (cdodq_r, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating cdodq_r in wann_main')
+        call set_error_dealloc(error, 'Error in deallocating cdodq_r in wann_main', comm)
         return
       endif
       deallocate (cdodq_precond, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating cdodq_precond in wann_main')
+        call set_error_dealloc(error, 'Error in deallocating cdodq_precond in wann_main', comm)
         return
       endif
       deallocate (cdodq_precond_loc, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating cdodq_precond_loc in wann_main')
+        call set_error_dealloc(error, 'Error in deallocating cdodq_precond_loc in wann_main', comm)
         return
       endif
     end if
@@ -1106,62 +1108,62 @@ contains
     ! deallocate sub vars passed into other subs
     deallocate (rguide, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rguide in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rguide in wann_main', comm)
       return
     endif
     deallocate (rave2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main', comm)
       return
     endif
     deallocate (rave, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rave in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rave in wann_main', comm)
       return
     endif
     deallocate (sheet, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sheet in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating sheet in wann_main', comm)
       return
     endif
     deallocate (cdodq, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cdodq in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating cdodq in wann_main', comm)
       return
     endif
     deallocate (csheet, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating csheet in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating csheet in wann_main', comm)
       return
     endif
     if (wann_control%constrain%selective_loc) then
       deallocate (rnr0n2, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating rnr0n2 in wann_main')
+        call set_error_dealloc(error, 'Error in deallocating rnr0n2 in wann_main', comm)
         return
       endif
     end if
     ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main', comm)
       return
     endif
     deallocate (rnkb, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rnkb in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating rnkb in wann_main', comm)
       return
     endif
 
     deallocate (u0_loc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating u0_loc in wann_main')
+      call set_error_dealloc(error, 'Error in deallocating u0_loc in wann_main', comm)
       return
     endif
     if (optimisation > 0) then
       deallocate (m0_loc, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating m0_loc in wann_main')
+        call set_error_dealloc(error, 'Error in deallocating m0_loc in wann_main', comm)
         return
       endif
     end if
@@ -1171,7 +1173,7 @@ contains
 
     deallocate (history, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating history in wann_main')
+      call set_error_dealloc(error, 'Error deallocating history in wann_main', comm)
       return
     endif
 
@@ -1192,7 +1194,7 @@ contains
     !================================================!
     subroutine internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
                                          conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                         wann_control, error)
+                                         wann_control, error, comm)
       !================================================!
       !
       !! Determine whether minimisation of non-gauge
@@ -1208,6 +1210,7 @@ contains
       type(localisation_vars_type), intent(in) :: old_spread
       type(localisation_vars_type), intent(in) :: wann_spread
       type(w90_error_type), allocatable, intent(out) :: error
+      type(w90comm_type), intent(in) :: comm
       type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
@@ -1223,7 +1226,7 @@ contains
 
       allocate (temp_hist(wann_control%conv_window), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main')
+        call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
         return
       endif
 
@@ -1271,7 +1274,7 @@ contains
 
       deallocate (temp_hist, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main')
+        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main', comm)
         return
       endif
 
@@ -1304,17 +1307,17 @@ contains
       ! Allocate
       allocate (noise_real(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating noise_real in wann_main')
+        call set_error_alloc(error, 'Error allocating noise_real in wann_main', comm)
         return
       endif
       allocate (noise_imag(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating noise_imag in wann_main')
+        call set_error_alloc(error, 'Error allocating noise_imag in wann_main', comm)
         return
       endif
       allocate (cnoise(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating cnoise in wann_main')
+        call set_error_alloc(error, 'Error allocating cnoise in wann_main', comm)
         return
       endif
 
@@ -1348,17 +1351,17 @@ contains
       ! Deallocate
       deallocate (cnoise, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating cnoise in wann_main')
+        call set_error_dealloc(error, 'Error deallocating cnoise in wann_main', comm)
         return
       endif
       deallocate (noise_imag, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating noise_imag in wann_main')
+        call set_error_dealloc(error, 'Error deallocating noise_imag in wann_main', comm)
         return
       endif
       deallocate (noise_real, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating noise_real in wann_main')
+        call set_error_dealloc(error, 'Error deallocating noise_real in wann_main', comm)
         return
       endif
 
@@ -1493,7 +1496,7 @@ contains
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                          wann_control, num_wann, wbtot, cdq_loc, cdodq_loc, &
-                                         counts, stdout, timer, error)
+                                         counts, stdout, timer, error, comm)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1514,6 +1517,7 @@ contains
       type(wann_control_type), intent(in) :: wann_control
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
+      type(w90comm_type), intent(in) :: comm
 
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: iter
@@ -1679,7 +1683,7 @@ contains
       real(kind=dp) :: fac, shift, eqa, eqb
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-        call io_stopwatch_start('wann: main: optimal_step', timer) !fixme!!!! JJ, neither passed nor local??
+        call io_stopwatch_start('wann: main: optimal_step', timer)
       endif
 
       fac = trial_spread%om_tot - wann_spread%om_tot
@@ -1746,6 +1750,7 @@ contains
       type(sitesym_type), intent(in) :: sitesym
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
+      type(w90comm_type), intent(in) :: comm
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
@@ -1764,7 +1769,6 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
-      type(w90comm_type), intent(in) :: comm
 
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
@@ -1794,7 +1798,7 @@ contains
                      cwschur4, info)
           if (info .ne. 0) then
             if (print_output%iprint > 0) write (stdout, *) 'wann_main: SCHUR failed, info= ', info
-            call set_error_fatal(error, 'wann_main: problem computing schur form 1')
+            call set_error_fatal(error, 'wann_main: problem computing schur form 1', comm)
             return
           endif
           do i = 1, num_wann
@@ -1839,7 +1843,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error)
+        call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error, comm)
         if (allocated(error)) return
         !RS: calculate cdq(Rk) from k
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
@@ -2423,8 +2427,8 @@ contains
   !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, sitesym, timer, error, &
-                         comm, iprint, cdodq)
+                         cdodq_loc, lambda_loc, timing_level, sitesym, timer, error, comm, &
+                         iprint, cdodq)
     !================================================!
     !
     !   Calculate the Gradient of the Wannier Function spread
@@ -2485,18 +2489,18 @@ contains
 
     allocate (cr(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cr in wann_domega')
+      call set_error_alloc(error, 'Error in allocating cr in wann_domega', comm)
       return
     endif
     allocate (crt(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating crt in wann_domega')
+      call set_error_alloc(error, 'Error in allocating crt in wann_domega', comm)
       return
     endif
     if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       allocate (r0kb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating r0kb in wann_domega')
+        call set_error_alloc(error, 'Error in allocating r0kb in wann_domega', comm)
         return
       endif
     end if
@@ -2686,12 +2690,12 @@ contains
 
     deallocate (cr, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cr in wann_domega')
+      call set_error_dealloc(error, 'Error in deallocating cr in wann_domega', comm)
       return
     endif
     deallocate (crt, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating crt in wann_domega')
+      call set_error_dealloc(error, 'Error in deallocating crt in wann_domega', comm)
       return
     endif
 
@@ -2793,7 +2797,7 @@ contains
 
   !================================================!
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
-                            atom_data, print_output, error, stdout, seedname)
+                            atom_data, print_output, error, comm, stdout, seedname)
     !================================================!
     !
     ! Write xyz file with Wannier centres
@@ -2809,6 +2813,7 @@ contains
     type(atom_data_type), intent(in) :: atom_data
     type(print_output_type), intent(in) :: print_output
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     logical, intent(in) :: translate_home_cell
     integer, intent(in) :: num_wann
@@ -2842,7 +2847,7 @@ contains
     xyz_unit = io_file_unit()
     open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
     if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz')
+      call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz', comm)
       return
     endif
     write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
@@ -2866,7 +2871,7 @@ contains
 
   !================================================!
   subroutine wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                                 have_disentangled, w90_system, error, stdout, seedname)
+                                 have_disentangled, w90_system, error, comm, stdout, seedname)
     !================================================!
     !
     ! Write a file with Wannier centres, spreads and occupations for
@@ -2885,6 +2890,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(w90_system_type), intent(in) :: w90_system
     type(w90_error_type), allocatable, intent(out)  :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -2909,7 +2915,7 @@ contains
 
     allocate (f_w(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating f_w in wann_write_vdw_data')
+      call set_error_alloc(error, 'Error in allocating f_w in wann_write_vdw_data', comm)
       return
     endif
 
@@ -2921,7 +2927,7 @@ contains
 
       ! dimension of occupied subspace
       if (w90_system%num_valence_bands .le. 0) then
-        call set_error_input(error, 'Please set num_valence_bands in seedname.win')
+        call set_error_input(error, 'Please set num_valence_bands in seedname.win', comm)
         return
       endif
 
@@ -2929,7 +2935,7 @@ contains
 
       allocate (v_matrix(ndim, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating V_matrix in wann_write_vdw_data')
+        call set_error_alloc(error, 'Error in allocating V_matrix in wann_write_vdw_data', comm)
         return
       endif
 
@@ -3022,14 +3028,14 @@ contains
     if (have_disentangled) then
       deallocate (v_matrix, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating v_matrix in wann_write_vdw_data')
+        call set_error_dealloc(error, 'Error in deallocating v_matrix in wann_write_vdw_data', comm)
         return
       endif
     endif
 
     deallocate (f_w, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating f_w in wann_write_vdw_data')
+      call set_error_dealloc(error, 'Error in deallocating f_w in wann_write_vdw_data', comm)
       return
     endif
 
@@ -3039,7 +3045,7 @@ contains
 
   !================================================!
   subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
-                                  timer, error)
+                                  timer, error, comm)
     !================================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
@@ -3054,6 +3060,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     integer :: nkp, i, j, m
@@ -3074,26 +3081,26 @@ contains
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call set_error_fatal(error, 'wann_check_unitarity: error 1')
+            call set_error_fatal(error, 'wann_check_unitarity: error 1', comm)
             return
           endif
           if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) &
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call set_error_fatal(error, 'wann_check_unitarity: error 2')
+            call set_error_fatal(error, 'wann_check_unitarity: error 2', comm)
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp1) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call set_error_fatal(error, 'wann_check_unitarity: error 3')
+            call set_error_fatal(error, 'wann_check_unitarity: error 3', comm)
             return
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call set_error_fatal(error, 'wann_check_unitarity: error 4')
+            call set_error_fatal(error, 'wann_check_unitarity: error 4', comm)
             return
           endif
         enddo
@@ -3107,7 +3114,7 @@ contains
   end subroutine wann_check_unitarity
 
   !================================================!
-  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, seedname)
+  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
     !================================================!
     !
     ! Write seedname.r2mn file
@@ -3122,6 +3129,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts, num_wann
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3135,7 +3143,7 @@ contains
     r2mnunit = io_file_unit()
     open (r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
     if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn')
+      call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn', comm)
       return
     endif
     do nw1 = 1, num_wann
@@ -3164,7 +3172,7 @@ contains
 
   !================================================!
   subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                              error, stdout)
+                              error, comm, stdout)
     !================================================!
 
     use w90_comms, only: w90comm_type
@@ -3178,6 +3186,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3197,32 +3206,32 @@ contains
 
     allocate (cw1(10*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw1 in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating cw1 in wann_svd_omega_i', comm)
       return
     endif
     allocate (cw2(10*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw2 in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating cw2 in wann_svd_omega_i', comm)
       return
     endif
     allocate (cv1(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv1 in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating cv1 in wann_svd_omega_i', comm)
       return
     endif
     allocate (cv2(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv2 in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating cv2 in wann_svd_omega_i', comm)
       return
     endif
     allocate (singvd(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating singvd in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating singvd in wann_svd_omega_i', comm)
       return
     endif
     allocate (cpad1(num_wann*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cpad1 in wann_svd_omega_i')
+      call set_error_alloc(error, 'Error in allocating cpad1 in wann_svd_omega_i', comm)
       return
     endif
 
@@ -3243,7 +3252,7 @@ contains
         call zgesvd('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
                     num_wann, cv2, num_wann, cw1, 10*num_wann, cw2, info)
         if (info .ne. 0) then
-          call set_error_fatal(error, 'ERROR: Singular value decomp. zgesvd failed')
+          call set_error_fatal(error, 'ERROR: Singular value decomp. zgesvd failed', comm)
           return
         endif
 
@@ -3269,32 +3278,32 @@ contains
 
     deallocate (cpad1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cpad1 in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating cpad1 in wann_svd_omega_i', comm)
       return
     endif
     deallocate (singvd, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating singvd in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating singvd in wann_svd_omega_i', comm)
       return
     endif
     deallocate (cv2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv2 in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating cv2 in wann_svd_omega_i', comm)
       return
     endif
     deallocate (cv1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv1 in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating cv1 in wann_svd_omega_i', comm)
       return
     endif
     deallocate (cw2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw2 in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating cw2 in wann_svd_omega_i', comm)
       return
     endif
     deallocate (cw1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw1 in wann_svd_omega_i')
+      call set_error_dealloc(error, 'Error in deallocating cw1 in wann_svd_omega_i', comm)
       return
     endif
 
@@ -3406,18 +3415,18 @@ contains
 
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating history in wann_main_gamma')
+      call set_error_alloc(error, 'Error allocating history in wann_main_gamma', comm)
       return
     endif
 
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rnkb in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating rnkb in wann_main_gamma', comm)
       return
     endif
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main_gamma', comm)
       return
     endif
 
@@ -3427,37 +3436,37 @@ contains
     ! sub vars passed into other subs
     allocate (m_w(num_wann, num_wann, tnntot), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_w in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating m_w in wann_main_gamma', comm)
       return
     endif
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating csheet in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating csheet in wann_main_gamma', comm)
       return
     endif
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sheet in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating sheet in wann_main_gamma', comm)
       return
     endif
     allocate (rave(3, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rave in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating rave in wann_main_gamma', comm)
       return
     endif
     allocate (r2ave(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating r2ave in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating r2ave in wann_main_gamma', comm)
       return
     endif
     allocate (rave2(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rave2 in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating rave2 in wann_main_gamma', comm)
       return
     endif
     allocate (rguide(3, num_wann))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rguide in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating rguide in wann_main_gamma', comm)
       return
     endif
 
@@ -3467,22 +3476,22 @@ contains
     ! sub vars not passed into other subs
     allocate (u0(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u0 in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating u0 in wann_main_gamma', comm)
       return
     endif
     allocate (uc_rot(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating uc_rot in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating uc_rot in wann_main_gamma', comm)
       return
     endif
     allocate (ur_rot(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ur_rot in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating ur_rot in wann_main_gamma', comm)
       return
     endif
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cz in wann_main_gamma')
+      call set_error_alloc(error, 'Error in allocating cz in wann_main_gamma', comm)
       return
     endif
 
@@ -3555,7 +3564,7 @@ contains
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                           kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
                           omega%invariant, ln_tmp, first_pass, &
-                          print_output%timing_level, timer, error)
+                          print_output%timing_level, timer, error, comm)
     if (allocated(error)) return
 
     ! public variables
@@ -3639,7 +3648,7 @@ contains
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                             kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
                             omega%invariant, ln_tmp, first_pass, print_output%timing_level, &
-                            timer, error)
+                            timer, error, comm)
       if (allocated(error)) return
 
       ! print the new centers and spreads
@@ -3729,7 +3738,7 @@ contains
 
     if (output_file%write_xyz) then
       call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, stdout, seedname)
+                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
       if (allocated(error)) return
     endif
 
@@ -3742,19 +3751,19 @@ contains
 
     ! unitarity is checked
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
-                              print_output%iprint, stdout, timer, error)
+                              print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
 
     ! write extra info regarding omega_invariant
     if (print_output%iprint > 2) then
       call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, stdout)
+                            error, comm, stdout)
       if (allocated(error)) return
     endif
 
     ! write matrix elements <m|r^2|n> to file
     if (output_file%write_r2mn) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, seedname)
+      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
       if (allocated(error)) return
     endif
 
@@ -3768,79 +3777,79 @@ contains
     ! aam: write data required for vdW utility
     if (output_file%write_vdw_data) then
       call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                               have_disentangled, w90_system, error, stdout, seedname)
+                               have_disentangled, w90_system, error, comm, stdout, seedname)
       if (allocated(error)) return
     endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (cz, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cz in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating cz in wann_main_gamma', comm)
       return
     endif
     deallocate (ur_rot, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ur_rot in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating ur_rot in wann_main_gamma', comm)
       return
     endif
     deallocate (uc_rot, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating uc_rot in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating uc_rot in wann_main_gamma', comm)
       return
     endif
     deallocate (u0, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating u0 in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating u0 in wann_main_gamma', comm)
       return
     endif
 
     ! deallocate sub vars passed into other subs
     deallocate (rguide, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rguide in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating rguide in wann_main_gamma', comm)
       return
     endif
     deallocate (rave2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main_gamma', comm)
       return
     endif
     deallocate (rave, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rave in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating rave in wann_main_gamma', comm)
       return
     endif
     deallocate (sheet, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sheet in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating sheet in wann_main_gamma', comm)
       return
     endif
     deallocate (csheet, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating csheet in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating csheet in wann_main_gamma', comm)
       return
     endif
     deallocate (m_w, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating m_w in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating m_w in wann_main_gamma', comm)
       return
     endif
 
     ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main_gamma', comm)
       return
     endif
     deallocate (rnkb, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating rnkb in wann_main_gamma')
+      call set_error_dealloc(error, 'Error in deallocating rnkb in wann_main_gamma', comm)
       return
     endif
 
     deallocate (history, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating history in wann_main_gamma')
+      call set_error_dealloc(error, 'Error deallocating history in wann_main_gamma', comm)
       return
     endif
 
@@ -3967,7 +3976,7 @@ contains
 
       allocate (temp_hist(conv_window), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main')
+        call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
         return
       endif
 
@@ -3991,7 +4000,7 @@ contains
 
       deallocate (temp_hist, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma')
+        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma', comm)
         return
       endif
 
@@ -4004,7 +4013,7 @@ contains
   !================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                               nntot, wbtot, wb, bk, omega_invariant, ln_tmp, first_pass, &
-                              timing_level, timer, error)
+                              timing_level, timer, error, comm)
     !================================================!
     !
     !   Calculate the Wannier Function spread
@@ -4020,6 +4029,7 @@ contains
     type(localisation_vars_type), intent(out)  :: wann_spread
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_wann
@@ -4049,7 +4059,7 @@ contains
 
     allocate (m_w_nn2(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_w_nn2 in wann_omega_gamma')
+      call set_error_alloc(error, 'Error in allocating m_w_nn2 in wann_omega_gamma', comm)
       return
     endif
 
@@ -4134,7 +4144,7 @@ contains
 
     deallocate (m_w_nn2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating m_w_nn2 in wann_omega_gamma')
+      call set_error_dealloc(error, 'Error in deallocating m_w_nn2 in wann_omega_gamma', comm)
       return
     endif
 

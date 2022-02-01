@@ -156,7 +156,7 @@ contains
     num_nodes = mpisize(comm)
 
     if (.not. allocated(fermi_energy_list)) then
-      call set_error_input(error, 'Must specify one or more Fermi levels when gyrotropic=true')
+      call set_error_input(error, 'Must specify one or more Fermi levels when gyrotropic=true', comm)
       return
     endif
 
@@ -200,7 +200,7 @@ contains
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
     if ((.not. w90_system%spinors) .and. eval_spn) then
-      call set_error_input(error, "spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
+      call set_error_input(error, "spin contribution requested for gyrotropic, but the wavefunctions are not spinors", comm)
       return
     endif
 
@@ -313,7 +313,7 @@ contains
 
       if (pw90_berry%transl_inv) then
         if (eval_K) then
-          call set_error_input(error, 'transl_inv=T disabled for K-tensor')
+          call set_error_input(error, 'transl_inv=T disabled for K-tensor', comm)
           return
         endif
         write (stdout, '(/,1x,a)') &
@@ -670,7 +670,7 @@ contains
     logical          :: got_spin, got_orb_n
 
     if (pw90_gyrotropic%smearing%use_adaptive) then
-      call set_error_input(error, 'Adaptive smearing not allowed in Gyrotropic')
+      call set_error_input(error, 'Adaptive smearing not allowed in Gyrotropic', comm)
       return
     endif
 

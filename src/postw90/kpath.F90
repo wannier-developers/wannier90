@@ -169,13 +169,13 @@ contains
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
         if (pw90_berry%kubo_smearing%use_adaptive) then
-          call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity')
+          call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity', comm)
           return
         endif
       end if
       if (plot_shc) then
         if (fermi_n == 0) then
-          call set_error_input(error, 'Error: must specify Fermi energy')
+          call set_error_input(error, 'Error: must specify Fermi energy', comm)
           return
         else if (fermi_n /= 1) then
           call set_error_input(error, 'Error: kpath plot only accept one Fermi energy, ' &
@@ -1186,7 +1186,7 @@ contains
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=curv')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=curv', comm)
           return
         endif
       end if
@@ -1194,7 +1194,7 @@ contains
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=morb')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=morb', comm)
           return
         endif
       end if
@@ -1207,7 +1207,7 @@ contains
             //' spin Hall conductivity in Bohr^2'
         end if
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=shc')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=shc', comm)
           return
         endif
       end if

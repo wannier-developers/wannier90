@@ -223,7 +223,7 @@ contains
     num_nodes = mpisize(comm)
 
     if (fermi_n == 0) then
-      call set_error_input(error, 'Must specify one or more Fermi levels when berry=true')
+      call set_error_input(error, 'Must specify one or more Fermi levels when berry=true', comm, comm)
       return
     endif
 
@@ -304,7 +304,7 @@ contains
     !
     not_scannable = eval_kubo .or. (eval_shc .and. pw90_spin_hall%freq_scan)
     if (not_scannable .and. fermi_n .ne. 1) then
-      call set_error_input(error, 'The berry_task(s) you chose require that you specify a single ' &
+      call set_error_input(error, 'The berry_task(s, comm, comm) you chose require that you specify a single ' &
                            //'Fermi energy: scanning the Fermi energy is not implemented')
       return
     endif
@@ -473,7 +473,7 @@ contains
 
       if (pw90_berry%transl_inv) then
         if (eval_morb) then
-          call set_error_input(error, 'transl_inv=T disabled for morb')
+          call set_error_input(error, 'transl_inv=T disabled for morb', comm, comm)
           return
         endif
         write (stdout, '(/,1x,a)') 'Using a translationally-invariant discretization for the'
@@ -503,7 +503,7 @@ contains
     !
     allocate (adkpt(3, pw90_berry%curv_adpt_kmesh**3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating adkpt in berry')
+      call set_error_alloc(error, 'Error in allocating adkpt in berry', comm, comm)
       return
     endif
     ikpt = 0

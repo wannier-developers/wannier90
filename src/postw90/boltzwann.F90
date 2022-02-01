@@ -219,7 +219,7 @@ contains
 
     ! separate error condition from info printout above (which may be avoided entirely in lib mode?)
     if (pw90_boltzwann%dir_num_2d < 0 .or. pw90_boltzwann%dir_num_2d > 3) then
-      call set_error_input(error, 'Unrecognized value of pw90_boltzwann_2d_dir_num')
+      call set_error_input(error, 'Unrecognized value of pw90_boltzwann_2d_dir_num', comm)
       return
     endif
 
@@ -227,7 +227,7 @@ contains
     TempNumPoints = int(floor((pw90_boltzwann%temp_max - pw90_boltzwann%temp_min)/pw90_boltzwann%temp_step)) + 1
     allocate (TempArray(TempNumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating TempArray in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating TempArray in boltzwann_main', comm)
       return
     endif
     do i = 1, TempNumPoints
@@ -237,7 +237,7 @@ contains
     ! This array contains the same temperatures of the TempArray, but multiplied by k_boltzmann, in units of eV
     allocate (KTArray(TempNumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating KTArray in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating KTArray in boltzwann_main', comm)
       return
     endif
     ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
@@ -246,7 +246,7 @@ contains
     MuNumPoints = int(floor((pw90_boltzwann%mu_max - pw90_boltzwann%mu_min)/pw90_boltzwann%mu_step)) + 1
     allocate (MuArray(MuNumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating MuArray in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating MuArray in boltzwann_main', comm)
       return
     endif
     do i = 1, MuNumPoints
@@ -254,7 +254,7 @@ contains
     end do
 
     if (pw90_boltzwann%tdf_smearing%use_adaptive) then
-      call set_error_input(error, 'Adaptive smearing not allowed in Boltzwann TDF')
+      call set_error_input(error, 'Adaptive smearing not allowed in Boltzwann TDF', comm)
       return
     endif
     ! I precalculate the TDFEnergyArray
@@ -269,7 +269,7 @@ contains
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating TDFEnergyArray in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating TDFEnergyArray in boltzwann_main', comm)
       return
     endif
     do i = 1, TDFEnergyNumPoints
@@ -286,7 +286,7 @@ contains
     ! I allocate the array for the TDF
     allocate (TDF(6, TDFEnergyNumPoints, ndim), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating TDF in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating TDF in boltzwann_main', comm)
       return
     endif
 
@@ -337,22 +337,22 @@ contains
     ! Allocate at least 1 entry
     allocate (LocalElCond(6, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating LocalElCond in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating LocalElCond in boltzwann_main', comm)
       return
     endif
     allocate (LocalSigmaS(6, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating LocalSigmaS in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating LocalSigmaS in boltzwann_main', comm)
       return
     endif
     allocate (LocalSeebeck(9, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating LocalSeebeck in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating LocalSeebeck in boltzwann_main', comm)
       return
     endif
     allocate (LocalKappa(6, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating LocalKappa in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating LocalKappa in boltzwann_main', comm)
       return
     endif
     LocalElCond = 0._dp
@@ -362,7 +362,7 @@ contains
     ! I allocate the array that I will use to store the functions to be integrated
     allocate (IntegrandArray(6, TDFEnergyNumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating FermiDerivArray in boltzwann_main')
+      call set_error_alloc(error, 'Error in allocating FermiDerivArray in boltzwann_main', comm)
       return
     endif
 
@@ -558,22 +558,22 @@ contains
     if (on_root) then
       allocate (ElCond(6, TempNumPoints, MuNumPoints), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main')
+        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main', comm)
         return
       endif
       allocate (SigmaS(6, TempNumPoints, MuNumPoints), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main')
+        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main', comm)
         return
       endif
       allocate (Seebeck(9, TempNumPoints, MuNumPoints), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main')
+        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main', comm)
         return
       endif
       allocate (Kappa(6, TempNumPoints, MuNumPoints), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main')
+        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main', comm)
         return
       endif
     else
@@ -583,22 +583,22 @@ contains
       ! is ElCond(1,1,1), some compilers complain.
       allocate (ElCond(1, 1, 1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main (2)')
+        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main (2)', comm)
         return
       endif
       allocate (SigmaS(1, 1, 1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main (2)')
+        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main (2)', comm)
         return
       endif
       allocate (Seebeck(1, 1, 1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main (2)')
+        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main (2)', comm)
         return
       endif
       allocate (Kappa(1, 1, 1), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main (2)')
+        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main (2)', comm)
         return
       endif
     end if
@@ -690,74 +690,74 @@ contains
     ! Before ending, I deallocate memory
     deallocate (TempArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating TempArray in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating TempArray in boltzwann_main', comm)
       return
     endif
     deallocate (KTArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating KTArray in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating KTArray in boltzwann_main', comm)
       return
     endif
     deallocate (MuArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating MuArray in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating MuArray in boltzwann_main', comm)
       return
     endif
     deallocate (TDFEnergyArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating TDFEnergyArray in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating TDFEnergyArray in boltzwann_main', comm)
       return
     endif
     deallocate (TDF, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating TDF in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating TDF in boltzwann_main', comm)
       return
     endif
     deallocate (LocalElCond, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating LocalElCond in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating LocalElCond in boltzwann_main', comm)
       return
     endif
     deallocate (LocalSigmaS, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating LocalSigmaS in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating LocalSigmaS in boltzwann_main', comm)
       return
     endif
     deallocate (LocalSeebeck, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating LocalSeebeck in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating LocalSeebeck in boltzwann_main', comm)
       return
     endif
     deallocate (LocalKappa, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating LocalKappa in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating LocalKappa in boltzwann_main', comm)
       return
     endif
 
     deallocate (ElCond, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ElCond in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating ElCond in boltzwann_main', comm)
       return
     endif
     deallocate (SigmaS, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating SigmaS in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating SigmaS in boltzwann_main', comm)
       return
     endif
     deallocate (Seebeck, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating Seebeck in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating Seebeck in boltzwann_main', comm)
       return
     endif
     deallocate (Kappa, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating Kappa in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating Kappa in boltzwann_main', comm)
       return
     endif
 
     deallocate (IntegrandArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating IntegrandArray in boltzwann_main')
+      call set_error_dealloc(error, 'Error in deallocating IntegrandArray in boltzwann_main', comm)
       return
     endif
 
@@ -929,7 +929,7 @@ contains
 
     ! Some initial checks
     if (size(TDF, 1) /= 6 .or. size(TDF, 2) /= size(TDFEnergyArray) .or. size(TDF, 3) /= ndim) then
-      call set_error_input(error, 'Wrong size for the TDF array in calcTDF')
+      call set_error_input(error, 'Wrong size for the TDF array in calcTDF', comm)
       return
     end if
 
@@ -938,23 +938,23 @@ contains
 
     allocate (TDF_k(6, size(TDFEnergyArray), ndim), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating TDF_k in calcTDF')
+      call set_error_alloc(error, 'Error in allocating TDF_k in calcTDF', comm)
       return
     endif
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating HH in calcTDF')
+      call set_error_alloc(error, 'Error in allocating HH in calcTDF', comm)
       return
     endif
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating delHH in calcTDF')
+      call set_error_alloc(error, 'Error in allocating delHH in calcTDF', comm)
       return
     endif
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating UU in calcTDF')
+      call set_error_alloc(error, 'Error in allocating UU in calcTDF', comm)
       return
     endif
 
@@ -962,7 +962,7 @@ contains
     if (DOS_NumPoints .eq. 1) DOS_NumPoints = 2
     allocate (DOS_EnergyArray(DOS_NumPoints), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating DOS_EnergyArray in calcTDF')
+      call set_error_alloc(error, 'Error in allocating DOS_EnergyArray in calcTDF', comm)
       return
     endif
     do i = 1, DOS_NumPoints
@@ -971,12 +971,12 @@ contains
 
     allocate (DOS_k(size(DOS_EnergyArray), ndim), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating DOS_k in calcTDF')
+      call set_error_alloc(error, 'Error in allocating DOS_k in calcTDF', comm)
       return
     endif
     allocate (DOS_all(size(DOS_EnergyArray), ndim), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating DOS_all in calcTDF')
+      call set_error_alloc(error, 'Error in allocating DOS_all in calcTDF', comm)
       return
     endif
     dos_all = 0.0_dp
@@ -1220,37 +1220,37 @@ contains
 
     deallocate (HH, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating HH in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating HH in calcTDF', comm)
       return
     endif
     deallocate (delHH, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating delHH in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating delHH in calcTDF', comm)
       return
     endif
     deallocate (UU, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating UU in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating UU in calcTDF', comm)
       return
     endif
     deallocate (DOS_EnergyArray, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating DOS_EnergyArray in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating DOS_EnergyArray in calcTDF', comm)
       return
     endif
     deallocate (DOS_k, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating DOS_k in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating DOS_k in calcTDF', comm)
       return
     endif
     deallocate (DOS_all, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating DOS_all in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating DOS_all in calcTDF', comm)
       return
     endif
     deallocate (TDF_k, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating TDF_k in calcTDF')
+      call set_error_dealloc(error, 'Error in deallocating TDF_k in calcTDF', comm)
       return
     endif
 

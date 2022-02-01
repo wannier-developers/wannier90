@@ -25,6 +25,7 @@ module w90_sitesym
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
+  use w90_comms, only: w90comm_type
 
   implicit none
 
@@ -101,7 +102,7 @@ contains
 
   !================================================!
   subroutine sitesym_symmetrize_u_matrix(sitesym, umat, num_bands, ndim, num_kpts, num_wann, &
-                                         stdout, error, lwindow_in)
+                                         stdout, error, comm, lwindow_in)
     !================================================!
     !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases:
@@ -122,6 +123,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -139,12 +141,12 @@ contains
     complex(kind=dp) :: cmat(ndim, num_wann)
 
     if (present(lwindow_in) .and. (ndim .ne. num_bands)) then
-      call set_error_fatal(error, 'ndim!=num_bands')
+      call set_error_fatal(error, 'ndim!=num_bands', comm)
       return
     endif
     if (.not. present(lwindow_in)) then
       if (ndim .ne. num_wann) then
-        call set_error_fatal(error, 'ndim!=num_wann')
+        call set_error_fatal(error, 'ndim!=num_wann', comm)
         return
       endif
     endif
@@ -160,10 +162,10 @@ contains
       endif
       if (present(lwindow_in)) then
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              error, n)
+                              error, comm, n)
       else
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
-                              error)
+                              error, comm)
       endif
       if (allocated(error)) return
 
@@ -182,7 +184,7 @@ contains
       enddo
     enddo
     if (any(.not. ldone)) then
-      call set_error_fatal(error, 'error in sitesym_symmetrize_u_matrix')
+      call set_error_fatal(error, 'error in sitesym_symmetrize_u_matrix', comm)
       return
     endif
 
@@ -267,7 +269,7 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !================================================!
-  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, error)
+  subroutine sitesym_symmetrize_rotation(sitesym, urot, num_kpts, num_wann, error, comm)
     !================================================!
     use w90_utility, only: utility_zgemm
     use w90_wannier90_types, only: sitesym_type
@@ -278,6 +280,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann, num_kpts
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
@@ -308,7 +311,7 @@ contains
       enddo
     enddo
     if (any(.not. ldone)) then
-      call set_error_fatal(error, 'error in sitesym_symmetrize_rotation')
+      call set_error_fatal(error, 'error in sitesym_symmetrize_rotation', comm)
       return
     endif
 
@@ -380,7 +383,7 @@ contains
 
   !================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
-                              sitesym, stdout, error, n)
+                              sitesym, stdout, error, comm, n)
     !================================================!
     !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)
@@ -393,15 +396,20 @@ contains
     use w90_error, only: w90_error_type, set_error_fatal, set_error_unconv
     implicit none
 
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: stdout
-    integer, intent(in) :: num_wann
+    ! arguments
     type(sitesym_type), intent(in) :: sitesym
+    type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
-    integer, intent(in) :: ir, ndim
+
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
+
+    integer, intent(in) :: ir, ndim
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer, optional, intent(in) :: n
 
+    ! local variables
     integer :: isym, ngk, i, iter, ntmp
     integer, parameter :: niter = 100
     real(kind=dp)    :: diff
@@ -413,13 +421,13 @@ contains
     !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
       if (ndim .ne. num_bands) then
-        call set_error_fatal(error, 'ndim!=num_bands')
+        call set_error_fatal(error, 'ndim!=num_bands', comm)
         return
       endif
       ntmp = n
     else
       if (ndim .ne. num_wann) then
-        call set_error_fatal(error, 'ndim!=num_wann')
+        call set_error_fatal(error, 'ndim!=num_wann', comm)
         return
       endif
       ntmp = ndim
@@ -427,7 +435,7 @@ contains
 
     ngk = count(sitesym%kptsym(:, ir) .eq. sitesym%ir2ik(ir))
     if (ngk .eq. 1) then
-      call orthogonalize_u(ndim, num_wann, umat, ntmp, error)
+      call orthogonalize_u(ndim, num_wann, umat, ntmp, error, comm)
       return
     endif
 
@@ -462,11 +470,11 @@ contains
         write (stdout, "(a)") 'Either eps is too small or specified irreps is not'
         write (stdout, "(a)") '  compatible with the bands'
         write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sitesym%symmetrize_eps
-        call set_error_unconv(error, 'symmetrize_ukirr: not converged')
+        call set_error_unconv(error, 'symmetrize_ukirr: not converged', comm)
         return
       endif
       usum = usum/ngk
-      call orthogonalize_u(ndim, num_wann, usum, ntmp, error)
+      call orthogonalize_u(ndim, num_wann, usum, ntmp, error, comm)
       if (allocated(error)) return
 
       umat(:, :) = usum
@@ -476,7 +484,7 @@ contains
   end subroutine symmetrize_ukirr
 
   !================================================!
-  subroutine orthogonalize_u(ndim, m, u, n, error)
+  subroutine orthogonalize_u(ndim, m, u, n, error, comm)
     !================================================!
 
     use w90_error, only: w90_error_type, set_error_fatal, set_error_fatal
@@ -484,6 +492,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
@@ -495,7 +504,7 @@ contains
     integer :: LWORK
 
     if (n .lt. m) then
-      call set_error_fatal(error, 'n<m')
+      call set_error_fatal(error, 'n<m', comm)
       return
     endif
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
@@ -509,7 +518,7 @@ contains
     ! Singular-value decomposition
     call zgesvd('A', 'A', n, m, smat, n, eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
-      call set_error_fatal(error, ' ERROR: IN ZGESVD IN orthogonalize_u')
+      call set_error_fatal(error, ' ERROR: IN ZGESVD IN orthogonalize_u', comm)
       return
     endif
     deallocate (smat, eig, WORK, RWORK)
@@ -530,7 +539,7 @@ contains
 
   !================================================!
   subroutine sitesym_dis_extract_symmetry(sitesym, lambda, umat, zmat, ik, n, num_bands, num_wann, &
-                                          stdout, error)
+                                          stdout, error, comm)
     !================================================!
     !
     !   minimize Omega_I by steepest descendent
@@ -549,6 +558,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -609,7 +619,7 @@ contains
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
             endif
-            call set_error_fatal(error, 'error at sitesym_dis_extract_symmetry')
+            call set_error_fatal(error, 'error at sitesym_dis_extract_symmetry', comm)
             return
           endif
         endif
@@ -617,7 +627,7 @@ contains
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
       call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
-                            stdout, error, n)
+                            stdout, error, comm, n)
       if (allocated(error)) return
 
       umat(:, :) = umatnew(:, :)
@@ -627,7 +637,7 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !================================================!
-  subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error)
+  subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
     !================================================!
 
     use w90_io, only: io_file_unit
@@ -639,6 +649,7 @@ contains
     ! arguments
     type(sitesym_type), intent(inout) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -653,37 +664,37 @@ contains
     read (iu, *)
     read (iu, *) ibnum, sitesym%nsymmetry, sitesym%nkptirr, iknum
     if (ibnum .ne. num_bands) then
-      call set_error_file(error, "Error: Number of bands is not correct (sitesym_read)")
+      call set_error_file(error, "Error: Number of bands is not correct (sitesym_read)", comm)
       return
     endif
     if (iknum .ne. num_kpts) then
-      call set_error_file(error, "Error: Number of k-points is not correct (sitesym_read)")
+      call set_error_file(error, "Error: Number of k-points is not correct (sitesym_read)", comm)
       return
     endif
 
     allocate (sitesym%ik2ir(num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sitesym%ik2ir in sitesym_read')
+      call set_error_alloc(error, 'Error in allocating sitesym%ik2ir in sitesym_read', comm)
       return
     endif
     allocate (sitesym%ir2ik(sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sitesym%ir2ik in sitesym_read')
+      call set_error_alloc(error, 'Error in allocating sitesym%ir2ik in sitesym_read', comm)
       return
     endif
     allocate (sitesym%kptsym(sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sitesym%kptsym in sitesym_read')
+      call set_error_alloc(error, 'Error in allocating sitesym%kptsym in sitesym_read', comm)
       return
     endif
     allocate (sitesym%d_matrix_band(num_bands, num_bands, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_band in sitesym_read')
+      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_band in sitesym_read', comm)
       return
     endif
     allocate (sitesym%d_matrix_wann(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_wann in sitesym_read')
+      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_wann in sitesym_read', comm)
       return
     endif
 
@@ -698,7 +709,7 @@ contains
   end subroutine sitesym_read
 
   !================================================!
-  subroutine sitesym_dealloc(sitesym, error)
+  subroutine sitesym_dealloc(sitesym, error, comm)
     !================================================!
 
     use w90_error, only: w90_error_type, set_error_dealloc
@@ -708,31 +719,32 @@ contains
 
     type(sitesym_type), intent(inout) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer :: ierr
 
     deallocate (sitesym%ik2ir, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sitesym%ik2ir in sitesym_dealloc')
+      call set_error_dealloc(error, 'Error in deallocating sitesym%ik2ir in sitesym_dealloc', comm)
       return
     endif
     deallocate (sitesym%ir2ik, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sitesym%ir2ik in sitesym_dealloc')
+      call set_error_dealloc(error, 'Error in deallocating sitesym%ir2ik in sitesym_dealloc', comm)
       return
     endif
     deallocate (sitesym%kptsym, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sitesym%kptsym in sitesym_dealloc')
+      call set_error_dealloc(error, 'Error in deallocating sitesym%kptsym in sitesym_dealloc', comm)
       return
     endif
     deallocate (sitesym%d_matrix_band, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_band in sitesym_dealloc')
+      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_band in sitesym_dealloc', comm)
       return
     endif
     deallocate (sitesym%d_matrix_wann, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc')
+      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc', comm)
       return
     endif
 
