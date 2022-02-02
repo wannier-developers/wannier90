@@ -171,14 +171,14 @@ contains
   subroutine comms_sync_err(comm, error, ierr)
     implicit none
     type(w90comm_type), intent(in) :: comm
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_error_type), allocatable, intent(inout) :: error
     integer :: ierr, mpiierr, abserr
 
 #ifdef MPI
     abserr = abs(ierr) ! possibility of -ve values, use abs for safety
     call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
     ! you could check mpiierr, but it would be just too sad... fixme?
-    if (abserr > 0) call recv_error(error)
+    if (abserr > 0 .and. ierr == 0) call recv_error(error)
 #endif
   end subroutine comms_sync_err
 
