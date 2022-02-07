@@ -269,7 +269,7 @@ program postw90
                                     effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
                                     berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
                                     write_data, gamma_only, physics%bohr, optimisation, stdout, &
-                                    seedname, error)
+                                    seedname, error, comm)
     if (allocated(error)) call catch_error(error)
 
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
