@@ -401,13 +401,13 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-    complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
-
     integer, intent(in) :: ir, ndim
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     integer, optional, intent(in) :: n
+
+    complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
 
     ! local variables
     integer :: isym, ngk, i, iter, ntmp
