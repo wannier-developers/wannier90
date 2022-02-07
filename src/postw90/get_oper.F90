@@ -176,7 +176,7 @@ contains
         !
         if (abs(scissors_shift) > 1.0e-7_dp) then
           call set_error_input(error, 'Error in get_HH_R: scissors shift not implemented for ' &
-                               //'effective_model=T')
+                               //'effective_model=T', comm)
           return
         endif
       endif
@@ -258,7 +258,7 @@ contains
     return
 
 101 call set_error_file(error, 'Error in get_HH_R: problem opening file '// &
-                        trim(seedname)//'_HH_R.dat')
+                        trim(seedname)//'_HH_R.dat', comm)
     return !fixme restructure
 
   end subroutine get_HH_R
@@ -468,8 +468,8 @@ contains
               nn_found = .true.
               nn = inn
             else
-              call set_error_fatal(error, 'Error reading '//trim(seedname, comm)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+              call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
@@ -687,8 +687,8 @@ contains
               nn_found = .true.
               nn = inn
             else
-              call set_error_fatal(error, 'Error reading '//trim(seedname, comm)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+              call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
@@ -1584,8 +1584,8 @@ contains
               nn_found = .true.
               nn = inn
             else
-              call set_error_fatal(error, 'Error reading '//trim(seedname, comm)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+              call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
