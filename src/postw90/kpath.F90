@@ -179,7 +179,7 @@ contains
           return
         else if (fermi_n /= 1) then
           call set_error_input(error, 'Error: kpath plot only accept one Fermi energy, ' &
-                               //'use fermi_energy instead of fermi_energy_min')
+                               //'use fermi_energy instead of fermi_energy_min', comm)
           return
         end if
       end if
@@ -303,10 +303,10 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
         if (allocated(error)) return
 
-        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, error)
+        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, error, comm)
         if (allocated(error)) return
 
         !
@@ -315,7 +315,7 @@ contains
         !
         if (pw90_kpath%bands_colour == 'spin') then
           call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error)
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error, comm)
           if (allocated(error)) return
 
           my_color(:, loop_kpt) = spn_k(:)

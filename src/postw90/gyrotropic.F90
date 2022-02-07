@@ -693,7 +693,8 @@ contains
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, D_h, UU, eig, num_wann)
       call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, AA_R, &
-                                         kpt, real_lattice, mp_grid, num_wann, error, OO_true=AA)
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm, &
+                                         OO_true=AA)
       if (allocated(error)) return
 
       do i = 1, 3
@@ -736,7 +737,7 @@ contains
         !
         if (eval_spn .and. .not. got_spin) then
           call spin_get_S(kpt, S, num_wann, ws_region, wannier_data, real_lattice, mp_grid, &
-                          ws_distance, HH_R, SS_R, wigner_seitz, error)
+                          ws_distance, HH_R, SS_R, wigner_seitz, error, comm)
           if (allocated(error)) return
           got_spin = .true. ! Do it for only one value of ifermi and n
         endif
@@ -783,7 +784,7 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, error) &
+        delta = utility_w0gauss(arg, pw90_gyrotropic%smearing%type_index, error, comm) &
                 /eta_smr*kweight ! Broadened delta(E_nk-E_f)
         if (allocated(error)) return
 
@@ -816,13 +817,13 @@ contains
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, &
                                   real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
-                                  wigner_seitz, stdout, error, SS_R, gyro_NOA_spn)
+                                  wigner_seitz, stdout, error, comm, SS_R, gyro_NOA_spn)
         if (allocated(error)) return
       else
         call gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, &
                                   real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
-                                  wigner_seitz, stdout, error, SS_R)
+                                  wigner_seitz, stdout, error, comm, SS_R)
         if (allocated(error)) return
       endif
     endif
@@ -878,7 +879,7 @@ contains
   subroutine gyrotropic_get_NOA_k(ws_region, kpt, kweight, eig, del_eig, AA, UU, gyro_NOA_orb, &
                                   num_wann, print_output, fermi_energy_list, wannier_data, &
                                   real_lattice, mp_grid, pw90_gyrotropic, ws_distance, &
-                                  wigner_seitz, stdout, error, SS_R, gyro_NOA_spn)
+                                  wigner_seitz, stdout, error, comm, SS_R, gyro_NOA_spn)
     !================================================!
     !
     ! Contribution from point k to the real (antisymmetric) part
@@ -906,6 +907,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -918,6 +920,7 @@ contains
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -953,7 +956,7 @@ contains
       do j = 1, 3 ! spin direction
         call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            SS_R(:, :, :, j), kpt, real_lattice, mp_grid, num_wann, &
-                                           error, OO=SS(:, :, j))
+                                           error, comm, OO=SS(:, :, j))
         if (allocated(error)) return
 
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)

@@ -246,21 +246,21 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
                          dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                         pw90_dos%smearing, error, levelspacing_k=levelspacing_k, UU=UU)
+                         pw90_dos%smearing, error, comm, levelspacing_k=levelspacing_k, UU=UU)
           if (allocated(error)) return
 
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
           if (allocated(error)) return
 
-          call utility_diagonalize(HH, num_wann, eig, UU, error)
+          call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
           if (allocated(error)) return
 
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
                          dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                         pw90_dos%smearing, error, UU=UU)
+                         pw90_dos%smearing, error, comm, UU=UU)
           if (allocated(error)) return
 
         end if
@@ -295,21 +295,21 @@ contains
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
                          dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                         pw90_dos%smearing, error, levelspacing_k=levelspacing_k, UU=UU)
+                         pw90_dos%smearing, error, comm, levelspacing_k=levelspacing_k, UU=UU)
           if (allocated(error)) return
 
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
           if (allocated(error)) return
 
-          call utility_diagonalize(HH, num_wann, eig, UU, error)
+          call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
           if (allocated(error)) return
 
           call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
                          dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                          spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                         pw90_dos%smearing, error, UU=UU)
+                         pw90_dos%smearing, error, comm, UU=UU)
           if (allocated(error)) return
 
         end if
@@ -588,7 +588,7 @@ contains
   subroutine dos_get_k(num_elec_per_state, ws_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
                        wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
                        pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                       smearing, error, levelspacing_k, UU)
+                       smearing, error, comm, levelspacing_k, UU)
     !================================================!
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
@@ -597,6 +597,7 @@ contains
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
+    use w90_comms, only: w90comm_type
 
     ! Arguments
     type(pw90_dos_mod_type), intent(in) :: pw90_dos
@@ -607,6 +608,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(pw90_smearing_type), intent(in) :: smearing
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_elec_per_state
@@ -639,13 +641,13 @@ contains
     if (present(levelspacing_k)) then
       if (.not. smearing%use_adaptive) then
         call set_error_input(error, 'Cannot call doskpt with levelspacing_k and ' &
-                             //'without adptative smearing')
+                             //'without adptative smearing', comm)
         return
       endif
     else
       if (smearing%use_adaptive) then
         call set_error_input(error, 'Cannot call doskpt without levelspacing_k and ' &
-                             //'with adptative smearing')
+                             //'with adptative smearing', comm)
         return
       endif
     end if
@@ -656,7 +658,7 @@ contains
     !
     if (spin_decomp) then
       call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error)
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error, comm)
       if (allocated(error)) return
 
     endif
@@ -704,7 +706,7 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smearing%type_index, error)/eta_smr
+          rdum = utility_w0gauss(arg, smearing%type_index, error, comm)/eta_smr
           if (allocated(error)) return
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))

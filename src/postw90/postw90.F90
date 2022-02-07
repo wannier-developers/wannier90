@@ -296,7 +296,7 @@ program postw90
       ! the orbital magnetization
 
       call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                     num_kpts, gamma_only, stdout, timer, error)
+                     num_kpts, gamma_only, stdout, timer, error, comm)
       if (allocated(error)) call catch_error(error)
 
       time2 = io_time()
@@ -325,11 +325,13 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   ! surely this function name is toooo long? --JJ fixme
-  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, num_kpts, &
-                                                      dis_window, system, fermi_energy_list, num_bands, num_wann, &
+  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, &
+                                                      num_kpts, dis_window, system, &
+                                                      fermi_energy_list, num_bands, num_wann, &
                                                       eigval, mp_grid, real_lattice, pw90_calcs, &
-                                                      scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, &
-                                                      kslice, dos_data, berry, spin_hall, gyrotropic, geninterp, &
+                                                      scissors_shift, effective_model, pw90_spin, &
+                                                      pw90_ham, kpath, kslice, dos_data, berry, &
+                                                      spin_hall, gyrotropic, geninterp, &
                                                       boltz, eig_found, error, comm)
   if (allocated(error)) call catch_error(error)
 
@@ -344,10 +346,11 @@ program postw90
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
-                                    u_matrix, u_matrix_opt, real_lattice, omega_invariant, &
-                                    mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
-                                    have_disentangled, .true., seedname, stdout, error)
+      call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, &
+                                    m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                                    omega_invariant, mp_grid, num_bands, num_exclude_bands, &
+                                    num_kpts, num_wann, checkpoint, have_disentangled, .true., &
+                                    seedname, stdout, error, comm)
       if (allocated(error)) call catch_error(error)
     endif
 

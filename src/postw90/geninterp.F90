@@ -180,8 +180,8 @@ contains
       elseif (index(cdum, 'abs') > 0) then
         absoluteCoords = .true.
       else
-        call set_error_input(error, 'Error on second line of file '//trim(seedname, comm) &
-                             //'_geninterp.kpt: unable to recognize keyword')
+        call set_error_input(error, 'Error on second line of file '//trim(seedname) &
+                             //'_geninterp.kpt: unable to recognize keyword', comm)
         return
       end if
 
@@ -362,10 +362,10 @@ contains
 
       else
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
         if (allocated(error)) return
 
-        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, error)
+        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, error, comm)
         if (allocated(error)) return
 
       end if

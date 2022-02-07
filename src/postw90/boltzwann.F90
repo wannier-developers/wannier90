@@ -1073,7 +1073,7 @@ contains
 
       call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, &
                    HH_R, SS_R, del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
-                   num_wann, num_elec_per_state, spin_decomp, error)
+                   num_wann, num_elec_per_state, spin_decomp, error, comm)
       if (allocated(error)) return
 
       ! As above, the sum of TDF_k * kweight amounts to calculate
@@ -1116,7 +1116,8 @@ contains
                   call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
                                  spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                                 pw90_boltzwann%dos_smearing, error, levelspacing_k=levelspacing_k)
+                                 pw90_boltzwann%dos_smearing, error, comm, &
+                                 levelspacing_k=levelspacing_k)
                   if (allocated(error)) return
 
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
@@ -1128,7 +1129,7 @@ contains
             call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                            num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
                            pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                           pw90_boltzwann%dos_smearing, error, levelspacing_k=levelspacing_k)
+                           pw90_boltzwann%dos_smearing, error, comm, levelspacing_k=levelspacing_k)
             if (allocated(error)) return
 
             dos_all = dos_all + dos_k*kweight
@@ -1137,7 +1138,7 @@ contains
           call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
                          pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
-                         pw90_boltzwann%dos_smearing, error)
+                         pw90_boltzwann%dos_smearing, error, comm)
           if (allocated(error)) return
 
           ! This sum multiplied by kweight amounts to calculate
@@ -1291,7 +1292,7 @@ contains
   !================================================!
   subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, &
                      wigner_seitz, HH_R, SS_R, deleig_k, eig_k, EnergyArray, kpt, real_lattice, &
-                     TDF_k, mp_grid, num_wann, num_elec_per_state, spin_decomp, error)
+                     TDF_k, mp_grid, num_wann, num_elec_per_state, spin_decomp, error, comm)
     !================================================!
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
@@ -1323,6 +1324,7 @@ contains
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1334,6 +1336,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1381,7 +1384,7 @@ contains
     !
     if (spin_decomp) then
       call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error)
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1424,7 +1427,7 @@ contains
       do loop_f = min_f, max_f
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(BandIdx))/smear
-          rdum = utility_w0gauss(arg, pw90_boltzwann%tdf_smearing%type_index, error)/smear
+          rdum = utility_w0gauss(arg, pw90_boltzwann%tdf_smearing%type_index, error, comm)/smear
           if (allocated(error)) return
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
