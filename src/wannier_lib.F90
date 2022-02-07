@@ -246,6 +246,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
   type(timer_list_type) :: timer
   type(w90_error_type), allocatable :: error
+  type(w90comm_type) :: comm
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
@@ -300,7 +301,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   if (allocated(error)) call prterr(error, stdout)
   kpt_latt = kpt_latt_loc
   atoms%num_atoms = num_atoms_loc
-  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, error)
+  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, &
+                                   error, comm)
   if (allocated(error)) call prterr(error, stdout)
   gamma_only = gamma_only_loc
   system%spinors = spinors_loc
@@ -315,7 +317,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
                                     w90_calcs, eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, calc_only_A, &
                                     cp_pp, gamma_only, lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, &
-                                    seedname, stdout, error)
+                                    seedname, stdout, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   have_disentangled = .false.
   disentanglement = (num_bands > num_wann)
@@ -335,7 +337,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 
   if (.not. kmesh_info%explicit_nnkpts) then
     call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, num_kpts, gamma_only, &
-                   stdout, timer, error)
+                   stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
   ! Now we zero all of the local output data, then copy in the data
@@ -382,13 +384,13 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
 
-  call kmesh_dealloc(kmesh_info, error)
+  call kmesh_dealloc(kmesh_info, error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   call w90_wannier90_readwrite_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, &
                                            exclude_bands, kmesh_data, kpt_latt, wannierise, proj, &
                                            input_proj, select_proj, spec_points, wann_data, &
-                                           wann_plot, write_data, eigval, error)
+                                           wann_plot, write_data, eigval, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
@@ -584,7 +586,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   atoms%num_atoms = num_atoms_loc
   gamma_only = gamma_only_loc
 
-  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, error)
+  call w90_readwrite_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, real_lattice, &
+                                   error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
@@ -594,7 +597,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                     write_data, ws_region, w90_calcs, eigval, real_lattice, physics%bohr, &
                                     symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                     eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., .false., &
-                                    lsitesymmetry, use_bloch_phases, seedname, stdout, error)
+                                    lsitesymmetry, use_bloch_phases, seedname, stdout, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   have_disentangled = .false.
   disentanglement = (num_bands > num_wann)
@@ -609,7 +612,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
   call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, num_kpts, gamma_only, &
-                 stdout, timer, error)
+                 stdout, timer, error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   time2 = io_time()
@@ -668,7 +671,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   else
     if (gamma_only) then
       call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                 verbose%timing_level, stdout, timer, error)
+                                 verbose%timing_level, stdout, timer, error, comm)
       if (allocated(error)) call prterr(error, stdout)
     else
       call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
@@ -726,7 +729,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
                    rpt_origin, band_plot%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout, timer, error)
+                   stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
@@ -758,18 +761,19 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     spread_loc(2) = wann_omega%invariant
     spread_loc(3) = wann_omega%tilde
   endif
-  call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, error)
+  call hamiltonian_dealloc(hmlg, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
+                           error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call kmesh_dealloc(kmesh_info, error)
+  call kmesh_dealloc(kmesh_info, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_wannier90_readwrite_w90_dealloc(atoms, band_plot, dis_spheres, dis_window, &
                                            exclude_bands, kmesh_data, kpt_latt, wannierise, proj, &
                                            input_proj, select_proj, spec_points, wann_data, &
-                                           wann_plot, write_data, eigval, error)
+                                           wann_plot, write_data, eigval, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
