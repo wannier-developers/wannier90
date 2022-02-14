@@ -174,7 +174,7 @@ contains
     type(w90_error_type), allocatable, intent(inout) :: error
     integer :: ierr, mpiierr, abserr
 
-#ifdef MPI
+#if defined(MPI) && !defined(DISABLE_ERROR_SYNC)
     abserr = abs(ierr) ! possibility of -ve values, use abs for safety
     call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
     ! you could check mpiierr, but it would be just too sad... fixme?
