@@ -518,7 +518,8 @@ program postw90
 
   ! I put a barrier here before calling the final time printing routines,
   ! just to be sure that all processes have arrived here.
-  call comms_barrier(comm)
+  call comms_barrier(error, comm)
+  ! Trap error?, or just print times anyway?
   if (on_root) then
     write (stdout, '(/,1x,a25,f11.3,a)') &
       'Total Execution Time     ', io_time(), ' (sec)'

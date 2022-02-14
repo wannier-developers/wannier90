@@ -56,13 +56,23 @@ module w90_comms
   public :: comms_bcast      ! send data from the root node
   public :: comms_end
   public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
-  public :: comms_recv       ! accept data from one node to another
+  !public :: comms_recv       ! accept data from one node to another
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce); data is lost on all other nodes
   public :: comms_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
-  public :: comms_send       ! send data from one node to another
+  !public :: comms_send       ! send data from one node to another
   public :: mpirank
   public :: mpisize
   public :: comms_sync_err
+
+  ! versions without error synchronisation, use at own risk
+  public :: comms_no_sync_allreduce  ! reduce data onto all nodes
+  public :: comms_no_sync_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
+  public :: comms_no_sync_bcast      ! send data from the root node
+  public :: comms_no_sync_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
+  public :: comms_no_sync_recv       ! accept data from one node to another
+  public :: comms_no_sync_reduce     ! reduce data onto root node (n.b. not allreduce); data is lost on all other nodes
+  public :: comms_no_sync_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
+  public :: comms_no_sync_send       ! send data from one node to another
 
   type, public :: w90comm_type
 #ifdef MPI08
@@ -90,21 +100,22 @@ module w90_comms
     module procedure comms_bcast_char
   end interface comms_bcast
 
-  interface comms_send
-    module procedure comms_send_int
-    module procedure comms_send_logical
-    module procedure comms_send_real
-    module procedure comms_send_cmplx
-    module procedure comms_send_char
-  end interface comms_send
+  ! We don't currently have error synchronisation for point-to-point comms
+  !interface comms_send
+  !  module procedure comms_send_int
+  !  module procedure comms_send_logical
+  !  module procedure comms_send_real
+  !  module procedure comms_send_cmplx
+  !  module procedure comms_send_char
+  !end interface comms_send
 
-  interface comms_recv
-    module procedure comms_recv_int
-    module procedure comms_recv_logical
-    module procedure comms_recv_real
-    module procedure comms_recv_cmplx
-    module procedure comms_recv_char
-  end interface comms_recv
+  !interface comms_recv
+  !  module procedure comms_recv_int
+  !  module procedure comms_recv_logical
+  !  module procedure comms_recv_real
+  !  module procedure comms_recv_cmplx
+  !  module procedure comms_recv_char
+  !end interface comms_recv
 
   interface comms_reduce
     module procedure comms_reduce_int
@@ -142,6 +153,70 @@ module w90_comms
 !     module procedure comms_scatterv_cmplx
     module procedure comms_scatterv_cmplx_4
   end interface comms_scatterv
+
+  !! These routines do not synchronise errors. You should not normally use them.
+  !! If you do use them, you are required to make sure that the error conditions
+  !! between the MPI processes are correctly synced up on exit from your code.
+  interface comms_no_sync_bcast
+    module procedure comms_no_sync_bcast_int
+    module procedure comms_no_sync_bcast_logical
+    module procedure comms_no_sync_bcast_real
+    module procedure comms_no_sync_bcast_cmplx
+    module procedure comms_no_sync_bcast_char
+  end interface comms_no_sync_bcast
+
+  interface comms_no_sync_send
+    module procedure comms_no_sync_send_int
+    module procedure comms_no_sync_send_logical
+    module procedure comms_no_sync_send_real
+    module procedure comms_no_sync_send_cmplx
+    module procedure comms_no_sync_send_char
+  end interface comms_no_sync_send
+
+  interface comms_no_sync_recv
+    module procedure comms_no_sync_recv_int
+    module procedure comms_no_sync_recv_logical
+    module procedure comms_no_sync_recv_real
+    module procedure comms_no_sync_recv_cmplx
+    module procedure comms_no_sync_recv_char
+  end interface comms_no_sync_recv
+
+  interface comms_no_sync_reduce
+    module procedure comms_no_sync_reduce_int
+    module procedure comms_no_sync_reduce_real
+    module procedure comms_no_sync_reduce_cmplx
+  end interface comms_no_sync_reduce
+
+  interface comms_no_sync_allreduce
+!     module procedure comms_no_sync_allreduce_int    ! to be done
+    module procedure comms_no_sync_allreduce_real
+    module procedure comms_no_sync_allreduce_cmplx
+  end interface comms_no_sync_allreduce
+
+  interface comms_no_sync_gatherv
+!     module procedure comms_no_sync_gatherv_int    ! to be done
+    module procedure comms_no_sync_gatherv_logical
+    module procedure comms_no_sync_gatherv_real_1
+    module procedure comms_no_sync_gatherv_real_2
+    module procedure comms_no_sync_gatherv_real_3
+    module procedure comms_no_sync_gatherv_real_2_3
+    module procedure comms_no_sync_gatherv_cmplx_1
+    module procedure comms_no_sync_gatherv_cmplx_2
+    module procedure comms_no_sync_gatherv_cmplx_3
+    module procedure comms_no_sync_gatherv_cmplx_3_4
+    module procedure comms_no_sync_gatherv_cmplx_4
+  end interface comms_no_sync_gatherv
+
+  interface comms_no_sync_scatterv
+    module procedure comms_no_sync_scatterv_int_1
+    module procedure comms_no_sync_scatterv_int_2
+    module procedure comms_no_sync_scatterv_int_3
+    module procedure comms_no_sync_scatterv_real_1
+    module procedure comms_no_sync_scatterv_real_2
+    module procedure comms_no_sync_scatterv_real_3
+!     module procedure comms_no_sync_scatterv_cmplx
+    module procedure comms_no_sync_scatterv_cmplx_4
+  end interface comms_no_sync_scatterv
 
 contains
 
@@ -236,7 +311,7 @@ contains
 
   end subroutine comms_end
 
-  subroutine comms_barrier(comm)
+  subroutine comms_no_sync_barrier(comm)
     !! A barrier to synchronise all nodes
     implicit none
     type(w90comm_type), intent(in) :: comm
@@ -247,9 +322,9 @@ contains
     call mpi_barrier(comm%comm, ierr)
 #endif
 
-  end subroutine comms_barrier
+  end subroutine comms_no_sync_barrier
 
-  subroutine comms_bcast_int(array, size, error, comm)
+  subroutine comms_no_sync_bcast_int(array, size, error, comm)
     !! Send integar array from root node to all nodes
     implicit none
 
@@ -261,9 +336,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0)
-    if (allocated(error)) return
-
     call mpi_bcast(array, size, MPI_INTEGER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -271,9 +343,9 @@ contains
       return
     end if
 #endif
-  end subroutine comms_bcast_int
+  end subroutine comms_no_sync_bcast_int
 
-  subroutine comms_bcast_real(array, size, error, comm)
+  subroutine comms_no_sync_bcast_real(array, size, error, comm)
     !! Send real array from root node to all nodes
     implicit none
 
@@ -285,9 +357,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -296,9 +365,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_bcast_real
+  end subroutine comms_no_sync_bcast_real
 
-  subroutine comms_bcast_logical(array, size, error, comm)
+  subroutine comms_no_sync_bcast_logical(array, size, error, comm)
     !! Send logical array from root node to all nodes
     implicit none
 
@@ -310,9 +379,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_bcast(array, size, MPI_LOGICAL, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -321,9 +387,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_bcast_logical
+  end subroutine comms_no_sync_bcast_logical
 
-  subroutine comms_bcast_char(array, size, error, comm)
+  subroutine comms_no_sync_bcast_char(array, size, error, comm)
     !! Send character array from root node to all nodes
     implicit none
 
@@ -335,9 +401,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_bcast(array, size, MPI_CHARACTER, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -346,9 +409,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_bcast_char
+  end subroutine comms_no_sync_bcast_char
 
-  subroutine comms_bcast_cmplx(array, size, error, comm)
+  subroutine comms_no_sync_bcast_cmplx(array, size, error, comm)
     !! Send character array from root node to all nodes
 
     implicit none
@@ -361,9 +424,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
 
     if (ierr .ne. MPI_SUCCESS) then
@@ -372,11 +432,11 @@ contains
     end if
 #endif
 
-  end subroutine comms_bcast_cmplx
+  end subroutine comms_no_sync_bcast_cmplx
 
   !--------- SEND ----------------
 
-  subroutine comms_send_logical(array, size, to, error, comm)
+  subroutine comms_no_sync_send_logical(array, size, to, error, comm)
     !! Send logical array to specified node
 
     implicit none
@@ -398,9 +458,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_send_logical
+  end subroutine comms_no_sync_send_logical
 
-  subroutine comms_send_int(array, size, to, error, comm)
+  subroutine comms_no_sync_send_int(array, size, to, error, comm)
     !! Send integer array to specified node
     implicit none
 
@@ -421,9 +481,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_send_int
+  end subroutine comms_no_sync_send_int
 
-  subroutine comms_send_char(array, size, to, error, comm)
+  subroutine comms_no_sync_send_char(array, size, to, error, comm)
     !! Send character array to specified node
     implicit none
 
@@ -444,9 +504,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_send_char
+  end subroutine comms_no_sync_send_char
 
-  subroutine comms_send_real(array, size, to, error, comm)
+  subroutine comms_no_sync_send_real(array, size, to, error, comm)
     !! Send real array to specified node
     implicit none
 
@@ -467,9 +527,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_send_real
+  end subroutine comms_no_sync_send_real
 
-  subroutine comms_send_cmplx(array, size, to, error, comm)
+  subroutine comms_no_sync_send_cmplx(array, size, to, error, comm)
     !! Send complex array to specified node
     implicit none
 
@@ -490,11 +550,11 @@ contains
     end if
 #endif
 
-  end subroutine comms_send_cmplx
+  end subroutine comms_no_sync_send_cmplx
 
   !--------- RECV ----------------
 
-  subroutine comms_recv_logical(array, size, from, error, comm)
+  subroutine comms_no_sync_recv_logical(array, size, from, error, comm)
     !! Receive logical array from specified node
     implicit none
 
@@ -516,9 +576,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_recv_logical
+  end subroutine comms_no_sync_recv_logical
 
-  subroutine comms_recv_int(array, size, from, error, comm)
+  subroutine comms_no_sync_recv_int(array, size, from, error, comm)
     !! Receive integer array from specified node
     implicit none
 
@@ -540,9 +600,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_recv_int
+  end subroutine comms_no_sync_recv_int
 
-  subroutine comms_recv_char(array, size, from, error, comm)
+  subroutine comms_no_sync_recv_char(array, size, from, error, comm)
     !! Receive character array from specified node
     implicit none
 
@@ -564,9 +624,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_recv_char
+  end subroutine comms_no_sync_recv_char
 
-  subroutine comms_recv_real(array, size, from, error, comm)
+  subroutine comms_no_sync_recv_real(array, size, from, error, comm)
     !! Receive real array from specified node
     implicit none
 
@@ -589,9 +649,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_recv_real
+  end subroutine comms_no_sync_recv_real
 
-  subroutine comms_recv_cmplx(array, size, from, error, comm)
+  subroutine comms_no_sync_recv_cmplx(array, size, from, error, comm)
     !! Receive complex array from specified node
     implicit none
 
@@ -614,9 +674,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_recv_cmplx
+  end subroutine comms_no_sync_recv_cmplx
 
-  subroutine comms_reduce_int(array, size, op, error, comm)
+  subroutine comms_no_sync_reduce_int(array, size, op, error, comm)
     !! Reduce integer data to root node
     implicit none
 
@@ -630,9 +690,6 @@ contains
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
-
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
 
     ! note, JJ 23/2/2021
     ! previously this routine alloc'd/used/dealloc'd a temp array
@@ -669,9 +726,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_reduce_int
+  end subroutine comms_no_sync_reduce_int
 
-  subroutine comms_reduce_real(array, size, op, error, comm)
+  subroutine comms_no_sync_reduce_real(array, size, op, error, comm)
     !! Reduce real data to root node
 
     implicit none
@@ -686,9 +743,6 @@ contains
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
-
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
 
     select case (op)
 
@@ -736,9 +790,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_reduce_real
+  end subroutine comms_no_sync_reduce_real
 
-  subroutine comms_reduce_cmplx(array, size, op, error, comm)
+  subroutine comms_no_sync_reduce_cmplx(array, size, op, error, comm)
     !! Reduce complex data to root node
 
     implicit none
@@ -753,9 +807,6 @@ contains
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
-
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
 
     select case (op)
 
@@ -788,9 +839,9 @@ contains
 
 #endif
 
-  end subroutine comms_reduce_cmplx
+  end subroutine comms_no_sync_reduce_cmplx
 
-  subroutine comms_allreduce_real(array, size, op, error, comm)
+  subroutine comms_no_sync_allreduce_real(array, size, op, error, comm)
     !! Reduce real data to all nodes
 
     implicit none
@@ -803,9 +854,6 @@ contains
 
 #ifdef MPI
     integer :: ierr
-
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
 
     select case (op)
 
@@ -833,9 +881,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_allreduce_real
+  end subroutine comms_no_sync_allreduce_real
 
-  subroutine comms_allreduce_cmplx(array, size, op, error, comm)
+  subroutine comms_no_sync_allreduce_cmplx(array, size, op, error, comm)
     !! Reduce complex data to all nodes
     implicit none
 
@@ -847,9 +895,6 @@ contains
 
 #ifdef MPI
     integer :: ierr
-
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
 
     select case (op)
 
@@ -871,9 +916,9 @@ contains
     end if
 #endif
 
-  end subroutine comms_allreduce_cmplx
+  end subroutine comms_no_sync_allreduce_cmplx
 
-  subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
+  subroutine comms_no_sync_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 1)
     implicit none
 
@@ -888,9 +933,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -903,9 +945,9 @@ contains
     rootglobalarray = array
 #endif
 
-  end subroutine comms_gatherv_real_1
+  end subroutine comms_no_sync_gatherv_real_1
 
-  subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
+  subroutine comms_no_sync_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 2)
     implicit none
 
@@ -920,9 +962,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -935,9 +974,9 @@ contains
     rootglobalarray = array
 #endif
 
-  end subroutine comms_gatherv_real_2
+  end subroutine comms_no_sync_gatherv_real_2
 
-  subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+  subroutine comms_no_sync_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 3)
     implicit none
 
@@ -952,9 +991,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
                      displs, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -968,9 +1004,9 @@ contains
     rootglobalarray = array
 #endif
 
-  end subroutine comms_gatherv_real_3
+  end subroutine comms_no_sync_gatherv_real_3
 
-  subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+  subroutine comms_no_sync_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, error, comm)
     !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
     implicit none
 
@@ -985,9 +1021,6 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call comms_sync_err(comm, error, 0) ! sync error state across comm
-    if (allocated(error)) return
-
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, displs, &
                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
 
@@ -1001,6 +1034,651 @@ contains
     !rootglobalarray = array ! shapes don't match
 #endif
 
+  end subroutine comms_no_sync_gatherv_real_2_3
+
+  ! Array: local array for sending data; localcount elements will be sent
+  !        to the root node
+  ! rootglobalarray: array on the root node to which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+
+  subroutine comms_no_sync_gatherv_cmplx_1(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather complex data to root node (for arrays of rank 1)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_1', code_mpi)
+      return
+    end if
+
+#else
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
+#endif
+
+  end subroutine comms_no_sync_gatherv_cmplx_1
+
+  subroutine comms_no_sync_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather complex data to root node (for arrays of rank 2)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_2', code_mpi)
+      return
+    end if
+
+#else
+    call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
+#endif
+
+  end subroutine comms_no_sync_gatherv_cmplx_2
+
+  subroutine comms_no_sync_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather complex data to root node (for arrays of rank 3)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_3', code_mpi)
+      return
+    end if
+
+#else
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
+#endif
+
+  end subroutine comms_no_sync_gatherv_cmplx_3
+
+  subroutine comms_no_sync_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather complex data to root node (for arrays of rank 3 and 4, respectively)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_3_4', code_mpi)
+      return
+    end if
+
+#else
+    call zcopy(localcount, array, 1, rootglobalarray, 1)
+    !rootglobalarray = array ! shapes don't match
+#endif
+
+  end subroutine comms_no_sync_gatherv_cmplx_3_4
+
+  subroutine comms_no_sync_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather complex data to root node (for arrays of rank 4)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:, :, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_cmplx_4', code_mpi)
+      return
+    end if
+
+#else
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
+#endif
+
+  end subroutine comms_no_sync_gatherv_cmplx_4
+
+  subroutine comms_no_sync_gatherv_logical(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather real data to root node
+    implicit none
+
+    logical, intent(inout) :: array !! local array for sending data
+    integer, intent(in) :: localcount !! localcount elements will be sent to the root node
+    logical, intent(inout) :: rootglobalarray !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, displs, &
+                     MPI_LOGICAL, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_gatherv_logical', code_mpi)
+      return
+    end if
+#else
+!    rootglobalarray(1:localcount)=array(1:localcount)
+#endif
+
+  end subroutine comms_no_sync_gatherv_logical
+
+  subroutine comms_no_sync_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter real data from root node (array of rank 1)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_real_1', code_mpi)
+      return
+    end if
+
+#else
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_real_1
+
+  subroutine comms_no_sync_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter real data from root node (array of rank 2)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_real_2', code_mpi)
+      return
+    end if
+
+#else
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_real_2
+
+  subroutine comms_no_sync_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter real data from root node (array of rank 3)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_real_3', code_mpi)
+      return
+    end if
+
+#else
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_real_3
+
+  subroutine comms_no_sync_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter complex data from root node (array of rank 4)
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array(:, :, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
+                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_cmplx_4', code_mpi)
+      return
+    end if
+
+#else
+    !call zcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_cmplx_4
+
+  subroutine comms_no_sync_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter integer data from root node (array of rank 1)
+    implicit none
+
+    integer, intent(inout) :: array(:) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_real', code_mpi)
+      return
+    end if
+
+#else
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_int_1
+
+  subroutine comms_no_sync_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter integer data from root node (array of rank 2)
+
+    implicit none
+
+    integer, intent(inout) :: array(:, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:, :) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_int_2', code_mpi)
+      return
+    end if
+
+#else
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_int_2
+
+  subroutine comms_no_sync_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Scatter integer data from root node (array of rank 3)
+
+    implicit none
+
+    integer, intent(inout) :: array(:, :, :) !! local array for getting data
+    integer, intent(in) :: localcount !! localcount elements will be fetched from the root node
+    integer, intent(inout) :: rootglobalarray(:, :, :) !!  array on the root node from which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+#ifdef MPI
+    integer :: ierr
+
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, comm%comm, ierr)
+
+    if (ierr .ne. MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_scatterv_int_3', code_mpi)
+      return
+    end if
+
+#else
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
+#endif
+
+  end subroutine comms_no_sync_scatterv_int_3
+
+  ! The routines that synchronise the errors
+  subroutine comms_barrier(error, comm)
+    !! A barrier to synchronise all nodes
+    implicit none
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    call comms_sync_err(comm, error, 0)
+    if (allocated(error)) return
+    ! The barrier is almost redundant since the sync is global, unless DISABLE_ERROR_SYNC defined
+    call comms_no_sync_barrier(comm)
+  end subroutine comms_barrier
+
+  subroutine comms_bcast_int(array, size, error, comm)
+    !! Send integar array from root node to all nodes
+    implicit none
+
+    integer, intent(inout) :: array
+    integer, intent(in) :: size
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0)
+    if (allocated(error)) return
+
+    call comms_no_sync_bcast_int(array, size, error, comm)
+  end subroutine comms_bcast_int
+
+  subroutine comms_bcast_real(array, size, error, comm)
+    !! Send real array from root node to all nodes
+    implicit none
+
+    real(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_bcast_real(array, size, error, comm)
+  end subroutine comms_bcast_real
+
+  subroutine comms_bcast_logical(array, size, error, comm)
+    !! Send logical array from root node to all nodes
+    implicit none
+
+    logical, intent(inout) :: array
+    integer, intent(in) :: size
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_bcast_logical(array, size, error, comm)
+  end subroutine comms_bcast_logical
+
+  subroutine comms_bcast_char(array, size, error, comm)
+    !! Send character array from root node to all nodes
+    implicit none
+
+    character(len=*), intent(inout) :: array
+    integer, intent(in) :: size
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_bcast_char(array, size, error, comm)
+  end subroutine comms_bcast_char
+
+  subroutine comms_bcast_cmplx(array, size, error, comm)
+    !! Send character array from root node to all nodes
+
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    integer :: ierr
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_bcast_cmplx(array, size, error, comm)
+  end subroutine comms_bcast_cmplx
+
+  subroutine comms_reduce_int(array, size, op, error, comm)
+    !! Reduce integer data to root node
+    implicit none
+
+    integer, intent(inout) :: array
+    integer, intent(in) :: size
+    character(len=*), intent(in) :: op
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_reduce_int(array, size, op, error, comm)
+  end subroutine comms_reduce_int
+
+  subroutine comms_reduce_real(array, size, op, error, comm)
+    !! Reduce real data to root node
+
+    implicit none
+
+    real(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    character(len=*), intent(in) :: op
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_reduce_real(array, size, op, error, comm)
+  end subroutine comms_reduce_real
+
+  subroutine comms_reduce_cmplx(array, size, op, error, comm)
+    !! Reduce complex data to root node
+
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    character(len=*), intent(in) :: op
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_reduce_cmplx(array, size, op, error, comm)
+  end subroutine comms_reduce_cmplx
+
+  subroutine comms_allreduce_real(array, size, op, error, comm)
+    !! Reduce real data to all nodes
+
+    implicit none
+
+    real(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    character(len=*), intent(in) :: op
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_allreduce_real(array, size, op, error, comm)
+  end subroutine comms_allreduce_real
+
+  subroutine comms_allreduce_cmplx(array, size, op, error, comm)
+    !! Reduce complex data to all nodes
+    implicit none
+
+    complex(kind=dp), intent(inout) :: array
+    integer, intent(in) :: size
+    character(len=*), intent(in) :: op
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_allreduce_cmplx(array, size, op, error, comm)
+  end subroutine comms_allreduce_cmplx
+
+  subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather real data to root node (for arrays of rank 1)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:) !! local array for sending data
+    integer, intent(in) :: localcount !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(0:) !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
+  end subroutine comms_gatherv_real_1
+
+  subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather real data to root node (for arrays of rank 2)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:, :)           !! local array for sending data
+    integer, intent(in) :: localcount                     !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(0:)                     !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
+  end subroutine comms_gatherv_real_2
+
+  subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather real data to root node (for arrays of rank 3)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:, :, :)           !! local array for sending data
+    integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
+  end subroutine comms_gatherv_real_3
+
+  subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, error, comm)
+    !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
+    implicit none
+
+    real(kind=dp), intent(inout) :: array(:, :)              !! local array for sending data
+    integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(0:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(0:)
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    call comms_sync_err(comm, error, 0) ! sync error state across comm
+    if (allocated(error)) return
+
+    call comms_no_sync_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, &
+                                        error, comm)
   end subroutine comms_gatherv_real_2_3
 
   ! Array: local array for sending data; localcount elements will be sent
@@ -1021,25 +1699,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
-                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_cmplx_1', code_mpi)
-      return
-    end if
-
-#else
-    !call zcopy(localcount, array, 1, rootglobalarray, 1)
-    rootglobalarray = array
-#endif
-
+    call comms_no_sync_gatherv_cmplx_1(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_gatherv_cmplx_1
 
   subroutine comms_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1054,25 +1718,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
-                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_cmplx_2', code_mpi)
-      return
-    end if
-
-#else
-    call zcopy(localcount, array, 1, rootglobalarray, 1)
-    rootglobalarray = array
-#endif
-
+    call comms_no_sync_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_gatherv_cmplx_2
 
   subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1087,25 +1737,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
-                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_cmplx_3', code_mpi)
-      return
-    end if
-
-#else
-    !call zcopy(localcount, array, 1, rootglobalarray, 1)
-    rootglobalarray = array
-#endif
-
+    call comms_no_sync_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_gatherv_cmplx_3
 
   subroutine comms_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1120,25 +1756,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
-                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_cmplx_3_4', code_mpi)
-      return
-    end if
-
-#else
-    call zcopy(localcount, array, 1, rootglobalarray, 1)
-    !rootglobalarray = array ! shapes don't match
-#endif
-
+    call comms_no_sync_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, &
+                                         error, comm)
   end subroutine comms_gatherv_cmplx_3_4
 
   subroutine comms_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1153,25 +1775,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
-                     MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_cmplx_4', code_mpi)
-      return
-    end if
-
-#else
-    !call zcopy(localcount, array, 1, rootglobalarray, 1)
-    rootglobalarray = array
-#endif
-
+    call comms_no_sync_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_gatherv_cmplx_4
 
   subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1186,23 +1794,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, displs, &
-                     MPI_LOGICAL, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_gatherv_logical', code_mpi)
-      return
-    end if
-#else
-!    rootglobalarray(1:localcount)=array(1:localcount)
-#endif
-
+    call comms_no_sync_gatherv_logical(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_gatherv_logical
 
   subroutine comms_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1217,25 +1813,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
-                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_real_1', code_mpi)
-      return
-    end if
-
-#else
-    !call dcopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_scatterv_real_1
 
   subroutine comms_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1250,25 +1832,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
-                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_real_2', code_mpi)
-      return
-    end if
-
-#else
-    !call dcopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_scatterv_real_2
 
   subroutine comms_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1283,25 +1851,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
-                      MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_real_3', code_mpi)
-      return
-    end if
-
-#else
-    !call dcopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, &
+                                       error, comm)
   end subroutine comms_scatterv_real_3
 
   subroutine comms_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1316,25 +1870,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
-                      MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_cmplx_4', code_mpi)
-      return
-    end if
-
-#else
-    !call zcopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, &
+                                        error, comm)
   end subroutine comms_scatterv_cmplx_4
 
   subroutine comms_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1349,25 +1889,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
-                      MPI_INTEGER, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_real', code_mpi)
-      return
-    end if
-
-#else
-    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
   end subroutine comms_scatterv_int_1
 
   subroutine comms_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1383,25 +1909,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
-                      MPI_INTEGER, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_int_2', code_mpi)
-      return
-    end if
-
-#else
-    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
   end subroutine comms_scatterv_int_2
 
   subroutine comms_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, error, comm)
@@ -1417,24 +1929,11 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
-    integer :: ierr
-
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
-                      MPI_INTEGER, root_id, comm%comm, ierr)
-
-    if (ierr .ne. MPI_SUCCESS) then
-      call set_base_error(error, 'Error in comms_scatterv_int_3', code_mpi)
-      return
-    end if
-
-#else
-    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
-    array = rootglobalarray
-#endif
-
+    call comms_no_sync_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, &
+                                      error, comm)
   end subroutine comms_scatterv_int_3
+
 end module w90_comms
