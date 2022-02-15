@@ -874,9 +874,13 @@ contains
     implicit none
 
     type(w90comm_type), intent(in) :: comm
+
+    ! this error is never returned (i.e. errors here are discarded)
     type(w90_error_type), allocatable :: error
 
     logical :: found
+    integer :: lx
+    integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
     call w90_readwrite_get_keyword_block('dis_spheres', found, 0, 0, 0.0_dp, error, comm)
@@ -1001,6 +1005,15 @@ contains
     call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector('ws_search_size', found, 0, error, comm)
+    call w90_readwrite_get_range_vector('bands_plot_project', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('bands_plot_project', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector('wannier_plot_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('wannier_plot_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector('select_projections', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('select_projections', found, lx, .false., error, comm, lxa)
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
@@ -1122,7 +1135,16 @@ contains
     call w90_readwrite_get_keyword_vector('kslice_b2', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector('kslice_corner', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector('spin_kmesh', found, 0, error, comm)
-    ! BGS what about get_range_vectors and gyrotropic_band_list, kdotp_bands etc?
+    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector('kdotp_bands', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('kdotp_bands', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector('dos_project', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector('dos_project', found, lx, .false., error, comm, lxa)
+    deallocate (lxa)
     ! ends list of postw90 keywords
     if (allocated(error)) deallocate (error)
 
@@ -1969,8 +1991,8 @@ contains
     return
 
 121 if (ispostw90) then
-      call set_error_file(error, &
-                         'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', comm)
+      call set_error_file(error, 'Error opening '//trim(seedname) &
+                          //'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', comm)
     else
       call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
     end if
@@ -3418,14 +3440,15 @@ contains
     end do
 
     if (.not. found_e) then
-      call set_error_input(error, &
-                          'w90_readwrite_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+      call set_error_input(error, 'w90_readwrite_get_projections: Found '//trim(start_st) &
+                           //' but no '//trim(end_st)//' in input file', comm)
       return
     end if
 
     if (line_e <= line_s) then
       call set_error_input(error, &
-                          'w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+                           'w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st) &
+                           //' in input file', comm)
       return
     end if
 
@@ -3501,8 +3524,8 @@ contains
           if (allocated(error)) return
         else
           if (atom_data%num_species == 0) then
-            call set_error_input(error, &
-                            'w90_wannier90_readwrite_read_projection: Atom centred projection requested but no atoms defined', comm)
+            call set_error_input(error, 'w90_wannier90_readwrite_read_projection: ' &
+                                 //'Atom centred projection requested but no atoms defined', comm)
             return
           endif
           do loop = 1, atom_data%num_species
