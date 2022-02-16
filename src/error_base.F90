@@ -27,6 +27,8 @@ module w90_error_base
     final :: untrapped_error
   end type w90_error_type
 
+  integer, parameter :: code_remote = -99 ! special code for error triggered by other mpi rank
+
 contains
 
   subroutine untrapped_error(err)
@@ -50,7 +52,7 @@ contains
   subroutine recv_error(err)
     type(w90_error_type), allocatable, intent(out) :: err
     allocate (err)
-    err%code = -99 ! special error code for error triggered by other mpi rank
+    err%code = code_remote
   end subroutine recv_error
 
 end module w90_error_base

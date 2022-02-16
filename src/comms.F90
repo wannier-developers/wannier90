@@ -54,7 +54,6 @@ module w90_comms
   public :: comms_array_split
   public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
   public :: comms_bcast      ! send data from the root node
-  public :: comms_end
   public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
   !public :: comms_recv       ! accept data from one node to another
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce); data is lost on all other nodes
@@ -297,19 +296,6 @@ contains
     end do
 
   end subroutine comms_array_split
-
-  ! this shouldn't really exist
-  subroutine comms_end
-    !! Called to finalise the comms
-    implicit none
-
-#ifdef MPI
-    integer :: ierr
-
-    call mpi_finalize(ierr)
-#endif
-
-  end subroutine comms_end
 
   subroutine comms_no_sync_barrier(comm)
     !! A barrier to synchronise all nodes
