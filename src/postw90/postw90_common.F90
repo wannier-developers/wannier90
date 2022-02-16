@@ -99,7 +99,7 @@ contains
         read (file_unit, *) num_wann_loc
         if (num_wann_loc /= num_wann) then
           call set_error_fatal(error, 'Inconsistent values of num_wann in '//trim(seedname) &
-                               //'_HH_R.dat and '//trim(seedname)//'.win')
+                               //'_HH_R.dat and '//trim(seedname)//'.win', comm)
           return
         endif
         read (file_unit, *) wigner_seitz%nrpts
@@ -116,19 +116,19 @@ contains
     ! Now can allocate several arrays
     allocate (wigner_seitz%irvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating irvec in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating irvec in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%irvec = 0
     allocate (wigner_seitz%crvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating crvec in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating crvec in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%crvec = 0.0_dp
     allocate (wigner_seitz%ndegen(wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ndegen in pw90common_wanint_setup')
+      call set_error_alloc(error, 'Error in allocating ndegen in pw90common_wanint_setup', comm)
       return
     endif
     wigner_seitz%ndegen = 0
@@ -157,7 +157,7 @@ contains
     return
 
 101 call set_error_file(error, 'Error in pw90common_wanint_setup: problem opening file '// &
-                        trim(seedname)//'_HH_R.dat')
+                        trim(seedname)//'_HH_R.dat', comm)
     return !jj fixme restructure
 
   end subroutine pw90common_wanint_setup
@@ -207,13 +207,13 @@ contains
 
     allocate (kpoint_dist%int_kpts(3, kpoint_dist%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um')
+      call set_error_alloc(error, 'Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um', comm)
       return
     endif
     kpoint_dist%int_kpts = 0.0_dp
     allocate (kpoint_dist%weight(kpoint_dist%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating weight in w90_wannier90_readwrite_read_um')
+      call set_error_alloc(error, 'Error allocating weight in w90_wannier90_readwrite_read_um', comm)
       return
     endif
     kpoint_dist%weight = 0.0_dp
@@ -251,7 +251,7 @@ contains
 
     return
 
-106 call set_error_file(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file')
+106 call set_error_file(error, 'Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file', comm)
     return
 
   end subroutine pw90common_wanint_get_kpoint_file
@@ -613,40 +613,40 @@ contains
     if (.not. on_root) then
       allocate (fermi_energy_list(fermi_n), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_gyrotropic%freq_list(pw90_gyrotropic%nfreq), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating dos_project in postw90_w90_wannier90_readwrite_dist')
+        call set_error_alloc(error, 'Error allocating dos_project in postw90_w90_wannier90_readwrite_dist', comm)
         return
       endif
       if (.not. effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating eigval in postw90_w90_wannier90_readwrite_dist')
+            call set_error_alloc(error, 'Error allocating eigval in postw90_w90_wannier90_readwrite_dist', comm)
             return
           endif
         end if
         allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist', comm)
           return
         endif
       endif
@@ -688,32 +688,32 @@ contains
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist')
+          call set_error_alloc(error, 'Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
         endif
       end if
@@ -775,7 +775,7 @@ contains
       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist')
+        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
         return
       endif
     end if
@@ -793,7 +793,7 @@ contains
     ! Allocate on all nodes
     allocate (v_matrix(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating v_matrix in pw90common_wanint_data_dist')
+      call set_error_alloc(error, 'Error allocating v_matrix in pw90common_wanint_data_dist', comm)
       return
     endif
     ! u_matrix and u_matrix_opt are stored on root only
@@ -825,7 +825,7 @@ contains
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in pw90common_wanint_data_dist')
+        call set_error_alloc(error, 'Error allocating u_matrix in pw90common_wanint_data_dist', comm)
         return
       endif
     endif
@@ -857,7 +857,7 @@ contains
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating lwindow in pw90common_wanint_data_dist')
+            call set_error_alloc(error, 'Error allocating lwindow in pw90common_wanint_data_dist', comm)
             return
           endif
         endif
@@ -865,7 +865,7 @@ contains
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating ndimwin in pw90common_wanint_data_dist')
+            call set_error_alloc(error, 'Error allocating ndimwin in pw90common_wanint_data_dist', comm)
             return
           endif
         endif
@@ -975,7 +975,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, OO, &
                                        OO_R, kpt, real_lattice, mp_grid, alpha, num_wann, &
-                                       error)
+                                       error, comm)
     !================================================!
     !
     !! For alpha=0:
@@ -992,6 +992,7 @@ contains
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1001,6 +1002,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1018,7 +1020,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1063,8 +1065,8 @@ contains
 
   !================================================!
   subroutine pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
-                                           OO_R, kpt, real_lattice, mp_grid, num_wann, error, OO, &
-                                           OO_dx, OO_dy, OO_dz)
+                                           OO_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                           comm, OO, OO_dx, OO_dy, OO_dz)
     !================================================!
     !
     !! For OO:
@@ -1079,6 +1081,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1088,6 +1091,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1107,7 +1111,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1156,7 +1160,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, num_wann, ws_region, wannier_data, &
                                                     real_lattice, mp_grid, ws_distance, &
-                                                    wigner_seitz, error, OO, OO_da, OO_dadb)
+                                                    wigner_seitz, error, comm, OO, OO_da, OO_dadb)
     !================================================!
     !
     !! For OO:
@@ -1174,6 +1178,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1183,6 +1188,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1201,7 +1207,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1268,7 +1274,7 @@ contains
   subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, OO_R, oo_a_R, num_wann, &
                                                             ws_region, wannier_data, real_lattice, &
                                                             mp_grid, ws_distance, wigner_seitz, &
-                                                            error, OO, OO_da, OO_dadb)
+                                                            error, comm, OO, OO_da, OO_dadb)
     !================================================!
     ! modified version of pw90common_fourier_R_to_k_new_second_d, includes wannier centres in
     ! the exponential inside the sum (so called TB convention)
@@ -1289,6 +1295,7 @@ contains
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1298,6 +1305,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1322,7 +1330,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1424,7 +1432,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                            OO_R, kpt, real_lattice, mp_grid, num_wann, error, &
-                                           OO_true, OO_pseudo)
+                                           comm, OO_true, OO_pseudo)
     !================================================!
     !
     !! For OO_true (true vector):
@@ -1436,6 +1444,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1445,6 +1454,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1462,7 +1472,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1530,7 +1540,7 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
                                                 wigner_seitz, OO_R, kpt, real_lattice, mp_grid, &
-                                                num_wann, error, OO_da, OO_dadb)
+                                                num_wann, error, comm, OO_da, OO_dadb)
     !================================================!
     !
     !! For $$OO_{ij;dx,dy,dz}$$:
@@ -1545,6 +1555,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1554,6 +1565,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1571,7 +1583,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1630,7 +1642,8 @@ contains
   !================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
                                                         wigner_seitz, OO_R, kpt, real_lattice, &
-                                                        mp_grid, num_wann, error, OO_da, OO_dadb)
+                                                        mp_grid, num_wann, error, comm, OO_da, &
+                                                        OO_dadb)
     !================================================!
     !
     ! modified version of pw90common_fourier_R_to_k_vec_dadb, includes wannier centres in
@@ -1650,6 +1663,7 @@ contains
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1659,6 +1673,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1681,7 +1696,7 @@ contains
 
     if (ws_region%use_ws_distance) then
       call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
-                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error)
+                             mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1975,7 +1990,7 @@ contains
       tot = tot + 1.0_dp/real(wigner_seitz%ndegen(ir), dp)
     enddo
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) then
-      call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points')
+      call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points', comm)
       return
     endif
     if (print_output%timing_level > 1 .and. on_root) &

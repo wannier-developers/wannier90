@@ -169,17 +169,17 @@ contains
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
         if (pw90_berry%kubo_smearing%use_adaptive) then
-          call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity')
+          call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity', comm)
           return
         endif
       end if
       if (plot_shc) then
         if (fermi_n == 0) then
-          call set_error_input(error, 'Error: must specify Fermi energy')
+          call set_error_input(error, 'Error: must specify Fermi energy', comm)
           return
         else if (fermi_n /= 1) then
           call set_error_input(error, 'Error: kpath plot only accept one Fermi energy, ' &
-                               //'use fermi_energy instead of fermi_energy_min')
+                               //'use fermi_energy instead of fermi_energy_min', comm)
           return
         end if
       end if
@@ -303,10 +303,10 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                       HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
         if (allocated(error)) return
 
-        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, error)
+        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, error, comm)
         if (allocated(error)) return
 
         !
@@ -315,7 +315,7 @@ contains
         !
         if (pw90_kpath%bands_colour == 'spin') then
           call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error)
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error, comm)
           if (allocated(error)) return
 
           my_color(:, loop_kpt) = spn_k(:)
@@ -1186,7 +1186,7 @@ contains
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=curv')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=curv', comm)
           return
         endif
       end if
@@ -1194,7 +1194,7 @@ contains
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=morb')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=morb', comm)
           return
         endif
       end if
@@ -1207,7 +1207,7 @@ contains
             //' spin Hall conductivity in Bohr^2'
         end if
         if (fermi_n /= 1) then
-          call set_error_input(error, 'Must specify one Fermi level when kpath_task=shc')
+          call set_error_input(error, 'Must specify one Fermi level when kpath_task=shc', comm)
           return
         endif
       end if

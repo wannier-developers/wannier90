@@ -1,13 +1,13 @@
 OBJS  =  constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
         ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
-        wannier90_readwrite.o comms-abort.o readwrite.o error.o
+        wannier90_readwrite.o readwrite.o error.o error_base.o
 
 OBJS_LIBV1 = wannier_lib.o
 
 OBJS_POST  = ws_distance.o types.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
         postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
-        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o comms-abort.o readwrite.o \
-	error.o
+        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o readwrite.o \
+	error.o error_base.o
 
 LIBRARY = ../../libwannier.a
 LIBRARYV2 = ../../libwan2.a

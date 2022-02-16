@@ -131,7 +131,7 @@ contains
           if (io < 0) exit ! reached end of file
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
-            call set_error_fatal(error, 'Error in get_HH_R: orbital indices out of bounds')
+            call set_error_fatal(error, 'Error in get_HH_R: orbital indices out of bounds', comm)
             return
           endif
           if (n > 1) then
@@ -159,7 +159,7 @@ contains
         close (file_unit)
         if (ir /= wigner_seitz%nrpts) then
           write (stdout, *) 'ir=', ir, '  nrpts=', wigner_seitz%nrpts
-          call set_error_fatal(error, 'Error in get_HH_R: inconsistent nrpts values')
+          call set_error_fatal(error, 'Error in get_HH_R: inconsistent nrpts values', comm)
           return
         endif
         do ir = 1, wigner_seitz%nrpts
@@ -176,7 +176,7 @@ contains
         !
         if (abs(scissors_shift) > 1.0e-7_dp) then
           call set_error_input(error, 'Error in get_HH_R: scissors shift not implemented for ' &
-                               //'effective_model=T')
+                               //'effective_model=T', comm)
           return
         endif
       endif
@@ -258,7 +258,7 @@ contains
     return
 
 101 call set_error_file(error, 'Error in get_HH_R: problem opening file '// &
-                        trim(seedname)//'_HH_R.dat')
+                        trim(seedname)//'_HH_R.dat', comm)
     return !fixme restructure
 
   end subroutine get_HH_R
@@ -336,7 +336,7 @@ contains
     !
     if (effective_model) then
       if (.not. allocated(HH_R)) then
-        call set_error_fatal(error, 'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first')
+        call set_error_fatal(error, 'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first', comm)
         return
       endif
       AA_R = cmplx_0
@@ -357,7 +357,7 @@ contains
           if (io < 0) exit
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
-            call set_error_fatal(error, 'Error in get_AA_R: orbital indices out of bounds')
+            call set_error_fatal(error, 'Error in get_AA_R: orbital indices out of bounds', comm)
             return
           endif
           if (n > 1) then
@@ -376,7 +376,7 @@ contains
         ! elements is used, but it cannot be larger
         if (ir > nrpts) then
           write (stdout, *) 'ir=', ir, '  nrpts=', nrpts
-          call set_error_fatal(error, 'Error in get_AA_R: inconsistent nrpts values')
+          call set_error_fatal(error, 'Error in get_AA_R: inconsistent nrpts values', comm)
           return
         endif
       endif
@@ -421,15 +421,15 @@ contains
       read (mmn_in, *, err=102, end=102) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours', comm)
         return
       endif
 
@@ -469,7 +469,7 @@ contains
               nn = inn
             else
               call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
@@ -477,7 +477,7 @@ contains
         if (nn .eq. 0) then
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call set_error_fatal(error, 'Neighbour not found')
+          call set_error_fatal(error, 'Neighbour not found', comm)
           return
         end if
         nn_count = nn_count + 1 !Check: can also be place after nn=inn (?)
@@ -546,11 +546,11 @@ contains
       call io_stopwatch_stop('get_oper: get_AA_R', timer)
     return
 
-101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return
-102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn', comm)
     return
-103 call set_error_file(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat')
+103 call set_error_file(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat', comm)
     return !fixme jj restructure
 
   end subroutine get_AA_R
@@ -621,7 +621,7 @@ contains
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) then
-        call set_error_fatal(error, 'Error: scissors correction not yet implemented for BB_R')
+        call set_error_fatal(error, 'Error: scissors correction not yet implemented for BB_R', comm)
         return
       endif
 
@@ -650,15 +650,15 @@ contains
       read (mmn_in, *, err=104, end=104) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours', comm)
         return
       endif
 
@@ -688,7 +688,7 @@ contains
               nn = inn
             else
               call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
@@ -696,7 +696,7 @@ contains
         if (nn .eq. 0) then
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call set_error_fatal(error, 'Neighbour not found')
+          call set_error_fatal(error, 'Neighbour not found', comm)
           return
         end if
 
@@ -730,9 +730,9 @@ contains
       call io_stopwatch_stop('get_oper: get_BB_R', timer)
     return
 
-103 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+103 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return
-104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn', comm)
     return
 
   end subroutine get_BB_R
@@ -802,7 +802,7 @@ contains
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) then
-        call set_error_fatal(error, 'Error: scissors correction not yet implemented for CC_R')
+        call set_error_fatal(error, 'Error: scissors correction not yet implemented for CC_R', comm)
         return
       endif
 
@@ -838,15 +838,15 @@ contains
         read (uHu_in, err=106, end=106) nb_tmp, nkp_tmp, nntot_tmp
       endif
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of bands')
+        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.uHu has not the right number of nearest neighbours', comm)
         return
       endif
 
@@ -922,9 +922,9 @@ contains
       call io_stopwatch_stop('get_oper: get_CC_R', timer)
     return
 
-105 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu')
+105 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu', comm)
     return
-106 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uHu')
+106 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uHu', comm)
     return !jj fixme restructure
 
   end subroutine get_CC_R
@@ -1011,15 +1011,15 @@ contains
       write (stdout, '(a)') trim(header)
       read (uIu_in, err=108, end=108) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of bands')
+        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.uIu has not the right number of nearest neighbours', comm)
         return
       endif
 
@@ -1099,9 +1099,9 @@ contains
       call io_stopwatch_stop('get_oper: get_FF_R', timer)
     return
 
-107 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu')
+107 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uIu', comm)
     return
-108 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uIu')
+108 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uIu', comm)
     return
 
   end subroutine get_FF_R
@@ -1197,11 +1197,11 @@ contains
         read (spn_in, err=110, end=110) nb_tmp, nkp_tmp
       endif
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of bands')
+        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of k-points', comm)
         return
       endif
       if (pw90_oper_read%spn_formatted) then
@@ -1224,7 +1224,7 @@ contains
       else
         allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating spm_temp in get_SS_R')
+          call set_error_alloc(error, 'Error in allocating spm_temp in get_SS_R', comm)
           return
         endif
         do ik = 1, num_kpts
@@ -1244,7 +1244,7 @@ contains
         end do
         deallocate (spn_temp, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error in deallocating spm_temp in get_SS_R')
+          call set_error_dealloc(error, 'Error in deallocating spm_temp in get_SS_R', comm)
           return
         endif
       endif
@@ -1275,9 +1275,9 @@ contains
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SS_R', timer)
     return
 
-109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
+109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn', comm)
     return
-110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
+110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn', comm)
     return
 
   end subroutine get_SS_R
@@ -1419,11 +1419,11 @@ contains
         read (spn_in, err=110, end=110) nb_tmp, nkp_tmp
       endif
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of bands')
+        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.spn has wrong number of k-points', comm)
         return
       endif
       if (pw90_oper_read%spn_formatted) then
@@ -1446,7 +1446,7 @@ contains
       else
         allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating spm_temp in get_SHC_R')
+          call set_error_alloc(error, 'Error in allocating spm_temp in get_SHC_R', comm)
           return
         endif
         do ik = 1, num_kpts
@@ -1466,7 +1466,7 @@ contains
         end do
         deallocate (spn_temp, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error in deallocating spm_temp in get_SHC_R')
+          call set_error_dealloc(error, 'Error in deallocating spm_temp in get_SHC_R', comm)
           return
         endif
       endif
@@ -1522,15 +1522,15 @@ contains
       read (mmn_in, *, err=102, end=102) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.mmn has wrong number of nearest neighbours', comm)
         return
       endif
 
@@ -1585,7 +1585,7 @@ contains
               nn = inn
             else
               call set_error_fatal(error, 'Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found')
+                   & More than one matching nearest neighbour found', comm)
               return
             endif
           endif
@@ -1593,7 +1593,7 @@ contains
         if (nn .eq. 0) then
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call set_error_fatal(error, 'Neighbour not found')
+          call set_error_fatal(error, 'Neighbour not found', comm)
           return
         end if
         nn_count = nn_count + 1 !Check: can also be place after nn=inn (?)
@@ -1675,13 +1675,13 @@ contains
       call io_stopwatch_stop('get_oper: get_SHC_R', timer)
     return
 
-101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn')
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return
-102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn')
+102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn', comm)
     return
-109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn')
+109 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.spn', comm)
     return
-110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn')
+110 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.spn', comm)
     return
 
   end subroutine get_SHC_R
@@ -1748,7 +1748,7 @@ contains
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) then
-        call set_error_fatal(error, 'Error: scissors correction not yet implemented for SBB_R')
+        call set_error_fatal(error, 'Error: scissors correction not yet implemented for SBB_R', comm)
         return
       endif
 
@@ -1774,15 +1774,15 @@ contains
       write (stdout, '(a)') trim(header)
       read (sHu_in, err=112, end=112) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of bands')
+        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.sHu has not the right number of nearest neighbours', comm)
         return
       endif
 
@@ -1844,9 +1844,9 @@ contains
       call io_stopwatch_stop('get_oper: get_SBB_R', timer)
     return
 
-111 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu')
+111 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu', comm)
     return
-112 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sHu')
+112 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sHu', comm)
     return !fixme jj restructure
 
   end subroutine get_SBB_R
@@ -1913,7 +1913,7 @@ contains
     if (on_root) then
 
       if (abs(scissors_shift) > 1.0e-7_dp) then
-        call set_error_fatal(error, 'Error: scissors correction not yet implemented for SAA_R')
+        call set_error_fatal(error, 'Error: scissors correction not yet implemented for SAA_R', comm)
         return
       endif
 
@@ -1939,15 +1939,15 @@ contains
       write (stdout, '(a)') trim(header)
       read (sIu_in, err=114, end=114) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) then
-        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of bands')
+        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of bands', comm)
         return
       endif
       if (nkp_tmp .ne. num_kpts) then
-        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of k-points')
+        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of k-points', comm)
         return
       endif
       if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of nearest neighbours')
+        call set_error_fatal(error, trim(seedname)//'.sIu has not the right number of nearest neighbours', comm)
         return
       endif
 
@@ -2009,9 +2009,9 @@ contains
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_stop('get_oper: get_SAA_R', timer)
     return
 
-113 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu')
+113 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu', comm)
     return
-114 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sIu')
+114 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sIu', comm)
     return !jj fixme restructure
 
   end subroutine get_SAA_R

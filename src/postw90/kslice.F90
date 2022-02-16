@@ -166,27 +166,27 @@ contains
     heatmap = plot_curv .or. plot_morb .or. plot_shc
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call set_error_input(error, 'Error: spin-colored Fermi lines not allowed in ' &
-                           //'curv/morb/shc heatmap plots')
+                           //'curv/morb/shc heatmap plots', comm)
       return
     end if
     if (plot_shc) then
       if (pw90_berry%kubo_smearing%use_adaptive) then
-        call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity')
+        call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity', comm)
         return
       end if
       if (fermi_n == 0) then
-        call set_error_input(error, 'Error: must specify Fermi energy')
+        call set_error_input(error, 'Error: must specify Fermi energy', comm)
         return
       else if (fermi_n /= 1) then
         call set_error_input(error, 'Error: kpath plot only accept one Fermi energy, ' &
-                             //'use fermi_energy instead of fermi_energy_min')
+                             //'use fermi_energy instead of fermi_energy_min', comm)
         return
       end if
     end if
 
     if (on_root) then
       call kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc, &
-                             stdout, pw90_berry, fermi_energy_list, error)
+                             stdout, pw90_berry, fermi_energy_list, error, comm)
       if (allocated(error)) return
     end if
 
@@ -262,7 +262,7 @@ contains
     areab1b2 = sqrt(zvec(1)**2 + zvec(2)**2 + zvec(3)**2)
     if (areab1b2 < eps8) then
       call set_error_fatal(error, 'Error in kslice: Vectors pw90_kslice_b1 and pw90_kslice_b2 ' &
-                           //'not linearly independent')
+                           //'not linearly independent', comm)
       return
     endif
     ! This is the unit vector zvec/|zvec| which completes the triad
@@ -270,7 +270,7 @@ contains
     bvec(3, :) = zvec(:)/areab1b2
     ! Now that we have bvec(3,:), we can compute the dual vectors
     ! avec_2d as in the 3D case
-    call utility_recip_lattice(bvec, avec_2d, rdum, error)
+    call utility_recip_lattice(bvec, avec_2d, rdum, error, comm)
     if (allocated(error)) return
 
     ! Moduli b1,b2,y_vec
@@ -340,7 +340,7 @@ contains
       if (plot_fermi_lines) then
         if (fermi_lines_color) then
           call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error)
+                           SS_R, kpt, real_lattice, spn_k, mp_grid, num_wann, error, comm)
           if (allocated(error)) return
 
           do n = 1, num_wann
@@ -362,10 +362,10 @@ contains
           Delta_k = max(b1mod/pw90_kslice%kmesh2d(1), b2mod/pw90_kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
-                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error)
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
           if (allocated(error)) return
 
-          call utility_diagonalize(HH, num_wann, eig, UU, error)
+          call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
           if (allocated(error)) return
 
         endif
@@ -961,15 +961,17 @@ contains
   !================================================!
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, &
-                               plot_shc, stdout, pw90_berry, fermi_energy_list, error)
+                               plot_shc, stdout, pw90_berry, fermi_energy_list, error, comm)
     !================================================!
 
     use w90_constants, only: dp
     use w90_postw90_types, only: pw90_berry_mod_type
+    use w90_comms, only: w90comm_type
 
     type(pw90_berry_mod_type), intent(in) :: pw90_berry
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: stdout
     logical, intent(in) :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
 
@@ -984,7 +986,8 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (plot_fermi_lines) then
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=fermi_lines')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=fermi_lines', &
+                             comm)
         return
       endif
       select case (fermi_lines_color)
@@ -1004,13 +1007,13 @@ contains
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
       endif
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=curv')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=curv', comm)
         return
       endif
     elseif (plot_morb) then
       write (stdout, '(/,3x,a)') '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=morb')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=morb', comm)
         return
       endif
     elseif (plot_shc) then
@@ -1022,7 +1025,7 @@ contains
           //'of spin Hall conductivity in Bohr^2'
       endif
       if (fermi_n /= 1) then
-        call set_error_input(error, 'Must specify one Fermi level when kslice_task=shc')
+        call set_error_input(error, 'Must specify one Fermi level when kslice_task=shc', comm)
         return
       endif
     endif

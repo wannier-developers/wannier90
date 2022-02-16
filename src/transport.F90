@@ -68,6 +68,7 @@ module w90_transport
 
   use w90_constants, only: dp
   use w90_error
+  use w90_comms
 
   implicit none
 
@@ -88,7 +89,7 @@ contains
                        real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        bands_plot_mode, have_disentangled, lsitesymmetry, seedname, stdout, &
-                       timer, error)
+                       timer, error, comm)
     !================================================!
     !
     !! Main transport subroutine
@@ -120,6 +121,7 @@ contains
     type(ham_logical_type), intent(inout)       :: ham_logical
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -189,7 +191,7 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, timer, error, transport%mode)
+                               stdout, timer, error, transport%mode, comm)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
@@ -197,19 +199,19 @@ contains
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, timer, error, &
-                                lsitesymmetry)
+                                lsitesymmetry, comm)
         if (allocated(error)) return
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error)
+                                    print_output%timing_level, seedname, timer, error, comm)
         endif
 
         if (allocated(error)) return
 
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                            print_output%timing_level, stdout, timer, error)
+                            print_output%timing_level, stdout, timer, error, comm)
         if (allocated(error)) return
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
@@ -217,7 +219,7 @@ contains
                                  num_pl, num_wann, one_dim_vec, stdout, timer)
 
         call tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, print_output%timing_level, seedname, timer, error)
+                         num_wann, print_output%timing_level, seedname, timer, error, comm)
         if (allocated(error)) return
 
         if (output_file%write_xyz) then
@@ -225,7 +227,7 @@ contains
                               num_wann, seedname, stdout)
         endif
       end if
-      call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname, timer, error)
+      call tran_bulk(transport, hB0, hB1, print_output%timing_level, stdout, seedname, timer, error, comm)
       if (allocated(error)) return
     end if
 
@@ -235,7 +237,7 @@ contains
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, &
                                ham_r, real_lattice, wannier_centres_translated, irvec, mp_grid, &
                                ndegen, num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, &
-                               stdout, timer, error, transport%mode)
+                               stdout, timer, error, transport%mode, comm)
         if (allocated(error)) return
 
         call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, &
@@ -243,18 +245,18 @@ contains
                                 kpt_latt, real_lattice, wannier_data%centres, &
                                 wannier_centres_translated, irvec, shift_vec, nrpts, num_bands, &
                                 num_kpts, num_wann, have_disentangled, stdout, timer, error, &
-                                lsitesymmetry)
+                                lsitesymmetry, comm)
         if (allocated(error)) return
 
         if (output_file%write_hr) then
           call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error)
+                                    print_output%timing_level, seedname, timer, error, comm)
           if (allocated(error)) return
         endif
 
         call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                            print_output%timing_level, stdout, timer, error)
+                            print_output%timing_level, stdout, timer, error, comm)
         if (allocated(error)) return
 
         call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, &
@@ -266,14 +268,14 @@ contains
         call tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            have_disentangled, wannier_centres_translated, stdout, &
-                                           seedname, timer, error)
+                                           seedname, timer, error, comm)
         if (allocated(error)) return
 
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning, transport, atom_data, wannier_data, &
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
-                               irvec_max, output_file%write_xyz, stdout, seedname, timer, error)
+                               irvec_max, output_file%write_xyz, stdout, seedname, timer, error, comm)
         if (allocated(error)) return
 
         if (output_file%write_xyz) call tran_write_xyz(atom_data, transport, &
@@ -288,11 +290,11 @@ contains
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
                                     hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname, &
-                                    timer, error)
+                                    timer, error, comm)
         if (allocated(error)) return
       endif
       call tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, print_output%timing_level, &
-                    stdout, seedname, timer, error)
+                    stdout, seedname, timer, error, comm)
       if (allocated(error)) return
 
     end if
@@ -302,42 +304,42 @@ contains
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hR1 in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hR1 in tran_main', comm)
         return
       endif
     end if
     if (allocated(hR0)) then
       deallocate (hR0, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hR0 in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hR0 in tran_main', comm)
         return
       endif
     end if
     if (allocated(hL1)) then
       deallocate (hL1, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hL1 in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hL1 in tran_main', comm)
         return
       endif
     end if
     if (allocated(hB1)) then
       deallocate (hB1, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hB1 in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hB1 in tran_main', comm)
         return
       endif
     end if
     if (allocated(hB0)) then
       deallocate (hB0, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hB0 in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hB0 in tran_main', comm)
         return
       endif
     end if
     if (allocated(hr_one_dim)) then
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating hr_one_dim in tran_main')
+        call set_error_dealloc(error, 'Error in deallocating hr_one_dim in tran_main', comm)
         return
       endif
     end if
@@ -347,7 +349,7 @@ contains
   !================================================!
   subroutine tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                             irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, timing_level, &
-                            stdout, timer, error)
+                            stdout, timer, error, comm)
     !================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -366,6 +368,7 @@ contains
     type(real_space_ham_type), intent(in) :: real_space_ham
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -402,7 +405,7 @@ contains
     end do
     if (j .ne. 1) then
       write (stdout, '(i3,a)') j, ' : 1-D LATTICE VECTOR NOT DEFINED'
-      call set_error_fatal(error, 'Error: 1-d lattice vector not defined in tran_reduce_hr')
+      call set_error_fatal(error, 'Error: 1-d lattice vector not defined in tran_reduce_hr', comm)
       return
     end if
 
@@ -425,7 +428,7 @@ contains
 
     allocate (hr_one_dim(num_wann, num_wann, -irvec_max:irvec_max), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hr_one_dim in tran_reduce_hr')
+      call set_error_alloc(error, 'Error in allocating hr_one_dim in tran_reduce_hr', comm)
       return
     endif
     hr_one_dim = 0.0_dp
@@ -452,7 +455,7 @@ contains
 
     if (nrpts_tmp .ne. nrpts_one_dim) then
       write (stdout, '(a)') 'FAILED TO EXTRACT 1-D HAMILTONIAN'
-      call set_error_fatal(error, 'Error: cannot extract 1d hamiltonian in tran_reduce_hr')
+      call set_error_fatal(error, 'Error: cannot extract 1d hamiltonian in tran_reduce_hr', comm)
       return
     end if
 
@@ -632,7 +635,7 @@ contains
 
   !================================================!
   subroutine tran_get_ht(fermi_energy_list, transport, hB0, hB1, hr_one_dim, irvec_max, num_pl, &
-                         num_wann, timing_level, seedname, timer, error)
+                         num_wann, timing_level, seedname, timer, error, comm)
     !================================================!
     !
     !!  Construct h00 and h01
@@ -652,6 +655,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
@@ -676,7 +680,7 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
       call set_error_fatal(error, "Error in tran_get_ht: nfermi>1. " &
-                           //"Set the fermi level using the input parameter 'fermi_evel'")
+                           //"Set the fermi level using the input parameter 'fermi_evel'", comm)
       return
     endif
 
@@ -684,12 +688,12 @@ contains
 
     allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hB0 in tran_get_ht')
+      call set_error_alloc(error, 'Error in allocating hB0 in tran_get_ht', comm)
       return
     endif
     allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hB1 in tran_get_ht')
+      call set_error_alloc(error, 'Error in allocating hB1 in tran_get_ht', comm)
       return
     endif
 
@@ -745,7 +749,7 @@ contains
   end subroutine tran_get_ht
 
   !================================================!
-  subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname, timer, error)
+  subroutine tran_bulk(transport, hB0, hB1, timing_level, stdout, seedname, timer, error, comm)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -766,6 +770,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -787,52 +792,52 @@ contains
 
     allocate (tot(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tot in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating tot in tran_bulk', comm)
       return
     endif
     allocate (tott(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tott in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating tott in tran_bulk', comm)
       return
     endif
     allocate (g_B(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_B in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating g_B in tran_bulk', comm)
       return
     endif
     allocate (gL(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating gL in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating gL in tran_bulk', comm)
       return
     endif
     allocate (gR(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating gR in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating gR in tran_bulk', comm)
       return
     endif
     allocate (sLr(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sLr in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating sLr in tran_bulk', comm)
       return
     endif
     allocate (sRr(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sRr in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating sRr in tran_bulk', comm)
       return
     endif
     allocate (s1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s1 in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating s1 in tran_bulk', comm)
       return
     endif
     allocate (s2(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s2 in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating s2 in tran_bulk', comm)
       return
     endif
     allocate (c1(transport%num_bb, transport%num_bb), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating c1 in tran_bulk')
+      call set_error_alloc(error, 'Error in allocating c1 in tran_bulk', comm)
       return
     endif
 
@@ -853,16 +858,16 @@ contains
     if (transport%read_ht) then
       allocate (hB0(transport%num_bb, transport%num_bb), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hB0 in tran_bulk')
+        call set_error_alloc(error, 'Error in allocating hB0 in tran_bulk', comm)
         return
       endif
       allocate (hB1(transport%num_bb, transport%num_bb), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hB1 in tran_bulk')
+        call set_error_alloc(error, 'Error in allocating hB1 in tran_bulk', comm)
         return
       endif
       filename = trim(seedname)//'_htB.dat'
-      call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, error)
+      call tran_read_htX(transport%num_bb, hB0, hB1, filename, stdout, error, comm)
       if (allocated(error)) return
     end if
 
@@ -882,9 +887,9 @@ contains
       ! retarded Green
 
       e_scan_cmp = e_scan + eta
-      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, error)
+      call tran_transfer(tot, tott, hB0, hB1, e_scan_cmp, transport%num_bb, stdout, error, comm)
       if (allocated(error)) return
-      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, error)
+      call tran_green(tot, tott, hB0, hB1, e_scan, g_B, 0, 1, transport%num_bb, stdout, error, comm)
       if (allocated(error)) return
 
       ! compute S_Lr and S_Rr
@@ -940,52 +945,52 @@ contains
 
     deallocate (c1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating c1 in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating c1 in tran_bulk', comm)
       return
     endif
     deallocate (s2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s2 in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_bulk', comm)
       return
     endif
     deallocate (s1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s1 in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_bulk', comm)
       return
     endif
     deallocate (sRr, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sRr in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating sRr in tran_bulk', comm)
       return
     endif
     deallocate (sLr, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sLr in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating sLr in tran_bulk', comm)
       return
     endif
     deallocate (gR, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating gR in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating gR in tran_bulk', comm)
       return
     endif
     deallocate (gL, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating gL in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating gL in tran_bulk', comm)
       return
     endif
     deallocate (g_B, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_B in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating g_B in tran_bulk', comm)
       return
     endif
     deallocate (tott, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tott in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating tott in tran_bulk', comm)
       return
     endif
     deallocate (tot, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tot in tran_bulk')
+      call set_error_dealloc(error, 'Error in deallocating tot in tran_bulk', comm)
       return
     endif
 
@@ -997,7 +1002,7 @@ contains
 
   !================================================!
   subroutine tran_lcr(transport, hC, hCR, hL0, hL1, hLC, hR0, hR1, timing_level, stdout, seedname, &
-                      timer, error)
+                      timer, error, comm)
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -1023,6 +1028,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -1070,17 +1076,17 @@ contains
 
     allocate (hCband(2*KL + KU + 1, transport%num_cc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hCband in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating hCband in tran_lcr', comm)
       return
     endif
     allocate (hLC_cmp(transport%num_ll, transport%num_lc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hLC_cmp in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating hLC_cmp in tran_lcr', comm)
       return
     endif
     allocate (hCR_cmp(transport%num_cr, transport%num_rr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hCR_cmp in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating hCR_cmp in tran_lcr', comm)
       return
     endif
 
@@ -1088,58 +1094,58 @@ contains
     if (transport%read_ht) then
       allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr', comm)
         return
       endif
       allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr', comm)
         return
       endif
       allocate (hC(transport%num_cc, transport%num_cc), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hC in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating hC in tran_lcr', comm)
         return
       endif
       allocate (hLC(transport%num_ll, transport%num_lc), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hLC in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating hLC in tran_lcr', comm)
         return
       endif
       allocate (hCR(transport%num_cr, transport%num_rr), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating hCR in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating hCR in tran_lcr', comm)
         return
       endif
 
       filename = trim(seedname)//'_htL.dat'
-      call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, error)
+      call tran_read_htX(transport%num_ll, hL0, hL1, filename, stdout, error, comm)
       if (allocated(error)) return
 
       if (.not. transport%use_same_lead) then
         allocate (hR0(transport%num_rr, transport%num_rr), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr')
+          call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr', comm)
           return
         endif
         allocate (hR1(transport%num_rr, transport%num_rr), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr')
+          call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr', comm)
           return
         endif
         filename = trim(seedname)//'_htR.dat'
-        call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, error)
+        call tran_read_htX(transport%num_rr, hR0, hR1, filename, stdout, error, comm)
         if (allocated(error)) return
       end if
 
       filename = trim(seedname)//'_htC.dat'
-      call tran_read_htC(transport%num_cc, hC, filename, stdout, error)
+      call tran_read_htC(transport%num_cc, hC, filename, stdout, error, comm)
       if (allocated(error)) return
       filename = trim(seedname)//'_htLC.dat'
-      call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, error)
+      call tran_read_htXY(transport%num_ll, transport%num_lc, hLC, filename, stdout, error, comm)
       if (allocated(error)) return
       filename = trim(seedname)//'_htCR.dat'
-      call tran_read_htXY(transport%num_cr, transport%num_rr, hCR, filename, stdout, error)
+      call tran_read_htXY(transport%num_cr, transport%num_rr, hCR, filename, stdout, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1151,7 +1157,7 @@ contains
     end do
     deallocate (hC, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hC in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hC in tran_lcr', comm)
       return
     endif
 
@@ -1159,7 +1165,7 @@ contains
     hLC_cmp(:, :) = cmplx(hLC(:, :), kind=dp)
     deallocate (hLC, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hLC in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hLC in tran_lcr', comm)
       return
     endif
 
@@ -1167,95 +1173,95 @@ contains
     hCR_cmp(:, :) = cmplx(hCR(:, :), kind=dp)
     deallocate (hCR, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hCR in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hCR in tran_lcr', comm)
       return
     endif
 
     allocate (totL(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating totL in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating totL in tran_lcr', comm)
       return
     endif
     allocate (tottL(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tottL in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating tottL in tran_lcr', comm)
       return
     endif
     if (.not. transport%use_same_lead) then
       allocate (totR(transport%num_rr, transport%num_rr), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating totR in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating totR in tran_lcr', comm)
         return
       endif
       allocate (tottR(transport%num_rr, transport%num_rr), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating tottR in tran_lcr')
+        call set_error_alloc(error, 'Error in allocating tottR in tran_lcr', comm)
         return
       endif
     end if
     allocate (g_surf_L(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_surf_L in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating g_surf_L in tran_lcr', comm)
       return
     endif
     allocate (g_surf_R(transport%num_rr, transport%num_rr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_surf_R in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating g_surf_R in tran_lcr', comm)
       return
     endif
     allocate (g_C_inv(2*KL + KU + 1, transport%num_cc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_C_inv in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating g_C_inv in tran_lcr', comm)
       return
     endif
     allocate (g_C(transport%num_cc, transport%num_cc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_C in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating g_C in tran_lcr', comm)
       return
     endif
     allocate (sLr(transport%num_lc, transport%num_lc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sLr in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating sLr in tran_lcr', comm)
       return
     endif
     allocate (sRr(transport%num_cr, transport%num_cr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sRr in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating sRr in tran_lcr', comm)
       return
     endif
     allocate (gL(transport%num_lc, transport%num_lc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating gL in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating gL in tran_lcr', comm)
       return
     endif
     allocate (gR(transport%num_cr, transport%num_cr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating gR in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating gR in tran_lcr', comm)
       return
     endif
     allocate (c1(transport%num_lc, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating c1 in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating c1 in tran_lcr', comm)
       return
     endif
     allocate (c2(transport%num_cr, transport%num_rr), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating c2 in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating c2 in tran_lcr', comm)
       return
     endif
     allocate (s1(KC, KC), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s1 in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating s1 in tran_lcr', comm)
       return
     endif
     allocate (s2(KC, KC), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s2 in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating s2 in tran_lcr', comm)
       return
     endif
     allocate (ipiv(transport%num_cc), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ipiv in tran_lcr')
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_lcr', comm)
       return
     endif
 
@@ -1275,11 +1281,11 @@ contains
       e_scan_cmp = e_scan + eta
 
       ! Surface green function for the left lead : g_surf_L
-      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, error)
+      call tran_transfer(totL, tottL, hL0, hL1, e_scan_cmp, transport%num_ll, stdout, error, comm)
       if (allocated(error)) return
 
       call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_L, -1, 1, transport%num_ll, stdout, &
-                      error)
+                      error, comm)
       if (allocated(error)) return
 
       ! Self-energy (Sigma_L) : sLr = (hLC_cmp)^+ * g_surf_L * hLC_cmp
@@ -1293,15 +1299,15 @@ contains
       ! Surface green function for the right lead : g_surf_R
       if (transport%use_same_lead) then
         call tran_green(totL, tottL, hL0, hL1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
-                        error)
+                        error, comm)
         if (allocated(error)) return
 
       else
-        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, error)
+        call tran_transfer(totR, tottR, hR0, hR1, e_scan_cmp, transport%num_rr, stdout, error, comm)
         if (allocated(error)) return
 
         call tran_green(totR, tottR, hR0, hR1, e_scan, g_surf_R, 1, 1, transport%num_rr, stdout, &
-                        error)
+                        error, comm)
         if (allocated(error)) return
       end if
 
@@ -1348,7 +1354,7 @@ contains
                  transport%num_cc, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
-        call set_error_fatal(error, 'tran_lcr: problem in ZGBSV')
+        call set_error_fatal(error, 'tran_lcr: problem in ZGBSV', comm)
         return
       end if
 
@@ -1406,106 +1412,106 @@ contains
 
     deallocate (ipiv, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_lcr', comm)
       return
     endif
     deallocate (s2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s2 in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_lcr', comm)
       return
     endif
     deallocate (s1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s1 in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_lcr', comm)
       return
     endif
     deallocate (c2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating c2 in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating c2 in tran_lcr', comm)
       return
     endif
     deallocate (c1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating c1 in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating c1 in tran_lcr', comm)
       return
     endif
     deallocate (gR, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating gR in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating gR in tran_lcr', comm)
       return
     endif
     deallocate (gL, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating gL in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating gL in tran_lcr', comm)
       return
     endif
     deallocate (sRr, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sRr in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating sRr in tran_lcr', comm)
       return
     endif
     deallocate (sLr, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating sLr in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating sLr in tran_lcr', comm)
       return
     endif
     deallocate (g_C, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_C in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating g_C in tran_lcr', comm)
       return
     endif
     deallocate (g_C_inv, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_C_inv in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating g_C_inv in tran_lcr', comm)
       return
     endif
     deallocate (g_surf_R, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_surf_R in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating g_surf_R in tran_lcr', comm)
       return
     endif
     deallocate (g_surf_L, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_surf_L in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating g_surf_L in tran_lcr', comm)
       return
     endif
     if (allocated(tottR)) then
       deallocate (tottR, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating tottR in tran_lcr')
+        call set_error_dealloc(error, 'Error in deallocating tottR in tran_lcr', comm)
         return
       endif
     endif
     if (allocated(totR)) then
       deallocate (totR, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating totR in tran_lcr')
+        call set_error_dealloc(error, 'Error in deallocating totR in tran_lcr', comm)
         return
       endif
     endif
     deallocate (tottL, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tottL in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating tottL in tran_lcr', comm)
       return
     endif
     deallocate (totL, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating totL in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating totL in tran_lcr', comm)
       return
     endif
     deallocate (hCR_cmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hCR_cmp in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hCR_cmp in tran_lcr', comm)
       return
     endif
     deallocate (hLC_cmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hLC_cmp in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hLC_cmp in tran_lcr', comm)
       return
     endif
     deallocate (hCband, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating hCband in tran_lcr')
+      call set_error_dealloc(error, 'Error in deallocating hCband in tran_lcr', comm)
       return
     endif
 
@@ -1516,7 +1522,7 @@ contains
   end subroutine tran_lcr
 
   !================================================!
-  subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, error)
+  subroutine tran_transfer(tot, tott, h_00, h_01, e_scan_cmp, nxx, stdout, error, comm)
     !================================================!
     !
     ! iterative construction of the transfer matrix
@@ -1532,6 +1538,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) ::  e_scan_cmp
@@ -1551,47 +1558,47 @@ contains
 
     allocate (ipiv(nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ipiv in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_transfer', comm)
       return
     endif
     allocate (tsum(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tsum in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating tsum in tran_transfer', comm)
       return
     endif
     allocate (tsumt(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tsumt in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating tsumt in tran_transfer', comm)
       return
     endif
     allocate (t11(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating t11 in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating t11 in tran_transfer', comm)
       return
     endif
     allocate (t12(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating t12 in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating t12 in tran_transfer', comm)
       return
     endif
     allocate (s1(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s1 in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating s1 in tran_transfer', comm)
       return
     endif
     allocate (s2(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s2 in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating s2 in tran_transfer', comm)
       return
     endif
     allocate (tau(nxx, nxx, 2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tau in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating tau in tran_transfer', comm)
       return
     endif
     allocate (taut(nxx, nxx, 2), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating taut in tran_transfer')
+      call set_error_alloc(error, 'Error in allocating taut in tran_transfer', comm)
       return
     endif
 
@@ -1617,7 +1624,7 @@ contains
     call ZGESV(nxx, nxx, t12, nxx, ipiv, t11, nxx, info)
     if (info .ne. 0) then
       write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-      call set_error_fatal(error, 'tran_transfer: problem in ZGESV 1')
+      call set_error_fatal(error, 'tran_transfer: problem in ZGESV 1', comm)
       return
     end if
 
@@ -1666,7 +1673,7 @@ contains
       call ZGESV(nxx, nxx, s1, nxx, ipiv, s2, nxx, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-        call set_error_fatal(error, 'tran_transfer: problem in ZGESV 2')
+        call set_error_fatal(error, 'tran_transfer: problem in ZGESV 2', comm)
         return
       end if
 
@@ -1724,53 +1731,53 @@ contains
     end do
 
     if (conver .gt. eps7 .or. conver2 .gt. eps7) then
-      call set_error_unconv(error, 'Error in converging transfer matrix in tran_transfer')
+      call set_error_unconv(error, 'Error in converging transfer matrix in tran_transfer', comm)
       return
     endif
 
     deallocate (taut, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating taut in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating taut in tran_transfer', comm)
       return
     endif
     deallocate (tau, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tau in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating tau in tran_transfer', comm)
       return
     endif
     deallocate (s2, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s2 in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_transfer', comm)
       return
     endif
     deallocate (s1, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s1 in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_transfer', comm)
       return
     endif
     deallocate (t12, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating t12 in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating t12 in tran_transfer', comm)
       return
     endif
     deallocate (t11, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating t11 in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating t11 in tran_transfer', comm)
       return
     endif
     deallocate (tsumt, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tsumt in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating tsumt in tran_transfer', comm)
       return
     endif
     deallocate (tsum, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating tsum in tran_transfer')
+      call set_error_dealloc(error, 'Error in deallocating tsum in tran_transfer', comm)
       return
     endif
     deallocate (ipiv, stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in deallocating ipiv in tran_transfer')
+      call set_error_alloc(error, 'Error in deallocating ipiv in tran_transfer', comm)
       return
     endif
 
@@ -1779,7 +1786,7 @@ contains
   end subroutine tran_transfer
 
   !================================================!
-  subroutine tran_green(tot, tott, h_00, h_01, e_scan, g, igreen, invert, nxx, stdout, error)
+  subroutine tran_green(tot, tott, h_00, h_01, e_scan, g, igreen, invert, nxx, stdout, error, comm)
     !================================================!
     !   construct green's functions
     !
@@ -1797,6 +1804,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     integer, intent(in) :: igreen
@@ -1814,32 +1822,32 @@ contains
 
     allocate (ipiv(nxx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ipiv in tran_green')
+      call set_error_alloc(error, 'Error in allocating ipiv in tran_green', comm)
       return
     endif
     allocate (g_inv(nxx, nxx))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_inv in tran_green')
+      call set_error_alloc(error, 'Error in allocating g_inv in tran_green', comm)
       return
     endif
     allocate (eh_00(nxx, nxx))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating eh_00 in tran_green')
+      call set_error_alloc(error, 'Error in allocating eh_00 in tran_green', comm)
       return
     endif
     allocate (c1(nxx, nxx))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating c1 in tran_green')
+      call set_error_alloc(error, 'Error in allocating c1 in tran_green', comm)
       return
     endif
     allocate (s1(nxx, nxx))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s1 in tran_green')
+      call set_error_alloc(error, 'Error in allocating s1 in tran_green', comm)
       return
     endif
     allocate (s2(nxx, nxx))
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating s2 in tran_green')
+      call set_error_alloc(error, 'Error in allocating s2 in tran_green', comm)
       return
     endif
 
@@ -1874,7 +1882,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_fatal(error, 'tran_green: problem in ZGESV 1')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 1', comm)
           return
         end if
       end if
@@ -1906,7 +1914,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_fatal(error, 'tran_green: problem in ZGESV 2')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 2', comm)
           return
         end if
       end if
@@ -1940,7 +1948,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call set_error_fatal(error, 'tran_green: problem in ZGESV 3')
+          call set_error_fatal(error, 'tran_green: problem in ZGESV 3', comm)
           return
         end if
       end if
@@ -1949,32 +1957,32 @@ contains
 
     deallocate (s2)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s2 in tran_green')
+      call set_error_dealloc(error, 'Error in deallocating s2 in tran_green', comm)
       return
     endif
     deallocate (s1)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating s1 in tran_green')
+      call set_error_dealloc(error, 'Error in deallocating s1 in tran_green', comm)
       return
     endif
     deallocate (c1)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in deallocating c1 in tran_green')
+      call set_error_alloc(error, 'Error in deallocating c1 in tran_green', comm)
       return
     endif
     deallocate (eh_00)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating eh_00 in tran_green')
+      call set_error_dealloc(error, 'Error in deallocating eh_00 in tran_green', comm)
       return
     endif
     deallocate (g_inv)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating g_inv in tran_green')
+      call set_error_dealloc(error, 'Error in deallocating g_inv in tran_green', comm)
       return
     endif
     deallocate (ipiv)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_green')
+      call set_error_dealloc(error, 'Error in deallocating ipiv in tran_green', comm)
       return
     endif
 
@@ -1983,7 +1991,7 @@ contains
   end subroutine tran_green
 
   !================================================!
-  subroutine tran_read_htX(nxx, h_00, h_01, h_file, stdout, error)
+  subroutine tran_read_htX(nxx, h_00, h_01, h_file, stdout, error, comm)
     !================================================!
 
     use w90_constants, only: dp, maxlen
@@ -1993,6 +2001,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx), h_01(nxx, nxx)
@@ -2013,13 +2022,13 @@ contains
 
     read (file_unit, *, err=102, end=102) nw
     if (nw .ne. nxx) then
-      call set_error_file(error, 'wrong matrix size in transport: read_htX')
+      call set_error_file(error, 'wrong matrix size in transport: read_htX', comm)
       return
     endif
     read (file_unit, *) ((h_00(i, j), i=1, nxx), j=1, nxx)
     read (file_unit, *, err=102, end=102) nw
     if (nw .ne. nxx) then
-      call set_error_file(error, 'wrong matrix size in transport: read_htX')
+      call set_error_file(error, 'wrong matrix size in transport: read_htX', comm)
       return
     endif
     read (file_unit, *, err=102, end=102) ((h_01(i, j), i=1, nxx), j=1, nxx)
@@ -2028,15 +2037,15 @@ contains
 
     return
 
-101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file, comm)
     return
-102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file, comm)
     return
 
   end subroutine tran_read_htX
 
   !================================================!
-  subroutine tran_read_htC(nxx, h_00, h_file, stdout, error)
+  subroutine tran_read_htC(nxx, h_00, h_file, stdout, error, comm)
     !================================================!
 
     use w90_constants, only: dp, maxlen
@@ -2046,6 +2055,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx)
@@ -2066,7 +2076,7 @@ contains
 
     read (file_unit, *, err=102, end=102) nw
     if (nw .ne. nxx) then
-      call set_error_file(error, 'wrong matrix size in transport: read_htC')
+      call set_error_file(error, 'wrong matrix size in transport: read_htC', comm)
       return
     endif
     read (file_unit, *, err=102, end=102) ((h_00(i, j), i=1, nxx), j=1, nxx)
@@ -2075,15 +2085,15 @@ contains
 
     return
 
-101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file, comm)
     return
-102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file, comm)
     return
 
   end subroutine tran_read_htC
 
   !================================================!
-  subroutine tran_read_htXY(nxx1, nxx2, h_01, h_file, stdout, error)
+  subroutine tran_read_htXY(nxx1, nxx2, h_01, h_file, stdout, error, comm)
     !================================================!
 
     use w90_constants, only: dp, maxlen
@@ -2093,6 +2103,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx1, nxx2
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_01(nxx1, nxx2)
@@ -2114,7 +2125,7 @@ contains
     read (file_unit, *, err=102, end=102) nw1, nw2
 
     if (nw1 .ne. nxx1 .or. nw2 .ne. nxx2) then
-      call set_error_file(error, 'wrong matrix size in transport: read_htXY')
+      call set_error_file(error, 'wrong matrix size in transport: read_htXY', comm)
       return
     endif
 
@@ -2124,9 +2135,9 @@ contains
 
     return
 
-101 call set_error_file(error, 'Error: Problem opening input file '//h_file)
+101 call set_error_file(error, 'Error: Problem opening input file '//h_file, comm)
     return
-102 call set_error_file(error, 'Error: Problem reading input file '//h_file)
+102 call set_error_file(error, 'Error: Problem reading input file '//h_file, comm)
     return
 
   end subroutine tran_read_htXY
@@ -2135,7 +2146,7 @@ contains
   subroutine tran_find_integral_signatures(signatures, num_G, print_output, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            have_disentangled, wannier_centres_translated, stdout, &
-                                           seedname, timer, error)
+                                           seedname, timer, error, comm)
     !================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate
     ! Fourier components of each wannier function. Linear combinations of
@@ -2154,6 +2165,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -2180,7 +2192,7 @@ contains
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
     if (.not. have_file) then
       call set_error_file(error, 'tran_hr_parity_unkg: file '//trim(seedname)// &
-                          '.unkg not found')
+                          '.unkg not found', comm)
       return
     endif
     open (file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
@@ -2190,29 +2202,29 @@ contains
 
     allocate (signatures(20, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating signatures in tran_find_sigs_unkg_int')
+      call set_error_alloc(error, 'Error in allocating signatures in tran_find_sigs_unkg_int', comm)
       return
     endif
     allocate (unkg(num_G, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating unkg in tran_find_sigs_unkg_int')
+      call set_error_alloc(error, 'Error in allocating unkg in tran_find_sigs_unkg_int', comm)
       return
     endif
     allocate (g_abc(num_G, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_abc in tran_find_sigs_unkg_int')
+      call set_error_alloc(error, 'Error in allocating g_abc in tran_find_sigs_unkg_int', comm)
       return
     endif
     if (have_disentangled) then
       allocate (tran_u_matrix(num_bands, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', comm)
         return
       endif
     else
       allocate (tran_u_matrix(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', comm)
         return
       endif
     endif
@@ -2222,7 +2234,7 @@ contains
       do i = 1, num_G
         read (file_unit, *) ibnd, ig, a, b, c, r_unkg, i_unkg
         if ((ig .ne. i) .OR. (ibnd .ne. m)) then
-          call set_error_file(error, 'tran_find_sigs_unkg_int: Incorrect bands or g vectors')
+          call set_error_file(error, 'tran_find_sigs_unkg_int: Incorrect bands or g vectors', comm)
           return
         endif
         unkg(i, m) = cmplx(r_unkg, i_unkg, kind=dp)
@@ -2401,17 +2413,17 @@ contains
 
     deallocate (tran_u_matrix, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating tran_u_matrix in tran_find_signatures')
+      call set_error_dealloc(error, 'Error deallocating tran_u_matrix in tran_find_signatures', comm)
       return
     endif
     deallocate (g_abc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating g_abc in tran_find_signatures')
+      call set_error_dealloc(error, 'Error deallocating g_abc in tran_find_signatures', comm)
       return
     endif
     deallocate (unkg, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating unkg in tran_find_signatures')
+      call set_error_dealloc(error, 'Error deallocating unkg in tran_find_signatures', comm)
       return
     endif
 
@@ -2426,7 +2438,7 @@ contains
                                real_space_ham, print_output, real_lattice, num_wann, mp_grid, &
                                ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                nrpts_one_dim, num_pl, coord, tran_sorted_idx, hr_one_dim, &
-                               irvec_max, write_xyz, stdout, seedname, timer, error)
+                               irvec_max, write_xyz, stdout, seedname, timer, error, comm)
     !================================================!
     ! This is the main subroutine controling the sorting
     ! for the 2c2 geometry. We first sort in the conduction
@@ -2475,6 +2487,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -2500,7 +2513,7 @@ contains
 
     allocate (tran_sorted_idx(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tran_sorted_idx in tran_lcr_2c2_sort')
+      call set_error_alloc(error, 'Error in allocating tran_sorted_idx in tran_lcr_2c2_sort', comm)
       return
     endif
 
@@ -2514,7 +2527,7 @@ contains
 
     if (size(wannier_centres_translated) .eq. 0) then
       call set_error_fatal(error, 'Translated centres not known : required perform lcr transport, &
-                          &try restart=plot')
+                          &try restart=plot', comm)
       return
     endif
 
@@ -2542,14 +2555,14 @@ contains
         ((real_lattice(coord(2), coord(1)) .ne. 0) .or. (real_lattice(coord(3), coord(1)) .ne. 0))) then
       call set_error_fatal(error, &
       'Lattice vector in conduction direction must point along x,y or z &
-      & direction and be orthogonal to the remaining lattice vectors.')
+      & direction and be orthogonal to the remaining lattice vectors.', comm)
       return
     endif
 
     !Check
 
     if (num_wann .le. 4*transport%num_ll) then
-      call set_error_fatal(error, 'Principle layers are too big.')
+      call set_error_fatal(error, 'Principle layers are too big.', comm)
       return
     endif
 
@@ -2606,7 +2619,7 @@ contains
 
       !Grouping wannier functions with similar coord(1)
 
-      call group(PL, PL_groups, transport%group_threshold, error)
+      call group(PL, PL_groups, transport%group_threshold, error, comm)
       if (allocated(error)) return
 
       if (print_output%iprint .ge. 4) then
@@ -2624,24 +2637,24 @@ contains
 
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating PL_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_alloc(error, 'Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       call master_sort_and_group(PL, PL_groups, PL_subgroup_info, transport%group_threshold, &
                                  print_output, wannier_centres_translated, coord, stdout, timer, &
-                                 error)
+                                 error, comm)
       if (allocated(error)) return
 
       select case (PL_selector)
       case (1)
         allocate (PL1_groups(size(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL1_groups in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL1_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         allocate (PL1_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
 
@@ -2651,18 +2664,18 @@ contains
 
         deallocate (PL_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
       case (2)
         allocate (PL2_groups(size(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL2_groups in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL2_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         allocate (PL2_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
 
@@ -2672,18 +2685,18 @@ contains
 
         deallocate (PL_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
       case (3)
         allocate (PL3_groups(size(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL3_groups in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL3_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         allocate (PL3_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
 
@@ -2693,18 +2706,18 @@ contains
 
         deallocate (PL_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
       case (4)
         allocate (PL4_groups(size(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL4_groups in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL4_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         allocate (PL4_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_alloc(error, 'Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
 
@@ -2714,14 +2727,14 @@ contains
 
         deallocate (PL_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
       endselect
 
       deallocate (PL_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL_groups in tran_lcr_2c2_sort', comm)
         return
       endif
     enddo ! Principal layer loop
@@ -2734,7 +2747,7 @@ contains
 
     !Group central region
 
-    call group(central_region, central_region_groups, transport%group_threshold, error)
+    call group(central_region, central_region_groups, transport%group_threshold, error, comm)
     if (allocated(error)) return
 
     !Print central region group breakdown
@@ -2752,16 +2765,16 @@ contains
 
     allocate (central_subgroup_info(size(central_region_groups), maxval(central_region_groups)), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating central_group_info in tran_lcr_2c2_sort')
+      call set_error_alloc(error, 'Error in allocating central_group_info in tran_lcr_2c2_sort', comm)
       return
     endif
     call master_sort_and_group(central_region, central_region_groups, central_subgroup_info, &
                                transport%group_threshold, print_output, &
-                               wannier_centres_translated, coord, stdout, timer, error)
+                               wannier_centres_translated, coord, stdout, timer, error, comm)
     if (allocated(error)) return
     deallocate (central_subgroup_info, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating central_group_info in tran_lcr_2c2_sort')
+      call set_error_dealloc(error, 'Error deallocating central_group_info in tran_lcr_2c2_sort', comm)
       return
     endif
     write (stdout, *) ' '
@@ -2786,48 +2799,49 @@ contains
         if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                            tran_sorted_idx, num_wann, seedname, stdout)
         call set_error_fatal(error, 'Sorting techniques exhausted:&
-          & Inconsistent number of groups among principal layers')
+          & Inconsistent number of groups among principal layers', comm)
         return
       endif
+      !fixme unprotected writeout?
       write (stdout, *) 'Inconsistent number of groups among principal layers: restarting sorting...'
       deallocate (PL1_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL2_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL3_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL4_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL1_subgroup_info)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL2_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL3_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL4_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       goto 100
@@ -2842,7 +2856,7 @@ contains
                                              tran_sorted_idx, num_wann, seedname, stdout)
           call set_error_fatal(error, &
            'Sorting techniques exhausted: Inconsitent number of wannier function among &
-             & similar groups within principal layers')
+             & similar groups within principal layers', comm)
           return
         endif
         write (stdout, *) 'Inconsitent number of wannier function among &
@@ -2850,42 +2864,42 @@ contains
 
         deallocate (PL1_groups, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL2_groups, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL3_groups, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL4_groups, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL1_subgroup_info)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL2_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL3_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
         deallocate (PL4_subgroup_info, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+          call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
           return
         endif
         goto 100
@@ -2916,12 +2930,12 @@ contains
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort', comm)
         return
       endif
       call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                           irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                          print_output%timing_level, stdout, timer, error)
+                          print_output%timing_level, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
@@ -2934,42 +2948,42 @@ contains
       sort_iterator = sort_iterator - 1
       deallocate (PL1_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL2_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL3_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL4_groups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL1_subgroup_info)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL2_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL3_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       deallocate (PL4_subgroup_info, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
         return
       endif
       goto 100
@@ -2980,7 +2994,7 @@ contains
 
     allocate (temp_subgroup(size(PL1_subgroup_info, 1), size(PL1_subgroup_info, 2)), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tmp_subgroup in tran_lcr_2c2_sort')
+      call set_error_alloc(error, 'Error in allocating tmp_subgroup in tran_lcr_2c2_sort', comm)
       return
     endif
     do i = 2, 4
@@ -3001,53 +3015,54 @@ contains
                                                  tran_sorted_idx, num_wann, seedname, &
                                                  stdout)
               call set_error_fatal(error, &
-                                   'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+                                   'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', comm)
               return
             endif
-            write (stdout, *) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
+            !fixme, unprotected writeout?
+            write (stdout, *) 'Inconsistent subgroup structure among principal layers: restarting sorting...'
             deallocate (temp_subgroup, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating tmp_subgroup in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating tmp_subgroup in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL1_groups, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL2_groups, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL2_groups in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL3_groups, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL3_groups in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL4_groups, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL1_subgroup_info)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL2_subgroup_info, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL3_subgroup_info, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', comm)
               return
             endif
             deallocate (PL4_subgroup_info, stat=ierr)
             if (ierr /= 0) then
-              call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+              call set_error_dealloc(error, 'Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', comm)
               return
             endif
             goto 100
@@ -3061,7 +3076,7 @@ contains
 
     call check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                         num_wann, wannier_centres_translated, coord, &
-                                        tran_sorted_idx, write_xyz, stdout, seedname, timer, error)
+                                        tran_sorted_idx, write_xyz, stdout, seedname, timer, error, comm)
     if (allocated(error)) return
 
     write (stdout, *) ' '
@@ -3136,7 +3151,7 @@ contains
   !================================================!
   subroutine master_sort_and_group(Array, Array_groups, subgroup_info, tran_group_threshold, &
                                    print_output, wannier_centres_translated, coord, stdout, timer, &
-                                   error)
+                                   error, comm)
     !================================================!
     ! General sorting and grouping subroutine which takes Array,
     ! an ordered in conduction direction array of wannier function
@@ -3156,6 +3171,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout !, Array_size => size(Array_groups) so not needed
     integer, intent(in) :: Array_groups(:), coord(3)
@@ -3175,7 +3191,7 @@ contains
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating subgroup_info in master_sort_and_group')
+      call set_error_alloc(error, 'Error in allocating subgroup_info in master_sort_and_group', comm)
       return
     endif
     subgroup_info = 0
@@ -3193,12 +3209,12 @@ contains
     do j = 1, Array_num_groups
       allocate (group_array(2, Array_groups(j)), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating group_array in master_sort_and_group')
+        call set_error_alloc(error, 'Error in allocating group_array in master_sort_and_group', comm)
         return
       endif
       allocate (sorted_group_array(2, Array_groups(j)), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating sorted_group_array in master_sort_and_group')
+        call set_error_alloc(error, 'Error in allocating sorted_group_array in master_sort_and_group', comm)
         return
       endif
 
@@ -3213,7 +3229,7 @@ contains
       enddo
 
       call sort(group_array, sorted_group_array)
-      call group(sorted_group_array, group_subgroups, tran_group_threshold, error)
+      call group(sorted_group_array, group_subgroups, tran_group_threshold, error, comm)
       if (allocated(error)) return
 
       group_num_subgroups = size(group_subgroups)
@@ -3243,12 +3259,12 @@ contains
       do k = 1, group_num_subgroups
         allocate (subgroup_array(2, group_subgroups(k)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating subgroup_array in master_sort_and_group')
+          call set_error_alloc(error, 'Error in allocating subgroup_array in master_sort_and_group', comm)
           return
         endif
         allocate (sorted_subgroup_array(2, group_subgroups(k)), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating sorted_subgroup_array in master_sort_and_group')
+          call set_error_alloc(error, 'Error in allocating sorted_subgroup_array in master_sort_and_group', comm)
           return
         endif
 
@@ -3273,12 +3289,12 @@ contains
         subgroup_increment = subgroup_increment + group_subgroups(k)
         deallocate (sorted_subgroup_array, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating sorted_subgroup_array in master_sort_and_group')
+          call set_error_dealloc(error, 'Error deallocating sorted_subgroup_array in master_sort_and_group', comm)
           return
         endif
         deallocate (subgroup_array, stat=ierr)
         if (ierr /= 0) then
-          call set_error_dealloc(error, 'Error deallocating subgroup_array in master_sort_and_group')
+          call set_error_dealloc(error, 'Error deallocating subgroup_array in master_sort_and_group', comm)
           return
         endif
       enddo
@@ -3292,17 +3308,17 @@ contains
       increment = increment + Array_groups(j)
       deallocate (group_array, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating group_array in master_sort_and_group')
+        call set_error_dealloc(error, 'Error deallocating group_array in master_sort_and_group', comm)
         return
       endif
       deallocate (sorted_group_array, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating sorted_group_array in master_sort_and_group')
+        call set_error_dealloc(error, 'Error deallocating sorted_group_array in master_sort_and_group', comm)
         return
       endif
       deallocate (group_subgroups, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating group_subgroups in master_sort_and_group')
+        call set_error_dealloc(error, 'Error deallocating group_subgroups in master_sort_and_group', comm)
         return
       endif
     enddo
@@ -3354,7 +3370,7 @@ contains
   endsubroutine sort
 
   !================================================!
-  subroutine group(array, array_groups, tran_group_threshold, error)
+  subroutine group(array, array_groups, tran_group_threshold, error, comm)
     !================================================!
 
     use w90_constants, only: dp
@@ -3364,6 +3380,7 @@ contains
 
     ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     real(kind=dp), intent(in) :: tran_group_threshold
     real(kind=dp), intent(in) :: array(:, :)
     integer, intent(out), allocatable :: array_groups(:)
@@ -3377,12 +3394,12 @@ contains
 
     allocate (dummy_array(array_size), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating dummy_array in group')
+      call set_error_alloc(error, 'Error in allocating dummy_array in group', comm)
       return
     endif
     allocate (logic(array_size), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating logic in group')
+      call set_error_alloc(error, 'Error in allocating logic in group', comm)
       return
     endif
 
@@ -3449,19 +3466,19 @@ contains
 
     allocate (array_groups(array_idx), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating array_groups in group')
+      call set_error_alloc(error, 'Error in allocating array_groups in group', comm)
       return
     endif
     array_groups = dummy_array(:array_idx)
 
     deallocate (dummy_array, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating dummy_array in group')
+      call set_error_dealloc(error, 'Error deallocating dummy_array in group', comm)
       return
     endif
     deallocate (logic, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating logic in group')
+      call set_error_dealloc(error, 'Error deallocating logic in group', comm)
       return
     endif
 
@@ -3473,7 +3490,7 @@ contains
   subroutine check_and_sort_similar_centres(signatures, num_G, atom_data, transport, print_output, &
                                             num_wann, wannier_centres_translated, coord, &
                                             tran_sorted_idx, write_xyz, stdout, seedname, timer, &
-                                            error)
+                                            error, comm)
     !================================================!
     ! Here, we consider the possiblity of wannier functions
     ! with similar centres, such as a set of d-orbitals
@@ -3501,6 +3518,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
     integer, intent(in) :: coord(3)
     integer, intent(in) :: num_G
     integer, intent(in) :: num_wann
@@ -3527,37 +3545,37 @@ contains
 
     allocate (wf_similar_centres(transport%num_cell_ll*4, num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating wf_similar_centre in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating wf_similar_centre in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (idx_similar_wf(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating idx_similar_wf in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating idx_similar_wf in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (has_similar_centres(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating has_similar_centres in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating has_similar_centres in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (tmp_wf_verifier(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating tmp_wf_verifier in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating tmp_wf_verifier in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (group_verifier(4*transport%num_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating group_verifier in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating group_verifier in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (first_group_element(4*transport%num_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating first_group_element in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating first_group_element in check_and_sort_similar_centres', comm)
       return
     endif
     allocate (centre_id(num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating centre_id in check_and_sort_similar_centres')
+      call set_error_alloc(error, 'Error in allocating centre_id in check_and_sort_similar_centres', comm)
       return
     endif
 
@@ -3666,7 +3684,7 @@ contains
         if (group_verifier(i) .ne. group_verifier(i - 1)) then
           if (write_xyz) call tran_write_xyz(atom_data, transport, wannier_centres_translated, &
                                              tran_sorted_idx, num_wann, seedname, stdout)
-          call set_error_fatal(error, 'Inconsistent number of groups of similar centred wannier functions between unit cells')
+          call set_error_fatal(error, 'Inconsistent number of groups of similar centred wannier functions between unit cells', comm)
           return
         elseif (i .eq. 4*transport%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
@@ -3682,7 +3700,7 @@ contains
 
       allocate (wf_verifier(4*transport%num_cell_ll, group_verifier(1)), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating wf_verifier in check_and_sort_similar_centres')
+        call set_error_alloc(error, 'Error in allocating wf_verifier in check_and_sort_similar_centres', comm)
         return
       endif
 
@@ -3697,7 +3715,7 @@ contains
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) then
               call set_error_fatal(error, 'Inconsistent number of wannier &
                   &functions between equivalent groups of similar &
-                  &centred wannier functions')
+                  &centred wannier functions', comm)
               return
             endif
           endif
@@ -3717,22 +3735,22 @@ contains
 
           allocate (ref_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating ref_similar_centres in check_and_sort_similar_centres')
+            call set_error_alloc(error, 'Error in allocating ref_similar_centres in check_and_sort_similar_centres', comm)
             return
           end if
           allocate (unsorted_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating unsorted_similar_centres in check_and_sort_similar_centres')
+            call set_error_alloc(error, 'Error in allocating unsorted_similar_centres in check_and_sort_similar_centres', comm)
             return
           end if
           allocate (sorted_idx(wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating sorted_idx in check_and_sort_similar_centres')
+            call set_error_alloc(error, 'Error in allocating sorted_idx in check_and_sort_similar_centres', comm)
             return
           end if
           allocate (dot_p(wf_verifier(1, j)), stat=ierr)
           if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating dot_p in check_and_sort_similar_centres')
+            call set_error_alloc(error, 'Error in allocating dot_p in check_and_sort_similar_centres', comm)
             return
           end if
 
@@ -3768,22 +3786,22 @@ contains
 
           deallocate (dot_p, stat=ierr)
           if (ierr /= 0) then
-            call set_error_dealloc(error, 'Error in deallocating dot_p in check_and_sort_similar_centres')
+            call set_error_dealloc(error, 'Error in deallocating dot_p in check_and_sort_similar_centres', comm)
             return
           endif
           deallocate (sorted_idx, stat=ierr)
           if (ierr /= 0) then
-            call set_error_dealloc(error, 'Error in deallocating sorted_idx in check_and_sort_similar_centres')
+            call set_error_dealloc(error, 'Error in deallocating sorted_idx in check_and_sort_similar_centres', comm)
             return
           endif
           deallocate (unsorted_similar_centres, stat=ierr)
           if (ierr /= 0) then
-            call set_error_dealloc(error, 'Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres')
+            call set_error_dealloc(error, 'Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres', comm)
             return
           endif
           deallocate (ref_similar_centres, stat=ierr)
           if (ierr /= 0) then
-            call set_error_dealloc(error, 'Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
+            call set_error_dealloc(error, 'Error in deallocating ref_similar_centres in check_and_sort_similar_centres', comm)
             return
           endif
         enddo
@@ -3804,51 +3822,51 @@ contains
         if ((iterator .ge. 2) .or. (iterator .eq. 0)) then
           call set_error_fatal(error, &
               'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
-              &poor wannierisation and/or disentanglement')
+              &poor wannierisation and/or disentanglement', comm)
           return
         endif
         !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
       enddo
       deallocate (wf_verifier, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating wf_verifier in check_and_sort_similar_centres')
+        call set_error_dealloc(error, 'Error deallocating wf_verifier in check_and_sort_similar_centres', comm)
         return
       endif
     endif
 
     deallocate (centre_id, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating centre_id in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating centre_id in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (first_group_element, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating first_group_element in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating first_group_element in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (group_verifier, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating group_verifier in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating group_verifier in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (tmp_wf_verifier, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating tmp_wf_verifier in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating tmp_wf_verifier in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (has_similar_centres, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating has_similar_centres in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating has_similar_centres in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (idx_similar_wf, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating idx_similar_wf in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating idx_similar_wf in check_and_sort_similar_centres', comm)
       return
     endif
     deallocate (wf_similar_centres, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating wf_similar_centre in check_and_sort_similar_centres')
+      call set_error_dealloc(error, 'Error deallocating wf_similar_centre in check_and_sort_similar_centres', comm)
       return
     endif
 
@@ -4021,7 +4039,7 @@ contains
                                     ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
                                     nrpts_one_dim, num_pl, coord, tran_sorted_idx, hC, hCR, hL0, &
                                     hL1, hLC, hR0, hR1, hr_one_dim, irvec_max, stdout, seedname, &
-                                    timer, error)
+                                    timer, error, comm)
     !================================================!
     ! Builds hamiltonians blocks required for the
     ! Greens function caclulations of the quantum
@@ -4073,6 +4091,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -4091,43 +4110,43 @@ contains
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then
       call set_error_fatal(error, "Error in tran_lcr_2c2_build_ham: nfermi>1. " &
-                           //"Set the fermi level using the input parameter 'fermi_evel'")
+                           //"Set the fermi level using the input parameter 'fermi_evel'", comm)
       return
     endif
 
     allocate (hL0(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hL0 in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hL1(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hL1 in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hR0(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hR0 in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hR1(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hR1 in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hLC(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hLC in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hLC in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hCR(transport%num_ll, transport%num_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hCR in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hCR in tran_lcr_2c2_build_ham', comm)
       return
     endif
     allocate (hC(num_wann - (2*transport%num_ll), num_wann - (2*transport%num_ll)), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating hC in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating hC in tran_lcr_2c2_build_ham', comm)
       return
     endif
 
@@ -4137,7 +4156,7 @@ contains
     !BGS, I think (0, 0, 0) in kpt_latt should work as well as in kpt_cart
     if ((size(kpt_latt, 2) .ne. 1) .and. (kpt_latt(1, 1) .eq. 0.0_dp) &
         .and. (kpt_latt(2, 1) .eq. 0.0_dp) .and. (kpt_latt(3, 1) .eq. 0.0_dp)) then
-      call set_error_fatal(error, 'Calculation must be performed at gamma only')
+      call set_error_fatal(error, 'Calculation must be performed at gamma only', comm)
       return
     endif
 
@@ -4145,7 +4164,7 @@ contains
 
     allocate (sub_block(num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating sub_block in tran_lcr_2c2_build_ham')
+      call set_error_alloc(error, 'Error in allocating sub_block in tran_lcr_2c2_build_ham', comm)
       return
     endif
 
@@ -4342,12 +4361,12 @@ contains
       write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort', comm)
         return
       endif
       call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &
                           irvec_max, nrpts, nrpts_one_dim, num_wann, one_dim_vec, &
-                          print_output%timing_level, stdout, timer, error)
+                          print_output%timing_level, stdout, timer, error, comm)
       if (allocated(error)) return
 
       call tran_cut_hr_one_dim(real_space_ham, transport, print_output, hr_one_dim, real_lattice, &
@@ -4527,7 +4546,7 @@ contains
 
     deallocate (sub_block, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating sub_block in tran_lcr_2c2_build_ham')
+      call set_error_dealloc(error, 'Error deallocating sub_block in tran_lcr_2c2_build_ham', comm)
       return
     endif
 

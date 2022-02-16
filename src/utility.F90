@@ -21,6 +21,7 @@ module w90_utility
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
+  use w90_comms, only: w90comm_type
 
   implicit none
 
@@ -332,7 +333,7 @@ contains
 
   end subroutine utility_recip_lattice_base
 
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error)
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error, comm)
     !================================================!
     !
     !!  Calculates the reciprical lattice vectors and the cell volume
@@ -349,11 +350,12 @@ contains
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
+    type(w90comm_type), intent(in) :: comm
 
     call utility_recip_lattice_base(real_lat, recip_lat, volume)
 
     if (abs(volume) < eps5) then
-      call set_error_fatal(error, ' Found almost zero Volume in utility_recip_lattice')
+      call set_error_fatal(error, ' Found almost zero Volume in utility_recip_lattice', comm)
       return
     end if
 
@@ -540,7 +542,7 @@ contains
   end function utility_lowercase
 
   !================================================!
-  subroutine utility_string_to_coord(string_tmp, outvec, error)
+  subroutine utility_string_to_coord(string_tmp, outvec, error, comm)
     !================================================!
     !
     !! Takes a string in the form 0.0,1.0,0.5
@@ -555,6 +557,7 @@ contains
     character(len=maxlen), intent(in)  :: string_tmp
     real(kind=dp), intent(out) :: outvec(3)
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer :: pos
     character(len=maxlen) :: ctemp
@@ -563,7 +566,7 @@ contains
     ctemp = string_tmp
     pos = index(ctemp, ',')
     if (pos <= 0) then
-      call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+      call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
       return
     endif
 
@@ -578,7 +581,7 @@ contains
 
     return
 
-100 call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+100 call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
     return ! this is kinda ugly, JJ
 
   end subroutine utility_string_to_coord
@@ -627,7 +630,7 @@ contains
   end subroutine utility_translate_home
 
   !================================================!
-  subroutine utility_diagonalize(mat, dim, eig, rot, error)
+  subroutine utility_diagonalize(mat, dim, eig, rot, error, comm)
     !================================================!
     !
     !! Diagonalize the dim x dim  hermitian matrix 'mat' and
@@ -643,6 +646,7 @@ contains
     real(kind=dp), intent(out) :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     complex(kind=dp) :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
     real(kind=dp) :: rwork(7*dim)
@@ -660,13 +664,13 @@ contains
     if (info < 0) then
       write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: THE ', -info, &
         ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-      call set_error_fatal(error, errormsg)
+      call set_error_fatal(error, errormsg, comm)
       return
     endif
     if (info > 0) then
       write (errormsg, '(i3,a)') 'Error in utility_diagonalize: ', info, &
         ' EIGENVECTORS FAILED TO CONVERGE'
-      call set_error_fatal(error, errormsg)
+      call set_error_fatal(error, errormsg, comm)
       return
     endif
 
@@ -982,7 +986,7 @@ contains
     return
   end function utility_wgauss
 
-  function utility_w0gauss(x, n, error)
+  function utility_w0gauss(x, n, error, comm)
     !-----------------------------------------------------------------------
     !
     !! the derivative of utility_wgauss:  an approximation to the delta function
@@ -1007,6 +1011,7 @@ contains
     integer, intent(in) :: n
     !! input: the order of the smearing function
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
@@ -1042,7 +1047,7 @@ contains
     endif
 
     if (n .gt. 10 .or. n .lt. 0) then
-      call set_error_input(error, 'utility_w0gauss higher order (n>10) smearing is untested and unstable')
+      call set_error_input(error, 'utility_w0gauss higher order (n>10) smearing is untested and unstable', comm)
       return
     endif
 
@@ -1065,7 +1070,7 @@ contains
     return
   end function utility_w0gauss
 
-  function utility_w0gauss_vec(x, n, error) result(res)
+  function utility_w0gauss_vec(x, n, error, comm) result(res)
     !-----------------------------------------------------------------------
     !  Stepan Tsirkin: a vectorized version of the outine, gets x as an array.
     !
@@ -1091,6 +1096,7 @@ contains
     !! input: the point where to compute the function
     integer :: n
     !! input: the order of the smearing function
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: sqrtpm1
@@ -1100,18 +1106,18 @@ contains
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
-      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == 99')
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == 99', comm)
       return
     endif
 
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
-      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == -1')
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == -1', comm)
       return
     endif
 
     if (n .gt. 10 .or. n .lt. 0) then
-      call set_error_input(error, 'utility_w0gauss higher order smearing is untested and unstable')
+      call set_error_input(error, 'utility_w0gauss higher order smearing is untested and unstable', comm)
       return
     endif
 
@@ -1122,7 +1128,7 @@ contains
     if (n .eq. 0) then
       return
     else
-      call set_error_input(error, 'utility_w0gauss_vec not implemented for n >0 ')
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n >0 ', comm)
       return
     endif
   end function utility_w0gauss_vec
