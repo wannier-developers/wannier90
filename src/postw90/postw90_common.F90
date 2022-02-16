@@ -172,7 +172,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_send, comms_recv, comms_bcast
+    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_no_sync_send, comms_no_sync_recv, comms_bcast
     use w90_postw90_types, only: kpoint_dist_type
 
     ! arguments
@@ -226,11 +226,11 @@ contains
           sum = sum + kpoint_dist%weight(loop_kpt)
         end do
 
-        call comms_send(kpoint_dist%int_kpts(1, 1), &
-                        3*kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
+        call comms_no_sync_send(kpoint_dist%int_kpts(1, 1), &
+                                3*kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
         if (allocated(error)) return
-        call comms_send(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(loop_nodes), &
-                        loop_nodes, error, comm)
+        call comms_no_sync_send(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(loop_nodes), &
+                                loop_nodes, error, comm)
         if (allocated(error)) return
       end do
       do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(0)
@@ -241,11 +241,11 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(my_node_id), &
-                      0, error, comm)
+      call comms_no_sync_recv(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(my_node_id), &
+                              0, error, comm)
       if (allocated(error)) return
-      call comms_recv(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(my_node_id), 0, &
-                      error, comm)
+      call comms_no_sync_recv(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(my_node_id), 0, &
+                              error, comm)
       if (allocated(error)) return
     end if
 
