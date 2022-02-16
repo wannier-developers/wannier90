@@ -727,20 +727,8 @@ program w90chk2chk
   use w90_constants, only: dp
   use w90_io, only: io_file_unit
   use w90_conv
-  use w90_comms, only: comms_end, w90comm_type, mpisize
-
-#ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
-#endif
-#ifdef MPI90
-  use mpi ! next best, use fortran90 interface
-#endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   ! Export mode:
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
@@ -752,23 +740,8 @@ program w90chk2chk
   character(len=50) :: seedname
   integer :: num_nodes, ierr
 
-  type(w90comm_type) :: comm
-
-#ifdef MPI
-  comm%comm = MPI_COMM_WORLD
-  call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-  num_nodes = mpisize(comm)
-#else
-  num_nodes = 1
-#endif
-
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')
-
-  if (num_nodes /= 1) then
-    call io_error('w90chk2chk can only be used in serial...', stdout, seedname)
-  endif
 
   call conv_get_seedname(stdout, seedname)
 
@@ -781,8 +754,6 @@ program w90chk2chk
   end if
 
   close (unit=stdout)
-
-  call comms_end
 
 end program w90chk2chk
 
