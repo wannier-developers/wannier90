@@ -2680,6 +2680,8 @@ contains
     integer :: num_project, wann_plot_num, num_exclude_bands, fermi_n
     logical :: disentanglement
 
+    character(len=128) :: errmesg
+
     if (mpirank(comm) == 0) on_root = .true.
 
     call comms_bcast(eig_found, 1, error, comm)
@@ -3161,6 +3163,12 @@ contains
 
     call comms_bcast(print_output%timing_level, 1, error, comm)
     if (allocated(error)) return
+
+    ! test mpi error handling using "unlucky" input token
+    if (print_output%timing_level < 0 .and. mpirank(comm) == abs(print_output%timing_level)) then
+      call set_error_input(error, 'received unlucky_rank', comm)
+      return
+    endif
 
     call comms_bcast(w90_system%spinors, 1, error, comm)
     if (allocated(error)) return

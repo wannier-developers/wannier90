@@ -88,10 +88,21 @@ contains
     logical :: found
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
+    integer :: unlucky_rank
 
     print_output%timing_level = 1 ! Verbosity of timing output info
     call w90_readwrite_get_keyword('timing_level', found, error, comm, i_value=print_output%timing_level)
     if (allocated(error)) return
+
+    ! special test case; use the timing_level variable to
+    ! communicate a kill to remote process, testing error handling
+    call w90_readwrite_get_keyword('unlucky', found, error, comm, i_value=unlucky_rank)
+    if (found) then
+      if (unlucky_rank > 0) then
+        unlucky_rank = abs(unlucky_rank)
+        print_output%timing_level = -unlucky_rank
+      endif
+    endif
 
     print_output%iprint = 1 ! Verbosity
     call w90_readwrite_get_keyword('iprint', found, error, comm, i_value=print_output%iprint)
@@ -4177,5 +4188,4 @@ contains
       in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
     end if ! found tags
   end subroutine clear_block
-
 end module w90_readwrite

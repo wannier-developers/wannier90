@@ -27,7 +27,6 @@ module w90_types
   !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
   use w90_constants, only: dp, maxlen
-  !use w90_io, only: maxlen
 
   implicit none
 

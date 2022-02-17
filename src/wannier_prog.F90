@@ -181,7 +181,7 @@ program wannier
 
   integer :: len_seedname
   integer :: num_nodes, my_node_id, ierr
-  integer :: stdout
+  integer :: stdout, stderr
 
   logical :: eig_found
   logical :: gamma_only
@@ -206,7 +206,7 @@ program wannier
   seedname = "wannier"
   if (ierr .ne. 0) then
     call set_error_mpi(error, 'MPI initialisation error', comm)  ! stdout, seedname not yet known!
-    call prterr(error, stdout, comm)
+    call prterr(error, stderr, comm)
   endif
 #endif
 
@@ -222,17 +222,17 @@ program wannier
     len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname, 1, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
   call comms_bcast(seedname, len_seedname, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
   call comms_bcast(dryrun, 1, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   if (on_root) then
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.werr')
+    stderr = io_file_unit()
+    open (unit=stderr, file=trim(seedname)//'.werr')
     call io_date(cdate, ctime)
-    write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
+    write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
     call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                       dis_manifold, exclude_bands, fermi_energy_list, &
@@ -245,13 +245,10 @@ program wannier
                                       mp_grid, num_bands, num_kpts, num_proj, num_wann, &
                                       optimisation, eig_found, calc_only_A, cp_pp, gamma_only, &
                                       lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, &
-                                      seedname, stdout, error, comm)
-    if (allocated(error)) then
-      call prterr(error, stdout, comm)
-    end if
+                                      seedname, stderr, error, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
 
     have_disentangled = .false.
-    close (stdout, status='delete')
 
     if (w90_calculation%restart .eq. ' ') then
       stat = 'replace'
@@ -298,7 +295,7 @@ program wannier
                                                          num_kpts, gamma_only, stdout, &
                                                          timer, error, comm)
     if (allocated(error)) then
-      call prterr(error, stdout, comm)
+      call prterr(error, stderr, comm)
     end if
 
     time2 = io_time()
@@ -332,12 +329,12 @@ program wannier
                                     num_proj, num_wann, optimisation, eig_found, cp_pp, &
                                     gamma_only, have_disentangled, lhasproj, lsitesymmetry, &
                                     use_bloch_phases, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) then
     call set_error_fatal(error, 'Gamma point branch is serial only at the moment', comm)
-    call prterr(error, stdout, comm)
+    call prterr(error, stderr, comm)
   endif
 
   if (w90_calculation%transport .and. transport%read_ht) goto 3003
@@ -354,17 +351,17 @@ program wannier
                                     omega%invariant, mp_grid, num_bands, num_exclude_bands, &
                                     num_kpts, num_wann, checkpoint, have_disentangled, .false., &
                                     seedname, stdout, error, comm)
-      if (allocated(error)) call prterr(error, stdout, comm)
+      if (allocated(error)) call prterr(error, stderr, comm)
     endif
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, checkpoint, &
                                   have_disentangled, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
 
     if (lsitesymmetry) then
       call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
       ! update this to read on root and bcast - JRY
-      if (allocated(error)) call prterr(error, stdout, comm)
+      if (allocated(error)) call prterr(error, stderr, comm)
     endif
 
     select case (w90_calculation%restart)
@@ -380,7 +377,7 @@ program wannier
       else
         if (on_root) write (stdout, '(/a/)')
         call set_error_input(error, 'Value of checkpoint not recognised in wann_prog', comm)
-        call prterr(error, stdout, comm)
+        call prterr(error, stderr, comm)
       endif
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -393,7 +390,7 @@ program wannier
       goto 3003
     case default        ! for completeness... (it is already trapped in w90_wannier90_readwrite_read)
       call set_error_input(error, 'Value of restart not recognised in wann_prog', comm)
-      call prterr(error, stdout, comm)
+      call prterr(error, stderr, comm)
     end select
   endif
 
@@ -403,13 +400,13 @@ program wannier
                                   w90_system%spinors, seedname, timer)
 
     call kmesh_dealloc(kmesh_info, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
     call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                              exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                              proj_input, input_proj, select_projection, &
                                              kpoint_path, wannier_data, wannier_plot, &
                                              w90_extra_io, eigval, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call mpi_finalize(ierr)
@@ -419,20 +416,20 @@ program wannier
   if (lsitesymmetry) then
     call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
     ! update this to read on root and bcast - JRY
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
   endif
 
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
                         print_output%timing_level, timer, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
                     gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, timer, error, &
                     comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
@@ -447,7 +444,7 @@ program wannier
                   m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
                   omega%invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
                   lsitesymmetry, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
 
     have_disentangled = .true.
     time2 = io_time()
@@ -477,7 +474,7 @@ program wannier
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, &
                    num_wann, optimisation, rpt_origin, band_plot%mode, transport%mode, &
                    have_disentangled, lsitesymmetry, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
 
   else
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
@@ -485,7 +482,7 @@ program wannier
                          m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          real_space_ham%translate_home_cell, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
 
   end if
 
@@ -515,7 +512,7 @@ program wannier
                  shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, transport%mode, &
                  have_disentangled, lsitesymmetry, w90_system%spinors, seedname, stdout, timer, &
                  error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   if (on_root) then
     time1 = io_time()
@@ -533,7 +530,7 @@ program wannier
                      real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                      nrpts, num_bands, num_kpts, num_wann, rpt_origin, band_plot%mode, &
                      have_disentangled, lsitesymmetry, seedname, stdout, timer, error, comm)
-      if (allocated(error)) call prterr(error, stdout, comm)
+      if (allocated(error)) call prterr(error, stderr, comm)
 
       time1 = io_time()
 
@@ -544,24 +541,24 @@ program wannier
 
   call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
                            error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                        u_matrix, u_matrix_opt, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   call kmesh_dealloc(kmesh_info, error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
   call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, &
                                            exclude_bands, kmesh_input, kpt_latt, wann_control, &
                                            proj_input, input_proj, select_projection, kpoint_path, &
                                            wannier_data, wannier_plot, w90_extra_io, eigval, &
                                            error, comm)
-  if (allocated(error)) call prterr(error, stdout, comm)
+  if (allocated(error)) call prterr(error, stderr, comm)
 
   if (lsitesymmetry) then
     call sitesym_dealloc(sitesym, error, comm)
-    if (allocated(error)) call prterr(error, stdout, comm)
+    if (allocated(error)) call prterr(error, stderr, comm)
   endif
 
 4004 continue
@@ -577,52 +574,67 @@ program wannier
     close (stdout)
   endif
 
+  close (stderr, status='delete')
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
 
 contains
 
-  subroutine prterr(error, stdout, comm)
+  subroutine prterr(error, stderr, comm)
     use w90_error_base, only: code_remote
     use w90_comms, only: comms_no_sync_send, comms_no_sync_recv
 
-    type(w90_error_type), intent(in) :: error
-    integer, intent(in) :: stdout
+    type(w90_error_type), allocatable, intent(in) :: error
+    integer, intent(in) :: stderr
     type(w90comm_type), intent(in) :: comm
 
     type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
-    integer :: rankj, jerr
+    integer :: ie ! global error value to be returned
+    integer :: je ! error value on remote ranks
+    integer :: j ! rank index
+    integer :: failrank ! lowest rank reporting an error
     character(len=128) :: mesg ! only print 128 chars of error
 
+    ie = 0
+    mesg = 'not set'
+
     if (mpirank(comm) == 0) then
-      ! print out error (from lowest numbered rank with an error condition)
-      do rankj = mpisize(comm) - 1, -1, 1
-        call comms_no_sync_recv(jerr, 1, rankj, le, comm)
-        if (jerr /= code_remote) then
-          call comms_no_sync_recv(mesg, 128, rankj, le, comm)
+      ! fixme, report all failing ranks
+      do j = mpisize(comm) - 1, 1, -1
+        call comms_no_sync_recv(je, 1, j, le, comm)
+
+        if (je /= code_remote .and. je /= 0) then
+          failrank = j
+          ie = je
+          call comms_no_sync_recv(mesg, 128, j, le, comm)
         endif
       enddo
-      if (error%code /= code_remote) then
-        jerr = error%code
+      ! if the error is on rank0
+      if (error%code /= code_remote .and. error%code /= 0) then
+        failrank = 0
+        ie = error%code
         mesg = error%message
       endif
 
-      write (stdout, *) 'Exiting.......'
-      write (stdout, *) mesg
-    else
-      jerr = error%code
-      call comms_no_sync_send(jerr, 1, 0, le, comm)
-      if (jerr /= code_remote) then
+      if (ie == 0) write (stderr, *) "logic error" ! to arrive here requires this
+
+      write (stderr, *) 'Exiting.......'
+      write (stderr, '(x,a,i0)') trim(mesg)//' rank: ', failrank
+
+    else ! non 0 ranks
+      je = error%code
+      call comms_no_sync_send(je, 1, 0, le, comm)
+      if (je /= code_remote .and. je /= 0) then
         mesg = error%message
         call comms_no_sync_send(mesg, 128, 0, le, comm)
       endif
     endif
 
 #ifdef MPI
-    call mpi_finalize(jerr)
+    call mpi_finalize(je) ! je overwritten here
 #endif
-    call exit(error%code)
+    call exit(ie) ! return true fail code
 
   end subroutine prterr
 
