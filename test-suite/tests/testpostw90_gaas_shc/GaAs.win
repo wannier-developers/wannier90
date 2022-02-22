@@ -22,6 +22,7 @@ num_valence_bands = 8
 #shc_bandshift = true
 #shc_bandshift_firstband = 9
 #shc_bandshift_energyshift = 1.117
+shc_method = qiao
 
 kubo_adpt_smr = false
 #kubo_adpt_smr_fac = 1.414

@@ -12,8 +12,18 @@ endif
 # Makefile.2
 #COMMS = serial
 
-ifeq ($(COMMS),mpi)
-TEMP1 = -DMPI
+ifeq ($(COMMS),mpi08)
+TEMP1 = -DMPI -DMPI08
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpih)
+TEMP1 = -DMPI -DMPIH
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi90)
+TEMP1 = -DMPI -DMPI90
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi)
+# default to f90 style "use mpi"
+TEMP1 = -DMPI -DMPI90
 TEMP2 = $(MPIF90)
 else
 TEMP1 =

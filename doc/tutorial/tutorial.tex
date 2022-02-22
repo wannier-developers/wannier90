@@ -3672,6 +3672,130 @@ $\vert n\mathbf{k} \rangle$ as a function of the corresponding energy $\epsilon_
 \label{fig:W_fit}
 \end{figure}
 
+\sectiontitle{33: Monolayer BC$_2$N -- $k\cdot p$ expansion coefficients}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate $k\cdot p$ expansion coefficients monolayer BC$_2$N using
+quasi-degenerate (L\"owdin) 
+perturbation theory. In preparation for this example it may be useful to read Ref.
+\cite{ibanez-azpiroz-ArXiv2019} }
+
+
+
+\item Directory: \verb|examples/example33/|
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|bc2n.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|bc2n.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|bc2n.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|bc2n.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+
+
+\end{itemize}
+
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < bc2n.scf > scf.out|
+
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < bc2n.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|GaAs.nnkp| file)
+
+\verb|wannier90.x -pp bc2n|
+
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
+Bloch states (written in the \verb|bc2n.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|bc2n.amn| file)
+
+\end{itemize}
+
+
+\verb|pw2wannier90.x < bc2n.pw2wan > pw2wan.out|
+
+\item Run {\tt wannier90} to  compute MLWFs
+
+\verb|wannier90.x bc2n|
+
+\item Run {\tt postw90} to compute expansion coefficients
+
+\verb|postw90.x bc2n| 
+
+
+\end{enumerate}
+
+
+\subsection*{Expansion coefficients}
+
+For computing $k\cdot p$ expansion coefficients as given by quasi-degenerate (L\"owdin) 
+perturbation theory, set
+\begin{verbatim}
+berry = true
+berry_task = kdotp
+\end{verbatim}
+Select the k-point around which the expansion coefficients will be computed, \textit{e.g.}, the S point
+\begin{verbatim}
+kdotp_kpoint  =  0.5000 0.0000 0.5000
+\end{verbatim}
+Set number of bands that should be taken into account for the $k\cdot p$ expansion, as well
+as their band indexes within the Wannier basis
+\begin{verbatim}
+kdotp_num_bands = 2
+kdotp_bands =  2,3
+\end{verbatim}
+Since no k-space integral is needed, set
+\begin{verbatim}
+berry_kmesh = 1 1 1
+\end{verbatim}
+Although not used, we also need to input the value of the Fermi level in eV
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+
+
+On output, the program generates three files, namely \verb|SEED-kdotp_0.dat|, 
+\verb|SEED-kdotp_1.dat| and  \verb|SEED-kdotp_2.dat|, which correspond to the zeroth, first and second 
+order expansion coefficients, respectively. The dimension of the matrix contained in each file 
+is $3^{l}\times N^{2}$, where $N$ is the number of bands set by \verb|kdotp_num_bands|, and $l$
+is the order of the expansion term (currently $l=0,1$ or $2$). 
+
+These coefficients can be used, among other things, to compute the energy dispersion of
+the bands of interest around the chosen k-point. 
+The $k\cdot p$ band dispersion can be computed and plotted along $k_x$ (from S to X)
+using python and the file \verb|kdotp_plot.py| provided in the example folder
+\begin{verbatim}
+python kdotp_plot.py
+\end{verbatim}
+For comparison, the exact band structure calculated using Wannier90 (file \verb|bc2n_band.dat|, generated automatically) 
+is also plotted along (see Fig. \ref{fig:bc2n-bnd}).
+
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=12cm]{kdotp_bands_SX.pdf}
+\caption{Band dispersion of monolayer BC$_{2}$N around $S$ point. Exact results (solid dots)
+are compared to first-order (blue) and second-order (red) $k\cdot p$ model results for valence and conduction bands.} 
+\label{fig:bc2n-bnd}
+\end{center}
+\end{figure}
+
+\end{itemize}
+
+
 %\cleardoublepage
 
 \bibliographystyle{apsrev4-1}

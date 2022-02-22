@@ -5,6 +5,7 @@ make.inc
 w90chk2chk.x
 w90spn2spn.x
 libwannier.a
+libwan2.a
 libwannier.so
 libwannier.dylib
 *~

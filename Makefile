@@ -24,22 +24,19 @@ all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
-serialobjs: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) serialobjs)
-
-w90chk2chk: objdir serialobjs
+w90chk2chk: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
 
-w90spn2spn: objdir serialobjs
+w90spn2spn: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
 
-wannier: objdir serialobjs
+wannier: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
 
-lib: objdir serialobjs
+lib: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
 
-dynlib: objdir serialobjs
+dynlib: objdir 
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
 
 w90pov:
@@ -50,8 +47,8 @@ w90vdw:
 
 libs: lib
 
-post: objdirp
-	(cd $(ROOTDIR)/src/objp && $(MAKE) -f $(REALMAKEFILE) post)
+post: objdir
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) post)
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
@@ -61,11 +58,6 @@ clean:
 		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf obj ; \
 	fi )
-	@( cd $(ROOTDIR) && if [ -d src/objp ] ; \
-		then cd src/objp && \
-		$(MAKE) -f $(REALMAKEFILE) clean && \
-		cd ../ && rm -rf objp ; \
-	fi )
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
@@ -73,7 +65,7 @@ clean:
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 veryclean: clean
-	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a w90chk2chk.x w90spn2spn.x
+	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a libwan2.a w90chk2chk.x w90spn2spn.x
 	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
 	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
 	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
@@ -212,9 +204,4 @@ objdir:
 		then mkdir src/obj ; \
 	fi ) ;
 
-objdirp: 
-	@( cd $(ROOTDIR) && if [ ! -d src/objp ] ; \
-		then mkdir src/objp ; \
-	fi ) ;
-
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests w90spn2spn install
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp tests w90spn2spn install
