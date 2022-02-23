@@ -41,13 +41,13 @@ w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
 ../../w90chk2chk.x: $(OBJS) ../w90chk2chk.F90
-	$(COMPILER) $(POSTOPTS) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
 
 ../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
-	$(COMPILER) $(POSTOPTS) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
 ../../wannier90.x: $(LIBRARYV2) ../wannier_prog.F90
-	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
+	$(COMPILER) $(POSTOPTS) $(FCOPTS)  ../wannier_prog.F90 $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
 
 $(LIBRARYV2): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBRARYV2) $(OBJS)
@@ -57,7 +57,7 @@ post: COMPILER = $(TEMP2)
 post: mpi_test ../../postw90.x
 
 ../../postw90.x: $(OBJS_POST) $(POSTDIR)postw90.F90
-	$(COMPILER) $(POSTDIR)postw90.F90 $(POSTOPTS) $(LDOPTS) $(OBJS_POST) $(LIBS) -o ../../postw90.x
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) $(POSTDIR)postw90.F90 $(LDOPTS) $(OBJS_POST) $(LIBS) -o ../../postw90.x
 
 mpi_test :
 ifeq ($(COMMS),mpi)
