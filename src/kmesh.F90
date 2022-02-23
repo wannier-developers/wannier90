@@ -702,7 +702,7 @@ contains
 
     ! Date and time
     call io_date(cdate, ctime)
-    write (nnkpout, '(4(a),/)') 'File written on ', cdate, ' at ', ctime
+    write (nnkpout, '(4(a),/)') '# File written on ', cdate, ' at ', ctime
 
     ! Calc_only_A
     write (nnkpout, '(a,l2,/)') 'calc_only_A  : ', calc_only_A
