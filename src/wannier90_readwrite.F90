@@ -130,7 +130,6 @@ contains
 
     ! local variables
     integer :: num_exclude_bands
-    character(len=20) :: energy_unit
     !! Units for energy
     logical :: found_fermi_energy
     logical :: has_kpath
@@ -147,8 +146,8 @@ contains
                                                 seedname)
     call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, stdout, seedname)
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
-                                    stdout, seedname)
+      call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, bohr, stdout, &
+                                    seedname)
       call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
       call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
       call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
@@ -489,7 +488,7 @@ contains
     if (wann_control%guiding_centres%num_no_guide_iter < 0) &
       call io_error('Error: num_no_guide_iter must be >= 0', stdout, seedname)
 
-    wann_control%fixed_step = -999.0_dp; 
+    wann_control%fixed_step = -999.0_dp
     wann_control%lfixstep = .false.
     call w90_readwrite_get_keyword(stdout, seedname, 'fixed_step', found, &
                                    r_value=wann_control%fixed_step)
@@ -2237,7 +2236,6 @@ contains
     if (on_root) print_output%iprint = iprintroot
     !______________________________________
 
-    !call comms_bcast(energy_unit, 1, stdout, seedname, comm)
     call comms_bcast(print_output%length_unit, 1, stdout, seedname, comm)
     call comms_bcast(wvfn_read%formatted, 1, stdout, seedname, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
