@@ -134,7 +134,6 @@ contains
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, library, ok
-    character(len=20) :: energy_unit
 
     library = .false.
     call w90_readwrite_in_file(seedname, stdout)
@@ -142,8 +141,8 @@ contains
     call w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
     call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, stdout, seedname)
     call w90_wannier90_readwrite_read_effective_model(effective_model, stdout, seedname)
-    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, bohr, &
-                                  stdout, seedname)
+    call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, bohr, stdout, &
+                                  seedname)
     call w90_wannier90_readwrite_read_oper(pw90_oper_read, stdout, seedname)
     call w90_readwrite_read_num_wann(num_wann, stdout, seedname)
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname) !for read_chkpt
