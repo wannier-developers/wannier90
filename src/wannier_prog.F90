@@ -640,8 +640,7 @@ contains
 #ifdef MPI
     call mpi_finalize(je) ! je overwritten here
 #endif
-    call exit(ie) ! return true fail code
-
+    !call exit(ie) ! return true fail code (gnu extension)
   end subroutine prterr
 
 end program wannier

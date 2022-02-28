@@ -1024,8 +1024,9 @@ contains
     ! counter on n values
     ! counter on 2n values
 
-    ! Fermi-Dirac smearing
+    utility_w0gauss = 0.d0 ! in case of error return
 
+    ! Fermi-Dirac smearing
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
