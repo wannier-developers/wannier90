@@ -32,7 +32,7 @@ module w90_wannier90_readwrite
   private
 
   type w90_extra_io_type
-    character(len=20) :: one_dim_axis
+    character(len=20) :: one_dim_axis = 'none'
     !! Constrained centres
     real(kind=dp), allocatable :: ccentres_frac(:, :)
   end type w90_extra_io_type
@@ -314,9 +314,6 @@ contains
       ! For aesthetic purposes, convert some things to uppercase
       call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
       ! Initialise
-      wann_omega%total = -999.0_dp
-      wann_omega%tilde = -999.0_dp
-      wann_omega%invariant = -999.0_dp
       call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
                                           num_bands, num_kpts, error, comm)
       if (allocated(error)) return
@@ -352,25 +349,21 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(w90_calculation_type), intent(out) :: w90_calculation
+    type(w90_calculation_type), intent(inout) :: w90_calculation
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    w90_calculation%transport = .false.
     call w90_readwrite_get_keyword('transport', found, error, comm, l_value=w90_calculation%transport)
     if (allocated(error)) return
 
-    w90_calculation%wannier_plot = .false.
     call w90_readwrite_get_keyword('wannier_plot', found, error, comm, l_value=w90_calculation%wannier_plot)
     if (allocated(error)) return
 
-    w90_calculation%bands_plot = .false.
     call w90_readwrite_get_keyword('bands_plot', found, error, comm, l_value=w90_calculation%bands_plot)
     if (allocated(error)) return
 
-    w90_calculation%fermi_surface_plot = .false.
     call w90_readwrite_get_keyword('fermi_surface_plot', found, error, comm, l_value=w90_calculation%fermi_surface_plot)
     if (allocated(error)) return
 
@@ -384,24 +377,21 @@ contains
     use w90_error, only: w90_error_type
     implicit none
     logical, intent(in) :: transport
-    type(transport_type), intent(out) :: tran
+    type(transport_type), intent(inout) :: tran
     character(len=*), intent(inout) :: restart
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    tran%read_ht = .false.
     call w90_readwrite_get_keyword('tran_read_ht', found, error, comm, l_value=tran%read_ht)
     if (allocated(error)) return
 
-    tran%easy_fix = .false.
     call w90_readwrite_get_keyword('tran_easy_fix', found, error, comm, l_value=tran%easy_fix)
     if (allocated(error)) return
 
     if (transport .and. tran%read_ht) restart = ' '
 
-    tran%mode = 'bulk'
     call w90_readwrite_get_keyword('transport_mode', found, error, comm, c_value=tran%mode)
     if (allocated(error)) return
 
@@ -410,63 +400,48 @@ contains
 !       return
 !    endif
 
-    tran%win_min = -3.0_dp
     call w90_readwrite_get_keyword('tran_win_min', found, error, comm, r_value=tran%win_min)
     if (allocated(error)) return
 
-    tran%win_max = 3.0_dp
     call w90_readwrite_get_keyword('tran_win_max', found, error, comm, r_value=tran%win_max)
     if (allocated(error)) return
 
-    tran%energy_step = 0.01_dp
     call w90_readwrite_get_keyword('tran_energy_step', found, error, comm, r_value=tran%energy_step)
     if (allocated(error)) return
 
-    tran%num_bb = 0
     call w90_readwrite_get_keyword('tran_num_bb', found, error, comm, i_value=tran%num_bb)
     if (allocated(error)) return
 
-    tran%num_ll = 0
     call w90_readwrite_get_keyword('tran_num_ll', found, error, comm, i_value=tran%num_ll)
     if (allocated(error)) return
 
-    tran%num_rr = 0
     call w90_readwrite_get_keyword('tran_num_rr', found, error, comm, i_value=tran%num_rr)
     if (allocated(error)) return
 
-    tran%num_cc = 0
     call w90_readwrite_get_keyword('tran_num_cc', found, error, comm, i_value=tran%num_cc)
     if (allocated(error)) return
 
-    tran%num_lc = 0
     call w90_readwrite_get_keyword('tran_num_lc', found, error, comm, i_value=tran%num_lc)
     if (allocated(error)) return
 
-    tran%num_cr = 0
     call w90_readwrite_get_keyword('tran_num_cr', found, error, comm, i_value=tran%num_cr)
     if (allocated(error)) return
 
-    tran%num_bandc = 0
     call w90_readwrite_get_keyword('tran_num_bandc', found, error, comm, i_value=tran%num_bandc)
     if (allocated(error)) return
 
-    tran%write_ht = .false.
     call w90_readwrite_get_keyword('tran_write_ht', found, error, comm, l_value=tran%write_ht)
     if (allocated(error)) return
 
-    tran%use_same_lead = .true.
     call w90_readwrite_get_keyword('tran_use_same_lead', found, error, comm, l_value=tran%use_same_lead)
     if (allocated(error)) return
 
-    tran%num_cell_ll = 0
     call w90_readwrite_get_keyword('tran_num_cell_ll', found, error, comm, i_value=tran%num_cell_ll)
     if (allocated(error)) return
 
-    tran%num_cell_rr = 0
     call w90_readwrite_get_keyword('tran_num_cell_rr', found, error, comm, i_value=tran%num_cell_rr)
     if (allocated(error)) return
 
-    tran%group_threshold = 0.15_dp
     call w90_readwrite_get_keyword('tran_group_threshold', found, error, comm, r_value=tran%group_threshold)
     if (allocated(error)) return
 
@@ -531,7 +506,6 @@ contains
 
     logical :: found
 
-    real_space_ham%dist_cutoff_mode = 'three_dim'
     call w90_readwrite_get_keyword('dist_cutoff_mode', found, error, comm, &
                                    c_value=real_space_ham%dist_cutoff_mode)
     if (allocated(error)) return
@@ -542,7 +516,6 @@ contains
       return
     endif
 
-    real_space_ham%dist_cutoff = 1000.0_dp
     call w90_readwrite_get_keyword('dist_cutoff', found, error, comm, &
                                    r_value=real_space_ham%dist_cutoff)
     if (allocated(error)) return
@@ -552,11 +525,9 @@ contains
                                    r_value=real_space_ham%dist_cutoff_hc)
     if (allocated(error)) return
 
-    real_space_ham%hr_cutoff = 0.0_dp
     call w90_readwrite_get_keyword('hr_cutoff', found, error, comm, r_value=real_space_ham%hr_cutoff)
     if (allocated(error)) return
 
-    real_space_ham%system_dim = 3
     call w90_readwrite_get_keyword('bands_plot_dim', found, error, comm, i_value=real_space_ham%system_dim)
     if (allocated(error)) return
 
@@ -569,7 +540,7 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(wann_control_type), intent(out) :: wann_control
+    type(wann_control_type), intent(inout) :: wann_control
     integer, intent(in) :: num_wann
     real(kind=dp), allocatable, intent(inout) :: ccentres_frac(:, :)
     integer, intent(in) :: stdout
@@ -579,7 +550,6 @@ contains
     integer :: ierr
     logical :: found
 
-    wann_control%num_dump_cycles = 100     ! frequency to write backups at
     call w90_readwrite_get_keyword('num_dump_cycles', found, error, comm, &
                                    i_value=wann_control%num_dump_cycles)
     if (allocated(error)) return
@@ -589,7 +559,6 @@ contains
       return
     endif
 
-    wann_control%num_print_cycles = 1          ! frequency to write at
     call w90_readwrite_get_keyword('num_print_cycles', found, error, comm, &
                                    i_value=wann_control%num_print_cycles)
     if (allocated(error)) return
@@ -599,7 +568,6 @@ contains
       return
     endif
 
-    wann_control%num_iter = 100
     call w90_readwrite_get_keyword('num_iter', found, error, comm, &
                                    i_value=wann_control%num_iter)
     if (allocated(error)) return
@@ -609,7 +577,6 @@ contains
       return
     endif
 
-    wann_control%num_cg_steps = 5
     call w90_readwrite_get_keyword('num_cg_steps', found, error, comm, &
                                    i_value=wann_control%num_cg_steps)
     if (allocated(error)) return
@@ -619,7 +586,6 @@ contains
       return
     endif
 
-    wann_control%conv_tol = 1.0e-10_dp
     call w90_readwrite_get_keyword('conv_tol', found, error, comm, &
                                    r_value=wann_control%conv_tol)
     if (allocated(error)) return
@@ -629,7 +595,6 @@ contains
       return
     endif
 
-    wann_control%conv_noise_amp = -1.0_dp
     call w90_readwrite_get_keyword('conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
     if (allocated(error)) return
@@ -641,7 +606,6 @@ contains
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
 
-    wann_control%conv_noise_num = 3
     call w90_readwrite_get_keyword('conv_noise_num', found, error, comm, &
                                    i_value=wann_control%conv_noise_num)
     if (allocated(error)) return
@@ -651,12 +615,10 @@ contains
       return
     endif
 
-    wann_control%guiding_centres%enable = .false.
     call w90_readwrite_get_keyword('guiding_centres', found, error, comm, &
                                    l_value=wann_control%guiding_centres%enable)
     if (allocated(error)) return
 
-    wann_control%guiding_centres%num_guide_cycles = 1
     call w90_readwrite_get_keyword('num_guide_cycles', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
@@ -666,7 +628,6 @@ contains
       return
     endif
 
-    wann_control%guiding_centres%num_no_guide_iter = 0
     call w90_readwrite_get_keyword('num_no_guide_iter', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_no_guide_iter)
     if (allocated(error)) return
@@ -676,8 +637,6 @@ contains
       return
     endif
 
-    wann_control%fixed_step = -999.0_dp
-    wann_control%lfixstep = .false.
     call w90_readwrite_get_keyword('fixed_step', found, error, comm, &
                                    r_value=wann_control%fixed_step)
     if (allocated(error)) return
@@ -688,7 +647,6 @@ contains
     endif
     if (wann_control%fixed_step > 0.0_dp) wann_control%lfixstep = .true.
 
-    wann_control%trial_step = 2.0_dp
     call w90_readwrite_get_keyword('trial_step', found, error, comm, &
                                    r_value=wann_control%trial_step)
     if (allocated(error)) return
@@ -698,13 +656,11 @@ contains
       return
     endif
 
-    wann_control%precond = .false.
     call w90_readwrite_get_keyword('precond', found, error, comm, &
                                    l_value=wann_control%precond)
     if (allocated(error)) return
 
     wann_control%constrain%slwf_num = num_wann
-    wann_control%constrain%selective_loc = .false.
     call w90_readwrite_get_keyword('slwf_num', found, error, comm, &
                                    i_value=wann_control%constrain%slwf_num)
     if (allocated(error)) return
@@ -719,7 +675,6 @@ contains
         wann_control%constrain%selective_loc = .true.
     end if
 
-    wann_control%constrain%constrain = .false.
     call w90_readwrite_get_keyword('slwf_constrain', found, error, comm, &
                                    l_value=wann_control%constrain%constrain)
     if (allocated(error)) return
@@ -742,7 +697,6 @@ contains
       end if
     end if
 
-    wann_control%constrain%lambda = 1.0_dp
     call w90_readwrite_get_keyword('slwf_lambda', found, error, comm, &
                                    r_value=wann_control%constrain%lambda)
     if (allocated(error)) return
@@ -771,7 +725,6 @@ contains
     integer :: nkp, ierr
     logical :: found
 
-    dis_control%num_iter = 200
     call w90_readwrite_get_keyword('dis_num_iter', found, error, comm, i_value=dis_control%num_iter)
     if (allocated(error)) return
     if (dis_control%num_iter < 0) then
@@ -779,7 +732,6 @@ contains
       return
     endif
 
-    dis_control%mix_ratio = 0.5_dp
     call w90_readwrite_get_keyword('dis_mix_ratio', found, error, comm, r_value=dis_control%mix_ratio)
     if (allocated(error)) return
     if (dis_control%mix_ratio <= 0.0_dp .or. dis_control%mix_ratio > 1.0_dp) then
@@ -787,7 +739,6 @@ contains
       return
     endif
 
-    dis_control%conv_tol = 1.0e-10_dp
     call w90_readwrite_get_keyword('dis_conv_tol', found, error, comm, r_value=dis_control%conv_tol)
     if (allocated(error)) return
     if (dis_control%conv_tol < 0.0_dp) then
@@ -795,7 +746,6 @@ contains
       return
     endif
 
-    dis_control%conv_window = 3
     call w90_readwrite_get_keyword('dis_conv_window', found, error, comm, i_value=dis_control%conv_window)
     if (allocated(error)) return
     if (dis_control%conv_window < 0) then
@@ -804,7 +754,6 @@ contains
     endif
 
     ! GS-start
-    dis_spheres%first_wann = 1
     call w90_readwrite_get_keyword('dis_spheres_first_wann', found, error, comm, i_value=dis_spheres%first_wann)
     if (allocated(error)) return
     if (dis_spheres%first_wann < 1) then
@@ -815,7 +764,6 @@ contains
       call set_error_input(error, 'Error: dis_spheres_first_wann is larger than num_bands-num_wann+1', comm)
       return
     endif
-    dis_spheres%num = 0
     call w90_readwrite_get_keyword('dis_spheres_num', found, error, comm, i_value=dis_spheres%num)
     if (allocated(error)) return
     if (dis_spheres%num < 0) then
@@ -851,23 +799,21 @@ contains
     use w90_io, only: post_proc_flag
     use w90_error, only: w90_error_type
     implicit none
-    logical, intent(out) :: cp_pp, pp_only_A, postproc_setup
+    logical, intent(inout) :: cp_pp, pp_only_A
+    logical, intent(inout) :: postproc_setup ! alreadt init in w90_calc
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    postproc_setup = .false.            ! set to true to write .nnkp file and exit
     call w90_readwrite_get_keyword('postproc_setup', found, error, comm, l_value=postproc_setup)
     if (allocated(error)) return
     ! We allow this keyword to be overriden by a command line arg -pp
     if (post_proc_flag) postproc_setup = .true.
 
-    cp_pp = .false.         ! set to true if doing CP post-processing
     call w90_readwrite_get_keyword('cp_pp', found, error, comm, l_value=cp_pp)
     if (allocated(error)) return
 
-    pp_only_A = .false.
     call w90_readwrite_get_keyword('calc_only_A', found, error, comm, l_value=pp_only_A)
     if (allocated(error)) return
 
@@ -885,7 +831,6 @@ contains
 
     logical :: found, chk_found
 
-    w90_calculation%restart = ' '
     call w90_readwrite_get_keyword('restart', found, error, comm, c_value=w90_calculation%restart)
     if (allocated(error)) return
     if (found) then
@@ -920,19 +865,15 @@ contains
 
     logical :: found, hr_plot
 
-    output_file%write_xyz = .false.
     call w90_readwrite_get_keyword('write_xyz', found, error, comm, l_value=output_file%write_xyz)
     if (allocated(error)) return
 
-    output_file%write_r2mn = .false.
     call w90_readwrite_get_keyword('write_r2mn', found, error, comm, l_value=output_file%write_r2mn)
     if (allocated(error)) return
 
-    output_file%write_proj = .false.
     call w90_readwrite_get_keyword('write_proj', found, error, comm, l_value=output_file%write_proj)
     if (allocated(error)) return
 
-    output_file%write_hr_diag = .false.
     call w90_readwrite_get_keyword('write_hr_diag', found, error, comm, &
                                    l_value=output_file%write_hr_diag)
     if (allocated(error)) return
@@ -944,15 +885,12 @@ contains
       call set_error_input(error, 'Input parameter hr_plot is no longer used. Please use write_hr instead.', comm)
       return
     endif
-    output_file%write_hr = .false.
     call w90_readwrite_get_keyword('write_hr', found, error, comm, l_value=output_file%write_hr)
     if (allocated(error)) return
 
-    output_file%write_rmn = .false.
     call w90_readwrite_get_keyword('write_rmn', found, error, comm, l_value=output_file%write_rmn)
     if (allocated(error)) return
 
-    output_file%write_tb = .false.
     call w90_readwrite_get_keyword('write_tb', found, error, comm, l_value=output_file%write_tb)
     if (allocated(error)) return
 
@@ -961,7 +899,6 @@ contains
     !%%%%%%%%%%%%%%%%
 
     ! aam: vdW
-    output_file%write_vdw_data = .false.
     call w90_readwrite_get_keyword('write_vdw_data', found, error, comm, &
                                    l_value=output_file%write_vdw_data)
     if (allocated(error)) return
@@ -976,12 +913,10 @@ contains
       return
     endif
 
-    output_file%write_u_matrices = .false.
     call w90_readwrite_get_keyword('write_u_matrices', found, error, comm, &
                                    l_value=output_file%write_u_matrices)
     if (allocated(error)) return
 
-    output_file%write_bvec = .false.
     call w90_readwrite_get_keyword('write_bvec', found, error, comm, l_value=output_file%write_bvec)
     if (allocated(error)) return
 
@@ -994,18 +929,16 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(wvfn_read_type), intent(out) :: wvfn_read
+    type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
     character(len=6) :: spin_str
 
-    wvfn_read%formatted = .false.       ! formatted or "binary" file
     call w90_readwrite_get_keyword('wvfn_formatted', found, error, comm, l_value=wvfn_read%formatted)
     if (allocated(error)) return
 
-    wvfn_read%spin_channel = 1
     call w90_readwrite_get_keyword('spin', found, error, comm, c_value=spin_str)
     if (allocated(error)) return
     if (found) then
@@ -1028,7 +961,7 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(band_plot_type), intent(out) :: band_plot
+    type(band_plot_type), intent(inout) :: band_plot
     integer, intent(in) :: num_wann
     logical, intent(in) :: has_kpath
     logical, intent(in) :: bands_plot
@@ -1038,11 +971,9 @@ contains
     integer :: ierr, num_project
     logical :: found
 
-    band_plot%format = 'gnuplot'
     call w90_readwrite_get_keyword('bands_plot_format', found, error, comm, c_value=band_plot%format)
     if (allocated(error)) return
 
-    band_plot%mode = 's-k'
     call w90_readwrite_get_keyword('bands_plot_mode', found, error, comm, c_value=band_plot%mode)
     if (allocated(error)) return
 
@@ -1096,7 +1027,7 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(wannier_plot_type), intent(out) :: wann_plot
+    type(wannier_plot_type), intent(inout) :: wann_plot
     integer, intent(in) :: num_wann
     logical, intent(in) :: wannier_plot
     type(w90_error_type), allocatable, intent(out) :: error
@@ -1104,8 +1035,6 @@ contains
 
     integer :: i, loop, ierr, wann_plot_num
     logical :: found
-
-    wann_plot%supercell = 2
 
     call w90_readwrite_get_vector_length('wannier_plot_supercell', found, i, error, comm)
     if (allocated(error)) return
@@ -1134,19 +1063,15 @@ contains
       endif
     end if
 
-    wann_plot%format = 'xcrysden'
     call w90_readwrite_get_keyword('wannier_plot_format', found, error, comm, c_value=wann_plot%format)
     if (allocated(error)) return
 
-    wann_plot%mode = 'crystal'
     call w90_readwrite_get_keyword('wannier_plot_mode', found, error, comm, c_value=wann_plot%mode)
     if (allocated(error)) return
 
-    wann_plot%spinor_mode = 'total'
     call w90_readwrite_get_keyword('wannier_plot_spinor_mode', found, error, comm, &
                                    c_value=wann_plot%spinor_mode)
     if (allocated(error)) return
-    wann_plot%spinor_phase = .true.
     call w90_readwrite_get_keyword('wannier_plot_spinor_phase', found, error, comm, &
                                    l_value=wann_plot%spinor_phase)
     if (allocated(error)) return
@@ -1186,11 +1111,9 @@ contains
       end do
     end if
 
-    wann_plot%radius = 3.5_dp
     call w90_readwrite_get_keyword('wannier_plot_radius', found, error, comm, r_value=wann_plot%radius)
     if (allocated(error)) return
 
-    wann_plot%scale = 1.0_dp
     call w90_readwrite_get_keyword('wannier_plot_scale', found, error, comm, r_value=wann_plot%scale)
     if (allocated(error)) return
 
@@ -1227,19 +1150,17 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    type(fermi_surface_plot_type), intent(out) :: fermi_surface_data
+    type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     logical, intent(in) :: fermi_surface_plot
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    fermi_surface_data%num_points = 50
     call w90_readwrite_get_keyword('fermi_surface_num_points', found, error, comm, &
                                    i_value=fermi_surface_data%num_points)
     if (allocated(error)) return
 
-    fermi_surface_data%plot_format = 'xcrysden'
     call w90_readwrite_get_keyword('fermi_surface_plot_format', found, error, comm, &
                                    c_value=fermi_surface_data%plot_format)
     if (allocated(error)) return
@@ -1265,18 +1186,16 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calculation
     type(band_plot_type), intent(in) :: band_plot
     type(real_space_ham_type), intent(inout) :: real_space_ham
-    character(len=*), intent(out) :: one_dim_axis
+    character(len=*), intent(inout) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    one_dim_axis = 'none'
     call w90_readwrite_get_keyword('one_dim_axis', found, error, comm, c_value=one_dim_axis)
     if (allocated(error)) return
 
-    real_space_ham%one_dim_dir = 0
     if (index(one_dim_axis, 'x') > 0) real_space_ham%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) real_space_ham%one_dim_dir = 2
     if (index(one_dim_axis, 'z') > 0) real_space_ham%one_dim_dir = 3
@@ -1307,13 +1226,10 @@ contains
 
     logical :: found
 
-    hamiltonian%translate_home_cell = .false.
     call w90_readwrite_get_keyword('translate_home_cell', found, error, comm, &
                                    l_value=hamiltonian%translate_home_cell)
     if (allocated(error)) return
 
-    hamiltonian%automatic_translation = .true.
-    hamiltonian%translation_centre_frac = 0.0_dp
     call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 3, error, comm, &
                                           r_value=rv_temp)
     if (allocated(error)) return
@@ -1329,14 +1245,13 @@ contains
     !================================================!
     use w90_error, only: w90_error_type
     implicit none
-    logical, intent(out) :: use_bloch_phases
+    logical, intent(inout) :: use_bloch_phases
     logical, intent(in) :: disentanglement
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    use_bloch_phases = .false.
     call w90_readwrite_get_keyword('use_bloch_phases', found, error, comm, l_value=use_bloch_phases)
     if (allocated(error)) return
 
@@ -1479,12 +1394,10 @@ contains
     integer, allocatable :: select_projections(:)
 
     ! Projections
-    proj_input%auto_projections = .false.
     call w90_readwrite_get_keyword('auto_projections', found, error, comm, &
                                    l_value=proj_input%auto_projections)
     if (allocated(error)) return
 
-    num_proj = 0
     call w90_readwrite_get_block_length('projections', found, i_temp, library, error, comm)
     if (allocated(error)) return
     ! check to see that there are no unrecognised keywords
@@ -1506,7 +1419,6 @@ contains
       num_proj = num_wann
     end if
 
-    select_proj%lselproj = .false.
     num_select_projections = 0
     call w90_readwrite_get_range_vector('select_projections', found, num_select_projections, &
                                         .true., error, comm)

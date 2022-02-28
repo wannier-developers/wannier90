@@ -219,6 +219,18 @@ program wannier
   on_root = .false.
   if (my_node_id == 0) on_root = .true.
 
+  ! global inits (non-type based) from readwrite files
+  optimisation = 3
+  num_wann = -99
+  num_proj = 0
+  lhasproj = .false.
+  !lsitesymmetry = .false.
+  cp_pp = .false.
+  calc_only_A = .false.
+  use_bloch_phases = .false.
+  eig_found = .false.
+  ! end global inits
+
   time0 = io_time()
 
   if (on_root) then

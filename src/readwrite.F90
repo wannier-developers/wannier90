@@ -90,7 +90,6 @@ contains
     type(w90comm_type), intent(in) :: comm
     integer :: unlucky_rank
 
-    print_output%timing_level = 1 ! Verbosity of timing output info
     call w90_readwrite_get_keyword('timing_level', found, error, comm, i_value=print_output%timing_level)
     if (allocated(error)) return
 
@@ -104,7 +103,6 @@ contains
       endif
     endif
 
-    print_output%iprint = 1 ! Verbosity
     call w90_readwrite_get_keyword('iprint', found, error, comm, i_value=print_output%iprint)
     if (allocated(error)) return
 
@@ -118,7 +116,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
-    optimisation = 3 ! Verbosity
     call w90_readwrite_get_keyword('optimisation', found, error, comm, i_value=optimisation)
     if (allocated(error)) return
 
@@ -127,20 +124,17 @@ contains
   subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    real(kind=dp), intent(out) :: lenconfac
-    character(len=*), intent(out) :: length_unit
-    character(len=*), intent(out) :: energy_unit
+    real(kind=dp), intent(inout) :: lenconfac
+    character(len=*), intent(inout) :: length_unit
+    character(len=*), intent(inout) :: energy_unit
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
     logical :: found
 
-    energy_unit = 'ev'
     call w90_readwrite_get_keyword('energy_unit', found, error, comm, c_value=energy_unit)
     if (allocated(error)) return
 
-    length_unit = 'ang'
-    lenconfac = 1.0_dp
     call w90_readwrite_get_keyword('length_unit', found, error, comm, c_value=length_unit)
     if (allocated(error)) return
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
@@ -153,13 +147,12 @@ contains
   subroutine w90_readwrite_read_num_wann(num_wann, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(out) :: num_wann
+    integer, intent(inout) :: num_wann
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    num_wann = -99
     call w90_readwrite_get_keyword('num_wann', found, error, comm, i_value=num_wann)
     if (allocated(error)) return
 
@@ -343,8 +336,6 @@ contains
       return
     endif
 
-    ! set to a negative default value
-    w90_system%num_valence_bands = -99
     call w90_readwrite_get_keyword('num_valence_bands', found, error, comm, &
                                    i_value=w90_system%num_valence_bands)
     if (allocated(error)) return
@@ -360,7 +351,7 @@ contains
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(in) :: library, bands_plot
-    type(kpoint_path_type), intent(out) :: kpoint_path
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     logical, intent(out) :: ok
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
@@ -391,7 +382,6 @@ contains
     else
       ok = .false.
     end if
-    kpoint_path%num_points_first_segment = 100
     call w90_readwrite_get_keyword('bands_num_points', found, error, comm, &
                                    i_value=kpoint_path%num_points_first_segment)
     if (allocated(error)) return
@@ -502,17 +492,13 @@ contains
     integer :: i
     logical :: found
 
-    ws_region%use_ws_distance = .true.
     call w90_readwrite_get_keyword('use_ws_distance', found, error, comm, &
                                    l_value=ws_region%use_ws_distance)
     if (allocated(error)) return
 
-    ws_region%ws_distance_tol = 1.e-5_dp
     call w90_readwrite_get_keyword('ws_distance_tol', found, error, comm, &
                                    r_value=ws_region%ws_distance_tol)
     if (allocated(error)) return
-
-    ws_region%ws_search_size = 2
 
     call w90_readwrite_get_vector_length('ws_search_size', found, i, error, comm)
     if (allocated(error)) return
@@ -554,14 +540,13 @@ contains
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: disentanglement, library, postproc_setup
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
-    logical, intent(out) :: eig_found
+    logical, intent(inout) :: eig_found
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
     ! local
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
-    eig_found = .false.
     if (.not. library .and. .not. pw90_effective_model) then
 
       if (.not. postproc_setup) then
@@ -640,9 +625,6 @@ contains
       return
     endif
 
-    dis_manifold%froz_min = -1.0_dp; dis_manifold%froz_max = 0.0_dp
-    ! no default for dis_froz_max
-    dis_manifold%frozen_states = .false.
     call w90_readwrite_get_keyword('dis_froz_max', found, error, comm, &
                                    r_value=dis_manifold%froz_max)
     if (allocated(error)) return
@@ -669,14 +651,13 @@ contains
   subroutine w90_readwrite_read_kmesh_data(kmesh_input, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
-    type(kmesh_input_type), intent(out) :: kmesh_input
+    type(kmesh_input_type), intent(inout) :: kmesh_input
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     integer :: itmp, ierr
     logical :: found
 
-    kmesh_input%search_shells = 36
     call w90_readwrite_get_keyword('search_shells', found, error, comm, &
                                    i_value=kmesh_input%search_shells)
     if (allocated(error)) return
@@ -685,7 +666,6 @@ contains
       return
     endif
 
-    kmesh_input%tol = 0.000001_dp
     call w90_readwrite_get_keyword('kmesh_tol', found, error, comm, r_value=kmesh_input%tol)
     if (allocated(error)) return
     if (kmesh_input%tol < 0.0_dp) then
@@ -693,7 +673,6 @@ contains
       return
     endif
 
-    kmesh_input%num_shells = 0
     call w90_readwrite_get_range_vector('shell_list', found, kmesh_input%num_shells, .true., error, comm)
     if (allocated(error)) return
     if (found) then
@@ -735,7 +714,6 @@ contains
     ! in kmesh.F90
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
-    kmesh_input%skip_B1_tests = .false.
     call w90_readwrite_get_keyword('skip_b1_tests', found, error, comm, &
                                    l_value=kmesh_input%skip_B1_tests)
     if (allocated(error)) return
