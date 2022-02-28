@@ -172,7 +172,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_no_sync_send, comms_no_sync_recv, comms_bcast
+    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_bcast
     use w90_postw90_types, only: kpoint_dist_type
 
     ! arguments
@@ -182,8 +182,10 @@ contains
 
     ! local variables
     integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
-    real(kind=dp) :: sum
+    !real(kind=dp) :: sum
     logical :: on_root = .false.
+    real(kind=dp), allocatable :: kt(:, :), wt(:) !temp for read/dist
+    integer :: ik, nk, ir, nkloc, off
 
     my_node_id = mpirank(comm)
     num_nodes = mpisize(comm)
@@ -218,36 +220,56 @@ contains
     endif
     kpoint_dist%weight = 0.0_dp
 
-    sum = 0.0_dp
+    !sum = 0.0_dp
+
+    nk = kpoint_dist%num_int_kpts
+    allocate (kt(3, nk))
+    allocate (wt(nk))
     if (on_root) then
-      do loop_nodes = 1, num_nodes - 1
-        do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(loop_nodes)
-          read (k_unit, *) (kpoint_dist%int_kpts(i, loop_kpt), i=1, 3), kpoint_dist%weight(loop_kpt)
-          sum = sum + kpoint_dist%weight(loop_kpt)
-        end do
+      do ik = 1, nk
+        read (k_unit, *) (kt(i, ik), i=1, 3), wt(ik)
+      enddo
+    endif
+    call comms_bcast(kt(1, 1), 3*nk, error, comm)
+    if (allocated(error)) return
+    call comms_bcast(wt(1), nk, error, comm)
+    if (allocated(error)) return
 
-        call comms_no_sync_send(kpoint_dist%int_kpts(1, 1), &
-                                3*kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
-        if (allocated(error)) return
-        call comms_no_sync_send(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(loop_nodes), &
-                                loop_nodes, error, comm)
-        if (allocated(error)) return
-      end do
-      do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(0)
-        read (k_unit, *) (kpoint_dist%int_kpts(i, loop_kpt), i=1, 3), kpoint_dist%weight(loop_kpt)
-        sum = sum + kpoint_dist%weight(loop_kpt)
-      end do
-!       print*,'rsum',sum
-    end if
+    nkloc = kpoint_dist%num_int_kpts_on_node(my_node_id)
+    off = 1
+    do ir = 0, my_node_id - 1
+      off = off + kpoint_dist%num_int_kpts_on_node(ir)
+    enddo
+    call dcopy(3*nkloc, kt(1, off), 1, kpoint_dist%int_kpts, 1)
+    call dcopy(nkloc, wt(off), 1, kpoint_dist%weight, 1)
+    deallocate (kt)
+    deallocate (wt)
 
-    if (.not. on_root) then
-      call comms_no_sync_recv(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(my_node_id), &
-                              0, error, comm)
-      if (allocated(error)) return
-      call comms_no_sync_recv(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(my_node_id), 0, &
-                              error, comm)
-      if (allocated(error)) return
-    end if
+!    if (on_root) then
+!      do loop_nodes = 1, num_nodes - 1
+!        do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(loop_nodes)
+!          read (k_unit, *) (kpoint_dist%int_kpts(i, loop_kpt), i=1, 3), kpoint_dist%weight(loop_kpt)
+!          sum = sum + kpoint_dist%weight(loop_kpt)
+!        end do
+!
+!        call comms_no_sync_send(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
+!        if (allocated(error)) return
+!        call comms_no_sync_send(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(loop_nodes), loop_nodes, error, comm)
+!        if (allocated(error)) return
+!      end do
+!      do loop_kpt = 1, kpoint_dist%num_int_kpts_on_node(0)
+!        read (k_unit, *) (kpoint_dist%int_kpts(i, loop_kpt), i=1, 3), kpoint_dist%weight(loop_kpt)
+!        sum = sum + kpoint_dist%weight(loop_kpt)
+!      end do
+!!       print*,'rsum',sum
+!    end if
+!
+!    if (.not. on_root) then
+!      call comms_no_sync_recv(kpoint_dist%int_kpts(1, 1), 3*kpoint_dist%num_int_kpts_on_node(my_node_id), 0, error, comm)
+!      if (allocated(error)) return
+!      call comms_no_sync_recv(kpoint_dist%weight(1), kpoint_dist%num_int_kpts_on_node(my_node_id), 0, error, comm)
+!      if (allocated(error)) return
+!    end if
 
     return
 
