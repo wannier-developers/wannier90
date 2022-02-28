@@ -27,6 +27,7 @@ module w90_types
   !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
   use w90_constants, only: dp, maxlen
+  !use w90_io, only: maxlen
 
   implicit none
 
@@ -37,23 +38,23 @@ module w90_types
     !! Contains variables to control output file formatting and verbosity.
     !!==================================================
     ! verbosity flags - w90_readwrite_read_verbosity
-    integer :: iprint
+    integer :: iprint = 1
     ! Controls the verbosity of the output
-    integer :: timing_level
+    integer :: timing_level = 1
     ! REVIEW_2021-07-22: we agree that we don't need both length_unit and lenconfac;
     ! REVIEW_2021-07-22: instead could have a utility function.
-    character(len=20) :: length_unit ! MAYBE, just have a separate variable?
+    character(len=20) :: length_unit = 'ang' ! MAYBE, just have a separate variable?
     ! Units for length
-    real(kind=dp) :: lenconfac !lots of write statements in wannier90
+    real(kind=dp) :: lenconfac = 1.0_dp !lots of write statements in wannier90
   end type print_output_type
 
   type w90_system_type
     !!==================================================
     !! Contains physical information about the material being calculated.
     !!==================================================
-    integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
+    integer :: num_valence_bands = -99 !wannierise, postw90/postw90_common, get_oper and berry
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
-    logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
+    logical :: spinors  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
   ! timer from io.F90
@@ -72,10 +73,10 @@ module w90_types
   end type timer_list_type
 
   type ws_region_type
-    logical :: use_ws_distance !ws_distance, plot and postw90_common
-    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
+    logical :: use_ws_distance = .true. !ws_distance, plot and postw90_common
+    real(kind=dp) :: ws_distance_tol = 1.e-5_dp !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions
-    integer :: ws_search_size(3) ! ws_distance, hamiltonian
+    integer :: ws_search_size(3) = 2 ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
   end type ws_region_type
@@ -119,13 +120,13 @@ module w90_types
     !!==================================================
     !! Contains information that can be provided by the user about determining the kmesh
     !!==================================================
-    integer :: num_shells
+    integer :: num_shells = 0
     !! no longer an input keyword
-    logical :: skip_B1_tests
+    logical :: skip_B1_tests = .false.
     !! do not check the B1 condition
     integer, allocatable :: shell_list(:)
-    integer :: search_shells
-    real(kind=dp) :: tol
+    integer :: search_shells = 36
+    real(kind=dp) :: tol = 0.000001_dp
   end type kmesh_input_type
 
   !AAM: There are a number of ways one can handle the initial guess. (i) specify explicit
@@ -155,7 +156,7 @@ module w90_types
     real(kind=dp), allocatable :: zona(:)
     ! a u t o m a t i c   p r o j e c t i o n s
     ! vv: Writes a new block in .nnkp
-    logical :: auto_projections
+    logical :: auto_projections = .false.
   end type proj_input_type
 
   ! kmesh information (set in kmesh)
@@ -185,11 +186,11 @@ module w90_types
     !! lower bound of the disentanglement outer window
     real(kind=dp) :: win_max
     !! upper bound of the disentanglement outer window
-    real(kind=dp) :: froz_min
+    real(kind=dp) :: froz_min = -1.0_dp
     !! lower bound of the disentanglement inner (frozen) window
-    real(kind=dp) :: froz_max
+    real(kind=dp) :: froz_max = 0.0_dp
     !! upper bound of the disentanglement inner (frozen) window
-    logical :: frozen_states
+    logical :: frozen_states = .false.
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
@@ -206,8 +207,8 @@ module w90_types
     integer, allocatable :: species_num(:)
     character(len=maxlen), allocatable :: label(:)
     character(len=2), allocatable :: symbol(:)
-    integer :: num_atoms
-    integer :: num_species
+    integer :: num_atoms = 0
+    integer :: num_species = 0
   end type atom_data_type
 
   ! plot.F90 and postw90/kpath
@@ -217,7 +218,7 @@ module w90_types
     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
     !! number of segments specified by the user. Each pair of special points defines a segment.
     !!==================================================
-    integer num_points_first_segment
+    integer :: num_points_first_segment = 100
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)
   end type kpoint_path_type

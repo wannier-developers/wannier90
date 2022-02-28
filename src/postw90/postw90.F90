@@ -213,6 +213,16 @@ program postw90
   on_root = .false.
   if (my_node_id == 0) on_root = .true.
 
+  ! global inits (non-type based) from readwrite files
+  optimisation = 3
+  num_wann = -99
+  eig_found = .false.
+  scissors_shift = 0.0_dp
+  dis_window%win_min = -1.0_dp
+  dis_window%win_max = 0.0_dp
+  !effective_model = .false.
+  ! end global inits
+
   if (on_root) then
     time0 = io_time()
     call io_commandline(prog, dryrun, seedname)
