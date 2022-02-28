@@ -625,8 +625,8 @@ contains
       !if (ie == 0) write (stderr, *) "logic error" ! to arrive here requires this
 
       write (stderr, *) 'Exiting.......'
-      write (stderr, '(x,a,i0)') trim(mesg)//' rank: ', failrank
-      write (stdout, '(x,a)') ' error encountered; check error .werr error log'
+      write (stderr, '(1x,a,i0)') trim(mesg)//' rank: ', failrank
+      write (stdout, '(1x,a)') ' error encountered; check error .werr error log'
 
     else ! non 0 ranks
       je = error%code
