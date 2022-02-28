@@ -37,12 +37,12 @@ module w90_postw90_readwrite
   ! These could be local to w90_wannier90_readwrite_read if they weren't also used by w90_wannier90_readwrite_write
   type pw90_extra_io_type
     ! from gyrotropic section
-    real(kind=dp) :: gyrotropic_freq_min
+    real(kind=dp) :: gyrotropic_freq_min = 0.0_dp
     real(kind=dp) :: gyrotropic_freq_max
-    real(kind=dp) :: gyrotropic_freq_step
-    real(kind=dp) :: kubo_freq_min
+    real(kind=dp) :: gyrotropic_freq_step = 0.01_dp
+    real(kind=dp) :: kubo_freq_min = 0.0_dp
     real(kind=dp) :: kubo_freq_max
-    real(kind=dp) :: kubo_freq_step
+    real(kind=dp) :: kubo_freq_step = 0.01_dp
     ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
     ! Only internal, always use the local variables defined by each module
     ! that take this value as default
@@ -52,7 +52,7 @@ module w90_postw90_readwrite
     ! These don't need to be public, since their values are copied in the variables of the
     ! local interpolation meshes. JRY: added save attribute
     type(kmesh_spacing_type) :: global_kmesh
-    logical :: global_kmesh_set
+    logical :: global_kmesh_set = .false.
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
   end type pw90_extra_io_type
@@ -265,37 +265,30 @@ contains
     use w90_error, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
-    type(pw90_calculation_type), intent(out) :: pw90_calculation
+    type(pw90_calculation_type), intent(inout) :: pw90_calculation
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
     logical :: found
 
-    pw90_calculation%dos = .false.
     call w90_readwrite_get_keyword('dos', found, error, comm, l_value=pw90_calculation%dos)
     if (allocated(error)) return
 
-    pw90_calculation%berry = .false.
     call w90_readwrite_get_keyword('berry', found, error, comm, l_value=pw90_calculation%berry)
     if (allocated(error)) return
 
-    pw90_calculation%kpath = .false.
     call w90_readwrite_get_keyword('kpath', found, error, comm, l_value=pw90_calculation%kpath)
     if (allocated(error)) return
 
-    pw90_calculation%kslice = .false.
     call w90_readwrite_get_keyword('kslice', found, error, comm, l_value=pw90_calculation%kslice)
     if (allocated(error)) return
 
-    pw90_calculation%gyrotropic = .false.
     call w90_readwrite_get_keyword('gyrotropic', found, error, comm, &
                                    l_value=pw90_calculation%gyrotropic)
     if (allocated(error)) return
 
-    pw90_calculation%geninterp = .false.
     call w90_readwrite_get_keyword('geninterp', found, error, comm, &
                                    l_value=pw90_calculation%geninterp)
     if (allocated(error)) return
-    pw90_calculation%boltzwann = .false.
     call w90_readwrite_get_keyword('boltzwann', found, error, comm, &
                                    l_value=pw90_calculation%boltzwann)
     if (allocated(error)) return
@@ -330,12 +323,12 @@ contains
 
     logical :: found
 
-    pw90_oper_read%spn_formatted = .false.       ! formatted or "binary" file
+    ! formatted or "binary" file
     call w90_readwrite_get_keyword('spn_formatted', found, error, comm, &
                                    l_value=pw90_oper_read%spn_formatted)
     if (allocated(error)) return
 
-    pw90_oper_read%uHu_formatted = .false.       ! formatted or "binary" file
+    ! formatted or "binary" file
     call w90_readwrite_get_keyword('uhu_formatted', found, error, comm, &
                                    l_value=pw90_oper_read%uHu_formatted)
     if (allocated(error)) return
@@ -357,7 +350,6 @@ contains
     integer :: i
     logical :: found
 
-    pw90_kslice%task = 'fermi_lines'
     call w90_readwrite_get_keyword('kslice_task', found, error, comm, c_value=pw90_kslice%task)
     if (allocated(error)) return
     if (kslicel .and. index(pw90_kslice%task, 'fermi_lines') == 0 .and. &
@@ -383,7 +375,6 @@ contains
       return
     endif
 
-    pw90_kslice%kmesh2d(1:2) = 50
     call w90_readwrite_get_vector_length('kslice_2dkmesh', found, i, error, comm)
     if (allocated(error)) return
     if (found) then
@@ -408,26 +399,18 @@ contains
       endif
     endif
 
-    pw90_kslice%corner = 0.0_dp
     call w90_readwrite_get_keyword_vector('kslice_corner', found, 3, error, comm, &
                                           r_value=pw90_kslice%corner)
     if (allocated(error)) return
 
-    pw90_kslice%b1(1) = 1.0_dp
-    pw90_kslice%b1(2) = 0.0_dp
-    pw90_kslice%b1(3) = 0.0_dp
     call w90_readwrite_get_keyword_vector('kslice_b1', found, 3, error, comm, &
                                           r_value=pw90_kslice%b1)
     if (allocated(error)) return
 
-    pw90_kslice%b2(1) = 0.0_dp
-    pw90_kslice%b2(2) = 1.0_dp
-    pw90_kslice%b2(3) = 0.0_dp
     call w90_readwrite_get_keyword_vector('kslice_b2', found, 3, error, comm, &
                                           r_value=pw90_kslice%b2)
     if (allocated(error)) return
 
-    pw90_kslice%fermi_lines_colour = 'none'
     call w90_readwrite_get_keyword('kslice_fermi_lines_colour', found, error, comm, &
                                    c_value=pw90_kslice%fermi_lines_colour)
     if (allocated(error)) return
@@ -449,7 +432,7 @@ contains
     use w90_comms, only: w90comm_type
 
     implicit none
-    type(pw90_smearing_type), intent(out) :: pw90_smearing
+    type(pw90_smearing_type), intent(inout) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -458,7 +441,6 @@ contains
     ! [gp-begin, Apr 20, 2012]
 
     ! By default: Gaussian
-    pw90_smearing%type_index = 0
     call w90_readwrite_get_keyword('smr_type', found, error, comm, c_value=ctmp)
     if (allocated(error)) return
     if (found) then
@@ -467,12 +449,10 @@ contains
     endif
 
     ! By default: adaptive smearing
-    pw90_smearing%use_adaptive = .true.
     call w90_readwrite_get_keyword('adpt_smr', found, error, comm, l_value=pw90_smearing%use_adaptive)
     if (allocated(error)) return
 
     ! By default: a=sqrt(2)
-    pw90_smearing%adaptive_prefactor = sqrt(2.0_dp)
     call w90_readwrite_get_keyword('adpt_smr_fac', found, error, comm, &
                                    r_value=pw90_smearing%adaptive_prefactor)
     if (allocated(error)) return
@@ -482,7 +462,6 @@ contains
     endif
 
     ! By default: 1 eV
-    pw90_smearing%adaptive_max_width = 1.0_dp
     call w90_readwrite_get_keyword('adpt_smr_max', found, error, comm, &
                                    r_value=pw90_smearing%adaptive_max_width)
     if (allocated(error)) return
@@ -493,7 +472,6 @@ contains
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
-    pw90_smearing%fixed_width = 0.0_dp
     call w90_readwrite_get_keyword('smr_fixed_en_width', found, error, comm, &
                                    r_value=pw90_smearing%fixed_width)
     if (allocated(error)) return
@@ -515,7 +493,6 @@ contains
 
     logical :: found
 
-    scissors_shift = 0.0_dp
     call w90_readwrite_get_keyword('scissors_shift', found, error, comm, r_value=scissors_shift)
     if (allocated(error)) return
 
@@ -530,8 +507,8 @@ contains
     use w90_comms, only: w90comm_type
 
     implicit none
-    logical, intent(out) :: spin_moment ! from pw90_calculation
-    logical, intent(out) :: spin_decomp ! from pw90_common
+    logical, intent(inout) :: spin_moment ! from pw90_calculation
+    logical, intent(inout) :: spin_decomp ! from pw90_common
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     integer, intent(in) :: num_elec_per_state
     type(w90_error_type), allocatable, intent(out) :: error
@@ -539,20 +516,16 @@ contains
 
     logical :: found
 
-    spin_moment = .false.
     call w90_readwrite_get_keyword('spin_moment', found, error, comm, l_value=spin_moment)
     if (allocated(error)) return
 
-    pw90_spin%axis_polar = 0.0_dp
     call w90_readwrite_get_keyword('spin_axis_polar', found, error, comm, r_value=pw90_spin%axis_polar)
     if (allocated(error)) return
 
-    pw90_spin%axis_azimuth = 0.0_dp
     call w90_readwrite_get_keyword('spin_axis_azimuth', found, error, comm, &
                                    r_value=pw90_spin%axis_azimuth)
     if (allocated(error)) return
 
-    spin_decomp = .false.
     call w90_readwrite_get_keyword('spin_decomp', found, error, comm, l_value=spin_decomp)
     if (allocated(error)) return
 
@@ -586,11 +559,8 @@ contains
     character(len=maxlen)              :: ctmp
 
     ! Stepan
-    pw90_gyrotropic%task = 'all'
     call w90_readwrite_get_keyword('gyrotropic_task', found, error, comm, c_value=pw90_gyrotropic%task)
     if (allocated(error)) return
-    pw90_gyrotropic%box(:, :) = 0.0
-    pw90_gyrotropic%degen_thresh = 0.0_dp
     call w90_readwrite_get_keyword('gyrotropic_degen_thresh', found, error, comm, &
                                    r_value=pw90_gyrotropic%degen_thresh)
     if (allocated(error)) return
@@ -603,7 +573,6 @@ contains
       if (allocated(error)) return
       if (found) pw90_gyrotropic%box(i, :) = gyrotropic_box_tmp(:)
     enddo
-    pw90_gyrotropic%box_corner(:) = 0.0_dp
     call w90_readwrite_get_keyword_vector('gyrotropic_box_center', found, 3, error, comm, &
                                           r_value=gyrotropic_box_tmp)
     if (allocated(error)) return
@@ -697,7 +666,7 @@ contains
 
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calculation
-    type(pw90_berry_mod_type), intent(out) :: pw90_berry
+    type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
@@ -717,11 +686,9 @@ contains
 !    call w90_readwrite_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
-    pw90_berry%transl_inv = .false.
     call w90_readwrite_get_keyword('transl_inv', found, error, comm, l_value=pw90_berry%transl_inv)
     if (allocated(error)) return
 
-    pw90_berry%task = ' '
     call w90_readwrite_get_keyword('berry_task', found, error, comm, c_value=pw90_berry%task)
     if (allocated(error)) return
     if (pw90_calculation%berry .and. .not. found) then
@@ -737,7 +704,6 @@ contains
       return
     endif
 
-    pw90_berry%curv_adpt_kmesh = 1
     call w90_readwrite_get_keyword('berry_curv_adpt_kmesh', found, error, comm, &
                                    i_value=pw90_berry%curv_adpt_kmesh)
     if (allocated(error)) return
@@ -746,12 +712,10 @@ contains
       return
     endif
 
-    pw90_berry%curv_adpt_kmesh_thresh = 100.0_dp
     call w90_readwrite_get_keyword('berry_curv_adpt_kmesh_thresh', found, error, comm, &
                                    r_value=pw90_berry%curv_adpt_kmesh_thresh)
     if (allocated(error)) return
 
-    pw90_berry%curv_unit = 'ang2'
     call w90_readwrite_get_keyword('berry_curv_unit', found, error, comm, c_value=pw90_berry%curv_unit)
     if (allocated(error)) return
     if (pw90_berry%curv_unit .ne. 'ang2' .and. pw90_berry%curv_unit .ne. 'bohr2') then
@@ -759,7 +723,6 @@ contains
       return
     endif
 
-    pw90_berry%wanint_kpoint_file = .false.
     call w90_readwrite_get_keyword('wanint_kpoint_file', found, error, comm, &
                                    l_value=pw90_berry%wanint_kpoint_file)
     if (allocated(error)) return
@@ -799,7 +762,6 @@ contains
       return
     endif
 
-    pw90_berry%sc_phase_conv = 1
     call w90_readwrite_get_keyword('sc_phase_conv', found, error, comm, &
                                    i_value=pw90_berry%sc_phase_conv)
     if (allocated(error)) return
@@ -808,7 +770,6 @@ contains
       return
     endif
 
-    pw90_berry%sc_use_eta_corr = .true.
     call w90_readwrite_get_keyword('sc_use_eta_corr', found, error, comm, &
                                    l_value=pw90_berry%sc_use_eta_corr)
     if (allocated(error)) return
@@ -823,15 +784,12 @@ contains
       if (allocated(error)) return
     endif
 
-    pw90_berry%sc_eta = 0.04
     call w90_readwrite_get_keyword('sc_eta', found, error, comm, r_value=pw90_berry%sc_eta)
     if (allocated(error)) return
 
-    pw90_berry%sc_w_thr = 5.0d0
     call w90_readwrite_get_keyword('sc_w_thr', found, error, comm, r_value=pw90_berry%sc_w_thr)
     if (allocated(error)) return
 
-    pw90_berry%kdotp_kpoint(:) = 0.0_dp
     call w90_readwrite_get_keyword_vector('kdotp_kpoint', found, 3, error, comm, &
                                           r_value=pw90_berry%kdotp_kpoint)
     if (allocated(error)) return
@@ -871,7 +829,7 @@ contains
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
-    type(pw90_spin_hall_type), intent(out) :: pw90_spin_hall
+    type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -881,12 +839,10 @@ contains
 
     logical :: found
 
-    pw90_spin_hall%freq_scan = .false.
     call w90_readwrite_get_keyword('shc_freq_scan', found, error, comm, &
                                    l_value=pw90_spin_hall%freq_scan)
     if (allocated(error)) return
 
-    pw90_spin_hall%alpha = 1
     call w90_readwrite_get_keyword('shc_alpha', found, error, comm, i_value=pw90_spin_hall%alpha)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%alpha < 1 .or. pw90_spin_hall%alpha > 3)) then
@@ -894,7 +850,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%beta = 2
     call w90_readwrite_get_keyword('shc_beta', found, error, comm, i_value=pw90_spin_hall%beta)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%beta < 1 .or. pw90_spin_hall%beta > 3)) then
@@ -902,7 +857,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%gamma = 3
     call w90_readwrite_get_keyword('shc_gamma', found, error, comm, i_value=pw90_spin_hall%gamma)
     if (allocated(error)) return
     if (found .and. (pw90_spin_hall%gamma < 1 .or. pw90_spin_hall%gamma > 3)) then
@@ -910,7 +864,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%bandshift = .false.
     call w90_readwrite_get_keyword('shc_bandshift', found, error, comm, l_value=pw90_spin_hall%bandshift)
     if (allocated(error)) return
     pw90_spin_hall%bandshift = pw90_spin_hall%bandshift .and. pw90_calculation%berry .and. &
@@ -920,7 +873,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%bandshift_firstband = 0
     call w90_readwrite_get_keyword('shc_bandshift_firstband', found, error, comm, &
                                    i_value=pw90_spin_hall%bandshift_firstband)
     if (allocated(error)) return
@@ -933,7 +885,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%bandshift_energyshift = 0._dp
     call w90_readwrite_get_keyword('shc_bandshift_energyshift', found, error, comm, &
                                    r_value=pw90_spin_hall%bandshift_energyshift)
     if (allocated(error)) return
@@ -942,7 +893,6 @@ contains
       return
     endif
 
-    pw90_spin_hall%method = ' '
     call w90_readwrite_get_keyword('shc_method', found, error, comm, c_value=pw90_spin_hall%method)
     if (allocated(error)) return
     if (index(berry_task, 'shc') > 0 .and. .not. found) then
@@ -963,18 +913,16 @@ contains
     use w90_error, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
-    type(pw90_band_deriv_degen_type), intent(out) :: pw90_band_deriv_degen
+    type(pw90_band_deriv_degen_type), intent(inout) :: pw90_band_deriv_degen
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    pw90_band_deriv_degen%use_degen_pert = .false.
     call w90_readwrite_get_keyword('use_degen_pert', found, error, comm, &
                                    l_value=pw90_band_deriv_degen%use_degen_pert)
     if (allocated(error)) return
 
-    pw90_band_deriv_degen%degen_thr = 1.0d-4
     call w90_readwrite_get_keyword('degen_thr', found, error, comm, &
                                    r_value=pw90_band_deriv_degen%degen_thr)
     if (allocated(error)) return
@@ -992,14 +940,13 @@ contains
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
-    type(pw90_kpath_mod_type), intent(out) :: pw90_kpath
+    type(pw90_kpath_mod_type), intent(inout) :: pw90_kpath
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    pw90_kpath%task = 'bands'
     call w90_readwrite_get_keyword('kpath_task', found, error, comm, c_value=pw90_kpath%task)
     if (allocated(error)) return
     if (pw90_calculation%kpath .and. index(pw90_kpath%task, 'bands') == 0 .and. &
@@ -1014,7 +961,6 @@ contains
       return
     endif
 
-    pw90_kpath%num_points = 100
     call w90_readwrite_get_keyword('kpath_num_points', found, error, comm, &
                                    i_value=pw90_kpath%num_points)
     if (allocated(error)) return
@@ -1023,7 +969,6 @@ contains
       return
     endif
 
-    pw90_kpath%bands_colour = 'none'
     call w90_readwrite_get_keyword('kpath_bands_colour', found, error, comm, &
                                    c_value=pw90_kpath%bands_colour)
     if (allocated(error)) return
@@ -1052,7 +997,7 @@ contains
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
-    type(pw90_dos_mod_type), intent(out) :: pw90_dos
+    type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
@@ -1065,7 +1010,6 @@ contains
     logical :: found
     character(len=maxlen)              :: ctmp
 
-    pw90_dos%task = 'dos_plot'
     if (pw90_calculation%dos) then
       dos_plot = .true.
     else
@@ -1093,7 +1037,6 @@ contains
 
     !IVO_END
 
-    pw90_dos%energy_step = 0.01_dp
     call w90_readwrite_get_keyword('dos_energy_step', found, error, comm, &
                                    r_value=pw90_dos%energy_step)
     if (allocated(error)) return
@@ -1195,17 +1138,15 @@ contains
     use w90_comms, only: w90comm_type
     implicit none
 
-    type(pw90_geninterp_mod_type), intent(out) :: pw90_geninterp
+    type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
     logical :: found
 
-    pw90_geninterp%alsofirstder = .false.
     call w90_readwrite_get_keyword('geninterp_alsofirstder', found, error, comm, &
                                    l_value=pw90_geninterp%alsofirstder)
     if (allocated(error)) return
-    pw90_geninterp%single_file = .true.
     call w90_readwrite_get_keyword('geninterp_single_file', found, error, comm, &
                                    l_value=pw90_geninterp%single_file)
     if (allocated(error)) return
@@ -1244,7 +1185,6 @@ contains
     ! Note: to be put AFTER the disentanglement routines!
     pw90_boltzwann%TDF_smearing%use_adaptive = .false.
 
-    pw90_boltzwann%calc_also_dos = .false.
     call w90_readwrite_get_keyword('boltz_calc_also_dos', found, error, comm, &
                                    l_value=pw90_boltzwann%calc_also_dos)
     if (allocated(error)) return
@@ -1253,7 +1193,6 @@ contains
 
     ! 0 means the normal 3d case for the calculation of the Seebeck coefficient
     ! The other valid possibilities are 1,2,3 for x,y,z respectively
-    pw90_boltzwann%dir_num_2d = 0
     call w90_readwrite_get_keyword('boltz_2d_dir', found, error, comm, c_value=boltz_2d_dir)
     if (allocated(error)) return
     if (found) then
@@ -1271,7 +1210,6 @@ contains
       end if
     end if
 
-    pw90_boltzwann%dos_energy_step = 0.001_dp
     call w90_readwrite_get_keyword('boltz_dos_energy_step', found, error, comm, &
                                    r_value=pw90_boltzwann%dos_energy_step)
     if (allocated(error)) return
@@ -1337,14 +1275,12 @@ contains
       return
     endif
 
-    pw90_boltzwann%mu_min = -999._dp
     call w90_readwrite_get_keyword('boltz_mu_min', found, error, comm, r_value=pw90_boltzwann%mu_min)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_min provided', comm)
       return
     endif
-    pw90_boltzwann%mu_max = -999._dp
     call w90_readwrite_get_keyword('boltz_mu_max', found2, error, comm, &
                                    r_value=pw90_boltzwann%mu_max)
     if (allocated(error)) return
@@ -1356,7 +1292,6 @@ contains
       call set_error_input(error, 'Error: boltz_mu_max must be greater than boltz_mu_min', comm)
       return
     endif
-    pw90_boltzwann%mu_step = 0._dp
     call w90_readwrite_get_keyword('boltz_mu_step', found, error, comm, r_value=pw90_boltzwann%mu_step)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
@@ -1368,7 +1303,6 @@ contains
       return
     endif
 
-    pw90_boltzwann%temp_min = -999._dp
     call w90_readwrite_get_keyword('boltz_temp_min', found, error, comm, &
                                    r_value=pw90_boltzwann%temp_min)
     if (allocated(error)) return
@@ -1376,7 +1310,6 @@ contains
       call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_min provided', comm)
       return
     endif
-    pw90_boltzwann%temp_max = -999._dp
     call w90_readwrite_get_keyword('boltz_temp_max', found2, error, comm, &
                                    r_value=pw90_boltzwann%temp_max)
     if (allocated(error)) return
@@ -1392,7 +1325,6 @@ contains
       call set_error_input(error, 'Error: boltz_temp_min must be greater than zero', comm)
       return
     endif
-    pw90_boltzwann%temp_step = 0._dp
     call w90_readwrite_get_keyword('boltz_temp_step', found, error, comm, &
                                    r_value=pw90_boltzwann%temp_step)
     if (allocated(error)) return
@@ -1408,7 +1340,6 @@ contains
     ! The interpolation mesh is read later on
 
     ! By default, the energy step for the TDF is 1 meV
-    pw90_boltzwann%tdf_energy_step = 0.001_dp
     call w90_readwrite_get_keyword('boltz_tdf_energy_step', found, error, comm, &
                                    r_value=pw90_boltzwann%tdf_energy_step)
     if (allocated(error)) return
@@ -1448,18 +1379,15 @@ contains
     endif
 
     ! By default: 10 fs relaxation time
-    pw90_boltzwann%relax_time = 10._dp
     call w90_readwrite_get_keyword('boltz_relax_time', found, error, comm, &
                                    r_value=pw90_boltzwann%relax_time)
     if (allocated(error)) return
 
-    pw90_boltzwann%bandshift = .false.
     call w90_readwrite_get_keyword('boltz_bandshift', found, error, comm, &
                                    l_value=pw90_boltzwann%bandshift)
     if (allocated(error)) return
     pw90_boltzwann%bandshift = pw90_boltzwann%bandshift .and. do_boltzwann
 
-    pw90_boltzwann%bandshift_firstband = 0
     call w90_readwrite_get_keyword('boltz_bandshift_firstband', found, error, comm, &
                                    i_value=pw90_boltzwann%bandshift_firstband)
     if (allocated(error)) return
@@ -1467,7 +1395,6 @@ contains
       call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_firstband provided', comm)
       return
     endif
-    pw90_boltzwann%bandshift_energyshift = 0._dp
     call w90_readwrite_get_keyword('boltz_bandshift_energyshift', found, error, comm, &
                                    r_value=pw90_boltzwann%bandshift_energyshift)
     if (allocated(error)) return
@@ -1523,8 +1450,6 @@ contains
                                    r_value=pw90_dos%energy_min)
     if (allocated(error)) return
 
-    pw90_extra_io%kubo_freq_min = 0.0_dp
-    pw90_extra_io%gyrotropic_freq_min = pw90_extra_io%kubo_freq_min
     call w90_readwrite_get_keyword('kubo_freq_min', found, error, comm, &
                                    r_value=pw90_extra_io%kubo_freq_min)
     if (allocated(error)) return
@@ -1541,7 +1466,6 @@ contains
                                    r_value=pw90_extra_io%kubo_freq_max)
     if (allocated(error)) return
 
-    pw90_extra_io%kubo_freq_step = 0.01_dp
     call w90_readwrite_get_keyword('kubo_freq_step', found, error, comm, &
                                    r_value=pw90_extra_io%kubo_freq_step)
     if (allocated(error)) return
@@ -1571,7 +1495,6 @@ contains
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
 
-    pw90_extra_io%gyrotropic_freq_step = 0.01_dp
     call w90_readwrite_get_keyword('gyrotropic_freq_min', found, error, comm, &
                                    r_value=pw90_extra_io%gyrotropic_freq_min)
     if (allocated(error)) return
@@ -1630,7 +1553,7 @@ contains
 
     type(kmesh_spacing_type), intent(out) :: kmesh
 
-    logical, intent(out) :: global_kmesh_set
+    logical, intent(inout) :: global_kmesh_set
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
@@ -1764,7 +1687,7 @@ contains
     !! A logical flag: if it is true, at the end the code stops if no value is specified.
     !! Define it to .false. if no check should be performed.
     !! Often, you can simply pass the flag that activates the module itself.
-    type(kmesh_spacing_type), intent(out) :: module_kmesh
+    type(kmesh_spacing_type), intent(inout) :: module_kmesh
     !! the integer array (length 3) where the interpolation mesh will be saved, and
     !! the real number on which the min mesh spacing is saved. -1 if it the
     !!user specifies in input the mesh and not the mesh_spacing

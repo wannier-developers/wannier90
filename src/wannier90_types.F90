@@ -35,26 +35,26 @@ module w90_wannier90_types
     !!==================================================
     !! Contains variables to control the execution path of the program.
     !!==================================================
-    logical :: postproc_setup
-    character(len=20) :: restart
-    logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
-    logical :: wannier_plot !plot, wannier_lib
-    logical :: fermi_surface_plot ! plot, wannier_lib!
-    logical :: transport ! also hamiltonian, wannier_prog, wannier_lib
+    logical :: postproc_setup = .false.
+    character(len=20) :: restart = ' '
+    logical :: bands_plot = .false. !hamiltonian (setup only), plot, wannier_lib
+    logical :: wannier_plot = .false. !plot, wannier_lib
+    logical :: fermi_surface_plot = .false. ! plot, wannier_lib!
+    logical :: transport = .false. ! also hamiltonian, wannier_prog, wannier_lib
   end type w90_calculation_type
 
   type output_file_type
-    logical :: write_hr !plot, transport and wannier_lib
-    logical :: write_r2mn
-    logical :: write_proj
-    logical :: write_hr_diag
-    logical :: write_vdw_data
+    logical :: write_hr = .false. !plot, transport and wannier_lib
+    logical :: write_r2mn = .false.
+    logical :: write_proj = .false.
+    logical :: write_hr_diag = .false.
+    logical :: write_vdw_data = .false.
     ! aam: for WF-based calculation of vdW C6 coefficients
-    logical :: write_u_matrices
-    logical :: write_bvec
-    logical :: write_rmn
-    logical :: write_tb
-    logical :: write_xyz !wannierise and transport
+    logical :: write_u_matrices = .false.
+    logical :: write_bvec = .false.
+    logical :: write_rmn = .false.
+    logical :: write_tb = .false.
+    logical :: write_xyz = .false. !wannierise and transport
   end type output_file_type
 
   type real_space_ham_type
@@ -62,37 +62,37 @@ module w90_wannier90_types
     !! Contains information to control the structure of the real-space Hamiltonian
     !! and how it is calculated.
     !!==================================================
-    real(kind=dp) :: hr_cutoff !plot and transport
+    real(kind=dp) :: hr_cutoff = 0.0_dp !plot and transport
     ! dist_cutoff - only plot and transport
-    real(kind=dp) :: dist_cutoff !plot and transport
-    character(len=20) :: dist_cutoff_mode !plot and transport
-    real(kind=dp) :: dist_cutoff_hc !plot and transport
-    integer :: one_dim_dir ! transport and plot
+    real(kind=dp) :: dist_cutoff = 1000.0_dp !plot and transport
+    character(len=20) :: dist_cutoff_mode = 'three_dim' !plot and transport
+    real(kind=dp) :: dist_cutoff_hc = 1000.0_dp !plot and transport
+    integer :: one_dim_dir = 0 ! transport and plot
     ! REVIEW_2021-07-22: system_dim is really providing information about the dimensionality
     ! REVIEW_2021-07-22: of the system. Whilst currently it is only used for plotting, its
     ! REVIEW_2021-07-22: use may be generalised in the future. Therefore it makes more sense
     ! REVIEW_2021-07-22: to put it here.
-    integer :: system_dim
+    integer :: system_dim = 3
     ! REVIEW_2021-07-22: There's been some discussion in the past about generalising
     ! REVIEW_2021-07-22: the use of translate_home_cell to also take into account of
     ! REVIEW_2021-07-22: changes in H(R) when WFs are translated. As this is something
     ! REVIEW_2021-07-22: we plan to do, translate_home_cell should probably be here
-    logical :: translate_home_cell ! currently used by wann_write_xyz when write_xyz=.true.
+    logical :: translate_home_cell = .false. ! currently used by wann_write_xyz when write_xyz=.true.
     ! REVIEW_2021-08-09: future plan is that these variables (translation_centre_frac and
     ! REVIEW_2021-08-09: automatic_translation will also result in the hamiltonian being
     ! REVIEW_2021-08-09: modified to be consistent with the translated Wannier centres.
     ! REVIEW_2021-08-09: This is related to Issue 39 in the main repo.
-    real(kind=dp) :: translation_centre_frac(3)
+    real(kind=dp) :: translation_centre_frac(3) = 0.0_dp
     ! For Hamiltonian matrix in WF representation
-    logical              :: automatic_translation
+    logical              :: automatic_translation = .true.
   end type real_space_ham_type
 
   type band_plot_type
     !!==================================================
     !! Contains information to control how the bandstructure plotting is performed and formatted.
     !!==================================================
-    character(len=20) :: mode !hamiltonian (setup only), plot
-    character(len=20) :: format
+    character(len=20) :: mode = 's-k' !hamiltonian (setup only), plot
+    character(len=20) :: format = 'gnuplot'
     integer, allocatable :: project(:)
   end type band_plot_type
 
@@ -101,22 +101,22 @@ module w90_wannier90_types
     !! Contains information for how to plot the wannier functions.
     !!==================================================
     integer, allocatable :: list(:)
-    integer :: supercell(3)
-    real(kind=dp) :: radius
-    real(kind=dp) :: scale
-    character(len=20) :: format
-    character(len=20) :: mode
-    character(len=20) :: spinor_mode
-    logical :: spinor_phase
+    integer :: supercell(3) = 2
+    real(kind=dp) :: radius = 3.5_dp
+    real(kind=dp) :: scale = 1.0_dp
+    character(len=20) :: format = 'xcrysden'
+    character(len=20) :: mode = 'crystal'
+    character(len=20) :: spinor_mode = 'total'
+    logical :: spinor_phase = .true.
   end type wannier_plot_type
 
   type wvfn_read_type ! only in plot.F90
     !!==================================================
     !! Contains information for how to read the wavefunction files
     !!==================================================
-    logical :: formatted
+    logical :: formatted = .false.
     !! Read the wvfn from fortran formatted file
-    integer :: spin_channel
+    integer :: spin_channel = 1
     !! Spin up=1 down=2
   end type wvfn_read_type
 
@@ -125,20 +125,20 @@ module w90_wannier90_types
     !!==================================================
     !! Contains parameters that control the disentanglement minimisation procedure
     !!==================================================
-    integer :: num_iter
+    integer :: num_iter = 200
     !! number of disentanglement iteration steps
-    real(kind=dp) :: mix_ratio
+    real(kind=dp) :: mix_ratio = 0.5_dp
     !! Mixing ratio for the disentanglement routine
-    real(kind=dp) :: conv_tol
+    real(kind=dp) :: conv_tol = 1.0e-10_dp
     !! Convergence tolerance for the disentanglement
-    integer :: conv_window
+    integer :: conv_window = 3
     !! Size of the convergence window for disentanglement
   end type dis_control_type
 
   type dis_spheres_type
     ! GS-start
-    integer :: first_wann
-    integer :: num
+    integer :: first_wann = 1
+    integer :: num = 0
     real(kind=dp), allocatable :: spheres(:, :)
     ! GS-end
   end type dis_spheres_type
@@ -147,22 +147,22 @@ module w90_wannier90_types
     !!==================================================
     !! Contains parameters that control the selective localisation and constrained centres algorithm
     !!==================================================
-    integer :: slwf_num
+    integer :: slwf_num !num_wann
     !! Number of objective Wannier functions (others excluded from spread functional)
-    logical :: selective_loc
+    logical :: selective_loc = .false.
     !! Selective localization
-    logical :: constrain
+    logical :: constrain = .false.
     !! Constrained centres in Cartesian coordinates in angstrom.
     real(kind=dp), allocatable :: centres(:, :)
-    real(kind=dp) :: lambda
+    real(kind=dp) :: lambda = 1.0_dp
     !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
     !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   end type wann_slwf_type
 
   type guiding_centres_type
-    logical :: enable
-    integer :: num_guide_cycles
-    integer :: num_no_guide_iter
+    logical :: enable = .false.
+    integer :: num_guide_cycles = 1
+    integer :: num_no_guide_iter = 0
     real(kind=dp), allocatable :: centres(:, :)
   end type guiding_centres_type
 
@@ -170,23 +170,23 @@ module w90_wannier90_types
     !!==================================================
     !! Contains parameters that control the wannierisation minimisation procedure
     !!==================================================
-    integer :: num_dump_cycles
+    integer :: num_dump_cycles = 100
     !! Number of steps before writing checkpoint
-    integer :: num_print_cycles
+    integer :: num_print_cycles = 1
     !! Number of steps between writing output
-    integer :: num_iter
+    integer :: num_iter = 100
     !! Number of wannierisation iterations
-    integer :: num_cg_steps
+    integer :: num_cg_steps = 5
     !! Number of Conjugate Gradient steps
-    real(kind=dp) :: conv_tol
+    real(kind=dp) :: conv_tol = 1.0e-10_dp
     integer :: conv_window
     type(guiding_centres_type) :: guiding_centres
-    real(kind=dp) :: fixed_step
-    real(kind=dp) :: trial_step
-    logical :: precond
-    logical :: lfixstep ! derived from input
-    real(kind=dp) :: conv_noise_amp
-    integer :: conv_noise_num
+    real(kind=dp) :: fixed_step = -999.0_dp
+    real(kind=dp) :: trial_step = 2.0_dp
+    logical :: precond = .false.
+    logical :: lfixstep = .false. ! derived from input
+    real(kind=dp) :: conv_noise_amp = -1.0_dp
+    integer :: conv_noise_num = 3
     type(wann_slwf_type) :: constrain
   end type wann_control_type
 
@@ -197,9 +197,9 @@ module w90_wannier90_types
     ! REVIEW_2021-08-04: This type is mainly used for the library mode to be returned back to the external code.
     ! REVIEW_2021-08-04: Internally the code mostly uses the localisation_vars type in wannierise.F90.
     !==================================================
-    real(kind=dp) :: invariant !wannierise, disentangle and chk2chk
-    real(kind=dp) :: total
-    real(kind=dp) :: tilde
+    real(kind=dp) :: invariant = -999.0_dp !wannierise, disentangle and chk2chk
+    real(kind=dp) :: total = -999.0_dp
+    real(kind=dp) :: tilde = -999.0_dp
   end type wann_omega_type
 
   ! REVIEW_2021-08-09: We are thinking that this functionality should be probably moved to postw90 at some point.
@@ -207,8 +207,8 @@ module w90_wannier90_types
     !!==================================================
     !! Contains variables to control Fermi surface plotting in the main wannier code.
     !!==================================================
-    integer :: num_points
-    character(len=20) :: plot_format
+    integer :: num_points = 50
+    character(len=20) :: plot_format = 'xcrysden'
   end type fermi_surface_plot_type
 
   ! REVIEW_2021-08-09: This functionality should be moved to postw90 at some point.
@@ -217,24 +217,24 @@ module w90_wannier90_types
     !!==================================================
     !! Contains variables to control the calculation of quantum (Landauer-Buttiker) transport
     !!==================================================
-    logical :: easy_fix
-    character(len=20) :: mode ! also hamiltonian
-    real(kind=dp) :: win_min
-    real(kind=dp) :: win_max
-    real(kind=dp) :: energy_step
-    integer :: num_bb
-    integer :: num_ll
-    integer :: num_rr
-    integer :: num_cc
-    integer :: num_lc
-    integer :: num_cr
-    integer :: num_bandc
-    logical :: write_ht
-    logical :: read_ht ! also wannier_prog
-    logical :: use_same_lead
-    integer :: num_cell_ll
-    integer :: num_cell_rr
-    real(kind=dp) :: group_threshold
+    logical :: easy_fix = .false.
+    character(len=20) :: mode = 'bulk' ! also hamiltonian
+    real(kind=dp) :: win_min = -3.0_dp
+    real(kind=dp) :: win_max = 3.0_dp
+    real(kind=dp) :: energy_step = 0.01_dp
+    integer :: num_bb = 0
+    integer :: num_ll = 0
+    integer :: num_rr = 0
+    integer :: num_cc = 0
+    integer :: num_lc = 0
+    integer :: num_cr = 0
+    integer :: num_bandc = 0
+    logical :: write_ht = .false.
+    logical :: read_ht = .false. ! also wannier_prog
+    logical :: use_same_lead = .true.
+    integer :: num_cell_ll = 0
+    integer :: num_cell_rr = 0
+    real(kind=dp) :: group_threshold = 0.15_dp
   end type transport_type
 
   ! projections selection - overlap.F90
@@ -247,7 +247,7 @@ module w90_wannier90_types
     !!==================================================
     !! Contains variables relevant to selecting a subset of the projections for the calculation.
     !!==================================================
-    logical :: lselproj
+    logical :: lselproj = .false.
     !integer, save :: num_select_projections
     !integer, allocatable, save :: select_projections(:)
     integer, allocatable :: proj2wann_map(:)
