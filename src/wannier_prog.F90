@@ -574,9 +574,9 @@ program wannier
     write (stdout, '(1x,a)') 'All done: wannier90 exiting'
 
     close (stdout)
+    close (stderr, status='delete')
   endif
 
-  close (stderr, status='delete')
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
