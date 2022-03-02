@@ -139,6 +139,7 @@ contains
     logical :: found_fermi_energy
     logical :: has_kpath
     logical :: disentanglement
+    character(len=20) :: energy_unit
 
     disentanglement = .false.
     call w90_readwrite_in_file(seedname, error, comm)
