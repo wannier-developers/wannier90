@@ -135,7 +135,6 @@ contains
 
     ! local variables
     integer :: num_exclude_bands
-    character(len=20) :: energy_unit
     !! Units for energy
     logical :: found_fermi_energy
     logical :: has_kpath
@@ -676,7 +675,7 @@ contains
       return
     endif
 
-    wann_control%fixed_step = -999.0_dp; 
+    wann_control%fixed_step = -999.0_dp
     wann_control%lfixstep = .false.
     call w90_readwrite_get_keyword('fixed_step', found, error, comm, &
                                    r_value=wann_control%fixed_step)

@@ -141,7 +141,6 @@ contains
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, library, ok
-    character(len=20) :: energy_unit
 
     library = .false.
     call w90_readwrite_in_file(seedname, error, comm)
