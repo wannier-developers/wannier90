@@ -103,4 +103,3 @@ contains
   end subroutine set_error_warn
 
 end module w90_error
-

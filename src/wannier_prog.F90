@@ -646,4 +646,3 @@ contains
   end subroutine prterr
 
 end program wannier
-
