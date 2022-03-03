@@ -568,7 +568,8 @@ contains
       !if (ie == 0) write (stderr, *) "logic error" ! to arrive here requires this
 
       write (stderr, *) 'Exiting.......'
-      write (stderr, '(1x,a,i0)') trim(mesg)//' rank: ', failrank
+      write (stderr, '(1x,a)') trim(mesg)
+      write (stderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
       write (stdout, '(1x,a)') ' error encountered; check error .werr error log'
 
     else ! non 0 ranks
@@ -584,6 +585,7 @@ contains
     call mpi_finalize(je) ! je overwritten here
 #endif
     !call exit(ie) ! return true fail code (gnu extension)
+    stop
   end subroutine prterr
 
 end program postw90
