@@ -395,9 +395,9 @@ program w90spn2spn
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
 
-  logical :: file_found
-  integer :: file_unit
-  integer :: stdout, ierr, num_nodes
+  !logical :: file_found
+  !integer :: file_unit
+  integer :: stdout !, ierr, num_nodes
   character(len=50) :: seedname
 
   stdout = io_file_unit()

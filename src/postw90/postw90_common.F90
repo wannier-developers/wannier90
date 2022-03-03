@@ -181,7 +181,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
-    integer :: loop_nodes, loop_kpt, i, ierr, my_node_id, num_nodes, k_unit
+    integer :: i, ierr, my_node_id, num_nodes, k_unit
     !real(kind=dp) :: sum
     logical :: on_root = .false.
     real(kind=dp), allocatable :: kt(:, :), wt(:) !temp for read/dist

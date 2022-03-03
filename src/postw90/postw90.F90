@@ -66,7 +66,7 @@ program postw90
   integer :: nkp, len_seedname
   integer :: stdout, stderr
   logical :: have_gamma
-  logical :: wpout_found, werr_found, dryrun
+  logical :: wpout_found, dryrun !, werr_found
   real(kind=dp) :: time0, time1, time2
   type(pw90_physical_constants_type) :: physics
 
@@ -85,8 +85,8 @@ program postw90
   complex(kind=dp), allocatable :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
 
-  ! why is this variable unused? JJ
-  complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
+  ! This is unused because get_FF_R doesn't seem to be called anywhere BGS
+  !complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
 
   complex(kind=dp), allocatable :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -165,7 +165,7 @@ program postw90
 
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
 
-  integer :: my_node_id, num_nodes, ierr
+  integer :: my_node_id, num_nodes
 
   logical :: effective_model = .false.
   logical :: gamma_only

@@ -2680,7 +2680,7 @@ contains
     integer :: num_project, wann_plot_num, num_exclude_bands, fermi_n
     logical :: disentanglement
 
-    character(len=128) :: errmesg
+    !character(len=128) :: errmesg
 
     if (mpirank(comm) == 0) on_root = .true.
 

@@ -584,7 +584,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
@@ -640,7 +640,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing formatted checkpoint file ', trim(seedname), '.chk.fmt...'
 
@@ -734,11 +734,11 @@ program w90chk2chk
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
   integer :: stdout
-  logical :: file_found
-  integer :: file_unit
+  !logical :: file_found
+  !integer :: file_unit
   character(len=20) :: checkpoint
   character(len=50) :: seedname
-  integer :: num_nodes, ierr
+  !integer :: num_nodes, ierr
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')
