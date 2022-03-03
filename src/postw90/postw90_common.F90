@@ -336,7 +336,7 @@ contains
 
     integer :: ierr
     integer :: iprintroot
-    integer :: fermi_n
+    integer :: fermi_n, kdotp_nbands
     logical :: on_root = .false.
 
     if (mpirank(comm) == 0) on_root = .true.
@@ -673,6 +673,17 @@ contains
         endif
       endif
     end if
+
+    if (on_root) kdotp_nbands = size(pw90_berry%kdotp_bands)
+    call comms_bcast(kdotp_nbands, 1, error, comm)
+    if (.not. on_root) then
+      allocate (pw90_berry%kdotp_bands(kdotp_nbands), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kdotp_bands in postw90_param_dist', comm)
+        return
+      endif
+    endif
+    call comms_bcast(pw90_berry%kdotp_bands(1), kdotp_nbands, error, comm)
 
     if (fermi_n > 0) then
       call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
