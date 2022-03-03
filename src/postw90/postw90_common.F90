@@ -674,16 +674,21 @@ contains
       endif
     end if
 
-    if (on_root) kdotp_nbands = size(pw90_berry%kdotp_bands)
-    call comms_bcast(kdotp_nbands, 1, error, comm)
-    if (.not. on_root) then
-      allocate (pw90_berry%kdotp_bands(kdotp_nbands), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kdotp_bands in postw90_param_dist', comm)
-        return
-      endif
+    kdotp_nbands = 0
+    if (on_root) then
+      if (allocated(pw90_berry%kdotp_bands)) kdotp_nbands = size(pw90_berry%kdotp_bands)
     endif
-    call comms_bcast(pw90_berry%kdotp_bands(1), kdotp_nbands, error, comm)
+    call comms_bcast(kdotp_nbands, 1, error, comm)
+    if (kdotp_nbands > 0) then
+      if (.not. on_root) then
+        allocate (pw90_berry%kdotp_bands(kdotp_nbands), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating kdotp_bands in postw90_param_dist', comm)
+          return
+        endif
+      endif
+      call comms_bcast(pw90_berry%kdotp_bands(1), kdotp_nbands, error, comm)
+    endif
 
     if (fermi_n > 0) then
       call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
