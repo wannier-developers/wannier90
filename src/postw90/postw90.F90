@@ -165,7 +165,7 @@ program postw90
 
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
 
-  integer :: my_node_id, num_nodes
+  integer :: my_node_id, num_nodes, ierr
 
   logical :: effective_model = .false.
   logical :: gamma_only

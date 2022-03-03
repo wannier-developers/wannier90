@@ -641,6 +641,7 @@ contains
     call mpi_finalize(je) ! je overwritten here
 #endif
     !call exit(ie) ! return true fail code (gnu extension)
+    stop
   end subroutine prterr
 
 end program wannier
