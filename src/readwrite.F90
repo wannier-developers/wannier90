@@ -111,19 +111,15 @@ contains
 
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, stdout, seedname)
+  subroutine w90_readwrite_read_units(lenconfac, length_unit, bohr, stdout, seedname)
     use w90_io, only: io_error
     implicit none
     real(kind=dp), intent(out) :: lenconfac
     integer, intent(in) :: stdout
     character(len=*), intent(out) :: length_unit
-    character(len=*), intent(out) :: energy_unit
     character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: bohr
     logical :: found
-
-    energy_unit = 'ev'
-    call w90_readwrite_get_keyword(stdout, seedname, 'energy_unit', found, c_value=energy_unit)
 
     length_unit = 'ang'
     lenconfac = 1.0_dp
@@ -758,7 +754,6 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_mode', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'energy_unit', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found)
