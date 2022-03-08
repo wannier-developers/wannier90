@@ -59,7 +59,7 @@ contains
     close (stdout)
     write (*, '(1x,a)') trim(error_msg)
     write (*, '(A)') "Error: examine the output/error file for details"
-    call exit(1)
+    stop
   end subroutine io_error
 
   !================================================!

@@ -123,7 +123,8 @@ contains
     ! rep old behaviour for a moment while testing...
     write (stdout, *) 'Exiting.......'
     write (stdout, *) error%message
-    call exit(error%code)
+    stop
+    !call exit(error%code)
   end subroutine prterr
 end module w90_libv1_types
 
