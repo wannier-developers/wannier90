@@ -22,7 +22,7 @@ module w90_error_base
   !! Codify error state with integer code and human readable string
   type w90_error_type
     integer :: code
-    character(len=:), allocatable :: message
+    character(len=256) :: message
   contains
     final :: untrapped_error
   end type w90_error_type
@@ -44,7 +44,7 @@ contains
     character(len=*), intent(in) :: mesg
     integer, intent(in) :: code
     allocate (err)
-    err%message = mesg
+    err%message = trim(mesg)
     err%code = code
   end subroutine set_base_error
 
