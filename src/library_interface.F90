@@ -160,7 +160,7 @@ contains
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(timer_list_type) :: timer
@@ -196,7 +196,7 @@ contains
     endif
   end subroutine overlaps
 
-  subroutine wannierise(helper, comm)
+  subroutine wannierise(helper, m_matrix, u_matrix, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -206,8 +206,8 @@ contains
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(timer_list_type) :: timer
