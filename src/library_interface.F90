@@ -75,7 +75,7 @@ module w90_helper_types
     character(len=128) :: seedname
   end type lib_reader_type
 
-  public:: input_reader
+  public:: input_reader, create_kmesh, overlaps, wannierise
 
 contains
 
@@ -114,12 +114,38 @@ contains
                                       helper%use_bloch_phases, seedname, stdout, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in reader', error%code, error%message
+      deallocate (error)
     endif
     helper%seedname = seedname
   end subroutine input_reader
 
+  subroutine create_kmesh(helper, comm)
+    use w90_kmesh, only: kmesh_get
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    use w90_io, only: io_print_timings
+    implicit none
+    type(lib_reader_type), intent(inout) :: helper
+    !integer, intent(in) :: stdout
+    type(w90comm_type), intent(in) :: comm
+    !
+    type(timer_list_type) :: timer
+    type(w90_error_type), allocatable :: error
+    integer :: stdout
+
+    stdout = 6
+    call kmesh_get(helper%kmesh_input, helper%kmesh_info, helper%print_output, helper%kpt_latt, &
+                   helper%real_lattice, helper%num_kpts, helper%gamma_only, stdout, timer, &
+                   error, comm)
+    if (allocated(error)) then
+      write (0, *) 'Error in kmesh_get', error%code, error%message
+      deallocate (error)
+    else
+      call io_print_timings(timer, stdout)
+    endif
+  end subroutine create_kmesh
+
   subroutine overlaps(helper, m_matrix, comm)
-    use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
@@ -164,6 +190,7 @@ contains
     deallocate (m_matrix_local)
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
+      deallocate (error)
     else
       call io_print_timings(timer, stdout)
     endif
@@ -211,6 +238,7 @@ contains
     endif
     if (allocated(error)) then
       write (0, *) 'Error in wannierise', error%code, error%message
+      deallocate (error)
     else
       call io_print_timings(timer, stdout)
     endif
