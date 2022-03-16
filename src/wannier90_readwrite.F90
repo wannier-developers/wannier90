@@ -120,7 +120,7 @@ contains
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: symmetrize_eps
 
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
 
     real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
     logical, intent(inout) :: eig_found
@@ -825,7 +825,7 @@ contains
     use w90_error, only: w90_error_type
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calculation
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -2228,7 +2228,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
 
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     character(len=*), intent(in) :: chkpt
 
     logical, intent(in) :: have_disentangled
