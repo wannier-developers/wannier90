@@ -81,7 +81,7 @@ module w90_comms
 #endif
   end type
 
-  type, public :: w90stat_type
+  type, private :: w90stat_type
 #ifdef MPI08
     type(mpi_status) :: stat ! f08 mpi interface
 #elif MPI90
