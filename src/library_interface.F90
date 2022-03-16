@@ -39,23 +39,24 @@ module w90_helper_types
     integer :: mp_grid(3)
     integer :: num_bands
     integer :: num_kpts
-    integer :: num_proj
-    integer :: num_wann
-    integer :: optimisation
+    integer :: num_proj = 0
+    integer :: num_wann = -99
+    integer :: optimisation = 3
     !integer :: stdout
 
     real(kind=dp), allocatable :: eigval(:, :)
     real(kind=dp), allocatable :: fermi_energy_list(:)
     real(kind=dp), allocatable :: kpt_latt(:, :)
     real(kind=dp) :: real_lattice(3, 3)
-    real(kind=dp) :: symmetrize_eps
+    !real(kind=dp) :: symmetrize_eps
 
-    logical :: eig_found
+    logical :: eig_found = .false.
     !Projections
-    logical :: lhasproj
+    logical :: lhasproj = .false.
     ! RS: symmetry-adapted Wannier functions
     logical :: lsitesymmetry = .false.
-    logical :: use_bloch_phases, calc_only_A
+    logical :: use_bloch_phases = .false.
+    logical :: calc_only_A = .false.
     logical :: gamma_only
 
     ! added for wannierise
@@ -98,16 +99,21 @@ contains
     local_comm%comm = 0 !comm
     stdout = 6
     call w90_wannier90_readwrite_read(helper%atom_data, helper%band_plot, helper%dis_control, &
-                                      helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, helper%fermi_energy_list, &
-                                      helper%fermi_surface_data, helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
-                                      helper%output_file, helper%wvfn_read, helper%wann_control, helper%wann_omega, helper%proj, &
-                                      helper%proj_input, helper%real_space_ham, helper%select_proj, helper%kpoint_path, &
-                                      helper%w90_system, helper%tran, helper%print_output, helper%wannier_data, helper%wann_plot, &
-                                      io_params, helper%ws_region, helper%w90_calculation, helper%eigval, &
-                                      helper%real_lattice, physics%bohr, helper%symmetrize_eps, helper%mp_grid, helper%num_bands, &
-                                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, helper%eig_found, &
-                                      helper%calc_only_A, cp_pp, helper%gamma_only, helper%lhasproj, .false., .false., &
-                                      helper%lsitesymmetry, helper%use_bloch_phases, seedname, stdout, error, local_comm)
+                                      helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
+                                      helper%fermi_energy_list, helper%fermi_surface_data, &
+                                      helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
+                                      helper%output_file, helper%wvfn_read, helper%wann_control, &
+                                      helper%wann_omega, helper%proj, helper%proj_input, &
+                                      helper%real_space_ham, helper%select_proj, helper%kpoint_path, &
+                                      helper%w90_system, helper%tran, helper%print_output, &
+                                      helper%wannier_data, helper%wann_plot, io_params, &
+                                      helper%ws_region, helper%w90_calculation, helper%eigval, &
+                                      helper%real_lattice, physics%bohr, helper%sitesym%symmetrize_eps, &
+                                      helper%mp_grid, helper%num_bands, helper%num_kpts, &
+                                      helper%num_proj, helper%num_wann, helper%optimisation, &
+                                      helper%eig_found, helper%calc_only_A, cp_pp, helper%gamma_only, &
+                                      helper%lhasproj, .false., .false., helper%lsitesymmetry, &
+                                      helper%use_bloch_phases, seedname, stdout, error, local_comm)
     if (allocated(error)) then
       write (0, *) 'Error in reader', error%code, error%message
     endif
