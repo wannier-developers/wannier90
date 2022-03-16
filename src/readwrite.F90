@@ -537,7 +537,7 @@ contains
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     logical, intent(in) :: disentanglement, library, postproc_setup
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     logical, intent(inout) :: eig_found
@@ -1143,7 +1143,7 @@ contains
     use w90_error, only: w90_error_type, set_error_input, set_error_dealloc
     implicit none
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -1814,7 +1814,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
@@ -2126,7 +2126,7 @@ contains
 
     implicit none
 
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
