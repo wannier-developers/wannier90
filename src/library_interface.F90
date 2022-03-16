@@ -79,7 +79,7 @@ module w90_helper_types
 
 contains
 
-  subroutine input_reader(helper, seedname) !, stdout, comm)
+  subroutine input_reader(helper, seedname, comm) !, stdout, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -87,16 +87,14 @@ contains
     type(lib_reader_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
     character(len=*), intent(in) :: seedname
-    !integer, intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
-    type(w90comm_type) :: local_comm
     type(w90_extra_io_type) :: io_params
     integer :: stdout
     logical :: cp_pp
 
-    local_comm%comm = 0 !comm
     stdout = 6
     call w90_wannier90_readwrite_read(helper%atom_data, helper%band_plot, helper%dis_control, &
                                       helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
@@ -113,14 +111,14 @@ contains
                                       helper%num_proj, helper%num_wann, helper%optimisation, &
                                       helper%eig_found, helper%calc_only_A, cp_pp, helper%gamma_only, &
                                       helper%lhasproj, .false., .false., helper%lsitesymmetry, &
-                                      helper%use_bloch_phases, seedname, stdout, error, local_comm)
+                                      helper%use_bloch_phases, seedname, stdout, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in reader', error%code, error%message
     endif
     helper%seedname = seedname
   end subroutine input_reader
 
-  subroutine overlaps(helper, m_matrix)
+  subroutine overlaps(helper, m_matrix, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -129,7 +127,7 @@ contains
     implicit none
     type(lib_reader_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
-    !integer, intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
@@ -141,7 +139,6 @@ contains
     !type(w90_physical_constants_type) :: physics
     type(timer_list_type) :: timer
     type(w90_error_type), allocatable :: error
-    type(w90comm_type) :: local_comm
     integer :: stdout
     logical :: cp_pp
 
@@ -156,7 +153,6 @@ contains
     !allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
     !allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
     cp_pp = .false.
-    local_comm%comm = 0 !comm
     stdout = 6
     ! should be distributed if MPI
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
@@ -164,7 +160,7 @@ contains
                       m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       helper%num_bands, helper%num_kpts, helper%num_proj, helper%num_wann, &
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
-                      helper%use_bloch_phases, helper%seedname, stdout, timer, error, local_comm)
+                      helper%use_bloch_phases, helper%seedname, stdout, timer, error, comm)
     deallocate (m_matrix_local)
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
@@ -173,7 +169,7 @@ contains
     endif
   end subroutine overlaps
 
-  subroutine wannierise(helper)
+  subroutine wannierise(helper, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -181,7 +177,7 @@ contains
     implicit none
     type(lib_reader_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
-    !integer, intent(in) :: comm
+    type(w90comm_type), intent(in) :: comm
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable :: u_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
@@ -189,10 +185,8 @@ contains
     !type(w90_physical_constants_type) :: physics
     type(timer_list_type) :: timer
     type(w90_error_type), allocatable :: error
-    type(w90comm_type) :: local_comm
     integer :: stdout
 
-    local_comm%comm = 0 !comm
     stdout = 6
     if (helper%gamma_only) then
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
@@ -201,7 +195,7 @@ contains
                            u_matrix, u_matrix_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            helper%real_space_ham%translate_home_cell, helper%seedname, stdout, timer, error, &
-                           local_comm)
+                           comm)
     else
       call wann_main(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                      helper%ham_logical, helper%kmesh_info, helper%kpt_latt, helper%output_file, &
@@ -213,7 +207,7 @@ contains
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
                      helper%rpt_origin, helper%band_plot%mode, helper%tran%mode, &
                      helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, timer, &
-                     error, local_comm)
+                     error, comm)
     endif
     if (allocated(error)) then
       write (0, *) 'Error in wannierise', error%code, error%message
