@@ -145,7 +145,7 @@ contains
     endif
   end subroutine create_kmesh
 
-  subroutine overlaps(helper, m_matrix, comm)
+  subroutine overlaps(helper, m_matrix, u_matrix, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
@@ -159,7 +159,7 @@ contains
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts)
     !
     !type(w90_physical_constants_type) :: physics
