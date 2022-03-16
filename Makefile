@@ -10,6 +10,13 @@ default: wannier post
 
 PREFIX ?= /usr
 
+VERSION_MAJOR = 3
+VERSION_MINOR = 1
+VERSION_PATCH = 0
+
+VERSION = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
+VERSION_SHORT = $(VERSION_MAJOR).$(VERSION_MINOR)
+
 install: default
 	install -d $(DESTDIR)$(PREFIX)/bin/
 	for x in wannier90.x postw90.x w90chk2chk.x w90spn2spn.x ; do \
@@ -19,24 +26,25 @@ install: default
 	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -m755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
 	install -d $(DESTDIR)$(PREFIX)/lib/
 	if [ -f "libwannier.a" ]; then install -m644 "libwannier.a" "$(DESTDIR)$(PREFIX)/lib/libwannier.a"; fi;
+	if [ -f "libwannier.a" ]; then $(MAKE) pkgconfig; fi;
 
 all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
-w90chk2chk: objdir 
+w90chk2chk: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
 
-w90spn2spn: objdir 
+w90spn2spn: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
 
-wannier: objdir 
+wannier: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
 
-lib: objdir 
+lib: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
 
-dynlib: objdir 
+dynlib: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
 
 w90pov:
@@ -47,12 +55,29 @@ w90vdw:
 
 libs: lib
 
+PKGCONFIG_FILENAME = wannier.pc
+pkgconfig:
+	$(file > $(PKGCONFIG_FILENAME),prefix=$(DESTDIR)$(PREFIX))
+	$(file >> $(PKGCONFIG_FILENAME),exec_prefix=$(DESTDIR)$(PREFIX)/bin)
+	$(file >> $(PKGCONFIG_FILENAME),libdir=$(DESTDIR)$(PREFIX)/lib)
+	$(file >> $(PKGCONFIG_FILENAME),includedir=$(DESTDIR)$(PREFIX)/include)
+	$(file >> $(PKGCONFIG_FILENAME),)
+	$(file >> $(PKGCONFIG_FILENAME),Name: wannier)
+	$(file >> $(PKGCONFIG_FILENAME),Description: Compute maximally-localised Wannier functions.)
+	$(file >> $(PKGCONFIG_FILENAME),Requires: )
+	$(file >> $(PKGCONFIG_FILENAME),Version: $(VERSION))
+	$(file >> $(PKGCONFIG_FILENAME),Libs: -L$${libdir} -lwannier)
+	$(file >> $(PKGCONFIG_FILENAME),Cflags: -I$${includedir})
+	install -D -m644 "$(PKGCONFIG_FILENAME)" "$(DESTDIR)$(PREFIX)/lib/pkgconfig/$(PKGCONFIG_FILENAME)"
+	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
+
 post: objdir
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) post)
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
 	cd $(ROOTDIR) && rm -f src/*~
+	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
 	@( cd $(ROOTDIR) && if [ -d src/obj ] ; \
 		then cd src/obj && \
 		$(MAKE) -f $(REALMAKEFILE) clean && \
@@ -68,17 +93,17 @@ veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a libwan2.a w90chk2chk.x w90spn2spn.x
 	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
 	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
-	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
+	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
+	$(MAKE) -C $(ROOTDIR)/doc/user_guide
+	$(MAKE) -C $(ROOTDIR)/doc/tutorial
 
 # For now hardcoded to 3.1.0, and using HEAD
 # Better to get the version from the io.F90 file and use
 # the tag (e.g. v3.1.0) instead of HEAD
-dist: 
+dist:
 	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.1.0/ -o wannier90-3.1.0.tar.gz
 
 dist-legacy:
@@ -174,10 +199,10 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
-test-serial: w90chk2chk wannier post  
+test-serial: w90chk2chk wannier post
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
 
-test-parallel: w90chk2chk wannier post 
+test-parallel: w90chk2chk wannier post
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default --numprocs=4 )
 
 # Alias
@@ -199,9 +224,9 @@ dist-lite:
 		./CHANGE.log \
 	)
 
-objdir: 
+objdir:
 	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
 		then mkdir src/obj ; \
 	fi ) ;
 
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp tests w90spn2spn install
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp tests w90spn2spn install pkgconfig
