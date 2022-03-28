@@ -93,6 +93,11 @@ $(DYNLIBRARY): $(OBJS) $(OBJS) $(OBJS_LIBV1)
 clean:
 	rm -f *.o *.mod *.MOD *.obj
 
+library_interface.o :  \
+	comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
+	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../library_interface.F90
+
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90
 
