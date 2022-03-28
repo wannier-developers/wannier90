@@ -7,7 +7,8 @@ module w90_helper_types
 
   implicit none
 
-  ! Todo - disentangle, restarts, distribute data, plot, transport
+  ! Todo - disentangle, restarts, distribute data, transport
+  ! stdout!!!
 
   type lib_global_type
     type(w90_calculation_type) :: w90_calculation ! separate this?
@@ -132,6 +133,31 @@ contains
     endif
     helper%seedname = seedname
   end subroutine input_reader
+
+  subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, comm)
+    !use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type, mpirank
+    implicit none
+    type(lib_global_type), intent(in) :: helper
+    character(len=*), intent(in) :: label
+    complex(kind=dp), intent(in) :: u_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !integer, intent(in) :: stdout
+    type(w90comm_type), intent(in) :: comm
+    !
+    integer :: stdout
+
+    if (mpirank(comm) == 0) then
+      stdout = 6
+      ! e.g. label = 'postwann' after wannierisation
+      call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
+                                               helper%kmesh_info, helper%kpt_latt, helper%num_kpts, helper%dis_manifold, &
+                                               helper%num_bands, helper%num_wann, u_matrix, u_opt, m_matrix, helper%mp_grid, &
+                                               helper%real_lattice, helper%omega%invariant, helper%have_disentangled, stdout, &
+                                               helper%seedname)
+    endif
+  end subroutine checkpoint
 
   subroutine create_kmesh(helper, comm)
     use w90_kmesh, only: kmesh_get
