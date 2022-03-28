@@ -32,6 +32,8 @@ module w90_helper_types
     type(wvfn_read_type) :: wvfn_read
     !type(w90comm_type) :: comm
 
+    type(timer_list_type) :: timer
+
     integer, allocatable :: exclude_bands(:)
     integer :: mp_grid(3)
     integer :: num_bands
@@ -132,25 +134,21 @@ contains
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
-    use w90_io, only: io_print_timings
     implicit none
     type(lib_global_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
     !
-    type(timer_list_type) :: timer
     type(w90_error_type), allocatable :: error
     integer :: stdout
 
     stdout = 6
     call kmesh_get(helper%kmesh_input, helper%kmesh_info, helper%print_output, helper%kpt_latt, &
-                   helper%real_lattice, helper%num_kpts, helper%gamma_only, stdout, timer, &
+                   helper%real_lattice, helper%num_kpts, helper%gamma_only, stdout, helper%timer, &
                    error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in kmesh_get', error%code, error%message
       deallocate (error)
-    else
-      call io_print_timings(timer, stdout)
     endif
   end subroutine create_kmesh
 
@@ -158,7 +156,6 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
-    use w90_io, only: io_print_timings
     implicit none
     type(lib_global_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
@@ -172,7 +169,6 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
-    type(timer_list_type) :: timer
     type(w90_error_type), allocatable :: error
     integer :: stdout
     logical :: cp_pp
@@ -195,13 +191,11 @@ contains
                       m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       helper%num_bands, helper%num_kpts, helper%num_proj, helper%num_wann, &
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
-                      helper%use_bloch_phases, helper%seedname, stdout, timer, error, comm)
+                      helper%use_bloch_phases, helper%seedname, stdout, helper%timer, error, comm)
     deallocate (m_matrix_local)
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
       deallocate (error)
-    else
-      call io_print_timings(timer, stdout)
     endif
   end subroutine overlaps
 
@@ -209,7 +203,6 @@ contains
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
-    use w90_io, only: io_print_timings
     implicit none
     type(lib_global_type), intent(inout) :: helper
     type(lib_plot_type), intent(in) :: plot
@@ -221,7 +214,6 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
-    type(timer_list_type) :: timer
     type(w90_error_type), allocatable :: error
     integer :: stdout
 
@@ -232,8 +224,8 @@ contains
                            helper%omega, helper%w90_system, helper%print_output, helper%wannier_data, m_matrix, &
                            u_matrix, u_matrix_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
-                           helper%real_space_ham%translate_home_cell, helper%seedname, stdout, timer, error, &
-                           comm)
+                           helper%real_space_ham%translate_home_cell, helper%seedname, stdout, &
+                           helper%timer, error, comm)
     else
       call wann_main(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                      helper%ham_logical, helper%kmesh_info, helper%kpt_latt, helper%output_file, &
@@ -244,15 +236,23 @@ contains
                      helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
                      helper%rpt_origin, plot%band_plot%mode, transport%tran%mode, &
-                     helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, timer, &
-                     error, comm)
+                     helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, &
+                     helper%timer, error, comm)
     endif
     if (allocated(error)) then
       write (0, *) 'Error in wannierise', error%code, error%message
       deallocate (error)
-    else
-      call io_print_timings(timer, stdout)
     endif
   end subroutine wannierise
+
+  subroutine print_times(helper)
+    use w90_io, only: io_print_timings
+    implicit none
+    type(lib_global_type), intent(in) :: helper
+    integer stdout
+
+    stdout = 6
+    call io_print_timings(helper%timer, stdout)
+  end subroutine print_times
 
 end module w90_helper_types
