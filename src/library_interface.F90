@@ -95,7 +95,7 @@ contains
   subroutine input_reader(helper, plot, transport, seedname, comm) !, stdout, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90comm_type, mpirank
     implicit none
     type(lib_global_type), intent(inout) :: helper
     type(lib_plot_type), intent(inout) :: plot
@@ -135,6 +135,7 @@ contains
   end subroutine input_reader
 
   subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, comm)
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     !use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     implicit none
