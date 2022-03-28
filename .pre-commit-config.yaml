@@ -13,7 +13,7 @@ repos:
         config/make[.]inc[.\w]*|
         examples/example\d\d[-]?\w*/.+win
       )$
-- repo: git://github.com/pseewald/fprettify
+- repo: https://github.com/pseewald/fprettify
   rev: v0.3.3
   hooks:
   - id: fprettify
