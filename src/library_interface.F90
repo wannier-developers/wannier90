@@ -7,13 +7,11 @@ module w90_helper_types
 
   implicit none
 
-  type lib_reader_type
+  type lib_global_type
     type(atom_data_type) :: atom_data
-    type(band_plot_type) :: band_plot
     type(dis_control_type) :: dis_control
     type(dis_manifold_type) :: dis_manifold
     type(dis_spheres_type) :: dis_spheres
-    type(fermi_surface_plot_type) :: fermi_surface_data
     type(kmesh_info_type) :: kmesh_info
     type(kmesh_input_type) :: kmesh_input
     type(kpoint_path_type) :: kpoint_path
@@ -23,13 +21,12 @@ module w90_helper_types
     type(proj_input_type) :: proj_input
     type(real_space_ham_type) :: real_space_ham
     type(select_projection_type) :: select_proj
-    type(transport_type) :: tran
+    !type(transport_type) :: tran
     type(w90_calculation_type) :: w90_calculation
     !type(w90_extra_io_type) :: w90_extra_io
     type(w90_system_type) :: w90_system
     type(wann_control_type) :: wann_control
     type(wannier_data_type) :: wannier_data
-    type(wannier_plot_type) :: wann_plot
     type(wann_omega_type) :: wann_omega
     type(ws_region_type) :: ws_region
     type(wvfn_read_type) :: wvfn_read
@@ -73,18 +70,30 @@ module w90_helper_types
     integer :: nrpts
     logical :: have_disentangled = .false.
     character(len=128) :: seedname
-  end type lib_reader_type
+  end type lib_global_type
+
+  type lib_plot_type
+    type(band_plot_type) :: band_plot
+    type(wannier_plot_type) :: wann_plot
+    type(fermi_surface_plot_type) :: fermi_surface_data
+  end type lib_plot_type
+
+  type lib_transport_type
+    type(transport_type) :: tran
+  end type lib_transport_type
 
   public:: input_reader, create_kmesh, overlaps, wannierise
 
 contains
 
-  subroutine input_reader(helper, seedname, comm) !, stdout, comm)
+  subroutine input_reader(helper, plot, transport, seedname, comm) !, stdout, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
-    type(lib_reader_type), intent(inout) :: helper
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_plot_type), intent(inout) :: plot
+    type(lib_transport_type), intent(inout) :: transport
     !integer, intent(in) :: stdout
     character(len=*), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
@@ -96,15 +105,15 @@ contains
     logical :: cp_pp
 
     stdout = 6
-    call w90_wannier90_readwrite_read(helper%atom_data, helper%band_plot, helper%dis_control, &
+    call w90_wannier90_readwrite_read(helper%atom_data, plot%band_plot, helper%dis_control, &
                                       helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
-                                      helper%fermi_energy_list, helper%fermi_surface_data, &
+                                      helper%fermi_energy_list, plot%fermi_surface_data, &
                                       helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
                                       helper%output_file, helper%wvfn_read, helper%wann_control, &
                                       helper%wann_omega, helper%proj, helper%proj_input, &
                                       helper%real_space_ham, helper%select_proj, helper%kpoint_path, &
-                                      helper%w90_system, helper%tran, helper%print_output, &
-                                      helper%wannier_data, helper%wann_plot, io_params, &
+                                      helper%w90_system, transport%tran, helper%print_output, &
+                                      helper%wannier_data, plot%wann_plot, io_params, &
                                       helper%ws_region, helper%w90_calculation, helper%eigval, &
                                       helper%real_lattice, physics%bohr, helper%sitesym%symmetrize_eps, &
                                       helper%mp_grid, helper%num_bands, helper%num_kpts, &
@@ -125,7 +134,7 @@ contains
     use w90_comms, only: w90comm_type
     use w90_io, only: io_print_timings
     implicit none
-    type(lib_reader_type), intent(inout) :: helper
+    type(lib_global_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
     !
@@ -151,7 +160,7 @@ contains
     use w90_overlap, only: overlap_read
     use w90_io, only: io_print_timings
     implicit none
-    type(lib_reader_type), intent(inout) :: helper
+    type(lib_global_type), intent(inout) :: helper
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
@@ -196,13 +205,15 @@ contains
     endif
   end subroutine overlaps
 
-  subroutine wannierise(helper, m_matrix, u_matrix, comm)
+  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_io, only: io_print_timings
     implicit none
-    type(lib_reader_type), intent(inout) :: helper
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_plot_type), intent(in) :: plot
+    type(lib_transport_type), intent(in) :: transport
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
@@ -232,7 +243,7 @@ contains
                      helper%eigval, helper%real_lattice, helper%wannier_centres_translated, helper%irvec, &
                      helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
-                     helper%rpt_origin, helper%band_plot%mode, helper%tran%mode, &
+                     helper%rpt_origin, plot%band_plot%mode, transport%tran%mode, &
                      helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, timer, &
                      error, comm)
     endif
