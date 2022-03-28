@@ -7,7 +7,11 @@ module w90_helper_types
 
   implicit none
 
+  ! Todo - disentangle, restarts, distribute data, plot, transport
+
   type lib_global_type
+    type(w90_calculation_type) :: w90_calculation ! separate this?
+
     type(atom_data_type) :: atom_data
     type(dis_control_type) :: dis_control
     type(dis_manifold_type) :: dis_manifold
@@ -22,7 +26,6 @@ module w90_helper_types
     type(real_space_ham_type) :: real_space_ham
     type(select_projection_type) :: select_proj
     !type(transport_type) :: tran
-    type(w90_calculation_type) :: w90_calculation
     !type(w90_extra_io_type) :: w90_extra_io
     type(w90_system_type) :: w90_system
     type(wann_control_type) :: wann_control
@@ -244,6 +247,41 @@ contains
       deallocate (error)
     endif
   end subroutine wannierise
+
+  subroutine plot_files(helper, plot, transport, m_matrix, u_matrix, u_matrix_opt, comm)
+    use w90_plot, only: plot_main
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    implicit none
+    type(lib_global_type), intent(inout) :: helper ! inout due to ham_logical
+    type(lib_plot_type), intent(in) :: plot
+    type(lib_transport_type), intent(in) :: transport
+    !integer, intent(in) :: stdout
+    type(w90comm_type), intent(in) :: comm
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    !
+    type(w90_physical_constants_type) :: physics
+    type(w90_error_type), allocatable :: error
+    integer :: stdout
+
+    stdout = 6
+    call plot_main(helper%atom_data, plot%band_plot, helper%dis_manifold, helper%fermi_energy_list, &
+                   plot%fermi_surface_data, helper%ham_logical, helper%kmesh_info, helper%kpt_latt, &
+                   helper%output_file, helper%wvfn_read, helper%real_space_ham, helper%kpoint_path, &
+                   helper%print_output, helper%wannier_data, plot%wann_plot, helper%ws_region, &
+                   helper%w90_calculation, helper%ham_k, helper%ham_r, m_matrix, u_matrix, &
+                   u_matrix_opt, helper%eigval, helper%real_lattice, helper%wannier_centres_translated, &
+                   physics%bohr, helper%irvec, helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, &
+                   helper%num_bands, helper%num_kpts, helper%num_wann, helper%rpt_origin, &
+                   transport%tran%mode, helper%have_disentangled, helper%lsitesymmetry, helper%w90_system%spinors, &
+                   helper%seedname, stdout, helper%timer, error, comm)
+    if (allocated(error)) then
+      write (0, *) 'Error in plotting', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine plot_files
 
   subroutine print_times(helper)
     use w90_io, only: io_print_timings
