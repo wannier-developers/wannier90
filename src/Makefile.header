@@ -1,6 +1,6 @@
 OBJS  =  constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
         ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
-        wannier90_readwrite.o readwrite.o error.o error_base.o
+        wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o
 
 OBJS_LIBV1 = wannier_lib.o
 
