@@ -202,7 +202,7 @@ contains
     endif
   end subroutine overlaps
 
-  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, comm)
+  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, u_opt, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -212,7 +212,7 @@ contains
     type(lib_transport_type), intent(in) :: transport
     !integer, intent(in) :: stdout
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(in) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
@@ -225,7 +225,7 @@ contains
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, helper%output_file, helper%wann_control, &
                            helper%omega, helper%w90_system, helper%print_output, helper%wannier_data, m_matrix, &
-                           u_matrix, u_matrix_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
+                           u_matrix, u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            helper%real_space_ham%translate_home_cell, helper%seedname, stdout, &
                            helper%timer, error, comm)
@@ -234,7 +234,7 @@ contains
                      helper%ham_logical, helper%kmesh_info, helper%kpt_latt, helper%output_file, &
                      helper%real_space_ham, helper%wann_control, helper%omega, helper%sitesym, &
                      helper%w90_system, helper%print_output, helper%wannier_data, helper%ws_region, &
-                     helper%w90_calculation, helper%ham_k, helper%ham_r, m_matrix, u_matrix, u_matrix_opt, &
+                     helper%w90_calculation, helper%ham_k, helper%ham_r, m_matrix, u_matrix, u_opt, &
                      helper%eigval, helper%real_lattice, helper%wannier_centres_translated, helper%irvec, &
                      helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
