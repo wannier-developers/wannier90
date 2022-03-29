@@ -53,7 +53,7 @@ tolerance = ( (1.0e-5, 1.0e-5, 'size'))
 [WANNIER90_BVEC]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_bvec.parse
-tolerance = ( (1.0e-5, 1.0e-5, 'size'))
+tolerance = ( (1.0e-10, 1.0e-10, 'size'))
 
 [WANNIER90_CUBE]
 exe = ../../wannier90.x
