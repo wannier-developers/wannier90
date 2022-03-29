@@ -132,6 +132,7 @@ contains
       deallocate (error)
     endif
     helper%seedname = seedname
+    if (mpirank(comm) /= 0) helper%print_output%iprint = 0
   end subroutine input_reader
 
   subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, comm)
