@@ -68,7 +68,7 @@ $(DYNLIBRARY): $(OBJS) $(LIBOBJS)
 
 # I expected this to only be needed for f2py-f90wrap, but seems to be wrong
 cabort.o: cabort.c
-	gcc -c -fPIC abort.c
+	gcc -c -fPIC cabort.c
 
 $(OBJS):
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c -o $@ ../src/$(@F:.o=.F90)
