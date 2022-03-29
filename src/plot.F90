@@ -2062,7 +2062,7 @@ contains
     write (file_unit, *) num_kpts, kmesh_info%nntot
     do nkp = 1, num_kpts
       do nn = 1, kmesh_info%nntot
-        write (file_unit, '(4F14.8)') kmesh_info%bk(:, nn, nkp), kmesh_info%wb(nn)
+        write (file_unit, '(4F20.14)') kmesh_info%bk(:, nn, nkp), kmesh_info%wb(nn)
       enddo
     enddo
     close (file_unit)
