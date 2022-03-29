@@ -1,0 +1,149 @@
+
+BUILD = ./sobj
+
+include make_serial.inc
+
+ifdef COMMS
+COMMS := $(strip $(COMMS))
+else
+COMMS = serial
+endif
+
+ifeq ($(COMMS),mpi08)
+TEMP1 = -DMPI -DMPI08
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpih)
+TEMP1 = -DMPI -DMPIH
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi90)
+TEMP1 = -DMPI -DMPI90
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi)
+# default to f90 style "use mpi"
+TEMP1 = -DMPI -DMPI90
+TEMP2 = $(MPIF90)
+else
+TEMP1 =
+TEMP2 = $(F90)
+endif
+
+POSTOPTS = $(TEMP1) -J$(BUILD) -I$(BUILD)
+COMPILER = $(TEMP2)
+
+FWRAP = ~/.local/bin/f90wrap
+PYMOD = wan90
+
+FPY = f2py
+
+OBJS  =  $(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/utility.o \
+	$(BUILD)/types.o $(BUILD)/hamiltonian.o $(BUILD)/overlap.o \
+	$(BUILD)/kmesh.o $(BUILD)/disentangle.o $(BUILD)/ws_distance.o \
+	$(BUILD)/wannierise.o $(BUILD)/plot.o $(BUILD)/transport.o \
+	$(BUILD)/sitesym.o $(BUILD)/comms.o $(BUILD)/wannier90_types.o \
+	$(BUILD)/wannier90_readwrite.o $(BUILD)/readwrite.o $(BUILD)/error.o \
+	$(BUILD)/error_base.o $(BUILD)/library_interface.o
+
+WRAPSRC = ../src/constants.F90 ../src/types.F90 ../src/wannier90_readwrite.F90 \
+	../src/wannier90_types.F90 ../src/comms.F90 ../src/library_interface.F90
+
+DYNLIBRARYEXTENSION ?= so
+SHAREDLIBFLAGS ?= -shared
+
+## Define the filename
+DYNLIBRARY = libwannier_$(COMMS).$(DYNLIBRARYEXTENSION)
+
+all: $(DYNLIBRARY) wrap python
+
+clean:
+	rm f90wrap_* $(BUILD)/* cabort.o $(PYMOD).py
+
+wrap: $(WRAPSRC)
+	$(FWRAP) -m $(PYMOD) -k kind_map $(WRAPSRC)
+
+python: $(DYNLIBRARY) cabort.o
+	f2py -c -m _$(PYMOD) -I$(BUILD) f90wrap_*.f90 cabort.o $(DYNLIBRARY)
+
+$(DYNLIBRARY): $(OBJS) $(LIBOBJS)
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(LIBOBJS) $(OBJS) -o $@ $(LIBS)
+
+# I expected this to only be needed for f2py-f90wrap, but seems to be wrong
+cabort.o: cabort.c
+	gcc -c -fPIC abort.c
+
+$(OBJS):
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c -o $@ ../src/$(@F:.o=.F90)
+
+$(BUILD)/constants.o: ../src/constants.F90
+
+$(BUILD)/io.o: ../src/io.F90 $(BUILD)/types.o $(BUILD)/constants.o \
+	$(BUILD)/types.o
+
+$(BUILD)/utility.o: ../src/utility.F90 $(BUILD)/constants.o $(BUILD)/io.o \
+	$(BUILD)/comms.o $(BUILD)/error.o
+
+$(BUILD)/wannier90_types.o: ../src/wannier90_types.F90 $(BUILD)/constants.o \
+	$(BUILD)/io.o
+
+$(BUILD)/wannier90_readwrite.o: ../src/wannier90_readwrite.F90 \
+	$(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/types.o \
+	$(BUILD)/wannier90_types.o $(BUILD)/readwrite.o
+
+$(BUILD)/readwrite.o: ../src/readwrite.F90 $(BUILD)/types.o \
+	$(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/utility.o $(BUILD)/comms.o
+
+$(BUILD)/types.o: ../src/types.F90 $(BUILD)/constants.o
+
+$(BUILD)/hamiltonian.o: ../src/hamiltonian.F90 $(BUILD)/ws_distance.o \
+	$(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/utility.o $(BUILD)/types.o \
+	$(BUILD)/wannier90_types.o
+
+$(BUILD)/overlap.o: ../src/overlap.F90 $(BUILD)/constants.o $(BUILD)/io.o \
+	$(BUILD)/utility.o $(BUILD)/types.o $(BUILD)/sitesym.o \
+	$(BUILD)/wannier90_types.o $(BUILD)/comms.o $(BUILD)/error.o
+
+$(BUILD)/kmesh.o: ../src/kmesh.F90 $(BUILD)/constants.o $(BUILD)/io.o \
+	$(BUILD)/utility.o $(BUILD)/types.o 
+
+$(BUILD)/error_base.o: ../src/error_base.F90
+
+$(BUILD)/error.o: ../src/error.F90 $(BUILD)/error_base.o $(BUILD)/comms.o
+
+$(BUILD)/disentangle.o: ../src/disentangle.F90 $(BUILD)/constants.o \
+	$(BUILD)/io.o $(BUILD)/types.o $(BUILD)/sitesym.o $(BUILD)/comms.o \
+	$(BUILD)/wannier90_types.o
+
+$(BUILD)/wannierise.o: ../src/wannierise.F90 $(BUILD)/hamiltonian.o \
+	$(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/utility.o $(BUILD)/types.o \
+	$(BUILD)/sitesym.o $(BUILD)/comms.o $(BUILD)/wannier90_types.o \
+	$(BUILD)/wannier90_readwrite.o $(BUILD)/error.o
+
+$(BUILD)/plot.o: ../src/plot.F90 $(BUILD)/constants.o $(BUILD)/io.o \
+	$(BUILD)/utility.o $(BUILD)/types.o $(BUILD)/hamiltonian.o \
+	$(BUILD)/ws_distance.o $(BUILD)/wannier90_types.o $(BUILD)/comms.o
+
+$(BUILD)/ws_distance.o: ../src/ws_distance.F90 $(BUILD)/constants.o \
+	$(BUILD)/io.o $(BUILD)/types.o
+
+$(BUILD)/transport.o: ../src/transport.F90 $(BUILD)/constants.o $(BUILD)/io.o \
+	$(BUILD)/types.o $(BUILD)/hamiltonian.o $(BUILD)/wannier90_types.o
+
+$(BUILD)/sitesym.o : ../src/sitesym.F90 $(BUILD)/utility.o $(BUILD)/types.o \
+	$(BUILD)/constants.o $(BUILD)/wannier90_types.o
+
+$(BUILD)/comms.o: ../src/comms.F90 $(BUILD)/constants.o $(BUILD)/error_base.o
+
+$(BUILD)/library_interface.o: ../src/library_interface.F90 $(BUILD)/constants.o $(BUILD)/error_base.o \
+	$(BUILD)/types.o $(BUILD)/wannier90_types.o $(BUILD)/wannier90_readwrite.o $(BUILD)/comms.o
+
+
+$(BUILD)/f90wrap_constants.o: f90wrap_constants.f90
+
+$(BUILD)/f90wrap_types.o: f90wrap_types.f90
+
+$(BUILD)/f90wrap_disentangle.o: f90wrap_disentangle.f90
+
+$(BUILD)/f90wrap_wannierise.o: f90wrap_wannierise.f90
+
+$(BUILD)/f90wrap_wannier90_readwrite.o: f90wrap_wannier90_readwrite.f90
+
+$(BUILD)/f90wrap_wannier90_types.o: f90wrap_wannier90_types.f90
