@@ -4,7 +4,7 @@ from mpi4py import MPI
 fcomm = MPI.COMM_WORLD.py2f()
 
 # Maybe should have a common name...
-import wan90mpi
+import wan90mpi as wan90
 
 data = wan90.w90_helper_types.lib_global_type()
 plot = wan90.w90_helper_types.lib_plot_type()
