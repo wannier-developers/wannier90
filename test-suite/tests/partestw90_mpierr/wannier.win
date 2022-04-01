@@ -43,4 +43,4 @@ begin kpoints
  0.50000 0.50000 0.50000
 end kpoints
 
-unlucky = 3
+unlucky = 1
