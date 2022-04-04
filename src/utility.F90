@@ -668,7 +668,7 @@ contains
       return
     endif
     if (info > 0) then
-      write (errormsg, '(i3,a)') 'Error in utility_diagonalize: ', info, &
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: ', info, &
         ' EIGENVECTORS FAILED TO CONVERGE'
       call set_error_fatal(error, errormsg, comm)
       return
