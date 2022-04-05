@@ -106,10 +106,10 @@ module w90_postw90_types
     !! Contains control variables for the kslice module of postw90
     !!==================================================
     character(len=20) :: task = 'fermi_lines'
-    real(kind=dp) :: corner(3) = 0.0_dp
-    real(kind=dp) :: b1(3) = [1.0_dp, 0.0_dp, 0.0_dp]
-    real(kind=dp) :: b2(3) = [0.0_dp, 1.0_dp, 0.0_dp]
-    integer :: kmesh2d(2) = 50
+    real(kind=dp) :: corner(3) != 0.0_dp
+    real(kind=dp) :: b1(3) != [1.0_dp, 0.0_dp, 0.0_dp]
+    real(kind=dp) :: b2(3) ! = [0.0_dp, 1.0_dp, 0.0_dp]
+    integer :: kmesh2d(2) ! = 50
     character(len=20) :: fermi_lines_colour = 'none'
   end type pw90_kslice_mod_type
 
