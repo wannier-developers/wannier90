@@ -144,6 +144,10 @@ contains
     character(len=20) :: energy_unit
 
     library = .false.
+    pw90_kslice%corner = 0.0_dp
+    pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
+    pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]
+    pw90_kslice%kmesh2d = 50
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_verbosity(print_output, error, comm)
