@@ -67,7 +67,8 @@ program wannier
   use w90_sitesym !YN:
 
   use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, &
-    w90_readwrite_chkpt_dist
+    w90_readwrite_chkpt_dist, w90_readwrite_in_file, w90_readwrite_clean_infile, &
+    w90_readwrite_read_final_alloc, w90_readwrite_uppercase
   use w90_wannier90_types
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
     w90_wannier90_readwrite_w90_dealloc, &
@@ -249,6 +250,10 @@ program wannier
     call io_date(cdate, ctime)
     write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
+    ! read infile to in_data structure
+    call w90_readwrite_in_file(seedname, error, comm)
+    if (allocated(error)) return
+
     call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                       dis_manifold, exclude_bands, fermi_energy_list, &
                                       fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
@@ -262,6 +267,21 @@ program wannier
                                       lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, &
                                       seedname, stderr, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+    if (allocated(error)) return
+
+    if (.not. (w90_calculation%transport .and. transport%read_ht)) then
+      ! For aesthetic purposes, convert some things to uppercase
+      call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
+      ! Initialise
+      omega%total = -999.0_dp
+      omega%tilde = -999.0_dp
+      omega%invariant = -999.0_dp
+      call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                          num_bands, num_kpts, error, comm)
+      if (allocated(error)) return
+    endif
 
     have_disentangled = .false.
 
