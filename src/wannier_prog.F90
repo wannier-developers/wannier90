@@ -271,6 +271,8 @@ program wannier
     call w90_readwrite_clean_infile(stdout, seedname, error, comm)
     if (allocated(error)) return
 
+    disentanglement = (num_bands > num_wann)
+
     if (.not. (w90_calculation%transport .and. transport%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
       call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
@@ -366,7 +368,6 @@ program wannier
                                     use_bloch_phases, error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-  disentanglement = (num_bands > num_wann)
   if (gamma_only .and. num_nodes > 1) then
     call set_error_fatal(error, 'Gamma point branch is serial only at the moment', comm)
     call prterr(error, stdout, stderr, comm)
