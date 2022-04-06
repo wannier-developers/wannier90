@@ -36,7 +36,9 @@ program postw90
     pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
   use w90_postw90_readwrite
   use w90_postw90_types
-  use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header
+  use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header, &
+    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, &
+    w90_readwrite_uppercase
   use w90_spin
   use w90_types
 
@@ -267,6 +269,11 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
 
   if (on_root) then
+
+    ! copy input file to in_data structure
+    call w90_readwrite_in_file(seedname, error, comm)
+    if (allocated(error)) return
+
     call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, &
                                     kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
                                     atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
@@ -276,6 +283,14 @@ program postw90
                                     write_data, gamma_only, physics%bohr, optimisation, stdout, &
                                     seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+    if (allocated(error)) return
+    ! For aesthetic purposes, convert some things to uppercase
+    call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
+    call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
+                                        num_bands, num_kpts, error, comm)
+    if (allocated(error)) return
 
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                                      real_lattice, spec_points, pw90_calcs, postw90_oper, &
