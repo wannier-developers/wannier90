@@ -142,9 +142,6 @@ contains
     character(len=20) :: energy_unit
 
     disentanglement = .false.
-    call w90_readwrite_in_file(seedname, error, comm)
-    if (allocated(error)) return
-
     call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, error, comm)
     if (allocated(error)) return
 
@@ -306,17 +303,6 @@ contains
         if (allocated(error)) return
 
       endif
-    endif
-    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
-    if (allocated(error)) return
-
-    if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
-      ! Initialise
-      call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
-                                          num_bands, num_kpts, error, comm)
-      if (allocated(error)) return
     endif
   end subroutine w90_wannier90_readwrite_read
 

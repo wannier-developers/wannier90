@@ -148,8 +148,7 @@ contains
     pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
     pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]
     pw90_kslice%kmesh2d = 50
-    call w90_readwrite_in_file(seedname, error, comm)
-    if (allocated(error)) return
+
     call w90_readwrite_read_verbosity(print_output, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_algorithm_control(optimisation, error, comm)
@@ -253,13 +252,6 @@ contains
                                                   pw90_extra_io%global_kmesh, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
-    if (allocated(error)) return
-    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
-    if (allocated(error)) return
-    ! For aesthetic purposes, convert some things to uppercase
-    call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
-    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
-                                        num_bands, num_kpts, error, comm)
     if (allocated(error)) return
   end subroutine w90_postw90_readwrite_read
 
