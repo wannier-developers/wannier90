@@ -373,6 +373,8 @@ program wannier
     call prterr(error, stdout, stderr, comm)
   endif
 
+  disentanglement = (num_bands > num_wann) ! for non-root
+
   if (w90_calculation%transport .and. transport%read_ht) goto 3003
 
   ! Sort out restarts
