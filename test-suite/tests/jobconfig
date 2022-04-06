@@ -435,7 +435,7 @@ output = gaas-kdotp_0.dat
 program = WANNIER90_WERR_FAIL
 inputs_args = ('wannier.win', '')
 output = wannier.werr
-min_nprocs = 3
+min_nprocs = 2
 
 [categories]
 wannier_only = testw90_*
