@@ -74,8 +74,6 @@ end module w90chk_parameters
 module wannchk_data
 
   use w90_constants, only: dp
-  use w90_io, only: maxlen
-
   use w90_wannier90_types
 
   implicit none
@@ -111,12 +109,30 @@ module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_error
   implicit none
 
   logical, save :: export_flag
   character(len=33), save :: header
 contains
+
+  subroutine io_error(error_msg, stdout, seedname)
+    !================================================
+    !
+    !! Abort the code giving an error message
+    !
+    !================================================
+
+    implicit none
+
+    character(len=*), intent(in) :: error_msg
+    character(len=50), intent(in)  :: seedname
+    integer :: stdout
+
+    close (stdout)
+    write (*, '(1x,a)') trim(error_msg)
+    write (*, '(A)') "Error: examine the output/error file for details"
+    stop
+  end subroutine io_error
 
   subroutine print_usage(stdout)
 
@@ -192,7 +208,7 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit
+    use w90_io, only: io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -346,7 +362,7 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit
+    use w90_io, only: io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -568,7 +584,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
@@ -624,7 +640,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing formatted checkpoint file ', trim(seedname), '.chk.fmt...'
 
@@ -709,50 +725,23 @@ program w90chk2chk
   !! Program to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, io_error
+  use w90_io, only: io_file_unit
   use w90_conv
-  use w90_comms, only: comms_end, w90comm_type, mpisize
-
-#ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
-#endif
-#ifdef MPI90
-  use mpi ! next best, use fortran90 interface
-#endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   ! Export mode:
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
   integer :: stdout
-  logical :: file_found
-  integer :: file_unit
+  !logical :: file_found
+  !integer :: file_unit
   character(len=20) :: checkpoint
   character(len=50) :: seedname
-  integer :: num_nodes, ierr
-
-  type(w90comm_type) :: comm
-
-#ifdef MPI
-  comm%comm = MPI_COMM_WORLD
-  call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-  num_nodes = mpisize(comm)
-#else
-  num_nodes = 1
-#endif
+  !integer :: num_nodes, ierr
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')
-
-  if (num_nodes /= 1) then
-    call io_error('w90chk2chk can only be used in serial...', stdout, seedname)
-  endif
 
   call conv_get_seedname(stdout, seedname)
 
@@ -765,8 +754,6 @@ program w90chk2chk
   end if
 
   close (unit=stdout)
-
-  call comms_end
 
 end program w90chk2chk
 

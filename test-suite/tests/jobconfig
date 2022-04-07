@@ -430,8 +430,18 @@ program = POSTW90_KDOTP_OK
 inputs_args = ('gaas.win', '')
 output = gaas-kdotp_0.dat
 
+# Test of MPI error handling implementation
+[partestw90_mpierr/]
+program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '')
+output = wannier.werr
+min_nprocs = 2
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
 all = wannier_only postw90_only
+# specifying min_procs does not remove par only test from the serial job
+# workaround by specifying different test sets 
+par = wannier_only postw90_only partest*
 default =  all

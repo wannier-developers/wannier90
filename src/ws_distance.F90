@@ -36,6 +36,7 @@ module w90_ws_distance
   !    probably think to do the math on node 0, and then broadcast results.
 
   use w90_constants, only: dp
+  use w90_error
 
   implicit none
 
@@ -53,9 +54,8 @@ contains
 
   !================================================!
 
-  subroutine ws_translate_dist(ws_distance, stdout, seedname, ws_region, num_wann, &
-                               wannier_centres, real_lattice, mp_grid, nrpts, irvec, &
-                               force_recompute)
+  subroutine ws_translate_dist(ws_distance, ws_region, num_wann, wannier_centres, real_lattice, &
+                               mp_grid, nrpts, irvec, error, comm, force_recompute)
     !================================================!
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
@@ -67,7 +67,6 @@ contains
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
     !================================================!
 
-    use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
     use w90_types, only: ws_region_type, ws_distance_type
 
@@ -75,9 +74,10 @@ contains
 
     type(ws_distance_type), intent(inout) :: ws_distance
     type(ws_region_type), intent(in) :: ws_region
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
@@ -87,9 +87,7 @@ contains
 
     logical, optional, intent(in):: force_recompute ! set to true to force recomputing everything
 
-    character(len=50), intent(in)  :: seedname
-
-    ! <<<local variables>>>
+    ! local variables
     real(kind=dp) :: inv_lattice(3, 3)
     integer  :: iw, jw, ideg, ir, ierr
     integer :: shifts(3, ndegenx)
@@ -106,15 +104,25 @@ contains
     ws_distance%done = .true.
 
     if (ndegenx*num_wann*nrpts <= 0) then
-      call io_error("unexpected dimensions in ws_translate_dist", stdout, seedname)
+      call set_error_fatal(error, "unexpected dimensions in ws_translate_dist", comm)
+      return
     end if
 
     allocate (ws_distance%irdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating irdist_ws in ws_translate_dist', comm)
+      return
+    endif
     allocate (ws_distance%crdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating crdist_ws in ws_translate_dist', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating crdist_ws in ws_translate_dist', comm)
+      return
+    endif
     allocate (ws_distance%ndeg(num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wcenter_ndeg in ws_translate_dist', comm)
+      return
+    endif
 
     !translation_centre_frac = 0._dp
     ws_distance%ndeg = 0
@@ -135,11 +143,13 @@ contains
           ! calculate instead crdist_ws, that is the Bravais lattice vector
           ! between two supercell lattices, that is the only one we need
           ! later for interpolation etc.
-          CALL R_wz_sc(-wannier_centres(:, iw) &
+          call r_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
                        ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, real_lattice, &
                        inv_lattice, ws_region%ws_search_size, ws_region%ws_distance_tol, &
-                       stdout, seedname)
+                       error, comm)
+          if (allocated(error)) return
+
           do ideg = 1, ws_distance%ndeg(iw, jw, ir)
             ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
             tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)
@@ -153,7 +163,7 @@ contains
 
   !================================================!
   subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, real_lattice, inv_lattice, &
-                     ws_search_size, ws_distance_tol, stdout, seedname)
+                     ws_search_size, ws_distance_tol, error, comm)
     !================================================!
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
@@ -163,13 +173,11 @@ contains
     !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-    use w90_io, only: io_error
 
     implicit none
 
     ! arguments
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
     integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: inv_lattice(3, 3)
@@ -179,7 +187,8 @@ contains
     integer, intent(out) :: ndeg
     real(DP), intent(out) :: R_out(3, ndegenx)
     integer, intent(out) :: shifts(3, ndegenx)
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     ! local variables
     real(DP) :: R(3), R_f(3), R_in_f(3), R_bz(3), mod2_R_bz
@@ -252,15 +261,16 @@ contains
       do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
         do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
-          R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
+          r_f = r_in_f + real((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)
           call utility_frac_to_cart(R_f, R, real_lattice)
 
-          if (ABS(SQRT(SUM((R - R0)**2)) - SQRT(mod2_R_bz)) < ws_distance_tol) then
+          if (abs(sqrt(sum((r - r0)**2)) - sqrt(mod2_r_bz)) < ws_distance_tol) then
             ndeg = ndeg + 1
-            IF (ndeg > ndegenx) then
-              call io_error("surprising ndeg, I wouldn't expect a degeneracy larger than 8...", stdout, seedname)
-            END IF
+            if (ndeg > ndegenx) then
+              call set_error_fatal(error, "surprising ndeg, I wouldn't expect a degeneracy larger than 8...", comm)
+              return
+            end if
             R_out(:, ndeg) = R
             ! I return/update also the shifts. Note that I have to sum these
             ! to the previous value since in this second loop I am using
@@ -279,7 +289,8 @@ contains
   !================================================!
 
   !================================================!
-  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, stdout, seedname)
+  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, seedname, error, &
+                          comm)
     !================================================!
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
@@ -287,16 +298,17 @@ contains
     !! of the first one.
     !================================================!
 
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, io_date
+    use w90_io, only: io_file_unit, io_date
     use w90_types, only: ws_distance_type
 
     implicit none
 
     type(ws_distance_type), intent(in) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
     logical, intent(in) :: use_ws_distance
     character(len=50), intent(in)  :: seedname
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
@@ -345,7 +357,8 @@ contains
     close (file_unit)
     return
 
-101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', stdout, seedname)
+101 call set_error_file(error, 'Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', comm)
+    return
     !================================================!
   end subroutine ws_write_vec
 

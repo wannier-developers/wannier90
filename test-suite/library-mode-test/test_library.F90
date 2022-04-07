@@ -105,10 +105,9 @@ program test_library
   real(kind=dp), allocatable :: wann_spreads_loc(:)
   real(kind=dp), dimension(3) :: spread_loc
 
-  integer :: i, j, k, l, ierr, mmn_in, amn_in, nn, inn
+  integer :: i, j, ierr, mmn_in, amn_in, nn, inn
   logical :: nn_found
   character(len=50) :: dummy, verbosity
-  real(kind=dp) :: re_tmp, im_tmp
 
   integer, parameter :: stdout = 6
   integer, parameter :: root_id = 0
@@ -286,12 +285,12 @@ program test_library
     print *, '#spinors_loc:', spinors_loc
   end if
 
-  call wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
-                     real_lattice_loc, recip_lattice_loc, kpt_latt_loc, num_bands_tot, &
-                     num_atoms_loc, atom_symbols_loc, atoms_cart_loc, gamma_only_loc, spinors_loc, &
-                     nntot_loc, nnlist_loc, nncell_loc, num_bands_loc, num_wann_loc, &
-                     proj_site_loc, proj_l_loc, proj_m_loc, proj_radial_loc, proj_z_loc, &
-                     proj_x_loc, proj_zona_loc, exclude_bands_loc, proj_s_loc, proj_s_qaxis_loc)
+  call wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, recip_lattice_loc, &
+                     kpt_latt_loc, num_bands_tot, num_atoms_loc, atom_symbols_loc, atoms_cart_loc, &
+                     gamma_only_loc, spinors_loc, nntot_loc, nnlist_loc, nncell_loc, &
+                     num_bands_loc, num_wann_loc, proj_site_loc, proj_l_loc, proj_m_loc, &
+                     proj_radial_loc, proj_z_loc, proj_x_loc, proj_zona_loc, exclude_bands_loc, &
+                     proj_s_loc, proj_s_qaxis_loc)
 
   if (verbose) then
     print *, "# WANNIER_SETUP CALLED."
@@ -511,11 +510,10 @@ program test_library
 
   if (verbose) print *, "# SECOND ALLOCATION PHASE COMPLETED."
 
-  call wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
-                   real_lattice_loc, recip_lattice_loc, kpt_latt_loc, num_bands_loc, &
-                   num_wann_loc, nntot_loc, num_atoms_loc, atom_symbols_loc, &
-                   atoms_cart_loc, gamma_only_loc, M_matrix_loc, A_matrix_loc, eigenvalues_loc, &
-                   U_matrix_loc, U_matrix_opt_loc, lwindow_loc, wann_centres_loc, &
+  call wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, recip_lattice_loc, &
+                   kpt_latt_loc, num_bands_loc, num_wann_loc, nntot_loc, num_atoms_loc, &
+                   atom_symbols_loc, atoms_cart_loc, gamma_only_loc, M_matrix_loc, A_matrix_loc, &
+                   eigenvalues_loc, U_matrix_loc, U_matrix_opt_loc, lwindow_loc, wann_centres_loc, &
                    wann_spreads_loc, spread_loc)
 
   if (verbose) print *, "# WANNIER_RUN CALLED."
