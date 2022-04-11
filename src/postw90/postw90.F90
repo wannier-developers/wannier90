@@ -272,7 +272,7 @@ program postw90
 
     ! copy input file to in_data structure
     call w90_readwrite_in_file(seedname, error, comm)
-    if (allocated(error)) return
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, &
                                     kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
@@ -285,12 +285,12 @@ program postw90
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     call w90_readwrite_clean_infile(stdout, seedname, error, comm)
-    if (allocated(error)) return
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
     ! For aesthetic purposes, convert some things to uppercase
     call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
     call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
                                         num_bands, num_kpts, error, comm)
-    if (allocated(error)) return
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                                      real_lattice, spec_points, pw90_calcs, postw90_oper, &
