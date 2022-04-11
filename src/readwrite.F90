@@ -41,6 +41,8 @@ module w90_readwrite
   public :: w90_readwrite_get_smearing_type
   public :: w90_readwrite_lib_set_atoms
   public :: w90_readwrite_read_chkpt
+  public :: w90_readwrite_read_chkpt_header
+  public :: w90_readwrite_read_chkpt_matrices
   public :: w90_readwrite_write_header
   public :: w90_readwrite_get_block_length
   public :: w90_readwrite_get_centre_constraints
@@ -1777,15 +1779,15 @@ contains
                                       have_disentangled, ispostw90, seedname, stdout, error, comm)
     !================================================!
     !! Read checkpoint file
-    !! IMPORTANT! If you change the chkpt format, adapt
-    !! accordingly also the w90chk2chk.x utility!
+    !! This is used to allocate the matrices.
+    !! If you have them already allocated, e.g. by numpy then call _core directly
     !!
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
     !================================================!
 
-    use w90_constants, only: eps6
+    !use w90_constants, only: eps6
     use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
@@ -1820,9 +1822,97 @@ contains
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
+    integer :: chk_unit, ierr
+
+    call w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
+                                         mp_grid, num_bands, num_exclude_bands, num_kpts, &
+                                         num_wann, checkpoint, have_disentangled, ispostw90, &
+                                         seedname, chk_unit, stdout, error, comm)
+    if (allocated(error)) return
+
+    if (have_disentangled) then
+      ! U_matrix_opt
+      if (.not. allocated(u_matrix_opt)) then
+        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt', comm)
+          return
+        endif
+      endif
+    endif
+
+    ! U_matrix
+    if (.not. allocated(u_matrix)) then
+      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt', comm)
+        return
+      endif
+    endif
+
+    ! M_matrix
+    if (.not. allocated(m_matrix)) then
+      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt', comm)
+        return
+      endif
+    endif
+
+    call w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
+                                           u_matrix, u_matrix_opt, omega_invariant, num_bands, &
+                                           num_kpts, num_wann, have_disentangled, seedname, &
+                                           chk_unit, stdout, error, comm)
+    return
+  end subroutine w90_readwrite_read_chkpt
+
+!================================================!
+  subroutine w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
+                                             mp_grid, num_bands, num_exclude_bands, num_kpts, &
+                                             num_wann, checkpoint, have_disentangled, ispostw90, &
+                                             seedname, io_unit, stdout, error, comm)
+    !================================================!
+    !! Read checkpoint file
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!
+    !!
+    !! Note on parallelization: this function should be called
+    !! from the root node only!
+    !!
+    !================================================!
+
+    use w90_constants, only: eps6
+    use w90_io, only: io_file_unit
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
+    use w90_utility, only: utility_recip_lattice
+
+    implicit none
+
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_exclude_bands
+    integer, intent(out) :: io_unit
+
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    character(len=*), intent(in)  :: seedname
+    character(len=*), intent(inout) :: checkpoint
+
+    logical, intent(in) :: ispostw90 ! Are we running postw90?
+    logical, intent(out) :: have_disentangled
+
     ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
+    integer :: chk_unit, nkp, i, j, ntmp
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands), tmp_mp_grid(1:3)
@@ -1831,6 +1921,7 @@ contains
 
     chk_unit = io_file_unit()
     open (unit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    io_unit = chk_unit
 
     ! Read comment line
     read (chk_unit) header
@@ -1911,6 +2002,64 @@ contains
 
     read (chk_unit) have_disentangled      ! whether a disentanglement has been performed
 
+    return
+
+121 if (ispostw90) then
+      call set_error_file(error, 'Error opening '//trim(seedname) &
+                          //'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', comm)
+    else
+      call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    end if
+    return
+
+  end subroutine w90_readwrite_read_chkpt_header
+
+!================================================!
+  subroutine w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
+                                               u_matrix, u_matrix_opt, omega_invariant, num_bands, &
+                                               num_kpts, num_wann, have_disentangled, seedname, &
+                                               chk_unit, stdout, error, comm)
+    !================================================!
+    !! Read checkpoint file
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!
+    !!
+    !! Note on parallelization: this function should be called
+    !! from the root node only!
+    !!
+    !================================================!
+
+    !use w90_constants, only: eps6
+    use w90_io, only: io_file_unit
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
+    use w90_utility, only: utility_recip_lattice
+
+    implicit none
+
+    type(wannier_data_type), intent(inout) :: wannier_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout, chk_unit
+
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+
+    real(kind=dp), intent(inout) :: omega_invariant
+
+    character(len=*), intent(in)  :: seedname
+
+    logical, intent(out) :: have_disentangled
+
+    ! local variables
+    integer :: nkp, i, j, k, l, ierr
+
     if (have_disentangled) then
 
       read (chk_unit) omega_invariant     ! omega invariant
@@ -1936,35 +2085,14 @@ contains
       read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
-      if (.not. allocated(u_matrix_opt)) then
-        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt', comm)
-          return
-        endif
-      endif
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
 
     endif
 
     ! U_matrix
-    if (.not. allocated(u_matrix)) then
-      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt', comm)
-        return
-      endif
-    endif
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt', comm)
-        return
-      endif
-    endif
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
@@ -1979,13 +2107,6 @@ contains
 
     return
 
-121 if (ispostw90) then
-      call set_error_file(error, 'Error opening '//trim(seedname) &
-                          //'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', comm)
-    else
-      call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
-    end if
-    return
 122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
     return
 123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
@@ -2001,7 +2122,7 @@ contains
 128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
     return
 
-  end subroutine w90_readwrite_read_chkpt
+  end subroutine w90_readwrite_read_chkpt_matrices
 
 !================================================!
   subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
