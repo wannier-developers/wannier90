@@ -7,7 +7,7 @@ module w90_helper_types
 
   implicit none
 
-  ! Todo - disentangle, restarts, distribute data,  AND  stdout!!!
+  ! Todo - disentangle, restarts, distribute data
   ! should we have a lib_wannierise_type?
 
   type lib_global_type
@@ -92,7 +92,7 @@ module w90_helper_types
 
 contains
 
-  subroutine input_reader(helper, plot, transport, seedname, comm) !, stdout, comm)
+  subroutine input_reader(helper, plot, transport, seedname, output, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -100,17 +100,15 @@ contains
     type(lib_global_type), intent(inout) :: helper
     type(lib_plot_type), intent(inout) :: plot
     type(lib_transport_type), intent(inout) :: transport
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     character(len=*), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    integer :: stdout
     logical :: cp_pp
 
-    stdout = 6
     call w90_wannier90_readwrite_read(helper%atom_data, plot%band_plot, helper%dis_control, &
                                       helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
                                       helper%fermi_energy_list, plot%fermi_surface_data, &
@@ -126,7 +124,7 @@ contains
                                       helper%num_proj, helper%num_wann, helper%optimisation, &
                                       helper%eig_found, helper%calc_only_A, cp_pp, helper%gamma_only, &
                                       helper%lhasproj, .false., .false., helper%lsitesymmetry, &
-                                      helper%use_bloch_phases, seedname, stdout, error, comm)
+                                      helper%use_bloch_phases, seedname, output, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in reader', error%code, error%message
       deallocate (error)
@@ -135,7 +133,7 @@ contains
     if (mpirank(comm) /= 0) helper%print_output%iprint = 0
   end subroutine input_reader
 
-  subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, comm)
+  subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, output, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     !use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -145,37 +143,32 @@ contains
     complex(kind=dp), intent(in) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    !
-    integer :: stdout
 
     if (mpirank(comm) == 0) then
-      stdout = 6
       ! e.g. label = 'postwann' after wannierisation
       call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
                                                helper%kmesh_info, helper%kpt_latt, helper%num_kpts, helper%dis_manifold, &
                                                helper%num_bands, helper%num_wann, u_matrix, u_opt, m_matrix, helper%mp_grid, &
-                                               helper%real_lattice, helper%omega%invariant, helper%have_disentangled, stdout, &
+                                               helper%real_lattice, helper%omega%invariant, helper%have_disentangled, output, &
                                                helper%seedname)
     endif
   end subroutine checkpoint
 
-  subroutine create_kmesh(helper, comm)
+  subroutine create_kmesh(helper, output, comm)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
     type(lib_global_type), intent(inout) :: helper
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
-    integer :: stdout
 
-    stdout = 6
     call kmesh_get(helper%kmesh_input, helper%kmesh_info, helper%print_output, helper%kpt_latt, &
-                   helper%real_lattice, helper%num_kpts, helper%gamma_only, stdout, helper%timer, &
+                   helper%real_lattice, helper%num_kpts, helper%gamma_only, output, helper%timer, &
                    error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in kmesh_get', error%code, error%message
@@ -183,13 +176,13 @@ contains
     endif
   end subroutine create_kmesh
 
-  subroutine overlaps(helper, a_matrix, m_matrix, u_matrix, comm)
+  subroutine overlaps(helper, a_matrix, m_matrix, u_matrix, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
     implicit none
     type(lib_global_type), intent(inout) :: helper
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
@@ -201,7 +194,6 @@ contains
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
-    integer :: stdout
     logical :: cp_pp
 
     !if disentangle
@@ -215,14 +207,13 @@ contains
     !allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
     !allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
     cp_pp = .false.
-    stdout = 6
     ! should be distributed if MPI
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
     call overlap_read(helper%kmesh_info, helper%select_proj, helper%sitesym, a_matrix, &
                       m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       helper%num_bands, helper%num_kpts, helper%num_proj, helper%num_wann, &
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
-                      helper%use_bloch_phases, helper%seedname, stdout, helper%timer, error, comm)
+                      helper%use_bloch_phases, helper%seedname, output, helper%timer, error, comm)
     deallocate (m_matrix_local)
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
@@ -230,7 +221,7 @@ contains
     endif
   end subroutine overlaps
 
-  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, u_opt, comm)
+  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, u_opt, output, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -238,7 +229,7 @@ contains
     type(lib_global_type), intent(inout) :: helper
     type(lib_plot_type), intent(in) :: plot
     type(lib_transport_type), intent(in) :: transport
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(in) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -246,16 +237,14 @@ contains
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
-    integer :: stdout
 
-    stdout = 6
     if (helper%gamma_only) then
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, helper%output_file, helper%wann_control, &
                            helper%omega, helper%w90_system, helper%print_output, helper%wannier_data, m_matrix, &
                            u_matrix, u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
-                           helper%real_space_ham%translate_home_cell, helper%seedname, stdout, &
+                           helper%real_space_ham%translate_home_cell, helper%seedname, output, &
                            helper%timer, error, comm)
     else
       call wann_main(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
@@ -267,7 +256,7 @@ contains
                      helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
                      helper%rpt_origin, plot%band_plot%mode, transport%tran%mode, &
-                     helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, &
+                     helper%have_disentangled, helper%lsitesymmetry, helper%seedname, output, &
                      helper%timer, error, comm)
     endif
     if (allocated(error)) then
@@ -276,7 +265,7 @@ contains
     endif
   end subroutine wannierise
 
-  subroutine plot_files(helper, plot, transport, m_matrix, u_matrix, u_matrix_opt, comm)
+  subroutine plot_files(helper, plot, transport, m_matrix, u_matrix, u_matrix_opt, output, comm)
     use w90_plot, only: plot_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -284,7 +273,7 @@ contains
     type(lib_global_type), intent(inout) :: helper ! inout due to ham_logical
     type(lib_plot_type), intent(in) :: plot
     type(lib_transport_type), intent(in) :: transport
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -292,9 +281,7 @@ contains
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
-    integer :: stdout
 
-    stdout = 6
     call plot_main(helper%atom_data, plot%band_plot, helper%dis_manifold, helper%fermi_energy_list, &
                    plot%fermi_surface_data, helper%ham_logical, helper%kmesh_info, helper%kpt_latt, &
                    helper%output_file, helper%wvfn_read, helper%real_space_ham, helper%kpoint_path, &
@@ -304,14 +291,14 @@ contains
                    physics%bohr, helper%irvec, helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, &
                    helper%num_bands, helper%num_kpts, helper%num_wann, helper%rpt_origin, &
                    transport%tran%mode, helper%have_disentangled, helper%lsitesymmetry, helper%w90_system%spinors, &
-                   helper%seedname, stdout, helper%timer, error, comm)
+                   helper%seedname, output, helper%timer, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in plotting', error%code, error%message
       deallocate (error)
     endif
   end subroutine plot_files
 
-  subroutine transport(helper, plot, tran, u_matrix, u_opt, comm)
+  subroutine transport(helper, plot, tran, u_matrix, u_opt, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_transport, only: tran_main
@@ -319,14 +306,13 @@ contains
     type(lib_global_type), intent(inout) :: helper ! because of ham_logical
     type(lib_plot_type), intent(in) :: plot
     type(lib_transport_type), intent(inout) :: tran
-    !integer, intent(in) :: stdout
+    integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(in) :: u_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
-    integer :: stdout
 
     ! should these tests be done outside?
     if (mpirank(comm) == 0) then
@@ -338,7 +324,7 @@ contains
                        helper%eigval, helper%real_lattice, helper%wannier_centres_translated, helper%irvec, &
                        helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                        helper%num_kpts, helper%num_wann, helper%rpt_origin, plot%band_plot%mode, &
-                       helper%have_disentangled, helper%lsitesymmetry, helper%seedname, stdout, &
+                       helper%have_disentangled, helper%lsitesymmetry, helper%seedname, output, &
                        helper%timer, error, comm)
         if (allocated(error)) then
           write (0, *) 'Error in transport', error%code, error%message
@@ -348,14 +334,13 @@ contains
     endif
   end subroutine transport
 
-  subroutine print_times(helper)
+  subroutine print_times(helper, output)
     use w90_io, only: io_print_timings
     implicit none
     type(lib_global_type), intent(in) :: helper
-    integer stdout
+    integer, intent(in) :: output
 
-    stdout = 6
-    call io_print_timings(helper%timer, stdout)
+    call io_print_timings(helper%timer, output)
   end subroutine print_times
 
 end module w90_helper_types
