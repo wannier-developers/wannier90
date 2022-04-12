@@ -2055,7 +2055,7 @@ contains
 
     character(len=*), intent(in)  :: seedname
 
-    logical, intent(out) :: have_disentangled
+    logical, intent(in) :: have_disentangled
 
     ! local variables
     integer :: nkp, i, j, k, l, ierr
