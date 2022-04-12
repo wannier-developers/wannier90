@@ -43,8 +43,15 @@ OBJS  =  $(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/utility.o \
 	$(BUILD)/wannier90_readwrite.o $(BUILD)/readwrite.o $(BUILD)/error.o \
 	$(BUILD)/error_base.o $(BUILD)/library_interface.o
 
+POST = $(BUILD)/postw90_types.o $(BUILD)/postw90_common.o \
+	$(BUILD)/postw90_readwrite.o $(BUILD)/spin.o $(BUILD)/kpath.o \
+	$(BUILD)/kslice.o $(BUILD)/geninterp.o $(BUILD)/get_oper.o \
+	$(BUILD)/dos.o $(BUILD)/berry.o $(BUILD)/boltzwann.o \
+	$(BUILD)/gyrotropic.o $(BUILD)/wan_ham.o $(BUILD)/pw90_library.o
+
 WRAPSRC = ../src/constants.F90 ../src/types.F90 ../src/wannier90_readwrite.F90 \
-	../src/wannier90_types.F90 ../src/comms.F90 ../src/library_interface.F90
+	../src/wannier90_types.F90 ../src/comms.F90 ../src/library_interface.F90 \
+	../src/postw90/postw90_types.F90 ../src/postw90/pw90_library.F90
 
 DYNLIBRARYEXTENSION ?= so
 SHAREDLIBFLAGS ?= -shared
@@ -63,8 +70,8 @@ wrap: $(WRAPSRC)
 python: $(DYNLIBRARY) cabort.o
 	f2py -c -m _$(PYMOD) -I$(BUILD) f90wrap_*.f90 cabort.o $(DYNLIBRARY)
 
-$(DYNLIBRARY): $(OBJS) $(LIBOBJS)
-	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(LIBOBJS) $(OBJS) -o $@ $(LIBS)
+$(DYNLIBRARY): $(OBJS) $(POST) $(LIBOBJS)
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(LIBOBJS) $(OBJS) $(POST) -o $@ $(LIBS)
 
 # I expected this to only be needed for f2py-f90wrap, but seems to be wrong
 cabort.o: cabort.c
@@ -72,6 +79,9 @@ cabort.o: cabort.c
 
 $(OBJS):
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c -o $@ ../src/$(@F:.o=.F90)
+
+$(POST):
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c -o $@ ../src/postw90/$(@F:.o=.F90)
 
 $(BUILD)/constants.o: ../src/constants.F90
 
@@ -132,9 +142,66 @@ $(BUILD)/sitesym.o : ../src/sitesym.F90 $(BUILD)/utility.o $(BUILD)/types.o \
 
 $(BUILD)/comms.o: ../src/comms.F90 $(BUILD)/constants.o $(BUILD)/error_base.o
 
-$(BUILD)/library_interface.o: ../src/library_interface.F90 $(BUILD)/constants.o $(BUILD)/error_base.o \
-	$(BUILD)/types.o $(BUILD)/wannier90_types.o $(BUILD)/wannier90_readwrite.o $(BUILD)/comms.o
+$(BUILD)/library_interface.o: ../src/library_interface.F90 $(BUILD)/constants.o \
+	$(BUILD)/error_base.o $(BUILD)/types.o $(BUILD)/wannier90_types.o \
+	$(BUILD)/wannier90_readwrite.o $(BUILD)/comms.o
 
+$(BUILD)/boltzwann.o: ../src/postw90/boltzwann.F90 $(BUILD)/constants.o $(BUILD)/types.o \
+	$(BUILD)/io.o $(BUILD)/utility.o $(BUILD)/postw90_common.o $(BUILD)/get_oper.o \
+	$(BUILD)/wan_ham.o $(BUILD)/comms.o $(BUILD)/spin.o $(BUILD)/dos.o \
+	$(BUILD)/postw90_types.o $(BUILD)/ws_distance.o
+
+$(BUILD)/geninterp.o: ../src/postw90/geninterp.F90 $(BUILD)/constants.o $(BUILD)/types.o \
+	$(BUILD)/io.o $(BUILD)/get_oper.o $(BUILD)/postw90_common.o $(BUILD)/comms.o \
+	$(BUILD)/utility.o $(BUILD)/wan_ham.o $(BUILD)/postw90_types.o \
+	$(BUILD)/ws_distance.o
+
+$(BUILD)/get_oper.o: ../src/postw90/get_oper.F90 $(BUILD)/types.o $(BUILD)/constants.o \
+	$(BUILD)/comms.o $(BUILD)/postw90_common.o $(BUILD)/io.o $(BUILD)/utility.o \
+	$(BUILD)/postw90_types.o
+
+$(BUILD)/spin.o: ../src/postw90/spin.F90 $(BUILD)/comms.o $(BUILD)/types.o $(BUILD)/constants.o \
+	$(BUILD)/utility.o $(BUILD)/postw90_common.o $(BUILD)/get_oper.o $(BUILD)/io.o \
+	$(BUILD)/wan_ham.o $(BUILD)/postw90_types.o $(BUILD)/ws_distance.o
+
+$(BUILD)/dos.o: ../src/postw90/dos.F90 $(BUILD)/comms.o $(BUILD)/types.o $(BUILD)/postw90_types.o \
+	$(BUILD)/constants.o $(BUILD)/utility.o $(BUILD)/io.o $(BUILD)/wan_ham.o \
+	$(BUILD)/postw90_common.o $(BUILD)/get_oper.o $(BUILD)/spin.o $(BUILD)/ws_distance.o
+
+$(BUILD)/kpath.o: ../src/postw90/kpath.F90 $(BUILD)/comms.o $(BUILD)/types.o $(BUILD)/constants.o \
+	$(BUILD)/io.o $(BUILD)/spin.o $(BUILD)/berry.o $(BUILD)/postw90_types.o \
+	$(BUILD)/ws_distance.o
+
+$(BUILD)/kslice.o: ../src/postw90/kslice.F90 $(BUILD)/comms.o $(BUILD)/types.o \
+	$(BUILD)/constants.o $(BUILD)/io.o $(BUILD)/spin.o $(BUILD)/berry.o \
+	$(BUILD)/postw90_types.o $(BUILD)/ws_distance.o
+
+$(BUILD)/berry.o: ../src/postw90/berry.F90 $(BUILD)/comms.o $(BUILD)/types.o $(BUILD)/constants.o \
+	$(BUILD)/utility.o $(BUILD)/postw90_common.o $(BUILD)/get_oper.o $(BUILD)/io.o \
+	$(BUILD)/spin.o $(BUILD)/wan_ham.o $(BUILD)/postw90_types.o $(BUILD)/ws_distance.o
+
+$(BUILD)/gyrotropic.o: ../src/postw90/gyrotropic.F90 $(BUILD)/comms.o $(BUILD)/types.o \
+	$(BUILD)/constants.o $(BUILD)/utility.o $(BUILD)/postw90_common.o $(BUILD)/get_oper.o \
+	$(BUILD)/io.o $(BUILD)/spin.o $(BUILD)/wan_ham.o $(BUILD)/berry.o \
+	$(BUILD)/postw90_types.o $(BUILD)/ws_distance.o
+
+$(BUILD)/wan_ham.o: ../src/postw90/wan_ham.F90 $(BUILD)/types.o $(BUILD)/postw90_types.o \
+	$(BUILD)/constants.o $(BUILD)/utility.o $(BUILD)/postw90_common.o \
+	$(BUILD)/get_oper.o $(BUILD)/ws_distance.o
+
+$(BUILD)/postw90_common.o: ../src/postw90/postw90_common.F90 $(BUILD)/postw90_types.o \
+	$(BUILD)/ws_distance.o $(BUILD)/comms.o $(BUILD)/types.o $(BUILD)/utility.o \
+	$(BUILD)/constants.o $(BUILD)/io.o
+
+$(BUILD)/postw90_types.o: ../src/postw90/postw90_types.F90 $(BUILD)/constants.o \
+	$(BUILD)/error_base.o $(BUILD)/types.o
+
+$(BUILD)/postw90_readwrite.o: ../src/postw90/postw90_readwrite.F90 $(BUILD)/comms.o \
+	$(BUILD)/postw90_types.o $(BUILD)/types.o $(BUILD)/utility.o $(BUILD)/constants.o \
+	$(BUILD)/io.o $(BUILD)/error.o
+
+$(BUILD)/pw90_library.o: ../src/postw90/pw90_library.F90 $(BUILD)/wannier90_readwrite.o \
+	$(BUILD)/postw90_readwrite.o $(BUILD)/types.o $(BUILD)/library_interface.o
 
 $(BUILD)/f90wrap_constants.o: f90wrap_constants.f90
 

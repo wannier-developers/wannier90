@@ -59,6 +59,7 @@ module w90_postw90_readwrite
 
   public :: pw90_extra_io_type
   public :: w90_postw90_readwrite_read
+  public :: w90_postw90_readwrite_readall
   public :: w90_postw90_readwrite_write
 
 contains
@@ -254,6 +255,147 @@ contains
     call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
     if (allocated(error)) return
   end subroutine w90_postw90_readwrite_read
+
+  subroutine w90_postw90_readwrite_readall(w90_system, dis_manifold, fermi_energy_list, num_bands, &
+                                           num_wann, eigval, real_lattice, kpoint_path, &
+                                           pw90_calculation, pw90_oper_read, scissors_shift, &
+                                           effective_model, pw90_spin, pw90_band_deriv_degen, &
+                                           pw90_kpath, pw90_kslice, pw90_dos, pw90_berry, &
+                                           pw90_spin_hall, pw90_gyrotropic, pw90_geninterp, &
+                                           pw90_boltzwann, pw90_extra_io, error, comm)
+    !================================================!
+    !
+    !! Read parameters and calculate derived values
+    !!
+    !! Note on parallelization: this function should be called
+    !! from the root node only!
+    !!
+    !
+    !================================================
+    use w90_utility, only: utility_recip_lattice
+    use w90_error, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    implicit none
+
+    ! arguments
+    !type(atom_data_type), intent(in) :: atom_data
+    type(pw90_berry_mod_type), intent(inout) :: pw90_berry
+    type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(pw90_dos_mod_type), intent(inout) :: pw90_dos
+    type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
+    type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
+    type(pw90_kpath_mod_type), intent(inout) :: pw90_kpath
+    type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
+    !type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(pw90_band_deriv_degen_type), intent(inout) :: pw90_band_deriv_degen
+    type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
+    type(pw90_spin_mod_type), intent(inout) :: pw90_spin
+    !type(print_output_type), intent(in) :: print_output
+    type(pw90_calculation_type), intent(inout) :: pw90_calculation
+    type(pw90_extra_io_type), intent(inout) :: pw90_extra_io
+    !type(ws_region_type), intent(inout) :: ws_region
+    type(kpoint_path_type), intent(inout) :: kpoint_path
+    type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
+    type(w90_system_type), intent(in) :: w90_system
+    !type(wannier_data_type), intent(in) :: wannier_data
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    !integer, intent(inout) :: mp_grid(3)
+    integer, intent(in) :: num_bands
+    !integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    !integer, intent(inout) :: optimisation
+    !integer, intent(in) :: stdout
+    !integer, allocatable, intent(inout) :: exclude_bands(:)
+
+    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    !real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: scissors_shift
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
+    !real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+
+    !character(len=50), intent(in)  :: seedname
+
+    !logical, intent(inout) :: eig_found
+    !logical, intent(inout) :: gamma_only
+    logical, intent(inout) :: effective_model
+
+    ! local variables
+    real(kind=dp) :: recip_lattice(3, 3), volume
+    !integer :: num_exclude_bands
+    logical :: dos_plot
+    logical :: found_fermi_energy
+    logical :: disentanglement, library
+    !character(len=20) :: energy_unit
+
+    library = .false.
+    pw90_kslice%corner = 0.0_dp
+    pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
+    pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]
+    pw90_kslice%kmesh2d = 50
+    call w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_effective_model(effective_model, error, comm)
+    if (allocated(error)) return
+    !call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
+    !                              bohr, error, comm)
+    !if (allocated(error)) return
+    call w90_wannier90_readwrite_read_oper(pw90_oper_read, error, comm)
+    if (allocated(error)) return
+    if (allocated(error)) return
+    disentanglement = (num_bands > num_wann)
+    call w90_wannier90_readwrite_read_kslice(pw90_calculation%kslice, pw90_kslice, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_smearing(pw90_extra_io%smear, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_scissors_shift(scissors_shift, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_pw90spin(pw90_calculation%spin_moment, &
+                                               pw90_calculation%spin_decomp, pw90_spin, &
+                                               w90_system%num_elec_per_state, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_gyrotropic(pw90_gyrotropic, num_wann, &
+                                                 pw90_extra_io%smear%fixed_width, &
+                                                 pw90_extra_io%smear%type_index, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_berry(pw90_calculation, pw90_berry, pw90_extra_io%smear, &
+                                            error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_spin_hall(pw90_calculation, scissors_shift, pw90_spin_hall, &
+                                                pw90_berry%task, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_pw90_kpath(pw90_calculation, pw90_kpath, kpoint_path, &
+                                                 error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, &
+                                          num_wann, pw90_extra_io%smear, dos_plot, error, comm)
+    call w90_wannier90_readwrite_read_geninterp(pw90_geninterp, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
+                                                pw90_calculation%boltzwann, &
+                                                pw90_extra_io%boltz_2d_dir, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, &
+                                                   dis_manifold, fermi_energy_list, eigval, &
+                                                   pw90_extra_io, error, comm)
+    if (allocated(error)) return
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, &
+                                                   pw90_extra_io%global_kmesh, recip_lattice, &
+                                                   error, comm)
+    if (allocated(error)) return
+    call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, &
+                                                  pw90_spin, pw90_gyrotropic, pw90_boltzwann, &
+                                                  recip_lattice, pw90_extra_io%global_kmesh_set, &
+                                                  pw90_extra_io%global_kmesh, error, comm)
+    if (allocated(error)) return
+  end subroutine w90_postw90_readwrite_readall
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error, comm)
