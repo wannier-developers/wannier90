@@ -8,8 +8,8 @@ module w90_lib_all
   use w90_postw90_types
 
   ! Todo - initialisation issues that we had to fix
-  ! Todo - read_chkpt and allocatable
   ! Todo - num_valence_bands init
+  ! v_matrix allocation in python or elsewhere?
 
   implicit none
 
@@ -131,6 +131,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
+    use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
@@ -166,15 +167,56 @@ contains
       if (allocated(error)) then
         write (0, *) 'Error in reading checkpoint matrices', error%code, error%message
         deallocate (error)
+      else
+        ! put this in a separate setup? (since may be coming from wannierise rather than checkpoint
+        call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
+                                     wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
+                                     wann90%seedname, wann90%timer, error, comm)
+        if (allocated(error)) then
+          write (0, *) 'Error in post checkpoint setup', error%code, error%message
+          deallocate (error)
+        endif
       endif
     endif
   end subroutine read_checkpoint
 
-  subroutine calc_dos(wann90, pw90, u_matrix, u_opt, output, comm)
+  subroutine calc_v_matrix(wann90, u_matrix, u_opt, v_matrix)
+    !use w90_error_base, only: w90_error_type
+    !use w90_comms, only: w90comm_type, mpirank
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    !integer, intent(in) :: output
+    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !type(w90comm_type), intent(in) :: comm
+    !
+    integer :: i, j, m, loop_kpt
+
+    !allocate (v_matrix(wann90%num_bands, wann90%num_wann, wann90%num_kpts), stat=ierr)
+    ! u_matrix and u_opt are stored on root only
+    if (.not. wann90%have_disentangled) then
+      v_matrix(1:wann90%num_wann, :, :) = u_matrix(1:wann90%num_wann, :, :)
+    else
+      v_matrix = cmplx_0
+      do loop_kpt = 1, wann90%num_kpts
+        do j = 1, wann90%num_wann
+          do m = 1, wann90%dis_manifold%ndimwin(loop_kpt)
+            do i = 1, wann90%num_wann
+              v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
+                                         + u_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
+            enddo
+          enddo
+        enddo
+      enddo
+    endif
+  end subroutine calc_v_matrix
+
+  subroutine calc_dos(wann90, pw90, u_matrix, v_matrix, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_dos, only: dos_main
-    use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
@@ -182,8 +224,8 @@ contains
     !type(lib_plot_type), intent(inout) :: plot
     !type(lib_transport_type), intent(inout) :: transport
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     !character(len=*), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
     !
@@ -195,118 +237,59 @@ contains
     !integer :: num_exclude_bands
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
-    complex(kind=dp), allocatable :: v_matrix(:, :, :)
-    integer :: i, j, m, loop_kpt, ierr
 
-    ! put this in a separate setup? (since may be coming from wannierise rather than checkpoint
-    call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
-                                 wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
-                                 wann90%seedname, wann90%timer, error, comm)
     if (pw90%calculation%dos .and. index(pw90%dos%task, 'dos_plot') > 0) then
-      ! build v_matrix, shouldn't really be here
-      allocate (v_matrix(wann90%num_bands, wann90%num_wann, wann90%num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        write (0, *) 'Error allocating v_matrix in calc_dos'
-      else
-        ! u_matrix and u_opt are stored on root only
-        if (.not. wann90%have_disentangled) then
-          v_matrix(1:wann90%num_wann, :, :) = u_matrix(1:wann90%num_wann, :, :)
-        else
-          v_matrix = cmplx_0
-          do loop_kpt = 1, wann90%num_kpts
-            do j = 1, wann90%num_wann
-              do m = 1, wann90%dis_manifold%ndimwin(loop_kpt)
-                do i = 1, wann90%num_wann
-                  v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
-                                             + u_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
-                enddo
-              enddo
-            enddo
-          enddo
-        endif
-        call dos_main(pw90%berry, wann90%dis_manifold, pw90%dos, pw90%kpt_dist, wann90%kpt_latt, &
-                      pw90%oper_read, pw90%band_deriv_degen, pw90%spin, wann90%ws_region, &
-                      wann90%w90_system, wann90%print_output, wann90%wannier_data, pw90%ws_distance, &
-                      pw90%ws_vec, HH_R, SS_R, u_matrix, v_matrix, wann90%eigval, wann90%real_lattice, &
-                      pw90%scissors_shift, wann90%mp_grid, wann90%num_bands, wann90%num_kpts, &
-                      wann90%num_wann, pw90%effective_model, wann90%have_disentangled, &
-                      pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
-                      error, comm)
-        if (allocated(HH_R)) deallocate (HH_R)
-        if (allocated(SS_R)) deallocate (SS_R)
-        if (allocated(v_matrix)) deallocate (v_matrix)
-        if (allocated(error)) then
-          write (0, *) 'Error in dos', error%code, error%message
-          deallocate (error)
-        endif
+      call dos_main(pw90%berry, wann90%dis_manifold, pw90%dos, pw90%kpt_dist, wann90%kpt_latt, &
+                    pw90%oper_read, pw90%band_deriv_degen, pw90%spin, wann90%ws_region, &
+                    wann90%w90_system, wann90%print_output, wann90%wannier_data, pw90%ws_distance, &
+                    pw90%ws_vec, HH_R, SS_R, u_matrix, v_matrix, wann90%eigval, wann90%real_lattice, &
+                    pw90%scissors_shift, wann90%mp_grid, wann90%num_bands, wann90%num_kpts, &
+                    wann90%num_wann, pw90%effective_model, wann90%have_disentangled, &
+                    pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
+                    error, comm)
+      if (allocated(HH_R)) deallocate (HH_R)
+      if (allocated(SS_R)) deallocate (SS_R)
+      if (allocated(error)) then
+        write (0, *) 'Error in dos', error%code, error%message
+        deallocate (error)
       endif
     else
       write (output, *) ' No dos calculation requested'
     endif
   end subroutine calc_dos
 
-  subroutine boltzwann(wann90, pw90, u_matrix, u_opt, output, comm)
+  subroutine boltzwann(wann90, pw90, u_matrix, v_matrix, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_boltzwann, only: boltzwann_main
-    use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
-    complex(kind=dp), allocatable :: v_matrix(:, :, :)
-    integer :: i, j, m, loop_kpt, ierr
 
-    ! put this in a separate setup? (since may be coming from wannierise rather than checkpoint
-    call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
-                                 wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
-                                 wann90%seedname, wann90%timer, error, comm)
-    ! build v_matrix, shouldn't really be here
-    allocate (v_matrix(wann90%num_bands, wann90%num_wann, wann90%num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      write (0, *) 'Error allocating v_matrix in calc_dos'
-    else
-      ! u_matrix and u_opt are stored on root only
-      if (.not. wann90%have_disentangled) then
-        v_matrix(1:wann90%num_wann, :, :) = u_matrix(1:wann90%num_wann, :, :)
-      else
-        v_matrix = cmplx_0
-        do loop_kpt = 1, wann90%num_kpts
-          do j = 1, wann90%num_wann
-            do m = 1, wann90%dis_manifold%ndimwin(loop_kpt)
-              do i = 1, wann90%num_wann
-                v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
-                                           + u_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
-              enddo
-            enddo
-          enddo
-        enddo
-      endif
-      call boltzwann_main(pw90%boltzwann, wann90%dis_manifold, pw90%dos, wann90%kpt_latt, &
-                          pw90%band_deriv_degen, pw90%oper_read, pw90%spin, physics, &
-                          wann90%ws_region, wann90%w90_system, wann90%wannier_data, &
-                          pw90%ws_distance, pw90%ws_vec, wann90%print_output, HH_R, SS_R, &
-                          v_matrix, u_matrix, wann90%eigval, wann90%real_lattice, &
-                          pw90%scissors_shift, wann90%mp_grid, wann90%num_wann, wann90%num_bands, &
-                          wann90%num_kpts, pw90%effective_model, wann90%have_disentangled, &
-                          pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
-                          error, comm)
-      if (allocated(HH_R)) deallocate (HH_R)
-      if (allocated(SS_R)) deallocate (SS_R)
-      if (allocated(v_matrix)) deallocate (v_matrix)
-      if (allocated(error)) then
-        write (0, *) 'Error in boltzwann', error%code, error%message
-        deallocate (error)
-      endif
+    call boltzwann_main(pw90%boltzwann, wann90%dis_manifold, pw90%dos, wann90%kpt_latt, &
+                        pw90%band_deriv_degen, pw90%oper_read, pw90%spin, physics, &
+                        wann90%ws_region, wann90%w90_system, wann90%wannier_data, &
+                        pw90%ws_distance, pw90%ws_vec, wann90%print_output, HH_R, SS_R, &
+                        v_matrix, u_matrix, wann90%eigval, wann90%real_lattice, &
+                        pw90%scissors_shift, wann90%mp_grid, wann90%num_wann, wann90%num_bands, &
+                        wann90%num_kpts, pw90%effective_model, wann90%have_disentangled, &
+                        pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
+                        error, comm)
+    if (allocated(HH_R)) deallocate (HH_R)
+    if (allocated(SS_R)) deallocate (SS_R)
+    if (allocated(error)) then
+      write (0, *) 'Error in boltzwann', error%code, error%message
+      deallocate (error)
     endif
   end subroutine boltzwann
 
