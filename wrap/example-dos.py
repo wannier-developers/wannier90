@@ -25,6 +25,9 @@ if wann90.have_disentangled :
 
 wan90.w90_lib_all.read_checkpoint(data, pw90, m_matrix, u_matrix, u_opt, 6, comm)
 
+v_matrix = numpy.empty((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
+wan90.w90_lib_all.calc_v_matrix(data, u_matrix, u_opt, v_matrix)
+
 # should check pw90.dos.index for 'dos_plot'
 if pw90.calculation.dos :
-    wan90.w90_lib_all.calc_dos(data, pw90, u_matrix, u_opt, 6, comm)
+    wan90.w90_lib_all.calc_dos(data, pw90, u_matrix, v_matrix, 6, comm)
