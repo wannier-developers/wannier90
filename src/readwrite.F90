@@ -454,7 +454,7 @@ contains
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
+  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_nerwann, pw90_geninterp, w90_plot, &
                                         disentanglement, eig_found, eigval, library, postproc_setup, &
                                         num_bands, num_kpts, stdout, seedname)
 
@@ -466,7 +466,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     character(len=50), intent(in)  :: seedname
     logical, intent(in) :: disentanglement, library, postproc_setup
-    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
+    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_nerwann, pw90_geninterp, w90_plot
     logical, intent(out) :: eig_found
     integer :: i, j, k, n, eig_unit, ierr
 
@@ -479,7 +479,7 @@ contains
         if (.not. eig_found) then
           if (disentanglement) then
             call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement', stdout, seedname)
-          else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
+          else if ((w90_plot .or. pw90_boltzwann .or. pw90_nerwann .or. pw90_geninterp)) then
             call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation', stdout, seedname)
           end if
         else
@@ -880,6 +880,23 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_min', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_step', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'boltzwann', found)
+        call w90_readwrite_get_keyword(stdout, seedname, 'ner_2d_dir', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift_energyshift', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift_firstband', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_kmesh_spacing', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_max', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_min', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_step', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_relax_time', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_energy_step', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_smr_fixed_en_width', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_smr_type', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_max', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_min', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_step', found)
+    call w90_readwrite_get_keyword(stdout, seedname, 'nerwann', found)
+
     call w90_readwrite_get_keyword(stdout, seedname, 'degen_thr', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found)
     call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr', found)
@@ -952,6 +969,8 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'wanint_kpoint_file', found)
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'berry_kmesh', found, 0)
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'boltz_kmesh', found, 0)
+    call w90_readwrite_get_keyword_vector(stdout, seedname, 'ner_kmesh', found, 0)
+    call w90_readwrite_get_keyword_vector(stdout, seedname, 'ner_bext', found, 0)
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'dos_kmesh', found, 0)
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b1', found, 0)
     call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b2', found, 0)
