@@ -39,6 +39,7 @@ program postw90
   use w90_kslice
 
   use w90_boltzwann
+  use w90_nerwann
   use w90_geninterp
 
 #ifdef MPI
@@ -180,6 +181,7 @@ program postw90
   type(pw90_gyrotropic_type) :: gyrotropic
   type(pw90_geninterp_mod_type) :: geninterp
   type(pw90_boltzwann_type) :: boltz
+  type(pw90_nerwann_type) :: ner
   ! end w90_postw90_types
   ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
@@ -262,13 +264,13 @@ program postw90
                                     num_wann, eigval, mp_grid, real_lattice, spec_points, &
                                     pw90_calcs, postw90_oper, scissors_shift, effective_model, pw90_spin, &
                                     pw90_ham, kpath, kslice, dos_data, berry, spin_hall, gyrotropic, &
-                                    geninterp, boltz, eig_found, write_data, gamma_only, physics%bohr, &
+                                    geninterp, boltz, ner, eig_found, write_data, gamma_only, physics%bohr, &
                                     optimisation, stdout, seedname)
 
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                                      real_lattice, spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                                      pw90_spin, kpath, kslice, dos_data, berry, &
-                                     gyrotropic, geninterp, boltz, write_data, optimisation, stdout)
+                                     gyrotropic, geninterp, boltz, ner, write_data, optimisation, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -321,7 +323,7 @@ program postw90
                                                       eigval, mp_grid, real_lattice, pw90_calcs, &
                                                       scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, &
                                                       kslice, dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                                      boltz, eig_found, stdout, seedname, comm)
+                                                      boltz, ner, eig_found, stdout, seedname, comm)
   fermi_n = 0
   if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
 
@@ -475,6 +477,18 @@ program postw90
                         pw90_calcs%spin_decomp, seedname, stdout, comm)
   end if
 
+  ! -----------------------------------------------------------------
+  ! Thermomagnetic transport coefficients (NerWann module)
+  ! -----------------------------------------------------------------
+
+  if (pw90_calcs%nerwann) then
+    call nerwann_main(ner, dis_window, kpt_latt, pw90_ham, postw90_oper, pw90_spin, &
+                        physics, ws_region, system, wann_data, ws_distance, ws_vec, verbose, HH_R, &
+                        SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
+                        num_wann, num_bands, num_kpts, effective_model, have_disentangled, &
+                        pw90_calcs%spin_decomp, seedname, stdout, comm)
+  end if
+
   if (pw90_calcs%gyrotropic) then
     call gyrotropic_main(berry, dis_window, fermi_energy_list, gyrotropic, kmesh_info, kpt_latt, &
                          physics, postw90_oper, pw90_ham, ws_region, system, verbose, wann_data, &
@@ -487,6 +501,12 @@ program postw90
     time2 = io_time()
     write (stdout, '(/1x,a,f11.3,a)') &
       'Time for BoltzWann (Boltzmann transport) ', time2 - time1, ' (sec)'
+  endif
+
+  if (on_root .and. pw90_calcs%nerwann) then
+    time2 = io_time()
+    write (stdout, '(/1x,a,f11.3,a)') &
+      'Time for NerWann (Thermomagnetic transport) ', time2 - time1, ' (sec)'
   endif
 
   ! I put a barrier here before calling the final time printing routines,
