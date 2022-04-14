@@ -54,6 +54,7 @@ module w90_postw90_readwrite
     logical :: global_kmesh_set
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
+    character(len=4) :: ner_2d_dir
   end type pw90_extra_io_type
 
   public :: pw90_extra_io_type
@@ -70,7 +71,7 @@ contains
                                         kpoint_path, pw90_calculation, pw90_oper_read, scissors_shift, &
                                         effective_model, pw90_spin, pw90_band_deriv_degen, pw90_kpath, &
                                         pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
-                                        pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, eig_found, &
+                                        pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, pw90_nerwann, eig_found, &
                                         pw90_extra_io, gamma_only, bohr, optimisation, stdout, seedname)
     !================================================!
     !
@@ -88,6 +89,7 @@ contains
     type(atom_data_type), intent(inout) :: atom_data
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
+    type(pw90_nerwann_type), intent(inout) :: pw90_nerwann
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
@@ -171,7 +173,7 @@ contains
     call w90_wannier90_readwrite_read_dos(pw90_calculation, pw90_dos, found_fermi_energy, num_wann, &
                                           pw90_extra_io%smear, dos_plot, stdout, seedname)
     call w90_readwrite_read_ws_data(ws_region, stdout, seedname)
-    call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
+    call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, pw90_calculation%nerwann, &
                                     pw90_calculation%geninterp, dos_plot, disentanglement, eig_found, &
                                     eigval, library, .false., num_bands, num_kpts, stdout, seedname)
     dis_manifold%win_min = -1.0_dp
@@ -183,6 +185,9 @@ contains
     call w90_wannier90_readwrite_read_boltzwann(pw90_boltzwann, eigval, pw90_extra_io%smear, &
                                                 pw90_calculation%boltzwann, pw90_extra_io%boltz_2d_dir, stdout, &
                                                 seedname)
+    call w90_wannier90_readwrite_read_nerwann(pw90_nerwann, eigval,pw90_extra_io%smear, &
+                                                pw90_calculation%nerwann,pw90_extra_io%ner_2d_dir, stdout, &
+                                                seedname)
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                    fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
     call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
@@ -193,7 +198,7 @@ contains
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                    recip_lattice, stdout, seedname)
     call w90_wannier90_readwrite_read_local_kmesh(pw90_calculation, pw90_berry, pw90_dos, pw90_spin, &
-                                                  pw90_gyrotropic, pw90_boltzwann, recip_lattice, &
+                                                  pw90_gyrotropic, pw90_boltzwann, pw90_nerwann, recip_lattice, &
                                                   pw90_extra_io%global_kmesh_set, pw90_extra_io%global_kmesh, &
                                                   stdout, seedname)
     call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname) !pw90_write
@@ -233,6 +238,8 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'geninterp', found, l_value=pw90_calculation%geninterp)
     pw90_calculation%boltzwann = .false.
     call w90_readwrite_get_keyword(stdout, seedname, 'boltzwann', found, l_value=pw90_calculation%boltzwann)
+    pw90_calculation%nerwann = .false.
+    call w90_readwrite_get_keyword(stdout, seedname, 'nerwann', found,l_value=pw90_calculation%nerwann)
 
   end subroutine w90_wannier90_readwrite_read_pw90_calcs
 
@@ -1150,6 +1157,147 @@ contains
                     stdout, seedname)
     ! [gp-end, Apr 12, 2012]
   end subroutine w90_wannier90_readwrite_read_boltzwann
+  
+    !================================================!
+  subroutine w90_wannier90_readwrite_read_nerwann(pw90_nerwann, eigval,pw90_smearing, do_nerwann, &
+                                                    ner_2d_dir, stdout,seedname)
+    !================================================!
+    ! [gp-begin, Jun 1, 2012]
+    ! General band interpolator (pw90_geninterp)
+    !================================================!
+
+    use w90_io, only: io_error
+
+    implicit none
+    type(pw90_nerwann_type), intent(inout) :: pw90_nerwann
+    type(pw90_smearing_type), intent(in) :: pw90_smearing
+
+    integer, intent(in) :: stdout
+    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    logical, intent(in) :: do_nerwann
+    character(len=4), intent(out) :: ner_2d_dir
+    character(len=50), intent(in)  :: seedname
+
+    logical :: found, found2
+    character(len=maxlen)              :: ctmp
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! Boltzmann transport under a magnetic field
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! Note: to be put AFTER the disentanglement routines!
+    pw90_nerwann%TDF_smearing%use_adaptive = .false.
+
+
+    ! 0 means the normal 3d case for the calculation of the response tensors
+    ! The other valid possibilities are 1,2,3 for x,y,z respectively
+    pw90_nerwann%dir_num_2d = 0
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_2d_dir', found,c_value=ner_2d_dir)
+    if (found) then
+      if (trim(ner_2d_dir) == 'no') then
+        pw90_nerwann%dir_num_2d = 0
+      elseif (trim(ner_2d_dir) == 'x') then
+        pw90_nerwann%dir_num_2d = 1
+      elseif (trim(ner_2d_dir) == 'y') then
+        pw90_nerwann%dir_num_2d = 2
+      elseif (trim(ner_2d_dir) == 'z') then
+        pw90_nerwann%dir_num_2d = 3
+      else
+        call io_error('Error: ner_2d_dir can only be "no", "x", "y" or "z".',stdout, seedname)
+      end if
+    end if
+
+    pw90_nerwann%mu_min = -999._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_min', found,r_value=pw90_nerwann%mu_min)
+    if ((.not. found) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_mu_min provided',stdout, seedname)
+    pw90_nerwann%mu_max = -999._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_max', found2,r_value=pw90_nerwann%mu_max)
+    if ((.not. found2) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_mu_max provided',stdout, seedname)
+    if (found .and. found2 .and. (pw90_nerwann%mu_max < pw90_nerwann%mu_min)) &
+      call io_error('Error: ner_mu_max must be greater than ner_mu_min', stdout,seedname)
+    pw90_nerwann%mu_step = 0._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_step', found,r_value=pw90_nerwann%mu_step)
+    if ((.not. found) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_mu_step provided',stdout, seedname)
+    if (found .and. (pw90_nerwann%mu_step <= 0._dp)) &
+      call io_error('Error: ner_mu_step must be greater than zero', stdout,seedname)
+
+    pw90_nerwann%temp_min = -999._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_min', found, &
+                                   r_value=pw90_nerwann%temp_min)
+    if ((.not. found) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_temp_min provided',stdout, seedname)
+    pw90_nerwann%temp_max = -999._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_max', found2, &
+                                   r_value=pw90_nerwann%temp_max)
+    if ((.not. found2) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_temp_max provided',stdout, seedname)
+    if (found .and. found2 .and. (pw90_nerwann%temp_max < pw90_nerwann%temp_min)) &
+      call io_error('Error: ner_temp_max must be greater than ner_temp_min',stdout, seedname)
+    if (found .and. (pw90_nerwann%temp_min <= 0._dp)) &
+      call io_error('Error: ner_temp_min must be greater than zero', stdout,seedname)
+    pw90_nerwann%temp_step = 0._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_step', found, &
+                                   r_value=pw90_nerwann%temp_step)
+    if ((.not. found) .and. do_nerwann) &
+      call io_error('Error: NERWann required but no ner_temp_step provided',stdout, seedname)
+    if (found .and. (pw90_nerwann%temp_step <= 0._dp)) &
+      call io_error('Error: ner_temp_step must be greater than zero', stdout,seedname)
+
+    ! The interpolation mesh is read later on
+
+    ! By default, the energy step for the TDF is 1 meV
+    pw90_nerwann%tdf_energy_step = 0.001_dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_energy_step',found, &
+                                   r_value=pw90_nerwann%tdf_energy_step)
+    if (pw90_nerwann%tdf_energy_step <= 0._dp) &
+      call io_error('Error: ner_tdf_energy_step must be greater than zero',stdout, seedname)
+
+    ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
+    ! (i.e., no smearing)
+    pw90_nerwann%tdf_smearing%fixed_width = pw90_smearing%fixed_width
+    call w90_readwrite_get_keyword(stdout, seedname,'ner_tdf_smr_fixed_en_width', found, &
+                                   r_value=pw90_nerwann%tdf_smearing%fixed_width)
+    if (found .and. (pw90_nerwann%tdf_smearing%fixed_width < 0._dp)) &
+      call io_error('Error: ner_TDF_smr_fixed_en_width must be greater than or equal to zero', &
+                    stdout, seedname)
+
+    ! By default: use the "global" smearing index
+
+    pw90_nerwann%tdf_smearing%type_index = pw90_smearing%type_index
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_smr_type', found,c_value=ctmp)
+    if (found) pw90_nerwann%tdf_smearing%type_index =w90_readwrite_get_smearing_index(ctmp, &
+                                                                                         'ner_tdf_smr_type',stdout, seedname)
+
+    ! By default: 10 fs relaxation time
+    pw90_nerwann%relax_time = 10._dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_relax_time', found, &
+                                   r_value=pw90_nerwann%relax_time)
+
+    pw90_nerwann%bext(1) = 0._dp
+    pw90_nerwann%bext(2) = 0._dp
+    pw90_nerwann%bext(3) = 0._dp
+    call w90_readwrite_get_keyword_vector(stdout, seedname, 'bext', found, 3,r_value=pw90_nerwann%bext)
+
+    pw90_nerwann%bandshift = .false.
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift', found, &
+                                   l_value=pw90_nerwann%bandshift)
+    pw90_nerwann%bandshift = pw90_nerwann%bandshift .and. do_nerwann
+
+    pw90_nerwann%bandshift_firstband = 0
+    call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift_firstband',found, &
+                                   i_value=pw90_nerwann%bandshift_firstband)
+    if (pw90_nerwann%bandshift .and. (.not. found)) &
+      call io_error('Error: ner_bandshift required but no ner_bandshift_firstband provided', &
+                    stdout, seedname)
+    pw90_nerwann%bandshift_energyshift = 0._dp
+    call w90_readwrite_get_keyword(stdout, seedname,'ner_bandshift_energyshift', found, &
+                                   r_value=pw90_nerwann%bandshift_energyshift)
+    if (pw90_nerwann%bandshift .and. (.not. found)) &
+      call io_error('Error: ner_bandshift required but no ner_bandshift_energyshift provided', &
+                    stdout, seedname)
+  end subroutine w90_wannier90_readwrite_read_nerwann
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
@@ -1345,6 +1493,7 @@ contains
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
+    type(pw90_nerwann_type), intent(inout) :: pw90_nerwann
     type(kmesh_spacing_type), intent(in) :: global_kmesh
 
     integer, intent(in) :: stdout
@@ -1358,6 +1507,10 @@ contains
                           moduleprefix='boltz', should_be_defined=pw90_calculation%boltzwann, &
                           module_kmesh=pw90_boltzwann%kmesh)
 
+    call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set,global_kmesh, &
+                          moduleprefix='ner', should_be_defined=pw90_calculation%nerwann, &
+                          module_kmesh=pw90_nerwann%kmesh)
+    
     call get_module_kmesh(stdout, seedname, recip_lattice, global_kmesh_set, global_kmesh, &
                           moduleprefix='berry', should_be_defined=pw90_calculation%berry, &
                           module_kmesh=pw90_berry%kmesh)
@@ -1467,7 +1620,7 @@ contains
                                          real_lattice, kpoint_path, pw90_calculation, pw90_oper_read, &
                                          scissors_shift, pw90_spin, pw90_kpath, pw90_kslice, pw90_dos, &
                                          pw90_berry, pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
-                                         pw90_extra_io, optimisation, stdout)
+                                         pw90_nerwann, pw90_extra_io, optimisation, stdout)
     !================================================!
     !
     !! write postw90 parameters to stdout
@@ -1492,6 +1645,7 @@ contains
     type(pw90_gyrotropic_type), intent(in) :: pw90_gyrotropic
     type(pw90_geninterp_mod_type), intent(in) :: pw90_geninterp
     type(pw90_boltzwann_type), intent(in) :: pw90_boltzwann
+    type(pw90_nerwann_type), intent(in) :: pw90_nerwann
     type(pw90_extra_io_type), intent(in) :: pw90_extra_io
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
@@ -1998,6 +2152,53 @@ contains
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
     endif
 
+    if (pw90_calculation%nerwann .or. print_output%iprint > 2) then
+      write (stdout, '(1x,a78)') '*-------------------------------- NERWANN-----------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Thermomagnetic coefficients               :', &
+        pw90_calculation%nerwann, '|'
+      if (pw90_nerwann%dir_num_2d > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :', &
+          trim(pw90_extra_io%ner_2d_dir), '|'
+      else
+        write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Relaxation Time (fs)                      :', pw90_nerwann%relax_time, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Chemical Potential (eV)  :', pw90_nerwann%mu_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Chemical Potential (eV)  :', pw90_nerwann%mu_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Chemical Potential (eV)     :', pw90_nerwann%mu_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Temperature (K)          :', pw90_nerwann%temp_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', pw90_nerwann%temp_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature(K)              :', pw90_nerwann%temp_step, '|'
+      write (stdout, '(1x,a46,2x,3F8.3,1x,a5)') &
+        '|  External magnetic field                   :   ', (pw90_nerwann%bext(i), i=1, 3), '|'
+
+      if (pw90_extra_io%global_kmesh%mesh(1) == pw90_nerwann%kmesh%mesh(1) .and. &
+          pw90_extra_io%global_kmesh%mesh(2) == pw90_nerwann%kmesh%mesh(2) .and. &
+          pw90_extra_io%global_kmesh%mesh(3) == pw90_nerwann%kmesh%mesh(3)) then
+        write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
+      else
+        if (pw90_nerwann%kmesh%spacing > 0.0_dp) then
+          write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|Grid size = ', &
+            pw90_nerwann%kmesh%mesh(1), 'x', pw90_nerwann%kmesh%mesh(2), 'x',pw90_nerwann%kmesh%mesh(3), &
+            ' Spacing = ', pw90_nerwann%kmesh%spacing, '|'
+        else
+          write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
+            , pw90_nerwann%kmesh%mesh(1), 'x', pw90_nerwann%kmesh%mesh(2), 'x', pw90_nerwann%kmesh%mesh(3), '|'
+        endif
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', &
+        pw90_nerwann%tdf_energy_step, '|'
+      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', &
+        trim(w90_readwrite_get_smearing_type(pw90_nerwann%tdf_smearing%type_index)),'|'
+      if (pw90_nerwann%tdf_smearing%fixed_width > 0.0_dp) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
+          '|  TDF fixed Smearing width (eV)             :',pw90_nerwann%tdf_smearing%fixed_width, '|'
+      else
+        write (stdout, '(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
+      endif
+      write (stdout, '(1x,a78)')'*----------------------------------------------------------------------------*'
+    endif
+
     if (pw90_calculation%geninterp .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------Generic Band Interpolation--------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Properties at given k-points      :', pw90_calculation%geninterp, '|'
@@ -2060,7 +2261,8 @@ contains
   ! extra postw90 memory
   !================================================!
   subroutine w90_postw90_readwrite_mem_estimate(mem_param, mem_bw, dis_manifold, do_boltzwann, &
-                                                pw90_boltzwann, spin_decomp, num_wann, stdout)
+                                                do_nerwann, pw90_boltzwann, pw90_nerwann, & 
+                                                spin_decomp, num_wann, stdout)
     !================================================!
     ! note, should only be called from root node
     !================================================!
@@ -2069,6 +2271,7 @@ contains
 
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(pw90_boltzwann_type) :: pw90_boltzwann
+    type(pw90_nerwann_type) :: pw90_nerwann
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -2078,7 +2281,7 @@ contains
     real(kind=dp), parameter :: size_cmplx = 16.0_dp
     real(kind=dp), intent(in) :: mem_param
     real(kind=dp), intent(inout) :: mem_bw
-    logical, intent(in) :: do_boltzwann, spin_decomp
+    logical, intent(in) :: do_boltzwann, do_nerwann, spin_decomp
     integer :: NumPoints1, NumPoints2, NumPoints3, ndim
     real(kind=dp) :: TDF_exceeding_energy
 
@@ -2134,6 +2337,51 @@ contains
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:', &
       (mem_param + mem_bw)/(1024**2), ' Mb'
 
+    if (do_nerwann) then
+      if (spin_decomp) then
+        ndim = 3
+      else
+        ndim = 1
+      end if
+
+      ! A large value for estimaation
+      TDF_exceeding_energy = 2._dp
+      NumPoints1 = int(floor((pw90_nerwann%temp_max - pw90_nerwann%temp_min)/ &
+                             pw90_nerwann%temp_step)) + 1 ! Temperature
+      NumPoints2 = int(floor((pw90_nerwann%mu_max - pw90_nerwann%mu_min)/ &
+                             pw90_nerwann%mu_step)) + 1  ! chemical potential
+      NumPoints3 = int(floor((dis_manifold%win_max - dis_manifold%win_min &
+                              + 2._dp*TDF_exceeding_energy)/ &
+                             pw90_nerwann%tdf_energy_step)) + 1      !Energy array for TDFtot
+      mem_bw = mem_bw + NumPoints1*size_real                         !Temperature
+      mem_bw = mem_bw + NumPoints1*size_real                         !K*T
+      mem_bw = mem_bw + NumPoints2*size_real                         !Chemical potential
+      mem_bw = mem_bw + NumPoints3*size_real                         !TDtot FEnergyArray
+      mem_bw = mem_bw + 9*NumPoints3*ndim*size_real                  !TDtot
+      mem_bw = mem_bw + 9*NumPoints3*size_real                       !Integrals
+      mem_bw = mem_bw + (9*4 + 9)*size_real
+      !EConInvtotz, SigStotz, EConInv2dtotz, TSeebtotz, SigS_FPtotz, Seebtotz
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Tot El Conductivity
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Tot Seebeck
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Tot El Thermal Conductivity
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Local El Conductivity
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Local Seebeck
+      mem_bw = mem_bw + 9*NumPoints1*NumPoints2*size_real            !Local El Thermal Conductivity
+
+      mem_bw = mem_bw + num_wann*num_wann*size_cmplx                 !HH
+      mem_bw = mem_bw + 3*num_wann*num_wann*size_cmplx               !delHH
+      mem_bw = mem_bw + num_wann*num_wann*size_cmplx                 !UU
+      mem_bw = mem_bw + 3*num_wann*size_real                         !del_eig
+      mem_bw = mem_bw + num_wann*size_real                           !eig
+      mem_bw = mem_bw + num_wann*size_real                           !levelspacing_k
+
+      mem_bw = mem_bw + 9*ndim*NumPoints3*size_real                  !TDFtot_kz
+    end if
+
+if (do_nerwann) &
+      write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'NerWann:', &
+      (mem_param + mem_bw)/(1024**2), ' Mb'
+      
   end subroutine w90_postw90_readwrite_mem_estimate
 
   !================================================!
