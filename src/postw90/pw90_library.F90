@@ -285,12 +285,53 @@ contains
                         wann90%num_kpts, pw90%effective_model, wann90%have_disentangled, &
                         pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
                         error, comm)
-    if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(SS_R)) deallocate (SS_R)
+    if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
       write (0, *) 'Error in boltzwann', error%code, error%message
       deallocate (error)
     endif
   end subroutine boltzwann
+
+  subroutine gyrotropic(wann90, pw90, u_matrix, v_matrix, output, comm)
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    use w90_gyrotropic, only: gyrotropic_main
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_postw90_type), intent(inout) :: pw90
+    integer, intent(in) :: output
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    type(w90comm_type), intent(in) :: comm
+    !
+    type(pw90_physical_constants_type) :: physics
+    type(w90_error_type), allocatable :: error
+    complex(kind=dp), allocatable :: AA_R(:, :, :, :)
+    complex(kind=dp), allocatable :: BB_R(:, :, :, :)
+    complex(kind=dp), allocatable :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable :: HH_R(:, :, :)
+    complex(kind=dp), allocatable :: SS_R(:, :, :, :)
+
+    call gyrotropic_main(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, &
+                         pw90%gyrotropic, wann90%kmesh_info, wann90%kpt_latt, physics, &
+                         pw90%oper_read, pw90%band_deriv_degen, wann90%ws_region, &
+                         wann90%w90_system, wann90%print_output, wann90%wannier_data, &
+                         pw90%ws_vec, pw90%ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, &
+                         v_matrix, wann90%eigval, wann90%real_lattice, pw90%scissors_shift, &
+                         wann90%mp_grid, wann90%num_bands, wann90%num_kpts, wann90%num_wann, &
+                         pw90%effective_model, wann90%have_disentangled, wann90%seedname, output, &
+                         wann90%timer, error, comm)
+    if (allocated(SS_R)) deallocate (SS_R)
+    if (allocated(HH_R)) deallocate (HH_R)
+    if (allocated(CC_R)) deallocate (CC_R)
+    if (allocated(BB_R)) deallocate (BB_R)
+    if (allocated(AA_R)) deallocate (AA_R)
+    if (allocated(error)) then
+      write (0, *) 'Error in boltzwann', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine gyrotropic
 
 end module w90_lib_all
