@@ -10,6 +10,11 @@ module w90_lib_all
   ! Todo - initialisation issues that we had to fix
   ! Todo - num_valence_bands init
   ! Todo - need to test MPI (data dist routines...?)
+  ! have AA_R etc as numpy matrices that are passed in so calculate once separately?
+  ! or have 2 versions, one which takes those matrices and a hihger level wrapper that
+  ! creates them and then calls the other, so that for single one-off calls you don't need
+  ! to keep them in the SCF or other code. BUT m_matrix is part of the checkpoint isn't it
+  ! so it shouldn't be re-read!
 
   implicit none
 
@@ -37,7 +42,8 @@ module w90_lib_all
     type(wigner_seitz_type) :: ws_vec
   end type lib_postw90_type
 
-  public :: read_all_input, read_checkpoint, calc_dos, boltzwann, gyrotropic, berry, kpath
+  public :: read_all_input, read_checkpoint, calc_dos, boltzwann, gyrotropic, berry, kpath, &
+            kslice
 
 contains
 
@@ -199,7 +205,8 @@ contains
     if (.not. wann90%have_disentangled) then
       v_matrix(1:wann90%num_wann, :, :) = u_matrix(1:wann90%num_wann, :, :)
     else
-      v_matrix = cmplx_0
+      !this should be initialised by the caller really
+      v_matrix(1:wann90%num_bands, 1:wann90%num_wann, 1:wann90%num_kpts) = cmplx_0
       do loop_kpt = 1, wann90%num_kpts
         do j = 1, wann90%num_wann
           do m = 1, wann90%dis_manifold%ndimwin(loop_kpt)
@@ -442,5 +449,59 @@ contains
       deallocate (error)
     endif
   end subroutine kpath
+
+  subroutine kslice(wann90, pw90, u_matrix, v_matrix, output, comm)
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    use w90_kslice, only: k_slice
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_postw90_type), intent(inout) :: pw90
+    integer, intent(in) :: output
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    type(w90comm_type), intent(in) :: comm
+    !
+    type(pw90_physical_constants_type) :: physics
+    type(w90_error_type), allocatable :: error
+    complex(kind=dp), allocatable :: AA_R(:, :, :, :)
+    complex(kind=dp), allocatable :: BB_R(:, :, :, :)
+    complex(kind=dp), allocatable :: CC_R(:, :, :, :, :)
+    complex(kind=dp), allocatable :: HH_R(:, :, :)
+    complex(kind=dp), allocatable :: SS_R(:, :, :, :)
+    complex(kind=dp), allocatable :: SR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SHR_R(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SH_R(:, :, :, :)
+    complex(kind=dp), allocatable :: SAA_R(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :)
+    integer :: fermi_n
+
+    fermi_n = 0
+    if (allocated(wann90%fermi_energy_list)) fermi_n = size(wann90%fermi_energy_list)
+    call k_slice(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, wann90%kmesh_info, &
+                 wann90%kpt_latt, pw90%kslice, pw90%oper_read, pw90%band_deriv_degen, pw90%spin, &
+                 wann90%ws_region, pw90%spin_hall, wann90%print_output, &
+                 wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, &
+                 SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, u_matrix, physics%bohr, wann90%eigval, &
+                 wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
+                 wann90%num_bands, wann90%num_kpts, wann90%num_wann, &
+                 wann90%w90_system%num_valence_bands, pw90%effective_model, &
+                 wann90%have_disentangled, wann90%seedname, output, wann90%timer, error, comm)
+    if (allocated(SBB_R)) deallocate (SBB_R)
+    if (allocated(SAA_R)) deallocate (SAA_R)
+    if (allocated(SHR_R)) deallocate (SHR_R)
+    if (allocated(SH_R)) deallocate (SH_R)
+    if (allocated(SR_R)) deallocate (SR_R)
+    if (allocated(SS_R)) deallocate (SS_R)
+    if (allocated(HH_R)) deallocate (HH_R)
+    if (allocated(CC_R)) deallocate (CC_R)
+    if (allocated(BB_R)) deallocate (BB_R)
+    if (allocated(AA_R)) deallocate (AA_R)
+    if (allocated(error)) then
+      write (0, *) 'Error in kslice', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine kslice
 
 end module w90_lib_all
