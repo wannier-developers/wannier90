@@ -141,7 +141,7 @@ contains
     integer :: tdftotz_unit,NumZeroDettotz,ndim
 !Total TDF 1st+2nd along Bz 
     real(kind=dp), allocatable :: TDFtotz(:, :, :) ! (coordinate,Energy) 
-    integer :: Nernst_T_unit,Hall_T_unit,kappatotz_unit,Etnz_unit 
+    integer :: Nernst_T_unit,Hall_T_unit,kappatotz_unit,Etn_unit 
     real(kind=dp) ::TEContotz(3,3),EConInvtotz(3,3),SigS_FPtotz(3,3),& 
                     TSeebtotz(3,3),seeb2(3,3),sigs2T(3,3),TKco(3,3),Tkaptotz(3,3)
     real(kind=dp) :: TECon2dtotz(2,2),EConInv2dtotz(2,2)
@@ -554,7 +554,7 @@ contains
       open (unit=Nernst_T_unit, file=trim(seedname)//'_Nernst_T.dat') 
       write (Nernst_T_unit, '(A)') "# NerWann module of the Wannier90 code ." 
       write (Nernst_T_unit, '(A)') "# [Isothermal Nernst along Bz in SI units, i.e. in V/K]" 
-      write (Nernst_T_unit, '(A)') "# [the Nernst coefficient is defined in the documentation,"
+      write (Nernst_T_unit, '(A)') "# [the isothermal Nernst coefficient is defined in the documentation,"
       write (Nernst_T_unit, '(A)') "#  the Isothermal Nernst along Bz.]" 
       write (Nernst_T_unit, '(A)') "# Mu(eV) Temp(K) Nernst_T" 
       do MuIdx = 1, MuNumPoints
@@ -564,7 +564,7 @@ contains
       end do
       close (Nernst_T_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Nit coefficient Bz on the "//trim(seedname)//"_Nernst_T.dat file." 
+	  write (stdout, '(3X,A)') "Nernst coefficient Bz on the "//trim(seedname)//"_Nernst_T.dat file." 
 
 
 !!!Isothermal Hall along Bz 
@@ -572,7 +572,7 @@ contains
       open (unit=Hall_T_unit, file=trim(seedname)//'_Hall_T.dat') 
       write (Hall_T_unit, '(A)') "# NerWann module of the Wannier90 code." 
       write (Hall_T_unit, '(A)') "# [Isothermal Hall along Bz in SI units, i.e. in m3/C]" 
-      write (Hall_T_unit, '(A)') "# [the Hityxz coefficient is defined in the documentation" 
+      write (Hall_T_unit, '(A)') "# [the isothermal Hall coefficient is defined in the documentation" 
       write (Hall_T_unit, '(A)') "#  the Isothermal Hall along Bz.]" 
       write (Hall_T_unit, '(A)') "# Mu(eV) Temp(K) Hall_T" 
       do MuIdx = 1, MuNumPoints
@@ -582,25 +582,25 @@ contains
       end do
       close (Hall_T_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Hit coefficient on the "//trim(seedname)//"_Hall_T.dat file." 
+	  write (stdout, '(3X,A)') "Hall coefficient on the "//trim(seedname)//"_Hall_T.dat file." 
 
 !Ettinghausen Coefficient along Bz
-      Etnz_unit = io_file_unit() 
-      open (unit=Etnz_unit, file=trim(seedname)//'_Etnz.dat') 
+      Etn_unit = io_file_unit() 
+      open (unit=Etn_unit, file=trim(seedname)//'_Etn.dat') 
       write (Etn_unit, '(A)') "# NerWann module of the Wannier90 code." 
       write (Etn_unit, '(A)') "# [Ettingshausen along Bz in SI units, i.e. in m.K/Amp]" 
-      write (Etn_unit, '(A)') "# [the Etnz coefficient is defined in the documentation," 
+      write (Etn_unit, '(A)') "# [the Ettingshausen coefficient is defined in the documentation," 
       write (Etn_unit, '(A)') "#  the Ettingshausen coefficient along Bz]" 
-      write (Etn_unit, '(A)') "# Mu(eV) Temp(K) Etn" 
+      write (Etn_unit, '(A)') "# Mu(eV) Temp(K) Ettingshausen" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
           write (Etn_unit, 104) MuArray(MuIdx), TempArray(TempIdx), TempArray(TempIdx)*&
         Seebtotz(4,TempIdx,MuIdx)/Kappatotz(5,TempIdx,MuIdx) 
         end do
       end do
-      close (Etnz_unit)
+      close (Etn_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Etn coefficient on the "//trim(seedname)//"_Etn.dat file." 
+	  write (stdout, '(3X,A)') "Ettingshausen coefficient on the "//trim(seedname)//"_Etn.dat file." 
 
 
 
