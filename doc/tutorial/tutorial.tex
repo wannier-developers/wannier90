@@ -3840,7 +3840,7 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 {\tt mpirun -np 8 postw90.x ZnSe} (parallel execution) 
 \end{enumerate}
 
-The output file {\tt ZnSe.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . A constant relaxation time of $\tau=10$~fs is assumed as an arbitrary value and in reality thermomagnetic coefficients depend on the relaxation time value. You can plot the isothermal Hall conductivity ({\tt ZnSe\_Hitz.dat}), isothermal Nernst coefficient ({\tt ZnSe\_Nitz.dat}), and Ettingshausen coefficient ({\tt ZnSe\_Etnz.dat}).
+The output file {\tt ZnSe.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . A constant relaxation time of $\tau=10$~fs is assumed as an arbitrary value and in reality thermomagnetic coefficients depend on the relaxation time value. You can plot the isothermal Hall conductivity ({\tt ZnSe\_Hall_T.dat}), isothermal Nernst coefficient ({\tt ZnSe\_Nernst_T.dat}), and Ettingshausen coefficient ({\tt ZnSe\_Etn.dat}).
 
 Please keep in mind that this is only a representative example and the results have to converge with respect to interpolation mesh which often requires a reasonably fine mesh.  
 
