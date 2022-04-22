@@ -556,7 +556,7 @@ contains
       write (Nernst_T_unit, '(A)') "# [Isothermal Nernst along Bz in SI units, i.e. in V/K]" 
       write (Nernst_T_unit, '(A)') "# [the Nernst coefficient is defined in the documentation,"
       write (Nernst_T_unit, '(A)') "#  the Isothermal Nernst along Bz.]" 
-      write (Nernst_T_unit, '(A)') "# Mu(eV) Temp(K) Nityxz" 
+      write (Nernst_T_unit, '(A)') "# Mu(eV) Temp(K) Nernst_T" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
           write (Nernst_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Seebtotz(4,TempIdx,MuIdx)
@@ -574,7 +574,7 @@ contains
       write (Hall_T_unit, '(A)') "# [Isothermal Hall along Bz in SI units, i.e. in m3/C]" 
       write (Hall_T_unit, '(A)') "# [the Hityxz coefficient is defined in the documentation" 
       write (Hall_T_unit, '(A)') "#  the Isothermal Hall along Bz.]" 
-      write (Hall_T_unit, '(A)') "# Mu(eV) Temp(K) Hityxz" 
+      write (Hall_T_unit, '(A)') "# Mu(eV) Temp(K) Hall_T" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
           write (Hall_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Hall_T(1, TempIdx, MuIdx) 
@@ -587,20 +587,20 @@ contains
 !Ettinghausen Coefficient along Bz
       Etnz_unit = io_file_unit() 
       open (unit=Etnz_unit, file=trim(seedname)//'_Etnz.dat') 
-      write (Etnz_unit, '(A)') "# NerWann module of the Wannier90 code." 
-      write (Etnz_unit, '(A)') "# [Ettingshausen along Bz in SI units, i.e. in m.K/Amp]" 
-      write (Etnz_unit, '(A)') "# [the Etnz coefficient is defined in the documentation," 
-      write (Etnz_unit, '(A)') "#  the Ettingshausen coefficient along Bz]" 
-      write (Etnz_unit, '(A)') "# Mu(eV) Temp(K) Etnz" 
+      write (Etn_unit, '(A)') "# NerWann module of the Wannier90 code." 
+      write (Etn_unit, '(A)') "# [Ettingshausen along Bz in SI units, i.e. in m.K/Amp]" 
+      write (Etn_unit, '(A)') "# [the Etnz coefficient is defined in the documentation," 
+      write (Etn_unit, '(A)') "#  the Ettingshausen coefficient along Bz]" 
+      write (Etn_unit, '(A)') "# Mu(eV) Temp(K) Etn" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
-          write (Etnz_unit, 104) MuArray(MuIdx), TempArray(TempIdx), TempArray(TempIdx)*&
+          write (Etn_unit, 104) MuArray(MuIdx), TempArray(TempIdx), TempArray(TempIdx)*&
         Seebtotz(4,TempIdx,MuIdx)/Kappatotz(5,TempIdx,MuIdx) 
         end do
       end do
       close (Etnz_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Etn coefficient on the "//trim(seedname)//"_Etnz.dat file." 
+	  write (stdout, '(3X,A)') "Etn coefficient on the "//trim(seedname)//"_Etn.dat file." 
 
 
 
