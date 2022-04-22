@@ -141,13 +141,13 @@ contains
     integer :: tdftotz_unit,NumZeroDettotz,ndim
 !Total TDF 1st+2nd along Bz 
     real(kind=dp), allocatable :: TDFtotz(:, :, :) ! (coordinate,Energy) 
-    integer :: Nitz_unit,Hitz_unit,kappatotz_unit,Etnz_unit 
+    integer :: Nernst_T_unit,Hall_T_unit,kappatotz_unit,Etnz_unit 
     real(kind=dp) ::TEContotz(3,3),EConInvtotz(3,3),SigS_FPtotz(3,3),& 
                     TSeebtotz(3,3),seeb2(3,3),sigs2T(3,3),TKco(3,3),Tkaptotz(3,3)
     real(kind=dp) :: TECon2dtotz(2,2),EConInv2dtotz(2,2)
     real(kind=dp) :: Dettotz
     real(kind=dp), allocatable :: SigStotz(:, :, :),Seebtotz(:, :, :),Kappatotz(:, :, :) ! (coordinate,Temp, mu) 
-    real(kind=dp), allocatable :: EContotz(:, :, :),Hitz(:, :, :) ! (coordinate,Temp, mu) 
+    real(kind=dp), allocatable :: EContotz(:, :, :),Hall_T(:, :, :) ! (coordinate,Temp, mu) 
     real(kind=dp), allocatable :: LEContotz(:, :) ! (coordinate,Temp+mu combined index)
     real(kind=dp), allocatable :: LSigStotz(:, :) ! (coordinate,Temp+mu combined index) 
     real(kind=dp), allocatable :: LSeebtotz(:, :),LHitz(:, :) ! (coordinate,Temp+mu combined index) 
@@ -303,15 +303,15 @@ contains
 
 !!!Allocation for  response functions along Bz 
     allocate (LEContotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LEContotz in nerwann_main', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating LocalElCond2ndz in nerwann_main', stdout, seedname)
     allocate (LSigStotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LSigStotz in nerwann_main', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating LocalSigmaS2ndz in nerwann_main', stdout, seedname)
     allocate (LSeebtotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LSeebtotz in nerwann_main', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck2ndz in nerwann_main', stdout, seedname)
     allocate (LHitz(1, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LHitz in nerwann_main', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck2ndz in nerwann_main', stdout, seedname)
     allocate (LKappatotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LKappatotz in nerwann_main', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating LocalKappa2ndz in nerwann_main', stdout, seedname)
     allocate (LKco(9, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating LKco in nerwann_main', stdout, seedname)
     LEContotz = 0._dp
@@ -517,8 +517,8 @@ contains
       if (ierr /= 0) call io_error('Error in allocating Seebtotz in nerwann_main', stdout, seedname) 
       allocate (Kappatotz(9, TempNumPoints, MuNumPoints), stat=ierr) 
       if (ierr /= 0) call io_error('Error in allocating Kappatotz in nerwann_main', stdout, seedname) 
-      allocate (Hitz(1, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Hitz in nerwann_main', stdout, seedname) 
+      allocate (Hall_T(1, TempNumPoints, MuNumPoints), stat=ierr) 
+      if (ierr /= 0) call io_error('Error in allocating Hall_T in nerwann_main', stdout, seedname) 
     else
       allocate (EContotz(1, 1, 1), stat=ierr) 
       if (ierr /= 0) call io_error('Error in allocating EContotz in nerwann_main (2)', stdout, seedname) 
@@ -528,8 +528,8 @@ contains
       if (ierr /= 0) call io_error('Error in allocating Seebtotz in nerwann_main (2)', stdout, seedname) 
       allocate (Kappatotz(1, 1, 1), stat=ierr) 
       if (ierr /= 0) call io_error('Error in allocating Kappatotz in nerwann_main (2)', stdout, seedname) 
-      allocate (Hitz(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Hitz in nerwann_main (2)', stdout, seedname) 
+      allocate (Hall_T(1, 1, 1), stat=ierr) 
+      if (ierr /= 0) call io_error('Error in allocating Hall_T in nerwann_main (2)', stdout, seedname) 
     end if
 
     ! The 9* factors are due to the fact that for each (T,mu) pair we have 9 components 3*3
@@ -539,7 +539,7 @@ contains
                        seedname, comm) 
     call comms_gatherv(LSeebtotz, 9*counts(my_node_id), Seebtotz, 9*counts, 9*displs, stdout, &
                        seedname, comm) 
-    call comms_gatherv(LHitz, 1*counts(my_node_id), Hitz, 1*counts, 1*displs, stdout, &
+    call comms_gatherv(LHitz, 1*counts(my_node_id), Hall_T, 1*counts, 1*displs, stdout, &
                        seedname, comm) 
     call comms_gatherv(LKappatotz, 9*counts(my_node_id), Kappatotz, 9*counts, 9*displs, stdout, &
                        seedname, comm) 
@@ -550,39 +550,39 @@ contains
     ! Open files and print
     if (on_root) then
 !!!Isothermal Nernst along Bz !!!!
-      Nitz_unit = io_file_unit() 
-      open (unit=Nitz_unit, file=trim(seedname)//'_Nitz.dat') 
-      write (Nitz_unit, '(A)') "# NerWann module of the Wannier90 code ." 
-      write (Nitz_unit, '(A)') "# [Isothermal Nernst along Bz in SI units, i.e. in V/K]" 
-      write (Nitz_unit, '(A)') "# [the Nernst coefficient is defined in the documentation,"
-      write (Nitz_unit, '(A)') "#  the Isothermal Nernst along Bz.]" 
-      write (Nitz_unit, '(A)') "# Mu(eV) Temp(K) Nityxz" 
+      Nernst_T_unit = io_file_unit() 
+      open (unit=Nernst_T_unit, file=trim(seedname)//'_Nernst_T.dat') 
+      write (Nernst_T_unit, '(A)') "# NerWann module of the Wannier90 code ." 
+      write (Nernst_T_unit, '(A)') "# [Isothermal Nernst along Bz in SI units, i.e. in V/K]" 
+      write (Nernst_T_unit, '(A)') "# [the Nernst coefficient is defined in the documentation,"
+      write (Nernst_T_unit, '(A)') "#  the Isothermal Nernst along Bz.]" 
+      write (Nernst_T_unit, '(A)') "# Mu(eV) Temp(K) Nityxz" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
-          write (Nitz_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Seebtotz(4,TempIdx,MuIdx)
+          write (Nernst_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Seebtotz(4,TempIdx,MuIdx)
         end do
       end do
-      close (Nitz_unit)
+      close (Nernst_T_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Nit coefficient Bz on the "//trim(seedname)//"_Nitz.dat file." 
+	  write (stdout, '(3X,A)') "Nit coefficient Bz on the "//trim(seedname)//"_Nernst_T.dat file." 
 
 
 !!!Isothermal Hall along Bz 
-      Hitz_unit = io_file_unit() 
-      open (unit=Hitz_unit, file=trim(seedname)//'_Hitz.dat') 
-      write (Hitz_unit, '(A)') "# NerWann module of the Wannier90 code." 
-      write (Hitz_unit, '(A)') "# [Isothermal Hall along Bz in SI units, i.e. in m3/C]" 
-      write (Hitz_unit, '(A)') "# [the Hityxz coefficient is defined in the documentation" 
-      write (Hitz_unit, '(A)') "#  the Isothermal Hall along Bz.]" 
-      write (Hitz_unit, '(A)') "# Mu(eV) Temp(K) Hityxz" 
+      Hall_T_unit = io_file_unit() 
+      open (unit=Hall_T_unit, file=trim(seedname)//'_Hall_T.dat') 
+      write (Hall_T_unit, '(A)') "# NerWann module of the Wannier90 code." 
+      write (Hall_T_unit, '(A)') "# [Isothermal Hall along Bz in SI units, i.e. in m3/C]" 
+      write (Hall_T_unit, '(A)') "# [the Hityxz coefficient is defined in the documentation" 
+      write (Hall_T_unit, '(A)') "#  the Isothermal Hall along Bz.]" 
+      write (Hall_T_unit, '(A)') "# Mu(eV) Temp(K) Hityxz" 
       do MuIdx = 1, MuNumPoints
         do TempIdx = 1, TempNumPoints
-          write (Hitz_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Hitz(1, TempIdx, MuIdx) 
+          write (Hall_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Hall_T(1, TempIdx, MuIdx) 
         end do
       end do
-      close (Hitz_unit)
+      close (Hall_T_unit)
     if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Hit coefficient on the "//trim(seedname)//"_Hitz.dat file." 
+	  write (stdout, '(3X,A)') "Hit coefficient on the "//trim(seedname)//"_Hall_T.dat file." 
 
 !Ettinghausen Coefficient along Bz
       Etnz_unit = io_file_unit() 
@@ -645,8 +645,8 @@ end if
     if (ierr /= 0) call io_error('Error in deallocating Seebtotz in nerwann_main', stdout, seedname)
     deallocate (Kappatotz, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating Kappatotz in nerwann_main', stdout, seedname)
-    deallocate (Hitz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Hitz in nerwann_main', stdout, seedname)
+    deallocate (Hall_T, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating Hall_T in nerwann_main', stdout, seedname)
     deallocate (IntegrandArraytot, stat=ierr) 
     if (ierr /= 0) call io_error('Error in deallocating IntegrandArraytot in nerwann_main', stdout, seedname) 
 
@@ -1089,6 +1089,7 @@ subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distan
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if
 
+!  write(*,6)'loop,rdum,occ,vel=',loop_f,rdum,r_num_elec_per_state,vel(BandIdx,1:3) !Added by Dr.Keivan main write
 !Total TDF 1st+2nd along Bz
         TDFtot_kz(XX, loop_f, 1) = TDFtot_kz(XX, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*& 
                         vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
