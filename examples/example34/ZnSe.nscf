@@ -1,9 +1,9 @@
 &control
  calculation = 'nscf'
  prefix='ZnSe',
- pseudo_dir = '/project/dftclass2019/GBRV-PSEUDO',
-    outdir ='/home/sr3qj/znse',
-    wfcdir ='/home/sr3qj/znse',
+ pseudo_dir = './',
+    outdir ='./',
+    wfcdir ='./',
 /
 &system
     ibrav           =  5
@@ -14,9 +14,7 @@
     nbnd	    =  18
     ecutwfc         =  60.00
     ecutrho         =  600
-    occupations = 'smearing'
-    smearing = 'fd'
-    degauss = 0.025
+    occupations = 'fixed'
 /
 &electrons
  diagonalization = 'cg'
