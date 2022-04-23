@@ -449,7 +449,7 @@ $k$-mesh (one or three integers)\\
 {\sc ner\_bandshift\_firstband} & I & Index of the first band to be shifted\\
 {\sc ner\_bandshift\_energyshift} & P & Energy shift of the conduction bands in eV\\
 {\sc ner\_relax\_time} & P & Constant relaxation time in fs\\
-{\sc bext} & R & External magnetic field in T\\
+{\sc ner_bext} & R & External magnetic field in T\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the \nw\ module.]
@@ -1877,7 +1877,7 @@ The units are eV and it has to be specified if {\tt ner\_bandshift} is \verb#tru
 \subsection[ner\_bandshift\_energyshift]{\tt real(kind=dp) :: ner\_bandshift\_energyshift}
 Energy shift of the conduction bands in the unit of eV. It has to be provided if {\tt ner\_bandshift} is \verb#true#.
 
-\subsection[bext]{\tt real(kind=dp) :: bext(3)}
+\subsection[ner_bext]{\tt real(kind=dp) :: ner_bext(3)}
 The external magnetic field vector in units of Tesla for the calculation of thermomagnetic properties. The default value is (0.0,0.0,0.0)
 
 \clearpage
