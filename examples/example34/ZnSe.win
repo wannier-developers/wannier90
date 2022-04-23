@@ -1,4 +1,4 @@
-!!! -- Begin of NERWann input -- !!!
+!!! -- Begining of NERWann input -- !!!
 nerwann                    = true 
 ner_tdf_smr_type          = f-d
 smr_fixed_en_width          = 0.025
