@@ -1278,7 +1278,7 @@ contains
     pw90_nerwann%bext(1) = 0._dp
     pw90_nerwann%bext(2) = 0._dp
     pw90_nerwann%bext(3) = 0._dp
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'bext', found, 3,r_value=pw90_nerwann%bext)
+    call w90_readwrite_get_keyword_vector(stdout, seedname, 'ner_bext', found, 3,r_value=pw90_nerwann%bext)
 
     pw90_nerwann%bandshift = .false.
     call w90_readwrite_get_keyword(stdout, seedname, 'ner_bandshift', found, &
