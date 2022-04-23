@@ -1,0 +1,33 @@
+&control
+ calculation = 'scf'
+ prefix='ZnSe',
+ pseudo_dir = '/project/dftclass2019/GBRV-PSEUDO',
+    outdir ='/home/sr3qj/znse',
+    wfcdir ='/home/sr3qj/znse',
+/
+&system
+    ibrav           =  5
+    celldm(1)       =  7.5737973304
+    celldm(4)       =   0.50
+    nat             =   2
+    ntyp            =   2
+    ecutwfc         =  60.00
+    ecutrho         =  600
+    occupations = 'smearing'
+    smearing = 'fd'
+    degauss = 0.025
+/
+&electrons
+ diagonalization = 'cg'
+ mixing_mode = 'TF'
+ mixing_beta = 0.5
+ conv_thr = 1.0d-6
+/
+ATOMIC_SPECIES
+ Zn 65.38  zn_pbesol_v1.uspp.F.UPF
+ Se 78.96  se_pbesol_v1.uspp.F.UPF
+ATOMIC_POSITIONS {crystal}
+Zn   0.00   0.00    0.00
+Se   0.25   0.25    0.25
+K_POINTS {automatic}
+8 8 8 0 0 0
