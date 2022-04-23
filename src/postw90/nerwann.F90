@@ -32,7 +32,7 @@ module w90_nerwann
   !!
   !! S.E. Rezaei, M. Zebajadi, K. Esfarjani 
   !!    Comput. Mater. Sci. (2022)
-  !!    DOI: 
+  !!    DOI: 10.1016/j.commatsci.2022.111412
   !================================================!
 
   use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split,comms_reduce, &
@@ -61,11 +61,11 @@ module w90_nerwann
   character(len=74), parameter :: pub_string_1 = &
                                   "Please cite the following paper when publishing results obtained using    "
   character(len=74), parameter :: pub_string_2 = &
-                                  "the NerWann module:                                                     "
+                                  "the Nerwann module "
   character(len=74), parameter :: pub_string_3 = &
                                   "S.E. Rezaei, M. Zebajadi, K. Esfarjani,              "
   character(len=74), parameter :: pub_string_4 = &
-                                  "Comput. Mater. Sci. (2022)          "
+                                  "Comput. Mater. Sci. (2022)10.1016/j.commatsci.2022.111412         "
 
 contains
 
