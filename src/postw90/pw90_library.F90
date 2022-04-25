@@ -504,4 +504,38 @@ contains
     endif
   end subroutine kslice
 
+  subroutine spin_moment(wann90, pw90, u_matrix, v_matrix, output, comm)
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    use w90_spin, only: spin_get_moment
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_postw90_type), intent(inout) :: pw90
+    integer, intent(in) :: output
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    type(w90comm_type), intent(in) :: comm
+    !
+    type(w90_error_type), allocatable :: error
+    complex(kind=dp), allocatable :: HH_R(:, :, :)
+    complex(kind=dp), allocatable :: SS_R(:, :, :, :)
+
+    call spin_get_moment(wann90%dis_manifold, wann90%fermi_energy_list, pw90%kpt_dist, &
+                         wann90%kpt_latt, pw90%oper_read, pw90%spin, wann90%ws_region, &
+                         wann90%print_output, wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, &
+                         HH_R, SS_R, u_matrix, v_matrix, wann90%eigval, wann90%real_lattice, &
+                         pw90%scissors_shift, wann90%mp_grid, wann90%num_wann, wann90%num_bands, &
+                         wann90%num_kpts, wann90%w90_system%num_valence_bands, &
+                         pw90%effective_model, wann90%have_disentangled, &
+                         pw90%berry%wanint_kpoint_file, wann90%seedname, output, wann90%timer, &
+                         error, comm)
+    if (allocated(SS_R)) deallocate (SS_R)
+    if (allocated(HH_R)) deallocate (HH_R)
+    if (allocated(error)) then
+      write (0, *) 'Error in spin_moment', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine spin_moment
+
 end module w90_lib_all
