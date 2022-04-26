@@ -1,14 +1,8 @@
-all: $(patsubst %.chk.fmt.bz2, %.chk, $(wildcard *.chk.fmt.bz2)) $(patsubst %.mmn.bz2, %.mmn, $(wildcard *.mmn.bz2)) 
+all: $(patsubst %.win, %.chk.fmt.bz2, $(wildcard *.win))
 
-%.chk: %.chk.fmt.bz2
-	$(eval SEEDNAME:=$(patsubst %.chk.fmt.bz2, %, $<))
+%.chk.fmt.bz2: %.win
+	$(eval SEEDNAME:=$(patsubst %.win, %, $<))
 	echo $(SEEDNAME)
-	cat $< | bunzip2 - > $(SEEDNAME).chk.fmt && ../../../w90chk2chk.x -f2u $(SEEDNAME) && rm $(SEEDNAME).chk.fmt
-
-%.mmn: %.mmn.bz2
-	$(eval SEEDNAME:=$(patsubst %.mmn.bz2, %, $<))
-	echo $(SEEDNAME)
-	cat $< | bunzip2 - > $(SEEDNAME).mmn
-
+	../../../wannier90.x $< && ../../../w90chk2chk.x -u2f $(SEEDNAME) && bzip2 $(SEEDNAME).chk.fmt && rm $(SEEDNAME).chk
 
 .PHONY: all
