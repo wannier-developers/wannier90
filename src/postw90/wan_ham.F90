@@ -20,7 +20,7 @@ module w90_wan_ham
 
   !! This module contain operations on the Hamiltonian in the WF basis
 
-  use w90_constants, only: dp
+  use w90_constants, only: dp, pw90_physical_constants_type
 
   implicit none
 
@@ -29,6 +29,8 @@ module w90_wan_ham
   public :: wham_get_D_h
   public :: wham_get_D_h_P_value
   public :: wham_get_eig_deleig
+  public :: wham_get_eig_deltwoeig
+  public :: Omega_operator
   public :: wham_get_eig_deleig_TB_conv
   public :: wham_get_eig_UU_HH_AA_sc
   public :: wham_get_eig_UU_HH_AA_sc_TB_conv
@@ -514,6 +516,229 @@ contains
                            stdout, seedname)
 
   end subroutine wham_get_eig_deleig
+
+!================================!
+! conversion of a kpoint from  
+!reduced to cartesian coordinates
+!================================!
+subroutine red_to_cart(kpt, real_lattice, recip_lattice,newkptn)
+ use w90_constants, only: dkpt
+!Arguments
+ real(kind=dp), intent(in)::kpt(3)
+ real(kind=dp), intent(in) :: real_lattice(3, 3)
+ real(kind=dp), intent(in) :: recip_lattice(3, 3)
+ real(kind=dp), intent(out)::newkptn(3)
+
+!local variables
+ real(kind=dp) :: cark(3)
+ integer::i,j
+ do i=1,3
+  do j=1,3
+   cark(i)=cark(i)+recip_lattice(j,i)*kpt(j)
+  end do
+  cark(i)=cark(i)-dkpt
+ end do
+ do i=1,3
+  do j=1,3
+   newkptn(i)=newkptn(i)+real_lattice(i,j)*cark(j)
+  end do
+ end do
+end subroutine red_to_cart
+
+!=============================!
+!Reduced kpts to real space===!
+!=============================!
+subroutine kred_2_cart(i,kpt,real_lattice, recip_lattice,kcart,nkdk,kredn,kredp)
+ use w90_constants, only: dkpt, twopi
+!Arguments
+ integer(kind=dp),intent(in)::i
+ real(kind=dp), intent(in)::kpt(3)
+ real(kind=dp), intent(in) :: real_lattice(3, 3)
+ real(kind=dp), intent(in) :: recip_lattice(3, 3)
+ real(kind=dp), intent(out)::kredn(3),kredp(3),kcart(3),nkdk(3)
+!local variables
+  kcart=matmul(transpose(recip_lattice),kpt)
+  nkdk=kcart
+  nkdk(i)=kcart(i)-dkpt
+  kredn=matmul(real_lattice,nkdk)/twopi
+  nkdk(i)=kcart(i)+dkpt
+  kredp=matmul(real_lattice,nkdk)/twopi
+end subroutine kred_2_cart
+
+!================================!
+! Finite difference method(FDM)==!
+!================================!
+  subroutine fin_diff(de, ep, em,num_wann)
+  use w90_constants, only: dkpt
+!Arguments
+  real(kind=dp), intent(out):: de(num_wann)
+  real(kind=dp), intent(in):: em(num_wann), ep(num_wann)
+  integer, intent(in) :: num_wann
+  de=(ep-em)/(2*dkpt)
+  end subroutine fin_diff
+
+!====================================!
+!2nd derivative of eigenvalues=dv/dk !
+!====================================!
+subroutine wham_get_eig_deltwoeig(dis_manifold, kpt_latt, pw90_band_deriv_degen, print_output, &
+                                  ws_region,wannier_data,ws_distance,wigner_seitz, delHHnn, delHHpp, &
+                                  HHnn, HHpp, HH_R, u_matrix, UUnn, UUpp, v_matrix, del_eignn, &
+                                  del_eigpp, eignn, eigpp,eigval, kpt, krednn,kredpp, kcart,nkdk, &
+                                  real_lattice,scissors_shift,mp_grid, num_bands, num_kpts, &
+                                  num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                  seedname, stdout, comm, recip_lattice, del2_eig)
+!This subroutine is  to calculate the derivative of velocity with respect to k vector using Finite difference method
+use w90_constants, only: dp, dkpt,twopi,cmplx_0
+use w90_postw90_types, only:  wigner_seitz_type, pw90_band_deriv_degen_type
+use w90_comms, only: w90comm_type, mpirank
+use w90_get_oper, only: get_HH_R
+use w90_io, only: io_error, io_stopwatch, io_file_unit
+use w90_types, only: dis_manifold_type, print_output_type,wannier_data_type, &
+      ws_region_type, ws_distance_type
+use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
+      pw90common_fourier_R_to_k
+use w90_utility
+
+!Arguments
+type(dis_manifold_type), intent(in) :: dis_manifold
+ real(kind=dp), intent(in) :: kpt_latt(:, :)
+type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+type(ws_region_type), intent(in) :: ws_region
+type(print_output_type), intent(in) :: print_output
+type(wannier_data_type), intent(in) :: wannier_data
+type(ws_distance_type), intent(inout) :: ws_distance
+type(wigner_seitz_type), intent(inout) :: wigner_seitz
+complex(kind=dp), intent(out) :: delHHnn(:, :, :), delHHpp(:, :, :)
+complex(kind=dp), intent(out)   :: HHnn(:, :), HHpp(:, :)
+complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+complex(kind=dp), intent(out)   :: UUnn(:, :), UUpp(:, :)
+real(kind=dp), intent(out) :: del_eignn(num_wann, 3), del_eigpp(num_wann, 3)
+real(kind=dp), intent(out) :: eignn(num_wann), eigpp(num_wann)
+real(kind=dp), intent(in) :: eigval(:, :)
+real(kind=dp), intent(in) :: kpt(3)
+real(kind=dp), intent(out) :: krednn(3),kredpp(3),kcart(3),nkdk(3)
+real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+real(kind=dp), intent(in) :: scissors_shift
+integer, intent(in) :: mp_grid(3)
+integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
+logical, intent(in) :: effective_model, have_disentangled
+character(len=50), intent(in)  :: seedname
+integer, intent(in) :: stdout
+type(w90comm_type), intent(in) :: comm
+real(kind=dp),intent(out)::del2_eig(:,:,:) !2nd derivative of eigenvalues 
+ complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+!Local Variables
+integer(kind=dp)::i,j
+!Eigenvalues
+  call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R,u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts,num_wann, &
+                  num_valence_bands, effective_model, have_disentangled,seedname, stdout, comm)
+  do j=1,3 !Index of k e.g k1,k2, k3 for kx,ky,kz,jth component of a k_vctor 
+  call kred_2_cart(j,kpt,real_lattice, recip_lattice,kcart,nkdk,krednn,kredpp)
+!minus dkpt
+call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance,wigner_seitz, HHnn, HH_R, &
+                                   krednn, real_lattice, mp_grid, 0, num_wann,seedname, stdout)
+  call utility_diagonalize(HHnn, num_wann, eignn, UUnn, stdout, seedname)
+  call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen,ws_region, &
+                                 print_output, wannier_data, ws_distance,wigner_seitz, delHHnn, HHnn, &
+                                 HH_R, u_matrix, UUnn, v_matrix, del_eignn, eignn,eigval, krednn, &
+                                 real_lattice, scissors_shift, mp_grid,num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, effective_model,have_disentangled, &
+                                 seedname, stdout, comm)
+!plus dkpt
+call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance,wigner_seitz, HHpp, HH_R, &
+                                   kredpp, real_lattice, mp_grid, 0, num_wann,seedname, stdout)
+  call utility_diagonalize(HHpp, num_wann, eigpp, UUpp,stdout, seedname)
+  call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen,ws_region, &
+                                 print_output, wannier_data, ws_distance,wigner_seitz, delHHpp, HHpp, &
+                                 HH_R, u_matrix, UUpp, v_matrix, del_eigpp, eigpp,eigval, kredpp, &
+                                 real_lattice, scissors_shift, mp_grid,num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, effective_model,have_disentangled, &
+                                 seedname, stdout, comm)
+	do i=1,3
+  call fin_diff(del2_eig(:,i,j),del_eigpp(:,i),del_eignn(:,i),num_wann)
+	end do !i loop
+  end do !j loop
+
+end subroutine wham_get_eig_deltwoeig
+!========================================================!
+!This suroutine is to calculate Omega operator over bands
+!========================================================!
+subroutine Omega_operator(dis_manifold, kpt_latt, pw90_band_deriv_degen,print_output, &
+                                  ws_region,wannier_data,ws_distance,wigner_seitz,delHH,delHHnn, &
+                                  delHHpp, HH, HHnn, HHpp, HH_R, u_matrix, UU, UUnn, UUpp,v_matrix, &
+                                  deleig,deleignn, deleigpp, eig, eignn, eigpp,eigval, kpt,krednn,kredpp, &
+                                  kcart, nkdk, real_lattice,scissors_shift,mp_grid,num_bands, num_kpts, &
+                                  num_wann, num_valence_bands, effective_model,have_disentangled, &
+                                  seedname, stdout, comm, recip_lattice, del2_eig, &
+                                  omg_bndx,omg_bndy,omg_bndz, pw90_ner,physics)
+
+    use w90_constants, only: dp
+    use w90_postw90_types, only: pw90_band_deriv_degen_type, wigner_seitz_type, pw90_nerwann_type
+    use w90_comms, only: w90comm_type, mpirank
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
+    use w90_types, only: dis_manifold_type, print_output_type,wannier_data_type, &
+      ws_region_type, ws_distance_type
+!Arguments
+
+type(dis_manifold_type), intent(in) :: dis_manifold
+ real(kind=dp), intent(in) :: kpt_latt(:, :)
+type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+type(ws_region_type), intent(in) :: ws_region
+type(print_output_type), intent(in) :: print_output
+type(wannier_data_type), intent(in) :: wannier_data
+type(ws_distance_type), intent(inout) :: ws_distance
+type(wigner_seitz_type), intent(inout) :: wigner_seitz
+complex(kind=dp), intent(out) :: delHH(:,:,:), delHHnn(:, :, :), delHHpp(:, :, :)
+complex(kind=dp), intent(out)   :: HH(:,:), HHnn(:, :), HHpp(:, :)
+complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+complex(kind=dp), intent(out)   :: UUnn(:, :), UUpp(:, :),UU(:,:)
+real(kind=dp), intent(out) :: deleignn(num_wann, 3), deleigpp(num_wann, 3), deleig(num_wann, 3)
+real(kind=dp), intent(out) :: eignn(num_wann), eigpp(num_wann),eig(num_wann)
+real(kind=dp), intent(in) :: eigval(:, :)
+real(kind=dp), intent(out) :: krednn(3),kredpp(3),kcart(3),nkdk(3)
+real(kind=dp), intent(in) :: kpt(3)
+real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+real(kind=dp), intent(in) :: scissors_shift
+integer, intent(in) :: mp_grid(3)
+integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
+logical, intent(in) :: effective_model, have_disentangled
+character(len=50), intent(in)  :: seedname
+integer, intent(in) :: stdout
+type(w90comm_type), intent(in) :: comm
+real(kind=dp),intent(out)::del2_eig(:,:,:) !2nd derivative of eigenvalues 
+ complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+real(kind=dp),intent(out)::omg_bndx(num_wann),omg_bndy(num_wann),omg_bndz(num_wann) !omg_bndxy vx operating on by
+type(pw90_nerwann_type), intent (in) :: pw90_ner
+type(pw90_physical_constants_type), intent(in) :: physics
+
+
+call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen,ws_region, &
+                                 print_output, wannier_data, ws_distance,wigner_seitz, delHH, HH, &
+                                 HH_R, u_matrix, UU, v_matrix, deleig, eig,eigval, kpt, &
+                                 real_lattice, scissors_shift, mp_grid,num_bands, num_kpts, &
+                                 num_wann, num_valence_bands, effective_model,have_disentangled, &
+                                 seedname, stdout, comm)
+
+call wham_get_eig_deltwoeig(dis_manifold, kpt_latt, pw90_band_deriv_degen,print_output, &
+                                  ws_region,wannier_data,ws_distance,wigner_seitz,delHHnn, delHHpp, &
+                                  HHnn, HHpp, HH_R, u_matrix, UUnn, UUpp,v_matrix, deleignn, &
+                                  deleigpp, eignn, eigpp, eigval, kpt, krednn, kredpp, kcart,nkdk, &
+                                  real_lattice,scissors_shift,mp_grid,num_bands, num_kpts, &
+                                  num_wann, num_valence_bands, effective_model,have_disentangled, &
+                                  seedname, stdout, comm, recip_lattice,del2_eig)
+
+omg_bndx(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(del2_eig(:,1,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
+deleig(:,3)*pw90_ner%bext(2))+ del2_eig(:,1,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+ &
+del2_eig(:,1,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
+omg_bndy(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(del2_eig(:,2,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
+deleig(:,3)*pw90_ner%bext(2))+del2_eig(:,2,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+ & 
+del2_eig(:,2,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
+omg_bndz(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(del2_eig(:,3,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
+deleig(:,3)*pw90_ner%bext(2))+del2_eig(:,3,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+& 
+del2_eig(:,3,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
+end subroutine Omega_operator 
 
   !================================================!
   subroutine wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, delHH, UU, eig, del_eig, num_wann, &

@@ -240,7 +240,7 @@ contains
                                                             pw90_calculation, scissors_shift, effective_model, &
                                                             pw90_spin, pw90_band_deriv_degen, pw90_kpath, &
                                                             pw90_kslice, pw90_dos, pw90_berry, pw90_spin_hall, &
-                                                            pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, &
+                                                            pw90_gyrotropic, pw90_geninterp, pw90_boltzwann, pw90_nerwann, &
                                                             eig_found, stdout, seedname, comm)
     !================================================!
     !
@@ -257,7 +257,7 @@ contains
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
       pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
-      pw90_boltzwann_type
+      pw90_boltzwann_type, pw90_nerwann_type
 
     type(print_output_type), intent(inout) :: print_output
     type(ws_region_type), intent(inout) :: ws_region
@@ -275,6 +275,7 @@ contains
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
+    type(pw90_nerwann_type), intent(inout) :: pw90_nerwann
     type(w90comm_type), intent(in) :: comm
 
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
@@ -464,6 +465,29 @@ contains
     call comms_bcast(pw90_boltzwann%bandshift, 1, stdout, seedname, comm)
     call comms_bcast(pw90_boltzwann%bandshift_firstband, 1, stdout, seedname, comm)
     call comms_bcast(pw90_boltzwann%bandshift_energyshift, 1, stdout, seedname, comm)
+    ! Nerwann variables
+    call comms_bcast(pw90_calculation%nerwann, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%dir_num_2d, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%mu_min, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%mu_max, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%mu_step, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%temp_min, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%temp_max, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%temp_step, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%kmesh%spacing, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%kmesh%mesh(1), 3, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%tdf_energy_step, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%relax_time, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%bext(1), 3, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%tdf_smearing%use_adaptive, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%tdf_smearing%fixed_width, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%tdf_smearing%type_index, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%bandshift, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%bandshift_firstband, 1, stdout, seedname, comm)
+    call comms_bcast(pw90_nerwann%bandshift_energyshift, 1, stdout, seedname, comm)
+
+
+    ! [gp-end]
     ! [gp-end]
     call comms_bcast(ws_region%use_ws_distance, 1, stdout, seedname, comm)
 

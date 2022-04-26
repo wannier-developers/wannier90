@@ -102,6 +102,8 @@ and the current-induced magnetization
   properties for bulk materials using the semiclassical Boltzmann
   transport equation (see Chap.~\ref{ch:boltzwann} and example 16 of
   the tutorial).
+  \item \texttt{NerWann}: Calculation of thermomagnetic properties for bulk materials using the semiclassical Boltzmann transport equation in the presence of a magnetic field (see Chap.~\ref{ch:nerwann} and example 33 of
+  the tutorial).
 \item \texttt{geninterp} (Generic Band Interpolation): Calculation band energies (and band
   derivatives) on a generic list of $k$ points (see Chap.~\ref{ch:geninterp}).
 \end{itemize}
@@ -419,6 +421,45 @@ physical value, L for a logical value and S for a text string.}
 \end{center}
 \end{table}
 
+%nerwann table
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{{\tt NerWann} Parameters} \\
+\hline
+{\sc nerwann}   & L & Calculate thermomagnetic properties \\
+{\sc [ner\_]kmesh} & I & Dimensions of the uniform interpolation 
+$k$-mesh (one or three integers)\\ 
+{\sc [ner\_]kmesh\_spacing} & R & Minimum distance between $k$ points in \AA$^{-1}$\\
+{\sc ner\_2d\_dir} & S & Non-periodic direction in 2D systems\\
+{\sc ner\_mu\_min} & P & Minimum value of the chemical potential in eV\\
+{\sc ner\_mu\_max} & P & Maximum value of the chemical potential in eV\\
+{\sc ner\_mu\_step} & R & Step size of chemical potential in eV\\
+{\sc ner\_temp\_min} & P & Minimum value of the temperature~$T$ in Kelvin \\
+{\sc ner\_temp\_max} & P & Maximum value of the temperature~$T$ in Kelvin \\
+{\sc ner\_temp\_step} & R & Step size of temperature in Kelvin \\
+{\sc ner\_tdf\_energy\_step} & R & Energy step size for the total transport distribution (eV) \\
+{\sc ner\_tdf\_smr\_type} & S & Smearing type for the total transport distribution \\
+{\sc ner\_tdf\_smr\_fixed\_en\_width} & P & Smearing for the total transport distribution (eV) \\
+{\sc ner\_bandshift} & L & shift of the conduction bands\\
+{\sc ner\_bandshift\_firstband} & I & Index of the first band to be shifted\\
+{\sc ner\_bandshift\_energyshift} & P & Energy shift of the conduction bands in eV\\
+{\sc ner\_relax\_time} & P & Constant relaxation time in fs\\
+{\sc ner_bext} & R & External magnetic field in T\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the \nw\ module.]
+{{\tt seedname.win} file keywords controlling the \nw\ module (calculation of thermomagnetic properties in the Wannier basis). Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_bw}
+\end{center}
+\end{table}
+
 \begin{table}[h!]
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
@@ -573,9 +614,9 @@ No default value.
 \subsection[spin\_decomp]{\tt logical :: spin\_decomp}
 If {\tt true}, extra columns are added to some output files (such as
 {\tt seedname-dos.dat} for the {\tt dos} module, and analogously for
-the {\tt berry} and {\tt BoltzWann} modules).
+the {\tt berry}, {\tt BoltzWann} modules, and {\tt NerWann} modules).
 
-For the {\tt dos} and {\tt BoltzWann} modules, two further columns are
+For the {\tt dos}, {\tt BoltzWann}, and {\tt NerWann} modules, two further columns are
 generated, which contain the decomposition of the required property
 (e.g., total or orbital-projected DOS) of a spinor calculation into
 up-spin and down-spin parts (relative to the quantization axis defined
@@ -1749,7 +1790,97 @@ Energy shift of the conduction bands.
 The units are eV.
 No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
 
+\clearpage
+\section{NerWann}
+\subsection[nerwann]{\tt logical :: nerwann}
+Determines whether to compute the isothermal Hall conductivity, isothermal Nernst coefficient , and Ettingshausen coefficient.
 
+The default value is \verb#false#.
+
+\subsection[ner\_kmesh]{\tt integer :: ner\_kmesh(:)}
+It specifies the interpolation $k$ mesh used to calculate the total transport distribution function. 
+
+\subsection[ner\_kmesh\_spacing]{\tt real(kind=dp) :: ner\_kmesh\_spacing}
+Overrides the \verb#kmesh_spacing# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+\subsection[ner\_2d\_dir]{\tt  character(len=4) :: ner\_2d\_dir}
+\label{sec:boltz2ddir}
+It is the direction along which the system is non-periodic in 2D systems.
+
+The default value is \texttt{no}.
+
+\subsection[ner\_relax\_time]{\tt real(kind=dp) :: ner\_relax\_time}
+The value of the constant relaxation time in fs to be used in the total transport distribution function.
+
+The default value is 10~fs.
+
+\subsection[ner\_mu\_min]{\tt real(kind=dp) :: ner\_mu\_min}
+Minimum value of the chemical potential $\mu$ for which thermomagnetic properties are calculated.
+
+The units are eV.
+No default value.
+
+\subsection[ner\_mu\_max]{\tt real(kind=dp) :: ner\_mu\_max}
+Maximum value of the chemical potential $\mu$ for which thermomagnetic properties are calculated.
+
+The units are eV.
+No default value.
+
+\subsection[ner\_mu\_step]{\tt real(kind=dp) :: ner\_mu\_step}
+Energy step for the grid of chemical potentials from ner\_mu\_min to ner\_mu\_max in eV. 
+
+No default value.
+
+\subsection[ner\_temp\_min]{\tt real(kind=dp) :: ner\_temp\_min}
+Minimum value of temperature for which thermomagnetic properties are calculated.
+
+The units are K and there is no default value.
+
+\subsection[ner\_temp\_max]{\tt real(kind=dp) :: ner\_temp\_max}
+Maximum value of temperature for which thermomagnetic properties are calculated.
+
+The units are K and there is no default value.
+
+\subsection[ner\_temp\_step]{\tt real(kind=dp) :: ner\_temp\_step}
+Energy step for the grid of temperatures from ner\_temp\_min to ner\_temp\_max.
+
+The units are K and there is no default value.
+
+\subsection[ner\_tdf\_energy\_step]{\tt real(kind=dp) :: ner\_tdf\_energy\_step}
+Energy step for the grid of energies in the total transport distribution function.
+
+The units are eV and the default value is 0.001~eV.
+
+\subsection[ner\_tdf\_smr\_type]{\tt character(len=120) :: ner\_tdf\_smr\_type}
+The type of smearing function to be used for the total transport distribution function. The default value is the one given via the {\tt smr\_type} input flag (if defined).
+
+\subsection[ner\_tdf\_smr\_fixed\_en\_width]{\tt real(kind=dp) :: ner\_tdf\_smr\_fixed\_en\_width}
+Energy width for the smearing function in eV unit. For the total transport distribution function, a standard (non-adaptive) smearing scheme is used.
+
+The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt ner\_tdf\_energy\_step}, the total transport distribution function will be unsmeared.
+
+
+\subsection[ner\_bandshift]{\tt logical :: ner\_bandshift}
+Shift all conduction bands by the value of  {\tt ner\_bandshift\_energyshift}. Such a shift is applied after interpolation and the index of the first band to shift is required. 
+
+
+The default value is \verb#false#.
+
+\subsection[ner\_bandshift\_firstband]{\tt integer :: ner\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+It means that this band and all the above bands all bands will be shifted by  {\tt ner\_bandshift\_energyshift}. This 
+
+The units are eV and it has to be specified if {\tt ner\_bandshift} is \verb#true#. 
+
+\subsection[ner\_bandshift\_energyshift]{\tt real(kind=dp) :: ner\_bandshift\_energyshift}
+Energy shift of the conduction bands in the unit of eV. It has to be provided if {\tt ner\_bandshift} is \verb#true#.
+
+\subsection[ner_bext]{\tt real(kind=dp) :: ner_bext(3)}
+The external magnetic field vector in units of Tesla for the calculation of thermomagnetic properties. The default value is (0.0,0.0,0.0)
+
+\clearpage
 \section{Generic Band Interpolation}
 \subsection[boltzwann]{\tt logical :: geninterp}
 Determines whether to enter the Generic Band Interpolation routines.

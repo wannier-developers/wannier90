@@ -4,6 +4,8 @@
 
 ### New features
 
+- Calculation of the isothermal Nernst, isothermal Hall, and ettingshausen coefficients explained in malism given in S.Emad Rezaei, Mona Zebarjadi,and Keivan Esfarjani, COMMAT_111412, 214402 (2022) + examples 34
+- 
 - Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + examples 29 and 30 and tests [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
 
 - Implementation of the SCDM method in Wannier90 for spinor wavefunctions and added example31 for the tutorial [[#277]](https://github.com/wannier-developers/wannier90/pull/277)

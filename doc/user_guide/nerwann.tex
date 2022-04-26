@@ -1,0 +1,114 @@
+%!TEX root=./user_guide.tex
+\chapter{Thermomagnetic calculations with the \bw\ module} \textbf{nerwann}. 
+
+The flag $\verb#nerwann#=\verb#TRUE#$ will prompt the computation of the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients by solving the Boltzmann transport equation in the presence of a magnetic field within the constant time relaxation approximation. Each quantity is defined in the following section\ref{nerwann-theory} 
+
+The parameters of the nerwann module are described in the documentation as well as an example of computing thermomagnetic properties of GaAs in the Tutorial. 
+
+Thermomagnetic responses largely depend on the magnitude of magnetic field which needs to be specified by the user via the \textbf{bext} flag in the input file.
+
+
+citing the following paper would be greatly appreciated when publishing data attained using the nerwann module:
+\begin{quote}
+S.E. Rezaei, M. Zebarjadi, and K. Esfarjani, \\
+\emph{Calculation of thermomagnetic properties using first-principles density functional theory}, Comput. Mater. Sci. 210, 111412 (2022), DOI:10.1016/j.commatsci.2022.111412.
+\end{quote}
+
+%Reference: [Comput. Mater. Sci paper]
+\section{Theory}
+\label{nerwann-theory}
+In response to external fields, at a point $k$ in the reciprocal space, the distribution function $f_{k}$ deviates from the equilibrium distribution function $f_{k}^{0}$ as $f_{k}\textbf{=}f_{k}^{0}+f_{k}^{1}$. Moreover, the presence of a magnetic field causes a force acting on a particle described by Lorentz force $q\nu\times H$, and subsequently, the BTE will be modified as follows~\cite{smith1967electronic}: 
+\begin{equation}
+\frac{q}{\hbar}\nu\times H\cdot \nabla _{k} f_{k}^{1}+\nu \cdot [q\varepsilon + T\nabla (\frac{E_{k}-\mu}{T})]\frac{\partial f_{k}^{0}}{\partial E_{k}}\textbf{=}- \frac{f_{k}^{1}}{\tau}
+\label{eq1}   
+\end{equation}
+Where q is the electron charge, $\hbar$ is the Planck constant, T is the temperature, $\varepsilon$ is the electric field, $E_{k}$ is the band energy and $\mu$ is the chemical potential. Eq.~\ref{eq1} can be abbreviated by introducing a generalized force, $F$, and a band operator, $\Omega$ defined as follows:
+\begin{equation}
+\begin{split}
+%&F\textbf{=}-\nabla \mu +(E_{k}-\mu)T\nabla (\frac{1}{T}) \\
+&F\textbf{=}-\nabla \mu -\frac{(E_{k}-\mu)}{T}\nabla T) \\
+&\Omega\textbf{=}\frac{q}{\hbar}\nu\times H\cdot\nabla _{k}\textbf{=}\frac{q}{\hbar}\nu _{j}H_{k}\epsilon _{ijk}(\frac{\partial}{\partial k_{i}}) 
+\end{split}
+\label{eq2}
+\end{equation}
+Inserting ~\ref{eq2} in ~\ref{eq1} results in an equation for $f_{k}^{1}$:
+\begin{equation}
+f_{k}^{1}\textbf{=}(1+\tau \Omega)^{-1}\tau \nu \cdot F(-\frac{\partial f_{k}^{0}}{\partial E_{k}})
+\label{eq3}
+\end{equation}
+When  $\tau \Omega$ is small, at small magnetic fields, the term $(1+\tau \Omega)^{-1}$ can be expanded according to the Jones-Zener expansion~\cite{jones-zener}:
+\begin{equation}
+(1+\tau \Omega)^{-1}\textbf{=}1-\tau \Omega +(\tau \Omega)^{2}-\dots
+\label{eq4}
+\end{equation}
+For the Nernst effect the first two terms (1-$\tau \Omega$) are needed to achieve a response linear in $H$, and higher order terms are neglected, thus, the transport distribution function (Eq.~\ref{eq3}) is modified as:
+\begin{equation}
+f_{k}^{1}\textbf{=}-F_{i}\frac{\partial f_{k}^{0}}{\partial E_{k}}\tau [1-\tau \Omega]\nu _{j}
+\label{eq5}
+\end{equation}
+The physical constants (G) and transport coefficients($(ij)_{H}$) are defined as comprehensive tensors. 
+\begin{equation}
+    \begin{split}
+    G\textbf{=}\begin{pmatrix}
+q^2 \\
+\frac{q}{T}(E-\mu) \\
+q(E-\mu) \\
+\frac{(E-\mu)^2}{T} \\
+\end{pmatrix} \\
+(ij)_{H}\textbf{=}\begin{pmatrix}
+\sigma_{ij}(H) \\
+B_{ij}(H) \\
+\rho _{ij}(H) \\
+\kappa _{ij} (H) \\
+\end{pmatrix} 
+\label{eqmtrx}
+    \end{split}
+\end{equation}
+The transport distribution function ($\Xi ^H$) for thermomagnetic effect relates the $(ij)_H$ and G tensors as below:
+\begin{equation}
+ %\fontsize{8}{11}\selectfont
+    \begin{split}
+        &(ij)_H\textbf{=}\int G \, \Xi_{ij}^H (E)\left(-\frac{\partial f(E,\mu,T)}{\partial E}\right) dE \\
+     &\Xi_{ij}^H(E)\textbf{=}\frac{1}{VN_k}\sum_{n,k}\nu_{i,nk}\tau_{nk}[\nu_{j,nk}-\Omega\,\tau_{nk}\,\nu_{j,nk}]\,\delta(E-E_{k})
+        \label{eq6}
+    \end{split}
+\end{equation}
+Table.~\ref{TMco} summarizes the definition of each thermomagnetic response function along with their corresponding boundary conditions.
+\begin{table}
+ \caption{Isothermal Nernst (N$_{T}$), Isothermal Hall (H$_{T}$), and Ettinghausen ($\eta$) coefficients in Adiabatic (A) and Isothermal (T) conditions. $\alpha$,$\rho$,$\kappa$, and $\pi$ are the Seebeck coefficient, electrical resistivity, thermal conductivity and Peltier coefficient, respectively.}
+ \centering
+ \noindent
+ \begin{tabular}{lccc} %crrrr}
+    \hline
+    \hline
+    \textbf{Coefficient} &\textbf{Measure} &\textbf{Boundary Conditions} & \textbf{Equation}  \\
+    \hline
+    \hline
+   $N_{T}$  & $\frac{\varepsilon_y}{\partial_x T}$ & J=0, $ \partial_yT\textbf{=}0$ & $\alpha_{yx}(H)$   \\
+    $H_{T}$  & $\frac{\varepsilon_y}{J_x }$ &  J=J$_x, \nabla T\textbf{=}0$ & $\rho _{yx}(H)$ \\
+    $\eta$    & $\frac{\partial_yT}{J_x}$ &  J=J$_x$, $Q_y\textbf{=}0$ $\partial_xT\textbf{=}0$ & $\frac{\pi_{yx}(H)}{\kappa_{yy}(H)}$\\
+    \hline  
+    \hline 
+ \end{tabular}
+ \label{TMco}
+\end{table}
+
+\section{Files}
+
+\subsection{{\tt seedname\_tdftotz.dat}}
+OUTPUT. This file contains the total Transport Distribution Function (TDF) tensor ($\Xi_{ijz}^H(E)$). The first few lines are descriptions that are commented. The first column is energy in eV unit, followed by nine components of the total Transport Distribution Function. When spin decomposition is needed, 12  more columns will be added for spin up and down contributions.  It is noteworthy to add that the total Transport Distribution Function is printed out in the SI units of  $m^2C^3/S^3$.  
+
+\subsection{{\tt seedname\_Hall_T.dat}}
+OUTPUT. This file contains the isothermal Hall conductivity on the grid of temperature and chemical points. 
+
+The first few lines are descriptions that are commented. The first and second columns are chemical potential in eV unit, and temperature in Kelvin, respectively. The last column is the isothermal Hall conductivity in units of $m^3/C$. 
+
+\subsection{{\tt seedname\_Nernst_T.dat}}
+OUTPUT. This file contains the isothermal Nernst coefficient on the grid of temperature and chemical points. 
+
+The format of results is explained in the first lines which are commented. The first two columns are chemical potential in eV unit, and temperature in Kelvin, respectively. The last column is the isothermal Nernst coefficient in units of $V/K$. 
+
+\subsection{{\tt seedname\_Etn.dat}}
+OUTPUT. This file contains the Ettingshausen coefficient on the grid of temperature and chemical points. 
+
+The first few commented lines are descriptions. The first column is chemical potential in eV and the second columns is temperature in Kelvin. The third column is the Ettingshausen coefficient in $m.K/Amp$ units. 

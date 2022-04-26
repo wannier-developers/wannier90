@@ -3795,7 +3795,63 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 
 \end{itemize}
 
+\sectiontitle{34: ZnSe -- Nernst effect}
+\begin{itemize}
+\item{Outline: \it{Achieve MLWFs for the valence and low-lying
+    conduction bands of ZnSe. Compute the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients  within the constant relaxation time approximation the \nw\ module.}} 
+\end{itemize}
+\begin{itemize}
+  \item{Directory: {\tt examples/example34}}
+  \item{Input Files}
+    \begin{itemize}
+      \item{ {\tt ZnSe.scf}  {\it The \pwscf\ input file for ground state
+	  calculation}}
+      \item{ {\tt ZnSe.nscf}  {\it The \pwscf\ input file to achieve Bloch
+	  states for the conduction states}} 
+      \item{ {\tt ZnSe.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt ZnSe.win}  {\it The {\tt wannier90} input file}}
+    \end{itemize}
+\end{itemize}
 
+
+\begin{enumerate}
+\item Run \pwscf\ to achieve the ground bands of ZnSe\\  
+{\tt pw.x < ZnSe.scf > scf.out}
+
+\item Run \pwscf\ to achieve the Bloch states on a uniform k-point
+  grid.\\ 
+{\tt pw.x < ZnSe.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt ZnSe.nnkp} file).\\
+{\tt wannier90.x -pp ZnSe}
+
+\item Run {\tt pw2wannier90} to obtain the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt ZnSe.mmn} and {\tt  ZnSe.amn} files).\\
+{\tt pw2wannier90.x < ZnSe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x ZnSe}
+
+
+\item Run \postw\ to calculate thermomagnetic responses.\\
+{\tt postw90.x ZnSe} (serial execution) \\
+{\tt mpirun -np 8 postw90.x ZnSe} (parallel execution) 
+\end{enumerate}
+
+The output file {\tt ZnSe.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . A constant relaxation time of $\tau=10$~fs is assumed as an arbitrary value and in reality thermomagnetic coefficients depend on the relaxation time value. You can plot the isothermal Hall conductivity ({\tt ZnSe\_Hall_T.dat}), isothermal Nernst coefficient ({\tt ZnSe\_Nernst_T.dat}), and Ettingshausen coefficient ({\tt ZnSe\_Etn.dat}).
+
+Please keep in mind that this is only a representative example and the results have to converge with respect to interpolation mesh which often requires a reasonably fine mesh.  
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item Change the interpolation to a $60\times 60\times 60$ mesh and run again \postw\ to check if the results for thermomagnetic responses converge. Please note that it might take long depending on your machine.  
+
+\item You might want to plot the Nernst coefficient versus carrier concentration, also change the temperature and see how the Nernst coefficient behaves.
+
+\end{itemize}
 %\cleardoublepage
 
 \bibliographystyle{apsrev4-1}
