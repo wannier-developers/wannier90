@@ -7,7 +7,7 @@ F90 = gfortran
 #COMMS  = mpi
 #MPIF90 = mpgfortran #mpif90
 
-FCOPTS = -g -O0 -fPIC -Wall -Wextra -fcheck=all -fbacktrace -finit-real=nan -finit-integer=0x7fffffff
+FCOPTS = -g -O0 -fPIC -Wall -Wextra -fcheck=all -fbacktrace -finit-real=nan -finit-integer=0x7fffffff -DW90DEV
 LDOPTS = $(FCOPTS)
 
 MODFLAG = -J
