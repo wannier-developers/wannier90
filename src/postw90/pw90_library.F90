@@ -186,6 +186,28 @@ contains
     endif
   end subroutine read_checkpoint
 
+  subroutine pw_setup(wann90, pw90, output, comm)
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    use w90_postw90_common, only: pw90common_wanint_setup
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_postw90_type), intent(inout) :: pw90
+    integer, intent(in) :: output
+    type(w90comm_type), intent(in) :: comm
+    !
+    type(w90_error_type), allocatable :: error
+
+    call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
+                                 wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
+                                 wann90%seedname, wann90%timer, error, comm)
+    if (allocated(error)) then
+      write (0, *) 'Error in post setup', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine pw_setup
+
   subroutine calc_v_matrix(wann90, u_matrix, u_opt, v_matrix)
     !use w90_error_base, only: w90_error_type
     !use w90_comms, only: w90comm_type, mpirank
