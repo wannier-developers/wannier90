@@ -93,6 +93,8 @@ module w90_helper_types
 contains
 
   subroutine input_reader(helper, plot, transport, seedname, output, comm)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
+      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -107,30 +109,53 @@ contains
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    logical :: cp_pp
+    logical :: cp_pp, disentanglement
 
-    call w90_wannier90_readwrite_read(helper%atom_data, plot%band_plot, helper%dis_control, &
-                                      helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
-                                      helper%fermi_energy_list, plot%fermi_surface_data, &
-                                      helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
-                                      helper%output_file, helper%wvfn_read, helper%wann_control, &
-                                      helper%wann_omega, helper%proj, helper%proj_input, &
-                                      helper%real_space_ham, helper%select_proj, helper%kpoint_path, &
-                                      helper%w90_system, transport%tran, helper%print_output, &
-                                      helper%wannier_data, plot%wann_plot, io_params, &
-                                      helper%ws_region, helper%w90_calculation, helper%eigval, &
-                                      helper%real_lattice, physics%bohr, helper%sitesym%symmetrize_eps, &
-                                      helper%mp_grid, helper%num_bands, helper%num_kpts, &
-                                      helper%num_proj, helper%num_wann, helper%optimisation, &
-                                      helper%eig_found, helper%calc_only_A, cp_pp, helper%gamma_only, &
-                                      helper%lhasproj, .false., .false., helper%lsitesymmetry, &
-                                      helper%use_bloch_phases, seedname, output, error, comm)
+    call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in reader', error%code, error%message
+      write (0, *) 'Error in input file access', error%code, error%message
       deallocate (error)
+    else
+      call w90_wannier90_readwrite_read(helper%atom_data, plot%band_plot, helper%dis_control, &
+                                        helper%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
+                                        helper%fermi_energy_list, plot%fermi_surface_data, &
+                                        helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
+                                        helper%output_file, helper%wvfn_read, helper%wann_control, &
+                                        helper%wann_omega, helper%proj, helper%proj_input, &
+                                        helper%real_space_ham, helper%select_proj, helper%kpoint_path, &
+                                        helper%w90_system, transport%tran, helper%print_output, &
+                                        helper%wannier_data, plot%wann_plot, io_params, &
+                                        helper%ws_region, helper%w90_calculation, helper%eigval, &
+                                        helper%real_lattice, physics%bohr, helper%sitesym%symmetrize_eps, &
+                                        helper%mp_grid, helper%num_bands, helper%num_kpts, &
+                                        helper%num_proj, helper%num_wann, helper%optimisation, &
+                                        helper%eig_found, helper%calc_only_A, cp_pp, helper%gamma_only, &
+                                        helper%lhasproj, .false., .false., helper%lsitesymmetry, &
+                                        helper%use_bloch_phases, seedname, output, error, comm)
+      if (allocated(error)) then
+        write (0, *) 'Error in reader', error%code, error%message
+        deallocate (error)
+      else
+        ! For aesthetic purposes, convert some things to uppercase
+        call w90_readwrite_uppercase(helper%atom_data, helper%kpoint_path, &
+                                     helper%print_output%length_unit)
+        disentanglement = (helper%num_bands > helper%num_wann)
+        call w90_readwrite_read_final_alloc(disentanglement, helper%dis_manifold, &
+                                            helper%wannier_data, helper%num_wann, &
+                                            helper%num_bands, helper%num_kpts, error, comm)
+        if (allocated(error)) then
+          write (0, *) 'Error in read alloc', error%code, error%message
+          deallocate (error)
+        endif
+      endif
+      call w90_readwrite_clean_infile(output, seedname, error, comm)
+      if (allocated(error)) then
+        write (0, *) 'Error in input close', error%code, error%message
+        deallocate (error)
+      endif
+      helper%seedname = seedname
+      if (mpirank(comm) /= 0) helper%print_output%iprint = 0
     endif
-    helper%seedname = seedname
-    if (mpirank(comm) /= 0) helper%print_output%iprint = 0
   end subroutine input_reader
 
   subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, output, comm)
