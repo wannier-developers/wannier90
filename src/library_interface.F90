@@ -221,16 +221,20 @@ contains
     type(w90_error_type), allocatable :: error
     logical :: cp_pp
 
-    !if disentangle
-    !disentanglement = (num_bands > num_wann)
-    !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-    !allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
-    !allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
-    !allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-    !allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-    !else
-    !allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-    !allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+    if (helper%num_bands > helper%num_wann) then
+      ! disentnglement
+      !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
+      allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
+                              helper%num_kpts))
+      !allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, nntot, counts(my_node_id)), stat=ierr)
+      allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
+                                    helper%num_kpts))
+      !allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
+      !allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+      !else
+      !allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+      !allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+    endif
     cp_pp = .false.
     ! should be distributed if MPI
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
@@ -240,6 +244,10 @@ contains
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
                       helper%use_bloch_phases, helper%seedname, output, helper%timer, error, comm)
     deallocate (m_matrix_local)
+    if (helper%num_bands > helper%num_wann) then
+      deallocate (m_matrix_orig_local)
+      deallocate (m_matrix_orig)
+    endif
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
       deallocate (error)
