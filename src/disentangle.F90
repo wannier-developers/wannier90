@@ -73,7 +73,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout), allocatable :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), intent(inout), allocatable :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
     type(dis_control_type), intent(inout)  :: dis_control
@@ -3021,7 +3021,7 @@ contains
     real(kind=dp), intent(inout) :: eigval_opt(:, :)
     real(kind=dp), intent(out) :: omega_invariant
 
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :) ! non-gamma uses _local variant ?
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :) ! non-gamma uses _local variant ?
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: on_root, lsitesymmetry ! lsitesym not yet used
