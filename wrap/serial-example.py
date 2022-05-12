@@ -19,12 +19,20 @@ m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, dat
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 
-u_opt = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
-
 #m_matrix.flags.f_contiguous should be true
 
-wan90.w90_helper_types.overlaps(data, a_matrix, m_matrix, u_matrix, ftn_output, comm)
+if data.num_wann == data.num_bands:
+    m_orig = numpy.zeros((1, 1, 1, 1), dtype=numpy.cdouble, order='F')
+    u_opt = numpy.zeros((1, 1, 1), dtype=numpy.cdouble, order='F')
+    wan90.w90_helper_types.overlaps(data, a_matrix, m_matrix, m_orig, u_matrix, ftn_output, comm)
+else:
+    u_opt = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
+    m_orig = numpy.zeros((data.num_bands, data.num_bands, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
+    wan90.w90_helper_types.overlaps(data, a_matrix, m_matrix, m_orig, u_matrix, ftn_output, comm)
+    wan90.w90_helper_types.disentangle(data, a_matrix, m_matrix, m_orig, u_matrix, u_opt, ftn_output, comm)
+    
 wan90.w90_helper_types.wannierise(data, plot, tran, m_matrix, u_matrix, u_opt, ftn_output, comm)
+
 
 #wan90.w90_helper_types.checkpoint(data, "postwann", m_matrix, u_matrix, u_opt, ftn_output, comm)
 
@@ -33,5 +41,7 @@ wan90.w90_helper_types.wannierise(data, plot, tran, m_matrix, u_matrix, u_opt, f
 print (data.num_wann)
 
 wan90.w90_helper_types.plot_files(data, plot, tran, m_matrix, u_matrix, u_opt, ftn_output, comm)
+
+#wan90.w90_helper_types.transport(data, plot, tran, u_matrix, u_opt, ftn_output, comm)
 
 wan90.w90_helper_types.print_times(data, ftn_output)

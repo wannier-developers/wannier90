@@ -210,7 +210,7 @@ contains
     endif
   end subroutine create_kmesh
 
-  subroutine overlaps(helper, a_matrix, m_matrix, u_matrix, output, comm)
+  subroutine overlaps(helper, a_matrix, m_matrix, m_orig, u_matrix, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
@@ -219,7 +219,7 @@ contains
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
@@ -233,8 +233,8 @@ contains
     if (helper%num_bands > helper%num_wann) then
       ! disentnglement
       !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
-                              helper%num_kpts))
+      !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
+      !                        helper%num_kpts))
       !allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, nntot, counts(my_node_id)), stat=ierr)
       allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
                                     helper%num_kpts))
@@ -248,20 +248,68 @@ contains
     ! should be distributed if MPI
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
     call overlap_read(helper%kmesh_info, helper%select_proj, helper%sitesym, a_matrix, &
-                      m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
+                      m_matrix, m_matrix_local, m_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       helper%num_bands, helper%num_kpts, helper%num_proj, helper%num_wann, &
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
                       helper%use_bloch_phases, helper%seedname, output, helper%timer, error, comm)
     deallocate (m_matrix_local)
     if (helper%num_bands > helper%num_wann) then
       deallocate (m_matrix_orig_local)
-      deallocate (m_matrix_orig)
+      !deallocate (m_matrix_orig)
     endif
     if (allocated(error)) then
       write (0, *) 'Error in overlaps', error%code, error%message
       deallocate (error)
     endif
   end subroutine overlaps
+
+  subroutine disentangle(helper, a_matrix, m_matrix, m_orig, u_matrix, u_opt, output, comm)
+    use w90_disentangle, only: dis_main
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    !type(lib_plot_type), intent(in) :: plot
+    !type(lib_transport_type), intent(in) :: transport
+    integer, intent(in) :: output
+    type(w90comm_type), intent(in) :: comm
+    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !
+    !type(w90_physical_constants_type) :: physics
+    type(w90_error_type), allocatable :: error
+    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+
+    !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
+    !                        helper%num_kpts))
+    ! MPI issue
+    allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
+                                  helper%num_kpts))
+    m_matrix_orig_local(1:helper%num_bands, 1:helper%num_bands, 1:helper%kmesh_info%nntot, &
+                        1:helper%num_kpts) = m_orig(1:helper%num_bands, 1:helper%num_bands, &
+                                                    1:helper%kmesh_info%nntot, 1:helper%num_kpts)
+    ! MPI issue
+    allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
+                             helper%num_kpts))
+    call dis_main(helper%dis_control, helper%dis_spheres, helper%dis_manifold, helper%kmesh_info, &
+                  helper%kpt_latt, helper%sitesym, helper%print_output, a_matrix, m_matrix, &
+                  m_matrix_local, m_orig, m_matrix_orig_local, u_matrix, u_opt, &
+                  helper%eigval, helper%real_lattice, helper%omega%invariant, helper%num_bands, &
+                  helper%num_kpts, helper%num_wann, helper%optimisation, helper%gamma_only, &
+                  helper%lsitesymmetry, output, helper%timer, error, comm)
+    helper%have_disentangled = .true.
+    if (allocated(m_matrix_local)) deallocate (m_matrix_local)
+    if (allocated(m_matrix_orig_local)) deallocate (m_matrix_orig_local)
+    !if (allocated(m_matrix_orig)) deallocate (m_matrix_orig)
+    if (allocated(error)) then
+      write (0, *) 'Error in disentangle', error%code, error%message
+      deallocate (error)
+    endif
+  end subroutine disentangle
 
   subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, u_opt, output, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
