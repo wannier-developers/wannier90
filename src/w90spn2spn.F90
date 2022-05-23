@@ -33,7 +33,6 @@ module w90_conv_spn
   !! Module to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_error
 
   implicit none
 
@@ -43,6 +42,25 @@ module w90_conv_spn
   complex(kind=dp), allocatable, save :: spn_o(:, :, :, :)
 
 contains
+
+  subroutine io_error(error_msg, stdout, seedname)
+    !================================================
+    !
+    !! Abort the code giving an error message
+    !
+    !================================================
+
+    implicit none
+
+    character(len=*), intent(in) :: error_msg
+    character(len=50), intent(in)  :: seedname
+    integer :: stdout
+
+    close (stdout)
+    write (*, '(1x,a)') trim(error_msg)
+    write (*, '(A)') "Error: examine the output/error file for details"
+    stop
+  end subroutine io_error
 
   !================================================!
   subroutine print_usage(stdout)
@@ -129,7 +147,7 @@ contains
     !================================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit
+    use w90_io, only: io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -207,7 +225,7 @@ contains
     !================================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit
+    use w90_io, only: io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -368,48 +386,22 @@ program w90spn2spn
   !! Program to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, io_error
+  use w90_io, only: io_file_unit
   use w90_conv_spn
-  use w90_comms, only: comms_end, mpisize, w90comm_type
-
-#ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
-#endif
-#ifdef MPI90
-  use mpi ! next best, use fortran90 interface
-#endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   ! Export mode:
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
 
-  type(w90comm_type) :: comm
-  logical :: file_found
-  integer :: file_unit
-  integer :: stdout, ierr, num_nodes
+  !logical :: file_found
+  !integer :: file_unit
+  integer :: stdout !, ierr, num_nodes
   character(len=50) :: seedname
-
-#ifdef MPI
-  comm%comm = MPI_COMM_WORLD
-  call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-  num_nodes = mpisize(comm)
-#else
-  num_nodes = 1
-#endif
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90spn2spn.log')
-
-  if (num_nodes /= 1) then
-    call io_error('w90spn2spn can only be used in serial...', stdout, seedname)
-  endif
 
   call conv_get_seedname(stdout, seedname)
 
@@ -424,8 +416,6 @@ program w90spn2spn
   end if
 
   close (unit=stdout)
-
-  call comms_end
 
 end program w90spn2spn
 

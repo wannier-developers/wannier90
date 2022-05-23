@@ -26,8 +26,7 @@ module w90_types
   !! Types specific to wannier90.x (not used by postw90.x) are defined in wannier90_types.F90.
   !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
 
   implicit none
 
@@ -56,6 +55,21 @@ module w90_types
     integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
+
+  ! timer from io.F90
+  type timing_data_type                                          !! Data about each stopwatch - for timing routines
+    integer :: ncalls                                            !! Number of times stopwatch has been called
+    real(kind=DP) :: ctime                                       !! Total time on stopwatch
+    real(kind=DP) :: ptime                                       !! Temporary record of time when watch is started
+    character(len=60) :: label                                   !! What is this stopwatch timing
+  end type timing_data_type
+
+  integer, parameter :: nmax = 100                               !! Maximum number of stopwatches
+  type timer_list_type
+    type(timing_data_type) :: clocks(nmax)                         !! Data for the stopwatches
+    integer :: nnames = 0                                          !! Number of active stopwatches
+    logical :: overflow = .false.
+  end type timer_list_type
 
   type ws_region_type
     logical :: use_ws_distance !ws_distance, plot and postw90_common
