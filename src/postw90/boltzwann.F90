@@ -43,8 +43,10 @@ module w90_boltzwann
     comms_allreduce, w90comm_type
   use w90_constants, only: dp, pw90_physical_constants_type, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
-  use w90_io, only: io_error, io_stopwatch, io_file_unit
+  use w90_io, only: io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -78,7 +80,7 @@ contains
                             w90_system, wannier_data, ws_distance, wigner_seitz, print_output, &
                             HH_R, SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, &
                             mp_grid, num_wann, num_bands, num_kpts, effective_model, &
-                            have_disentangled, spin_decomp, seedname, stdout, comm)
+                            have_disentangled, spin_decomp, seedname, stdout, timer, error, comm)
     !================================================!
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
@@ -97,10 +99,10 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      ws_region_type, w90_system_type, ws_distance_type
+      ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
 
@@ -121,6 +123,8 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -182,7 +186,7 @@ contains
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
 
-    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
+    if (print_output%iprint > 0 .and. print_output%timing_level > 0) call io_stopwatch_start('boltzwann_main', timer)
 
     if (print_output%iprint > 0) then
       write (stdout, *)
@@ -215,32 +219,43 @@ contains
 
     ! separate error condition from info printout above (which may be avoided entirely in lib mode?)
     if (pw90_boltzwann%dir_num_2d < 0 .or. pw90_boltzwann%dir_num_2d > 3) then
-      call io_error('Unrecognized value of pw90_boltzwann_2d_dir_num', stdout, seedname)
+      call set_error_input(error, 'Unrecognized value of pw90_boltzwann_2d_dir_num', comm)
+      return
     endif
 
     ! I precalculate the TempArray and the MuArray
     TempNumPoints = int(floor((pw90_boltzwann%temp_max - pw90_boltzwann%temp_min)/pw90_boltzwann%temp_step)) + 1
     allocate (TempArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TempArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating TempArray in boltzwann_main', comm)
+      return
+    endif
     do i = 1, TempNumPoints
       TempArray(i) = pw90_boltzwann%temp_min + real(i - 1, dp)*pw90_boltzwann%temp_step
     end do
 
     ! This array contains the same temperatures of the TempArray, but multiplied by k_boltzmann, in units of eV
     allocate (KTArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating KTArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating KTArray in boltzwann_main', comm)
+      return
+    endif
     ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
     KTArray = TempArray*physics%k_B_SI/physics%elem_charge_SI
 
     MuNumPoints = int(floor((pw90_boltzwann%mu_max - pw90_boltzwann%mu_min)/pw90_boltzwann%mu_step)) + 1
     allocate (MuArray(MuNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating MuArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating MuArray in boltzwann_main', comm)
+      return
+    endif
     do i = 1, MuNumPoints
       MuArray(i) = pw90_boltzwann%mu_min + real(i - 1, dp)*pw90_boltzwann%mu_step
     end do
 
     if (pw90_boltzwann%tdf_smearing%use_adaptive) then
-      call io_error('Adaptive smearing not allowed in Boltzwann TDF', stdout, seedname)
+      call set_error_input(error, 'Adaptive smearing not allowed in Boltzwann TDF', comm)
+      return
     endif
     ! I precalculate the TDFEnergyArray
     ! I assume that dis_win_min and dis_win_max are set to sensible values, related to the max and min energy
@@ -253,8 +268,10 @@ contains
                                     + 2._dp*TDF_exceeding_energy)/pw90_boltzwann%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main', &
-                                 stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating TDFEnergyArray in boltzwann_main', comm)
+      return
+    endif
     do i = 1, TDFEnergyNumPoints
       TDFEnergyArray(i) = dis_manifold%win_min - TDF_exceeding_energy &
                           + real(i - 1, dp)*pw90_boltzwann%tdf_energy_step
@@ -268,15 +285,19 @@ contains
 
     ! I allocate the array for the TDF
     allocate (TDF(6, TDFEnergyNumPoints, ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating TDF in boltzwann_main', comm)
+      return
+    endif
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, pw90_band_deriv_degen, pw90_spin, &
-                       ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, &
-                       v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
-                       cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                       w90_system%num_valence_bands, w90_system%num_elec_per_state, effective_model, &
-                       have_disentangled, spin_decomp, seedname, stdout, comm)
+    call calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, &
+                       pw90_band_deriv_degen, pw90_spin, ws_region, print_output, wannier_data, &
+                       ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, eigval, &
+                       real_lattice, TDF, TDFEnergyArray, cell_volume, scissors_shift, mp_grid, &
+                       num_bands, num_kpts, num_wann, w90_system%num_valence_bands, &
+                       w90_system%num_elec_per_state, effective_model, have_disentangled, &
+                       spin_decomp, seedname, stdout, timer, error, comm)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -306,7 +327,7 @@ contains
     ! *********************************************************************************
     ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_start('boltzwann_main: calc_props', timer)
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
@@ -315,20 +336,35 @@ contains
     ! I allocate the arrays for the spectra
     ! Allocate at least 1 entry
     allocate (LocalElCond(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalElCond in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating LocalElCond in boltzwann_main', comm)
+      return
+    endif
     allocate (LocalSigmaS(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSigmaS in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating LocalSigmaS in boltzwann_main', comm)
+      return
+    endif
     allocate (LocalSeebeck(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating LocalSeebeck in boltzwann_main', comm)
+      return
+    endif
     allocate (LocalKappa(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalKappa in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating LocalKappa in boltzwann_main', comm)
+      return
+    endif
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
     LocalKappa = 0._dp
 
     ! I allocate the array that I will use to store the functions to be integrated
     allocate (IntegrandArray(6, TDFEnergyNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating FermiDerivArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating FermiDerivArray in boltzwann_main', comm)
+      return
+    endif
 
     NumberZeroDet = 0
     ! Now, I calculate the various spectra for all mu and T values
@@ -471,7 +507,8 @@ contains
       ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
-    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout, seedname, comm)
+    call comms_reduce(NumberZeroDet, 1, 'SUM', error, comm)
+    if (allocated(error)) return
     if (on_root) then
       if ((NumberZeroDet .gt. 0)) then
         write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumberZeroDet, " (mu,T) pairs for which the electrical"
@@ -520,40 +557,64 @@ contains
     ! Now I send the different pieces to the local node
     if (on_root) then
       allocate (ElCond(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main', comm)
+        return
+      endif
       allocate (SigmaS(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main', comm)
+        return
+      endif
       allocate (Seebeck(9, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main', comm)
+        return
+      endif
       allocate (Kappa(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main', comm)
+        return
+      endif
     else
       ! In principle, this should not be needed, because we use ElCond,
       ! Seebeck and Kappa only on the root node. However, since all
       ! processors call comms_gatherv a few lines below, and one argument
       ! is ElCond(1,1,1), some compilers complain.
       allocate (ElCond(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main (2)', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating ElCond in boltzwann_main (2)', comm)
+        return
+      endif
       allocate (SigmaS(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main (2)', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating SigmaS in boltzwann_main (2)', comm)
+        return
+      endif
       allocate (Seebeck(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main (2)', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating Seebeck in boltzwann_main (2)', comm)
+        return
+      endif
       allocate (Kappa(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main (2)', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating Kappa in boltzwann_main (2)', comm)
+        return
+      endif
     end if
 
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
-    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, stdout, &
-                       seedname, comm)
-    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout, &
-                       seedname, comm)
+    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
+    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
+    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, error, comm)
+    if (allocated(error)) return
+    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, error, comm)
+    if (allocated(error)) return
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('boltzwann_main: calc_props', timer)
 
     ! Open files and print
     if (on_root) then
@@ -628,37 +689,79 @@ contains
 
     ! Before ending, I deallocate memory
     deallocate (TempArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TempArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating TempArray in boltzwann_main', comm)
+      return
+    endif
     deallocate (KTArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating KTArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating KTArray in boltzwann_main', comm)
+      return
+    endif
     deallocate (MuArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating MuArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating MuArray in boltzwann_main', comm)
+      return
+    endif
     deallocate (TDFEnergyArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDFEnergyArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating TDFEnergyArray in boltzwann_main', comm)
+      return
+    endif
     deallocate (TDF, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDF in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating TDF in boltzwann_main', comm)
+      return
+    endif
     deallocate (LocalElCond, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalElCond in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating LocalElCond in boltzwann_main', comm)
+      return
+    endif
     deallocate (LocalSigmaS, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalSigmaS in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating LocalSigmaS in boltzwann_main', comm)
+      return
+    endif
     deallocate (LocalSeebeck, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating LocalSeebeck in boltzwann_main', comm)
+      return
+    endif
     deallocate (LocalKappa, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalKappa in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating LocalKappa in boltzwann_main', comm)
+      return
+    endif
 
     deallocate (ElCond, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ElCond in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating ElCond in boltzwann_main', comm)
+      return
+    endif
     deallocate (SigmaS, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating SigmaS in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating SigmaS in boltzwann_main', comm)
+      return
+    endif
     deallocate (Seebeck, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Seebeck in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating Seebeck in boltzwann_main', comm)
+      return
+    endif
     deallocate (Kappa, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Kappa in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating Kappa in boltzwann_main', comm)
+      return
+    endif
 
     deallocate (IntegrandArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating IntegrandArray in boltzwann_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating IntegrandArray in boltzwann_main', comm)
+      return
+    endif
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('boltzwann_main', timer)
 
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
@@ -668,12 +771,13 @@ contains
   end subroutine boltzwann_main
 
   !================================================!
-  subroutine calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, pw90_band_deriv_degen, &
-                           pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, &
-                           cell_volume, scissors_shift, mp_grid, num_bands, &
-                           num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
-                           effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
+  subroutine calcTDFandDOS(pw90_boltzwann, dis_manifold, pw90_dos, kpt_latt, postw90_oper, &
+                           pw90_band_deriv_degen, pw90_spin, ws_region, print_output, &
+                           wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, &
+                           v_matrix, eigval, real_lattice, TDF, TDFEnergyArray, cell_volume, &
+                           scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                           num_valence_bands, num_elec_per_state, effective_model, &
+                           have_disentangled, spin_decomp, seedname, stdout, timer, error, comm)
     !================================================!
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
@@ -700,11 +804,11 @@ contains
 
     use w90_constants, only: dp
     use w90_comms, only: comms_bcast, w90comm_type, mpirank
-    use w90_io, only: io_file_unit, io_error, io_stopwatch
+    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type
+      ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_dos_mod_type, pw90_oper_read_type, wigner_seitz_type
     use w90_readwrite, only: w90_readwrite_get_smearing_type
@@ -726,6 +830,8 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands, num_elec_per_state
     integer, intent(in) :: mp_grid(3)
@@ -792,7 +898,7 @@ contains
     num_nodes = mpisize(comm)
     if (my_node_id == 0) on_root = .true.
 
-    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
+    if (print_output%iprint > 0 .and. (print_output%timing_level > 0)) call io_stopwatch_start('calcTDF', timer)
     if (print_output%iprint > 0) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
@@ -803,49 +909,76 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
 
-    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, num_valence_bands, &
-                  effective_model, have_disentangled, seedname, stdout, comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
+    if (allocated(error)) return
+
     if (spin_decomp) then
       ndim = 3
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, postw90_oper, SS_R, v_matrix, eigval, &
-                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, have_disentangled, seedname, stdout, &
-                    comm)
+                    wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
+                    have_disentangled, seedname, stdout, timer, error, comm)
+      if (allocated(error)) return
+
     else
       ndim = 1
     end if
 
     ! Some initial checks
     if (size(TDF, 1) /= 6 .or. size(TDF, 2) /= size(TDFEnergyArray) .or. size(TDF, 3) /= ndim) then
-      call io_error('Wrong size for the TDF array in calcTDF', stdout, seedname)
+      call set_error_input(error, 'Wrong size for the TDF array in calcTDF', comm)
+      return
     end if
 
     ! I zero the TDF array before starting
     TDF = 0._dp
 
     allocate (TDF_k(6, size(TDFEnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDF_k in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating TDF_k in calcTDF', comm)
+      return
+    endif
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating HH in calcTDF', comm)
+      return
+    endif
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating delHH in calcTDF', comm)
+      return
+    endif
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating UU in calcTDF', comm)
+      return
+    endif
 
     DOS_NumPoints = int(floor((pw90_boltzwann%dos_energy_max - pw90_boltzwann%dos_energy_min)/pw90_boltzwann%dos_energy_step)) + 1
     if (DOS_NumPoints .eq. 1) DOS_NumPoints = 2
     allocate (DOS_EnergyArray(DOS_NumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_EnergyArray in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating DOS_EnergyArray in calcTDF', comm)
+      return
+    endif
     do i = 1, DOS_NumPoints
       DOS_EnergyArray(i) = pw90_boltzwann%dos_energy_min + real(i - 1, dp)*pw90_boltzwann%dos_energy_step
     end do
 
     allocate (DOS_k(size(DOS_EnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_k in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating DOS_k in calcTDF', comm)
+      return
+    endif
     allocate (DOS_all(size(DOS_EnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_all in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating DOS_all in calcTDF', comm)
+      return
+    endif
     dos_all = 0.0_dp
 
     ! I open the output files
@@ -928,7 +1061,9 @@ contains
                                ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
                                del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
                                num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-                               have_disentangled, seedname, stdout, comm)
+                               have_disentangled, seedname, stdout, timer, error, comm)
+      if (allocated(error)) return
+
       call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, num_wann, recip_lattice)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -936,9 +1071,11 @@ contains
         eig(pw90_boltzwann%bandshift_firstband:) = eig(pw90_boltzwann%bandshift_firstband:) + pw90_boltzwann%bandshift_energyshift
       end if
 
-      call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                   del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
-                   num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
+      call TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, &
+                   HH_R, SS_R, del_eig, eig, TDFEnergyArray, kpt, real_lattice, TDF_k, mp_grid, &
+                   num_wann, num_elec_per_state, spin_decomp, error, comm)
+      if (allocated(error)) return
+
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -965,19 +1102,24 @@ contains
                         (/real(i, kind=dp)/real(pw90_boltzwann%kmesh%mesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(pw90_boltzwann%kmesh%mesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(pw90_boltzwann%kmesh%mesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, &
-                                           wannier_data, ws_distance, wigner_seitz, delHH, HH, HH_R, &
-                                           u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
-                                           real_lattice, scissors_shift, mp_grid, num_bands, &
-                                           num_kpts, num_wann, num_valence_bands, effective_model, &
-                                           have_disentangled, seedname, stdout, comm)
-                  call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, num_wann, &
-                                            recip_lattice)
+                  call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, &
+                                           ws_region, print_output, wannier_data, ws_distance, &
+                                           wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
+                                           del_eig, eig, eigval, kpt, real_lattice, &
+                                           scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                           num_valence_bands, effective_model, have_disentangled, &
+                                           seedname, stdout, timer, error, comm)
+                  if (allocated(error)) return
+
+                  call dos_get_levelspacing(del_eig, pw90_boltzwann%kmesh%mesh, levelspacing_k, &
+                                            num_wann, recip_lattice)
                   call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                                  num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
-                                 spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, &
-                                 HH_R, SS_R, pw90_boltzwann%dos_smearing, &
+                                 spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                                 pw90_boltzwann%dos_smearing, error, comm, &
                                  levelspacing_k=levelspacing_k)
+                  if (allocated(error)) return
+
                   ! I divide by 8 because I'm substituting a point with its 8 neighbors
                   dos_all = dos_all + dos_k*kweight/8.
                 end do
@@ -985,17 +1127,20 @@ contains
             end do
           else
             call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
-                           num_wann, wannier_data, real_lattice, mp_grid, &
-                           pw90_dos, spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, &
-                           seedname, HH_R, SS_R, pw90_boltzwann%dos_smearing, &
-                           levelspacing_k=levelspacing_k)
+                           num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
+                           pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                           pw90_boltzwann%dos_smearing, error, comm, levelspacing_k=levelspacing_k)
+            if (allocated(error)) return
+
             dos_all = dos_all + dos_k*kweight
           end if
         else
           call dos_get_k(num_elec_per_state, ws_region, kpt, DOS_EnergyArray, eig, dos_k, &
                          num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
-                         pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
-                         pw90_boltzwann%dos_smearing)
+                         pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                         pw90_boltzwann%dos_smearing, error, comm)
+          if (allocated(error)) return
+
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
           ! So that the DOS will be in units of 1/eV, normalized so that
@@ -1009,15 +1154,20 @@ contains
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (pw90_boltzwann%calc_also_dos) then
-      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout, seedname, comm)
-      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout, seedname, comm)
-      call comms_reduce(min_spacing, 1, 'MIN', stdout, seedname, comm)
-      call comms_reduce(max_spacing, 1, 'MAX', stdout, seedname, comm)
+      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(NumPtsRefined, 1, 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(min_spacing, 1, 'MIN', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(max_spacing, 1, 'MAX', error, comm)
+      if (allocated(error)) return
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
-    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout, seedname, comm)
+    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (pw90_boltzwann%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
@@ -1054,7 +1204,7 @@ contains
       end do
     end if
 
-    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout, seedname)
+    if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch_stop('calcTDF', timer)
     if (on_root) then
       if (pw90_boltzwann%calc_also_dos) then
         write (stdout, '(3X,A)') "TDF and DOS calculated."
@@ -1070,19 +1220,40 @@ contains
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating HH in calcTDF', comm)
+      return
+    endif
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating delHH in calcTDF', comm)
+      return
+    endif
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating UU in calcTDF', comm)
+      return
+    endif
     deallocate (DOS_EnergyArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_EnergyArray in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating DOS_EnergyArray in calcTDF', comm)
+      return
+    endif
     deallocate (DOS_k, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_k in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating DOS_k in calcTDF', comm)
+      return
+    endif
     deallocate (DOS_all, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_all in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating DOS_all in calcTDF', comm)
+      return
+    endif
     deallocate (TDF_k, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDF_k in calcTDF', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating TDF_k in calcTDF', comm)
+      return
+    endif
 
   end subroutine calcTDFandDOS
 
@@ -1119,9 +1290,9 @@ contains
   end function MinusFermiDerivative
 
   !================================================!
-  subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                     deleig_k, eig_k, EnergyArray, kpt, real_lattice, TDF_k, &
-                     mp_grid, num_wann, num_elec_per_state, spin_decomp, seedname, stdout)
+  subroutine TDF_kpt(pw90_boltzwann, ws_region, pw90_spin, wannier_data, ws_distance, &
+                     wigner_seitz, HH_R, SS_R, deleig_k, eig_k, EnergyArray, kpt, real_lattice, &
+                     TDF_k, mp_grid, num_wann, num_elec_per_state, spin_decomp, error, comm)
     !================================================!
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
@@ -1149,11 +1320,11 @@ contains
 
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
-      ws_distance_type
+    use w90_types, only: print_output_type, wannier_data_type, ws_region_type, ws_distance_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
+    use w90_comms, only: w90comm_type
 
     implicit none
 
@@ -1164,10 +1335,11 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3)
     !! the three coordinates of the k point vector whose DOS contribution we
@@ -1196,8 +1368,6 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
 
-    character(len=50), intent(in) :: seedname
-
     logical, intent(in) :: spin_decomp
     integer, intent(in) :: num_elec_per_state
 
@@ -1212,9 +1382,11 @@ contains
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, &
-                                      HH_R, SS_R, kpt, real_lattice, spn_nk, &
-                                      mp_grid, num_wann, seedname, stdout)
+    if (spin_decomp) then
+      call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error, comm)
+      if (allocated(error)) return
+    endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
@@ -1255,7 +1427,8 @@ contains
       do loop_f = min_f, max_f
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(BandIdx))/smear
-          rdum = utility_w0gauss(arg, pw90_boltzwann%tdf_smearing%type_index, stdout, seedname)/smear
+          rdum = utility_w0gauss(arg, pw90_boltzwann%tdf_smearing%type_index, error, comm)/smear
+          if (allocated(error)) return
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if
