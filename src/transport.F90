@@ -4557,4 +4557,3 @@ contains
   end subroutine tran_lcr_2c2_build_ham
 
 end module w90_transport
-

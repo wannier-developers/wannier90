@@ -5,13 +5,17 @@ repos:
   - id: check-yaml
   - id: trailing-whitespace
     files: (?x)^(
+        Makefile|
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        examples/example\d\d[-]?\w*/.+win|
+        src/.+
       )$
   - id: end-of-file-fixer
     files: (?x)^(
+        Makefile|
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        examples/example\d\d[-]?\w*/.+win|
+        src/.+
       )$
 - repo: https://github.com/pseewald/fprettify
   rev: v0.3.3

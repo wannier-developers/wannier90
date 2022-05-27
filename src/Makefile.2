@@ -1,4 +1,4 @@
-# -*- MakeFile -*- 
+# -*- MakeFile -*-
 #  Should be no need to change below this line
 #
 
@@ -36,7 +36,7 @@ endif
 
 wannier libs dynlibs w90chk2chk w90spn2spn: POSTOPTS = $(TEMP1)
 wannier libs dynlibs w90chk2chk w90spn2spn: COMPILER = $(TEMP2)
-wannier: ../../wannier90.x 
+wannier: ../../wannier90.x
 w90chk2chk: ../../w90chk2chk.x
 w90spn2spn: ../../w90spn2spn.x
 
@@ -51,7 +51,7 @@ w90spn2spn: ../../w90spn2spn.x
 
 $(LIBRARYV2): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBRARYV2) $(OBJS)
-        
+
 post: POSTOPTS = $(TEMP1)
 post: COMPILER = $(TEMP2)
 post: mpi_test ../../postw90.x
@@ -71,11 +71,11 @@ ifndef MPIF90
 	$(info *  On many systems MPIF90=mpif90 will work      *) \
 	$(info ********************* STOP **********************) \
 	$(info  ) \
-	$(error MPIF90 is not set) 
+	$(error MPIF90 is not set)
 
 endif
 
-endif 
+endif
 
 
 
@@ -120,7 +120,7 @@ hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o types
 overlap.o: ../overlap.F90 constants.o io.o utility.o types.o sitesym.o wannier90_types.o comms.o error.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
-kmesh.o: ../kmesh.F90 constants.o io.o utility.o types.o 
+kmesh.o: ../kmesh.F90 constants.o io.o utility.o types.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
 error_base.o: ../error_base.F90
@@ -183,7 +183,7 @@ wan_ham.o: $(POSTDIR)wan_ham.F90 types.o postw90_types.o constants.o utility.o p
 postw90_common.o: $(POSTDIR)postw90_common.F90 postw90_types.o ws_distance.o comms.o types.o utility.o constants.o io.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_common.F90
 
-postw90_types.o: $(POSTDIR)postw90_types.F90 comms.o types.o utility.o constants.o io.o 
+postw90_types.o: $(POSTDIR)postw90_types.F90 comms.o types.o utility.o constants.o io.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_types.F90
 
 postw90_readwrite.o: $(POSTDIR)postw90_readwrite.F90 comms.o postw90_types.o types.o utility.o constants.o io.o error.o
@@ -197,4 +197,3 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./types.o \
 
 
 .PHONY: wannier libs post clean mpi_test w90spn2spn
-
