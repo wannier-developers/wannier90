@@ -551,8 +551,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   my_node_id = 0
 #endif
 
-  allocate (counts(0:num_nodes - 1)); 
-  allocate (displs(0:num_nodes - 1)); 
+  allocate (counts(0:num_nodes - 1))
+  allocate (displs(0:num_nodes - 1))
   time0 = io_time()
 
   seedname = trim(adjustl(seed__name))

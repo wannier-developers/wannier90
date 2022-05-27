@@ -102,8 +102,8 @@ contains
 
     integer :: my_node_id, num_nodes
 
-    my_node_id = mpirank(comm); 
-    num_nodes = mpisize(comm); 
+    my_node_id = mpirank(comm)
+    num_nodes = mpisize(comm)
     fermi_n = 0
     if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
     if (fermi_n > 1) then

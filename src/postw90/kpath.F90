@@ -269,7 +269,7 @@ contains
     if (allocated(error)) return
 
     ! Partition set of k-points into junks
-!   call comms_array_split(total_pts, counts, displs);
+!   call comms_array_split(total_pts, counts, displs)
     call comms_array_split(total_pts, counts, displs, comm)
     !kpt_lo = displs(my_node_id)+1
     !kpt_hi = displs(my_node_id)+counts(my_node_id)

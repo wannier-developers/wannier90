@@ -292,7 +292,7 @@ contains
     nkpts = (pw90_kslice%kmesh2d(1) + 1)*(pw90_kslice%kmesh2d(2) + 1)
 
     ! Partition set of k-points into junks
-    call comms_array_split(nkpts, counts, displs, comm); 
+    call comms_array_split(nkpts, counts, displs, comm)
     my_nkpts = counts(my_node_id)
 
     allocate (my_coords(2, my_nkpts))

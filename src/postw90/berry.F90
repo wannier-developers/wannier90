@@ -423,7 +423,7 @@ contains
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
                     timer, error, comm)
       if (allocated(error)) return
-      kdotp_nbands = size(pw90_berry%kdotp_bands); 
+      kdotp_nbands = size(pw90_berry%kdotp_bands)
       allocate (kdotp(kdotp_nbands, kdotp_nbands, 3, 3, 3))
       kdotp = cmplx_0
     endif
@@ -1874,7 +1874,7 @@ contains
           call utility_zgemm_new(tmp(:, :, 1), f_list(:, :, ife), tmp(:, :, 4))
           call utility_zgemm_new(tmp(:, :, 4), AA(:, :, beta_A(i)), tmp(:, :, 5))
 
-          s = 2.0_dp*utility_im_tr_prod(f_list(:, :, ife), tmp(:, :, 5)); 
+          s = 2.0_dp*utility_im_tr_prod(f_list(:, :, ife), tmp(:, :, 5))
           img_k_list(1, i, ife) = utility_re_tr_prod(f_list(:, :, ife), tmp(:, :, 2)) - s
           imh_k_list(1, i, ife) = utility_re_tr_prod(f_list(:, :, ife), tmp(:, :, 3)) + s
 
