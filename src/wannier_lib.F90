@@ -73,7 +73,7 @@ module w90_libv1_types
   type(proj_input_type), save :: input_proj
   type(w90_system_type), save :: system
   type(wannier_data_type), save :: wann_data
-  type(ws_region_type) :: ws_region
+  type(ws_region_type), save :: ws_region
 
   real(kind=dp), allocatable, save :: fermi_energy_list(:)
   real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
@@ -192,7 +192,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   use w90_io
   use w90_kmesh
   use w90_libv1_types
-  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_lib_set_atoms
+  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_lib_set_atoms, &
+    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, &
+    w90_readwrite_uppercase
   use w90_sitesym
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
     w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
@@ -260,6 +262,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
     call set_error_mpi(error, 'mpi_init must be called before wannier_setup() when libwannier is compiled with MPI support', comm)
   endif
   if (allocated(error)) call prterr(error, stdout)
+  comm%comm = MPI_COMM_WORLD
 #endif
 
   ! global inits (non-type based) from readwrite files
@@ -313,6 +316,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   ! GP: at this point we don't know yet the number of excluded bands...
   num_bands = num_bands_tot
   !library_w90_wannier90_readwrite_read_first_pass = .true.
+  ! read infile to in_data structure
+  call w90_readwrite_in_file(seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
   call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
                                     fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, out_files, &
                                     plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
@@ -322,8 +328,23 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
                                     cp_pp, gamma_only, lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, &
                                     seedname, stdout, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  have_disentangled = .false.
+  call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
+
   disentanglement = (num_bands > num_wann)
+
+  if (.not. (w90_calcs%transport .and. tran%read_ht)) then
+    ! For aesthetic purposes, convert some things to uppercase
+    call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
+    ! Initialise
+    wann_omega%total = -999.0_dp
+    wann_omega%tilde = -999.0_dp
+    wann_omega%invariant = -999.0_dp
+    call w90_readwrite_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, &
+                                        num_bands, num_kpts, error, comm)
+    if (allocated(error)) call prterr(error, stdout)
+  endif
+  have_disentangled = .false.
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_w90_wannier90_readwrite_read_first_pass = .false.
@@ -441,7 +462,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_transport
   use w90_comms, only: comms_array_split, comms_scatterv, w90comm_type, &
     mpisize, mpirank
-  use w90_readwrite, only: w90_readwrite_lib_set_atoms
+  use w90_readwrite, only: w90_readwrite_lib_set_atoms, w90_readwrite_in_file, &
+    w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_uppercase
   use w90_error
 
 #ifdef MPI_Fortran_HAVE_F08_MODULE
@@ -555,6 +577,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use_bloch_phases = .false.
   eig_found = .false.
   ! end global inits
+  verbose%length_unit = 'ang'
+  kmesh_data%num_shells = 0
   time0 = io_time()
 
   seedname = trim(adjustl(seed__name))
@@ -595,6 +619,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                    error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
+  ! read infile to in_data structure
+  call w90_readwrite_in_file(seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
   call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
                                     fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
                                     out_files, plot, wannierise, wann_omega, proj, input_proj, rs_region, &
@@ -604,8 +631,23 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                     eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., .false., &
                                     lsitesymmetry, use_bloch_phases, seedname, stdout, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  have_disentangled = .false.
+  call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout)
+
   disentanglement = (num_bands > num_wann)
+
+  if (.not. (w90_calcs%transport .and. tran%read_ht)) then
+    ! For aesthetic purposes, convert some things to uppercase
+    call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
+    ! Initialise
+    wann_omega%total = -999.0_dp
+    wann_omega%tilde = -999.0_dp
+    wann_omega%invariant = -999.0_dp
+    call w90_readwrite_read_final_alloc(disentanglement, dis_window, wann_data, num_wann, &
+                                        num_bands, num_kpts, error, comm)
+    if (allocated(error)) call prterr(error, stdout)
+  endif
+  have_disentangled = .false.
   call w90_wannier90_readwrite_write(atoms, band_plot, dis_data, dis_spheres, fermi_energy_list, &
                                      fermi_surface_data, kpt_latt, out_files, plot, wannierise, &
                                      proj, input_proj, rs_region, select_proj, spec_points, tran, &
