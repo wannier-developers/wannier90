@@ -4,6 +4,7 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
+  use iso_fortran_env, only: error_unit
 
   implicit none
 
@@ -12,6 +13,12 @@ module w90_helper_types
 
   type lib_global_type
     type(w90_calculation_type) :: w90_calculation ! separate this?
+    ! matrices
+    complex(kind=dp), pointer :: u_opt(:, :, :) => null()
+    complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
+    complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
+    complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
+    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()
 
     type(atom_data_type) :: atom_data
     type(dis_control_type) :: dis_control
@@ -122,7 +129,7 @@ contains
 
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in input file access', error%code, error%message
+      write (error_unit, *) 'Error in input file access', error%code, error%message
       deallocate (error)
     else
       call w90_wannier90_readwrite_read(helper%atom_data, plot%band_plot, helper%dis_control, &
@@ -142,7 +149,7 @@ contains
                                         helper%lhasproj, .false., .false., helper%lsitesymmetry, &
                                         helper%use_bloch_phases, seedname, output, error, comm)
       if (allocated(error)) then
-        write (0, *) 'Error in reader', error%code, error%message
+        write (error_unit, *) 'Error in reader', error%code, error%message
         deallocate (error)
       else
         ! For aesthetic purposes, convert some things to uppercase
@@ -153,13 +160,13 @@ contains
                                             helper%wannier_data, helper%num_wann, &
                                             helper%num_bands, helper%num_kpts, error, comm)
         if (allocated(error)) then
-          write (0, *) 'Error in read alloc', error%code, error%message
+          write (error_unit, *) 'Error in read alloc', error%code, error%message
           deallocate (error)
         endif
       endif
       call w90_readwrite_clean_infile(output, seedname, error, comm)
       if (allocated(error)) then
-        write (0, *) 'Error in input close', error%code, error%message
+        write (error_unit, *) 'Error in input close', error%code, error%message
         deallocate (error)
       endif
       helper%seedname = seedname
@@ -205,12 +212,12 @@ contains
                    helper%real_lattice, helper%num_kpts, helper%gamma_only, output, helper%timer, &
                    error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in kmesh_get', error%code, error%message
+      write (error_unit, *) 'Error in kmesh_get', error%code, error%message
       deallocate (error)
     endif
   end subroutine create_kmesh
 
-  subroutine overlaps(helper, a_matrix, m_matrix, m_orig, u_matrix, output, comm)
+  subroutine overlaps(helper, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
@@ -218,18 +225,23 @@ contains
     type(lib_global_type), intent(inout) :: helper
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     logical :: cp_pp
 
+    if ((.not. associated(helper%m_matrix)) .or. (.not. associated(helper%m_orig)) .or. &
+        (.not. associated(helper%a_matrix)) .or. (.not. associated(helper%u_matrix))) then
+      write (error_unit, *) 'Matrices not set for overlap call'
+      return
+    endif
     if (helper%num_bands > helper%num_wann) then
       ! disentnglement
       !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
@@ -247,8 +259,8 @@ contains
     cp_pp = .false.
     ! should be distributed if MPI
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
-    call overlap_read(helper%kmesh_info, helper%select_proj, helper%sitesym, a_matrix, &
-                      m_matrix, m_matrix_local, m_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
+    call overlap_read(helper%kmesh_info, helper%select_proj, helper%sitesym, helper%a_matrix, &
+                      helper%m_matrix, m_matrix_local, helper%m_orig, m_matrix_orig_local, helper%u_matrix, u_matrix_opt, &
                       helper%num_bands, helper%num_kpts, helper%num_proj, helper%num_wann, &
                       helper%print_output%timing_level, cp_pp, helper%gamma_only, helper%lsitesymmetry, &
                       helper%use_bloch_phases, helper%seedname, output, helper%timer, error, comm)
@@ -257,13 +269,14 @@ contains
       deallocate (m_matrix_orig_local)
       !deallocate (m_matrix_orig)
     endif
+    if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
     if (allocated(error)) then
-      write (0, *) 'Error in overlaps', error%code, error%message
+      write (error_unit, *) 'Error in overlaps', error%code, error%message
       deallocate (error)
     endif
   end subroutine overlaps
 
-  subroutine disentangle(helper, a_matrix, m_matrix, m_orig, u_matrix, u_opt, output, comm)
+  subroutine disentangle(helper, output, comm)
     use w90_disentangle, only: dis_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -273,31 +286,37 @@ contains
     !type(lib_transport_type), intent(in) :: transport
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
+    if ((.not. associated(helper%m_matrix)) .or. (.not. associated(helper%m_orig)) .or. &
+        (.not. associated(helper%a_matrix)) .or. (.not. associated(helper%u_matrix)) .or. &
+        (.not. associated(helper%u_opt))) then
+      write (error_unit, *) 'Matrices not set for disentangle call'
+      return
+    endif
     !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
     !                        helper%num_kpts))
     ! MPI issue
     allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
                                   helper%num_kpts))
     m_matrix_orig_local(1:helper%num_bands, 1:helper%num_bands, 1:helper%kmesh_info%nntot, &
-                        1:helper%num_kpts) = m_orig(1:helper%num_bands, 1:helper%num_bands, &
-                                                    1:helper%kmesh_info%nntot, 1:helper%num_kpts)
+                        1:helper%num_kpts) = helper%m_orig(1:helper%num_bands, 1:helper%num_bands, &
+                                                           1:helper%kmesh_info%nntot, 1:helper%num_kpts)
     ! MPI issue
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
                              helper%num_kpts))
     call dis_main(helper%dis_control, helper%dis_spheres, helper%dis_manifold, helper%kmesh_info, &
-                  helper%kpt_latt, helper%sitesym, helper%print_output, a_matrix, m_matrix, &
-                  m_matrix_local, m_orig, m_matrix_orig_local, u_matrix, u_opt, &
+                  helper%kpt_latt, helper%sitesym, helper%print_output, helper%a_matrix, helper%m_matrix, &
+                  m_matrix_local, helper%m_orig, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
                   helper%eigval, helper%real_lattice, helper%omega%invariant, helper%num_bands, &
                   helper%num_kpts, helper%num_wann, helper%optimisation, helper%gamma_only, &
                   helper%lsitesymmetry, output, helper%timer, error, comm)
@@ -306,12 +325,12 @@ contains
     if (allocated(m_matrix_orig_local)) deallocate (m_matrix_orig_local)
     !if (allocated(m_matrix_orig)) deallocate (m_matrix_orig)
     if (allocated(error)) then
-      write (0, *) 'Error in disentangle', error%code, error%message
+      write (error_unit, *) 'Error in disentangle', error%code, error%message
       deallocate (error)
     endif
   end subroutine disentangle
 
-  subroutine wannierise(helper, plot, transport, m_matrix, u_matrix, u_opt, output, comm)
+  subroutine wannierise(helper, plot, transport, output, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -321,18 +340,23 @@ contains
     type(lib_transport_type), intent(in) :: transport
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), intent(in) :: u_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(in) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
 
+    if ((.not. associated(helper%m_matrix)) .or. (.not. associated(helper%u_opt)) .or. &
+        (.not. associated(helper%u_matrix))) then
+      write (error_unit, *) 'Matrices not set for wannierise call'
+      return
+    endif
     if (helper%gamma_only) then
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, helper%output_file, helper%wann_control, &
-                           helper%omega, helper%w90_system, helper%print_output, helper%wannier_data, m_matrix, &
-                           u_matrix, u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
+                           helper%omega, helper%w90_system, helper%print_output, helper%wannier_data, helper%m_matrix, &
+                           helper%u_matrix, helper%u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            helper%real_space_ham%translate_home_cell, helper%seedname, output, &
                            helper%timer, error, comm)
@@ -341,7 +365,7 @@ contains
                      helper%ham_logical, helper%kmesh_info, helper%kpt_latt, helper%output_file, &
                      helper%real_space_ham, helper%wann_control, helper%omega, helper%sitesym, &
                      helper%w90_system, helper%print_output, helper%wannier_data, helper%ws_region, &
-                     helper%w90_calculation, helper%ham_k, helper%ham_r, m_matrix, u_matrix, u_opt, &
+                     helper%w90_calculation, helper%ham_k, helper%ham_r, helper%m_matrix, helper%u_matrix, helper%u_opt, &
                      helper%eigval, helper%real_lattice, helper%wannier_centres_translated, helper%irvec, &
                      helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_proj, helper%num_wann, helper%optimisation, &
@@ -350,12 +374,12 @@ contains
                      helper%timer, error, comm)
     endif
     if (allocated(error)) then
-      write (0, *) 'Error in wannierise', error%code, error%message
+      write (error_unit, *) 'Error in wannierise', error%code, error%message
       deallocate (error)
     endif
   end subroutine wannierise
 
-  subroutine plot_files(helper, plot, transport, m_matrix, u_matrix, u_matrix_opt, output, comm)
+  subroutine plot_files(helper, plot, transport, output, comm)
     use w90_plot, only: plot_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -365,9 +389,9 @@ contains
     type(lib_transport_type), intent(in) :: transport
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -376,19 +400,19 @@ contains
                    plot%fermi_surface_data, helper%ham_logical, helper%kmesh_info, helper%kpt_latt, &
                    helper%output_file, helper%wvfn_read, helper%real_space_ham, helper%kpoint_path, &
                    helper%print_output, helper%wannier_data, plot%wann_plot, helper%ws_region, &
-                   helper%w90_calculation, helper%ham_k, helper%ham_r, m_matrix, u_matrix, &
-                   u_matrix_opt, helper%eigval, helper%real_lattice, helper%wannier_centres_translated, &
+                   helper%w90_calculation, helper%ham_k, helper%ham_r, helper%m_matrix, helper%u_matrix, &
+                   helper%u_opt, helper%eigval, helper%real_lattice, helper%wannier_centres_translated, &
                    physics%bohr, helper%irvec, helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, &
                    helper%num_bands, helper%num_kpts, helper%num_wann, helper%rpt_origin, &
                    transport%tran%mode, helper%have_disentangled, helper%lsitesymmetry, helper%w90_system%spinors, &
                    helper%seedname, output, helper%timer, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in plotting', error%code, error%message
+      write (error_unit, *) 'Error in plotting', error%code, error%message
       deallocate (error)
     endif
   end subroutine plot_files
 
-  subroutine transport(helper, plot, tran, u_matrix, u_opt, output, comm)
+  subroutine transport(helper, plot, tran, output, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_transport, only: tran_main
@@ -398,8 +422,8 @@ contains
     type(lib_transport_type), intent(inout) :: tran
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
-    complex(kind=dp), intent(in) :: u_opt(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(in) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     !
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -410,14 +434,14 @@ contains
         call tran_main(helper%atom_data, helper%dis_manifold, helper%fermi_energy_list, &
                        helper%ham_logical, helper%kpt_latt, helper%output_file, helper%real_space_ham, &
                        tran%tran, helper%print_output, helper%wannier_data, helper%ws_region, &
-                       helper%w90_calculation, helper%ham_k, helper%ham_r, u_matrix, u_opt, &
+                       helper%w90_calculation, helper%ham_k, helper%ham_r, helper%u_matrix, helper%u_opt, &
                        helper%eigval, helper%real_lattice, helper%wannier_centres_translated, helper%irvec, &
                        helper%mp_grid, helper%ndegen, helper%shift_vec, helper%nrpts, helper%num_bands, &
                        helper%num_kpts, helper%num_wann, helper%rpt_origin, plot%band_plot%mode, &
                        helper%have_disentangled, helper%lsitesymmetry, helper%seedname, output, &
                        helper%timer, error, comm)
         if (allocated(error)) then
-          write (0, *) 'Error in transport', error%code, error%message
+          write (error_unit, *) 'Error in transport', error%code, error%message
           deallocate (error)
         endif
       endif
@@ -432,5 +456,45 @@ contains
 
     call io_print_timings(helper%timer, output)
   end subroutine print_times
+
+  subroutine set_a_matrix(helper, a_matrix)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: a_matrix(:, :, :)
+
+    helper%a_matrix => a_matrix
+  end subroutine set_a_matrix
+
+  subroutine set_m_matrix(helper, m_matrix)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: m_matrix(:, :, :, :)
+
+    helper%m_matrix => m_matrix
+  end subroutine set_m_matrix
+
+  subroutine set_m_orig(helper, m_orig)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
+
+    helper%m_orig => m_orig
+  end subroutine set_m_orig
+
+  subroutine set_u_matrix(helper, u_matrix)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: u_matrix(:, :, :)
+
+    helper%u_matrix => u_matrix
+  end subroutine set_u_matrix
+
+  subroutine set_u_opt(helper, u_opt)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: u_opt(:, :, :)
+
+    helper%u_opt => u_opt
+  end subroutine set_u_opt
 
 end module w90_helper_types
