@@ -88,9 +88,18 @@ module w90_helper_types
     type(transport_type) :: tran
   end type lib_transport_type
 
-  public:: input_reader, create_kmesh, overlaps, wannierise
+  public:: input_reader, create_kmesh, checkpoint, overlaps, wannierise, plot_files, &
+           transport, print_times, get_fortran_stdout
 
 contains
+
+  subroutine get_fortran_stdout(output)
+    use iso_fortran_env, only: output_unit
+    implicit none
+    integer, intent(out) :: output
+
+    output = output_unit
+  end subroutine get_fortran_stdout
 
   subroutine input_reader(helper, plot, transport, seedname, output, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
