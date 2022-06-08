@@ -71,7 +71,7 @@ contains
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
-    complex(kind=dp), intent(inout), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
@@ -264,14 +264,14 @@ contains
         call set_error_dealloc(error, 'Error deallocating m_matrix_orig_local in dis_main', comm)
         return
       endif
-      if (on_root) then
-        deallocate (m_matrix)
-        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix in dis_main', comm)
-          return
-        endif
-      endif
+      !if (on_root) then
+      !  deallocate (m_matrix)
+      !  allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+      !  if (ierr /= 0) then
+      !    call set_error_alloc(error, 'Error in allocating m_matrix in dis_main', comm)
+      !    return
+      !  endif
+      !endif
       deallocate (m_matrix_local)
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) then
@@ -291,14 +291,14 @@ contains
 
     else
 
-      if (on_root) then
-        deallocate (m_matrix)
-        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix in dis_main', comm)
-          return
-        endif
-      endif
+      !if (on_root) then
+      !  deallocate (m_matrix)
+      !  allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+      !  if (ierr /= 0) then
+      !    call set_error_alloc(error, 'Error in allocating m_matrix in dis_main', comm)
+      !    return
+      !  endif
+      !endif
       deallocate (m_matrix_local)
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) then
