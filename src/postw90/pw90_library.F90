@@ -47,7 +47,7 @@ module w90_lib_all
 
 contains
 
-  subroutine read_all_input(wann90, pw90, plot, transport, seedname, output, comm)
+  subroutine read_all_input(wann90, w90only, pw90, seedname, output, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_readall, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -57,9 +57,8 @@ contains
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
+    type(lib_w90_type), intent(inout) :: w90only
     type(lib_postw90_type), intent(inout) :: pw90
-    type(lib_plot_type), intent(inout) :: plot
-    type(lib_transport_type), intent(inout) :: transport
     integer, intent(in) :: output
     character(len=*), intent(in) :: seedname
     type(w90comm_type), intent(in) :: comm
@@ -76,24 +75,24 @@ contains
       write (0, *) 'Error in input file access', error%code, error%message
       deallocate (error)
     else
-      call w90_wannier90_readwrite_readall(wann90%atom_data, plot%band_plot, wann90%dis_control, &
-                                           wann90%dis_spheres, wann90%dis_manifold, &
+      call w90_wannier90_readwrite_readall(wann90%atom_data, w90only%band_plot, w90only%dis_control, &
+                                           w90only%dis_spheres, wann90%dis_manifold, &
                                            wann90%exclude_bands, wann90%fermi_energy_list, &
-                                           plot%fermi_surface_data, wann90%kmesh_input, &
-                                           wann90%kmesh_info, wann90%kpt_latt, wann90%output_file, &
-                                           wann90%wvfn_read, wann90%wann_control, &
-                                           wann90%wann_omega, wann90%proj, wann90%proj_input, &
-                                           wann90%real_space_ham, wann90%select_proj, &
-                                           wann90%kpoint_path, wann90%w90_system, transport%tran, &
-                                           wann90%print_output, wann90%wannier_data, plot%wann_plot, &
-                                           io_params, wann90%ws_region, wann90%w90_calculation, &
+                                           w90only%fermi_surface_data, wann90%kmesh_input, &
+                                           wann90%kmesh_info, wann90%kpt_latt, w90only%output_file, &
+                                           w90only%wvfn_read, w90only%wann_control, &
+                                           w90only%wann_omega, w90only%proj, w90only%proj_input, &
+                                           w90only%real_space_ham, w90only%select_proj, &
+                                           wann90%kpoint_path, wann90%w90_system, w90only%tran, &
+                                           wann90%print_output, wann90%wannier_data, w90only%wann_plot, &
+                                           io_params, wann90%ws_region, w90only%w90_calculation, &
                                            wann90%eigval, wann90%real_lattice, physics%bohr, &
-                                           wann90%sitesym%symmetrize_eps, wann90%mp_grid, &
-                                           wann90%num_bands, wann90%num_kpts, wann90%num_proj, &
-                                           wann90%num_wann, wann90%optimisation, wann90%eig_found, &
-                                           wann90%calc_only_A, cp_pp, wann90%gamma_only, &
-                                           wann90%lhasproj, wann90%lsitesymmetry, &
-                                           wann90%use_bloch_phases, seedname, output, error, comm)
+                                           w90only%sitesym%symmetrize_eps, wann90%mp_grid, &
+                                           wann90%num_bands, wann90%num_kpts, w90only%num_proj, &
+                                           wann90%num_wann, w90only%optimisation, w90only%eig_found, &
+                                           w90only%calc_only_A, cp_pp, wann90%gamma_only, &
+                                           w90only%lhasproj, w90only%lsitesymmetry, &
+                                           w90only%use_bloch_phases, seedname, output, error, comm)
       wann90%seedname = seedname
       if (mpirank(comm) /= 0) wann90%print_output%iprint = 0
       if (allocated(error)) then
@@ -149,6 +148,7 @@ contains
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
+    real(kind=dp) :: omega_invariant ! assuming postw90 in doing this
     integer :: chk_unit
     integer :: num_exclude_bands
 
@@ -166,7 +166,7 @@ contains
     else
       call w90_readwrite_read_chkpt_matrices(wann90%dis_manifold, wann90%kmesh_info, &
                                              wann90%wannier_data, m_matrix, u_matrix, u_opt, &
-                                             wann90%omega%invariant, wann90%num_bands, &
+                                             omega_invariant, wann90%num_bands, &
                                              wann90%num_kpts, wann90%num_wann, &
                                              wann90%have_disentangled, wann90%seedname, chk_unit, &
                                              output, error, comm)
