@@ -174,26 +174,34 @@ contains
     endif
   end subroutine input_reader
 
-  subroutine checkpoint(helper, label, m_matrix, u_matrix, u_opt, output, comm)
+  subroutine checkpoint(helper, label, output, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     !use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     implicit none
     type(lib_global_type), intent(in) :: helper
     character(len=*), intent(in) :: label
-    complex(kind=dp), intent(in) :: u_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(in) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
     integer, intent(in) :: output
     type(w90comm_type), intent(in) :: comm
 
     if (mpirank(comm) == 0) then
+      if ((.not. associated(helper%u_opt)) .or. (.not. associated(helper%u_matrix))) then
+        write (error_unit, *) 'Matrices not set for checkpoint read'
+        return
+      endif
+      ! might need to read this in to the helper for a plot/transport restart, but not for pw90
+      allocate (m_matrix(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
       ! e.g. label = 'postwann' after wannierisation
       call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
                                                helper%kmesh_info, helper%kpt_latt, helper%num_kpts, helper%dis_manifold, &
-                                               helper%num_bands, helper%num_wann, u_matrix, u_opt, m_matrix, helper%mp_grid, &
+                                               helper%num_bands, helper%num_wann, helper%u_matrix, &
+                                               helper%u_opt, m_matrix, helper%mp_grid, &
                                                helper%real_lattice, helper%omega%invariant, helper%have_disentangled, output, &
                                                helper%seedname)
+      deallocate (m_matrix)
     endif
   end subroutine checkpoint
 
