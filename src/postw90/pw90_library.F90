@@ -47,7 +47,7 @@ module w90_lib_all
 
 contains
 
-  subroutine read_all_input(wann90, w90only, pw90, seedname, output, comm)
+  subroutine read_all_input(wann90, w90only, pw90, seedname, output, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_readall, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -61,6 +61,7 @@ contains
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
     character(len=*), intent(in) :: seedname
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
@@ -70,9 +71,11 @@ contains
     logical :: cp_pp
     logical :: disentanglement
 
+    status = 0
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in input file access', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     else
       call w90_wannier90_readwrite_readall(wann90%atom_data, w90only%band_plot, w90only%dis_control, &
@@ -97,6 +100,7 @@ contains
       if (mpirank(comm) /= 0) wann90%print_output%iprint = 0
       if (allocated(error)) then
         write (0, *) 'Error in wannier90 read', error%code, error%message
+        status = sign(1, error%code)
         deallocate (error)
       else
         call w90_postw90_readwrite_readall(wann90%w90_system, wann90%dis_manifold, &
@@ -109,6 +113,7 @@ contains
                                            pw90%geninterp, pw90%boltzwann, pw90_params, error, comm)
         if (allocated(error)) then
           write (0, *) 'Error in postw90 read', error%code, error%message
+          status = sign(1, error%code)
           deallocate (error)
         else
           ! For aesthetic purposes, convert some things to uppercase
@@ -120,19 +125,21 @@ contains
                                               wann90%num_bands, wann90%num_kpts, error, comm)
           if (allocated(error)) then
             write (0, *) 'Error in read alloc', error%code, error%message
+            status = sign(1, error%code)
             deallocate (error)
           endif
         endif
         call w90_readwrite_clean_infile(output, seedname, error, comm)
         if (allocated(error)) then
           write (0, *) 'Error in input close', error%code, error%message
+          status = sign(1, error%code)
           deallocate (error)
         endif
       endif
     endif
   end subroutine read_all_input
 
-  subroutine read_checkpoint(wann90, pw90, m_matrix, u_matrix, u_opt, output, comm)
+  subroutine read_checkpoint(wann90, pw90, m_matrix, u_matrix, u_opt, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
@@ -145,6 +152,7 @@ contains
     complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
@@ -152,6 +160,7 @@ contains
     integer :: chk_unit
     integer :: num_exclude_bands
 
+    status = 0
     ! Todo - fix ispostw90 flag
     num_exclude_bands = 0
     if (allocated(wann90%exclude_bands)) num_exclude_bands = size(wann90%exclude_bands)
@@ -162,6 +171,7 @@ contains
                                          wann90%seedname, chk_unit, output, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in reading checkpoint header', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     else
       call w90_readwrite_read_chkpt_matrices(wann90%dis_manifold, wann90%kmesh_info, &
@@ -172,6 +182,7 @@ contains
                                              output, error, comm)
       if (allocated(error)) then
         write (0, *) 'Error in reading checkpoint matrices', error%code, error%message
+        status = sign(1, error%code)
         deallocate (error)
       else
         ! put this in a separate setup? (since may be coming from wannierise rather than checkpoint
@@ -180,13 +191,14 @@ contains
                                      wann90%seedname, wann90%timer, error, comm)
         if (allocated(error)) then
           write (0, *) 'Error in post checkpoint setup', error%code, error%message
+          status = sign(1, error%code)
           deallocate (error)
         endif
       endif
     endif
   end subroutine read_checkpoint
 
-  subroutine pw_setup(wann90, pw90, output, comm)
+  subroutine pw_setup(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_postw90_common, only: pw90common_wanint_setup
@@ -195,15 +207,18 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
 
+    status = 0
     call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
                                  wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
                                  wann90%seedname, wann90%timer, error, comm)
     if (allocated(error)) then
       write (0, *) 'Error in post setup', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine pw_setup
@@ -242,7 +257,7 @@ contains
     endif
   end subroutine calc_v_matrix
 
-  subroutine calc_dos(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine calc_dos(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_dos, only: dos_main
@@ -256,6 +271,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     !character(len=*), intent(in) :: seedname
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
@@ -267,6 +283,7 @@ contains
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
 
+    status = 0
     if (pw90%calculation%dos .and. index(pw90%dos%task, 'dos_plot') > 0) then
       call dos_main(pw90%berry, wann90%dis_manifold, pw90%dos, pw90%kpt_dist, wann90%kpt_latt, &
                     pw90%oper_read, pw90%band_deriv_degen, pw90%spin, wann90%ws_region, &
@@ -280,6 +297,7 @@ contains
       if (allocated(SS_R)) deallocate (SS_R)
       if (allocated(error)) then
         write (0, *) 'Error in dos', error%code, error%message
+        status = sign(1, error%code)
         deallocate (error)
       endif
     else
@@ -287,7 +305,7 @@ contains
     endif
   end subroutine calc_dos
 
-  subroutine boltzwann(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine boltzwann(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_boltzwann, only: boltzwann_main
@@ -298,6 +316,7 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
@@ -305,6 +324,7 @@ contains
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
 
+    status = 0
     call boltzwann_main(pw90%boltzwann, wann90%dis_manifold, pw90%dos, wann90%kpt_latt, &
                         pw90%band_deriv_degen, pw90%oper_read, pw90%spin, physics, &
                         wann90%ws_region, wann90%w90_system, wann90%wannier_data, &
@@ -318,11 +338,12 @@ contains
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
       write (0, *) 'Error in boltzwann', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine boltzwann
 
-  subroutine gyrotropic(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine gyrotropic(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_gyrotropic, only: gyrotropic_main
@@ -333,6 +354,7 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
@@ -343,6 +365,7 @@ contains
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
 
+    status = 0
     call gyrotropic_main(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, &
                          pw90%gyrotropic, wann90%kmesh_info, wann90%kpt_latt, physics, &
                          pw90%oper_read, pw90%band_deriv_degen, wann90%ws_region, &
@@ -359,11 +382,12 @@ contains
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
       write (0, *) 'Error in gyrotropic', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine gyrotropic
 
-  subroutine berry(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine berry(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_berry, only: berry_main
@@ -374,6 +398,7 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
@@ -390,6 +415,7 @@ contains
     complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :)
     integer :: fermi_n
 
+    status = 0
     fermi_n = 0
     if (allocated(wann90%fermi_energy_list)) fermi_n = size(wann90%fermi_energy_list)
     call berry_main(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, wann90%kmesh_info, &
@@ -414,11 +440,12 @@ contains
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
       write (0, *) 'Error in berry', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine berry
 
-  subroutine kpath(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine kpath(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_kpath, only: k_path
@@ -429,6 +456,7 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
@@ -445,6 +473,7 @@ contains
     complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :)
     integer :: fermi_n
 
+    status = 0
     fermi_n = 0
     if (allocated(wann90%fermi_energy_list)) fermi_n = size(wann90%fermi_energy_list)
     call k_path(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, wann90%kmesh_info, &
@@ -468,11 +497,12 @@ contains
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
       write (0, *) 'Error in kpath', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine kpath
 
-  subroutine kslice(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine kslice(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_kslice, only: k_slice
@@ -483,6 +513,7 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
@@ -499,6 +530,7 @@ contains
     complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :)
     integer :: fermi_n
 
+    status = 0
     fermi_n = 0
     if (allocated(wann90%fermi_energy_list)) fermi_n = size(wann90%fermi_energy_list)
     call k_slice(pw90%berry, wann90%dis_manifold, wann90%fermi_energy_list, wann90%kmesh_info, &
@@ -522,11 +554,12 @@ contains
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
       write (0, *) 'Error in kslice', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine kslice
 
-  subroutine spin_moment(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine spin_moment(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_spin, only: spin_get_moment
@@ -537,12 +570,14 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: HH_R(:, :, :)
     complex(kind=dp), allocatable :: SS_R(:, :, :, :)
 
+    status = 0
     call spin_get_moment(wann90%dis_manifold, wann90%fermi_energy_list, pw90%kpt_dist, &
                          wann90%kpt_latt, pw90%oper_read, pw90%spin, wann90%ws_region, &
                          wann90%print_output, wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, &
@@ -556,11 +591,12 @@ contains
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
       write (0, *) 'Error in spin_moment', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine spin_moment
 
-  subroutine geninterp(wann90, pw90, u_matrix, v_matrix, output, comm)
+  subroutine geninterp(wann90, pw90, u_matrix, v_matrix, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_geninterp, only: geninterp_main
@@ -571,11 +607,13 @@ contains
     integer, intent(in) :: output
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: HH_R(:, :, :)
 
+    status = 0
     call geninterp_main(wann90%dis_manifold, pw90%geninterp, wann90%kpt_latt, &
                         pw90%band_deriv_degen, wann90%ws_region, wann90%print_output, &
                         wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, HH_R, v_matrix, &
@@ -587,6 +625,7 @@ contains
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
       write (0, *) 'Error in geninterp', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine geninterp

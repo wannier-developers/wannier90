@@ -1,6 +1,8 @@
 
 module w90_helper_types
 
+  ! as with fortran routines like allocate, the status variable indicates an error if non-zero
+  ! positive is an error, negative is a warning (such as non-convergence) which is recoverable.
   use w90_constants
   use w90_types
   use w90_wannier90_types
@@ -143,7 +145,7 @@ contains
     output = output_unit
   end subroutine get_fortran_stdout
 
-  subroutine input_reader(helper, wan90, seedname, output, comm)
+  subroutine input_reader(helper, wan90, seedname, output, status, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
@@ -154,6 +156,7 @@ contains
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
     character(len=*), intent(in) :: seedname
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
@@ -161,9 +164,11 @@ contains
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
 
+    status = 0
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
       write (error_unit, *) 'Error in input file access', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     else
       call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
@@ -184,6 +189,7 @@ contains
                                         wan90%use_bloch_phases, seedname, output, error, comm)
       if (allocated(error)) then
         write (error_unit, *) 'Error in reader', error%code, error%message
+        status = sign(1, error%code)
         deallocate (error)
       else
         ! For aesthetic purposes, convert some things to uppercase
@@ -195,12 +201,14 @@ contains
                                             helper%num_bands, helper%num_kpts, error, comm)
         if (allocated(error)) then
           write (error_unit, *) 'Error in read alloc', error%code, error%message
+          status = sign(1, error%code)
           deallocate (error)
         endif
       endif
       call w90_readwrite_clean_infile(output, seedname, error, comm)
       if (allocated(error)) then
         write (error_unit, *) 'Error in input close', error%code, error%message
+        status = sign(1, error%code)
         deallocate (error)
       endif
       helper%seedname = seedname
@@ -220,6 +228,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     integer, intent(in) :: output
+    !integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
 
     if (mpirank(comm) == 0) then
@@ -233,27 +242,30 @@ contains
     endif
   end subroutine checkpoint
 
-  subroutine create_kmesh(helper, output, comm)
+  subroutine create_kmesh(helper, output, status, comm)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
     type(lib_global_type), intent(inout) :: helper
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
 
+    status = 0
     call kmesh_get(helper%kmesh_input, helper%kmesh_info, helper%print_output, helper%kpt_latt, &
                    helper%real_lattice, helper%num_kpts, helper%gamma_only, output, helper%timer, &
                    error, comm)
     if (allocated(error)) then
       write (error_unit, *) 'Error in kmesh_get', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine create_kmesh
 
-  subroutine overlaps(helper, wan90, output, comm)
+  subroutine overlaps(helper, wan90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
@@ -261,6 +273,7 @@ contains
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
@@ -277,8 +290,10 @@ contains
     if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(wan90%m_orig)) .or. &
         (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix))) then
       write (error_unit, *) 'Matrices not set for overlap call'
+      status = 1
       return
     endif
+    status = 0
     if (helper%num_bands > helper%num_wann) then
       ! disentnglement
       !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
@@ -309,11 +324,12 @@ contains
     if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
     if (allocated(error)) then
       write (error_unit, *) 'Error in overlaps', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine overlaps
 
-  subroutine disentangle(helper, wan90, output, comm)
+  subroutine disentangle(helper, wan90, output, status, comm)
     use w90_disentangle, only: dis_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -321,6 +337,7 @@ contains
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
@@ -337,8 +354,10 @@ contains
         (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix)) .or. &
         (.not. associated(helper%u_opt))) then
       write (error_unit, *) 'Matrices not set for disentangle call'
+      status = 1
       return
     endif
+    status = 0
     !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
     !                        helper%num_kpts))
     ! MPI issue
@@ -362,11 +381,12 @@ contains
     !if (allocated(m_matrix_orig)) deallocate (m_matrix_orig)
     if (allocated(error)) then
       write (error_unit, *) 'Error in disentangle', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine disentangle
 
-  subroutine wannierise(helper, wan90, output, comm)
+  subroutine wannierise(helper, wan90, output, status, comm)
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -374,6 +394,7 @@ contains
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !complex(kind=dp), intent(in) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -385,8 +406,10 @@ contains
     if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(helper%u_opt)) .or. &
         (.not. associated(helper%u_matrix))) then
       write (error_unit, *) 'Matrices not set for wannierise call'
+      status = 1
       return
     endif
+    status = 0
     if (helper%gamma_only) then
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, wan90%output_file, wan90%wann_control, &
@@ -410,11 +433,12 @@ contains
     endif
     if (allocated(error)) then
       write (error_unit, *) 'Error in wannierise', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine wannierise
 
-  subroutine plot_files(helper, wan90, output, comm)
+  subroutine plot_files(helper, wan90, output, status, comm)
     use w90_plot, only: plot_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
@@ -422,6 +446,7 @@ contains
     type(lib_global_type), intent(inout) :: helper ! inout due to ham_logical
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -430,6 +455,7 @@ contains
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
 
+    status = 0
     call plot_main(helper%atom_data, wan90%band_plot, helper%dis_manifold, helper%fermi_energy_list, &
                    wan90%fermi_surface_data, wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, &
                    wan90%output_file, wan90%wvfn_read, wan90%real_space_ham, helper%kpoint_path, &
@@ -442,11 +468,12 @@ contains
                    helper%seedname, output, helper%timer, error, comm)
     if (allocated(error)) then
       write (error_unit, *) 'Error in plotting', error%code, error%message
+      status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine plot_files
 
-  subroutine transport(helper, wan90, output, comm)
+  subroutine transport(helper, wan90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_transport, only: tran_main
@@ -454,6 +481,7 @@ contains
     type(lib_global_type), intent(inout) :: helper ! because of ham_logical
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
+    integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !complex(kind=dp), intent(in) :: u_opt(:, :, :)
     !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -462,6 +490,7 @@ contains
     type(w90_error_type), allocatable :: error
 
     ! should these tests be done outside?
+    status = 0
     if (mpirank(comm) == 0) then
       if (wan90%w90_calculation%transport) then
         call tran_main(helper%atom_data, helper%dis_manifold, helper%fermi_energy_list, &
@@ -475,6 +504,7 @@ contains
                        helper%timer, error, comm)
         if (allocated(error)) then
           write (error_unit, *) 'Error in transport', error%code, error%message
+          status = sign(1, error%code)
           deallocate (error)
         endif
       endif
