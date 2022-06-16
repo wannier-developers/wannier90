@@ -16,9 +16,9 @@ if not pw90.effective_model :
 
 import numpy
 
-m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
+#m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
-wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
+#wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
 wan90.w90_helper_types.set_u_matrix(data, u_matrix)
 #a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 
@@ -30,8 +30,8 @@ if wann90.have_disentangled :
 wan90.w90_lib_all.read_checkpoint(data, pw90, ftn_output, status, comm)
 
 v_matrix = numpy.empty((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
-wan90.w90_lib_all.calc_v_matrix(data, v_matrix)
+wan90.w90_lib_all.calc_v_matrix(data, pw90, v_matrix)
 
 # should check pw90.dos.index for 'dos_plot'
 if pw90.calculation.dos :
-    wan90.w90_lib_all.calc_dos(data, pw90, u_matrix, v_matrix, ftn_output, status, comm)
+    wan90.w90_lib_all.calc_dos(data, pw90, ftn_output, status, comm)

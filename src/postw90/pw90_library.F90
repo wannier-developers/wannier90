@@ -19,6 +19,8 @@ module w90_lib_all
   implicit none
 
   type lib_postw90_type
+    complex(kind=dp), pointer :: v_matrix(:, :, :)
+
     type(pw90_calculation_type) :: calculation
     type(pw90_berry_mod_type) :: berry
     type(pw90_boltzwann_type) :: boltzwann
@@ -139,7 +141,7 @@ contains
     endif
   end subroutine read_all_input
 
-  subroutine read_checkpoint(wann90, pw90, m_matrix, u_matrix, u_opt, output, status, comm)
+  subroutine read_checkpoint(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
@@ -149,13 +151,13 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
     real(kind=dp) :: omega_invariant ! assuming postw90 in doing this
     integer :: chk_unit
     integer :: num_exclude_bands
@@ -174,12 +176,15 @@ contains
       status = sign(1, error%code)
       deallocate (error)
     else
+      allocate (m_matrix(wann90%num_wann, wann90%num_wann, wann90%kmesh_info%nntot, &
+                         wann90%num_kpts))
       call w90_readwrite_read_chkpt_matrices(wann90%dis_manifold, wann90%kmesh_info, &
-                                             wann90%wannier_data, m_matrix, u_matrix, u_opt, &
-                                             omega_invariant, wann90%num_bands, &
+                                             wann90%wannier_data, m_matrix, wann90%u_matrix, &
+                                             wann90%u_opt, omega_invariant, wann90%num_bands, &
                                              wann90%num_kpts, wann90%num_wann, &
                                              wann90%have_disentangled, wann90%seedname, chk_unit, &
                                              output, error, comm)
+      deallocate (m_matrix)
       if (allocated(error)) then
         write (0, *) 'Error in reading checkpoint matrices', error%code, error%message
         status = sign(1, error%code)
@@ -223,16 +228,17 @@ contains
     endif
   end subroutine pw_setup
 
-  subroutine calc_v_matrix(wann90, u_matrix, u_opt, v_matrix)
+  subroutine calc_v_matrix(wann90, pw90, v_matrix)
     !use w90_error_base, only: w90_error_type
     !use w90_comms, only: w90comm_type, mpirank
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
+    type(lib_postw90_type), intent(inout) :: pw90
     !integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_opt(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout), target :: v_matrix(:, :, :)
     !type(w90comm_type), intent(in) :: comm
     !
     integer :: i, j, m, loop_kpt
@@ -240,7 +246,7 @@ contains
     !allocate (v_matrix(wann90%num_bands, wann90%num_wann, wann90%num_kpts), stat=ierr)
     ! u_matrix and u_opt are stored on root only
     if (.not. wann90%have_disentangled) then
-      v_matrix(1:wann90%num_wann, :, :) = u_matrix(1:wann90%num_wann, :, :)
+      v_matrix(1:wann90%num_wann, :, :) = wann90%u_matrix(1:wann90%num_wann, :, :)
     else
       !this should be initialised by the caller really
       v_matrix(1:wann90%num_bands, 1:wann90%num_wann, 1:wann90%num_kpts) = cmplx_0
@@ -249,15 +255,16 @@ contains
           do m = 1, wann90%dis_manifold%ndimwin(loop_kpt)
             do i = 1, wann90%num_wann
               v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
-                                         + u_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
+                                         + wann90%u_opt(m, i, loop_kpt)*wann90%u_matrix(i, j, loop_kpt)
             enddo
           enddo
         enddo
       enddo
     endif
+    pw90%v_matrix => v_matrix
   end subroutine calc_v_matrix
 
-  subroutine calc_dos(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine calc_dos(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_dos, only: dos_main
@@ -268,8 +275,8 @@ contains
     !type(lib_plot_type), intent(inout) :: plot
     !type(lib_transport_type), intent(inout) :: transport
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     !character(len=*), intent(in) :: seedname
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
@@ -288,11 +295,11 @@ contains
       call dos_main(pw90%berry, wann90%dis_manifold, pw90%dos, pw90%kpt_dist, wann90%kpt_latt, &
                     pw90%oper_read, pw90%band_deriv_degen, pw90%spin, wann90%ws_region, &
                     wann90%w90_system, wann90%print_output, wann90%wannier_data, pw90%ws_distance, &
-                    pw90%ws_vec, HH_R, SS_R, u_matrix, v_matrix, wann90%eigval, wann90%real_lattice, &
-                    pw90%scissors_shift, wann90%mp_grid, wann90%num_bands, wann90%num_kpts, &
-                    wann90%num_wann, pw90%effective_model, wann90%have_disentangled, &
-                    pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
-                    error, comm)
+                    pw90%ws_vec, HH_R, SS_R, wann90%u_matrix, pw90%v_matrix, wann90%eigval, &
+                    wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, wann90%num_bands, &
+                    wann90%num_kpts, wann90%num_wann, pw90%effective_model, &
+                    wann90%have_disentangled, pw90%calculation%spin_decomp, wann90%seedname, &
+                    output, wann90%timer, error, comm)
       if (allocated(HH_R)) deallocate (HH_R)
       if (allocated(SS_R)) deallocate (SS_R)
       if (allocated(error)) then
@@ -305,7 +312,7 @@ contains
     endif
   end subroutine calc_dos
 
-  subroutine boltzwann(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine boltzwann(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
     use w90_boltzwann, only: boltzwann_main
@@ -314,8 +321,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -329,7 +336,7 @@ contains
                         pw90%band_deriv_degen, pw90%oper_read, pw90%spin, physics, &
                         wann90%ws_region, wann90%w90_system, wann90%wannier_data, &
                         pw90%ws_distance, pw90%ws_vec, wann90%print_output, HH_R, SS_R, &
-                        v_matrix, u_matrix, wann90%eigval, wann90%real_lattice, &
+                        pw90%v_matrix, wann90%u_matrix, wann90%eigval, wann90%real_lattice, &
                         pw90%scissors_shift, wann90%mp_grid, wann90%num_wann, wann90%num_bands, &
                         wann90%num_kpts, pw90%effective_model, wann90%have_disentangled, &
                         pw90%calculation%spin_decomp, wann90%seedname, output, wann90%timer, &
@@ -343,7 +350,7 @@ contains
     endif
   end subroutine boltzwann
 
-  subroutine gyrotropic(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine gyrotropic(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_gyrotropic, only: gyrotropic_main
@@ -352,8 +359,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -370,11 +377,11 @@ contains
                          pw90%gyrotropic, wann90%kmesh_info, wann90%kpt_latt, physics, &
                          pw90%oper_read, pw90%band_deriv_degen, wann90%ws_region, &
                          wann90%w90_system, wann90%print_output, wann90%wannier_data, &
-                         pw90%ws_vec, pw90%ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, &
-                         v_matrix, wann90%eigval, wann90%real_lattice, pw90%scissors_shift, &
-                         wann90%mp_grid, wann90%num_bands, wann90%num_kpts, wann90%num_wann, &
-                         pw90%effective_model, wann90%have_disentangled, wann90%seedname, output, &
-                         wann90%timer, error, comm)
+                         pw90%ws_vec, pw90%ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, &
+                         wann90%u_matrix, pw90%v_matrix, wann90%eigval, wann90%real_lattice, &
+                         pw90%scissors_shift, wann90%mp_grid, wann90%num_bands, wann90%num_kpts, &
+                         wann90%num_wann, pw90%effective_model, wann90%have_disentangled, &
+                         wann90%seedname, output, wann90%timer, error, comm)
     if (allocated(SS_R)) deallocate (SS_R)
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(CC_R)) deallocate (CC_R)
@@ -387,7 +394,7 @@ contains
     endif
   end subroutine gyrotropic
 
-  subroutine berry(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine berry(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_berry, only: berry_main
@@ -396,8 +403,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -422,9 +429,9 @@ contains
                     pw90%kpt_dist, wann90%kpt_latt, pw90%band_deriv_degen, pw90%oper_read, &
                     pw90%spin, physics, wann90%ws_region, pw90%spin_hall, wann90%wannier_data, &
                     pw90%ws_distance, pw90%ws_vec, wann90%print_output, AA_R, BB_R, CC_R, HH_R, &
-                    SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, u_matrix, v_matrix, wann90%eigval, &
-                    wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
-                    wann90%num_wann, wann90%num_kpts, wann90%num_bands, &
+                    SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, wann90%u_matrix, pw90%v_matrix, &
+                    wann90%eigval, wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, &
+                    fermi_n, wann90%num_wann, wann90%num_kpts, wann90%num_bands, &
                     wann90%w90_system%num_valence_bands, pw90%effective_model, &
                     wann90%have_disentangled, pw90%calculation%spin_decomp, &
                     wann90%seedname, output, wann90%timer, error, comm)
@@ -445,7 +452,7 @@ contains
     endif
   end subroutine berry
 
-  subroutine kpath(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine kpath(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_kpath, only: k_path
@@ -454,8 +461,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -480,8 +487,8 @@ contains
                 pw90%kpath, wann90%kpt_latt, pw90%oper_read, pw90%band_deriv_degen, pw90%spin, &
                 wann90%ws_region, wann90%kpoint_path, pw90%spin_hall, wann90%print_output, &
                 wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, &
-                SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, u_matrix, physics%bohr, wann90%eigval, &
-                wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
+                SHR_R, SR_R, SS_R, SAA_R, SBB_R, pw90%v_matrix, wann90%u_matrix, physics%bohr, &
+                wann90%eigval, wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
                 wann90%num_wann, wann90%num_bands, wann90%num_kpts, &
                 wann90%w90_system%num_valence_bands, pw90%effective_model, &
                 wann90%have_disentangled, wann90%seedname, output, wann90%timer, error, comm)
@@ -502,7 +509,7 @@ contains
     endif
   end subroutine kpath
 
-  subroutine kslice(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine kslice(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_kslice, only: k_slice
@@ -511,8 +518,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -537,8 +544,8 @@ contains
                  wann90%kpt_latt, pw90%kslice, pw90%oper_read, pw90%band_deriv_degen, pw90%spin, &
                  wann90%ws_region, pw90%spin_hall, wann90%print_output, &
                  wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, &
-                 SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, u_matrix, physics%bohr, wann90%eigval, &
-                 wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
+                 SHR_R, SR_R, SS_R, SAA_R, SBB_R, pw90%v_matrix, wann90%u_matrix, physics%bohr, &
+                 wann90%eigval, wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, fermi_n, &
                  wann90%num_bands, wann90%num_kpts, wann90%num_wann, &
                  wann90%w90_system%num_valence_bands, pw90%effective_model, &
                  wann90%have_disentangled, wann90%seedname, output, wann90%timer, error, comm)
@@ -559,7 +566,7 @@ contains
     endif
   end subroutine kslice
 
-  subroutine spin_moment(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine spin_moment(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_spin, only: spin_get_moment
@@ -568,8 +575,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -581,12 +588,12 @@ contains
     call spin_get_moment(wann90%dis_manifold, wann90%fermi_energy_list, pw90%kpt_dist, &
                          wann90%kpt_latt, pw90%oper_read, pw90%spin, wann90%ws_region, &
                          wann90%print_output, wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, &
-                         HH_R, SS_R, u_matrix, v_matrix, wann90%eigval, wann90%real_lattice, &
-                         pw90%scissors_shift, wann90%mp_grid, wann90%num_wann, wann90%num_bands, &
-                         wann90%num_kpts, wann90%w90_system%num_valence_bands, &
-                         pw90%effective_model, wann90%have_disentangled, &
-                         pw90%berry%wanint_kpoint_file, wann90%seedname, output, wann90%timer, &
-                         error, comm)
+                         HH_R, SS_R, wann90%u_matrix, pw90%v_matrix, wann90%eigval, &
+                         wann90%real_lattice, pw90%scissors_shift, wann90%mp_grid, &
+                         wann90%num_wann, wann90%num_bands, wann90%num_kpts, &
+                         wann90%w90_system%num_valence_bands, pw90%effective_model, &
+                         wann90%have_disentangled, pw90%berry%wanint_kpoint_file, wann90%seedname, &
+                         output, wann90%timer, error, comm)
     if (allocated(SS_R)) deallocate (SS_R)
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
@@ -596,7 +603,7 @@ contains
     endif
   end subroutine spin_moment
 
-  subroutine geninterp(wann90, pw90, u_matrix, v_matrix, output, status, comm)
+  subroutine geninterp(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     use w90_geninterp, only: geninterp_main
@@ -605,8 +612,8 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
@@ -616,8 +623,8 @@ contains
     status = 0
     call geninterp_main(wann90%dis_manifold, pw90%geninterp, wann90%kpt_latt, &
                         pw90%band_deriv_degen, wann90%ws_region, wann90%print_output, &
-                        wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, HH_R, v_matrix, &
-                        u_matrix, wann90%eigval, wann90%real_lattice, pw90%scissors_shift, &
+                        wann90%wannier_data, pw90%ws_distance, pw90%ws_vec, HH_R, pw90%v_matrix, &
+                        wann90%u_matrix, wann90%eigval, wann90%real_lattice, pw90%scissors_shift, &
                         wann90%mp_grid, wann90%num_bands, wann90%num_kpts, wann90%num_wann, &
                         wann90%w90_system%num_valence_bands, pw90%effective_model, &
                         wann90%have_disentangled, wann90%seedname, output, wann90%timer, &
