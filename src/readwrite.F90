@@ -35,6 +35,22 @@ module w90_readwrite
   integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
 
+  type settings_type
+    !!==================================================
+    !! structure to hold a collection of scalar settings
+    !!==================================================
+    character(len=maxlen), allocatable :: strings(:) ! tokens
+    character(len=maxlen), allocatable :: txtdata(:) ! text data items
+    !complex(kind=dp), allocatable :: cdata(:) ! complex data items
+    integer, allocatable :: idata(:) ! integer data items
+    logical, allocatable :: ldata(:) ! logical data items
+    real(kind=dp), allocatable :: rdata(:) ! real data items
+  
+    integer :: cnt, cntmx ! number of strings stored and max
+    logical :: init = .false. ! if allocated (therefore not empty)
+  end type settings_type
+  type(settings_type) :: settings
+
   public :: w90_readwrite_chkpt_dist
   public :: w90_readwrite_dealloc
   public :: w90_readwrite_get_convention_type
@@ -80,7 +96,93 @@ module w90_readwrite
 
   private :: clear_block
 
+  public :: set_option
+
+  interface set_option
+    module procedure set_option_bool
+    !module procedure set_option_cplx
+    module procedure set_option_text
+    module procedure set_option_dble
+    module procedure set_option_int
+  end interface set_option
+
 contains
+  !================================================!
+  subroutine init_settings()
+    implicit none
+    integer :: defsize = 10
+    !allocate(settings%cdata(defsize))
+    allocate(settings%idata(defsize))
+    allocate(settings%ldata(defsize))
+    allocate(settings%rdata(defsize))
+    allocate(settings%strings(defsize))
+    allocate(settings%txtdata(defsize))
+    settings%init = .true.
+    settings%cnt = 1
+    settings%cntmx = defsize
+  end subroutine init_settings
+
+  subroutine expand_settings()
+    ! needs implementing
+    ! reallocate with more space
+  end subroutine expand_settings
+
+  subroutine set_option_bool(string,bool)
+    implicit none
+    character(*), intent(in) :: string
+    logical, intent(in) :: bool
+    call setting_update(string, bool, "", 0.d0, 0)
+  endsubroutine set_option_bool
+
+  !subroutine set_option_cplx(string,cval)
+  !  implicit none
+  !  character(*), intent(in) :: string
+  !  complex(kind=dp), intent(in) :: cval
+  !  call setting_update(string, .false., cval, 0.d0, 0)
+  !endsubroutine set_option_cplx
+
+  subroutine set_option_dble(string,rval)
+    implicit none
+    character(*), intent(in) :: string
+    real(kind=dp), intent(in) :: rval
+    call setting_update(string, .false., "", rval, 0)
+  endsubroutine set_option_dble
+
+  subroutine set_option_int(string,ival)
+    implicit none
+    character(*), intent(in) :: string
+    integer, intent(in) :: ival
+    call setting_update(string, .false., "", 0.d0, ival)
+  endsubroutine set_option_int
+
+  subroutine set_option_text(string,text)
+    implicit none
+    character(*), intent(in) :: string
+    character(*), intent(in) :: text
+    call setting_update(string, .false., text, 0.d0, 0)
+  endsubroutine set_option_text
+
+  subroutine setting_update(string, bool, text, rval, ival)
+    implicit none
+    character(*), intent(in) :: string
+    character(*), intent(in) :: text
+    !complex(kind=dp), intent(in) :: cval
+    logical, intent(in) :: bool
+    real(kind=dp), intent(in) :: rval
+    integer, intent(in) :: ival
+    integer :: i
+    if (.not.settings%init) call init_settings()
+    i = settings%cnt 
+    settings%strings(i) = string
+    !settings%cdata(i) = cval
+    settings%txtdata(i) = text
+    settings%idata(i) = ival
+    settings%ldata(i) = bool
+    settings%rdata(i) = rval
+    settings%cnt = i + 1
+    if (settings%cnt == settings%cntmx) call expand_settings()
+  end subroutine setting_update 
+  !================================================!
 
   !================================================!
   subroutine w90_readwrite_read_verbosity(print_output, error, comm)
@@ -2351,6 +2453,27 @@ contains
 
     found = .false.
 
+    if (settings%init) then ! check for presence in settings object
+      do loop = 1, settings%cnt  ! this means the first occurance of the variable in settings is used
+        if(settings%strings(loop)==keyword)then
+          if (present(i_value)) then
+            i_value = settings%idata(loop)
+          else if (present(r_value)) then
+            r_value = settings%rdata(loop)
+          else if (present(l_value)) then
+            l_value = settings%ldata(loop)
+          else if (present(c_value)) then
+            c_value = settings%txtdata(loop)
+          endif 
+          ! else is a logic error (which should be checked for)
+          found = .true.
+          return
+        endif
+      enddo
+    endif
+     ! here control returns to scanning the input file; that behaviour may not be desirable
+     ! consider 'else' for exclusive settings or infile
+
     do loop = 1, num_lines
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
@@ -2389,8 +2512,7 @@ contains
     end if
 
     return
-
-220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
+220   call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
     return
 
   end subroutine w90_readwrite_get_keyword
