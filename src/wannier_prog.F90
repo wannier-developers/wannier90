@@ -68,7 +68,7 @@ program wannier
 
   use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, &
     w90_readwrite_chkpt_dist, w90_readwrite_in_file, w90_readwrite_clean_infile, &
-    w90_readwrite_read_final_alloc, w90_readwrite_uppercase
+    w90_readwrite_read_final_alloc, w90_readwrite_uppercase, set_option
   use w90_wannier90_types
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
     w90_wannier90_readwrite_w90_dealloc, &
@@ -253,6 +253,8 @@ program wannier
     ! read infile to in_data structure
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+    !call set_option("num_iter",872) ! for debug
 
     call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                       dis_manifold, exclude_bands, fermi_energy_list, &
