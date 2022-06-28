@@ -254,7 +254,9 @@ program wannier
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-    !call set_option("num_iter",872) ! for debug
+    !call set_option("num_iter",11) ! for debug
+    !call set_option("length_unit","bohr") ! for debug
+    !call set_option("guiding_centres",.true.) ! for debug
 
     call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                       dis_manifold, exclude_bands, fermi_energy_list, &

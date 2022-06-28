@@ -95,7 +95,9 @@ module w90_readwrite
   public :: w90_readwrite_read_ws_data
 
   private :: clear_block
-
+  private :: init_settings
+  private :: expand_settings
+  private :: update_settings
   public :: set_option
 
   interface set_option
@@ -108,6 +110,9 @@ module w90_readwrite
 
 contains
   !================================================!
+  ! jj, this is pretty horrible, maybe array of objects instead of an object with arrays??
+  ! jj, if tokens are found in settings, and they exist in the input file then error (token not cleared from input file)
+
   subroutine init_settings()
     implicit none
     integer :: defsize = 10
@@ -122,47 +127,60 @@ contains
     settings%cntmx = defsize
   end subroutine init_settings
 
-  subroutine expand_settings()
-    ! needs implementing
-    ! reallocate with more space
+  subroutine expand_settings() ! this is a compromise to avoid a fixed size
+    character(len=maxlen), allocatable :: nstr(:) ! tokens
+    character(len=maxlen), allocatable :: ntxt(:) ! text data items
+    integer, allocatable :: ni(:) ! integer data items
+    logical, allocatable :: nl(:) ! logical data items
+    real(kind=dp), allocatable :: nr(:) ! real data items
+ 
+    integer :: n, m ! old, new sizes
+    n = settings%cntmx
+    m = n + 10
+    allocate(ni(m));     ni(1:n) = settings%idata(1:n);   call move_alloc(ni,settings%idata) !f2003, note that "new" space not initialised
+    allocate(nl(m));     nl(1:n) = settings%ldata(1:n);   call move_alloc(nl,settings%ldata)
+    allocate(nr(m));     nr(1:n) = settings%rdata(1:n);   call move_alloc(nr,settings%rdata)
+    allocate(nstr(m)); nstr(1:n) = settings%strings(1:n); call move_alloc(nstr,settings%strings)
+    allocate(ntxt(m)); ntxt(1:n) = settings%txtdata(1:n); call move_alloc(ntxt,settings%txtdata)
+    settings%cntmx = m
   end subroutine expand_settings
 
   subroutine set_option_bool(string,bool)
     implicit none
     character(*), intent(in) :: string
     logical, intent(in) :: bool
-    call setting_update(string, bool, "", 0.d0, 0)
+    call update_settings(string, bool, "", 0.d0, 0)
   endsubroutine set_option_bool
 
   !subroutine set_option_cplx(string,cval)
   !  implicit none
   !  character(*), intent(in) :: string
   !  complex(kind=dp), intent(in) :: cval
-  !  call setting_update(string, .false., cval, 0.d0, 0)
+  !  call update_settings(string, .false., cval, 0.d0, 0)
   !endsubroutine set_option_cplx
 
   subroutine set_option_dble(string,rval)
     implicit none
     character(*), intent(in) :: string
     real(kind=dp), intent(in) :: rval
-    call setting_update(string, .false., "", rval, 0)
+    call update_settings(string, .false., "", rval, 0)
   endsubroutine set_option_dble
 
   subroutine set_option_int(string,ival)
     implicit none
     character(*), intent(in) :: string
     integer, intent(in) :: ival
-    call setting_update(string, .false., "", 0.d0, ival)
+    call update_settings(string, .false., "", 0.d0, ival)
   endsubroutine set_option_int
 
   subroutine set_option_text(string,text)
     implicit none
     character(*), intent(in) :: string
     character(*), intent(in) :: text
-    call setting_update(string, .false., text, 0.d0, 0)
+    call update_settings(string, .false., text, 0.d0, 0)
   endsubroutine set_option_text
 
-  subroutine setting_update(string, bool, text, rval, ival)
+  subroutine update_settings(string, bool, text, rval, ival)
     implicit none
     character(*), intent(in) :: string
     character(*), intent(in) :: text
@@ -181,7 +199,7 @@ contains
     settings%rdata(i) = rval
     settings%cnt = i + 1
     if (settings%cnt == settings%cntmx) call expand_settings()
-  end subroutine setting_update 
+  end subroutine update_settings 
   !================================================!
 
   !================================================!
@@ -2455,6 +2473,7 @@ contains
 
     if (settings%init) then ! check for presence in settings object
       do loop = 1, settings%cnt  ! this means the first occurance of the variable in settings is used
+                                 ! memory beyond cnt is not initialised
         if(settings%strings(loop)==keyword)then
           if (present(i_value)) then
             i_value = settings%idata(loop)
