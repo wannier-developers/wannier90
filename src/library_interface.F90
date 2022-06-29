@@ -6,6 +6,7 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
+  use w90_readwrite, only: update_settings
   use iso_fortran_env, only: error_unit
 
   implicit none
@@ -135,6 +136,15 @@ module w90_helper_types
   public:: input_reader, create_kmesh, checkpoint, overlaps, wannierise, plot_files, &
            transport, print_times, get_fortran_stdout
 
+  public :: set_option
+  interface set_option
+    module procedure set_option_bool
+    !module procedure set_option_cplx
+    module procedure set_option_text
+    module procedure set_option_dble
+    module procedure set_option_int
+  end interface set_option
+
 contains
 
   subroutine get_fortran_stdout(output)
@@ -144,6 +154,42 @@ contains
 
     output = output_unit
   end subroutine get_fortran_stdout
+
+  subroutine set_option_bool(string,bool)
+    implicit none
+    character(*), intent(in) :: string
+    logical, intent(in) :: bool
+    call update_settings(string, bool, "", 0.d0, 0)
+  endsubroutine set_option_bool
+
+  !subroutine set_option_cplx(string,cval)
+  !  implicit none
+  !  character(*), intent(in) :: string
+  !  complex(kind=dp), intent(in) :: cval
+  !  call update_settings(string, .false., cval, 0.d0, 0)
+  !endsubroutine set_option_cplx
+
+  subroutine set_option_dble(string,rval)
+    implicit none
+    character(*), intent(in) :: string
+    real(kind=dp), intent(in) :: rval
+    call update_settings(string, .false., "", rval, 0)
+  endsubroutine set_option_dble
+
+  subroutine set_option_int(string,ival)
+    implicit none
+    character(*), intent(in) :: string
+    integer, intent(in) :: ival
+    call update_settings(string, .false., "", 0.d0, ival)
+  endsubroutine set_option_int
+
+  subroutine set_option_text(string,text)
+    implicit none
+    character(*), intent(in) :: string
+    character(*), intent(in) :: text
+    call update_settings(string, .false., text, 0.d0, 0)
+  endsubroutine set_option_text
+
 
   subroutine input_reader(helper, wan90, seedname, output, status, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
