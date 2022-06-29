@@ -97,16 +97,7 @@ module w90_readwrite
   private :: clear_block
   private :: init_settings
   private :: expand_settings
-  private :: update_settings
-  public :: set_option
-
-  interface set_option
-    module procedure set_option_bool
-    !module procedure set_option_cplx
-    module procedure set_option_text
-    module procedure set_option_dble
-    module procedure set_option_int
-  end interface set_option
+  public :: update_settings
 
 contains
   !================================================!
@@ -144,41 +135,6 @@ contains
     allocate(ntxt(m)); ntxt(1:n) = settings%txtdata(1:n); call move_alloc(ntxt,settings%txtdata)
     settings%cntmx = m
   end subroutine expand_settings
-
-  subroutine set_option_bool(string,bool)
-    implicit none
-    character(*), intent(in) :: string
-    logical, intent(in) :: bool
-    call update_settings(string, bool, "", 0.d0, 0)
-  endsubroutine set_option_bool
-
-  !subroutine set_option_cplx(string,cval)
-  !  implicit none
-  !  character(*), intent(in) :: string
-  !  complex(kind=dp), intent(in) :: cval
-  !  call update_settings(string, .false., cval, 0.d0, 0)
-  !endsubroutine set_option_cplx
-
-  subroutine set_option_dble(string,rval)
-    implicit none
-    character(*), intent(in) :: string
-    real(kind=dp), intent(in) :: rval
-    call update_settings(string, .false., "", rval, 0)
-  endsubroutine set_option_dble
-
-  subroutine set_option_int(string,ival)
-    implicit none
-    character(*), intent(in) :: string
-    integer, intent(in) :: ival
-    call update_settings(string, .false., "", 0.d0, ival)
-  endsubroutine set_option_int
-
-  subroutine set_option_text(string,text)
-    implicit none
-    character(*), intent(in) :: string
-    character(*), intent(in) :: text
-    call update_settings(string, .false., text, 0.d0, 0)
-  endsubroutine set_option_text
 
   subroutine update_settings(string, bool, text, rval, ival)
     implicit none

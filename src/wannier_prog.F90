@@ -68,13 +68,15 @@ program wannier
 
   use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, &
     w90_readwrite_chkpt_dist, w90_readwrite_in_file, w90_readwrite_clean_infile, &
-    w90_readwrite_read_final_alloc, w90_readwrite_uppercase, set_option
+    w90_readwrite_read_final_alloc, w90_readwrite_uppercase
   use w90_wannier90_types
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
     w90_wannier90_readwrite_w90_dealloc, &
     w90_wannier90_readwrite_write, w90_wannier90_readwrite_dist, &
     w90_wannier90_readwrite_memory_estimate, &
     w90_wannier90_readwrite_write_chkpt, w90_extra_io_type
+
+  use w90_helper_types, only: set_option
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
