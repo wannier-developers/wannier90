@@ -550,6 +550,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer, allocatable :: counts(:)
   integer, allocatable :: displs(:)
   integer :: num_nodes, my_node_id
+  integer, allocatable :: dist_k(:)
   type(w90comm_type) :: comm
   logical :: disentanglement
   logical :: mpiinitalready
@@ -640,6 +641,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                    error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
+  allocate (dist_k(num_kpts))
+  dist_k = 0
   ! read infile to in_data structure
   call w90_readwrite_in_file(seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
@@ -765,7 +768,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, timer, error, comm)
+                   seedname, stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
 
@@ -822,6 +825,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   end if
   end if
 
+  deallocate (dist_k)
   if (present(wann_centres_loc)) wann_centres_loc = wann_data%centres
   if (present(wann_spreads_loc)) wann_spreads_loc = wann_data%spreads
   if (present(spread_loc)) then

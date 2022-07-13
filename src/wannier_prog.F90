@@ -183,7 +183,8 @@ program wannier
   real(kind=dp) time0, time1, time2
 
   integer :: len_seedname
-  integer :: num_nodes, my_node_id, ierr
+  integer :: i, j, num_nodes, my_node_id, ierr
+  integer, allocatable :: dist_k(:), counts(:), displs(:)
   integer :: stdout, stderr
 
   logical :: eig_found
@@ -360,6 +361,16 @@ program wannier
     stop
   endif
 
+  allocate (counts(0:num_nodes - 1))
+  allocate (displs(0:num_nodes - 1))
+  call comms_array_split(num_kpts, counts, displs, comm)
+  allocate (dist_k(num_kpts))
+  do i = 0, num_nodes - 1
+    do j = 1, counts(i)
+      dist_k(displs(i) + j) = i
+    enddo
+  enddo
+
   ! We now distribute the parameters to the other nodes
   call w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
                                     exclude_bands, fermi_energy_list, fermi_surface_plot, &
@@ -473,8 +484,8 @@ program wannier
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
-                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, timer, error, &
-                    comm)
+                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, timer, &
+                    error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   time1 = io_time()
@@ -519,7 +530,7 @@ program wannier
                    u_matrix, u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
                    irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, &
                    num_wann, optimisation, rpt_origin, band_plot%mode, transport%mode, &
-                   have_disentangled, lsitesymmetry, seedname, stdout, timer, error, comm)
+                   have_disentangled, lsitesymmetry, seedname, stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   else
