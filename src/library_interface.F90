@@ -19,6 +19,9 @@ module w90_helper_types
     complex(kind=dp), pointer :: u_opt(:, :, :) => null()
     complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
 
+    ! array of num_kpts containing the nodeid that the kpoint is on
+    integer, pointer :: dist_kpoints(:) => null()
+
     type(atom_data_type) :: atom_data
     !type(dis_control_type) :: dis_control
     type(dis_manifold_type) :: dis_manifold
@@ -155,7 +158,7 @@ contains
     output = output_unit
   end subroutine get_fortran_stdout
 
-  subroutine set_option_bool(string,bool)
+  subroutine set_option_bool(string, bool)
     implicit none
     character(*), intent(in) :: string
     logical, intent(in) :: bool
@@ -169,27 +172,26 @@ contains
   !  call update_settings(string, .false., cval, 0.d0, 0)
   !endsubroutine set_option_cplx
 
-  subroutine set_option_dble(string,rval)
+  subroutine set_option_dble(string, rval)
     implicit none
     character(*), intent(in) :: string
     real(kind=dp), intent(in) :: rval
     call update_settings(string, .false., "", rval, 0)
   endsubroutine set_option_dble
 
-  subroutine set_option_int(string,ival)
+  subroutine set_option_int(string, ival)
     implicit none
     character(*), intent(in) :: string
     integer, intent(in) :: ival
     call update_settings(string, .false., "", 0.d0, ival)
   endsubroutine set_option_int
 
-  subroutine set_option_text(string,text)
+  subroutine set_option_text(string, text)
     implicit none
     character(*), intent(in) :: string
     character(*), intent(in) :: text
     call update_settings(string, .false., text, 0.d0, 0)
   endsubroutine set_option_text
-
 
   subroutine input_reader(helper, wan90, seedname, output, status, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
@@ -356,12 +358,14 @@ contains
     endif
     cp_pp = .false.
     ! should be distributed if MPI
-    allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, helper%num_kpts))
+    allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
+                             helper%num_kpts))
     call overlap_read(helper%kmesh_info, wan90%select_proj, wan90%sitesym, wan90%a_matrix, &
-                      wan90%m_matrix, m_matrix_local, wan90%m_orig, m_matrix_orig_local, helper%u_matrix, u_matrix_opt, &
-                      helper%num_bands, helper%num_kpts, wan90%num_proj, helper%num_wann, &
-                      helper%print_output%timing_level, cp_pp, helper%gamma_only, wan90%lsitesymmetry, &
-                      wan90%use_bloch_phases, helper%seedname, output, helper%timer, error, comm)
+                      wan90%m_matrix, m_matrix_local, wan90%m_orig, m_matrix_orig_local, &
+                      helper%u_matrix, u_matrix_opt, helper%num_bands, helper%num_kpts, &
+                      wan90%num_proj, helper%num_wann, helper%print_output%timing_level, cp_pp, &
+                      helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
+                      helper%seedname, output, helper%timer, error, comm)
     deallocate (m_matrix_local)
     if (helper%num_bands > helper%num_wann) then
       deallocate (m_matrix_orig_local)
@@ -450,7 +454,7 @@ contains
     type(w90_error_type), allocatable :: error
 
     if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(helper%u_opt)) .or. &
-        (.not. associated(helper%u_matrix))) then
+        (.not. associated(helper%u_matrix)) .or. (.not. associated(helper%dist_kpoints))) then
       write (error_unit, *) 'Matrices not set for wannierise call'
       status = 1
       return
@@ -475,7 +479,7 @@ contains
                      helper%num_kpts, wan90%num_proj, helper%num_wann, wan90%optimisation, &
                      wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
                      helper%have_disentangled, wan90%lsitesymmetry, helper%seedname, output, &
-                     helper%timer, error, comm)
+                     helper%timer, helper%dist_kpoints, error, comm)
     endif
     if (allocated(error)) then
       write (error_unit, *) 'Error in wannierise', error%code, error%message
@@ -605,5 +609,13 @@ contains
 
     helper%u_opt => u_opt
   end subroutine set_u_opt
+
+  subroutine set_kpoint_distribution(helper, dist)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    integer, intent(inout), target :: dist(:)
+
+    helper%dist_kpoints => dist
+  end subroutine set_kpoint_distribution
 
 end module w90_helper_types
