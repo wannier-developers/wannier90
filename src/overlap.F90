@@ -105,17 +105,15 @@ contains
           call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_read', comm)
           return
         endif
-        allocate (m_matrix(1, 1, 1, 1))
       else
         allocate (m_matrix_orig(1, 1, 1, 1))
-        allocate (m_matrix(1, 1, 1, 1))
       endif
-
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read', comm)
         return
       endif
+
       allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read', comm)
@@ -127,21 +125,19 @@ contains
         return
       endif
 
-      allocate (m_matrix_local(1, 1, 1, 1))
-
     else
-      if (on_root) then
-        allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read', comm)
-          return
-        endif
-        m_matrix = cmplx_0
-        allocate (m_matrix_orig(1, 1, 1, 1))
-      else
-        allocate (m_matrix(1, 1, 1, 1))
-        allocate (m_matrix_orig(1, 1, 1, 1))
+      !if (on_root) then
+      allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read', comm)
+        return
       endif
+      m_matrix = cmplx_0
+      allocate (m_matrix_orig(1, 1, 1, 1))
+      !else
+      !  allocate (m_matrix(1, 1, 1, 1))
+      !  allocate (m_matrix_orig(1, 1, 1, 1))
+      !endif
 
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) then

@@ -67,15 +67,15 @@ contains
   !================================================!
 
   subroutine w90_postw90_readwrite_read(ws_region, w90_system, exclude_bands, print_output, &
-                                        wannier_data, kmesh_input, kpt_latt, num_kpts, &
-                                        dis_manifold, fermi_energy_list, atom_data, num_bands, &
-                                        num_wann, eigval, mp_grid, real_lattice, kpoint_path, &
-                                        pw90_calculation, pw90_oper_read, scissors_shift, &
-                                        effective_model, pw90_spin, pw90_band_deriv_degen, &
-                                        pw90_kpath, pw90_kslice, pw90_dos, pw90_berry, &
-                                        pw90_spin_hall, pw90_gyrotropic, pw90_geninterp, &
-                                        pw90_boltzwann, eig_found, pw90_extra_io, gamma_only, &
-                                        bohr, optimisation, stdout, seedname, error, comm)
+                                        kmesh_input, kpt_latt, num_kpts, dis_manifold, &
+                                        fermi_energy_list, atom_data, num_bands, num_wann, eigval, &
+                                        mp_grid, real_lattice, kpoint_path, pw90_calculation, &
+                                        pw90_oper_read, scissors_shift, effective_model, &
+                                        pw90_spin, pw90_band_deriv_degen, pw90_kpath, pw90_kslice, &
+                                        pw90_dos, pw90_berry, pw90_spin_hall, pw90_gyrotropic, &
+                                        pw90_geninterp, pw90_boltzwann, eig_found, pw90_extra_io, &
+                                        gamma_only, bohr, optimisation, stdout, seedname, error, &
+                                        comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -111,7 +111,6 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(inout) :: w90_system
-    type(wannier_data_type), intent(inout) :: wannier_data
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
@@ -278,7 +277,6 @@ contains
     implicit none
 
     ! arguments
-    !type(atom_data_type), intent(in) :: atom_data
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
     type(dis_manifold_type), intent(in) :: dis_manifold
@@ -287,49 +285,32 @@ contains
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(pw90_kpath_mod_type), intent(inout) :: pw90_kpath
     type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
-    !type(kmesh_input_type), intent(inout) :: kmesh_input
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_band_deriv_degen
     type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
-    !type(print_output_type), intent(in) :: print_output
     type(pw90_calculation_type), intent(inout) :: pw90_calculation
     type(pw90_extra_io_type), intent(inout) :: pw90_extra_io
-    !type(ws_region_type), intent(inout) :: ws_region
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(in) :: w90_system
-    !type(wannier_data_type), intent(in) :: wannier_data
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
-    !integer, intent(inout) :: mp_grid(3)
     integer, intent(in) :: num_bands
-    !integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    !integer, intent(inout) :: optimisation
-    !integer, intent(in) :: stdout
-    !integer, allocatable, intent(inout) :: exclude_bands(:)
 
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
-    !real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    !real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
 
-    !character(len=50), intent(in)  :: seedname
-
-    !logical, intent(inout) :: eig_found
-    !logical, intent(inout) :: gamma_only
     logical, intent(inout) :: effective_model
 
     ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
-    !integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, library
-    !character(len=20) :: energy_unit
 
     library = .false.
     pw90_kslice%corner = 0.0_dp

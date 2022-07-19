@@ -1500,7 +1500,6 @@ contains
     integer, intent(in) :: size
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
-    integer :: ierr
 
     call comms_sync_err(comm, error, 0) ! sync error state across comm
     if (allocated(error)) return
