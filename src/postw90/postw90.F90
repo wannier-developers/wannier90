@@ -274,9 +274,9 @@ program postw90
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-    call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, &
-                                    kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
-                                    atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
+    call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, kmesh_data, &
+                                    kpt_latt, num_kpts, dis_window, fermi_energy_list, atoms, &
+                                    num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                     spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                                     effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
                                     berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &

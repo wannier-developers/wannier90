@@ -88,6 +88,7 @@ module w90_helper_types
     ! matrices
     complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
+    complex(kind=dp), pointer :: m_matrix_local(:, :, :, :) => null()
     complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()
 
     type(dis_control_type) :: dis_control
@@ -220,19 +221,20 @@ contains
       deallocate (error)
     else
       call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
-                                        wan90%dis_spheres, helper%dis_manifold, helper%exclude_bands, &
-                                        helper%fermi_energy_list, wan90%fermi_surface_data, &
-                                        helper%kmesh_input, helper%kmesh_info, helper%kpt_latt, &
-                                        wan90%output_file, wan90%wvfn_read, wan90%wann_control, &
-                                        wan90%wann_omega, wan90%proj, wan90%proj_input, &
-                                        wan90%real_space_ham, wan90%select_proj, helper%kpoint_path, &
-                                        helper%w90_system, wan90%tran, helper%print_output, &
-                                        helper%wannier_data, wan90%wann_plot, io_params, &
+                                        wan90%dis_spheres, helper%dis_manifold, &
+                                        helper%exclude_bands, helper%fermi_energy_list, &
+                                        wan90%fermi_surface_data, helper%kmesh_input, &
+                                        helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
+                                        wan90%wvfn_read, wan90%wann_control, wan90%proj, &
+                                        wan90%proj_input, wan90%real_space_ham, wan90%select_proj, &
+                                        helper%kpoint_path, helper%w90_system, wan90%tran, &
+                                        helper%print_output, wan90%wann_plot, io_params, &
                                         helper%ws_region, wan90%w90_calculation, helper%eigval, &
-                                        helper%real_lattice, physics%bohr, wan90%sitesym%symmetrize_eps, &
-                                        helper%mp_grid, helper%num_bands, helper%num_kpts, &
-                                        wan90%num_proj, helper%num_wann, wan90%optimisation, &
-                                        wan90%eig_found, wan90%calc_only_A, cp_pp, helper%gamma_only, &
+                                        helper%real_lattice, physics%bohr, &
+                                        wan90%sitesym%symmetrize_eps, helper%mp_grid, &
+                                        helper%num_bands, helper%num_kpts, wan90%num_proj, &
+                                        helper%num_wann, wan90%optimisation, wan90%eig_found, &
+                                        wan90%calc_only_A, cp_pp, helper%gamma_only, &
                                         wan90%lhasproj, .false., .false., wan90%lsitesymmetry, &
                                         wan90%use_bloch_phases, seedname, output, error, comm)
       if (allocated(error)) then
@@ -420,11 +422,16 @@ contains
     allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
                              helper%num_kpts))
     call dis_main(wan90%dis_control, wan90%dis_spheres, helper%dis_manifold, helper%kmesh_info, &
-                  helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, wan90%m_matrix, &
-                  m_matrix_local, wan90%m_orig, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
+                  !helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, wan90%m_matrix, &
+                  !m_matrix_local, wan90%m_orig, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
+                  helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, &
+                  !m_matrix_local, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
+                  m_matrix_local, helper%u_matrix, helper%u_opt, &
                   helper%eigval, helper%real_lattice, wan90%omega%invariant, helper%num_bands, &
-                  helper%num_kpts, helper%num_wann, wan90%optimisation, helper%gamma_only, &
+                  !helper%num_kpts, helper%num_wann, wan90%optimisation, helper%gamma_only, &
+                  helper%num_kpts, helper%num_wann, helper%gamma_only, &
                   wan90%lsitesymmetry, output, helper%timer, error, comm)
+
     helper%have_disentangled = .true.
     if (allocated(m_matrix_local)) deallocate (m_matrix_local)
     if (allocated(m_matrix_orig_local)) deallocate (m_matrix_orig_local)
@@ -473,7 +480,8 @@ contains
                      wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
                      wan90%real_space_ham, wan90%wann_control, wan90%omega, wan90%sitesym, &
                      helper%w90_system, helper%print_output, helper%wannier_data, helper%ws_region, &
-                     wan90%w90_calculation, wan90%ham_k, wan90%ham_r, wan90%m_matrix, helper%u_matrix, helper%u_opt, &
+                     wan90%w90_calculation, wan90%ham_k, wan90%ham_r, wan90%m_matrix, &
+                     wan90%m_matrix_local, helper%u_matrix, helper%u_opt, &
                      helper%eigval, helper%real_lattice, wan90%wannier_centres_translated, wan90%irvec, &
                      helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, helper%num_bands, &
                      helper%num_kpts, wan90%num_proj, helper%num_wann, wan90%optimisation, &

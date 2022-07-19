@@ -544,7 +544,7 @@ contains
     ! Cut H matrix in real-space
     !
     if (index(band_plot%mode, 'cut') .ne. 0) then
-      call plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
+      call plot_cut_hr(real_space_ham, real_lattice, mp_grid, num_wann, &
                        wannier_centres_translated, stdout, error)
       if (allocated(error)) return
     endif
@@ -707,7 +707,7 @@ contains
   contains
 
     !================================================!
-    subroutine plot_cut_hr(band_plot, real_space_ham, real_lattice, mp_grid, num_wann, &
+    subroutine plot_cut_hr(real_space_ham, real_lattice, mp_grid, num_wann, &
                            wannier_centres_translated, stdout, error)
       !================================================!
       !
@@ -735,7 +735,6 @@ contains
 
       ! arguments
       type(real_space_ham_type), intent(in) :: real_space_ham
-      type(band_plot_type), intent(in) :: band_plot
       type(w90_error_type), allocatable, intent(out) :: error
 
       real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -1739,8 +1738,7 @@ contains
         if (wannier_plot%format .eq. 'xcrysden') then
           call internal_xsf_format()
         elseif (wannier_plot%format .eq. 'cube') then
-          call internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                    real_lattice, bohr, error)
+          call internal_cube_format(atom_data, wannier_data, real_lattice, bohr, error)
           if (allocated(error)) return
         else
           call set_error_warn(error, 'wannier_plot_format not recognised in wannier_plot', comm)
@@ -1757,8 +1755,7 @@ contains
   contains
 
     !================================================!
-    subroutine internal_cube_format(atom_data, wannier_data, wvfn_read, have_disentangled, &
-                                    real_lattice, bohr, error)
+    subroutine internal_cube_format(atom_data, wannier_data, real_lattice, bohr, error)
       !================================================!
       !
       !! Write WFs in Gaussian cube format.
@@ -1773,14 +1770,12 @@ contains
 
       implicit none
 
-      type(wvfn_read_type), intent(in) :: wvfn_read
       type(wannier_data_type), intent(in) :: wannier_data
       type(atom_data_type), intent(in) :: atom_data
       type(w90_error_type), allocatable, intent(out) :: error
       real(kind=dp), intent(in) :: bohr
 
       real(kind=dp), intent(in) :: real_lattice(3, 3)
-      logical, intent(in) :: have_disentangled
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
       real(kind=dp) :: inv_lattice(3, 3), recip_lattice(3, 3), pos_frac(3), volume

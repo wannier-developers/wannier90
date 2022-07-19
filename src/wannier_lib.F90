@@ -330,14 +330,16 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   ! read infile to in_data structure
   call w90_readwrite_in_file(seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, fermi_energy_list, &
-                                    fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, out_files, &
-                                    plot, wannierise, wann_omega, proj, input_proj, rs_region, select_proj, &
-                                    spec_points, system, tran, verbose, wann_data, wann_plot, write_data, ws_region, &
-                                    w90_calcs, eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
-                                    num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, calc_only_A, &
-                                    cp_pp, gamma_only, lhasproj, .true., .true., lsitesymmetry, use_bloch_phases, &
-                                    seedname, stdout, error, comm)
+  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, &
+                                    exclude_bands, fermi_energy_list, fermi_surface_data, &
+                                    kmesh_data, kmesh_info, kpt_latt, out_files, plot, wannierise, &
+                                    proj, input_proj, rs_region, select_proj, spec_points, system, &
+                                    tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
+                                    eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                                    num_bands, num_kpts, num_proj, num_wann, optimisation, &
+                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., &
+                                    .true., lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                                    error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_readwrite_clean_infile(stdout, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
@@ -646,14 +648,16 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   ! read infile to in_data structure
   call w90_readwrite_in_file(seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, exclude_bands, &
-                                    fermi_energy_list, fermi_surface_data, kmesh_data, kmesh_info, kpt_latt, &
-                                    out_files, plot, wannierise, wann_omega, proj, input_proj, rs_region, &
-                                    select_proj, spec_points, system, tran, verbose, wann_data, wann_plot, &
-                                    write_data, ws_region, w90_calcs, eigval, real_lattice, physics%bohr, &
-                                    symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, num_wann, optimisation, &
-                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., .false., &
-                                    lsitesymmetry, use_bloch_phases, seedname, stdout, error, comm)
+  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, &
+                                    exclude_bands, fermi_energy_list, fermi_surface_data, &
+                                    kmesh_data, kmesh_info, kpt_latt, out_files, plot, wannierise, &
+                                    proj, input_proj, rs_region, select_proj, spec_points, system, &
+                                    tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
+                                    eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                                    num_bands, num_kpts, num_proj, num_wann, optimisation, &
+                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., &
+                                    .false., lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                                    error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_readwrite_clean_infile(stdout, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)

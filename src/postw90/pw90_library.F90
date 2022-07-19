@@ -86,18 +86,18 @@ contains
                                            w90only%fermi_surface_data, wann90%kmesh_input, &
                                            wann90%kmesh_info, wann90%kpt_latt, w90only%output_file, &
                                            w90only%wvfn_read, w90only%wann_control, &
-                                           w90only%wann_omega, w90only%proj, w90only%proj_input, &
+                                           w90only%proj, w90only%proj_input, &
                                            w90only%real_space_ham, w90only%select_proj, &
                                            wann90%kpoint_path, wann90%w90_system, w90only%tran, &
-                                           wann90%print_output, wann90%wannier_data, w90only%wann_plot, &
+                                           wann90%print_output, w90only%wann_plot, &
                                            io_params, wann90%ws_region, w90only%w90_calculation, &
                                            wann90%eigval, wann90%real_lattice, physics%bohr, &
                                            w90only%sitesym%symmetrize_eps, wann90%mp_grid, &
                                            wann90%num_bands, wann90%num_kpts, w90only%num_proj, &
                                            wann90%num_wann, w90only%optimisation, w90only%eig_found, &
-                                           w90only%calc_only_A, cp_pp, wann90%gamma_only, &
-                                           w90only%lhasproj, w90only%lsitesymmetry, &
-                                           w90only%use_bloch_phases, seedname, output, error, comm)
+                                           wann90%gamma_only, w90only%lhasproj, &
+                                           w90only%lsitesymmetry, w90only%use_bloch_phases, &
+                                           seedname, output, error, comm)
       wann90%seedname = seedname
       if (mpirank(comm) /= 0) wann90%print_output%iprint = 0
       if (allocated(error)) then

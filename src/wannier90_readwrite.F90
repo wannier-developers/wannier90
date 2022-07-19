@@ -52,13 +52,13 @@ contains
   subroutine w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
                                           dis_manifold, exclude_bands, fermi_energy_list, &
                                           fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
-                                          output_file, wvfn_read, wann_control, wann_omega, proj, &
-                                          proj_input, real_space_ham, select_proj, kpoint_path, &
-                                          w90_system, tran, print_output, wannier_data, wann_plot, &
-                                          w90_extra_io, ws_region, w90_calculation, eigval, &
-                                          real_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
-                                          num_kpts, num_proj, num_wann, optimisation, eig_found, &
-                                          calc_only_A, cp_pp, gamma_only, lhasproj, library, &
+                                          output_file, wvfn_read, wann_control, proj, proj_input, &
+                                          real_space_ham, select_proj, kpoint_path, w90_system, &
+                                          tran, print_output, wann_plot, w90_extra_io, ws_region, &
+                                          w90_calculation, eigval, real_lattice, bohr, &
+                                          symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
+                                          num_wann, optimisation, eig_found, calc_only_A, cp_pp, &
+                                          gamma_only, lhasproj, library, &
                                           library_param_read_first_pass, lsitesymmetry, &
                                           use_bloch_phases, seedname, stdout, error, comm)
     !================================================!
@@ -97,9 +97,7 @@ contains
     type(w90_extra_io_type), intent(inout) :: w90_extra_io
     type(w90_system_type), intent(inout) :: w90_system
     type(wann_control_type), intent(inout) :: wann_control
-    type(wannier_data_type), intent(inout) :: wannier_data
     type(wannier_plot_type), intent(inout) :: wann_plot
-    type(wann_omega_type), intent(inout) :: wann_omega
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
@@ -310,15 +308,16 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_readall(atom_data, band_plot, dis_control, dis_spheres, &
                                              dis_manifold, exclude_bands, fermi_energy_list, &
-                                             fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
-                                             output_file, wvfn_read, wann_control, wann_omega, proj, &
+                                             fermi_surface_data, kmesh_input, kmesh_info, &
+                                             kpt_latt, output_file, wvfn_read, wann_control, proj, &
                                              proj_input, real_space_ham, select_proj, kpoint_path, &
-                                             w90_system, tran, print_output, wannier_data, wann_plot, &
+                                             w90_system, tran, print_output, wann_plot, &
                                              w90_extra_io, ws_region, w90_calculation, eigval, &
-                                             real_lattice, bohr, symmetrize_eps, mp_grid, num_bands, &
-                                             num_kpts, num_proj, num_wann, optimisation, eig_found, &
-                                             calc_only_A, cp_pp, gamma_only, lhasproj, lsitesymmetry, &
-                                             use_bloch_phases, seedname, stdout, error, comm)
+                                             real_lattice, bohr, symmetrize_eps, mp_grid, &
+                                             num_bands, num_kpts, num_proj, num_wann, &
+                                             optimisation, eig_found, gamma_only, lhasproj, &
+                                             lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                                             error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -355,9 +354,7 @@ contains
     type(w90_extra_io_type), intent(inout) :: w90_extra_io
     type(w90_system_type), intent(inout) :: w90_system
     type(wann_control_type), intent(inout) :: wann_control
-    type(wannier_data_type), intent(inout) :: wannier_data
     type(wannier_plot_type), intent(inout) :: wann_plot
-    type(wann_omega_type), intent(inout) :: wann_omega
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
@@ -387,7 +384,7 @@ contains
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
     logical, intent(inout) :: lsitesymmetry
-    logical, intent(out) :: use_bloch_phases, cp_pp, calc_only_A
+    logical, intent(out) :: use_bloch_phases
     logical, intent(inout) :: gamma_only
 
     ! local variables

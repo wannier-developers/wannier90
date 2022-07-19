@@ -45,7 +45,7 @@ module w90_readwrite
     integer, allocatable :: idata(:) ! integer data items
     logical, allocatable :: ldata(:) ! logical data items
     real(kind=dp), allocatable :: rdata(:) ! real data items
-  
+
     integer :: cnt, cntmx ! number of strings stored and max
     logical :: init = .false. ! if allocated (therefore not empty)
   end type settings_type
@@ -108,11 +108,11 @@ contains
     implicit none
     integer :: defsize = 10
     !allocate(settings%cdata(defsize))
-    allocate(settings%idata(defsize))
-    allocate(settings%ldata(defsize))
-    allocate(settings%rdata(defsize))
-    allocate(settings%strings(defsize))
-    allocate(settings%txtdata(defsize))
+    allocate (settings%idata(defsize))
+    allocate (settings%ldata(defsize))
+    allocate (settings%rdata(defsize))
+    allocate (settings%strings(defsize))
+    allocate (settings%txtdata(defsize))
     settings%init = .true.
     settings%cnt = 1
     settings%cntmx = defsize
@@ -124,15 +124,15 @@ contains
     integer, allocatable :: ni(:) ! integer data items
     logical, allocatable :: nl(:) ! logical data items
     real(kind=dp), allocatable :: nr(:) ! real data items
- 
+
     integer :: n, m ! old, new sizes
     n = settings%cntmx
     m = n + 10
-    allocate(ni(m));     ni(1:n) = settings%idata(1:n);   call move_alloc(ni,settings%idata) !f2003, note that "new" space not initialised
-    allocate(nl(m));     nl(1:n) = settings%ldata(1:n);   call move_alloc(nl,settings%ldata)
-    allocate(nr(m));     nr(1:n) = settings%rdata(1:n);   call move_alloc(nr,settings%rdata)
-    allocate(nstr(m)); nstr(1:n) = settings%strings(1:n); call move_alloc(nstr,settings%strings)
-    allocate(ntxt(m)); ntxt(1:n) = settings%txtdata(1:n); call move_alloc(ntxt,settings%txtdata)
+    allocate (ni(m)); ni(1:n) = settings%idata(1:n); call move_alloc(ni, settings%idata) !f2003, note that "new" space not initialised
+    allocate (nl(m)); nl(1:n) = settings%ldata(1:n); call move_alloc(nl, settings%ldata)
+    allocate (nr(m)); nr(1:n) = settings%rdata(1:n); call move_alloc(nr, settings%rdata)
+    allocate (nstr(m)); nstr(1:n) = settings%strings(1:n); call move_alloc(nstr, settings%strings)
+    allocate (ntxt(m)); ntxt(1:n) = settings%txtdata(1:n); call move_alloc(ntxt, settings%txtdata)
     settings%cntmx = m
   end subroutine expand_settings
 
@@ -145,8 +145,8 @@ contains
     real(kind=dp), intent(in) :: rval
     integer, intent(in) :: ival
     integer :: i
-    if (.not.settings%init) call init_settings()
-    i = settings%cnt 
+    if (.not. settings%init) call init_settings()
+    i = settings%cnt
     settings%strings(i) = string
     !settings%cdata(i) = cval
     settings%txtdata(i) = text
@@ -155,7 +155,7 @@ contains
     settings%rdata(i) = rval
     settings%cnt = i + 1
     if (settings%cnt == settings%cntmx) call expand_settings()
-  end subroutine update_settings 
+  end subroutine update_settings
   !================================================!
 
   !================================================!
@@ -2429,8 +2429,8 @@ contains
 
     if (settings%init) then ! check for presence in settings object
       do loop = 1, settings%cnt  ! this means the first occurance of the variable in settings is used
-                                 ! memory beyond cnt is not initialised
-        if(settings%strings(loop)==keyword)then
+        ! memory beyond cnt is not initialised
+        if (settings%strings(loop) == keyword) then
           if (present(i_value)) then
             i_value = settings%idata(loop)
           else if (present(r_value)) then
@@ -2439,15 +2439,15 @@ contains
             l_value = settings%ldata(loop)
           else if (present(c_value)) then
             c_value = settings%txtdata(loop)
-          endif 
+          endif
           ! else is a logic error (which should be checked for)
           found = .true.
           return
         endif
       enddo
     endif
-     ! here control returns to scanning the input file; that behaviour may not be desirable
-     ! consider 'else' for exclusive settings or infile
+    ! here control returns to scanning the input file; that behaviour may not be desirable
+    ! consider 'else' for exclusive settings or infile
 
     do loop = 1, num_lines
       in = index(in_data(loop), trim(keyword))
@@ -2487,7 +2487,7 @@ contains
     end if
 
     return
-220   call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
+220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
     return
 
   end subroutine w90_readwrite_get_keyword
