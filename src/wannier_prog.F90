@@ -337,9 +337,7 @@ program wannier
                                                          kpt_latt, real_lattice, &
                                                          num_kpts, gamma_only, stdout, &
                                                          timer, error, comm)
-    if (allocated(error)) then
-      call prterr(error, stdout, stderr, comm)
-    endif
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
@@ -348,6 +346,8 @@ program wannier
                                                  print_output, num_bands, num_kpts, num_proj, &
                                                  num_wann, optimisation, gamma_only, stdout)
   endif !on_root
+  call comms_sync_err(comm, error, ierr) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   if (dryrun) then
     if (on_root) then
@@ -371,10 +371,6 @@ program wannier
       dist_k(displs(i) + j) = i
     enddo
   enddo
-  !dist_k = my_node_id + 1
-  !do i = 1, num_kpts
-  !  if(i >= displs(my_node_id) .and. i < displs(my_node_id) + counts(my_node_id)) dist_k(i)=my_node_id
-  !enddo
 
   ! We now distribute the parameters to the other nodes
   call w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
