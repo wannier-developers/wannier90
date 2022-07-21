@@ -11,7 +11,6 @@ module w90_helper_types
 
   implicit none
 
-  ! Todo - disentangle, restarts, distribute data
   ! should we have a lib_wannierise_type?
 
   type lib_global_type
@@ -21,6 +20,10 @@ module w90_helper_types
 
     ! array of num_kpts containing the nodeid that the kpoint is on
     integer, pointer :: dist_kpoints(:) => null()
+    ! num kpoints per rank (size of contiguous blcok)
+    integer, pointer :: counts(:) => null()
+    ! kpoint block offset
+    integer, pointer :: displs(:) => null()
 
     type(atom_data_type) :: atom_data
     !type(dis_control_type) :: dis_control
@@ -382,61 +385,64 @@ contains
   end subroutine overlaps
 
   subroutine disentangle(helper, wan90, output, status, comm)
+
+    ! fixme, probably good to switch from m_matrix_local to m_matrix when mpisize==1
+
     use w90_disentangle, only: dis_main
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
+
     implicit none
+
+    ! arguments
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
-    !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
-    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    !
-    !type(w90_physical_constants_type) :: physics
-    type(w90_error_type), allocatable :: error
-    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    !complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
-    if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(wan90%m_orig)) .or. &
-        (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix)) .or. &
-        (.not. associated(helper%u_opt))) then
-      write (error_unit, *) 'Matrices not set for disentangle call'
+    ! local
+    type(w90_error_type), allocatable :: error
+
+    status = 0
+
+    if (.not. associated(wan90%m_matrix_local)) then
+      write (error_unit, *) 'm_matrix_local not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(wan90%a_matrix)) then
+      write (error_unit, *) 'a_matrix not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%u_matrix)) then
+      write (error_unit, *) 'u_matrix not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%u_opt)) then
+      write (error_unit, *) 'u_opt not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%counts)) then
+      write (error_unit, *) 'kpt decomp not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%displs)) then
+      write (error_unit, *) 'kpt decomp not set for disentangle call'
       status = 1
       return
     endif
-    status = 0
-    !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
-    !                        helper%num_kpts))
-    ! MPI issue
-    allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
-                                  helper%num_kpts))
-    m_matrix_orig_local(1:helper%num_bands, 1:helper%num_bands, 1:helper%kmesh_info%nntot, &
-                        1:helper%num_kpts) = wan90%m_orig(1:helper%num_bands, 1:helper%num_bands, &
-                                                          1:helper%kmesh_info%nntot, 1:helper%num_kpts)
-    ! MPI issue
-    allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
-                             helper%num_kpts))
+
     call dis_main(wan90%dis_control, wan90%dis_spheres, helper%dis_manifold, helper%kmesh_info, &
-                  !helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, wan90%m_matrix, &
-                  !m_matrix_local, wan90%m_orig, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
                   helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, &
-                  !m_matrix_local, m_matrix_orig_local, helper%u_matrix, helper%u_opt, &
-                  m_matrix_local, helper%u_matrix, helper%u_opt, &
-                  helper%eigval, helper%real_lattice, wan90%omega%invariant, helper%num_bands, &
-                  !helper%num_kpts, helper%num_wann, wan90%optimisation, helper%gamma_only, &
-                  helper%num_kpts, helper%num_wann, helper%gamma_only, &
-                  wan90%lsitesymmetry, &
-                  output, helper%timer, helper%dist_kpoints, helper%dist_kpoints, error, comm)
+                  wan90%m_matrix_local, helper%u_matrix, helper%u_opt, helper%eigval, &
+                  helper%real_lattice, wan90%omega%invariant, helper%num_bands, helper%num_kpts, &
+                  helper%num_wann, helper%gamma_only, wan90%lsitesymmetry, output, helper%timer, &
+                  helper%counts, helper%displs, error, comm)
+
+    !fixme, need call to "splitm" to prepare matrices for wannierisation
 
     helper%have_disentangled = .true.
-    if (allocated(m_matrix_local)) deallocate (m_matrix_local)
-    if (allocated(m_matrix_orig_local)) deallocate (m_matrix_orig_local)
-    !if (allocated(m_matrix_orig)) deallocate (m_matrix_orig)
+
     if (allocated(error)) then
       write (error_unit, *) 'Error in disentangle', error%code, error%message
       status = sign(1, error%code)
@@ -596,6 +602,14 @@ contains
     helper%m_matrix => m_matrix
   end subroutine set_m_matrix
 
+  subroutine set_m_matrix_local(helper, m_matrix_local) ! scattered m-matrix
+    implicit none
+    type(lib_w90_type), intent(inout) :: helper
+    complex(kind=dp), intent(inout), target :: m_matrix_local(:, :, :, :)
+
+    helper%m_matrix_local => m_matrix_local
+  end subroutine set_m_matrix_local
+
   subroutine set_m_orig(helper, m_orig)
     implicit none
     type(lib_w90_type), intent(inout) :: helper
@@ -627,5 +641,16 @@ contains
 
     helper%dist_kpoints => dist
   end subroutine set_kpoint_distribution
+
+  ! for "old style" blockwise distribution
+  subroutine set_kpoint_block(helper, counts, displs)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    integer, intent(inout), target :: counts(:)
+    integer, intent(inout), target :: displs(:)
+
+    helper%counts => counts
+    helper%displs => displs
+  end subroutine set_kpoint_block
 
 end module w90_helper_types
