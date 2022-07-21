@@ -516,12 +516,13 @@ program wannier
     call dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
                   print_output, a_matrix, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
                   real_lattice, omega%invariant, num_bands, num_kpts, num_wann, gamma_only, &
-                  lsitesymmetry, stdout, timer, error, comm)
+                  lsitesymmetry, stdout, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
     call splitm(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, m_matrix, &
-                u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, error, comm)
+                u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
+                error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     have_disentangled = .true.
@@ -546,13 +547,13 @@ program wannier
                    wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                    num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, transport%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout, timer, dist_k, error, comm)
+                   stdout, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   else
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &
-                         m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
+                         m_matrix, m_matrix_local, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          real_space_ham%translate_home_cell, seedname, stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)

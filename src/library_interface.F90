@@ -430,7 +430,8 @@ contains
                   helper%eigval, helper%real_lattice, wan90%omega%invariant, helper%num_bands, &
                   !helper%num_kpts, helper%num_wann, wan90%optimisation, helper%gamma_only, &
                   helper%num_kpts, helper%num_wann, helper%gamma_only, &
-                  wan90%lsitesymmetry, output, helper%timer, error, comm)
+                  wan90%lsitesymmetry, &
+                  output, helper%timer, helper%dist_kpoints, helper%dist_kpoints, error, comm)
 
     helper%have_disentangled = .true.
     if (allocated(m_matrix_local)) deallocate (m_matrix_local)
@@ -471,6 +472,7 @@ contains
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, wan90%output_file, wan90%wann_control, &
                            wan90%omega, helper%w90_system, helper%print_output, helper%wannier_data, wan90%m_matrix, &
+                           wan90%m_matrix_local, &
                            helper%u_matrix, helper%u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            wan90%real_space_ham%translate_home_cell, helper%seedname, output, &
@@ -487,7 +489,7 @@ contains
                      helper%num_kpts, wan90%num_proj, helper%num_wann, wan90%optimisation, &
                      wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
                      helper%have_disentangled, wan90%lsitesymmetry, helper%seedname, output, &
-                     helper%timer, helper%dist_kpoints, error, comm)
+                     helper%timer, helper%dist_kpoints, helper%dist_kpoints, error, comm) !fixme, this is broken (counts, displs)
     endif
     if (allocated(error)) then
       write (error_unit, *) 'Error in wannierise', error%code, error%message
