@@ -21,16 +21,14 @@ module w90_disentangle
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
-  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce, &
-    w90comm_type, mpisize, mpirank
+  use w90_comms, only: comms_bcast, comms_gatherv, comms_allreduce, w90comm_type, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_stopwatch_start, io_stopwatch_stop
   use w90_error
   use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
   use w90_wannier90_types, only: dis_control_type, dis_spheres_type, sitesym_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
-    sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
-    sitesym_dis_extract_symmetry
+    sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, sitesym_dis_extract_symmetry
 
   implicit none
 
@@ -43,7 +41,7 @@ contains
   subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
                       print_output, a_matrix, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
                       real_lattice, omega_invariant, num_bands, num_kpts, num_wann, gamma_only, &
-                      lsitesymmetry, stdout, timer, error, comm)
+                      lsitesymmetry, stdout, timer, counts, displs, error, comm)
     !================================================!
     !
     !! Main disentanglement routine
@@ -57,6 +55,8 @@ contains
     ! arguments
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
 
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: gamma_only
@@ -98,21 +98,15 @@ contains
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
 
     ! pllel setup
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (print_output%timing_level > 0) call io_stopwatch_start('dis: main', timer)
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-    call comms_array_split(num_kpts, counts, displs, comm) ! this should be passed to be consistent
 
     if (on_root) write (stdout, '(/1x,a)') &
       '*------------------------------- DISENTANGLE --------------------------------*'
@@ -161,8 +155,8 @@ contains
 
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
-                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, timer, &
-                         error, comm)
+                         kmesh_info%nntot, num_bands, print_output%timing_level, timer, counts, &
+                         displs, error, comm)
     if (allocated(error)) return
 
     dis_manifold%lwindow = .false.
@@ -190,8 +184,8 @@ contains
     else
       call dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                        m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
-                       ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, num_wann, &
-                       lsitesymmetry, on_root, timer, error, stdout, comm)
+                       ndimfroz, my_node_id, num_bands, num_kpts, num_wann, &
+                       lsitesymmetry, timer, counts, displs, error, stdout, comm)
       if (allocated(error)) return
     end if
 
@@ -263,7 +257,8 @@ contains
   end subroutine dis_main
 
   subroutine splitm(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, m_matrix, &
-                    u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, error, comm)
+                    u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
+                    error, comm)
     !================================================!
     !
     ! map m_matrix_orig_local to m_matrix_local
@@ -271,7 +266,7 @@ contains
     !
     !================================================!
 
-    use w90_comms, only: comms_array_split, comms_gatherv, w90comm_type, mpisize, mpirank
+    use w90_comms, only: comms_gatherv, w90comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_1
     use w90_error, only: w90_error_type
     use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
@@ -279,6 +274,7 @@ contains
     ! arguments
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: optimisation
+    integer, intent(in) :: counts(0:), displs(0:)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :) ! (num_bands, num_bands, nntot, num_kpts)
@@ -293,9 +289,8 @@ contains
 
     ! internal variables
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
-    integer, allocatable :: counts(:), displs(:)
     integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global, m
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
 
     if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
 
@@ -304,11 +299,7 @@ contains
       return
     endif
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
-    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
     if (ierr /= 0) then
@@ -373,8 +364,6 @@ contains
     call comms_gatherv(m_matrix_local, m*counts(my_node_id), m_matrix, m*counts, m*displs, error, comm)
     if (allocated(error)) return
 
-    deallocate (counts)
-    deallocate (displs)
     deallocate (cwb)
     deallocate (cww)
     if (print_output%timing_level > 1) call io_stopwatch_stop('dis: splitm', timer)
@@ -458,7 +447,7 @@ contains
   end subroutine internal_check_orthonorm
 
   subroutine internal_slim_m(m_matrix_orig_local, ndimwin, nfirstwin, nnlist, nntot, num_bands, &
-                             num_kpts, timing_level, timer, error, comm)
+                             timing_level, timer, counts, displs, error, comm)
     !================================================!
     !
     !! This subroutine slims down the original Mmn(k,b), removing
@@ -475,10 +464,12 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: timing_level
-    integer, intent(in) :: num_bands, num_kpts
+    integer, intent(in) :: num_bands
     integer, intent(in) :: ndimwin(:)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts) index of lowest band inside outer window at nkp-th
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
 
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
 
@@ -488,20 +479,13 @@ contains
 
     complex(kind=dp), allocatable :: cmtmp(:, :)
 
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 1 .and. on_root) call io_stopwatch_start('dis: main: slim_m', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (cmtmp(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) then
@@ -1898,8 +1882,8 @@ contains
 
   subroutine dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                          m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, &
-                         indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_nodes, &
-                         num_wann, lsitesymmetry, on_root, timer, error, stdout, comm)
+                         indxnfroz, ndimfroz, my_node_id, num_bands, num_kpts, num_wann, &
+                         lsitesymmetry, timer, counts, displs, error, stdout, comm)
     !================================================!
     !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -1957,11 +1941,13 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: num_nodes, my_node_id
+    integer, intent(in) :: my_node_id
     integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) ! (num_bands,num_kpts)
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
 
     real(kind=dp), intent(inout) :: eigval_opt(:, :)
     real(kind=dp), intent(out) :: omega_invariant
@@ -1969,19 +1955,20 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
-    logical, intent(in) :: on_root, lsitesymmetry
+    logical, intent(in) :: lsitesymmetry
 
     ! Internal variables
     integer :: i, j, l, m, n, nn, nkp, nkp2, info, ierr, ndimk, p
     integer :: icompflag, iter, ndiff
     real(kind=dp) :: womegai, wkomegai, womegai1, rsum, delta_womegai
     real(kind=dp), allocatable :: wkomegai1(:)
-
-    ! for MPI
+    real(kind=dp), allocatable :: history(:)
+    real(kind=dp), allocatable :: rwork(:)
+    real(kind=dp), allocatable :: w(:)
     real(kind=dp), allocatable :: wkomegai1_loc(:)
+
     complex(kind=dp), allocatable :: camp_loc(:, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt_loc(:, :, :)
-
     complex(kind=dp), allocatable :: ceamp(:, :, :)
     complex(kind=dp), allocatable :: camp(:, :, :)
     complex(kind=dp), allocatable :: czmat_in(:, :, :)
@@ -1991,24 +1978,22 @@ contains
     complex(kind=dp), allocatable :: czmat_out_loc(:, :, :)
     complex(kind=dp), allocatable :: cham(:, :, :)
 
-    integer, allocatable :: iwork(:)
-    integer, allocatable :: ifail(:)
-    real(kind=dp), allocatable :: w(:)
-    real(kind=dp), allocatable :: rwork(:)
     complex(kind=dp), allocatable :: cap(:)
+    complex(kind=dp), allocatable :: cwb(:, :), cww(:, :), cbw(:, :)
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:, :)
-
-    complex(kind=dp), allocatable :: cwb(:, :), cww(:, :), cbw(:, :)
-
-    real(kind=dp), allocatable :: history(:)
-    logical :: dis_converged
     complex(kind=dp) :: lambda(num_wann, num_wann) !RS:
 
-    ! Needed to split an array on different nodes
-    integer :: counts(0:num_nodes - 1)
-    integer :: displs(0:num_nodes - 1)
-    integer :: nkp_loc
+    integer, allocatable :: ifail(:)
+    integer, allocatable :: iwork(:)
+    integer :: nkp_loc, ranknk
+
+    logical :: dis_converged
+    logical :: on_root = .false.
+
+    if (my_node_id == 0) on_root = .true.
+
+    ranknk = counts(my_node_id)
 
     if (print_output%timing_level > 1 .and. on_root) call io_stopwatch_start('dis: extract', timer)
 
@@ -2032,9 +2017,6 @@ contains
       call set_error_alloc(error, 'Error allocating cbw in dis_extract', comm)
       return
     endif
-
-    cwb = cmplx_0; cww = cmplx_0; cbw = cmplx_0
-
     allocate (iwork(5*num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating iwork in dis_extract', comm)
@@ -2070,35 +2052,26 @@ contains
       call set_error_alloc(error, 'Error allocating cz in dis_extract', comm)
       return
     endif
-
-    ! for MPI
-    call comms_array_split(num_kpts, counts, displs, comm)
-    allocate (u_matrix_opt_loc(num_bands, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    allocate (u_matrix_opt_loc(num_bands, num_wann, ranknk), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating u_matrix_opt_loc in dis_extract', comm)
       return
     endif
-    ! Copy matrix elements from global U matrix to local U matrix
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
-      u_matrix_opt_loc(:, :, nkp_loc) = u_matrix_opt(:, :, nkp)
-    enddo
-    allocate (wkomegai1_loc(max(1, counts(my_node_id))), stat=ierr)
+    allocate (wkomegai1_loc(ranknk), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating wkomegai1_loc in dis_extract', comm)
       return
     endif
-    allocate (czmat_in_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
+    allocate (czmat_in_loc(num_bands, num_bands, ranknk), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating czmat_in_loc in dis_extract', comm)
       return
     endif
-    allocate (czmat_out_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
+    allocate (czmat_out_loc(num_bands, num_bands, ranknk), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating czmat_out_loc in dis_extract', comm)
       return
     endif
-
     allocate (wkomegai1(num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating wkomegai1 in dis_extract', comm)
@@ -2119,6 +2092,14 @@ contains
       call set_error_alloc(error, 'Error allocating history in dis_extract', comm)
       return
     endif
+
+    cwb = cmplx_0; cww = cmplx_0; cbw = cmplx_0
+
+    ! Copy matrix elements from global U matrix to local U matrix
+    do nkp_loc = 1, ranknk
+      nkp = displs(my_node_id) + nkp_loc
+      u_matrix_opt_loc(:, :, nkp_loc) = u_matrix_opt(:, :, nkp)
+    enddo
 
     ! ********************************************
     ! ENERGY WINDOWS AND SUBSPACES AT EACH K-POINT
@@ -2187,8 +2168,8 @@ contains
 
       if (iter .eq. 1) then
         ! Initialize Z matrix at k points w/ non-frozen states
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, ranknk
+          nkp = displs(my_node_id) + nkp_loc
           if (num_wann .gt. ndimfroz(nkp)) then
             call internal_zmatrix(cbw, czmat_in_loc(:, :, nkp_loc), m_matrix_orig_local, &
                                   u_matrix_opt, kmesh_info%wb, indxnfroz, ndimfroz, &
@@ -2199,15 +2180,15 @@ contains
         enddo
 
         if (lsitesymmetry) then
-          call comms_gatherv(czmat_in_loc, num_bands*num_bands*counts(my_node_id), czmat_in, &
+          call comms_gatherv(czmat_in_loc, num_bands*num_bands*ranknk, czmat_in, &
                              num_bands*num_bands*counts, num_bands*num_bands*displs, error, comm)
           if (allocated(error)) return
           call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, error, comm)
           if (allocated(error)) return
           call sitesym_symmetrize_zmatrix(sitesym, czmat_in, num_bands, num_kpts, &
                                           dis_manifold%lwindow) !RS:
-          do nkp_loc = 1, counts(my_node_id)
-            nkp = nkp_loc + displs(my_node_id)
+          do nkp_loc = 1, ranknk
+            nkp = displs(my_node_id) + nkp_loc
             czmat_in_loc(:, :, nkp_loc) = czmat_in(:, :, nkp)
           end do
         end if
@@ -2215,8 +2196,8 @@ contains
       else
         ! [iter.ne.1]
         ! Update Z matrix at k points with non-frozen states, using a mixing sch
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, ranknk
+          nkp = displs(my_node_id) + nkp_loc
           if (lsitesymmetry) then                !YN: RS:
             if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
           endif                                  !YN: RS:
@@ -2251,13 +2232,13 @@ contains
                                           sitesym%nsymmetry/count(sitesym%kptsym(:, nkp) .eq. sitesym%ir2ik(nkp))
         enddo
       endif
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, ranknk
+        nkp = displs(my_node_id) + nkp_loc
         wkomegai1_loc(nkp_loc) = wkomegai1(nkp)
       end do
 
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, ranknk
+        nkp = displs(my_node_id) + nkp_loc
         if (ndimfroz(nkp) .gt. 0) then
           if (lsitesymmetry) then
             call set_error_fatal(error, 'not implemented in symmetry-adapted mode', comm)
@@ -2290,8 +2271,8 @@ contains
       !! call comms_bcast(wkomegai1(1), num_kpts)
 
       ! Refine optimal subspace at k points w/ non-frozen states
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, ranknk
+        nkp = displs(my_node_id) + nkp_loc
         if (lsitesymmetry) then                                                     !RS:
           if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle                     !RS:
         end if                                                                      !RS:
@@ -2401,7 +2382,7 @@ contains
       call comms_allreduce(womegai1, 1, 'SUM', error, comm)
       if (allocated(error)) return
 
-      call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), u_matrix_opt, &
+      call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*ranknk, u_matrix_opt, &
                          num_bands*num_wann*counts, num_bands*num_wann*displs, error, comm)
       if (allocated(error)) return
 
@@ -2457,8 +2438,8 @@ contains
       if (print_output%timing_level > 1 .and. on_root) call io_stopwatch_start('dis: extract_4', timer)
 
       womegai = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, ranknk
+        nkp = displs(my_node_id) + nkp_loc
         wkomegai = 0.0_dp
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
@@ -2496,8 +2477,8 @@ contains
 124   format(2x, i6, 3x, f14.8, 3x, f14.8, 6x, es10.3, 2x, f8.2, 4x, '<-- DIS')
 
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, ranknk
+        nkp = displs(my_node_id) + nkp_loc
         if (num_wann .gt. ndimfroz(nkp)) then
           call internal_zmatrix(cbw, czmat_out_loc(:, :, nkp_loc), m_matrix_orig_local, &
                                 u_matrix_opt, kmesh_info%wb, indxnfroz, ndimfroz, &
@@ -2516,8 +2497,8 @@ contains
         if (allocated(error)) return
 
         call sitesym_symmetrize_zmatrix(sitesym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow)
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, ranknk
+          nkp = displs(my_node_id) + nkp_loc
           czmat_out_loc(:, :, nkp_loc) = czmat_out(:, :, nkp)
         end do
       end if

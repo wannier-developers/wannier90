@@ -2448,9 +2448,9 @@ contains
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
-    !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
-    !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
-    !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
+    !! note that this routine writes the full u_matrix and the m_matrix
+    !! --remember to gather them from u_matrix_loc and m_matrix_loc first!
+    !! (nothing here is parallel)
     !================================================!
 
     use w90_io, only: io_file_unit, io_date
@@ -2495,8 +2495,7 @@ contains
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
 
     write (chk_unit) header                                   ! Date and time
     write (chk_unit) num_bands                                ! Number of bands
