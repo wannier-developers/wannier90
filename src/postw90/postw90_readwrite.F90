@@ -971,6 +971,22 @@ contains
                                           r_value=pw90_berry%kdotp_kpoint)
     if (allocated(error)) return
 
+    pw90_berry%tetrahedron_method = .false.
+    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_method', found, &
+                                   l_value=pw90_berry%tetrahedron_method)
+    if (pw90_berry%tetrahedron_method .and. index(pw90_berry%task, 'shc') == 0) &
+      call io_error('Error: tetrahedron_method only implemented in the shc routine', stdout, seedname)
+
+    pw90_berry%tetrahedron_correction = .true.
+    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_correction', found, &
+                                   l_value=pw90_berry%tetrahedron_method)
+
+    pw90_berry%tetrahedron_cutoff = 1.e-4_dp
+    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_cutoff', found, &
+                                   r_value=pw90_berry%tetrahedron_cutoff)
+    if (pw90_berry%tetrahedron_cutoff <= 0._dp) call io_error &
+      ('Error: tetrahedron_cutoff must be greater than zero', stdout, seedname)
+
     kdotp_num_bands = 0
     call w90_readwrite_get_keyword(settings, 'kdotp_num_bands', found, error, comm, &
                                    i_value=kdotp_num_bands)
@@ -2191,7 +2207,14 @@ contains
         end if
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(w90_readwrite_get_smearing_type(pw90_dos%smearing%type_index)), '|'
-      end if
+      endif
+      if (pw90_berry%tetrahedron_method) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       T', '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
+          pw90_berry%tetrahedron_cutoff, '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       F', '|'
+      endif
       if (pw90_extra_io%global_kmesh%mesh(1) == pw90_dos%kmesh%mesh(1) .and. &
           pw90_extra_io%global_kmesh%mesh(2) == pw90_dos%kmesh%mesh(2) .and. &
           pw90_extra_io%global_kmesh%mesh(3) == pw90_dos%kmesh%mesh(3)) then
