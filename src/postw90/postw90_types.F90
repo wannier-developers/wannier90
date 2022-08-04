@@ -165,7 +165,18 @@ module w90_postw90_types
     integer :: kubo_nfreq
     complex(kind=dp), allocatable :: kubo_freq_list(:)
     real(kind=dp) :: kubo_eigval_max
+    ! + Module tetrahedron
+    !type(pw90_tetrahedron_type) :: tetrahedron
+    logical :: tetrahedron_method
+    logical :: tetrahedron_correction
+    real(kind=dp) :: tetrahedron_cutoff
   end type pw90_berry_mod_type
+
+  !type pw90_tetrahedron_type
+  !  logical :: method
+  !  logical :: correction
+  !  real(kind=dp) :: cutoff
+  !end type pw90_tetrahedron_type
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
   type pw90_spin_hall_type

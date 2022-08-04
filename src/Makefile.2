@@ -168,7 +168,10 @@ kpath.o: $(POSTDIR)kpath.F90 comms.o types.o constants.o io.o spin.o berry.o pos
 kslice.o: $(POSTDIR)kslice.F90 comms.o types.o constants.o io.o spin.o berry.o postw90_types.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kslice.F90
 
-berry.o: $(POSTDIR)berry.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_types.o ws_distance.o
+tetrahedron.o: $(POSTDIR)tetrahedron.F90 constants.o utility.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)tetrahedron.F90
+
+berry.o: $(POSTDIR)berry.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_types.o ws_distance.o tetrahedron.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry.F90
 
 gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o berry.o postw90_types.o ws_distance.o
