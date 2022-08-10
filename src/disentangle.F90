@@ -278,8 +278,8 @@ contains
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :) ! (num_bands, num_bands, nntot, num_kpts)
-    complex(kind=dp), intent(inout), allocatable :: m_matrix_local(:, :, :, :) ! (num_wann, num_wann, nntot, rank_kpts)
-    complex(kind=dp), intent(inout), allocatable :: m_matrix(:, :, :, :) ! (num_wann, num_wann, nntot, num_kpts) (root only)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :) ! (num_wann, num_wann, nntot, rank_kpts)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) ! (num_wann, num_wann, nntot, num_kpts) (root only)
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
@@ -294,18 +294,7 @@ contains
 
     if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
 
-    if (allocated(m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local is allocated at splitm call', comm)
-      return
-    endif
-
     my_node_id = mpirank(comm)
-
-    allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix_local in dis_main', comm)
-      return
-    endif
     allocate (cwb(num_wann, num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwb in dis_main', comm)
@@ -348,16 +337,6 @@ contains
       end do
       close (page_unit)
     endif
-
-    !if (my_node_id == 0) then
-    allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix in splitm', comm)
-      return
-    endif
-    !else
-    !  allocate(m_matrix(1,1,1,1), stat=ierr)
-    !endif
 
     ! collect up the local parts back on root
     m = num_wann*num_wann*kmesh_info%nntot

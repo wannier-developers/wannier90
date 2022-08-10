@@ -388,9 +388,9 @@ contains
 
     ! fixme, probably good to switch from m_matrix_local to m_matrix when mpisize==1
 
-    use w90_disentangle, only: dis_main
+    use w90_disentangle, only: dis_main, splitm
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90comm_type, mpirank
 
     implicit none
 
@@ -403,10 +403,19 @@ contains
 
     ! local
     type(w90_error_type), allocatable :: error
+    integer :: optimisation = 3
 
     status = 0
 
-    if (.not. associated(wan90%m_matrix_local)) then
+    if (.not. associated(wan90%m_orig)) then  ! m_matrix_orig_local (nband*nwann for disentangle)
+      write (error_unit, *) 'm_orig not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(wan90%m_matrix) .and. mpirank(comm) == 0) then ! (nband*nwann*allk root only for wannierise)
+      write (error_unit, *) 'm_matrix not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(wan90%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
       write (error_unit, *) 'm_matrix_local not set for disentangle call'
       status = 1
       return
@@ -434,13 +443,17 @@ contains
 
     call dis_main(wan90%dis_control, wan90%dis_spheres, helper%dis_manifold, helper%kmesh_info, &
                   helper%kpt_latt, wan90%sitesym, helper%print_output, wan90%a_matrix, &
-                  wan90%m_matrix_local, helper%u_matrix, helper%u_opt, helper%eigval, &
+                  wan90%m_orig, helper%u_matrix, helper%u_opt, helper%eigval, &
                   helper%real_lattice, wan90%omega%invariant, helper%num_bands, helper%num_kpts, &
                   helper%num_wann, helper%gamma_only, wan90%lsitesymmetry, output, helper%timer, &
                   helper%counts, helper%displs, error, comm)
 
-    !fixme, need call to "splitm" to prepare matrices for wannierisation
-
+    ! copy to m_matrix_local and m_matrix (on root) from m_matrix_orig_local
+    call splitm(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
+                wan90%m_matrix, helper%u_matrix, helper%num_bands, helper%num_kpts, &
+                helper%num_wann, optimisation, helper%timer, helper%counts, &
+                helper%displs, error, comm)
+ 
     helper%have_disentangled = .true.
 
     if (allocated(error)) then
@@ -610,7 +623,7 @@ contains
     helper%m_matrix_local => m_matrix_local
   end subroutine set_m_matrix_local
 
-  subroutine set_m_orig(helper, m_orig)
+  subroutine set_m_orig(helper, m_orig) ! m_matrix_local_orig
     implicit none
     type(lib_w90_type), intent(inout) :: helper
     complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
