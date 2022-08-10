@@ -708,12 +708,21 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (disentanglement) then
     have_disentangled = .false.
 
+   ! dis_main only uses m_matrix_orig_local
     call dis_main(dis_data, dis_spheres, dis_window, kmesh_info, kpt_latt, sym, verbose, a_matrix, &
-                  m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
+                  m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
-                  num_bands, num_kpts, num_wann, optimisation, gamma_only, lsitesymmetry, &
-                  stdout, timer, error, comm)
+                  num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
+                  stdout, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout)
+
+    ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
+    call splitm(kmesh_info, verbose, m_matrix_local, m_matrix_orig_local, m_matrix, &
+                u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
+                error, comm)
+    if (allocated(error)) call prterr(error, stdout)
+
+
     have_disentangled = .true.
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
                                              kpt_latt, num_kpts, dis_window, num_bands, num_wann, u_matrix, &
@@ -740,18 +749,18 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (gamma_only) then
     call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
-                         u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
+                         m_matrix_local, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          rs_region%translate_home_cell, seedname, stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   else
     call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
-                   ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
+                   ws_region, w90_calcs, ham_k, ham_r, m_matrix, m_matrix_local, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, timer, dist_k, error, comm)
+                   seedname, stdout, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
 
