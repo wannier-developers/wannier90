@@ -520,6 +520,21 @@ program wannier
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
+    my_node_id = mpirank(comm)
+    allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating m_matrix_local in wannier_prog', comm)
+      return
+    endif
+    if (my_node_id == 0) then
+      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+    else
+      allocate (m_matrix(1,1,1,1), stat=ierr)
+    endif
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating m_matrix in splitm', comm)
+      return
+    endif
     call splitm(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, m_matrix, &
                 u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
                 error, comm)
