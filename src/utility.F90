@@ -455,9 +455,9 @@ contains
 
     implicit none
 
-    real(kind=dp), intent(in)  :: inv_lat(3, 3)
-    real(kind=dp), intent(out)  :: frac(3)
-    real(kind=dp), intent(in)  :: cart(3)
+    real(kind=dp), intent(in) :: inv_lat(3, 3)
+    real(kind=dp), intent(out) :: frac(3)
+    real(kind=dp), intent(in) :: cart(3)
 
     integer :: i
 

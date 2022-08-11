@@ -179,7 +179,7 @@ contains
     integer :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc
     integer :: irguide
     integer :: irpt, loop_kpt
-    integer :: wwk, ranknk
+    integer :: ranknk
     logical :: lconverged, lrandom, lfirst
     logical :: lprint, ldump, lquad
     real(kind=dp) :: doda0
@@ -801,33 +801,33 @@ contains
         !omega_tilde = wann_spread%om_d + wann_spread%om_nu
       end if
 
-      if (ldump) then
-        ! Before calling w90_wannier90_readwrite_write_chkpt, I need to gather on the root node
-        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
-        ! it's printed by the root node only
-        u_matrix(:, :, :) = 0.0_dp
-        m_matrix(:, :, :, :) = 0.0_dp
-        do nkp_loc = 1, ranknk
-          nkp = local_k(nkp_loc)
-          u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
-          m_matrix(:, :, :, nkp) = m_matrix_loc(:, :, :, nkp_loc)
-        enddo
-
-        wwk = num_wann*num_wann*num_kpts
-        call comms_reduce(u_matrix(1, 1, 1), wwk, 'SUM', error, comm)
-        if (allocated(error)) return
-        call comms_reduce(m_matrix(1, 1, 1, 1), wwk*kmesh_info%nntot, 'SUM', error, comm)
-        if (allocated(error)) return
-
-        if (on_root) then
-          call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
-                                                   kmesh_info, kpt_latt, num_kpts, dis_manifold, &
-                                                   num_bands, num_wann, u_matrix, u_matrix_opt, &
-                                                   m_matrix, mp_grid, real_lattice, &
-                                                   omega%invariant, have_disentangled, stdout, &
-                                                   seedname)
-        endif
-      endif
+!JJ      if (ldump) then
+!JJ        ! Before calling w90_wannier90_readwrite_write_chkpt, I need to gather on the root node
+!JJ        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
+!JJ        ! it's printed by the root node only
+!JJ        u_matrix(:, :, :) = 0.0_dp
+!JJ        m_matrix(:, :, :, :) = 0.0_dp
+!JJ        do nkp_loc = 1, ranknk
+!JJ          nkp = displs(my_node_id) + nkp_loc
+!JJ          u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
+!JJ          m_matrix(:, :, :, nkp) = m_matrix_loc(:, :, :, nkp_loc)
+!JJ        enddo
+!JJ
+!JJ        wwk = num_wann*num_wann*num_kpts
+!JJ        call comms_reduce(u_matrix(1, 1, 1), wwk, 'SUM', error, comm)
+!JJ        if (allocated(error)) return
+!JJ        call comms_reduce(m_matrix(1, 1, 1, 1), wwk*kmesh_info%nntot, 'SUM', error, comm)
+!JJ        if (allocated(error)) return
+!JJ
+!JJ        if (on_root) then
+!JJ          call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
+!JJ                                                   kmesh_info, kpt_latt, num_kpts, dis_manifold, &
+!JJ                                                   num_bands, num_wann, u_matrix, u_matrix_opt, &
+!JJ                                                   m_matrix, mp_grid, real_lattice, &
+!JJ                                                   omega%invariant, have_disentangled, stdout, &
+!JJ                                                   seedname)
+!JJ        endif
+!JJ      endif
 
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
@@ -848,9 +848,6 @@ contains
 
     enddo
     ! end of the minimization loop
-
-    ! note, at this point m_matrix and m_matrix_loc are correctly synchronised
-    ! either as the initial condition or the result of reduction in last minim step
 
     u_matrix(:, :, :) = 0.0_dp
     do nkp_loc = 1, ranknk
@@ -958,18 +955,18 @@ contains
                               print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
 
-    ! write extra info regarding omega_invariant
-    if (print_output%iprint > 2 .and. on_root) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, comm, stdout)
-      if (allocated(error)) return
-    endif
+!JJ    ! write extra info regarding omega_invariant
+!JJ    if (print_output%iprint > 2 .and. on_root) then
+!JJ      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+!JJ                            error, comm, stdout)
+!JJ      if (allocated(error)) return
+!JJ    endif
 
-    ! write matrix elements <m|r^2|n> to file
-    if (output_file%write_r2mn .and. on_root) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-      if (allocated(error)) return
-    endif
+!JJ    ! write matrix elements <m|r^2|n> to file
+!JJ    if (output_file%write_r2mn .and. on_root) then
+!JJ      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
+!JJ      if (allocated(error)) return
+!JJ    endif
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. output_file%write_proj) then
@@ -1125,7 +1122,6 @@ contains
         return
       endif
     end if
-    ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main', comm)
@@ -1720,22 +1716,24 @@ contains
       type(w90comm_type), intent(in) :: comm
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
-      real(kind=dp), intent(inout) :: evals(:)
-      real(kind=dp), intent(inout) :: rwork(:)
       complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
       complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
       complex(kind=dp), intent(inout) :: cz(:, :)
-      integer, intent(in) :: num_wann, num_kpts
-      logical, intent(in) :: lsitesymmetry
+      complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
+      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
+
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: local_k(:)
-      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
-      complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
+      integer, intent(in) :: num_wann, num_kpts
       integer, intent(in) :: stdout
+      logical, intent(in) :: lsitesymmetry
+
+      real(kind=dp), intent(inout) :: evals(:)
+      real(kind=dp), intent(inout) :: rwork(:)
 
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
@@ -3276,7 +3274,7 @@ contains
   !================================================!
   subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
                              output_file, wann_control, omega, w90_system, print_output, &
-                             wannier_data, m_matrix, m_matrix_loc, u_matrix, u_matrix_opt, &
+                             wannier_data, m_matrix, u_matrix, u_matrix_opt, &
                              eigval, real_lattice, mp_grid, num_bands, num_kpts, num_wann, &
                              have_disentangled, translate_home_cell, seedname, stdout, timer, &
                              error, comm)
@@ -3328,7 +3326,6 @@ contains
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
 
     logical, intent(in) :: have_disentangled, translate_home_cell
     character(len=50), intent(in) :: seedname
@@ -3337,7 +3334,7 @@ contains
     type(localisation_vars_type) :: old_spread
     type(localisation_vars_type) :: wann_spread
 
-    integer :: counts(0:0)
+    integer :: counts(0:1)
     integer :: local_k(1)
     real(kind=dp), allocatable :: rnkb(:, :, :)
     real(kind=dp), allocatable :: ln_tmp(:, :, :)
@@ -3501,7 +3498,7 @@ contains
     irguide = 0
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
-                       m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
                        counts, local_k, error, comm)
       if (allocated(error)) return
       irguide = 1
@@ -3509,7 +3506,7 @@ contains
 
     !  weight m_matrix first to reduce number of operations
     !  m_w : weighted real matrix
-    ! m_matrix is only avbl on root
+    ! m_matrix is only avbl on root, but no mpi here
     !if (on_root) then
     do nn = 1, kmesh_info%nntot
       sqwb = sqrt(kmesh_info%wb(nn))
@@ -3592,7 +3589,7 @@ contains
           (iter .gt. wann_control%guiding_centres%num_no_guide_iter) &
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
-                         m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, &
+                         m_matrix, rnkb, print_output%timing_level, print_output%iprint, &
                          timer, counts, local_k, error, comm, m_w)
         if (allocated(error)) return
         irguide = 1
@@ -3703,7 +3700,7 @@ contains
 
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
-                       m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
                        counts, local_k, error, comm)
       if (allocated(error)) return
     endif

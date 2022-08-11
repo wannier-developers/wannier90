@@ -370,7 +370,8 @@ contains
                       helper%u_matrix, u_matrix_opt, helper%num_bands, helper%num_kpts, &
                       wan90%num_proj, helper%num_wann, helper%print_output%timing_level, cp_pp, &
                       helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
-                      helper%seedname, output, helper%timer, error, comm)
+                      helper%seedname, output, helper%timer, helper%counts, helper%displs, &
+                      error, comm)
     deallocate (m_matrix_local)
     if (helper%num_bands > helper%num_wann) then
       deallocate (m_matrix_orig_local)
@@ -388,7 +389,7 @@ contains
 
     ! fixme, probably good to switch from m_matrix_local to m_matrix when mpisize==1
 
-    use w90_disentangle, only: dis_main, splitm
+    use w90_disentangle, only: dis_main, setup_m_loc
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
 
@@ -448,12 +449,11 @@ contains
                   helper%num_wann, helper%gamma_only, wan90%lsitesymmetry, output, helper%timer, &
                   helper%counts, helper%displs, error, comm)
 
-    ! copy to m_matrix_local and m_matrix (on root) from m_matrix_orig_local
-    call splitm(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
-                wan90%m_matrix, helper%u_matrix, helper%num_bands, helper%num_kpts, &
-                helper%num_wann, optimisation, helper%timer, helper%counts, &
-                helper%displs, error, comm)
-
+    ! copy to m_matrix_local and m_matrix (on root) from m_matrix_orig_local (aka m_orig)
+    call setup_m_loc(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
+                     helper%u_matrix, helper%num_bands, helper%num_wann, optimisation, &
+                     helper%timer, helper%counts, helper%displs, error, comm)
+ 
     helper%have_disentangled = .true.
 
     if (allocated(error)) then
@@ -491,7 +491,6 @@ contains
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, wan90%output_file, wan90%wann_control, &
                            wan90%omega, helper%w90_system, helper%print_output, helper%wannier_data, wan90%m_matrix, &
-                           wan90%m_matrix_local, &
                            helper%u_matrix, helper%u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            wan90%real_space_ham%translate_home_cell, helper%seedname, output, &

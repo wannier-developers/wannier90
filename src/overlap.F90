@@ -40,7 +40,7 @@ contains
 
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, timer, error, comm)
+                              num_kpts, num_wann, timing_level, timer, counts, error, comm)
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -57,6 +57,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
+    integer, intent(in) :: counts(0:)
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
@@ -71,32 +72,18 @@ contains
     type(w90comm_type), intent(in) :: comm
 
     ! local variables
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
     integer :: ierr
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: disentanglement
     logical :: on_root = .false.
 
     disentanglement = (num_bands > num_wann)
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
 
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 0) call io_stopwatch_start('overlap: allocate', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
-
-    allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_read', comm)
-      return
-    endif
-    u_matrix = cmplx_0
 
     if (disentanglement) then
       if (on_root) then
@@ -106,51 +93,54 @@ contains
           return
         endif
       else
-        allocate (m_matrix_orig(1, 1, 1, 1))
+        allocate (m_matrix_orig(0, 0, 0, 0))
       endif
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read', comm)
         return
       endif
-
-      allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read', comm)
-        return
-      endif
-      allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_read', comm)
-        return
-      endif
-
+      m_matrix_orig = cmplx_0
+      m_matrix_orig_local = cmplx_0
     else
-      !if (on_root) then
+      allocate (m_matrix_orig_local(0, 0, 0, 0))
+      allocate (m_matrix_orig(0, 0, 0, 0))
+    endif
+
+    if (on_root) then
       allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read', comm)
         return
       endif
       m_matrix = cmplx_0
-      allocate (m_matrix_orig(1, 1, 1, 1))
-      !else
-      !  allocate (m_matrix(1, 1, 1, 1))
-      !  allocate (m_matrix_orig(1, 1, 1, 1))
-      !endif
-
-      allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read', comm)
-        return
-      endif
-      m_matrix_local = cmplx_0
-
-      allocate (m_matrix_orig_local(1, 1, 1, 1))
-      allocate (a_matrix(1, 1, 1))
-      allocate (u_matrix_opt(1, 1, 1))
-
+    else
+      allocate (m_matrix(0, 0, 0, 0))
     endif
+    allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read', comm)
+      return
+    endif
+    m_matrix_local = cmplx_0
+
+    allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read', comm)
+      return
+    endif
+    allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_read', comm)
+      return
+    endif
+    u_matrix = cmplx_0
+    allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_read', comm)
+      return
+    endif
+    u_matrix_opt = cmplx_0
 
     if (timing_level > 0) call io_stopwatch_stop('overlap: allocate', timer)
 
@@ -161,7 +151,7 @@ contains
                           m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
                           u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
                           cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                          timer, error, comm)
+                          timer, counts, displs, error, comm)
     !================================================!
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -183,12 +173,14 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
-    integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
@@ -207,7 +199,7 @@ contains
     ! local variables
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
-    integer :: nkp, nkp2, inn, nn, n, m
+    integer :: nkp, nkp2, inn, nn, n, m, w
     integer :: nnl, nnm, nnn, ncount
     logical :: nn_found
     real(kind=dp) :: m_real, m_imag, a_real, a_imag
@@ -215,23 +207,15 @@ contains
     character(len=50) :: dummy
 
     logical :: disentanglement
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
 
     disentanglement = (num_bands > num_wann)
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
-
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
 
     if (disentanglement) then
       if (on_root) then
@@ -326,14 +310,12 @@ contains
     endif
 
     if (disentanglement) then
-      call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, &
-                          num_bands*num_bands*kmesh_info%nntot*displs, error, comm)
+      w = num_bands*num_bands*kmesh_info%nntot
+      call comms_scatterv(m_matrix_orig_local, w*counts(my_node_id), m_matrix_orig, w*counts, w*displs, error, comm)
       if (allocated(error)) return
     else
-      call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                          num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
+      w = num_wann*num_wann*kmesh_info%nntot
+      call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
       if (allocated(error)) return
     endif
 
@@ -438,7 +420,7 @@ contains
       if (.not. gamma_only) then
         call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                              kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
-                             lsitesymmetry, stdout, timer, error, comm)
+                             lsitesymmetry, stdout, timer, counts, displs, error, comm)
       else
         call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
                                    timing_level, stdout, timer, error, comm)
@@ -798,7 +780,7 @@ contains
   !================================================!
   subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
                              num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, stdout, &
-                             timer, error, comm)
+                             timer, counts, displs, error, comm)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -823,6 +805,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90comm_type), intent(in) :: comm
 
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
     integer, intent(in) :: nnlist(:, :)
     integer, intent(in) :: nntot
     integer, intent(in) :: num_bands
@@ -847,20 +831,13 @@ contains
     complex(kind=dp), allocatable :: cvdag(:, :)
 
     ! pllel setup
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 1) call io_stopwatch_start('overlap: project', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (svals(num_bands), stat=ierr)
     if (ierr /= 0) then

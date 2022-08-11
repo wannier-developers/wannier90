@@ -182,7 +182,7 @@ program wannier
   real(kind=dp) time0, time1, time2
 
   integer :: len_seedname
-  integer :: i, j, num_nodes, my_node_id, ierr
+  integer :: i, j, num_nodes, my_node_id, ierr, w
   integer, allocatable :: dist_k(:), counts(:), displs(:)
   integer :: stdout, stderr
 
@@ -395,6 +395,14 @@ program wannier
 
   if (w90_calculation%transport .and. transport%read_ht) goto 3003
 
+
+  ! allocate main arrays (both restarted and new calculations)
+  call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
+                        u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
+                        print_output%timing_level, timer, counts, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+
   ! read symmetry info
   if (lsitesymmetry) then
     call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
@@ -406,6 +414,7 @@ program wannier
   if (w90_calculation%restart .eq. ' ') then  ! start a fresh calculation
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
+
     if (on_root) then
       num_exclude_bands = 0
       if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
@@ -416,6 +425,22 @@ program wannier
                                     seedname, stdout, error, comm)
       if (allocated(error)) call prterr(error, stdout, stderr, comm)
     endif
+ 
+    !-----------------JJ
+    ! scatter from m_matrix_orig to m_matrix_orig_local
+    ! normally achieved in overlap_read
+    !if (disentanglement) then
+    !  w = num_bands*num_bands*kmesh_info%nntot
+    !  call comms_scatterv(m_matrix_orig_local, w*counts(my_node_id), m_matrix_orig, w*counts, w*displs, error, comm)
+    !  if (allocated(error)) return
+    !else
+    ! scatter from m_matrix to m_matrix_local
+      w = num_wann*num_wann*kmesh_info%nntot
+      call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
+      if (allocated(error)) return
+    !endif
+    !!-----------------JJ
+
     call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
                                   omega%invariant, num_bands, num_kpts, num_wann, checkpoint, &
                                   have_disentangled, error, comm)
@@ -438,30 +463,7 @@ program wannier
       endif
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
-
-      ! fixme!! jj
-      ! just plonking this here for testing (it is not wrong)
-      ! m_matrix should not be (but currently 20july22 is) needed on each node
-      ! bcast duplicates m_matrix
-      ! m_matrix_loc are decomposed/scattered copies
-      if (my_node_id > 0) then
-        if (allocated(m_matrix)) deallocate (m_matrix)
-        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      endif
-      call comms_bcast(m_matrix(1, 1, 1, 1), num_wann*num_wann*kmesh_info%nntot*num_kpts, error, comm)
-      allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-      j = 1
-      do i = 1, num_kpts
-        if (dist_k(i) == my_node_id) then
-          m_matrix_local(:, :, :, j) = m_matrix(:, :, :, i)
-          j = j + 1
-        endif
-      enddo
-      !fixme
-      ! these allocations happen otherwise in overlap_alloc or disentangle's "splitm"
-      ! needs rationalising
-
-      goto 1001  !this goto if failing
+      goto 1001
     case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
       goto 2002
@@ -495,20 +497,18 @@ program wannier
     stop
   endif
 
-  call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                        u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        print_output%timing_level, timer, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
+  if (on_root) time2 = io_time()
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
                     m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
                     num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
                     gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, timer, &
-                    error, comm)
+                    counts, displs, error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-  time1 = io_time()
-  if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
+  if (on_root) then
+     time1 = io_time()
+     write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
+  endif
 
   have_disentangled = .false.
   if (disentanglement) then
@@ -519,31 +519,22 @@ program wannier
                   lsitesymmetry, stdout, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-    ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
-    my_node_id = mpirank(comm)
-    allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix_local in wannier_prog', comm)
-      return
-    endif
-    if (my_node_id == 0) then
-      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    else
-      allocate (m_matrix(1,1,1,1), stat=ierr)
-    endif
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix in splitm', comm)
-      return
-    endif
-    call splitm(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, m_matrix, &
-                u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
-                error, comm)
+    ! copy/transform m_matrix_orig_local to m_matrix_local
+    ! no MPI operations (therefore m_matrix not updated)
+    call setup_m_loc(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, u_matrix, &
+                     num_bands, num_wann, optimisation, timer, counts, displs, error, comm)
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+    ! explicitly synchronize m_matrix from m_matrix_local
+    w = num_wann*num_wann*kmesh_info%nntot
+    call comms_gatherv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
     have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
   endif
+
 
   if (on_root) then
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
@@ -553,7 +544,12 @@ program wannier
                                              stdout, seedname)
   endif
 
-1001 time2 = io_time()
+
+
+
+1001 continue
+  if (on_root) time2 = io_time()
+
   if (.not. gamma_only) then
     call wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
                    output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
@@ -562,13 +558,15 @@ program wannier
                    wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                    num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, transport%mode, have_disentangled, lsitesymmetry, seedname, &
-                   stdout, timer, counts, displs, error, comm)
+                   stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   else
+    ! for non-mpi case (since gamma only branch not parallelised) m_matrix_local == m_matrix
+    ! but this appears not be the case and the gatherv above is needed
     call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
                          output_file, wann_control, omega, w90_system, print_output, wannier_data, &
-                         m_matrix, m_matrix_local, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
+                         m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          real_space_ham%translate_home_cell, seedname, stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
@@ -586,10 +584,13 @@ program wannier
                                              stdout, seedname)
   endif
 
+
+
+
+
+
 2002 continue
-  if (on_root) then
-    time2 = io_time()
-  endif
+  if (on_root) time2 = io_time()
 
   ! I call the routine always; the if statements to decide if/what to plot are inside the function
   call plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
