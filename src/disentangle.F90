@@ -33,7 +33,7 @@ module w90_disentangle
   implicit none
 
   public :: dis_main
-  public :: splitm
+  public :: setup_m_loc
 
 contains
   !================================================!
@@ -256,9 +256,8 @@ contains
     !================================================!
   end subroutine dis_main
 
-  subroutine splitm(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, m_matrix, &
-                    u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
-                    error, comm)
+  subroutine setup_m_loc(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, u_matrix, &
+                    num_bands, num_wann, optimisation, timer, counts, displs, error, comm)
     !================================================!
     !
     ! map m_matrix_orig_local to m_matrix_local
@@ -272,14 +271,14 @@ contains
     use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
 
     ! arguments
-    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: optimisation
     integer, intent(in) :: counts(0:), displs(0:)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :) ! (num_bands, num_bands, nntot, num_kpts)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :) ! (num_wann, num_wann, nntot, rank_kpts)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) ! (num_wann, num_wann, nntot, num_kpts) (root only)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) ! (num_wann, num_wann, nntot, num_kpts) (root only)
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
@@ -289,7 +288,7 @@ contains
 
     ! internal variables
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
-    integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global, m
+    integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global
     integer :: my_node_id
 
     if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
@@ -327,6 +326,7 @@ contains
         endif
       enddo
     enddo
+    ! at this point m_matrix_orig_local may be deassociated/deallocated
 
     if (optimisation < 0) then
       rewind (page_unit)
@@ -339,14 +339,14 @@ contains
     endif
 
     ! collect up the local parts back on root
-    m = num_wann*num_wann*kmesh_info%nntot
-    call comms_gatherv(m_matrix_local, m*counts(my_node_id), m_matrix, m*counts, m*displs, error, comm)
-    if (allocated(error)) return
+    !m = num_wann*num_wann*kmesh_info%nntot
+    !call comms_gatherv(m_matrix_local, m*counts(my_node_id), m_matrix, m*counts, m*displs, error, comm)
+    !if (allocated(error)) return
 
     deallocate (cwb)
     deallocate (cww)
     if (print_output%timing_level > 1) call io_stopwatch_stop('dis: splitm', timer)
-  end subroutine splitm
+  end subroutine setup_m_loc
 
   subroutine internal_check_orthonorm(u_matrix_opt, ndimwin, num_kpts, num_wann, timing_level, &
                                       on_root, timer, error, stdout, comm)

@@ -738,9 +738,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     if (allocated(error)) call prterr(error, stdout)
 
     ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
-    call splitm(kmesh_info, verbose, m_matrix_local, m_matrix_orig_local, m_matrix, &
-                u_matrix, num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
-                error, comm)
+    call setup_m_loc(kmesh_info, verbose, m_matrix_local, m_matrix_orig_local, u_matrix, &
+                     num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
+                     error, comm)
     if (allocated(error)) call prterr(error, stdout)
 
 

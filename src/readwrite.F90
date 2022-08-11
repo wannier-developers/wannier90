@@ -1887,7 +1887,7 @@ contains
 
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: omega_invariant
@@ -1906,34 +1906,34 @@ contains
                                          seedname, chk_unit, stdout, error, comm)
     if (allocated(error)) return
 
-    if (have_disentangled) then
-      ! U_matrix_opt
-      if (.not. allocated(u_matrix_opt)) then
-        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt', comm)
-          return
-        endif
-      endif
-    endif
-
-    ! U_matrix
-    if (.not. allocated(u_matrix)) then
-      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt', comm)
-        return
-      endif
-    endif
-
+!    if (have_disentangled) then
+!      ! U_matrix_opt
+!      if (.not. allocated(u_matrix_opt)) then
+!        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+!        if (ierr /= 0) then
+!          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt', comm)
+!          return
+!        endif
+!      endif
+!    endif
+!
+!    ! U_matrix
+!    if (.not. allocated(u_matrix)) then
+!      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
+!      if (ierr /= 0) then
+!        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt', comm)
+!        return
+!      endif
+!    endif
+!
     ! M_matrix
-    if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt', comm)
-        return
-      endif
-    endif
+!    if (.not. allocated(m_matrix)) then
+!      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+!      if (ierr /= 0) then
+!        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt', comm)
+!        return
+!      endif
+!    endif
 
     call w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
                                            u_matrix, u_matrix_opt, omega_invariant, num_bands, &
