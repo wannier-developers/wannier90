@@ -453,7 +453,7 @@ contains
                 wan90%m_matrix, helper%u_matrix, helper%num_bands, helper%num_kpts, &
                 helper%num_wann, optimisation, helper%timer, helper%counts, &
                 helper%displs, error, comm)
- 
+
     helper%have_disentangled = .true.
 
     if (allocated(error)) then
@@ -508,7 +508,7 @@ contains
                      helper%num_kpts, wan90%num_proj, helper%num_wann, wan90%optimisation, &
                      wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
                      helper%have_disentangled, wan90%lsitesymmetry, helper%seedname, output, &
-                     helper%timer, helper%dist_kpoints, helper%dist_kpoints, error, comm) !fixme, this is broken (counts, displs)
+                     helper%timer, helper%dist_kpoints, error, comm)
     endif
     if (allocated(error)) then
       write (error_unit, *) 'Error in wannierise', error%code, error%message
