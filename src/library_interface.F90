@@ -44,6 +44,7 @@ module w90_helper_types
     !type(wann_omega_type) :: wann_omega
     type(ws_region_type) :: ws_region
     !type(wvfn_read_type) :: wvfn_read
+    type(w90_physical_constants_type) :: physics
 
     type(timer_list_type) :: timer
 
@@ -87,7 +88,7 @@ module w90_helper_types
   end type lib_global_type
 
   type lib_w90_type
-    type(w90_calculation_type) :: w90_calculation ! separate this?
+    type(w90_calculation_type) :: w90_calculation ! separate this? ... maybe yes (JJ)
     ! matrices
     complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
@@ -141,7 +142,7 @@ module w90_helper_types
   end type lib_w90_type
 
   public:: input_reader, create_kmesh, checkpoint, overlaps, wannierise, plot_files, &
-           transport, print_times, get_fortran_stdout
+           transport, print_times, get_fortran_stdout, write_kmesh
 
   public :: set_option
   interface set_option
@@ -211,15 +212,19 @@ contains
     integer, intent(out) :: status
     type(w90comm_type), intent(in) :: comm
     !
-    type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
+    integer :: eunit
 
+        
     status = 0
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
-      write (error_unit, *) 'Error in input file access', error%code, error%message
+      !write (error_unit, *) 'Error in input file access', error%code, error%message
+      open(newunit=eunit, file=seedname//'.werr')
+      write (eunit, *) 'Error in input file access', error%code, error%message
+      close(eunit)
       status = sign(1, error%code)
       deallocate (error)
     else
@@ -233,7 +238,7 @@ contains
                                         helper%kpoint_path, helper%w90_system, wan90%tran, &
                                         helper%print_output, wan90%wann_plot, io_params, &
                                         helper%ws_region, wan90%w90_calculation, helper%eigval, &
-                                        helper%real_lattice, physics%bohr, &
+                                        helper%real_lattice, helper%physics%bohr, &
                                         wan90%sitesym%symmetrize_eps, helper%mp_grid, &
                                         helper%num_bands, helper%num_kpts, wan90%num_proj, &
                                         helper%num_wann, wan90%optimisation, wan90%eig_found, &
@@ -242,7 +247,10 @@ contains
                                         wan90%use_bloch_phases, seedname, output, error, comm)
 
       if (allocated(error)) then
-        write (error_unit, *) 'Error in reader', error%code, error%message
+        open(newunit=eunit, file=seedname//'.werr')
+        !write (error_unit, *) 'Error in reader', error%code, error%message
+        write (eunit, *) 'Error in reader', error%code, error%message
+        close(eunit)
         status = sign(1, error%code)
         deallocate (error)
       else
@@ -254,14 +262,20 @@ contains
                                             helper%wannier_data, helper%num_wann, &
                                             helper%num_bands, helper%num_kpts, error, comm)
         if (allocated(error)) then
-          write (error_unit, *) 'Error in read alloc', error%code, error%message
+          open(newunit=eunit, file=seedname//'.werr')
+          !write (error_unit, *) 'Error in read alloc', error%code, error%message
+          write (eunit, *) 'Error in read alloc', error%code, error%message
+          close(eunit)
           status = sign(1, error%code)
           deallocate (error)
         endif
       endif
       call w90_readwrite_clean_infile(output, seedname, error, comm)
       if (allocated(error)) then
-        write (error_unit, *) 'Error in input close', error%code, error%message
+        open(newunit=eunit, file=seedname//'.werr')
+        !write (error_unit, *) 'Error in input close', error%code, error%message
+        write (eunit, *) 'Error in input close', error%code, error%message
+        close(eunit)
         status = sign(1, error%code)
         deallocate (error)
       endif
@@ -318,6 +332,35 @@ contains
       deallocate (error)
     endif
   end subroutine create_kmesh
+
+  subroutine write_kmesh(helper, wan90, seedname, status, comm)
+    use w90_kmesh, only: kmesh_get, kmesh_write
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90comm_type
+    implicit none
+    
+    !arguments
+    type(lib_global_type), intent(inout) :: helper
+    character(len=*), intent(in) :: seedname
+    type(lib_w90_type), intent(inout) :: wan90
+    integer, intent(out) :: status
+    type(w90comm_type), intent(in) :: comm
+
+    !variables
+    type(w90_error_type), allocatable :: error
+    logical :: calc_only_A = .false.! what does this do?
+
+    status = 0
+    call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%proj, helper%print_output, &
+                     helper%kpt_latt, helper%real_lattice, helper%num_kpts, wan90%num_proj, calc_only_A, &
+                     helper%w90_system%spinors, seedname, helper%timer)
+
+    if (allocated(error)) then
+      write (error_unit, *) 'Error in kmesh_write', error%code, error%message
+      status = sign(1, error%code)
+      deallocate (error)
+    endif
+  end subroutine write_kmesh
 
   subroutine overlaps(helper, wan90, output, status, comm)
     use w90_error_base, only: w90_error_type
@@ -443,20 +486,21 @@ contains
   end subroutine disentangle
 
   subroutine wannierise(helper, wan90, output, status, comm)
+
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
+
     implicit none
-    type(lib_global_type), intent(inout) :: helper
-    type(lib_w90_type), intent(inout) :: wan90
+    
+    ! arguments
     integer, intent(in) :: output
     integer, intent(out) :: status
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(inout) :: wan90
     type(w90comm_type), intent(in) :: comm
-    !complex(kind=dp), intent(in) :: u_opt(:, :, :)
-    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    !
-    !type(w90_physical_constants_type) :: physics
+
+    ! local
     type(w90_error_type), allocatable :: error
 
     if ((.not. associated(wan90%m_matrix_local)) .or. (.not. associated(helper%u_opt)) .or. &

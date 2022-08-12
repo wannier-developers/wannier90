@@ -789,7 +789,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     logical, intent(in) :: calc_only_A
     logical, intent(in) :: spinors
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
 
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer           :: i, nkp, nn, nnkpout, num_exclude_bands
@@ -797,8 +797,7 @@ contains
 
     if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: write', timer)
 
-    nnkpout = io_file_unit()
-    open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
+    open (newunit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
 
     ! Date and time
     call io_date(cdate, ctime)

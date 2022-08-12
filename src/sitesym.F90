@@ -227,7 +227,6 @@ contains
           irk = sitesym%kptsym(isym, ir)
           if (lfound(irk)) cycle
           lfound(irk) = .true.
-          write (*, *) "ig, ik->irk:", isym, ik, "->", irk
           !
           ! cmat1 = D(R,k)^{+} G(Rk) D(R,k)
           ! cmat2 = D(R,k)^{\dagger} G(Rk)
@@ -664,7 +663,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
 
     ! local variables
     integer :: iu, ibnum, iknum, ierr
