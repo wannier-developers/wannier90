@@ -148,7 +148,7 @@ contains
 
   !================================================!
   subroutine overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, &
-                          m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
+                          m_matrix_local, m_matrix_orig_local, u_matrix, &
                           u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
                           cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
                           timer, counts, displs, error, comm)
@@ -185,7 +185,6 @@ contains
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
@@ -206,6 +205,8 @@ contains
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
 
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
+
     logical :: disentanglement
     integer :: my_node_id
     logical :: on_root = .false.
@@ -213,7 +214,11 @@ contains
     disentanglement = (num_bands > num_wann)
 
     my_node_id = mpirank(comm)
-    if (my_node_id == 0) on_root = .true.
+    if (my_node_id == 0) then
+      on_root = .true.
+      allocate (m_matrix_orig(num_bands, num_bands, kmesh_info%nntot, num_kpts), stat=ierr)
+      !fixme check alloc
+    endif
 
     if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
 
@@ -448,6 +453,8 @@ contains
     return
 104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.amn', comm)
     return
+
+    if (on_root) deallocate(m_matrix_orig)
 
   end subroutine overlap_read
 

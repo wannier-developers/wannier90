@@ -92,7 +92,7 @@ module w90_helper_types
     complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
     complex(kind=dp), pointer :: m_matrix_local(:, :, :, :) => null()
-    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()
+    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()  !m_matrix_orig_local
 
     type(dis_control_type) :: dis_control
     type(dis_spheres_type) :: dis_spheres
@@ -240,6 +240,7 @@ contains
                                         wan90%calc_only_A, cp_pp, helper%gamma_only, &
                                         wan90%lhasproj, .false., .false., wan90%lsitesymmetry, &
                                         wan90%use_bloch_phases, seedname, output, error, comm)
+
       if (allocated(error)) then
         write (error_unit, *) 'Error in reader', error%code, error%message
         status = sign(1, error%code)
@@ -323,22 +324,13 @@ contains
     use w90_comms, only: w90comm_type
     use w90_overlap, only: overlap_read
     implicit none
-    type(lib_global_type), intent(inout) :: helper
-    type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: output
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
-    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    !complex(kind=dp), intent(inout) :: m_orig(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    !
-    !type(w90_physical_constants_type) :: physics
-    type(w90_error_type), allocatable :: error
     logical :: cp_pp
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(inout) :: wan90
+    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable :: error
 
     if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(wan90%m_orig)) .or. &
         (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix))) then
@@ -347,37 +339,17 @@ contains
       return
     endif
     status = 0
-    if (helper%num_bands > helper%num_wann) then
-      ! disentnglement
-      !allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      !allocate (m_matrix_orig(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
-      !                        helper%num_kpts))
-      !allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, nntot, counts(my_node_id)), stat=ierr)
-      allocate (m_matrix_orig_local(helper%num_bands, helper%num_bands, helper%kmesh_info%nntot, &
-                                    helper%num_kpts))
-      !allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-      !allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-      !else
-      !allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-      !allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
-    endif
+
     cp_pp = .false.
-    ! should be distributed if MPI
-    allocate (m_matrix_local(helper%num_wann, helper%num_wann, helper%kmesh_info%nntot, &
-                             helper%num_kpts))
+    ! fixme MPI defunct!!
+
     call overlap_read(helper%kmesh_info, wan90%select_proj, wan90%sitesym, wan90%a_matrix, &
-                      wan90%m_matrix, m_matrix_local, wan90%m_orig, m_matrix_orig_local, &
-                      helper%u_matrix, u_matrix_opt, helper%num_bands, helper%num_kpts, &
+                      wan90%m_matrix, wan90%m_matrix_local, wan90%m_orig, &
+                      helper%u_matrix, helper%u_opt, helper%num_bands, helper%num_kpts, &
                       wan90%num_proj, helper%num_wann, helper%print_output%timing_level, cp_pp, &
                       helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
                       helper%seedname, output, helper%timer, helper%counts, helper%displs, &
                       error, comm)
-    deallocate (m_matrix_local)
-    if (helper%num_bands > helper%num_wann) then
-      deallocate (m_matrix_orig_local)
-      !deallocate (m_matrix_orig)
-    endif
-    if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
     if (allocated(error)) then
       write (error_unit, *) 'Error in overlaps', error%code, error%message
       status = sign(1, error%code)
@@ -449,7 +421,7 @@ contains
                   helper%num_wann, helper%gamma_only, wan90%lsitesymmetry, output, helper%timer, &
                   helper%counts, helper%displs, error, comm)
 
-    ! copy to m_matrix_local and m_matrix (on root) from m_matrix_orig_local (aka m_orig)
+    ! copy to m_matrix_local from m_matrix_orig_local (aka m_orig)
     call setup_m_loc(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
                      helper%u_matrix, helper%num_bands, helper%num_wann, optimisation, &
                      helper%timer, helper%counts, helper%displs, error, comm)

@@ -437,7 +437,7 @@ program wannier
     ! scatter from m_matrix to m_matrix_local
       w = num_wann*num_wann*kmesh_info%nntot
       call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
-      if (allocated(error)) return
+      if (allocated(error)) call prterr(error, stdout, stderr, comm)
     !endif
     !!-----------------JJ
 
@@ -499,10 +499,9 @@ program wannier
 
   if (on_root) time2 = io_time()
   call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
-                    m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
-                    num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
-                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, timer, &
-                    counts, displs, error, comm)
+                    m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, num_kpts, num_proj, &
+                    num_wann, print_output%timing_level, cp_pp, gamma_only, lsitesymmetry, &
+                    use_bloch_phases, seedname, stdout, timer, counts, displs, error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   if (on_root) then
