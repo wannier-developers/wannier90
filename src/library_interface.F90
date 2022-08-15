@@ -333,7 +333,8 @@ contains
     type(w90_error_type), allocatable :: error
 
     if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(wan90%m_orig)) .or. &
-        (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix))) then
+        (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix)) .or. &
+        (.not. associated(wan90%m_matrix_local))) then
       write (error_unit, *) 'Matrices not set for overlap call'
       status = 1
       return
@@ -425,7 +426,7 @@ contains
     call setup_m_loc(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
                      helper%u_matrix, helper%num_bands, helper%num_wann, optimisation, &
                      helper%timer, helper%counts, helper%displs, error, comm)
- 
+
     helper%have_disentangled = .true.
 
     if (allocated(error)) then
