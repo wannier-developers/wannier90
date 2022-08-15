@@ -48,7 +48,7 @@ contains
   subroutine wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
                        output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
                        print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                       m_matrix, m_matrix_loc, u_matrix, u_matrix_opt, eigval, real_lattice, &
+                       m_matrix_loc, u_matrix, u_matrix_opt, eigval, real_lattice, &
                        wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                        num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                        bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
@@ -114,7 +114,7 @@ contains
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)

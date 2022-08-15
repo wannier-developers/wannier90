@@ -14,8 +14,8 @@ comm = wan90.w90_comms.w90comm_type()
 
 comm.comm = MPI.COMM_WORLD.py2f()
 
-status = wan90.w90_helper_types.input_reader(data, w90data, "diamond", ftn_output, comm)
-#status = wan90.w90_helper_types.input_reader(data, w90data, "cnt55", ftn_output, comm)
+#status = wan90.w90_helper_types.input_reader(data, w90data, "diamond", ftn_output, comm)
+status = wan90.w90_helper_types.input_reader(data, w90data, "cnt55", ftn_output, comm)
 
 exit
 
@@ -65,30 +65,30 @@ while k < data.num_kpts:
 counts[nproc-1] = cnt
 wan90.w90_helper_types.set_kpoint_block(data, counts, displs)
 
-m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
+#m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
-a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 
-wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
+#wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
 wan90.w90_helper_types.set_u_matrix(data, u_matrix)
-wan90.w90_helper_types.set_a_matrix(w90data, a_matrix)
 
 m_matrix_loc = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, counts[my_proc]), dtype=numpy.cdouble, order='F')
 wan90.w90_helper_types.set_m_matrix_local(w90data, m_matrix_loc)
 
 if data.num_wann == data.num_bands:
-    m_orig = numpy.zeros((1, 1, 1, 1), dtype=numpy.cdouble, order='F')
-    wan90.w90_helper_types.set_m_orig(w90data, m_orig)
     u_opt = numpy.zeros((1, 1, 1), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_u_opt(data, u_opt)
     status = wan90.w90_helper_types.overlaps(data, w90data, ftn_output, comm)
 else:
+    a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
+    wan90.w90_helper_types.set_a_matrix(w90data, a_matrix)
     u_opt = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_u_opt(data, u_opt)
     m_orig = numpy.zeros((data.num_bands, data.num_bands, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_m_orig(w90data, m_orig)
     status = wan90.w90_helper_types.overlaps(data, w90data, ftn_output, comm)
     status = wan90.w90_helper_types.disentangle(data, w90data, ftn_output, comm)
+    if status == 1:
+        exit
 
 status = wan90.w90_helper_types.wannierise(data, w90data, ftn_output, comm)
 
