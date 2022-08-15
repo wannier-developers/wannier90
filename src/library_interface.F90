@@ -332,25 +332,35 @@ contains
     type(w90comm_type), intent(in) :: comm
     type(w90_error_type), allocatable :: error
 
-    if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(wan90%m_orig)) .or. &
-        (.not. associated(wan90%a_matrix)) .or. (.not. associated(helper%u_matrix)) .or. &
-        (.not. associated(wan90%m_matrix_local))) then
-      write (error_unit, *) 'Matrices not set for overlap call'
-      status = 1
-      return
-    endif
     status = 0
 
     cp_pp = .false.
     ! fixme MPI defunct!!
 
-    call overlap_read(helper%kmesh_info, wan90%select_proj, wan90%sitesym, wan90%a_matrix, &
-                      wan90%m_matrix, wan90%m_matrix_local, wan90%m_orig, &
-                      helper%u_matrix, helper%u_opt, helper%num_bands, helper%num_kpts, &
-                      wan90%num_proj, helper%num_wann, helper%print_output%timing_level, cp_pp, &
-                      helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
-                      helper%seedname, output, helper%timer, helper%counts, helper%displs, &
-                      error, comm)
+    if (helper%num_bands > helper%num_wann) then
+      if ((.not. associated(wan90%a_matrix)) .or. (.not. associated(wan90%m_orig))) then
+        write (error_unit, *) 'Matrices not set for overlap call'
+        status = 1
+        return
+      endif
+      call overlap_read(helper%kmesh_info, wan90%select_proj, wan90%sitesym, wan90%a_matrix, &
+                        wan90%m_orig, helper%num_bands, helper%num_kpts, &
+                        wan90%num_proj, helper%num_wann, helper%print_output%timing_level, cp_pp, &
+                        helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
+                        helper%seedname, output, helper%timer, helper%dist_kpoints, error, comm)
+    else
+      if ((.not. associated(helper%u_matrix)) .or. (.not. associated(wan90%m_matrix_local))) then
+        write (error_unit, *) 'Matrices not set for overlap call'
+        status = 1
+        return
+      endif
+      call overlap_read(helper%kmesh_info, wan90%select_proj, wan90%sitesym, helper%u_matrix, &
+                        wan90%m_matrix_local, helper%num_bands, &
+                        helper%num_kpts, wan90%num_proj, helper%num_wann, &
+                        helper%print_output%timing_level, cp_pp, helper%gamma_only, &
+                        wan90%lsitesymmetry, wan90%use_bloch_phases, helper%seedname, output, &
+                        helper%timer, helper%dist_kpoints, error, comm)
+    endif
     if (allocated(error)) then
       write (error_unit, *) 'Error in overlaps', error%code, error%message
       status = sign(1, error%code)
@@ -383,10 +393,6 @@ contains
 
     if (.not. associated(wan90%m_orig)) then  ! m_matrix_orig_local (nband*nwann for disentangle)
       write (error_unit, *) 'm_orig not set for disentangle call'
-      status = 1
-      return
-    else if (.not. associated(wan90%m_matrix) .and. mpirank(comm) == 0) then ! (nband*nwann*allk root only for wannierise)
-      write (error_unit, *) 'm_matrix not set for disentangle call'
       status = 1
       return
     else if (.not. associated(wan90%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
@@ -453,7 +459,7 @@ contains
     !type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
 
-    if ((.not. associated(wan90%m_matrix)) .or. (.not. associated(helper%u_opt)) .or. &
+    if ((.not. associated(wan90%m_matrix_local)) .or. (.not. associated(helper%u_opt)) .or. &
         (.not. associated(helper%u_matrix)) .or. (.not. associated(helper%dist_kpoints))) then
       write (error_unit, *) 'Matrices not set for wannierise call'
       status = 1
@@ -463,7 +469,7 @@ contains
     if (helper%gamma_only) then
       call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
                            helper%kmesh_info, helper%kpt_latt, wan90%output_file, wan90%wann_control, &
-                           wan90%omega, helper%w90_system, helper%print_output, helper%wannier_data, wan90%m_matrix, &
+                           wan90%omega, helper%w90_system, helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
                            helper%u_matrix, helper%u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
                            helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
                            wan90%real_space_ham%translate_home_cell, helper%seedname, output, &
@@ -473,7 +479,7 @@ contains
                      wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
                      wan90%real_space_ham, wan90%wann_control, wan90%omega, wan90%sitesym, &
                      helper%w90_system, helper%print_output, helper%wannier_data, helper%ws_region, &
-                     wan90%w90_calculation, wan90%ham_k, wan90%ham_r, wan90%m_matrix, &
+                     wan90%w90_calculation, wan90%ham_k, wan90%ham_r, &
                      wan90%m_matrix_local, helper%u_matrix, helper%u_opt, &
                      helper%eigval, helper%real_lattice, wan90%wannier_centres_translated, wan90%irvec, &
                      helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, helper%num_bands, &

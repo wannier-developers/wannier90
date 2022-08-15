@@ -708,7 +708,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (disentanglement) then
     have_disentangled = .false.
 
-   ! dis_main only uses m_matrix_orig_local
+    ! dis_main only uses m_matrix_orig_local
     call dis_main(dis_data, dis_spheres, dis_window, kmesh_info, kpt_latt, sym, verbose, a_matrix, &
                   m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
@@ -721,7 +721,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                      num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
                      error, comm)
     if (allocated(error)) call prterr(error, stdout)
-
 
     have_disentangled = .true.
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wann_data, kmesh_info, &
@@ -756,7 +755,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   else
     call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
                    rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
-                   ws_region, w90_calcs, ham_k, ham_r, m_matrix, m_matrix_local, u_matrix, u_matrix_opt, eigval, &
+                   ws_region, w90_calcs, ham_k, ham_r, m_matrix_local, u_matrix, u_matrix_opt, eigval, &
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &

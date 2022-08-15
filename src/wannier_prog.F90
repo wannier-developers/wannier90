@@ -251,48 +251,51 @@ program wannier
     open (newunit=stderr, file=trim(seedname)//'.werr') ! redefining from unit 0
     call io_date(cdate, ctime)
     write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
+  endif
 
-    ! read infile to in_data structure
-    call w90_readwrite_in_file(seedname, error, comm)
+  ! read infile to in_data structure
+  call w90_readwrite_in_file(seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+  !call set_option("num_iter",11) ! for debug
+  !call set_option("length_unit","bohr") ! for debug
+  !call set_option("guiding_centres",.true.) ! for debug
+
+  call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
+                                    dis_manifold, exclude_bands, fermi_energy_list, &
+                                    fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
+                                    output_file, wvfn_read, wann_control, proj_input, &
+                                    input_proj, real_space_ham, select_projection, kpoint_path, &
+                                    w90_system, transport, print_output, wannier_plot, &
+                                    w90_extra_io, ws_region, w90_calculation, eigval, &
+                                    real_lattice, physics%bohr, sitesym%symmetrize_eps, &
+                                    mp_grid, num_bands, num_kpts, num_proj, num_wann, &
+                                    optimisation, eig_found, calc_only_A, cp_pp, gamma_only, &
+                                    lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, &
+                                    seedname, stderr, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (.not. on_root) print_output%iprint = 0
+
+  call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+  disentanglement = (num_bands > num_wann)
+
+  if (.not. (w90_calculation%transport .and. transport%read_ht)) then
+    ! For aesthetic purposes, convert some things to uppercase
+    call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
+    ! Initialise
+    omega%total = -999.0_dp
+    omega%tilde = -999.0_dp
+    omega%invariant = -999.0_dp
+    call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                        num_bands, num_kpts, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  endif
 
-    !call set_option("num_iter",11) ! for debug
-    !call set_option("length_unit","bohr") ! for debug
-    !call set_option("guiding_centres",.true.) ! for debug
+  have_disentangled = .false.
 
-    call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, &
-                                      dis_manifold, exclude_bands, fermi_energy_list, &
-                                      fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
-                                      output_file, wvfn_read, wann_control, proj_input, &
-                                      input_proj, real_space_ham, select_projection, kpoint_path, &
-                                      w90_system, transport, print_output, wannier_plot, &
-                                      w90_extra_io, ws_region, w90_calculation, eigval, &
-                                      real_lattice, physics%bohr, sitesym%symmetrize_eps, &
-                                      mp_grid, num_bands, num_kpts, num_proj, num_wann, &
-                                      optimisation, eig_found, calc_only_A, cp_pp, gamma_only, &
-                                      lhasproj, .false., .false., lsitesymmetry, use_bloch_phases, &
-                                      seedname, stderr, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
-    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
-    disentanglement = (num_bands > num_wann)
-
-    if (.not. (w90_calculation%transport .and. transport%read_ht)) then
-      ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(atom_data, kpoint_path, print_output%length_unit)
-      ! Initialise
-      omega%total = -999.0_dp
-      omega%tilde = -999.0_dp
-      omega%invariant = -999.0_dp
-      call w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
-                                          num_bands, num_kpts, error, comm)
-      if (allocated(error)) call prterr(error, stdout, stderr, comm)
-    endif
-
-    have_disentangled = .false.
-
+  if (on_root) then
     if (w90_calculation%restart .eq. ' ') then
       stat = 'replace'
       pos = 'rewind'
@@ -332,13 +335,15 @@ program wannier
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
+  endif
 
-    if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_input, kmesh_info, print_output, &
-                                                         kpt_latt, real_lattice, &
-                                                         num_kpts, gamma_only, stdout, &
-                                                         timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_input, kmesh_info, print_output, &
+                                                       kpt_latt, real_lattice, &
+                                                       num_kpts, gamma_only, stdout, &
+                                                       timer, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
+  if (on_root) then
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
@@ -373,18 +378,18 @@ program wannier
   enddo
 
   ! We now distribute the parameters to the other nodes
-  call w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
-                                    exclude_bands, fermi_energy_list, fermi_surface_plot, &
-                                    kmesh_input, kmesh_info, kpt_latt, output_file, wvfn_read, &
-                                    wann_control, omega, input_proj, real_space_ham, &
-                                    w90_system, transport, print_output, wannier_data, &
-                                    wannier_plot, ws_region, w90_calculation, eigval, &
-                                    real_lattice, sitesym%symmetrize_eps, mp_grid, &
-                                    kpoint_path%num_points_first_segment, num_bands, num_kpts, &
-                                    num_proj, num_wann, optimisation, eig_found, cp_pp, &
-                                    gamma_only, have_disentangled, lhasproj, lsitesymmetry, &
-                                    use_bloch_phases, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  !call w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, &
+  !                                  exclude_bands, fermi_energy_list, fermi_surface_plot, &
+  !                                  kmesh_input, kmesh_info, kpt_latt, output_file, wvfn_read, &
+  !                                  wann_control, omega, input_proj, real_space_ham, &
+  !                                  w90_system, transport, print_output, wannier_data, &
+  !                                  wannier_plot, ws_region, w90_calculation, eigval, &
+  !                                  real_lattice, sitesym%symmetrize_eps, mp_grid, &
+  !                                  kpoint_path%num_points_first_segment, num_bands, num_kpts, &
+  !                                  num_proj, num_wann, optimisation, eig_found, cp_pp, &
+  !                                  gamma_only, have_disentangled, lhasproj, lsitesymmetry, &
+  !                                  use_bloch_phases, error, comm)
+  !if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   if (gamma_only .and. num_nodes > 1) then
     call set_error_fatal(error, 'Gamma point branch is serial only at the moment', comm)
@@ -395,13 +400,11 @@ program wannier
 
   if (w90_calculation%transport .and. transport%read_ht) goto 3003
 
-
   ! allocate main arrays (both restarted and new calculations)
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
                         print_output%timing_level, timer, counts, error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
 
   ! read symmetry info
   if (lsitesymmetry) then
@@ -425,7 +428,7 @@ program wannier
                                     seedname, stdout, error, comm)
       if (allocated(error)) call prterr(error, stdout, stderr, comm)
     endif
- 
+
     !-----------------JJ
     ! scatter from m_matrix_orig to m_matrix_orig_local
     ! normally achieved in overlap_read
@@ -435,9 +438,9 @@ program wannier
     !  if (allocated(error)) return
     !else
     ! scatter from m_matrix to m_matrix_local
-      w = num_wann*num_wann*kmesh_info%nntot
-      call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
-      if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    w = num_wann*num_wann*kmesh_info%nntot
+    call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
     !endif
     !!-----------------JJ
 
@@ -498,15 +501,22 @@ program wannier
   endif
 
   if (on_root) time2 = io_time()
-  call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
-                    m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, num_kpts, num_proj, &
-                    num_wann, print_output%timing_level, cp_pp, gamma_only, lsitesymmetry, &
-                    use_bloch_phases, seedname, stdout, timer, counts, displs, error, comm)
+  if (disentanglement) then
+    call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix_orig_local, &
+                      num_bands, num_kpts, num_proj, &
+                      num_wann, print_output%timing_level, cp_pp, gamma_only, lsitesymmetry, &
+                      use_bloch_phases, seedname, stdout, timer, dist_k, error, comm)
+  else
+    call overlap_read(kmesh_info, select_projection, sitesym, u_matrix, m_matrix_local, &
+                      num_bands, num_kpts, num_proj, &
+                      num_wann, print_output%timing_level, cp_pp, gamma_only, lsitesymmetry, &
+                      use_bloch_phases, seedname, stdout, timer, dist_k, error, comm)
+  endif
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
   if (on_root) then
-     time1 = io_time()
-     write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
+    time1 = io_time()
+    write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
   endif
 
   have_disentangled = .false.
@@ -534,7 +544,6 @@ program wannier
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
   endif
 
-
   if (on_root) then
     call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
                                              kpt_latt, num_kpts, dis_manifold, num_bands, &
@@ -543,16 +552,13 @@ program wannier
                                              stdout, seedname)
   endif
 
-
-
-
 1001 continue
   if (on_root) time2 = io_time()
 
   if (.not. gamma_only) then
     call wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
                    output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
-                   print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, m_matrix, &
+                   print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
                    m_matrix_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
                    wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
                    num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
@@ -582,11 +588,6 @@ program wannier
                                              real_lattice, omega%invariant, have_disentangled, &
                                              stdout, seedname)
   endif
-
-
-
-
-
 
 2002 continue
   if (on_root) time2 = io_time()
