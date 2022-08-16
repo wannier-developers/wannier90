@@ -3,7 +3,7 @@ program libv2
   use mpi_f08
   use w90_helper_types
 
-  use w90_comms, only: w90comm_type, comms_array_split, comms_scatterv
+  use w90_comms, only: w90comm_type, comms_array_split
   use w90_io, only: io_print_timings
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
@@ -20,9 +20,9 @@ program libv2
   complex(kind=dp), allocatable :: u(:,:,:)
   complex(kind=dp), allocatable :: uopt(:,:,:)
   integer, allocatable :: counts(:), displs(:), distk(:)
+  integer :: length, len2, i, j
   integer :: mpisize, rank, ierr, stat
   integer, pointer :: nb, nk, nw, nn
-  integer :: length, len2, i, j
   integer :: stdout, stderr
   logical, pointer :: pp 
   type(lib_global_type), target :: w90main
@@ -97,7 +97,7 @@ program libv2
   ! end setup pplel decomp
 
   call create_kmesh(w90main, stdout, stat, comm)
-  if (rank == 0) write(*,*)'nw, nb, nk, nn: ', nw, nb, nk, nn
+  write(*,*)'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, counts(rank)
 
   if (w90dat%lsitesymmetry) then
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
@@ -105,12 +105,12 @@ program libv2
 
   if (nw < nb ) then
     allocate(a(nb, nw, nk))
-    allocate(morig(nb, nb, nn, nk))
+    allocate(morig(nb, nb, nn, counts(rank)))
     call set_a_matrix(w90dat, a)
     call set_m_orig(w90dat, morig)
   endif
 
-  allocate(mloc(nw, nw, nn, nk))
+  allocate(mloc(nw, nw, nn, counts(rank)))
 !  allocate(m(nw, nw, nn, nk)) ! we don't need global m
   allocate(u(nw, nw, nk))
   allocate(uopt(nb, nw, nk))
@@ -124,12 +124,10 @@ program libv2
 
   if (nw < nb) then ! disentanglement reqired
     call disentangle(w90main, w90dat, stdout, stat, comm)
-    call wannierise(w90main, w90dat, stdout, stat, comm)
-  else
-    call wannierise(w90main, w90dat, stdout, stat, comm)
   endif
-
+  call wannierise(w90main, w90dat, stdout, stat, comm)
   call plot_files(w90main, w90dat, stdout, stat, comm)
+
   call print_times(w90main, stdout)
   call mpi_finalize()
 end program libv2

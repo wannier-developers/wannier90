@@ -3325,12 +3325,6 @@ contains
     call comms_bcast(print_output%timing_level, 1, error, comm)
     if (allocated(error)) return
 
-    ! test mpi error handling using "unlucky" input token
-    if (print_output%timing_level < 0 .and. mpirank(comm) == abs(print_output%timing_level)) then
-      call set_error_input(error, 'received unlucky_rank', comm)
-      return
-    endif
-
     call comms_bcast(w90_system%spinors, 1, error, comm)
     if (allocated(error)) return
 
