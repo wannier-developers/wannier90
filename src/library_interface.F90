@@ -203,7 +203,8 @@ contains
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_error, only: set_error_input
+    use w90_comms, only: w90comm_type, mpirank, comms_sync_err
     implicit none
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
@@ -215,7 +216,7 @@ contains
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
-    integer :: eunit
+    integer :: eunit, ierr
 
         
     status = 0
@@ -223,7 +224,7 @@ contains
     if (allocated(error)) then
       !write (error_unit, *) 'Error in input file access', error%code, error%message
       open(newunit=eunit, file=seedname//'.werr')
-      write (eunit, *) 'Error in input file access', error%code, error%message
+      call prterr(error, output, eunit, comm)
       close(eunit)
       status = sign(1, error%code)
       deallocate (error)
@@ -245,6 +246,24 @@ contains
                                         wan90%calc_only_A, cp_pp, helper%gamma_only, &
                                         wan90%lhasproj, .false., .false., wan90%lsitesymmetry, &
                                         wan90%use_bloch_phases, seedname, output, error, comm)
+
+      ! test mpi error handling using "unlucky" input token
+      ! this machinery used to sit in w90_wannier90_readwrite_dist
+      ! but that routine is obsolete if input file is read on all ranks
+      ! fixme, this should be moved to wannier90 main routine (definately doesn't belong here)
+      if (helper%print_output%timing_level < 0 .and. mpirank(comm) == abs(helper%print_output%timing_level)) then
+        write(*,*)"here...", mpirank(comm)
+        call set_error_input(error, 'received unlucky_rank', comm)
+      else
+        call comms_sync_err(comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+      endif
+      if (allocated(error)) then ! applies (is t) for all ranks now
+        open(newunit=eunit, file=seedname//'.werr')
+        call prterr(error, output, eunit, comm)
+        close(eunit)
+        status = sign(1, error%code)
+        deallocate (error)
+      endif
 
       if (allocated(error)) then
         open(newunit=eunit, file=seedname//'.werr')
