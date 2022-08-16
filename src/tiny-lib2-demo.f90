@@ -22,8 +22,8 @@ program libv2
   integer, allocatable :: counts(:), displs(:), distk(:)
   integer :: mpisize, rank, ierr, stat
   integer, pointer :: nb, nk, nw, nn
-  integer :: ik, length, len2, i, j
-  integer :: stdout
+  integer :: length, len2, i, j
+  integer :: stdout, stderr
   logical, pointer :: pp 
   type(lib_global_type), target :: w90main
   type(lib_w90_type), target :: w90dat
@@ -65,16 +65,19 @@ program libv2
   ! special branch for writing nnkp file
   if (pp) then
     call write_kmesh(w90main, w90dat, fn, 6, stat, comm)
+    call mpi_finalize()
     stop
   endif
 
   ! open main output file
   open(newunit=stdout, file=fn//'.wout')
+  ! open main error file 
+  !open(newunit=stderr, file=fn//'.werr') ! fixme: need to add stderr to lib calls
 
   ! write jazzy header info
   call w90_readwrite_write_header(w90main%physics%bohr_version_str, &
                                   w90main%physics%constants_version_str1, &
-                                  w90main%physics%constants_version_str2, stdout)
+                                  w90main%physics%constants_version_str2, stdout) ! (not a library call)
 
   ! setup pplel decomp
   call mpi_comm_rank(comm%comm, rank, ierr)
@@ -82,47 +85,47 @@ program libv2
   allocate(counts(0:mpisize-1))
   allocate(displs(0:mpisize-1))
   allocate(distk(nk))
-  call comms_array_split(nk, counts, displs, comm)
+  call comms_array_split(nk, counts, displs, comm) ! (not a library call) fixme
   distk(:) = -1
   do i = 0, mpisize - 1
     do j = 1, counts(i)
       distk(displs(i) + j) = i
     enddo
   enddo
-  call set_kpoint_block(w90main, counts, displs)
+  call set_kpoint_block(w90main, counts, displs) 
   call set_kpoint_distribution(w90main, distk)
   ! end setup pplel decomp
 
   call create_kmesh(w90main, stdout, stat, comm)
-  write(*,*)'nw, nb, nk, nn: ', nw, nb, nk, nn
+  if (rank == 0) write(*,*)'nw, nb, nk, nn: ', nw, nb, nk, nn
 
   if (w90dat%lsitesymmetry) then
-    call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm)
+    call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
   endif
 
-  allocate(a(nb, nw, nk))
+  if (nw < nb ) then
+    allocate(a(nb, nw, nk))
+    allocate(morig(nb, nb, nn, nk))
+    call set_a_matrix(w90dat, a)
+    call set_m_orig(w90dat, morig)
+  endif
+
   allocate(mloc(nw, nw, nn, nk))
-  allocate(m(nw, nw, nn, nk))
-  allocate(morig(nb, nb, nn, nk)) ! only needed in disentangle
+!  allocate(m(nw, nw, nn, nk)) ! we don't need global m
   allocate(u(nw, nw, nk))
   allocate(uopt(nb, nw, nk))
 
-  call set_a_matrix(w90dat, a)
   call set_m_matrix_local(w90dat, mloc)
-  call set_m_matrix(w90dat, m)
-  call set_m_orig(w90dat, morig)
+!  call set_m_matrix(w90dat, m)  ! we don't need global m
   call set_u_matrix(w90main, u)
   call set_u_opt(w90main, uopt)
 
   call overlaps(w90main, w90dat, stdout, stat, comm)
 
-  if (nw == nb) then 
-    uopt = u
-    mloc = m
+  if (nw < nb) then ! disentanglement reqired
+    call disentangle(w90main, w90dat, stdout, stat, comm)
     call wannierise(w90main, w90dat, stdout, stat, comm)
   else
-    call disentangle(w90main, w90dat, stdout, stat, comm)
-    call comms_scatterv(mloc, nw*nw*nn*counts(rank), m, nw*nw*nn*counts, nw*nw*nn*displs, error, comm)
     call wannierise(w90main, w90dat, stdout, stat, comm)
   endif
 

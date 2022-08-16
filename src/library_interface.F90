@@ -421,8 +421,6 @@ contains
 
   subroutine disentangle(helper, wan90, output, status, comm)
 
-    ! fixme, probably good to switch from m_matrix_local to m_matrix when mpisize==1
-
     use w90_disentangle, only: dis_main, setup_m_loc
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type, mpirank
@@ -626,7 +624,7 @@ contains
     type(lib_global_type), intent(in) :: helper
     integer, intent(in) :: output
 
-    call io_print_timings(helper%timer, output)
+    if (helper%print_output%iprint>0) call io_print_timings(helper%timer, output)
   end subroutine print_times
 
   subroutine set_a_matrix(helper, a_matrix)
