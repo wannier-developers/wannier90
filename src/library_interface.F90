@@ -249,7 +249,8 @@ contains
       if (allocated(error)) then
         open(newunit=eunit, file=seedname//'.werr')
         !write (error_unit, *) 'Error in reader', error%code, error%message
-        write (eunit, *) 'Error in reader', error%code, error%message
+        !write (eunit, *) 'Error in reader', error%code, error%message
+        call prterr(error, output, eunit, comm)
         close(eunit)
         status = sign(1, error%code)
         deallocate (error)
@@ -264,7 +265,8 @@ contains
         if (allocated(error)) then
           open(newunit=eunit, file=seedname//'.werr')
           !write (error_unit, *) 'Error in read alloc', error%code, error%message
-          write (eunit, *) 'Error in read alloc', error%code, error%message
+          !write (eunit, *) 'Error in read alloc', error%code, error%message
+          call prterr(error, output, eunit, comm)
           close(eunit)
           status = sign(1, error%code)
           deallocate (error)
@@ -274,7 +276,8 @@ contains
       if (allocated(error)) then
         open(newunit=eunit, file=seedname//'.werr')
         !write (error_unit, *) 'Error in input close', error%code, error%message
-        write (eunit, *) 'Error in input close', error%code, error%message
+        !write (eunit, *) 'Error in input close', error%code, error%message
+        call prterr(error, output, eunit, comm)
         close(eunit)
         status = sign(1, error%code)
         deallocate (error)
@@ -333,22 +336,24 @@ contains
     endif
   end subroutine create_kmesh
 
-  subroutine write_kmesh(helper, wan90, seedname, status, comm)
+  subroutine write_kmesh(helper, wan90, seedname, stdout, status, comm)
     use w90_kmesh, only: kmesh_get, kmesh_write
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90comm_type
     implicit none
     
     !arguments
-    type(lib_global_type), intent(inout) :: helper
     character(len=*), intent(in) :: seedname
-    type(lib_w90_type), intent(inout) :: wan90
+    integer, intent(in) :: stdout
     integer, intent(out) :: status
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(inout) :: wan90
     type(w90comm_type), intent(in) :: comm
 
     !variables
     type(w90_error_type), allocatable :: error
     logical :: calc_only_A = .false.! what does this do?
+    integer :: eunit
 
     status = 0
     call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%proj, helper%print_output, &
@@ -356,7 +361,10 @@ contains
                      helper%w90_system%spinors, seedname, helper%timer)
 
     if (allocated(error)) then
-      write (error_unit, *) 'Error in kmesh_write', error%code, error%message
+      open(newunit=eunit, file=seedname//'.werr')
+      if (allocated(error)) call prterr(error, stdout, eunit, comm)
+      close(eunit) 
+      !write (error_unit, *) 'Error in kmesh_write', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
@@ -687,5 +695,65 @@ contains
     helper%counts => counts
     helper%displs => displs
   end subroutine set_kpoint_block
+
+  subroutine prterr(error, stdout, stderr, comm)
+    use w90_error_base, only: code_remote, w90_error_type
+    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90comm_type, mpirank, mpisize
+
+    type(w90_error_type), allocatable, intent(in) :: error
+    integer, intent(in) :: stderr, stdout
+    type(w90comm_type), intent(in) :: comm
+
+    type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
+    integer :: ie ! global error value to be returned
+    integer :: je ! error value on remote ranks
+    integer :: j ! rank index
+    integer :: failrank ! lowest rank reporting an error
+    character(len=128) :: mesg ! only print 128 chars of error
+
+    ie = 0
+    mesg = 'not set'
+
+    if (mpirank(comm) == 0) then
+      ! fixme, report all failing ranks
+      do j = mpisize(comm) - 1, 1, -1
+        call comms_no_sync_recv(je, 1, j, le, comm)
+
+        if (je /= code_remote .and. je /= 0) then
+          failrank = j
+          ie = je
+          call comms_no_sync_recv(mesg, 128, j, le, comm)
+        endif
+      enddo
+      ! if the error is on rank0
+      if (error%code /= code_remote .and. error%code /= 0) then
+        failrank = 0
+        ie = error%code
+        mesg = error%message
+      endif
+
+      !if (ie == 0) write (stderr, *) "logic error" ! to arrive here requires this
+
+      write (stderr, *) 'Exiting.......'
+      write (stderr, '(1x,a)') trim(mesg)
+      write (stderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+      write (stdout, '(1x,a)') ' error encountered; check error .werr error log'
+
+    else ! non 0 ranks
+      je = error%code
+      call comms_no_sync_send(je, 1, 0, le, comm)
+      if (je /= code_remote .and. je /= 0) then
+        mesg = error%message
+        call comms_no_sync_send(mesg, 128, 0, le, comm)
+      endif
+    endif
+
+#ifdef MPI
+    call mpi_finalize(je) ! je overwritten here
+#endif
+    !call exit(ie) ! return true fail code (gnu extension)
+    stop
+  end subroutine prterr
+
 
 end module w90_helper_types
