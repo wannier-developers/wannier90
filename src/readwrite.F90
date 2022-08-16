@@ -1255,6 +1255,12 @@ contains
                                             num_bands, num_kpts, error, comm)
     !================================================== !
     ! Some checks and initialisations !
+    ! conditionally allocates:
+    !   dis_manifold%ndimwin(num_kpts)
+    !   dis_manifold%lwindow(num_bands, num_kpts)
+    !   wannier_data%centres(3, num_wann)
+    !   wannier_data%spreads(num_wann)
+    !     small arrays... maybe overkill here?
     !================================================== !
     use w90_error, only: w90_error_type, set_error_alloc
     implicit none

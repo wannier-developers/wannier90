@@ -696,7 +696,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call comms_array_split(num_kpts, counts, displs, comm)
   call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
                         u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        verbose%timing_level, timer, error, comm)
+                        verbose%timing_level, timer, counts, error, comm)
   if (allocated(error)) call prterr(error, stdout)
   if (disentanglement) then
     m_matrix_orig = m_matrix_loc
@@ -739,8 +739,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
     ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
     call setup_m_loc(kmesh_info, verbose, m_matrix_local, m_matrix_orig_local, u_matrix, &
-                     num_bands, num_kpts, num_wann, optimisation, timer, counts, displs, &
-                     error, comm)
+                     num_bands, num_wann, optimisation, timer, counts, displs, error, comm)
     if (allocated(error)) call prterr(error, stdout)
 
     have_disentangled = .true.
@@ -757,9 +756,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                  verbose%timing_level, stdout, timer, error, comm)
       if (allocated(error)) call prterr(error, stdout)
     else
-      call overlap_project(sym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
+      call overlap_project(sym, m_matrix_local, u_matrix, kmesh_info%nnlist, &
                            kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                           verbose%timing_level, lsitesymmetry, stdout, timer, error, comm)
+                           verbose%timing_level, lsitesymmetry, stdout, timer, dist_k, error, comm)
       if (allocated(error)) call prterr(error, stdout)
     endif
     time1 = io_time()
@@ -769,7 +768,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   if (gamma_only) then
     call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
                          wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
-                         m_matrix_local, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
+                         u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
                          num_bands, num_kpts, num_wann, have_disentangled, &
                          rs_region%translate_home_cell, seedname, stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout)
@@ -780,7 +779,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
                    nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
                    band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, timer, counts, displs, error, comm)
+                   seedname, stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
 
