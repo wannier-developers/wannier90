@@ -14,7 +14,7 @@ program libv2
   character(len=100) :: seedname
   character(len=:), allocatable :: fn
   complex(kind=dp), allocatable :: a(:,:,:)
-  complex(kind=dp), allocatable :: m(:,:,:,:)
+  !complex(kind=dp), allocatable :: m(:,:,:,:)
   complex(kind=dp), allocatable :: mloc(:,:,:,:)
   complex(kind=dp), allocatable :: morig(:,:,:,:)
   complex(kind=dp), allocatable :: u(:,:,:)
@@ -80,6 +80,7 @@ program libv2
                                   w90main%physics%constants_version_str2, stdout) ! (not a library call)
 
   ! setup pplel decomp
+  ! fixme, remove duplication
   call mpi_comm_rank(comm%comm, rank, ierr)
   call mpi_comm_size(comm%comm, mpisize, ierr)
   allocate(counts(0:mpisize-1))
