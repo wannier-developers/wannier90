@@ -75,7 +75,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(ws_region_type), intent(in) :: ws_region
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -188,7 +188,7 @@ contains
     real(DP), intent(out) :: R_out(3, ndegenx)
     integer, intent(out) :: shifts(3, ndegenx)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(DP) :: R(3), R_f(3), R_in_f(3), R_bz(3), mod2_R_bz
@@ -308,7 +308,7 @@ contains
     integer, intent(in) :: num_wann
     logical, intent(in) :: use_ws_distance
     character(len=50), intent(in)  :: seedname
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)

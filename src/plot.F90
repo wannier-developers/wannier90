@@ -20,7 +20,7 @@ module w90_plot
 
   !! This module handles various plots
 
-  use w90_comms, only: comms_array_split, comms_reduce, w90comm_type, mpisize, mpirank
+  use w90_comms, only: comms_array_split, comms_reduce, w90_comm_type, mpisize, mpirank
 
   implicit none
 
@@ -73,7 +73,7 @@ contains
     type(print_output_type), intent(in)       :: print_output
     type(real_space_ham_type), intent(inout)  :: real_space_ham
     type(w90_calculation_type), intent(in)    :: w90_calculation
-    type(w90comm_type), intent(in)            :: comm
+    type(w90_comm_type), intent(in)            :: comm
     type(wannier_data_type), intent(in)       :: wannier_data
     type(wannier_plot_type), intent(in)       :: wannier_plot
     type(ws_region_type), intent(in)          :: ws_region
@@ -280,7 +280,7 @@ contains
     type(ws_region_type), intent(in) :: ws_region
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
@@ -1124,7 +1124,7 @@ contains
     type(fermi_surface_plot_type), intent(in)   :: fermi_surface_plot
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     character(len=50), intent(in)  :: seedname
     real(kind=dp), allocatable, intent(in)      :: fermi_energy_list(:)
@@ -1306,7 +1306,7 @@ contains
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type, &
       timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file, &
       set_error_warn
 
@@ -1321,7 +1321,7 @@ contains
     type(wvfn_read_type), intent(in) :: wvfn_read
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
@@ -2247,7 +2247,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: nkp, nn, file_unit
     character(len=33) :: header

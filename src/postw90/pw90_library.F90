@@ -52,7 +52,7 @@ contains
   subroutine read_all_input(wann90, w90only, pw90, seedname, output, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_readall, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
@@ -64,7 +64,7 @@ contains
     integer, intent(in) :: output
     character(len=*), intent(in) :: seedname
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -143,7 +143,7 @@ contains
 
   subroutine read_checkpoint(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
     use w90_postw90_common, only: pw90common_wanint_setup
 
@@ -154,7 +154,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
@@ -205,7 +205,7 @@ contains
 
   subroutine pw_setup(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
@@ -213,7 +213,7 @@ contains
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
 
@@ -230,7 +230,7 @@ contains
 
   subroutine calc_v_matrix(wann90, pw90, v_matrix)
     !use w90_error_base, only: w90_error_type
-    !use w90_comms, only: w90comm_type, mpirank
+    !use w90_comms, only: w90_comm_type, mpirank
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
@@ -239,7 +239,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout), target :: v_matrix(:, :, :)
-    !type(w90comm_type), intent(in) :: comm
+    !type(w90_comm_type), intent(in) :: comm
     !
     integer :: i, j, m, loop_kpt
 
@@ -266,7 +266,7 @@ contains
 
   subroutine calc_dos(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_dos, only: dos_main
 
     implicit none
@@ -279,7 +279,7 @@ contains
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     !character(len=*), intent(in) :: seedname
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     !type(w90_extra_io_type) :: io_params
@@ -314,7 +314,7 @@ contains
 
   subroutine boltzwann(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_boltzwann, only: boltzwann_main
 
     implicit none
@@ -324,7 +324,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -352,7 +352,7 @@ contains
 
   subroutine gyrotropic(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_gyrotropic, only: gyrotropic_main
 
     implicit none
@@ -362,7 +362,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -396,7 +396,7 @@ contains
 
   subroutine berry(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_berry, only: berry_main
 
     implicit none
@@ -406,7 +406,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -454,7 +454,7 @@ contains
 
   subroutine kpath(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_kpath, only: k_path
 
     implicit none
@@ -464,7 +464,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -511,7 +511,7 @@ contains
 
   subroutine kslice(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_kslice, only: k_slice
 
     implicit none
@@ -521,7 +521,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(pw90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
@@ -568,7 +568,7 @@ contains
 
   subroutine spin_moment(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_spin, only: spin_get_moment
 
     implicit none
@@ -578,7 +578,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: HH_R(:, :, :)
@@ -605,7 +605,7 @@ contains
 
   subroutine geninterp(wann90, pw90, output, status, comm)
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_geninterp, only: geninterp_main
 
     implicit none
@@ -615,7 +615,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_error_type), allocatable :: error
     complex(kind=dp), allocatable :: HH_R(:, :, :)

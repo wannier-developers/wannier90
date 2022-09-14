@@ -25,7 +25,7 @@ module w90_get_oper
   !! (e.g., quantum-espresso)
   !================================================
 
-  use w90_comms, only: comms_bcast, w90comm_type, mpirank
+  use w90_comms, only: comms_bcast, w90_comm_type, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
   use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
@@ -64,7 +64,7 @@ contains
     ! arguments
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(print_output_type), intent(in) :: print_output
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
@@ -286,7 +286,7 @@ contains
     type(kmesh_info_type), intent(in)     :: kmesh_info
     type(print_output_type), intent(in)   :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in)         :: comm
+    type(w90_comm_type), intent(in)         :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -575,7 +575,7 @@ contains
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in)       :: comm
+    type(w90_comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -759,7 +759,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in)   :: print_output
     type(timer_list_type), intent(inout)  :: timer
-    type(w90comm_type), intent(in)        :: comm
+    type(w90_comm_type), intent(in)        :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -949,7 +949,7 @@ contains
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in)       :: comm
+    type(w90_comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -1127,7 +1127,7 @@ contains
     type(pw90_oper_read_type), intent(in) :: pw90_oper_read
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, irvec(:, :)
@@ -1308,7 +1308,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(pw90_spin_hall_type), intent(in) :: pw90_spin_hall
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout, nrpts, num_bands, num_kpts, num_wann, num_valence_bands
@@ -1706,7 +1706,7 @@ contains
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in)       :: comm
+    type(w90_comm_type), intent(in)       :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)
@@ -1871,7 +1871,7 @@ contains
     type(kmesh_info_type), intent(in)   :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in)      :: comm
+    type(w90_comm_type), intent(in)      :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_bands, num_kpts, num_wann, nrpts, stdout, irvec(:, :)

@@ -25,7 +25,7 @@ module w90_sitesym
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -123,7 +123,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -204,7 +204,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(:, :, :) !(num_wann, num_wann, num_kpts)
 
@@ -289,7 +289,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann, num_kpts
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
@@ -407,7 +407,7 @@ contains
 
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: ir, ndim
@@ -501,7 +501,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
@@ -567,7 +567,7 @@ contains
     ! arguments
     type(sitesym_type), intent(in) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: stdout
@@ -658,7 +658,7 @@ contains
     ! arguments
     type(sitesym_type), intent(inout) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -727,7 +727,7 @@ contains
 
     type(sitesym_type), intent(inout) :: sitesym
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 
     deallocate (sitesym%ik2ir, stat=ierr)

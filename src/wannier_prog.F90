@@ -115,7 +115,7 @@ program wannier
   type(sitesym_type) :: sitesym
   type(transport_type) :: transport
   type(w90_calculation_type) :: w90_calculation
-  type(w90comm_type) :: comm
+  type(w90_comm_type) :: comm
   type(w90_physical_constants_type) :: physics
   type(w90_system_type) :: w90_system
   type(wann_control_type) :: wann_control
@@ -676,7 +676,7 @@ contains
 
     type(w90_error_type), allocatable, intent(in) :: error
     integer, intent(in) :: stderr, stdout
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
     integer :: ie ! global error value to be returned
