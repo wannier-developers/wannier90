@@ -30,7 +30,7 @@ module w90_kmesh
   use w90_types, only: max_shells, num_nnmax ! used for dimensioning
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -78,7 +78,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -926,7 +926,7 @@ contains
 
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 
     ! Deallocate real arrays that are public
@@ -1055,7 +1055,7 @@ contains
     type(kmesh_input_type), intent(in)  :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: lmn(:, :)
@@ -1126,7 +1126,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1447,7 +1447,7 @@ contains
     type(kmesh_input_type), intent(in) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1609,7 +1609,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts, stdout
     integer, intent(in) :: lmn(:, :)

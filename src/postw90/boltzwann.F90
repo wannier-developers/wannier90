@@ -40,7 +40,7 @@ module w90_boltzwann
   !================================================!
 
   use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_array_split, comms_reduce, &
-    comms_allreduce, w90comm_type
+    comms_allreduce, w90_comm_type
   use w90_constants, only: dp, pw90_physical_constants_type, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
   use w90_io, only: io_file_unit
@@ -100,7 +100,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_comms, only: comms_bcast, w90_comm_type, mpirank
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, &
@@ -118,7 +118,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(pw90_physical_constants_type), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_system_type), intent(in) :: w90_system
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
@@ -803,7 +803,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_comms, only: comms_bcast, w90_comm_type, mpirank
     use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
@@ -826,7 +826,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -1324,7 +1324,7 @@ contains
     use w90_postw90_types, only: pw90_boltzwann_type, pw90_spin_mod_type, wigner_seitz_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1336,7 +1336,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)

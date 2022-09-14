@@ -101,7 +101,7 @@ contains
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(inout) :: mp_grid(3)
@@ -358,7 +358,7 @@ contains
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(inout) :: mp_grid(3)
@@ -580,7 +580,7 @@ contains
     logical, intent(inout) :: lsitesymmetry
     real(kind=dp), intent(inout) :: symmetrize_eps
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -601,7 +601,7 @@ contains
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calculation
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -630,7 +630,7 @@ contains
     type(transport_type), intent(inout) :: tran
     character(len=*), intent(inout) :: restart
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -752,7 +752,7 @@ contains
     implicit none
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -795,7 +795,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: ccentres_frac(:, :)
     integer, intent(in) :: stdout
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr
     logical :: found
@@ -970,7 +970,7 @@ contains
     integer, intent(in) :: num_bands, num_wann
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: nkp, ierr
     logical :: found
@@ -1052,7 +1052,7 @@ contains
     logical, intent(inout) :: cp_pp, pp_only_A
     logical, intent(inout) :: postproc_setup ! alreadt init in w90_calc
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1077,7 +1077,7 @@ contains
     type(w90_calculation_type), intent(inout) :: w90_calculation
     character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found, chk_found
 
@@ -1111,7 +1111,7 @@ contains
     integer, intent(in) :: num_valence_bands
     logical, intent(in) :: disentanglement, gamma_only
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found, hr_plot
 
@@ -1181,7 +1181,7 @@ contains
     implicit none
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
     character(len=6) :: spin_str
@@ -1216,7 +1216,7 @@ contains
     logical, intent(in) :: has_kpath
     logical, intent(in) :: bands_plot
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr, num_project
     logical :: found
@@ -1281,7 +1281,7 @@ contains
     integer, intent(in) :: num_wann
     logical, intent(in) :: wannier_plot
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i, loop, ierr, wann_plot_num
     logical :: found
@@ -1403,7 +1403,7 @@ contains
     type(fermi_surface_plot_type), intent(inout) :: fermi_surface_data
     logical, intent(in) :: fermi_surface_plot
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1439,7 +1439,7 @@ contains
     character(len=*), intent(inout) :: one_dim_axis
     logical, intent(in) :: tran_read_ht
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1472,7 +1472,7 @@ contains
     type(real_space_ham_type), intent(inout) :: hamiltonian
     real(kind=dp) :: rv_temp(3)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1498,7 +1498,7 @@ contains
     logical, intent(inout) :: use_bloch_phases
     logical, intent(in) :: disentanglement
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1528,7 +1528,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     logical, intent(in) :: library
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer, allocatable :: nnkpts_block(:, :)
@@ -1626,7 +1626,7 @@ contains
     type(proj_input_type), intent(inout) :: proj_input
     type(select_projection_type), intent(inout) :: select_proj
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     real(kind=dp), intent(in) :: bohr
@@ -1768,7 +1768,7 @@ contains
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
     type(wann_control_type), intent(inout) :: wann_control
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -2310,7 +2310,7 @@ contains
     type(proj_input_type), intent(inout) :: proj
     type(proj_input_type), intent(inout) :: proj_input
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
 
@@ -2782,7 +2782,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_comms, only: comms_bcast, w90_comm_type, mpirank
 
     implicit none
 
@@ -2801,7 +2801,7 @@ contains
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(transport_type), intent(inout) :: tran
     type(w90_calculation_type), intent(inout) :: w90_calculation
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_system_type), intent(inout) :: w90_system
     type(wann_control_type), intent(inout) :: wann_control
     type(wannier_data_type), intent(inout) :: wannier_data

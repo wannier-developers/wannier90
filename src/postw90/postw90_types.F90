@@ -26,7 +26,7 @@ module w90_postw90_types
   !! Types specific to wannier90.x (not used by postw90.x) are defined in wannier90_types.F90.
 
   use w90_constants, only: dp
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 

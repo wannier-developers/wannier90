@@ -23,7 +23,7 @@ module w90_wannierise
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -68,7 +68,7 @@ contains
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
-    use w90_comms, only: mpisize, mpirank, comms_allreduce, comms_reduce, w90comm_type
+    use w90_comms, only: mpisize, mpirank, comms_allreduce, comms_reduce, w90_comm_type
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
 
     implicit none
@@ -87,7 +87,7 @@ contains
     type(wann_omega_type), intent(inout)     :: omega
     type(sitesym_type), intent(in)           :: sitesym
     type(w90_calculation_type), intent(in)   :: w90_calculation
-    type(w90comm_type), intent(in)           :: comm
+    type(w90_comm_type), intent(in)           :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
     type(timer_list_type), intent(inout)     :: timer
     type(w90_error_type), allocatable, intent(out) :: error
@@ -173,7 +173,7 @@ contains
     !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
     real(kind=dp) :: lambda_loc
 
-    integer, allocatable :: counts(:), local_k(:)
+    integer, allocatable :: global_k(:)
     complex(kind=dp) :: rdotk
     integer :: conv_count, noise_count, page_unit
     integer :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc
@@ -201,22 +201,13 @@ contains
 
     first_pass = .true.
 
-    allocate (counts(0:num_nodes - 1), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating counts in wann_main', comm)
-      return
-    end if
-    do i = 0, num_nodes - 1
-      counts(i) = count(dist_k == i)
-    enddo
-    ranknk = counts(my_node_id) ! number k this rank, for dimensioning
-    ! there is no need to round up to 1 using max(1, counts)
-    ! but less than zero is nonsense
+    ranknk = count(dist_k == my_node_id) ! number k this rank, for dimensioning
+    ! there is no need to round up to 1, but less than zero is nonsense
     if (ranknk < 0) then
       call set_error_fatal(error, 'kpt decomposition nonsensical in wann_main', comm)
       return
     endif
-    allocate (local_k(ranknk), stat=ierr)
+    allocate (global_k(ranknk), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating local kpoint distribution in wann_main', comm)
       return
@@ -224,7 +215,7 @@ contains
     loop_kpt = 1
     do i = 1, num_kpts
       if (dist_k(i) == my_node_id) then
-        local_k(loop_kpt) = i
+        global_k(loop_kpt) = i
         loop_kpt = loop_kpt + 1
       endif
     enddo
@@ -371,7 +362,7 @@ contains
 
     ! initialize local u matrix with global one
     do nkp_loc = 1, ranknk
-      nkp = local_k(nkp_loc)
+      nkp = global_k(nkp_loc)
       u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)
       u_matrix(:, :, nkp_loc) = u_matrix(:, :, nkp)
     end do
@@ -468,7 +459,7 @@ contains
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       counts, local_k, error, comm)
+                       ranknk, global_k, error, comm)
       if (allocated(error)) return
 
       irguide = 1
@@ -483,7 +474,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, print_output, wann_control%constrain, omega%invariant, ln_tmp_loc, &
-                    m_matrix_loc, lambda_loc, first_pass, timer, counts, local_k, error, comm)
+                    m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, error, comm)
     if (allocated(error)) return
 
     ! public variables
@@ -581,7 +572,7 @@ contains
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                          m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, &
-                         timer, counts, local_k, error, comm)
+                         timer, ranknk, global_k, error, comm)
         if (allocated(error)) return
 
         irguide = 1
@@ -592,14 +583,14 @@ contains
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
-                         timer, counts, local_k, error, comm, print_output%iprint, cdodq)
+                         timer, ranknk, global_k, error, comm, print_output%iprint, cdodq)
         if (allocated(error)) return
 
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
-                         timer, counts, local_k, error, comm, print_output%iprint)
+                         timer, ranknk, global_k, error, comm, print_output%iprint)
         if (allocated(error)) return
 
       endif
@@ -616,7 +607,7 @@ contains
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
-                                     stdout, timer, counts, error, comm)
+                                     stdout, timer, dist_k, error, comm)
       if (allocated(error)) return
 
       if (lsitesymmetry) then
@@ -651,14 +642,14 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                  print_output%timing_level, stdout, sitesym, timer, counts, &
-                                  local_k, error, comm)
+                                  print_output%timing_level, stdout, sitesym, timer, ranknk, &
+                                  global_k, error, comm)
         if (allocated(error)) return
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, omega%invariant, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, counts, local_k, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, &
                         error, comm)
         if (allocated(error)) return
 
@@ -712,8 +703,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                  print_output%timing_level, stdout, sitesym, timer, counts, &
-                                  local_k, error, comm)
+                                  print_output%timing_level, stdout, sitesym, timer, ranknk, &
+                                  global_k, error, comm)
         if (allocated(error)) return
 
         call wann_spread_copy(wann_spread, old_spread)
@@ -721,7 +712,7 @@ contains
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, omega%invariant, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, counts, local_k, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, &
                         error, comm)
         if (allocated(error)) return
 
@@ -851,7 +842,7 @@ contains
 
     u_matrix(:, :, :) = 0.0_dp
     do nkp_loc = 1, ranknk
-      nkp = local_k(nkp_loc)
+      nkp = global_k(nkp_loc)
       u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
     enddo
     call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
@@ -946,7 +937,7 @@ contains
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       counts, local_k, error, comm)
+                       ranknk, global_k, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1183,7 +1174,7 @@ contains
       type(localisation_vars_type), intent(in) :: old_spread
       type(localisation_vars_type), intent(in) :: wann_spread
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
       type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
@@ -1256,7 +1247,7 @@ contains
     end subroutine internal_test_convergence
 
     !================================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, dist_k, cdq_loc)
       !================================================!
       !
       !! Add some random noise to the search direction
@@ -1265,13 +1256,13 @@ contains
       !================================================!
 
       use w90_constants, only: cmplx_0
-      use w90_comms, only: w90comm_type
+      use w90_comms, only: w90_comm_type
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
       integer, intent(in) :: num_wann
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: dist_k(:)
       ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
@@ -1300,7 +1291,7 @@ contains
       ! cdq is a num_wann x num_wann x num_kpts anti-hermitian array
       ! to which we add a random anti-hermitian matrix
 
-      do ikp = 1, counts(my_node_id)
+      do ikp = 1, count(dist_k == mpirank(comm)) ! fixme JJ
         do iw = 1, num_wann
           call random_seed()
           call random_number(noise_real(:, iw))
@@ -1451,7 +1442,7 @@ contains
         enddo
       end if
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         cdodq_precond_loc(:, :, nkp_loc) = cdodq_precond(:, :, nkp)
       enddo
 
@@ -1472,7 +1463,7 @@ contains
       !================================================!
 
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: comms_allreduce, w90comm_type
+      use w90_comms, only: comms_allreduce, w90_comm_type
       use w90_wannier90_types, only: wann_control_type
       use w90_types, only: timer_list_type
 
@@ -1482,7 +1473,7 @@ contains
       type(wann_control_type), intent(in) :: wann_control
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
 
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: iter
@@ -1508,7 +1499,7 @@ contains
       complex(kind=dp), external :: zdotc
       integer :: m
 
-      m = counts(my_node_id)*num_wann*num_wann ! for dimensioning
+      m = count(dist_k == mpirank(comm))*num_wann*num_wann ! for dimensioning
 
       if ((.not. wann_control%precond) .and. print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_start('wann: main: search_direction', timer)
@@ -1626,7 +1617,7 @@ contains
       !
       !================================================!
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: w90comm_type
+      use w90_comms, only: w90_comm_type
       use w90_types, only: timer_list_type
 
       implicit none
@@ -1691,7 +1682,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                    timing_level, stdout, sitesym, timer, counts, local_k, error, &
+                                    timing_level, stdout, sitesym, timer, ranknk, global_k, error, &
                                     comm)
       !================================================!
       !
@@ -1703,7 +1694,7 @@ contains
       use w90_sitesym, only: sitesym_symmetrize_rotation
       use w90_wannier90_types, only: sitesym_type
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: comms_allreduce, w90comm_type
+      use w90_comms, only: comms_allreduce, w90_comm_type
       use w90_utility, only: utility_zgemm
       use w90_types, only: kmesh_info_type, timer_list_type
 
@@ -1713,7 +1704,7 @@ contains
       type(sitesym_type), intent(in) :: sitesym
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
@@ -1725,8 +1716,8 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
 
-      integer, intent(in) :: counts(0:)
-      integer, intent(in) :: local_k(:)
+      integer, intent(in) :: ranknk
+      integer, intent(in) :: global_k(:)
       integer, intent(in) :: timing_level
       integer, intent(in) :: num_wann, num_kpts
       integer, intent(in) :: stdout
@@ -1738,15 +1729,15 @@ contains
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
-      integer :: my_node_id, ranknk
+      integer :: my_node_id
 
       my_node_id = mpirank(comm)
-      ranknk = counts(my_node_id) ! number k this rank, for dimensioning
+      !ranknk = count(dist_k == my_node_id) ! number k this rank, for dimensioning
 
       if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: main: u_and_m', timer)
 
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         !JJ fixme, review this cycle... currently it causes error
         !if (lsitesymmetry) then                !YN: RS:
         !  if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
@@ -1787,7 +1778,7 @@ contains
       ! each process communicates its result to other processes
       cdq(:, :, :) = 0.0_dp
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
       enddo
       call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
@@ -1814,13 +1805,13 @@ contains
         call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error, comm)
         if (allocated(error)) return
         do nkp_loc = 1, ranknk
-          nkp = local_k(nkp_loc)
+          nkp = global_k(nkp_loc)
           cdq_loc(:, :, nkp_loc) = cdq(:, :, nkp)
         enddo
       endif
 
       ! the orbitals are rotated
-      do nkp_loc = 1, counts(my_node_id)
+      do nkp_loc = 1, ranknk
         ! cmtmp = U(k) . cdq(k)
         call utility_zgemm(cmtmp, u_matrix_loc(:, :, nkp_loc), 'N', cdq_loc(:, :, nkp_loc), 'N', &
                            num_wann)
@@ -1829,7 +1820,7 @@ contains
 
       ! and the M_ij are updated
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
           ! tmp_cdq = cdq^{dagger} . M
@@ -1848,7 +1839,7 @@ contains
   !================================================!
 
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
-                         m_matrix_loc, rnkb, timing_level, iprint, timer, counts, local_k, error, &
+                         m_matrix_loc, rnkb, timing_level, iprint, timer, ranknk, global_k, error, &
                          comm, m_w)
     !================================================!
     !! Uses guiding centres to pick phases which give a
@@ -1859,13 +1850,13 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_inv3
-    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
+    use w90_comms, only: comms_allreduce, w90_comm_type, mpirank
     use w90_types, only: kmesh_info_type, timer_list_type
 
     implicit none
 
     ! arguments
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
@@ -1875,8 +1866,8 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: irguide !! Zero if first call to this routine
     integer, intent(in) :: iprint
-    integer, intent(in) :: counts(0:)
-    integer, intent(in) :: local_k(:)
+    integer, intent(in) :: ranknk
+    integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(out) :: sheet(:, :, :) !! Choice of branch cut
     real(kind=dp), intent(out) :: rnkb(:, :, :)
@@ -1911,8 +1902,8 @@ contains
         ! get average phase for each unique bk direction
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
-          do nkp_loc = 1, counts(my_node_id)
-            nkp = local_k(nkp_loc)
+          do nkp_loc = 1, ranknk
+            nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
           enddo
@@ -1922,8 +1913,8 @@ contains
 
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
-          do nkp_loc = 1, counts(my_node_id)
-            nkp = local_k(nkp_loc)
+          do nkp_loc = 1, ranknk
+            nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) &
                        + cmplx(m_w(loop_wann, loop_wann, 2*nn - 1), m_w(loop_wann, loop_wann, 2*nn), dp)
@@ -2072,7 +2063,7 @@ contains
   !================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_slwf, omega_invariant, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timer, counts, local_k, error, comm)
+                        m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, error, comm)
     !================================================!
     !
     !!   Calculate the Wannier Function spread
@@ -2083,7 +2074,7 @@ contains
     !================================================
 
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
+    use w90_comms, only: comms_allreduce, w90_comm_type, mpirank
     use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: wann_slwf_type
 
@@ -2093,12 +2084,12 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(localisation_vars_type), intent(out)  :: wann_spread
     type(print_output_type), intent(in) :: print_output
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wann_slwf_type), intent(in) :: wann_slwf
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: counts(0:), local_k(:)
+    integer, intent(in) :: ranknk, global_k(:)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
 
@@ -2125,8 +2116,8 @@ contains
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: omega', timer)
 
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = local_k(nkp_loc)
+    do nkp_loc = 1, ranknk
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           ! Note that this ln_tmp is defined differently wrt the one in wann_domega
@@ -2139,8 +2130,8 @@ contains
     rave = 0.0_dp
     do iw = 1, num_wann
       do ind = 1, 3
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = local_k(nkp_loc)
+        do nkp_loc = 1, ranknk
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
                             *ln_tmp_loc(iw, nn, nkp_loc)
@@ -2169,7 +2160,7 @@ contains
 
     r2ave = 0.0_dp
     do iw = 1, num_wann
-      do nkp_loc = 1, counts(my_node_id)
+      do nkp_loc = 1, ranknk
         do nn = 1, kmesh_info%nntot
           mnn2 = real(m_matrix_loc(iw, iw, nn, nkp_loc) &
                       *conjg(m_matrix_loc(iw, iw, nn, nkp_loc)), kind=dp)
@@ -2237,7 +2228,7 @@ contains
 
     if (wann_slwf%selective_loc) then
       wann_spread%om_iod = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
+      do nkp_loc = 1, ranknk
         do nn = 1, kmesh_info%nntot
           summ = 0.0_dp
           do n = 1, wann_slwf%slwf_num
@@ -2260,8 +2251,8 @@ contains
       wann_spread%om_iod = wann_spread%om_iod/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = local_k(nkp_loc)
+      do nkp_loc = 1, ranknk
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, wann_slwf%slwf_num
             brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2279,8 +2270,8 @@ contains
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
       if (wann_slwf%constrain) then
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = local_k(nkp_loc)
+        do nkp_loc = 1, ranknk
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             do n = 1, wann_slwf%slwf_num
               wann_spread%om_nu = wann_spread%om_nu + 2.0_dp*kmesh_info%wb(nn)* &
@@ -2308,7 +2299,7 @@ contains
       if (first_pass) then
         wann_spread%om_i = 0.0_dp
         !nkp = nkp_loc + displs(my_node_id)
-        do nkp_loc = 1, counts(my_node_id)
+        do nkp_loc = 1, ranknk
           do nn = 1, kmesh_info%nntot
             summ = 0.0_dp
             do m = 1, num_wann
@@ -2333,7 +2324,7 @@ contains
       endif
 
       wann_spread%om_od = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
+      do nkp_loc = 1, ranknk
         !nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
           do m = 1, num_wann
@@ -2352,8 +2343,8 @@ contains
       wann_spread%om_od = wann_spread%om_od/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = local_k(nkp_loc)
+      do nkp_loc = 1, ranknk
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2380,7 +2371,7 @@ contains
   !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, ln_tmp_loc, m_matrix_loc, rnkb_loc, cdodq_loc, &
-                         lambda_loc, timing_level, sitesym, timer, counts, local_k, error, comm, &
+                         lambda_loc, timing_level, sitesym, timer, ranknk, global_k, error, comm, &
                          iprint, cdodq)
     !================================================!
     !
@@ -2391,7 +2382,7 @@ contains
     ! Radu Miron at Imperial College London
     !================================================
 
-    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, w90comm_type, mpirank
+    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, w90_comm_type, mpirank
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_sitesym, only: sitesym_symmetrize_gradient
@@ -2404,15 +2395,15 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
     type(wann_slwf_type), intent(inout) :: wann_slwf
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: timing_level, iprint
-    integer, intent(in) :: counts(0:)
-    integer, intent(in) :: local_k(:)
+    integer, intent(in) :: ranknk
+    integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(in)  :: sheet(:, :, :)
     real(kind=dp), intent(out) :: rave(:, :)
@@ -2434,11 +2425,9 @@ contains
     real(kind=dp), allocatable :: r0kb(:, :, :)
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
-    integer :: my_node_id, ranknk
+    integer :: my_node_id
 
     my_node_id = mpirank(comm)
-    ranknk = counts(my_node_id)
-
     if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: domega', timer)
 
     allocate (cr(num_wann, num_wann), stat=ierr)
@@ -2460,7 +2449,7 @@ contains
     end if
 
     do nkp_loc = 1, ranknk
-      nkp = local_k(nkp_loc)
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           ! Note that this ln_tmp is defined differently wrt the one in wann_omega
@@ -2475,7 +2464,7 @@ contains
     do iw = 1, num_wann
       do ind = 1, 3
         do nkp_loc = 1, ranknk
-          nkp = local_k(nkp_loc)
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%bk(ind, nn, nkp) &
                             *ln_tmp_loc(iw, nn, nkp_loc)
@@ -2492,7 +2481,7 @@ contains
     if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       r0kb = 0.0_dp
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             r0kb(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp) &
@@ -2504,7 +2493,7 @@ contains
 
     rnkb_loc = 0.0_dp
     do nkp_loc = 1, ranknk
-      nkp = local_k(nkp_loc)
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           rnkb_loc(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2517,11 +2506,11 @@ contains
     cr = cmplx_0
     crt = cmplx_0
     do nkp_loc = 1, ranknk
-      nkp = local_k(nkp_loc)
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann ! R^{k,b} and R~^{k,b} have columns of zeroes for the non-objective Wannier functions
           mnn = m_matrix_loc(n, n, nn, nkp_loc)
-          crt(:, n) = m_matrix_loc(:, n, nn, nkp_loc)/mnn
+          crt(:, n) = m_matrix_loc(:, n, nn, nkp_loc)/mnn !JJ potential for division by zero
           cr(:, n) = m_matrix_loc(:, n, nn, nkp_loc)*conjg(mnn)
         enddo
         if (wann_slwf%selective_loc) then
@@ -2630,7 +2619,7 @@ contains
       ! each process communicates its result to other processes
       cdodq(:, :, :) = 0.0_dp
       do nkp_loc = 1, ranknk
-        nkp = local_k(nkp_loc)
+        nkp = global_k(nkp_loc)
         cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
       enddo
       call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
@@ -2641,8 +2630,8 @@ contains
         ! in any event this was the old program flow for (mode 1)
         call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann, error, comm)
         call sitesym_symmetrize_gradient(sitesym, cdodq, 2, num_kpts, num_wann, error, comm)
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = local_k(nkp_loc)
+        do nkp_loc = 1, ranknk
+          nkp = global_k(nkp_loc)
           cdodq_loc(:, :, nkp_loc) = cdodq(:, :, nkp)
         enddo
       endif
@@ -2698,7 +2687,7 @@ contains
     !================================================!
 
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_types, only: timer_list_type
 
     implicit none
@@ -2769,7 +2758,7 @@ contains
     type(atom_data_type), intent(in) :: atom_data
     type(print_output_type), intent(in) :: print_output
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical, intent(in) :: translate_home_cell
     integer, intent(in) :: num_wann
@@ -2846,7 +2835,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(w90_system_type), intent(in) :: w90_system
     type(w90_error_type), allocatable, intent(out)  :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -3006,7 +2995,7 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_types, only: timer_list_type
 
     implicit none
@@ -3016,7 +3005,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer :: nkp, i, j, m
@@ -3085,7 +3074,7 @@ contains
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts, num_wann
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3131,7 +3120,7 @@ contains
                               error, comm, stdout)
     !================================================!
 
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
@@ -3142,7 +3131,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -3292,7 +3281,7 @@ contains
       wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -3300,7 +3289,7 @@ contains
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
     type(wann_omega_type), intent(inout) :: omega
     type(w90_system_type), intent(in) :: w90_system
@@ -3335,7 +3324,7 @@ contains
     type(localisation_vars_type) :: wann_spread
 
     integer :: counts(0:1)
-    integer :: local_k(1)
+    integer :: global_k(1)
     real(kind=dp), allocatable :: rnkb(:, :, :)
     real(kind=dp), allocatable :: ln_tmp(:, :, :)
     logical :: first_pass
@@ -3454,7 +3443,7 @@ contains
     cz = cmplx_0
 
     ! Set up the MPI arrays for a serial run.
-    counts(0) = 1; local_k(1) = 1
+    counts(0) = 1; global_k(1) = 1
 
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
@@ -3499,7 +3488,7 @@ contains
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       counts, local_k, error, comm)
+                       num_kpts, global_k, error, comm) ! no plellisation so num_kpts_local = num_kpts
       if (allocated(error)) return
       irguide = 1
     endif
@@ -3590,7 +3579,7 @@ contains
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                          m_matrix, rnkb, print_output%timing_level, print_output%iprint, &
-                         timer, counts, local_k, error, comm, m_w)
+                         timer, num_kpts, global_k, error, comm, m_w) ! num_kpts_loc == num_kpts here
         if (allocated(error)) return
         irguide = 1
       endif
@@ -3701,7 +3690,7 @@ contains
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       counts, local_k, error, comm)
+                       num_kpts, global_k, error, comm) ! num_kpts_loc == num_kpts here
       if (allocated(error)) return
     endif
 
@@ -3985,7 +3974,7 @@ contains
     type(localisation_vars_type), intent(out)  :: wann_spread
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_wann

@@ -121,7 +121,7 @@ contains
     type(ham_logical_type), intent(inout)       :: ham_logical
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -368,7 +368,7 @@ contains
     type(real_space_ham_type), intent(in) :: real_space_ham
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -655,7 +655,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
@@ -770,7 +770,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -1028,7 +1028,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -1538,7 +1538,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) ::  e_scan_cmp
@@ -1804,7 +1804,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     integer, intent(in) :: igreen
@@ -2001,7 +2001,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx), h_01(nxx, nxx)
@@ -2055,7 +2055,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx)
@@ -2103,7 +2103,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx1, nxx2
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_01(nxx1, nxx2)
@@ -2165,7 +2165,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -2487,7 +2487,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -3171,7 +3171,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout !, Array_size => size(Array_groups) so not needed
     integer, intent(in) :: Array_groups(:), coord(3)
@@ -3380,7 +3380,7 @@ contains
 
     ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     real(kind=dp), intent(in) :: tran_group_threshold
     real(kind=dp), intent(in) :: array(:, :)
     integer, intent(out), allocatable :: array_groups(:)
@@ -3518,7 +3518,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: coord(3)
     integer, intent(in) :: num_G
     integer, intent(in) :: num_wann
@@ -4091,7 +4091,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 

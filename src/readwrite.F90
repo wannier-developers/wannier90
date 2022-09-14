@@ -25,7 +25,7 @@ module w90_readwrite
 
   use w90_constants, only: dp, maxlen
   use w90_types
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -165,7 +165,7 @@ contains
     type(print_output_type), intent(inout) :: print_output
     logical :: found
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer :: unlucky_rank
 
     call w90_readwrite_get_keyword('timing_level', found, error, comm, i_value=print_output%timing_level)
@@ -192,7 +192,7 @@ contains
     integer, intent(inout) :: optimisation
     logical :: found
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     call w90_readwrite_get_keyword('optimisation', found, error, comm, i_value=optimisation)
     if (allocated(error)) return
@@ -207,7 +207,7 @@ contains
     character(len=*), intent(inout) :: energy_unit
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     logical :: found
 
     call w90_readwrite_get_keyword('energy_unit', found, error, comm, c_value=energy_unit)
@@ -227,7 +227,7 @@ contains
     implicit none
     integer, intent(inout) :: num_wann
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -251,7 +251,7 @@ contains
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(out) :: num_exclude_bands
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr
     logical :: found
@@ -293,7 +293,7 @@ contains
     integer, intent(in) :: stdout
     logical, intent(in) :: library_param_read_first_pass
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i_temp
     logical :: found
@@ -326,7 +326,7 @@ contains
     integer, intent(in) :: num_kpts
     logical, intent(in) :: library
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found, ltmp
 
@@ -352,7 +352,7 @@ contains
     logical, intent(in) :: pw90_effective_model, library
     integer, intent(inout) :: mp_grid(3), num_kpts
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: iv_temp(3)
     logical :: found
@@ -380,7 +380,7 @@ contains
     logical, intent(in) :: library
     type(w90_system_type), intent(inout) :: w90_system
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found, ltmp
 
@@ -432,7 +432,7 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     logical, intent(out) :: ok
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
@@ -478,7 +478,7 @@ contains
     logical, intent(out) :: found_fermi_energy
     real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp) :: fermi_energy
     logical :: fermi_energy_scan
@@ -565,7 +565,7 @@ contains
     implicit none
     type(ws_region_type), intent(inout) :: ws_region
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i
     logical :: found
@@ -620,7 +620,7 @@ contains
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     logical, intent(inout) :: eig_found
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     ! local
     integer :: i, j, k, n, eig_unit, ierr
 
@@ -687,7 +687,7 @@ contains
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     ! local
     logical :: found, found2
 
@@ -731,7 +731,7 @@ contains
     implicit none
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: itmp, ierr
     logical :: found
@@ -809,7 +809,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
@@ -863,7 +863,7 @@ contains
     real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -889,7 +889,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
@@ -940,7 +940,7 @@ contains
 
     implicit none
 
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! this error is never returned (i.e. errors here are discarded)
     type(w90_error_type), allocatable :: error
@@ -1223,7 +1223,7 @@ contains
     integer, intent(in) :: stdout
     character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: loop, ierr
 
@@ -1269,7 +1269,7 @@ contains
     type(wannier_data_type), intent(inout) :: wannier_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr
 
@@ -1399,7 +1399,7 @@ contains
     character(len=*), intent(in) :: keyword
     !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer :: w90_readwrite_get_smearing_index
 
     integer :: pos
@@ -1605,7 +1605,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr
 
@@ -1882,7 +1882,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -1904,7 +1904,7 @@ contains
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
-    integer :: chk_unit, ierr
+    integer :: chk_unit
 
     call w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
                                          mp_grid, num_bands, num_exclude_bands, num_kpts, &
@@ -1974,7 +1974,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -2122,7 +2122,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -2218,7 +2218,7 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_comms, only: comms_bcast, w90_comm_type, mpirank
     use w90_error, only: w90_error_type, set_error_alloc
 
     implicit none
@@ -2227,7 +2227,7 @@ contains
     type(wannier_data_type), intent(inout) :: wannier_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
@@ -2331,7 +2331,7 @@ contains
 
     character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer           :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
@@ -2424,7 +2424,7 @@ contains
     real(kind=dp), optional, intent(inout) :: r_value
     !! Keyword value
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer           :: kl, in, loop, itmp
     character(len=maxlen) :: dummy
@@ -2512,7 +2512,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2590,7 +2590,7 @@ contains
     integer, intent(out)  :: length
     !! length of vector
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
@@ -2672,7 +2672,7 @@ contains
     !! keyword block data
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter, blen
     logical           :: found_e, found_s, lconvert
@@ -2808,7 +2808,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2922,7 +2922,7 @@ contains
 
     type(atom_data_type), intent(inout) :: atom_data
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
@@ -3120,7 +3120,7 @@ contains
 
     type(atom_data_type), intent(inout) :: atom_data
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: atoms_label_tmp(atom_data%num_atoms)
     !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
@@ -3231,7 +3231,7 @@ contains
     logical, intent(in)    :: lcount
     !! If T only count states
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, optional, intent(out)   :: i_value(length)
     !! States specified in range vector
 
@@ -3348,7 +3348,7 @@ contains
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer           :: loop1, index1, constraint_num, loop2
     integer           :: column, start, finish, wann
@@ -3440,7 +3440,7 @@ contains
     character(len=maxlen), intent(inout):: dummy
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     if (column == 0) then
       read (dummy(start:finish), '(i3)') wann
@@ -3475,7 +3475,7 @@ contains
     type(proj_input_type), intent(inout) :: input_proj
     type(proj_input_type), intent(inout) :: proj ! intent(out)?
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
@@ -4248,7 +4248,7 @@ contains
 
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
@@ -4331,7 +4331,7 @@ contains
 
     ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: keyword
 
     ! local variables

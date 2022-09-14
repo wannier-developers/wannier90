@@ -22,7 +22,7 @@ program postw90
 
   use w90_berry, only: berry_main
   use w90_boltzwann
-  use w90_comms, only: comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize
+  use w90_comms, only: comms_bcast, comms_barrier, w90_comm_type, mpirank, mpisize
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
   use w90_dos
   use w90_error
@@ -189,7 +189,7 @@ program postw90
   type(pw90_oper_read_type) :: postw90_oper
   type(pw90_spin_hall_type) :: spin_hall
   type(pw90_spin_mod_type) :: pw90_spin
-  type(w90comm_type) :: comm
+  type(w90_comm_type) :: comm
   type(wigner_seitz_type) :: ws_vec
   type(ws_distance_type) :: ws_distance
 
@@ -573,7 +573,7 @@ contains
 
     type(w90_error_type), allocatable, intent(in) :: error
     integer, intent(in) :: stderr, stdout
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
     integer :: ie ! global error value to be returned

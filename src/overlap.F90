@@ -41,7 +41,7 @@ contains
 
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, timer, counts, error, comm)
+                              num_kpts, num_wann, timing_level, timer, dist_k, error, comm)
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -58,7 +58,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
-    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: dist_k(:)
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
@@ -70,17 +70,18 @@ contains
 
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer :: ierr
-    integer :: my_node_id
+    integer :: my_node_id, nkl
     logical :: disentanglement
     logical :: on_root = .false.
 
     disentanglement = (num_bands > num_wann)
 
     my_node_id = mpirank(comm)
+    nkl = count(dist_k == my_node_id) ! number of k on this rank
 
     if (my_node_id == 0) on_root = .true.
 
@@ -96,7 +97,7 @@ contains
       else
         allocate (m_matrix_orig(0, 0, 0, 0))
       endif
-      allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
+      allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read', comm)
         return
@@ -118,7 +119,7 @@ contains
     else
       allocate (m_matrix(0, 0, 0, 0))
     endif
-    allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+    allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read', comm)
       return
@@ -171,10 +172,8 @@ contains
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
-    !integer, intent(in) :: counts(0:)
-    !integer, intent(in) :: displs(0:)
     integer, intent(in) :: dist_k(:)
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
@@ -618,7 +617,7 @@ contains
     ! arguments
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: nntot
     integer, intent(in) :: num_bands
@@ -714,7 +713,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig_local(:, :, :, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer :: ierr
@@ -804,7 +803,7 @@ contains
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: dist_k(:)
     integer, intent(in) :: nnlist(:, :)
@@ -1005,7 +1004,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn

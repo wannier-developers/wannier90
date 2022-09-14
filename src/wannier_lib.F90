@@ -187,7 +187,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   !! in the folder test-suite/library-mode-test/test_library.F90
   !================================================!
 
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
   use w90_constants, only: w90_physical_constants_type, dp
   use w90_io
   use w90_kmesh
@@ -250,7 +250,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   real(kind=dp), dimension(3, num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
   type(timer_list_type) :: timer
   type(w90_error_type), allocatable :: error
-  type(w90comm_type) :: comm
+  type(w90_comm_type) :: comm
 
   type(w90_extra_io_type) :: write_data
   ! was in driver, only used by wannier_lib
@@ -473,7 +473,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: comms_array_split, comms_scatterv, w90comm_type, &
+  use w90_comms, only: comms_array_split, comms_scatterv, w90_comm_type, &
     mpisize, mpirank
   use w90_readwrite, only: w90_readwrite_lib_set_atoms, w90_readwrite_in_file, &
     w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_uppercase
@@ -553,7 +553,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   integer, allocatable :: displs(:)
   integer :: num_nodes, my_node_id
   integer, allocatable :: dist_k(:)
-  type(w90comm_type) :: comm
+  type(w90_comm_type) :: comm
   logical :: disentanglement
   logical :: mpiinitalready
 

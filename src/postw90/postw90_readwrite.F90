@@ -87,7 +87,7 @@ contains
     !================================================
     use w90_utility, only: utility_recip_lattice
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
 
     ! arguments
@@ -112,7 +112,7 @@ contains
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(inout) :: w90_system
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_bands
@@ -273,7 +273,7 @@ contains
     !================================================
     use w90_utility, only: utility_recip_lattice
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
 
     ! arguments
@@ -294,7 +294,7 @@ contains
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_system_type), intent(in) :: w90_system
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -382,11 +382,11 @@ contains
   subroutine w90_wannier90_readwrite_read_pw90_calcs(pw90_calculation, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
     type(pw90_calculation_type), intent(inout) :: pw90_calculation
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     logical :: found
 
     call w90_readwrite_get_keyword('dos', found, error, comm, l_value=pw90_calculation%dos)
@@ -418,11 +418,11 @@ contains
   subroutine w90_wannier90_readwrite_read_effective_model(effective_model, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
     logical, intent(inout) :: effective_model
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -434,11 +434,11 @@ contains
   subroutine w90_wannier90_readwrite_read_oper(pw90_oper_read, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
     type(pw90_oper_read_type), intent(inout) :: pw90_oper_read
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -458,13 +458,13 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     logical, intent(in) :: kslicel
     type(pw90_kslice_mod_type), intent(inout) :: pw90_kslice
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i
     logical :: found
@@ -548,12 +548,12 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     type(pw90_smearing_type), intent(inout) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
     character(len=maxlen)              :: ctmp
@@ -604,11 +604,11 @@ contains
   subroutine w90_wannier90_readwrite_read_scissors_shift(scissors_shift, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
     real(kind=dp), intent(inout) :: scissors_shift
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -623,7 +623,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     logical, intent(inout) :: spin_moment ! from pw90_calculation
@@ -631,7 +631,7 @@ contains
     type(pw90_spin_mod_type), intent(inout) :: pw90_spin
     integer, intent(in) :: num_elec_per_state
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -661,7 +661,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     type(pw90_gyrotropic_type), intent(out) :: pw90_gyrotropic
@@ -669,7 +669,7 @@ contains
     real(kind=dp), intent(in) :: smr_fixed_en_width
     integer, intent(in) :: smr_index
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp) :: smr_max_arg
     real(kind=dp)                   :: gyrotropic_box_tmp(3)
@@ -781,14 +781,14 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calculation
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
     integer :: kdotp_num_bands, ierr
@@ -943,14 +943,14 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
     type(pw90_spin_hall_type), intent(inout) :: pw90_spin_hall
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp), intent(in) :: scissors_shift
 
@@ -1030,11 +1030,11 @@ contains
   subroutine w90_wannier90_readwrite_read_pw90ham(pw90_band_deriv_degen, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
     type(pw90_band_deriv_degen_type), intent(inout) :: pw90_band_deriv_degen
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1054,7 +1054,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1062,7 +1062,7 @@ contains
     type(pw90_kpath_mod_type), intent(inout) :: pw90_kpath
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1111,7 +1111,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1119,7 +1119,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     logical, intent(out) :: dos_plot
@@ -1254,12 +1254,12 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
 
     type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found
 
@@ -1282,13 +1282,13 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
     type(pw90_smearing_type), intent(in) :: pw90_smearing
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     logical, intent(in) :: do_boltzwann
@@ -1531,7 +1531,7 @@ contains
 
     use w90_constants, only: cmplx_i
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1540,7 +1540,7 @@ contains
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(dis_manifold_type), intent(in) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
@@ -1666,7 +1666,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1675,7 +1675,7 @@ contains
     logical, intent(inout) :: global_kmesh_set
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: i
     logical :: found
@@ -1736,7 +1736,7 @@ contains
                                                       recip_lattice, global_kmesh_set, &
                                                       global_kmesh, error, comm)
     !================================================!
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     implicit none
 
     type(pw90_calculation_type), intent(in) :: pw90_calculation
@@ -1747,7 +1747,7 @@ contains
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
     type(kmesh_spacing_type), intent(in) :: global_kmesh
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: global_kmesh_set
@@ -1795,7 +1795,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=*), intent(in)       :: moduleprefix
@@ -1813,7 +1813,7 @@ contains
     logical, intent(in) :: global_kmesh_set
     type(kmesh_spacing_type), intent(in) :: global_kmesh
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     logical :: found, found2
     integer :: i
@@ -2435,7 +2435,7 @@ contains
     !================================================!
 
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -2448,7 +2448,7 @@ contains
     type(pw90_dos_mod_type), intent(inout) :: pw90_dos
     type(pw90_berry_mod_type), intent(inout) :: pw90_berry
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)

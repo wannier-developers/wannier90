@@ -96,7 +96,7 @@ contains
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
-      comms_gatherv, w90comm_type
+      comms_gatherv, w90_comm_type
 
     ! arguments
     type(dis_manifold_type), intent(in)          :: dis_manifold
@@ -108,7 +108,7 @@ contains
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
     type(timer_list_type), intent(inout)         :: timer
-    type(w90comm_type), intent(in)               :: comm
+    type(w90_comm_type), intent(in)               :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
