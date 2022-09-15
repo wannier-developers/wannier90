@@ -20,7 +20,7 @@ module w90_plot
 
   !! This module handles various plots
 
-  use w90_comms, only: comms_array_split, comms_reduce, w90_comm_type, mpisize, mpirank
+  use w90_comms, only: comms_reduce, w90_comm_type, mpisize, mpirank
 
   implicit none
 

@@ -607,7 +607,7 @@ contains
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
-                                     stdout, timer, dist_k, error, comm)
+                                     stdout, timer, error, comm)
       if (allocated(error)) return
 
       if (lsitesymmetry) then
@@ -1247,22 +1247,24 @@ contains
     end subroutine internal_test_convergence
 
     !================================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann, dist_k, cdq_loc)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, ranknk, cdq_loc)
       !================================================!
       !
       !! Add some random noise to the search direction
       !! to help escape from local minima
       !
       !================================================!
-
       use w90_constants, only: cmplx_0
       use w90_comms, only: w90_comm_type
 
       implicit none
+
+      ! arguments
       real(kind=dp), intent(in) :: conv_noise_amp
       integer, intent(in) :: num_wann
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      integer, intent(in) :: dist_k(:)
+      integer, intent(in) :: ranknk
+
       ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
@@ -1291,7 +1293,7 @@ contains
       ! cdq is a num_wann x num_wann x num_kpts anti-hermitian array
       ! to which we add a random anti-hermitian matrix
 
-      do ikp = 1, count(dist_k == mpirank(comm)) ! fixme JJ
+      do ikp = 1, ranknk
         do iw = 1, num_wann
           call random_seed()
           call random_number(noise_real(:, iw))
@@ -1452,7 +1454,7 @@ contains
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                          wann_control, num_wann, wbtot, cdq_loc, cdodq_loc, &
-                                         stdout, timer, counts, error, comm)
+                                         stdout, timer, error, comm)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1461,7 +1463,6 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !
       !================================================!
-
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
       use w90_comms, only: comms_allreduce, w90_comm_type
       use w90_wannier90_types, only: wann_control_type
@@ -1475,7 +1476,6 @@ contains
       type(w90_error_type), allocatable, intent(out) :: error
       type(w90_comm_type), intent(in) :: comm
 
-      integer, intent(in) :: counts(0:)
       integer, intent(in) :: iter
       integer, intent(in) :: noise_count
       integer, intent(in) :: num_wann
@@ -1551,7 +1551,7 @@ contains
         if (print_output%iprint > 0) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', &
           wann_control%conv_noise_num, ' ]'
-        call internal_random_noise(wann_control%conv_noise_amp, num_wann, counts, cdq_loc)
+        call internal_random_noise(wann_control%conv_noise_amp, num_wann, ranknk, cdq_loc)
       endif
 
       ! calculate gradient along search direction - Tr[gradient . search direction]
@@ -1571,7 +1571,7 @@ contains
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
           if (lrandom) then
-            call internal_random_noise(wann_control%conv_noise_amp, num_wann, counts, cdq_loc)
+            call internal_random_noise(wann_control%conv_noise_amp, num_wann, ranknk, cdq_loc)
           endif
           ncg = 0
           gcfac = 0.0_dp
