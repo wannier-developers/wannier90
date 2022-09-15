@@ -3,7 +3,7 @@ program libv2
   use mpi_f08
   use w90_helper_types
 
-  use w90_comms, only: w90_comm_type, comms_array_split
+  use w90_comms, only: w90_comm_type
   use w90_io, only: io_print_timings
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
@@ -19,8 +19,8 @@ program libv2
   complex(kind=dp), allocatable :: morig(:, :, :, :)
   complex(kind=dp), allocatable :: u(:, :, :)
   complex(kind=dp), allocatable :: uopt(:, :, :)
-  integer, allocatable :: counts(:), displs(:), distk(:)
-  integer :: length, len2, i, j
+  integer, allocatable :: distk(:)
+  integer :: length, len2, i
   integer :: mpisize, rank, ierr, stat, nkl
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
@@ -72,7 +72,7 @@ program libv2
   ! open main output file
   open (newunit=stdout, file=fn//'.wout')
   ! open main error file
-  open (newunit=stderr, file=fn//'.werr') ! fixme: need to add stderr to lib calls
+  open (newunit=stderr, file=fn//'.werr')
 
   ! write jazzy header info
   call w90_readwrite_write_header(w90main%physics%bohr_version_str, &
@@ -80,35 +80,34 @@ program libv2
                                   w90main%physics%constants_version_str2, stdout) ! (not a library call)
 
   ! setup pplel decomp
-  ! fixme, remove duplication
   call mpi_comm_rank(comm%comm, rank, ierr)
   call mpi_comm_size(comm%comm, mpisize, ierr)
+
   allocate (distk(nk))
-  allocate (counts(0:mpisize))
-  allocate (displs(0:mpisize))
-  call comms_array_split(nk, counts, displs, comm) ! (not a library call)
-  distk(:) = -1
-  do i = 0, mpisize - 1
-    do j = 1, counts(i)
-      distk(displs(i) + j) = i
-    enddo
+  nkl = nk/mpisize ! number of kpoints per rank
+  if (mod(nk, mpisize) > 0) nkl = nkl + 1
+  do i = 1, nk
+    distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
   call set_kpoint_distribution(w90main, distk)
-  deallocate (counts, displs)
-  nkl = count(distk == rank)
-  ! end setup pplel decomp
+  nkl = count(distk == rank) ! number of kpoints this rank
 
+  ! setup k mesh
   call create_kmesh(w90main, stdout, stderr, stat, comm)
   write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
   if (w90dat%lsitesymmetry) then
-    write (*, *) "fixme"
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
+    if (allocated(error)) then
+      stat = error%code
+      deallocate (error)
+      stop stat
+    endif
   endif
 
-  if (nw < nb) then
+  if (nw < nb) then ! disentanglement reqired
     allocate (a(nb, nw, nk))
-    allocate (morig(nb, nb, nn, count(distk == rank)))
+    allocate (morig(nb, nb, nn, nkl))
     call set_a_matrix(w90dat, a)
     call set_m_orig(w90dat, morig)
   endif
@@ -124,15 +123,18 @@ program libv2
   call set_u_opt(w90main, uopt)
 
   call overlaps(w90main, w90dat, stdout, stderr, stat, comm)
+  if (stat /= 0) stop stat
 
   if (nw < nb) then ! disentanglement reqired
     call disentangle(w90main, w90dat, stdout, stderr, stat, comm)
+    if (stat /= 0) stop stat
   endif
   call wannierise(w90main, w90dat, stdout, stderr, stat, comm)
+  if (stat /= 0) stop stat
   call plot_files(w90main, w90dat, stdout, stderr, stat, comm)
+  if (stat /= 0) stop stat
 
   call print_times(w90main, stdout)
   if (rank == 0) close (unit=stderr, status='delete')
   call mpi_finalize()
 end program libv2
-
