@@ -136,8 +136,8 @@ module w90_helper_types
     type(transport_type) :: tran
   end type lib_w90_type
 
-  public:: checkpoint, create_kmesh, get_fortran_stdout, input_reader, overlaps, plot_files, &
-           print_times, transport, wannierise, write_kmesh
+  public:: checkpoint, create_kmesh, get_fortran_stdout, get_fortran_stderr, input_reader, &
+           overlaps, plot_files, print_times, transport, wannierise, write_kmesh
 
   public :: set_option
   interface set_option
@@ -157,6 +157,14 @@ contains
 
     output = output_unit
   end subroutine get_fortran_stdout
+
+  subroutine get_fortran_stderr(output)
+    use iso_fortran_env, only: error_unit
+    implicit none
+    integer, intent(out) :: output
+
+    output = error_unit
+  end subroutine get_fortran_stderr
 
   subroutine set_option_bool(string, bool)
     implicit none
