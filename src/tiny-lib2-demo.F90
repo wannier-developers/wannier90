@@ -1,6 +1,11 @@
 program libv2
 
+#ifdef MPI08
   use mpi_f08
+#endif
+#ifdef MPI90
+  use mpi
+#endif
   use w90_helper_types
 
   use w90_comms, only: w90_comm_type
@@ -21,7 +26,7 @@ program libv2
   complex(kind=dp), allocatable :: uopt(:, :, :)
   integer, allocatable :: distk(:)
   integer :: length, len2, i
-  integer :: mpisize, rank, ierr, stat, nkl
+  integer :: mpisize, rank, ierr, nkl
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
   logical, pointer :: pp
@@ -37,15 +42,15 @@ program libv2
   nn => w90main%kmesh_info%nntot
 
   ! get seedname and pp flag, if present
-  call get_command_argument(1, seedname, length, stat)
-  if (stat /= 0) then
+  call get_command_argument(1, seedname, length, ierr)
+  if (ierr /= 0) then
     write (*, *) 'failed to parse seedname'
     stop
   endif
   if (seedname == '-pp') then
     pp = .true.
-    call get_command_argument(2, seedname, length, stat)
-    if (stat /= 0) then
+    call get_command_argument(2, seedname, length, ierr)
+    if (ierr /= 0) then
       write (*, *) 'failed to parse seedname'
       stop
     endif
@@ -57,15 +62,19 @@ program libv2
   fn = trim(seedname(1:len2))
   ! end get seedname
 
+#ifdef MPI
   comm%comm = mpi_comm_world
   call mpi_init(ierr)
+#endif
 
-  call input_reader(w90main, w90dat, fn, 6, 6, stat, comm)
+  call input_reader(w90main, w90dat, fn, 6, 6, ierr, comm)
 
   ! special branch for writing nnkp file
   if (pp) then
-    call write_kmesh(w90main, w90dat, fn, 6, 6, stat, comm)
-    call mpi_finalize()
+    call write_kmesh(w90main, w90dat, fn, 6, 6, ierr, comm)
+#ifdef MPI
+    call mpi_finalize(ierr)
+#endif
     stop
   endif
 
@@ -79,9 +88,14 @@ program libv2
                                   w90main%physics%constants_version_str1, &
                                   w90main%physics%constants_version_str2, stdout) ! (not a library call)
 
+#ifdef MPI
   ! setup pplel decomp
   call mpi_comm_rank(comm%comm, rank, ierr)
   call mpi_comm_size(comm%comm, mpisize, ierr)
+#else
+  rank = 0
+  mpisize = 1
+#endif
 
   allocate (distk(nk))
   nkl = nk/mpisize ! number of kpoints per rank
@@ -93,15 +107,15 @@ program libv2
   nkl = count(distk == rank) ! number of kpoints this rank
 
   ! setup k mesh
-  call create_kmesh(w90main, stdout, stderr, stat, comm)
+  call create_kmesh(w90main, stdout, stderr, ierr, comm)
   write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
   if (w90dat%lsitesymmetry) then
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
     if (allocated(error)) then
-      stat = error%code
+      ierr = error%code
       deallocate (error)
-      stop stat
+      error stop
     endif
   endif
 
@@ -122,19 +136,21 @@ program libv2
   call set_u_matrix(w90main, u)
   call set_u_opt(w90main, uopt)
 
-  call overlaps(w90main, w90dat, stdout, stderr, stat, comm)
-  if (stat /= 0) stop stat
+  call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
+  if (ierr /= 0) error stop
 
   if (nw < nb) then ! disentanglement reqired
-    call disentangle(w90main, w90dat, stdout, stderr, stat, comm)
-    if (stat /= 0) stop stat
+    call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
   endif
-  call wannierise(w90main, w90dat, stdout, stderr, stat, comm)
-  if (stat /= 0) stop stat
-  call plot_files(w90main, w90dat, stdout, stderr, stat, comm)
-  if (stat /= 0) stop stat
+  call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+  if (ierr /= 0) error stop
+  call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
+  if (ierr /= 0) error stop
 
   call print_times(w90main, stdout)
   if (rank == 0) close (unit=stderr, status='delete')
-  call mpi_finalize()
+#ifdef MPI
+  call mpi_finalize(ierr)
+#endif
 end program libv2
