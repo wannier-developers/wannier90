@@ -430,6 +430,17 @@ program = POSTW90_KDOTP_OK
 inputs_args = ('gaas.win', '')
 output = gaas-kdotp_0.dat
 
+# Test of tetrahedron method for spin Hall conductivity of Pt
+[testpostw90_pt_tetra_shcfreq/]
+program = POSTW90_SHCFREQDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-freqscan.dat
+
+[testpostw90_pt_tetra_shcfermi/]
+program = POSTW90_SHCFERMIDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-fermiscan.dat
+
 # Test of MPI error handling implementation
 [partestw90_mpierr/]
 program = WANNIER90_WERR_FAIL
