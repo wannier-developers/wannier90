@@ -2077,7 +2077,7 @@ contains
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method (PRB 106, 075125)                        :', '       T', '|'
         write (stdout, '(1x,a46,10x,a8,13x,L8)') '|  with higher-order correction                                :', &
             pw90_berry%tetrahedron_higher_correction, '|'
-        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
+        write (stdout, '(1x,a46,10x,E8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
           pw90_berry%tetrahedron_cutoff, '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       F', '|'
