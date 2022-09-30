@@ -836,6 +836,24 @@ contains
                                           r_value=pw90_berry%kdotp_kpoint)
     if (allocated(error)) return
 
+    pw90_berry%tetrahedron_method = .false.
+    call w90_readwrite_get_keyword('tetrahedron_method', found, error, comm, &
+                                   l_value=pw90_berry%tetrahedron_method)
+    if (pw90_berry%tetrahedron_method .and. index(pw90_berry%task, 'shc') == 0) &
+      call set_error_input(error, 'Error: tetrahedron_method only implemented in the shc routine', comm)
+
+    pw90_berry%tetrahedron_higher_correction = .true.
+    call w90_readwrite_get_keyword('tetrahedron_higher_correction', found, error, comm, &
+                                   l_value=pw90_berry%tetrahedron_method)
+    if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
+      (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
+
+    pw90_berry%tetrahedron_cutoff = 1.e-4_dp
+    call w90_readwrite_get_keyword('tetrahedron_cutoff', found, error, comm, &
+                                   r_value=pw90_berry%tetrahedron_cutoff)
+    if (pw90_berry%tetrahedron_cutoff <= 0._dp) call set_error_input &
+      (error, 'Error: tetrahedron_cutoff must be greater than zero', comm)
+
     kdotp_num_bands = 0
     call w90_readwrite_get_keyword('kdotp_num_bands', found, error, comm, i_value=kdotp_num_bands)
     if (allocated(error)) return
@@ -2054,6 +2072,15 @@ contains
         endif
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(w90_readwrite_get_smearing_type(pw90_dos%smearing%type_index)), '|'
+      endif
+      if (pw90_berry%tetrahedron_method) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method (PRB 106, 075125)                        :', '       T', '|'
+        write (stdout, '(1x,a46,10x,a8,13x,L8)') '|  with higher-order correction                                :', &
+          pw90_berry%tetrahedron_higher_correction, '|'
+        write (stdout, '(1x,a46,10x,E8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
+          pw90_berry%tetrahedron_cutoff, '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       F', '|'
       endif
       if (pw90_extra_io%global_kmesh%mesh(1) == pw90_dos%kmesh%mesh(1) .and. &
           pw90_extra_io%global_kmesh%mesh(2) == pw90_dos%kmesh%mesh(2) .and. &

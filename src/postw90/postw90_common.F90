@@ -506,6 +506,12 @@ contains
     if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_use_eta_corr, 1, error, comm)
     if (allocated(error)) return
+    call comms_bcast(pw90_berry%tetrahedron_method, 1, error, comm)
+    if (allocated(error)) return
+    call comms_bcast(pw90_berry%tetrahedron_higher_correction, 1, error, comm)
+    if (allocated(error)) return
+    call comms_bcast(pw90_berry%tetrahedron_cutoff, 1, error, comm)
+    if (allocated(error)) return
 ! ----------------------------------------------
 !
 ! New input variables in development
