@@ -1,5 +1,8 @@
-test-suite/* linguist-vendored
-# Add here files that should not be added to the distribution 
+test-suite/** linguist-vendored
+test-suite/tools/** linguist-vendored=false
+examples/**/UNK* linguist-vendored
+
+# Add here files that should not be added to the distribution
 # (via git archive)
 .gitignore export-ignore
 /utility/w90pov/**/*.xsf.gz export-ignore

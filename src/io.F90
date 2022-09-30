@@ -26,119 +26,131 @@ module w90_io
 
   private
 
-  integer, parameter, public :: maxlen = 255                     !! Max column width of input file
   logical, public, save :: post_proc_flag                        !! Are we in post processing mode
   character(len=10), parameter, public :: w90_version = '3.1.0 ' !! Label for this version of wannier90
 
-  type timing_data_type                                          !! Data about each stopwatch - for timing routines
-    integer :: ncalls                                            !! Number of times stopwatch has been called
-    real(kind=DP) :: ctime                                       !! Total time on stopwatch
-    real(kind=DP) :: ptime                                       !! Temporary record of time when watch is started
-    character(len=60) :: label                                   !! What is this stopwatch timing
-  end type timing_data_type
-
-  integer, parameter :: nmax = 100                               !! Maximum number of stopwatches
-  type(timing_data_type) :: clocks(nmax)                         !! Data for the stopwatches
-  integer, save :: nnames = 0                                    !! Number of active stopwatches
-
+  public :: io_stopwatch_start
+  public :: io_stopwatch_stop
   public :: io_commandline
   public :: io_date
-  public :: io_error
   public :: io_file_unit
   public :: io_get_seedname
   public :: io_print_timings
-  public :: io_stopwatch
   public :: io_time
   public :: io_wallclocktime
 
 contains
 
-  !================================================
-
-  subroutine io_stopwatch(tag, mode, stdout, seedname)
-    !================================================
-    !
+  ! was io_stopwatch(tag, 1, error), acts on stopwatch 1
+  !=====================================
+  subroutine io_stopwatch_start(tag, timers)
+    !=====================================
     !! Stopwatch to time parts of the code
-    !
-    !================================================
+    !=====================================
+
+    use w90_types, only: timer_list_type, nmax
 
     implicit none
 
+    ! arguments
+    type(timer_list_type), intent(inout) :: timers
+
     character(len=*), intent(in) :: tag
     !! Which stopwatch to act upon
-    integer, intent(in)          :: mode
-    character(len=50), intent(in)  :: seedname
+    !integer, intent(in)  :: mode
     !! Action  1=start 2=stop
 
+    ! local variables
     integer :: i
-    integer :: stdout
     real(kind=dp) :: t
 
     call cpu_time(t)
 
-    select case (mode)
+    do i = 1, timers%nnames
+      if (timers%clocks(i)%label .eq. tag) then
+        timers%clocks(i)%ptime = t
+        timers%clocks(i)%ncalls = timers%clocks(i)%ncalls + 1
+        return
+      endif
+    enddo
 
-    case (1)
+    if (.not. timers%overflow) then
+      if (timers%nnames == nmax) then
+        timers%overflow = .true.
+      else
+        timers%nnames = timers%nnames + 1
 
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ptime = t
-          clocks(i)%ncalls = clocks(i)%ncalls + 1
-          return
-        endif
-      enddo
-
-      nnames = nnames + 1
-      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded', stdout, seedname)
-
-      clocks(nnames)%label = tag
-      clocks(nnames)%ctime = 0.0_dp
-      clocks(nnames)%ptime = t
-      clocks(nnames)%ncalls = 1
-
-    case (2)
-
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ctime = clocks(i)%ctime + t - clocks(i)%ptime
-          return
-        endif
-      end do
-
-      write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
-
-    case default
-
-      write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
-      call io_error('Value of mode not recognised in io_stopwatch', stdout, seedname)
-
-    end select
+        timers%clocks(timers%nnames)%label = tag
+        timers%clocks(timers%nnames)%ctime = 0.0_dp
+        timers%clocks(timers%nnames)%ptime = t
+        timers%clocks(timers%nnames)%ncalls = 1
+      endif
+    endif
 
     return
 
-  end subroutine io_stopwatch
+  end subroutine io_stopwatch_start
+
+  ! was io_stopwatch(tag, 2, error), acts on stopwatch 2
+  !=====================================
+  subroutine io_stopwatch_stop(tag, timers)
+    !=====================================
+    !! Stopwatch to time parts of the code
+    !=====================================
+    use w90_types, only: timer_list_type
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: tag
+    type(timer_list_type), intent(inout) :: timers
+    !! Which stopwatch to act upon
+    !integer, intent(in)  :: mode
+    !! Action  1=start 2=stop
+
+    ! local variables
+    integer :: i
+    real(kind=dp) :: t
+
+    call cpu_time(t)
+
+    do i = 1, timers%nnames
+      if (timers%clocks(i)%label .eq. tag) then
+        timers%clocks(i)%ctime = timers%clocks(i)%ctime + t - timers%clocks(i)%ptime
+        return
+      endif
+    end do
+
+    return
+
+  end subroutine io_stopwatch_stop
 
   !================================================
-  subroutine io_print_timings(stdout)
+  subroutine io_print_timings(timers, stdout)
     !================================================
     !
     !! Output timing information to stdout
     !
     !================================================
+    use w90_types, only: timer_list_type
 
     implicit none
 
+    type(timer_list_type), intent(in) :: timers
+    integer, intent(in) :: stdout
     integer :: i
-    integer :: stdout
 
+    if (timers%overflow) then
+      write (stdout, '(1x,a)') 'Warning: Timer array overflowed, some timing data has been lost'
+    endif
     write (stdout, '(/1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|                             TIMING INFORMATION                            |'
     write (stdout, '(1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|    Tag                                                Ncalls      Time (s)|'
     write (stdout, '(1x,a)') '|---------------------------------------------------------------------------|'
-    do i = 1, nnames
+    do i = 1, timers%nnames
       write (stdout, '(1x,"|",a50,":",i10,4x,f10.3,"|")') &
-        clocks(i)%label, clocks(i)%ncalls, clocks(i)%ctime
+        timers%clocks(i)%label, timers%clocks(i)%ncalls, timers%clocks(i)%ctime
     enddo
     write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
 
@@ -213,9 +225,18 @@ contains
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
 
-    help_flag(1) = '-h    '; help_flag(2) = '-help '; help_flag(3) = '--help '; 
-    version_flag(1) = '-v    '; version_flag(2) = '-version '; version_flag(3) = '--version '; 
-    dryrun_flag(1) = '-d    '; dryrun_flag(2) = '-dryrun '; dryrun_flag(3) = '--dryrun '; 
+    help_flag(1) = '-h    '
+    help_flag(2) = '-help '
+    help_flag(3) = '--help '
+
+    version_flag(1) = '-v    '
+    version_flag(2) = '-version '
+    version_flag(3) = '--version '
+
+    dryrun_flag(1) = '-d    '
+    dryrun_flag(2) = '-dryrun '
+    dryrun_flag(3) = '--dryrun '
+
     post_proc_flag = .false.
     print_help = .false.
     print_version = .false.
@@ -302,34 +323,34 @@ contains
 
   end subroutine io_commandline
 
-  !================================================
-  subroutine io_error(error_msg, stdout, seedname)
-    !================================================
-    !
-    !! Abort the code giving an error message
-    !
-    !================================================
-
-    implicit none
-
-    character(len=*), intent(in) :: error_msg
-    character(len=50), intent(in)  :: seedname
-    integer :: stdout
-
-    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
-    call comms_abort(seedname, error_msg, stdout)
-    close (stdout)
-
-    write (*, '(1x,a)') trim(error_msg)
-    write (*, '(A)') "Error: examine the output/error file for details"
-
-#ifdef EXIT_FLAG
-    call exit(1)
-#else
-    STOP
-#endif
-
-  end subroutine io_error
+!  !================================================
+!  subroutine io_error(error_msg, stdout, seedname)
+!    !================================================
+!    !
+!    !! Abort the code giving an error message
+!    !
+!    !================================================
+!
+!    implicit none
+!
+!    character(len=*), intent(in) :: error_msg
+!    character(len=50), intent(in)  :: seedname
+!    integer :: stdout
+!
+!    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
+!    call comms_abort(seedname, error_msg, stdout)
+!    close (stdout)
+!
+!    write (*, '(1x,a)') trim(error_msg)
+!    write (*, '(A)') "Error: examine the output/error file for details"
+!
+!#ifdef EXIT_FLAG
+!    call exit(1)
+!#else
+!    STOP
+!#endif
+!
+!  end subroutine io_error
 
   !================================================
   subroutine io_date(cdate, ctime)
