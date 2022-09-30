@@ -846,7 +846,7 @@ contains
     call w90_readwrite_get_keyword('tetrahedron_higher_correction', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_method)
     if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
-    (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
+      (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
 
     pw90_berry%tetrahedron_cutoff = 1.e-4_dp
     call w90_readwrite_get_keyword('tetrahedron_cutoff', found, error, comm, &
@@ -2076,7 +2076,7 @@ contains
       if (pw90_berry%tetrahedron_method) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method (PRB 106, 075125)                        :', '       T', '|'
         write (stdout, '(1x,a46,10x,a8,13x,L8)') '|  with higher-order correction                                :', &
-            pw90_berry%tetrahedron_higher_correction, '|'
+          pw90_berry%tetrahedron_higher_correction, '|'
         write (stdout, '(1x,a46,10x,E8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
           pw90_berry%tetrahedron_cutoff, '|'
       else

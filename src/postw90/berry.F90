@@ -590,7 +590,7 @@ contains
     !
     if (pw90_berry%wanint_kpoint_file) then
 
-      if (pw90_berry%tetrahedron_method) call set_error_input&
+      if (pw90_berry%tetrahedron_method) call set_error_input &
         (error, 'Tetrahedron method not implemented with wanint_kpoint_file', comm)
       ! NOTE: still need to specify pw90_pw90_berry%kmesh%mesh in the input file
       !
@@ -3163,20 +3163,20 @@ contains
     if (index(pw90_spin_hall%method, 'ryoo') > 0) then
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SAA_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm, &
                                          OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SBB_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm, &
                                          OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
     else
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SR_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm, &
                                          OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SHR_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm, &
                                          OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
     endif
 
