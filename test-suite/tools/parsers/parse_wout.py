@@ -14,17 +14,7 @@ from . import show_output
 # 0: Shell Index
 # 1: distance (ang^-1)
 # 2: multiplicity
-near_neigh_re = re.compile("^\s*\|\s+(\d+)\s+([\d\.]+)\s*(\d+)\s*")
-
-
-# Match the lines describing the b_k vectors for the completeness relation
-# Groups:
-# 0: Index
-# 1: b_k(x)
-# 2: b_k(y)
-# 3: b_k(z)
-# 4: w_b
-completeness_re = re.compile("^\s*\|\s+(\d+)\s+([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s*([\d\.]+)\s*")
+near_neigh_re = re.compile(r"^\s*\|\s+(\d+)\s+([\d\.]+)\s*(\d+)\s*")
 
 # Match the 'WF centre and spread' line. 
 # Groups:
@@ -33,19 +23,19 @@ completeness_re = re.compile("^\s*\|\s+(\d+)\s+([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-
 # 2: centre_y
 # 3: centre_z
 # 4: spread
-spread_re = re.compile("^\s*WF centre and spread\s+(\d+)\s+\(\s*([0-9\.-]+)\s*,\s*([0-9\.-]+)\s*,\s*([0-9\.-]+)\s*\)\s*([0-9\.-]+)\s*$")
+spread_re = re.compile(r"^\s*WF centre and spread\s+(\d+)\s+\(\s*([0-9\.-]+)\s*,\s*([0-9\.-]+)\s*,\s*([0-9\.-]+)\s*\)\s*([0-9\.-]+)\s*$")
 
 # Match the lines with the Omegas
 # Groups:
 # 0: Omega_*
-omegaI_re = re.compile("Omega\ I\s+=\s*([0-9\.-]+)\s*$")
-omegaD_re = re.compile("Omega\ D\s+=\s*([0-9\.-]+)\s*$")
-omegaOD_re = re.compile("Omega\ OD\s+=\s*([0-9\.-]+)\s*$")
-omegaTotal_re = re.compile("Omega\ Total\s+=\s*([0-9\.-]+)\s*$")
-omegaIOD_C_re = re.compile("Omega\ IOD_C\s+=\s*([0-9\.-]+)\s*$")
-omegaRest_re = re.compile("Omega\ Rest\s+=\s*([0-9\.-]+)\s*$")
-penaltyfunc_re = re.compile("Penalty\ func\s+=\s*([0-9\.-]+)\s*$")
-omegaTotal_C_re = re.compile("Omega\ Total_C\s+=\s*([0-9\.-]+)\s*$")
+omegaI_re = re.compile(r"Omega\ I\s+=\s*([0-9\.-]+)\s*$")
+omegaD_re = re.compile(r"Omega\ D\s+=\s*([0-9\.-]+)\s*$")
+omegaOD_re = re.compile(r"Omega\ OD\s+=\s*([0-9\.-]+)\s*$")
+omegaTotal_re = re.compile(r"Omega\ Total\s+=\s*([0-9\.-]+)\s*$")
+omegaIOD_C_re = re.compile(r"Omega\ IOD_C\s+=\s*([0-9\.-]+)\s*$")
+omegaRest_re = re.compile(r"Omega\ Rest\s+=\s*([0-9\.-]+)\s*$")
+penaltyfunc_re = re.compile(r"Penalty\ func\s+=\s*([0-9\.-]+)\s*$")
+omegaTotal_C_re = re.compile(r"Omega\ Total_C\s+=\s*([0-9\.-]+)\s*$")
 
 ## A comment on regexps: re.match only checks the beginning of the line, while
 ## re.search anywhere in the string (like perl)
@@ -81,20 +71,36 @@ def parse(fname):
             continue
         
         ###############################################################
-        # Completeness relation
-        # Start from the sixth line after 
-        # 'Completeness relation is fully satisfied',
+        # b_k vectors
+        # Start from the fourth line after
+        # 'b_k Vectors (Ang^-1) and Weights (Ang^2)',
         # then stop at the line with ------------------
-        if "Completeness relation is fully satisfied" in l:
-            for l2 in lines[lno+6:]: # Skip 6 lines
-                match = completeness_re.search(l2)
-                if not match or '--------------------------------------' in l2:
+        if "b_k Vectors (Ang^-1) and Weights (Ang^2)" in l:
+            for l2 in lines[lno+4:]: # Skip 6 lines
+                data = l2.split()
+                if len(data) != 7 or '-' * 76 in l2:
                     break
-                _, bkx, bky, bkz, bkw = match.groups() 
-                retdict["completeness_x"].append(float(bkx))
-                retdict["completeness_y"].append(float(bky))
-                retdict["completeness_z"].append(float(bkz))
-                retdict["completeness_weight"].append(float(bkw))
+                _, bkx, bky, bkz, bkw = data[1:-1]
+                retdict["b_k_x"].append(float(bkx))
+                retdict["b_k_y"].append(float(bky))
+                retdict["b_k_z"].append(float(bkz))
+                retdict["w_b"].append(float(bkw))
+            continue
+
+        ###############################################################
+        # b_k directions
+        # Start from the fourth line after
+        # 'b_k Directions (Ang^-1)',
+        # then stop at the line with ------------------
+        if "b_k Directions (Ang^-1)" in l:
+            for l2 in lines[lno+4:]: # Skip 6 lines
+                data = l2.split()
+                if len(data) != 6 or '-' * 76 in l2:
+                    break
+                _, bkx, bky, bkz = data[1:-1]
+                retdict["b_k_direction_x"].append(float(bkx))
+                retdict["b_k_direction_y"].append(float(bky))
+                retdict["b_k_direction_z"].append(float(bkz))
             continue
 
         ###############################################################

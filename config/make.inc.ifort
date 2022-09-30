@@ -15,6 +15,9 @@ LDOPTS=-O2
 LIBDIR = /opt/intel/mkl/lib/intel64
 LIBS   =  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
 
+# f90wrap location
+F90WRAP = f90wrap
+
 #=======================
 # ATLAS Blas and LAPACK
 #=======================

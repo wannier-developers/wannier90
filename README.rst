@@ -5,12 +5,17 @@ Wannier90
 The Maximally-Localised Generalised Wannier Functions Code 
 ----------------------------------------------------------
 
-The homepage of the Wannier90 code is http://www.wannier.org
+The homepage of the Wannier90 code is https://www.wannier.org
 
 The code is hosted on 
 GitHub_.
 
+The documentation of the code can be found
+here_.
+
 .. _GitHub: https://github.com/wannier-developers/wannier90
+
+.. _here: https://wannier90.readthedocs.io/
 
 How to contribute
 +++++++++++++++++
@@ -87,13 +92,19 @@ Authors and contributors
 
 The Wannier90 Developer Group includes:
 
-* Giovanni Pizzi    (EPFL, CH)
-* Valerio Vitale    (Cambridge, GB)
+* Giovanni Pizzi    (Paul Scherrer Institute, CH)
+* Valerio Vitale    (University of Trieste, IT)
 * David Vanderbilt  (Rutgers University, US)
 * Nicola Marzari    (EPFL, CH)
 * Ivo Souza         (Universidad del Pais Vasco, ES)
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
+
+In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4.x are:
+
+* Jerome Jackson    (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
+* Leon Petit        (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
+* Barry G. Searle   (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design, python interface
 
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 
@@ -117,6 +128,7 @@ In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3
 * Lorenzo Paulatto (Sorbonne Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
 * Samuel Poncé (Oxford University, GB): Test suite for Wannier90
 * Thomas Ponweiser (RISC Software GmbH, AT): performance optimizations for postw90
+* Junfeng Qiao (EPFL, CH): spin Hall conductivity
 * Florian Thöle (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
 * Stepan Tsirkin (Universidad del Pais Vasco, ES): GW bands interpolation, gyrotropic module, shift-current calculation, bug fixes in the berry module
 * Małgorzata Wierzbowska (Polish Academy of Science, PL): performance optimizations for postw90

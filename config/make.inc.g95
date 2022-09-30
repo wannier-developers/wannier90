@@ -6,6 +6,10 @@ FCOPTS = -O2
 LDOPTS = -O2
 
 
+
+# f90wrap location
+F90WRAP = f90wrap
+
 #=======================
 # ATLAS Blas and LAPACK
 #=======================

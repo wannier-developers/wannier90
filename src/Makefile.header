@@ -1,15 +1,25 @@
+ifdef WANNIER90_WITH_C
 OBJS  =  constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
         ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
-        wannier90_readwrite.o comms-abort.o readwrite.o
-
-OBJS_LIBV1 = wannier_lib.o
+        wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
+	library_extra.o c_interface.o
+else
+OBJS  =  constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
+        ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
+        wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
+	library_extra.o
+endif
 
 OBJS_POST  = ws_distance.o types.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
         postw90_common.o wan_ham.o spin.o dos.o tetrahedron.o berry.o gyrotropic.o kpath.o kslice.o \
-        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o comms-abort.o readwrite.o
+        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o readwrite.o \
+	error.o error_base.o
 
-LIBRARY = ../../libwannier.a
-LIBRARYV2 = ../../libwan2.a
+WRAPSRC = ../src/constants.F90 ../src/types.F90 ../src/wannier90_readwrite.F90 \
+        ../src/wannier90_types.F90 ../src/comms.F90 ../src/library_interface.F90 \
+        ../src/library_extra.F90
+#	../src/postw90/postw90_types.F90../src/postw90/pw90_library.F90
+
 
 ## Dynamic library section
 ## Define some defaults (good for linux) if none is defined in the make.inc
@@ -18,8 +28,15 @@ LIBRARYV2 = ../../libwan2.a
 ## calling it .so and using -shared often works equally well)
 ## NOTE: if you want to compile the dynamic library, you have to compile
 ## everything with -fPIC usually, on 64bit systems
-DYNLIBRARYEXTENSION ?= so
-SHAREDLIBFLAGS ?= '-shared'
+SHAREDLIBFLAGS ?=-shared -Wl,-soname,libwannier90.so.4 -fPIC
 
 ## Define the filename
-DYNLIBRARY = ../../libwannier.$(DYNLIBRARYEXTENSION)
+ifdef USEMPI
+  LIBSUFFIX=_mpi
+else
+  LIBSUFFIX=
+endif
+
+DYNLIBBASE = wannier90$(LIBSUFFIX)
+LIBRARYV2 =  ../../libwannier90$(LIBSUFFIX).a
+DYNLIBRARY =       libwannier90$(LIBSUFFIX).so.4

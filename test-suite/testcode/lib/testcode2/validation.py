@@ -57,7 +57,7 @@ name: name of status (unknown, skipped, passed, partial, failed) to use.
     def failed(self):
         '''Return true if stored status is failed.'''
         return self.status == self._failed
-    def print_status(self, msg=None, verbose=1, vspace=True):
+    def print_status(self, msg=None, verbose=1, vspace=False):
         '''Print status.
 
 msg: optional message to print out after status.

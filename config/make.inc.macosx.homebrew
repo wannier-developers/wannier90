@@ -27,6 +27,9 @@ MPIF90=mpifort
 DYNLIBRARYEXTENSION=dylib
 SHAREDLIBFLAGS=-dynamiclib
 
+# f90wrap location
+F90WRAP = f90wrap
+
 ## Note: we could use -framework Accelerate, but we should
 ## then compile with the -ff2c option to gfortran to use
 ## C-style conventions for functions returning complex values -

@@ -1,7 +1,7 @@
     num_print_cycles =   13      
     num_wann        =   4 
     use_ws_distance = .false.
-search_shells=12    
+search_shells=12
     dis_win_min       = -8.0d0       
     dis_win_max       = 14.3d0
     dis_froz_min      = -8.0d0

@@ -17,3 +17,6 @@ LIBS   = -L$(LIBDIR) -llapack -lessl
 #        http://www.netlib.org/lapack/
 #        and (optionally) the essl wrappers
 #        http://www.netlib.org/lapack/essl/
+
+# f90wrap location
+F90WRAP = f90wrap

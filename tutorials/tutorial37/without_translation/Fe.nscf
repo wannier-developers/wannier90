@@ -1,0 +1,49 @@
+&control
+    calculation = 'bands'
+    outdir = './tmp'
+    prefix = 'Fe'
+    pseudo_dir = '../pseudo'
+    verbosity = 'high'
+/
+
+&system
+    degauss = 0.02
+    ecutwfc = 120.0
+    ibrav = 3
+    celldm(1) = 5.42
+    occupations = 'smearing'
+    smearing = 'm-v'
+    nat = 1
+    nbnd = 28
+    angle1(1) = 0
+    angle2(1) = 0
+    lspinorb = .true.
+    noncolin = .true.
+    ntyp = 1
+    starting_magnetization(1) = 0.5
+/
+
+&electrons
+    startingwfc = 'random'
+    conv_thr = 1e-10
+    electron_maxstep = 200
+    mixing_beta = 0.3
+    mixing_mode = 'local-TF'
+/
+
+ATOMIC_SPECIES
+Fe 0.0 Fe.jry.pbe.UPF
+
+ATOMIC_POSITIONS crystal
+Fe      0.000000000     0.000000000     0.000000000
+
+K_POINTS crystal
+8
+  0.00000000  0.00000000  0.00000000  1.250000e-01
+  0.00000000  0.00000000  0.50000000  1.250000e-01
+  0.00000000  0.50000000  0.00000000  1.250000e-01
+  0.00000000  0.50000000  0.50000000  1.250000e-01
+  0.50000000  0.00000000  0.00000000  1.250000e-01
+  0.50000000  0.00000000  0.50000000  1.250000e-01
+  0.50000000  0.50000000  0.00000000  1.250000e-01
+  0.50000000  0.50000000  0.50000000  1.250000e-01

@@ -1,0 +1,6 @@
+&inputpp 
+    outdir = './tmp'
+    prefix = 'Fe'
+    seedname = 'Fe'
+    write_uHu = .true.
+/

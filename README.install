@@ -100,13 +100,16 @@ Parallel builds
  Methods 1 and 2 require module files built by the same version of compiler that
  is to be used to compile wannier90.
 
- The specific interface to be used must be chosen by setting COMMS in make.inc
- to one of "mpi08", "mpi90" or "mpih" (plain "mpi" is the same as "mpi90"). 
-
- Particularly when wannier90 is to be used in library mode, the MPI interface
- specified by COMMS must be the same as that used in the calling code; otherwise
- using the fortran08 is recommended.
- 
+ If you intend to link to libwannier90 from another program, then you may wish to
+ ensure that the MPI interface level (standard) used in compiling Wannier90
+ matches that of the calling program.  Three levels of Fortran MPI standard are
+ supported by Wannier90: Fortran90 (which uses a Fortran module), Fortran2008
+ (which uses a Fortran module that includes f2008 types for the different MPI 
+ objects) and a legacy Fortran77 interface (which uses the 'mpi.h' include file).
+ To specify a particular interface set:
+  COMMS=mpi08
+  COMMS=mpi90  (default, same as COMMS=mpi)
+  COMMS=mpih
 
 Linux x86,x86-64
 ----------------

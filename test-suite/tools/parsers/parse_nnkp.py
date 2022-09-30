@@ -14,13 +14,13 @@ from . import show_output
 # 0: idx of first kpt
 # 1: idx of second kpt
 # 2,3,4: g1,g2,g3 (reciprocal lattice vector needed to bring them together)
-nnkpts_re = re.compile("^\s*\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
+nnkpts_re = re.compile(r"^\s*\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
 # Match the lines in the kpoints block
 # Groups
 # 0: k1
 # 0: k2
 # 0: k3
-kpts_re = re.compile("^\s*([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s*$")
+kpts_re = re.compile(r"^\s*([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s*$")
 
 def parse(fname):
     """

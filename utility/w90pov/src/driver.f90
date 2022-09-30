@@ -27,9 +27,9 @@ module m_driver
   ! alatt = reciprocal lattice
   real(q) :: blatt(3, 3)
   ! nspecies = number of atomtypes
-  integer :: nspecies
+  !integer :: nspecies
   ! ntype = number of atoms of type i
-  integer :: ntype(100)
+  !integer :: ntype(100)
   ! natoms = number of atoms
   integer :: natoms
   ! posion = atomic positions (real coordinates)

@@ -13,6 +13,9 @@ LDOPTS =
 #FCOPTS=-Ddebug -O0 -g -fno-omit-frame-pointer -debug extended -traceback -C -Ddebug -stand f95 -warn all
 #LDOPTS=-Ddebug -O0 -g -fno-omit-frame-pointer -debug extended -traceback -C -Ddebug -stand f95 -warn all
 
+# f90wrap location
+F90WRAP = f90wrap
+
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path
 #========================================================

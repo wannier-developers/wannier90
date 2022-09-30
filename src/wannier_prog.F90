@@ -52,455 +52,307 @@
 program wannier
   !! The main Wannier90 program
 
-  use w90_constants, only: w90_physical_constants_type, dp
-  use w90_types
-  use w90_io
-  use w90_hamiltonian
-  use w90_kmesh
-  use w90_disentangle
-  use w90_overlap
-  use w90_wannierise
-  use w90_plot
-  use w90_transport
-  use w90_comms
-  use w90_sitesym !YN:
-
-  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_chkpt, &
-    w90_readwrite_chkpt_dist
-  use w90_wannier90_types
-  use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
-    w90_wannier90_readwrite_w90_dealloc, &
-    w90_wannier90_readwrite_write, w90_wannier90_readwrite_dist, &
-    w90_wannier90_readwrite_memory_estimate, &
-    w90_wannier90_readwrite_write_chkpt, w90_extra_io_type
-
-#ifdef MPI
-#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
-#    error "You need to define which MPI interface you are using"
-#  endif
-#endif
-
 #ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
+  use mpi_f08
 #endif
 #ifdef MPI90
-  use mpi ! next best, use fortran90 interface
+  use mpi
 #endif
+
+  use w90_library
+  use w90_library_extra ! for input_reader_special, overlaps, etc
+
+  use w90_comms, only: w90_comm_type, comms_sync_error
+  use w90_io, only: io_commandline, io_date, io_time, prterr
+  use w90_sitesym, only: sitesym_read
+  use w90_error, only: w90_error_type, set_error_input
 
   implicit none
 
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
+  integer, parameter :: dp = kind(0.d0)
 
-  type(atom_data_type) :: atom_data
-  type(band_plot_type) :: band_plot
-  type(dis_control_type) :: dis_control
-  type(dis_manifold_type) :: dis_manifold
-  type(dis_spheres_type) :: dis_spheres
-  type(fermi_surface_plot_type) :: fermi_surface_plot
-  type(ham_logical_type) :: ham_logical
-  type(kmesh_info_type) :: kmesh_info
-  type(kmesh_input_type) :: kmesh_input
-  type(kpoint_path_type) :: kpoint_path
-  type(output_file_type) :: output_file
-  type(print_output_type) :: print_output
-  type(proj_input_type) :: input_proj
-  type(real_space_ham_type) :: real_space_ham
-  type(select_projection_type) :: select_projection
-  type(sitesym_type) :: sitesym
-  type(transport_type) :: transport
-  type(w90_calculation_type) :: w90_calculation
-  type(w90comm_type) :: comm
-  type(w90_physical_constants_type) :: physics
-  type(w90_system_type) :: w90_system
-  type(wann_control_type) :: wann_control
-  type(wannier_data_type) :: wannier_data
-  type(wannier_plot_type) :: wannier_plot
-  type(wann_omega_type) :: omega
-  type(ws_region_type) :: ws_region
-  type(wvfn_read_type) :: wvfn_read
-
-  integer, allocatable :: exclude_bands(:)
-  integer :: mp_grid(3)  !! Dimensions of the Monkhorst-Pack grid
-  integer :: num_bands   !! Number of bands
-  integer :: num_exclude_bands
-  integer :: num_kpts
-  integer :: num_proj
-  integer :: num_wann    !! number of wannier functions
-  integer :: optimisation
-
-  real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
-  real(kind=dp), allocatable :: eigval(:, :)
-  real(kind=dp), allocatable :: fermi_energy_list(:)
-  real(kind=dp) :: real_lattice(3, 3)
-  real(kind=dp) :: recip_lattice(3, 3)
-
-  ! Are we running postw90?
-  !logical :: ispostw90 = .false.
-
-  ! a_matrix and m_matrix_orig can be calculated internally from bloch states
-  ! or read in from an ab-initio grid
-  ! a_matrix      = projection of trial orbitals on bloch states
-  ! m_matrix_orig = overlap of bloch states
-  !BGS a_matrix, m_matrix in disentangle and overlap
-  complex(kind=dp), allocatable :: a_matrix(:, :, :)
-  complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
-  complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
-  ! u_matrix_opt gives the num_wann dimension optimal subspace from the
-  ! original bloch states
-  complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
-  ! u_matrix gives the unitary rotations from the optimal subspace to the
-  ! optimally smooth states.
-  ! m_matrix we store here, becuase it is needed for restart of wannierise
+  character(len=:), allocatable :: seedname, progname, cpstatus
+  character(len=:), pointer :: restart
+  complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
   complex(kind=dp), allocatable :: u_matrix(:, :, :)
-  ! disentangle, hamiltonain, overlap and wannierise
-  complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
-  complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+  complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+  real(kind=dp), allocatable :: eigval(:, :)
+  integer, allocatable :: dist_k(:)
+  integer :: mpisize, rank, ierr, nkl
+  integer, pointer :: nb, nk, nw, nn
+  integer :: stdout, stderr
+  logical, pointer :: pp
+  logical :: ld, lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
+  type(lib_common_type), target :: common_data
+  type(w90_error_type), allocatable :: error
+  character(len=9) :: cdate, ctime
 
-  integer :: rpt_origin
-  !! index of R=0
-  integer :: nrpts
-  !! number of Wigner-Seitz grid points
-  integer, allocatable :: irvec(:, :)
-  !! The irpt-th Wigner-Seitz grid point has components
-  !! irvec(1:3,irpt) in the basis of the lattice vectors
-  integer, allocatable :: shift_vec(:, :)
-  integer, allocatable :: ndegen(:)
-  !! Weight of the irpt-th point is 1/ndegen(irpt)
-  real(kind=dp), allocatable :: wannier_centres_translated(:, :)
-  complex(kind=dp), allocatable :: ham_r(:, :, :)
-  !! Hamiltonian matrix in WF representation
-  complex(kind=dp), allocatable :: ham_k(:, :, :)
+  pp => common_data%w90_calculation%postproc_setup
+  restart => common_data%w90_calculation%restart
+  nw => common_data%num_wann
+  nb => common_data%num_bands
+  nk => common_data%num_kpts
+  nn => common_data%kmesh_info%nntot
 
-  type(proj_input_type) :: proj_input ! Projections
-  type(w90_extra_io_type) :: w90_extra_io
-
-  real(kind=dp) time0, time1, time2
-
-  integer :: len_seedname
-  integer :: num_nodes, my_node_id, ierr
-  integer :: stdout
-
-  logical :: eig_found
-  logical :: gamma_only
-  logical :: have_disentangled, disentanglement
-  logical :: lhasproj
-  logical :: lsitesymmetry = .false. ! RS: symmetry-adapted Wannier functions
-  logical :: on_root = .false.
-  logical :: use_bloch_phases, cp_pp, calc_only_A
-  logical :: wout_found, dryrun
-
-  character(len=20) :: checkpoint
-  character(len=50) :: prog
-  character(len=50) :: seedname
-  character(len=9) :: stat, pos, cdate, ctime
+  progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
+  call io_commandline(progname, ld, pp, seedname)
 
 #ifdef MPI
-  comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
-  seedname = "wannier"
-  if (ierr .ne. 0) call io_error('MPI initialisation error', 0, seedname)  ! stdout, seedname not yet known!
-#endif
-
-  num_nodes = mpisize(comm)
-  my_node_id = mpirank(comm)
-  if (my_node_id == 0) on_root = .true.
-
-  time0 = io_time()
-
-  if (on_root) then
-    prog = 'wannier90'
-    call io_commandline(prog, dryrun, seedname)
-    len_seedname = len(seedname)
-  end if
-  call comms_bcast(len_seedname, 1, stdout, seedname, comm)
-  call comms_bcast(seedname, len_seedname, stdout, seedname, comm)
-  call comms_bcast(dryrun, 1, stdout, seedname, comm)
-
-  if (on_root) then
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.werr')
-    call io_date(cdate, ctime)
-    write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
-
-    call w90_wannier90_readwrite_read(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, exclude_bands, &
-                                      fermi_energy_list, fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
-                                      output_file, wvfn_read, wann_control, omega, proj_input, input_proj, &
-                                      real_space_ham, select_projection, kpoint_path, w90_system, transport, &
-                                      print_output, wannier_data, wannier_plot, w90_extra_io, ws_region, &
-                                      w90_calculation, eigval, real_lattice, physics%bohr, sitesym%symmetrize_eps, mp_grid, &
-                                      num_bands, num_kpts, num_proj, num_wann, optimisation, eig_found, &
-                                      calc_only_A, cp_pp, gamma_only, lhasproj, .false., .false., lsitesymmetry, &
-                                      use_bloch_phases, seedname, stdout)
-    have_disentangled = .false.
-    close (stdout, status='delete')
-
-    if (w90_calculation%restart .eq. ' ') then
-      stat = 'replace'
-      pos = 'rewind'
-    else
-      inquire (file=trim(seedname)//'.wout', exist=wout_found)
-      if (wout_found) then
-        stat = 'old'
-      else
-        stat = 'replace'
-      endif
-      pos = 'append'
-    endif
-
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
-    call w90_readwrite_write_header(physics%bohr_version_str, physics%constants_version_str1, &
-                                    physics%constants_version_str2, stdout)
-    if (num_nodes == 1) then
-#ifdef MPI
-      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_init() returned an error!'
+    stop
+  endif
+  call mpi_comm_rank(mpi_comm_world, rank, ierr) ! the type of comm_world depends on interface used
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_comm_rank() returned an error!'
+    stop
+  endif
+  call mpi_comm_size(mpi_comm_world, mpisize, ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_comm_size() returned an error!'
+    stop
+  endif
+  call w90_set_comm(common_data, mpi_comm_world)
 #else
-      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
+  rank = 0
+  mpisize = 1
 #endif
-    else
-      write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', num_nodes, ' CPUs'
-    endif
-    call w90_wannier90_readwrite_write(atom_data, band_plot, dis_control, dis_spheres, fermi_energy_list, &
-                                       fermi_surface_plot, kpt_latt, output_file, wvfn_read, wann_control, &
-                                       proj_input, input_proj, real_space_ham, select_projection, kpoint_path, &
-                                       transport, print_output, wannier_data, wannier_plot, w90_extra_io, &
-                                       w90_calculation, real_lattice, sitesym%symmetrize_eps, mp_grid, num_bands, num_kpts, &
-                                       num_proj, num_wann, optimisation, cp_pp, gamma_only, lsitesymmetry, &
-                                       w90_system%spinors, use_bloch_phases, stdout)
-    time1 = io_time()
-    write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. kmesh_info%explicit_nnkpts) call kmesh_get(kmesh_input, kmesh_info, print_output, &
-                                                         kpt_latt, real_lattice, &
-                                                         num_kpts, gamma_only, seedname, stdout)
-    time2 = io_time()
-    write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
+  ! open main output file
+  if (rank == 0) open (newunit=stdout, file=seedname//'.wout', status="replace")
 
-    call w90_wannier90_readwrite_memory_estimate(atom_data, kmesh_info, wann_control, input_proj, print_output, &
-                                                 num_bands, num_kpts, num_proj, num_wann, optimisation, gamma_only, &
-                                                 stdout)
-  end if !on_root
+  ! open main error file
+  ! call w90_get_fortran_stderr(stderr) !alternative for terminal output
+  if (rank == 0) open (newunit=stderr, file=seedname//'.werr', status="replace")
 
-  if (dryrun) then
-    if (on_root) then
-      write (stdout, *) ' '
-      write (stdout, *) '                       ==============================='
-      write (stdout, *) '                                   DRYRUN             '
-      write (stdout, *) '                       No problems found with win file'
-      write (stdout, *) '                       ==============================='
-    endif
+  call io_date(cdate, ctime)
+  if (rank == 0) write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
+
+  ! read key parameters from .win file
+  call input_reader_special(common_data, seedname, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! read all remaining parameters from .win file
+  call w90_input_reader(common_data, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! write useful info (includes jazzy header info)
+  call w90_print_info(common_data, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! special branch for writing nnkp file
+  ! exit immediately after writing the nnkp file
+  if (pp) then
+    call write_kmesh(common_data, stdout, stderr, ierr) ! only active on rank 0
+    if (ierr /= 0) stop
+    if (rank == 0) close (unit=stderr, status='delete')
+    if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
+    if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
+#ifdef MPI
+    call mpi_finalize(ierr)
+#endif
     stop
   endif
 
-  ! We now distribute the parameters to the other nodes
-  call w90_wannier90_readwrite_dist(atom_data, band_plot, dis_control, dis_spheres, dis_manifold, exclude_bands, &
-                                    fermi_energy_list, fermi_surface_plot, kmesh_input, kmesh_info, kpt_latt, &
-                                    output_file, wvfn_read, wann_control, omega, input_proj, real_space_ham, &
-                                    w90_system, transport, print_output, wannier_data, wannier_plot, ws_region, &
-                                    w90_calculation, eigval, real_lattice, sitesym%symmetrize_eps, mp_grid, &
-                                    kpoint_path%num_points_first_segment, num_bands, num_kpts, num_proj, num_wann, &
-                                    optimisation, eig_found, cp_pp, gamma_only, have_disentangled, &
-                                    lhasproj, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
-  disentanglement = (num_bands > num_wann)
-  if (gamma_only .and. num_nodes > 1) &
-    call io_error('Gamma point branch is serial only at the moment', stdout, seedname)
-
-  if (w90_calculation%transport .and. transport%read_ht) goto 3003
-
-  ! Sort out restarts
-  if (w90_calculation%restart .eq. ' ') then  ! start a fresh calculation
-    if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
-  else                      ! restart a previous calculation
-    if (on_root) then
-      num_exclude_bands = 0
-      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, &
-                                    m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                                    omega%invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                                    num_wann, checkpoint, have_disentangled, .false., &
-                                    seedname, stdout)
-    endif
-    call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
-                                  omega%invariant, num_bands, num_kpts, num_wann, &
-                                  checkpoint, have_disentangled, seedname, stdout, comm)
-    if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout)  ! update this to read on root and bcast - JRY
-
-    select case (w90_calculation%restart)
-    case ('default')    ! continue from where last checkpoint was written
-      if (on_root) write (stdout, '(/1x,a)', advance='no') &
-        'Resuming a previous Wannier90 calculation '
-      if (checkpoint .eq. 'postdis') then
-        if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
-        goto 1001         ! go to wann_main
-      elseif (checkpoint .eq. 'postwann') then
-        if (on_root) write (stdout, '(a/)') 'from plotting ...'
-        goto 2002         ! go to plot_main
-      else
-        if (on_root) write (stdout, '(/a/)')
-        call io_error('Value of checkpoint not recognised in wann_prog', stdout, seedname)
-      endif
-    case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
-      goto 1001
-    case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
-      goto 2002
-    case ('transport')   ! continue from tran_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
-      goto 3003
-    case default        ! for completeness... (it is already trapped in w90_wannier90_readwrite_read)
-      call io_error('Value of restart not recognised in wann_prog', stdout, seedname)
-    end select
-  endif
-
-  if (w90_calculation%postproc_setup) then
-    if (on_root) call kmesh_write(exclude_bands, kmesh_info, input_proj, print_output, &
-                                  kpt_latt, real_lattice, num_kpts, &
-                                  num_proj, calc_only_A, w90_system%spinors, seedname, stdout)
-    call kmesh_dealloc(kmesh_info, stdout, seedname)
-    call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
-                                             kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
-                                             select_projection, kpoint_path, wannier_data, wannier_plot, &
-                                             w90_extra_io, eigval, seedname, stdout)
-    if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
-    if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-    call comms_end
-    stop
-  endif
-
-  if (lsitesymmetry) call sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, stdout) ! update this to read on root and bcast - JRY
-
-  call overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                        u_matrix, u_matrix_opt, kmesh_info%nntot, num_bands, num_kpts, num_wann, &
-                        print_output%timing_level, seedname, stdout, comm)
-  call overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, m_matrix_local, &
-                    m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, num_bands, &
-                    num_kpts, num_proj, num_wann, print_output%timing_level, cp_pp, &
-                    gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, comm)
-  time1 = io_time()
-  if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
-    ' (sec)'
-
-  have_disentangled = .false.
-
-  if (disentanglement) then
-
-    call dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
-                  print_output, a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
-                  m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                  omega%invariant, num_bands, num_kpts, num_wann, optimisation, gamma_only, &
-                  lsitesymmetry, stdout, seedname, comm)
-    have_disentangled = .true.
-    time2 = io_time()
-    if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, &
-      ' (sec)'
-  endif
-
-  if (on_root) then
-    call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, kmesh_info, &
-                                             kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, u_matrix, &
-                                             u_matrix_opt, m_matrix, mp_grid, real_lattice, &
-                                             omega%invariant, have_disentangled, stdout, seedname)
-  endif
-!~  call w90_wannier90_readwrite_write_um
-
-1001 time2 = io_time()
-
-  ! JJ workaround mpi_scatterv requirement that all arrays are valid *for all mpi procs*
-  ! m_matrix* usually alloc'd in overlaps.F90, but not invariably, need to check here
-  if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1))
-
-  if (.not. gamma_only) then
-    call wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
-                   output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
-                   print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, m_matrix, &
-                   u_matrix, u_matrix_opt, eigval, real_lattice, wannier_centres_translated, &
-                   irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_proj, &
-                   num_wann, optimisation, rpt_origin, band_plot%mode, transport%mode, &
-                   have_disentangled, lsitesymmetry, seedname, stdout, comm)
+  ! test mpi error handling using "unlucky" input token
+  if (rank == -common_data%print_output%timing_level) then
+    call set_error_input(error, 'received unlucky_rank', common_data%comm)
   else
-    call wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
-                         output_file, wann_control, omega, w90_system, print_output, wannier_data, &
-                         m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
-                         num_bands, num_kpts, num_wann, have_disentangled, &
-                         real_space_ham%translate_home_cell, seedname, stdout, comm)
-  end if
+    ! this is necessary since non-root may never enter an mpi collective if root has exited here
+    call comms_sync_error(common_data%comm, error, 0)
+  endif
+  if (allocated(error)) then ! applies (is t) for all ranks now
+    call prterr(error, ierr, stdout, stderr, common_data%comm)
+#ifdef MPI
+    call mpi_finalize(ierr) ! let's be nice
+#endif
+    stop
+  endif
+  ! end unlucky code
 
-  time1 = io_time()
-  if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time1 - time2, &
-    ' (sec)'
+  ! setup kpoint distribution
+  allocate (dist_k(nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate dist_k array!'
+    stop
+  endif
+  ! get a basic k-point/rank distribution
+  call w90_distribute_kpts(common_data, nk, mpisize, dist_k, stdout, stderr, ierr)
+  if (ierr /= 0) stop
 
-  if (on_root) then
-    call w90_wannier90_readwrite_write_chkpt('postwann', exclude_bands, wannier_data, kmesh_info, &
-                                             kpt_latt, num_kpts, dis_manifold, num_bands, num_wann, u_matrix, &
-                                             u_matrix_opt, m_matrix, mp_grid, real_lattice, &
-                                             omega%invariant, have_disentangled, stdout, seedname)
+  ! copy distribution to library
+  call set_kpoint_distribution(common_data, dist_k, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! setup SAWF data
+  if (common_data%lsitesymmetry) then
+    call sitesym_read(common_data%sitesym, nb, nk, nw, seedname, error, common_data%comm) ! (not a library call)
+    if (allocated(error)) then
+      write (stderr, *) 'Wannier90: failed to setup symmetry!'
+      deallocate (error)
+      stop
+    endif
   endif
 
-2002 continue
-  if (on_root) then
-    time2 = io_time()
-  end if
+  call w90_get_nn(common_data, nn, stdout, stderr, ierr)
+  nkl = count(dist_k == rank) ! number of kpoints this rank
+  !write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
-  ! I call the routine always; the if statements to decide if/what to plot are inside the function
-  call plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
-                 ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
-                 kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
-                 w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
-                 real_lattice, wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, &
-                 shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, transport%mode, &
-                 have_disentangled, lsitesymmetry, w90_system%spinors, seedname, stdout, comm)
+  allocate (m_matrix_loc(nb, nb, nn, nkl), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate m_matrix_loc!'
+    stop
+  endif
+  call w90_set_m_local(common_data, m_matrix_loc)  ! we don't need global m
 
-  if (on_root) then
-    time1 = io_time()
-    write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
+  allocate (u_matrix(nw, nw, nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate u_matrix!'
+    stop
+  endif
+  call w90_set_u_matrix(common_data, u_matrix)
+
+  allocate (u_matrix_opt(nb, nw, nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate u_matrix_opt!'
+    stop
+  endif
+  call w90_set_u_opt(common_data, u_matrix_opt)
+
+! restart system
+  lovlp = .true.
+  ldsnt = .true.
+  lwann = .true.
+  lplot = .true.
+  ltran = .false.
+
+  if (restart == '') then
+    if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
+  else
+    cpstatus = ''
+    call read_chkpt(common_data, cpstatus, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+
+    if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .true.
+      lplot = .true.
+      ltran = .false.
+    elseif (restart == 'plot' .or. (restart == 'default' .and. cpstatus == 'postwann')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .true.
+      ltran = .false.
+    elseif (restart == 'transport') then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .false.
+      ltran = .true.
+      !else
+      ! illegitimate restart choice, should declaim the acceptable choices
+    endif
+  endif
+  ltran = (ltran .or. common_data%w90_calculation%transport)
+  ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
+
+  ! circumstances where eigenvalues are needed are a little overcomplicated
+  need_eigvals = .false.
+  need_eigvals = common_data%w90_calculation%bands_plot
+  need_eigvals = (need_eigvals .or. common_data%w90_calculation%fermi_surface_plot)
+  need_eigvals = (need_eigvals .or. common_data%output_file%write_hr)
+  need_eigvals = (need_eigvals .or. common_data%output_file%write_tb)
+  need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
+
+  if (need_eigvals) then
+    allocate (eigval(nb, nk), stat=ierr)
+    if (ierr /= 0) then
+      write (stderr, *) 'Wannier90: failed to allocate eigval array!'
+      stop
+    endif
+    call read_eigvals(common_data, eigval, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call w90_set_eigval(common_data, eigval)
   endif
 
-3003 continue
-  if (on_root) then
-    if (w90_calculation%transport) then
-      time2 = io_time()
+  ! ends setup
 
-      call tran_main(atom_data, dis_manifold, fermi_energy_list, ham_logical, kpt_latt, output_file, &
-                     real_space_ham, transport, print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                     u_matrix, u_matrix_opt, eigval, real_lattice, &
-                     wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                     num_bands, num_kpts, num_wann, rpt_origin, band_plot%mode, &
-                     have_disentangled, lsitesymmetry, seedname, stdout)
-      time1 = io_time()
-
-      write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
-      if (transport%read_ht) goto 4004
-    end if
+  if (lovlp) then
+    call overlaps(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
   endif
 
-  call hamiltonian_dealloc(ham_logical, ham_k, ham_r, wannier_centres_translated, irvec, ndegen, &
-                           stdout, seedname)
-  call overlap_dealloc(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, m_matrix_orig_local, &
-                       u_matrix, u_matrix_opt, seedname, stdout, comm)
-  call kmesh_dealloc(kmesh_info, stdout, seedname)
-  call w90_wannier90_readwrite_w90_dealloc(atom_data, band_plot, dis_spheres, dis_manifold, exclude_bands, &
-                                           kmesh_input, kpt_latt, wann_control, proj_input, input_proj, &
-                                           select_projection, kpoint_path, wannier_data, wannier_plot, &
-                                           w90_extra_io, eigval, seedname, stdout)
-  if (lsitesymmetry) call sitesym_dealloc(sitesym, stdout, seedname) !YN:
+  if (ldsnt) then
+    call w90_disentangle(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call write_chkpt(common_data, 'postdis', stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  endif
 
-4004 continue
+  if (lwann) then
+    call w90_project_overlap(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call w90_wannierise(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  endif
 
-  if (on_root) then
-    write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time(), ' (sec)'
+  if (lplot) then
+    call w90_plot(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  endif
 
-    if (print_output%timing_level > 0) call io_print_timings(stdout)
+  if (ltran) then
+    call w90_transport(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  endif
 
-    write (stdout, *)
+  ! cleanup
+
+  if (need_eigvals) then
+    deallocate (eigval, stat=ierr)
+    if (ierr /= 0) then
+      write (stderr, *) 'Wannier90: failed to deallocate eigval array!'
+      stop
+    endif
+  endif
+  deallocate (dist_k, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate dist_k array!'
+    stop
+  endif
+  deallocate (m_matrix_loc, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate m_matrix_loc!'
+    stop
+  endif
+  deallocate (u_matrix, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate u_matrix!'
+    stop
+  endif
+  deallocate (u_matrix_opt, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate u_matrix_opt!'
+    stop
+  endif
+
+  call print_times(common_data, stdout)
+
+  if (rank == 0) then
+    close (unit=stderr, status='delete')
     write (stdout, '(1x,a)') 'All done: wannier90 exiting'
-
-    close (stdout)
+    close (unit=stdout)
   endif
 
-  call comms_end
-
+#ifdef MPI
+  call mpi_finalize(ierr)
+#endif
 end program wannier
-

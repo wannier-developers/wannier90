@@ -1,0 +1,7 @@
+&INPUTPP
+! use pseudo-atomic-orbital projection
+  atom_proj = .true.
+  outdir = './out/'
+  prefix = 'graphene'
+  seedname = 'graphene'
+/

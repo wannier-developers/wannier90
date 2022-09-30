@@ -1,0 +1,24 @@
+@PACKAGE_INIT@
+
+
+## Define basic variables
+set(Wannier90_MPI @WANNIER90_MPI@)
+
+## Include dependencies
+include(CMakeFindDependencyMacro)
+if (Wannier90_MPI)
+	# Note: In the future the MPI support can be converted to an (optional) package component.
+	# This would however require a breaking change in the library definition
+	find_dependency(MPI COMPONENTS Fortran)
+	if (NOT MPI_Fortran_FOUND OR NOT MPI_Fortran_HAVE_F08_MODULE)
+		message(WARNING
+				"Wannier90 was built and packaged with MPI, but the system does not have compatible MPI support.\n"
+				"This is an issue with the packager of Wannier90."
+		)
+		set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+		return()
+	endif ()
+endif ()
+
+## Parse find_package request
+include(${CMAKE_CURRENT_LIST_DIR}/Wannier90Targets.cmake)

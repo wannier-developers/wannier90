@@ -3,7 +3,7 @@
  restart = wannierise
 
  num_wann        =   4 
- num_iter        = 20 
+ num_iter        =  20 
  use_ws_distance = .false.
 search_shells=12
  

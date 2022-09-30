@@ -19,5 +19,8 @@ LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
 
+# f90wrap location
+F90WRAP = f90wrap
+
 # ACML for blas and lapack
 LIBS = -lacml

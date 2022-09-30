@@ -27,7 +27,7 @@ extract_fn = tools parsers.parse_wout.parse
 tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
               (1.0e-5, 1.0e-5, 'final_centres_y'),
               (1.0e-5, 1.0e-5, 'final_centres_z'),
-              (3.0e-6, 3.0e-6, 'final_spreads'), 
+              (3.1e-6, 3.1e-6, 'final_spreads'), 
               (1.0e-6, 1.0e-6, 'omegaIOD_C'), 
               (1.0e-6, 5.0e-6, 'omegaD'), 
               (1.0e-5, 1.0e-5, 'omegaRest'), 
@@ -53,7 +53,24 @@ tolerance = ( (1.0e-5, 1.0e-5, 'size'))
 [WANNIER90_BVEC]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_bvec.parse
-tolerance = ( (1.0e-5, 1.0e-5, 'size'))
+tolerance = ( (1.0e-10, 1.0e-10, 'size'))
+
+[WANNIER90_RMN_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_rmn.parse
+# integer entries should be exact
+# fp comparisons limited by 6dp printout: ignore relative error
+tolerance = ( (1.0e-10, 1.0e-10, 'irvec_a'),
+              (1.0e-10, 1.0e-10, 'irvec_b'),
+              (1.0e-10, 1.0e-10, 'irvec_c'),
+              (1.0e-10, 1.0e-10, 'index_i'),
+              (1.0e-10, 1.0e-10, 'index_j'),
+              (2.0e-6, 1.0, 'real_x'),
+              (2.0e-6, 1.0, 'imag_x'),
+              (2.0e-6, 1.0, 'real_y'),
+              (2.0e-6, 1.0, 'imag_y'),
+              (2.0e-6, 1.0, 'real_z'),
+              (2.0e-6, 1.0, 'imag_z'))
 
 [WANNIER90_CUBE]
 exe = ../../wannier90.x
@@ -63,10 +80,11 @@ tolerance = ( (1.0e-5, 1.0e-5, 'origin'))
 [POSTW90_GENINTERPDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_geninterp_dat.parse
+# ignore relative error comparison of values ~zero
 tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
-	       (1.0e-6, 1.0e-6, 'bandkptx'),
-	       (1.0e-6, 1.0e-6, 'bandkpty'),
-	       (1.0e-6, 1.0e-6, 'bandkptz'),                            
+	       (1.0e-6, None, 'bandkptx'),
+	       (1.0e-6, None, 'bandkpty'),
+	       (1.0e-6, None, 'bandkptz'),
 	       (1.0e-2, 1.0e-2, 'bandderivx'),
 	       (1.0e-2, 1.0e-2, 'bandderivy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
@@ -83,10 +101,11 @@ tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
 [POSTW90_CURVDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_curv_dat.parse
+# relative error not helpful for e-20ish values expected
 tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
-               (1.0e-4, 1.0e+2, 'bandcurvx'),
-               (1.0e-4, 1.0e+2, 'bandcurvy'),
-               (1.0e-4, 1.0e+2, 'bandcurvz'))
+               (1.0e-6, 1.0e+3, 'bandcurvx'),
+               (1.0e-6, 1.0e+3, 'bandcurvy'),
+               (1.0e-6, 1.0e+3, 'bandcurvz'))
 
 [POSTW90_WPOUT_OK]
 exe = ../../postw90.x
@@ -221,10 +240,28 @@ tolerance = ( (10., 1.0e-4, 'elcond_xx'),
               (10., 1.0e-4, 'elcond_yz'),
               (10., 1.0e-4, 'elcond_zz'))
 
+[POSTW90_HIGHER_OK]
+exe = ../../postw90.x
+# To do: add extract_fn, tolerance
+
+
 [WANNIER90_DISENTANGLEMENT_SAWFS]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_wout.parse
 tolerance = ( (1.0e-6, 1.0e-6, 'omegaI'))
+
+[WANNIER90_BANDS_PLOT]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_w90_bands_dat.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'kpath'),
+              (1.0e-5, 1.0e-5, 'eigval'))
+
+[WANNIER90_BAND_KPT]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_w90_band_kpt.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'kpath'),
+              (1.0e-6, 1.0e-6, 'weight'),
+              (1.0e-6, 1.0e-6, 'nkp'))
 
 [user]
 # This is the string (or list of strings) that identifies sets of tests

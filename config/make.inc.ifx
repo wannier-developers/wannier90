@@ -1,0 +1,24 @@
+
+#=====================================================
+# For Linux x86_64 with intel ifx
+#=====================================================
+F90=ifx
+
+COMMS=mpi08
+MPIF90=mpiifx
+
+# use of runtime checks deactivates optimisation for speed in ifx
+# disable "warning #8889: Explicit interface or EXTERNAL declaration is required."
+# disable "warning #10182: disabling optimization; runtime debug checks enabled"
+# disable "remark #10440: Note that use of a debug option without any optimization-level option will turnoff most compiler optimizations similar to use of '-O0'"
+FCOPTS=-fPIC -check all -warn all -g -diag-disable 8889,10182,10440
+FCOPTS=-O3 -fPIC -warn all -diag-disable 8889
+LDOPTS=$(FCOPTS)
+
+#========================================================
+# Intel mkl libraries. Set MKLROOT per hand if necessary
+#========================================================
+LIBS   = -L$(MKLROOT) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential
+
+# f90wrap location
+F90WRAP = f90wrap

@@ -1,19 +1,32 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.2.3
+  rev: v4.1.0
   hooks:
   - id: check-yaml
+    exclude: (?x)^(
+        docs/mkdocs.yml
+      )$
+  - id: check-yaml
+    name: check yaml unsafe
+    args: ['--unsafe']
+    files: (?x)^(
+        docs/mkdocs.yml
+      )$
   - id: trailing-whitespace
     files: (?x)^(
+        Makefile|
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        tutorials/tutorial\d\d[-]?\w*/.+win|
+        src/.+
       )$
   - id: end-of-file-fixer
     files: (?x)^(
+        Makefile|
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        tutorials/tutorial\d\d[-]?\w*/.+win|
+        src/.+
       )$
-- repo: git://github.com/pseewald/fprettify
+- repo: https://github.com/fortran-lang/fprettify
   rev: v0.3.3
   hooks:
   - id: fprettify
@@ -22,3 +35,11 @@ repos:
         pwscf/.*
       )$
     verbose: true
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.12.1
+  hooks:
+  - id: markdownlint-cli2
+    args: ['--fix']
+    files: (?x)^(
+        docs/.*
+      )$
