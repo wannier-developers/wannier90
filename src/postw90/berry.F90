@@ -30,6 +30,7 @@ module w90_berry
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
   !! *  RPS19  = PRB 99, 235113 (2019)  (spin Hall conductivity - SHC)
   !! *  IAdJS19 = arXiv:1910.06172 (2019) (quasi-degenerate k.p)
+  !! *  GP22 = PRB 106, 075126 (2022)   (tetrahedron method for spectral functions, SHC)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -523,10 +524,11 @@ contains
       endif
 
       if (pw90_berry%tetrahedron_method) then
-        if (pw90_berry%tetrahedron_correction) then
-          write (stdout, '(/,3x,a)') '  Tetrahedron method with Kawamura`s correction'
+        if (pw90_berry%tetrahedron_higher_correction) then
+          write (stdout, '(/,3x,a)') '  Tetrahedron method with higher-order correction(PRB 89, 094515)'
         else
-          write (stdout, '(/,3x,a)') '  Tetrahedron method without correction'
+          write (stdout, '(/,3x,a)') '  Tetrahedron method without correction(PRB 89, 094515)'
+          call io_error ('Not yet implemented', stdout, seedname)
         endif
       endif
 

@@ -28,7 +28,7 @@ module w90_tetrahedron
   !tetrahedron_jacobian
   !tetrahedron_log1p
 
-  public :: tetrahedron_spinhall
+  public :: tetrahedron_spinhall ! Minsu Ghim, and Cheol-Hwan Park, PRB 106 075126
   ! To do: extend to other quantities(anomalous, ...)
   public :: tetrahedron_integral
   public :: tetrahedron_P_matrix_init
@@ -125,8 +125,8 @@ contains
   function tetrahedron_spinhall(F, E1, E2, t, hw, Ef, type, tet_cutoff)
     !=============================================================================
     ! Calculates contribution from a single tetrahedron, for the Kubo formula.   !
-    ! "integral d3k (f_{nk} - f_{mk} * (...)
-    ! Ref: Minsu Ghim and Cheol-Hwan Park, PRB ()                                !
+    ! "integral d3k (f_{nk} - f_{mk}) * (...)"
+    ! Ref: Minsu Ghim and Cheol-Hwan Park, PRB 106 075126                        !
     !=============================================================================
 
     use w90_constants, only: dp
@@ -169,7 +169,6 @@ contains
     !=============================================================================
     ! Calculates contribution from a single tetrahedron, for the Kubo formula.   !
     ! "integral d3k f_{nk} * (...)
-    ! Ref: Minsu Ghim and Cheol-Hwan Park, PRB ()                                !
     !=============================================================================
 
     use w90_constants, only: dp
@@ -274,7 +273,7 @@ contains
     ! type 2: dissipative                                                        !
     ! type 3: nondissipative, linear/(linear)**2                                 !
     !                                                                            !
-    ! Ref: Minsu Ghim and Cheol-Hwan Park, PRB ()                                !
+    ! Ref: Minsu Ghim and Cheol-Hwan Park, PRB 106 075126                        !
     !=============================================================================
 
     use w90_constants, only: dp
