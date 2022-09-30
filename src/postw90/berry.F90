@@ -432,7 +432,7 @@ contains
       endif
 
       if (pw90_berry%tetrahedron_method) then
-        !if (pw90_berry%tetrahedron_correction) then
+        !if (pw90_berry%tetrahedron_higher_correction) then
         allocate (imjv(num_wann, num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
         allocate (eig(num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
         allocate (imjv_tet(num_wann, num_wann, 64))

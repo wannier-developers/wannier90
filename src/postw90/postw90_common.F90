@@ -508,7 +508,7 @@ contains
     if (allocated(error)) return
     call comms_bcast(pw90_berry%tetrahedron_method, 1, error, comm)
     if (allocated(error)) return
-    call comms_bcast(pw90_berry%tetrahedron_correction, 1, error, comm)
+    call comms_bcast(pw90_berry%tetrahedron_higher_correction, 1, error, comm)
     if (allocated(error)) return
     call comms_bcast(pw90_berry%tetrahedron_cutoff, 1, error, comm)
     if (allocated(error)) return

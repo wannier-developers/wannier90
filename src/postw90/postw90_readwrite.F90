@@ -842,9 +842,11 @@ contains
     if (pw90_berry%tetrahedron_method .and. index(pw90_berry%task, 'shc') == 0) &
       call io_error('Error: tetrahedron_method only implemented in the shc routine', stdout, seedname)
 
-    pw90_berry%tetrahedron_correction = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_correction', found, &
+    pw90_berry%tetrahedron_higher_correction = .true.
+    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_higher_correction', found, &
                                    l_value=pw90_berry%tetrahedron_method)
+    if (.not. pw90_berry%tetrahedron_higher_correction) call io_error &
+      ('Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', stdout, seedname)
 
     pw90_berry%tetrahedron_cutoff = 1.e-4_dp
     call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_cutoff', found, &

@@ -1129,7 +1129,7 @@ contains
     call w90_readwrite_get_keyword('spin_moment', found, error, comm)
     call w90_readwrite_get_keyword('spn_formatted', found, error, comm)
     call w90_readwrite_get_keyword('tetrahedron_method', found, error, comm)
-    call w90_readwrite_get_keyword('tetrahedron_correction', found, error, comm)
+    call w90_readwrite_get_keyword('tetrahedron_higher_correction', found, error, comm)
     call w90_readwrite_get_keyword('tetrahedron_cutoff', found, error, comm)
     call w90_readwrite_get_keyword('transl_inv', found, error, comm)
     call w90_readwrite_get_keyword('uhu_formatted', found, error, comm)
