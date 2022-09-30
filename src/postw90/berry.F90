@@ -528,7 +528,7 @@ contains
           write (stdout, '(/,3x,a)') '  Tetrahedron method with higher-order correction(PRB 89, 094515)'
         else
           write (stdout, '(/,3x,a)') '  Tetrahedron method without correction(PRB 89, 094515)'
-          call io_error ('Not yet implemented', stdout, seedname)
+          call set_error_input(error, 'Not yet implemented', comm)
         endif
       endif
 
@@ -590,8 +590,8 @@ contains
     !
     if (pw90_berry%wanint_kpoint_file) then
 
-      if (pw90_berry%tetrahedron_method) call io_error &
-        ('Tetrahedron method not implemented with wanint_kpoint_file', stdout, seedname)
+      if (pw90_berry%tetrahedron_method) call set_error_input&
+        (error, 'Tetrahedron method not implemented with wanint_kpoint_file', comm)
       ! NOTE: still need to specify pw90_pw90_berry%kmesh%mesh in the input file
       !
       !        - Must use the correct nominal value in order to
@@ -1037,7 +1037,7 @@ contains
                   call berry_get_shc_tetrahedron(pw90_berry, ws_region, pw90_spin_hall, wannier_data, ws_distance, &
                                                  wigner_seitz, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, &
                                                  kpt, imjv(:, :, loop_x + 1, loop_y + 1, i), eig(:, loop_x + 1, loop_y + 1, i), &
-                                                 real_lattice, mp_grid, num_wann, seedname, stdout)
+                                                 real_lattice, mp_grid, num_wann, seedname, stdout, error, comm)
                 else
                   imjv(:, :, loop_x + 1, loop_y + 1, i) = imjv(:, :, loop_x + 1, loop_y + 1, i + 1)
                   eig(:, loop_x + 1, loop_y + 1, i) = eig(:, loop_x + 1, loop_y + 1, i + 1)
@@ -3065,7 +3065,7 @@ contains
   subroutine berry_get_shc_tetrahedron(pw90_berry, ws_region, pw90_spin_hall, wannier_data, ws_distance, &
                                        wigner_seitz, AA_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, &
                                        kpt, imjv, eig_out, real_lattice, mp_grid, num_wann, &
-                                       seedname, stdout)
+                                       seedname, stdout, error, comm)
 
     !====================================================================!
     ! returns the values used for calculating the SHC Kubo formula       !
@@ -3074,6 +3074,8 @@ contains
     !====================================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate
+    use w90_error, only: w90_error_type
+    use w90_comms, only: w90comm_type
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, wigner_seitz_type
@@ -3086,6 +3088,8 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -3136,42 +3140,43 @@ contains
 
     call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                        HH_R, kpt, real_lattice, &
-                                       mp_grid, num_wann, seedname, stdout, OO=HH, &
+                                       mp_grid, num_wann, error, comm, OO=HH, &
                                        OO_dx=delHH(:, :, 1), &
                                        OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
+    if (allocated(error)) return
 !   call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
 !                                       ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
 !                                       del_eig, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
 !                                       num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
-!                                       have_disentangled, seedname, stdout, comm)
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+!                                       have_disentangled, timer, error, comm)
+    call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                        AA_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                       OO_true=AA)
+                                       real_lattice, mp_grid, num_wann, &
+                                       error, comm, OO_true=AA)
     call pw90common_fourier_R_to_k_vec(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                        SS_R, kpt, &
-                                       real_lattice, mp_grid, num_wann, seedname, stdout, &
-                                       OO_true=SS)
+                                       real_lattice, mp_grid, num_wann, &
+                                       error, comm, OO_true=SS)
 
     if (index(pw90_spin_hall%method, 'ryoo') > 0) then
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SAA_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
                                          OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SBB_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
                                          OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
     else
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SR_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
                                          OO=SAA(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
       call pw90common_fourier_R_to_k_new(ws_region, wannier_data, ws_distance, wigner_seitz, &
                                          SHR_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
-                                         kpt, real_lattice, mp_grid, num_wann, seedname, stdout, &
+                                         kpt, real_lattice, mp_grid, num_wann, error, comm,&
                                          OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
     endif
 

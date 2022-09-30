@@ -837,22 +837,22 @@ contains
     if (allocated(error)) return
 
     pw90_berry%tetrahedron_method = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_method', found, &
+    call w90_readwrite_get_keyword('tetrahedron_method', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_method)
     if (pw90_berry%tetrahedron_method .and. index(pw90_berry%task, 'shc') == 0) &
-      call io_error('Error: tetrahedron_method only implemented in the shc routine', stdout, seedname)
+      call set_error_input(error, 'Error: tetrahedron_method only implemented in the shc routine', comm)
 
     pw90_berry%tetrahedron_higher_correction = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_higher_correction', found, &
+    call w90_readwrite_get_keyword('tetrahedron_higher_correction', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_method)
-    if (.not. pw90_berry%tetrahedron_higher_correction) call io_error &
-      ('Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', stdout, seedname)
+    if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
+    (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
 
     pw90_berry%tetrahedron_cutoff = 1.e-4_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'tetrahedron_cutoff', found, &
+    call w90_readwrite_get_keyword('tetrahedron_cutoff', found, error, comm, &
                                    r_value=pw90_berry%tetrahedron_cutoff)
-    if (pw90_berry%tetrahedron_cutoff <= 0._dp) call io_error &
-      ('Error: tetrahedron_cutoff must be greater than zero', stdout, seedname)
+    if (pw90_berry%tetrahedron_cutoff <= 0._dp) call set_error_input &
+      (error, 'Error: tetrahedron_cutoff must be greater than zero', comm)
 
     kdotp_num_bands = 0
     call w90_readwrite_get_keyword('kdotp_num_bands', found, error, comm, i_value=kdotp_num_bands)
