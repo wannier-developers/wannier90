@@ -33,8 +33,8 @@ module w90_lib_all
     type(pw90_oper_read_type) :: oper_read
     type(pw90_spin_mod_type) :: spin
     type(pw90_spin_hall_type) :: spin_hall
-    real(kind=dp) :: scissors_shift
-    logical :: effective_model
+    real(kind=dp) :: scissors_shift = 0.0_dp
+    logical :: effective_model = .false.
 
     character(len=20) :: checkpoint
 
@@ -189,16 +189,6 @@ contains
         write (outerr, *) 'Error in reading checkpoint matrices', error%code, error%message
         status = sign(1, error%code)
         deallocate (error)
-      else
-        ! put this in a separate setup? (since may be coming from wannierise rather than checkpoint
-        call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
-                                     wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
-                                     wann90%seedname, wann90%timer, error, comm)
-        if (allocated(error)) then
-          write (outerr, *) 'Error in post checkpoint setup', error%code, error%message
-          status = sign(1, error%code)
-          deallocate (error)
-        endif
       endif
     endif
   end subroutine read_checkpoint
