@@ -11,12 +11,12 @@ ftn_error = wan90.w90_helper_types.get_fortran_stderr()
 
 data = wan90.w90_helper_types.lib_global_type()
 w90data = wan90.w90_helper_types.lib_w90_type()
-comm = wan90.w90_comms.w90comm_type()
+comm = wan90.w90_comms.w90_comm_type()
 
 comm.comm = MPI.COMM_WORLD.py2f()
 
-#status = wan90.w90_helper_types.input_reader(data, w90data, "diamond", ftn_output, ftn_error, comm)
-status = wan90.w90_helper_types.input_reader(data, w90data, "cnt55", ftn_output, ftn_error, comm)
+status = wan90.w90_helper_types.input_reader(data, w90data, "diamond", ftn_output, ftn_error, comm)
+#status = wan90.w90_helper_types.input_reader(data, w90data, "cnt55", ftn_output, ftn_error, comm)
 
 exit
 
@@ -49,22 +49,22 @@ while k < data.num_kpts:
 wan90.w90_helper_types.set_kpoint_distribution(data, kpts)
 
 counts = numpy.zeros(nproc, dtype=numpy.int32)
-displs = numpy.zeros(nproc, dtype=numpy.int32)
+#displs = numpy.zeros(nproc, dtype=numpy.int32)
 cur_proc = 0
 k = 0
 cnt = 0
-displs[0] = 0
+#displs[0] = 0
 while k < data.num_kpts:
     if kpts[k] != cur_proc:
         counts[cur_proc] = cnt
         cur_proc = cur_proc + 1
-        if cur_proc <= nproc:
-            displs[cur_proc] = k
+#        if cur_proc <= nproc:
+#            displs[cur_proc] = k
         cnt = 0
     cnt = cnt + 1
     k = k + 1
 counts[nproc-1] = cnt
-wan90.w90_helper_types.set_kpoint_block(data, counts, displs)
+#wan90.w90_helper_types.set_kpoint_block(data, counts, displs)
 
 #m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')

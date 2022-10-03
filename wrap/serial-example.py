@@ -8,7 +8,7 @@ ftn_error = wan90.w90_helper_types.get_fortran_stderr()
 
 data = wan90.w90_helper_types.lib_global_type()
 w90data = wan90.w90_helper_types.lib_w90_type()
-comm = wan90.w90_comms.w90comm_type()
+comm = wan90.w90_comms.w90_comm_type()
 status = wan90.w90_helper_types.input_reader(data, w90data, "diamond", ftn_output, ftn_error, comm)
 
 if not data.kmesh_info.explicit_nnkpts :
@@ -18,10 +18,10 @@ if not data.kmesh_info.explicit_nnkpts :
 kpts = numpy.zeros(data.num_kpts, dtype=numpy.int32)
 wan90.w90_helper_types.set_kpoint_distribution(data, kpts)
 
-counts = numpy.zeros(1, dtype=numpy.int32)
-counts[0]=data.num_kpts
-displs = numpy.zeros(1, dtype=numpy.int32)
-wan90.w90_helper_types.set_kpoint_block(data, counts, displs)
+#counts = numpy.zeros(1, dtype=numpy.int32)
+#counts[0]=data.num_kpts
+#displs = numpy.zeros(1, dtype=numpy.int32)
+#wan90.w90_helper_types.set_kpoint_block(data, counts, displs)
 
 #m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
