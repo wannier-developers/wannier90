@@ -28,11 +28,13 @@ wan90.w90_helper_types.set_u_matrix(data, u_matrix)
 #a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 
 # have_disentangled is in the checkpoint file so unset!!!
-if wann90.have_disentangled :
+#if data.have_disentangled :
+if data.num_bands > data.num_wann :
     u_opt = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_u_opt(data, u_opt)
 
 status = wan90.w90_lib_all.read_checkpoint(data, pw90, ftn_output, ftn_error, comm)
+status = wan90.w90_lib_all.pw_setup(data, pw90, ftn_output, ftn_error, comm)
 
 v_matrix = numpy.empty((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 wan90.w90_lib_all.calc_v_matrix(data, pw90, v_matrix)
