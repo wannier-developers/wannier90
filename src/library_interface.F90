@@ -166,6 +166,14 @@ contains
     output = error_unit
   end subroutine get_fortran_stderr
 
+  subroutine get_fortran_file(output, name)
+    implicit none
+    integer, intent(out) :: output
+    character(len=*), intent(in) :: name
+
+    open (newunit=output, file=name, form='formatted', status='unknown')
+  end subroutine get_fortran_file
+
   subroutine set_option_bool(string, bool)
     implicit none
     character(*), intent(in) :: string
