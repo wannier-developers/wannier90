@@ -460,7 +460,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! in the folder test-suite/library-mode-test/test_library.F90
   !================================================!
 
-  use w90_constants, only: w90_physical_constants_type, dp
+  use w90_constants, only: w90_physical_constants_type, dp, cmplx_0, cmplx_1
   use w90_libv1_types
   use w90_wannier90_libv1_types
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
@@ -734,12 +734,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   m_matrix_orig_local, u_matrix, &
                   u_matrix_opt, eigval, real_lattice, wann_omega%invariant, &
                   num_bands, num_kpts, num_wann, gamma_only, lsitesymmetry, &
-                  stdout, timer, counts, displs, error, comm)
+                  stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
 
     ! allocate and assign to m_matrix_local and m_matrix (from m_matrix_orig_local)
     call setup_m_loc(kmesh_info, verbose, m_matrix_local, m_matrix_orig_local, u_matrix, &
-                     num_bands, num_wann, optimisation, timer, counts, displs, error, comm)
+                     num_bands, num_kpts, num_wann, optimisation, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
 
     have_disentangled = .true.
