@@ -49,7 +49,7 @@ module w90_lib_all
 
 contains
 
-  subroutine read_all_input(wann90, w90only, pw90, seedname, output, status, comm)
+  subroutine read_all_input(wann90, w90only, pw90, seedname, output, outerr, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_readall, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
@@ -61,7 +61,7 @@ contains
     type(lib_global_type), intent(inout) :: wann90
     type(lib_w90_type), intent(inout) :: w90only
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     character(len=*), intent(in) :: seedname
     integer, intent(out) :: status
     type(w90_comm_type), intent(in) :: comm
@@ -76,7 +76,7 @@ contains
     status = 0
     call w90_readwrite_in_file(seedname, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in input file access', error%code, error%message
+      write (outerr, *) 'Error in input file access', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     else
@@ -101,7 +101,7 @@ contains
       wann90%seedname = seedname
       if (mpirank(comm) /= 0) wann90%print_output%iprint = 0
       if (allocated(error)) then
-        write (0, *) 'Error in wannier90 read', error%code, error%message
+        write (outerr, *) 'Error in wannier90 read', error%code, error%message
         status = sign(1, error%code)
         deallocate (error)
       else
@@ -114,7 +114,7 @@ contains
                                            pw90%dos, pw90%berry, pw90%spin_hall, pw90%gyrotropic, &
                                            pw90%geninterp, pw90%boltzwann, pw90_params, error, comm)
         if (allocated(error)) then
-          write (0, *) 'Error in postw90 read', error%code, error%message
+          write (outerr, *) 'Error in postw90 read', error%code, error%message
           status = sign(1, error%code)
           deallocate (error)
         else
@@ -126,14 +126,14 @@ contains
                                               wann90%wannier_data, wann90%num_wann, &
                                               wann90%num_bands, wann90%num_kpts, error, comm)
           if (allocated(error)) then
-            write (0, *) 'Error in read alloc', error%code, error%message
+            write (outerr, *) 'Error in read alloc', error%code, error%message
             status = sign(1, error%code)
             deallocate (error)
           endif
         endif
         call w90_readwrite_clean_infile(output, seedname, error, comm)
         if (allocated(error)) then
-          write (0, *) 'Error in input close', error%code, error%message
+          write (outerr, *) 'Error in input close', error%code, error%message
           status = sign(1, error%code)
           deallocate (error)
         endif
@@ -141,7 +141,7 @@ contains
     endif
   end subroutine read_all_input
 
-  subroutine read_checkpoint(wann90, pw90, output, status, comm)
+  subroutine read_checkpoint(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
@@ -150,7 +150,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     integer, intent(out) :: status
@@ -172,7 +172,7 @@ contains
                                          pw90%checkpoint, wann90%have_disentangled, .true., &
                                          wann90%seedname, chk_unit, output, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in reading checkpoint header', error%code, error%message
+      write (outerr, *) 'Error in reading checkpoint header', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     else
@@ -186,7 +186,7 @@ contains
                                              output, error, comm)
       deallocate (m_matrix)
       if (allocated(error)) then
-        write (0, *) 'Error in reading checkpoint matrices', error%code, error%message
+        write (outerr, *) 'Error in reading checkpoint matrices', error%code, error%message
         status = sign(1, error%code)
         deallocate (error)
       else
@@ -195,7 +195,7 @@ contains
                                      wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
                                      wann90%seedname, wann90%timer, error, comm)
         if (allocated(error)) then
-          write (0, *) 'Error in post checkpoint setup', error%code, error%message
+          write (outerr, *) 'Error in post checkpoint setup', error%code, error%message
           status = sign(1, error%code)
           deallocate (error)
         endif
@@ -203,7 +203,7 @@ contains
     endif
   end subroutine read_checkpoint
 
-  subroutine pw_setup(wann90, pw90, output, status, comm)
+  subroutine pw_setup(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_postw90_common, only: pw90common_wanint_setup
@@ -211,7 +211,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     integer, intent(out) :: status
     type(w90_comm_type), intent(in) :: comm
     !
@@ -222,7 +222,7 @@ contains
                                  wann90%mp_grid, pw90%effective_model, pw90%ws_vec, output, &
                                  wann90%seedname, wann90%timer, error, comm)
     if (allocated(error)) then
-      write (0, *) 'Error in post setup', error%code, error%message
+      write (outerr, *) 'Error in post setup', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
@@ -235,7 +235,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    !integer, intent(in) :: output
+    !integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout), target :: v_matrix(:, :, :)
@@ -264,7 +264,7 @@ contains
     pw90%v_matrix => v_matrix
   end subroutine calc_v_matrix
 
-  subroutine calc_dos(wann90, pw90, output, status, comm)
+  subroutine calc_dos(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_dos, only: dos_main
@@ -274,7 +274,7 @@ contains
     type(lib_postw90_type), intent(inout) :: pw90
     !type(lib_plot_type), intent(inout) :: plot
     !type(lib_transport_type), intent(inout) :: transport
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     !character(len=*), intent(in) :: seedname
@@ -303,7 +303,7 @@ contains
       if (allocated(HH_R)) deallocate (HH_R)
       if (allocated(SS_R)) deallocate (SS_R)
       if (allocated(error)) then
-        write (0, *) 'Error in dos', error%code, error%message
+        write (outerr, *) 'Error in dos', error%code, error%message
         status = sign(1, error%code)
         deallocate (error)
       endif
@@ -312,7 +312,7 @@ contains
     endif
   end subroutine calc_dos
 
-  subroutine boltzwann(wann90, pw90, output, status, comm)
+  subroutine boltzwann(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_boltzwann, only: boltzwann_main
@@ -320,7 +320,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -344,13 +344,13 @@ contains
     if (allocated(SS_R)) deallocate (SS_R)
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
-      write (0, *) 'Error in boltzwann', error%code, error%message
+      write (outerr, *) 'Error in boltzwann', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine boltzwann
 
-  subroutine gyrotropic(wann90, pw90, output, status, comm)
+  subroutine gyrotropic(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_gyrotropic, only: gyrotropic_main
@@ -358,7 +358,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -388,13 +388,13 @@ contains
     if (allocated(BB_R)) deallocate (BB_R)
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
-      write (0, *) 'Error in gyrotropic', error%code, error%message
+      write (outerr, *) 'Error in gyrotropic', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine gyrotropic
 
-  subroutine berry(wann90, pw90, output, status, comm)
+  subroutine berry(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_berry, only: berry_main
@@ -402,7 +402,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -446,13 +446,13 @@ contains
     if (allocated(BB_R)) deallocate (BB_R)
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
-      write (0, *) 'Error in berry', error%code, error%message
+      write (outerr, *) 'Error in berry', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine berry
 
-  subroutine kpath(wann90, pw90, output, status, comm)
+  subroutine kpath(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_kpath, only: k_path
@@ -460,7 +460,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -503,13 +503,13 @@ contains
     if (allocated(BB_R)) deallocate (BB_R)
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
-      write (0, *) 'Error in kpath', error%code, error%message
+      write (outerr, *) 'Error in kpath', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine kpath
 
-  subroutine kslice(wann90, pw90, output, status, comm)
+  subroutine kslice(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_kslice, only: k_slice
@@ -517,7 +517,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -560,13 +560,13 @@ contains
     if (allocated(BB_R)) deallocate (BB_R)
     if (allocated(AA_R)) deallocate (AA_R)
     if (allocated(error)) then
-      write (0, *) 'Error in kslice', error%code, error%message
+      write (outerr, *) 'Error in kslice', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine kslice
 
-  subroutine spin_moment(wann90, pw90, output, status, comm)
+  subroutine spin_moment(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_spin, only: spin_get_moment
@@ -574,7 +574,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -597,13 +597,13 @@ contains
     if (allocated(SS_R)) deallocate (SS_R)
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
-      write (0, *) 'Error in spin_moment', error%code, error%message
+      write (outerr, *) 'Error in spin_moment', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
   end subroutine spin_moment
 
-  subroutine geninterp(wann90, pw90, output, status, comm)
+  subroutine geninterp(wann90, pw90, output, outerr, status, comm)
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_geninterp, only: geninterp_main
@@ -611,7 +611,7 @@ contains
     implicit none
     type(lib_global_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    integer, intent(in) :: output
+    integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: v_matrix(:, :, :)
     integer, intent(out) :: status
@@ -631,7 +631,7 @@ contains
                         error, comm)
     if (allocated(HH_R)) deallocate (HH_R)
     if (allocated(error)) then
-      write (0, *) 'Error in geninterp', error%code, error%message
+      write (outerr, *) 'Error in geninterp', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
