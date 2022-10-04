@@ -45,14 +45,12 @@ module w90_wannierise
 contains
 
   !================================================!
-  subroutine wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
-                       output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
+  subroutine wann_main(ham_logical, kmesh_info, kpt_latt, wann_control, omega, sitesym, &
                        print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                       m_matrix_loc, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
-                       bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
-                       seedname, stdout, timer, dist_k, error, comm)
+                       m_matrix_loc, u_matrix, real_lattice, wannier_centres_translated, irvec, &
+                       mp_grid, ndegen, nrpts, num_kpts, num_proj, num_wann, optimisation, &
+                       rpt_origin, bands_plot_mode, transport_mode, lsitesymmetry, stdout, &
+                       timer, dist_k, error, comm)
     !================================================!
     !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -60,29 +58,23 @@ contains
     !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop, io_file_unit
-    use w90_wannier90_types, only: wann_control_type, output_file_type, &
-      w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
-      ham_logical_type
-    use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
-      atom_data_type, dis_manifold_type, w90_system_type, ws_region_type, timer_list_type
+    use w90_wannier90_types, only: wann_control_type, w90_calculation_type, wann_omega_type, &
+      sitesym_type, ham_logical_type
+    use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, ws_region_type, &
+      timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
     use w90_comms, only: mpisize, mpirank, comms_allreduce, comms_reduce, w90_comm_type
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
+    use w90_hamiltonian, only: hamiltonian_setup
 
     implicit none
 
     ! arguments
-    type(atom_data_type), intent(in)         :: atom_data
-    type(dis_manifold_type), intent(in)      :: dis_manifold
     type(ham_logical_type), intent(inout)    :: ham_logical
     type(kmesh_info_type), intent(in)        :: kmesh_info
-    type(w90_system_type), intent(in)        :: w90_system
     type(ws_region_type), intent(in)         :: ws_region
     type(print_output_type), intent(in)      :: print_output
-    type(output_file_type), intent(in)       :: output_file
-    type(real_space_ham_type), intent(inout) :: real_space_ham
     type(wann_control_type), intent(inout)   :: wann_control
     type(wann_omega_type), intent(inout)     :: omega
     type(sitesym_type), intent(in)           :: sitesym
@@ -93,21 +85,17 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
     integer, intent(in) :: optimisation
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
-    integer, intent(inout), allocatable :: shift_vec(:, :)
-    integer, allocatable, intent(in) :: exclude_bands(:)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: rpt_origin
     integer, intent(in) :: stdout
     integer, intent(in) :: dist_k(:)
 
-    real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -117,14 +105,11 @@ contains
     !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: lsitesymmetry
-    logical, intent(in) :: have_disentangled
 
     character(len=*), intent(in) :: bands_plot_mode
     character(len=*), intent(in) :: transport_mode
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     type(localisation_vars_type) :: old_spread
@@ -902,38 +887,6 @@ contains
       end if
     endif
 
-    if (output_file%write_xyz .and. on_root) then
-      call wann_write_xyz(real_space_ham%translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
-
-    if (output_file%write_hr_diag) then
-      call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
-                             real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                             num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             timer, error, transport_mode, comm)
-      if (allocated(error)) return
-
-      call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
-                              ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
-                              real_lattice, wannier_data%centres, wannier_centres_translated, &
-                              irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                              have_disentangled, stdout, timer, error, lsitesymmetry, comm)
-      if (allocated(error)) return
-
-      if (print_output%iprint > 0) then
-        write (stdout, *)
-        write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
-        write (stdout, '(3x,a)') '  n        <0n|H|0n> (eV)'
-        write (stdout, '(3x,a)') '-------------------------'
-        do i = 1, num_wann
-          write (stdout, '(3x,i3,5x,f12.6)') i, real(ham_r(i, i, rpt_origin), kind=dp)
-        enddo
-        write (stdout, *)
-      endif
-    endif
-
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
@@ -945,34 +898,6 @@ contains
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
                               print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
-
-!JJ    ! write extra info regarding omega_invariant
-!JJ    if (print_output%iprint > 2 .and. on_root) then
-!JJ      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-!JJ                            error, comm, stdout)
-!JJ      if (allocated(error)) return
-!JJ    endif
-
-!JJ    ! write matrix elements <m|r^2|n> to file
-!JJ    if (output_file%write_r2mn .and. on_root) then
-!JJ      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-!JJ      if (allocated(error)) return
-!JJ    endif
-
-    ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. output_file%write_proj) then
-      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, timer)
-    endif
-
-    ! aam: write data required for vdW utility
-    if (output_file%write_vdw_data .and. on_root) then
-      call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, &
-                               u_matrix_opt, have_disentangled, w90_system, error, comm, stdout, &
-                               seedname)
-      if (allocated(error)) return
-    endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
@@ -2677,318 +2602,6 @@ contains
   end subroutine wann_spread_copy
 
   !================================================!
-  subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
-                                  timing_level, iprint, stdout, timer)
-    !================================================!
-    !
-    ! Calculates and writes the projection of each Wannier function
-    ! on the original bands within the outer window.
-    !
-    !================================================!
-
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: w90_comm_type
-    use w90_types, only: timer_list_type
-
-    implicit none
-
-    ! arguments
-    type(timer_list_type), intent(inout) :: timer
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
-    integer, intent(in) :: timing_level, iprint
-    logical, intent(in) :: lwindow(:, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-
-    ! local variables
-    integer :: nw, nb, nkp, counter
-    real(kind=dp) :: summ
-
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: calc_projection', timer)
-
-    if (iprint > 0) then
-      write (stdout, '(/1x,a78)') repeat('-', 78)
-      write (stdout, '(1x,9x,a)') &
-        'Projection of Bands in Outer Window on all Wannier Functions'
-      write (stdout, '(1x,8x,62a)') repeat('-', 62)
-      write (stdout, '(1x,16x,a)') '   Kpt  Band      Eigval      |Projection|^2'
-      write (stdout, '(1x,16x,a47)') repeat('-', 47)
-    endif
-
-    do nkp = 1, num_kpts
-      counter = 0
-      do nb = 1, num_bands
-        if (lwindow(nb, nkp)) then
-          counter = counter + 1
-          summ = 0.0_dp
-          do nw = 1, num_wann
-            summ = summ + abs(u_matrix_opt(counter, nw, nkp))**2
-          enddo
-          if (iprint > 0) write (stdout, '(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
-            nkp, nb, eigval(nb, nkp), summ
-        endif
-      enddo
-    enddo
-    if (iprint > 0) write (stdout, '(1x,a78/)') repeat('-', 78)
-
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: calc_projection', timer)
-
-    return
-
-  end subroutine wann_calc_projection
-
-  !================================================!
-  subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
-                            atom_data, print_output, error, comm, stdout, seedname)
-    !================================================!
-    !
-    ! Write xyz file with Wannier centres
-    !
-    !================================================!
-
-    use w90_io, only: io_file_unit, io_date
-    use w90_utility, only: utility_translate_home
-    use w90_types, only: atom_data_type, print_output_type
-
-    implicit none
-
-    type(atom_data_type), intent(in) :: atom_data
-    type(print_output_type), intent(in) :: print_output
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
-
-    logical, intent(in) :: translate_home_cell
-    integer, intent(in) :: num_wann
-    real(kind=dp), intent(in) :: wannier_centres(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-
-    integer :: iw, ind, xyz_unit, nsp, nat, ierr
-    character(len=9) :: cdate, ctime
-    real(kind=dp) :: wc(3, num_wann)
-
-    wc = wannier_centres
-
-    if (translate_home_cell) then
-      do iw = 1, num_wann
-        call utility_translate_home(wc(:, iw), real_lattice)
-      enddo
-    endif
-
-    if (print_output%iprint > 2) then
-      write (stdout, '(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
-      do iw = 1, num_wann
-        write (stdout, '(2x, "WF centre", i5, 2x, "(", f10.6, ",", f10.6, ",", f10.6, " )")') &
-          iw, (wc(ind, iw)*print_output%lenconfac, ind=1, 3)
-      end do
-      write (stdout, '(1x,a78)') repeat('-', 78)
-      write (stdout, *)
-    endif
-
-    xyz_unit = io_file_unit()
-    open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
-    if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz', comm)
-      return
-    endif
-    write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
-    call io_date(cdate, ctime)
-    write (xyz_unit, *) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-    do iw = 1, num_wann
-      write (xyz_unit, '("X",6x,3(f14.8,3x))') (wc(ind, iw), ind=1, 3)
-    end do
-    do nsp = 1, atom_data%num_species
-      do nat = 1, atom_data%species_num(nsp)
-        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%symbol(nsp), atom_data%pos_cart(:, nat, nsp)
-      end do
-    end do
-    close (xyz_unit)
-
-    write (stdout, '(/a)') ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
-
-    return
-
-  end subroutine wann_write_xyz
-
-  !================================================!
-  subroutine wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                                 have_disentangled, w90_system, error, comm, stdout, seedname)
-    !================================================!
-    !
-    ! Write a file with Wannier centres, spreads and occupations for
-    ! post-processing computation of vdW C6 coeffients.
-    !
-    ! Based on code written by Lampros Andrinopoulos.
-    !================================================!
-
-    use w90_io, only: io_file_unit, io_date
-    use w90_utility, only: utility_translate_home
-    use w90_constants, only: cmplx_0
-    use w90_types, only: wannier_data_type, w90_system_type
-
-    implicit none
-
-    type(wannier_data_type), intent(in) :: wannier_data
-    type(w90_system_type), intent(in) :: w90_system
-    type(w90_error_type), allocatable, intent(out)  :: error
-    type(w90_comm_type), intent(in) :: comm
-
-    integer, intent(in) :: num_wann
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    integer, intent(in) :: stdout
-    logical, intent(in) :: have_disentangled
-    character(len=50), intent(in)  :: seedname
-
-    integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
-    real(kind=dp)    :: wc(3, num_wann)
-    real(kind=dp)    :: ws(num_wann)
-    complex(kind=dp), allocatable :: f_w(:, :), v_matrix(:, :) !f_w2(:,:)
-
-    wc = wannier_data%centres
-    ws = wannier_data%spreads
-
-    ! translate Wannier centres to the home unit cell
-    do iw = 1, num_wann
-      call utility_translate_home(wc(:, iw), real_lattice)
-    enddo
-
-    allocate (f_w(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating f_w in wann_write_vdw_data', comm)
-      return
-    endif
-
-!~    ! aam: remove f_w2 at end
-!~    allocate(f_w2(num_wann, num_wann),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating f_w2 in wann_write_vdw_data')
-
-    if (have_disentangled) then
-
-      ! dimension of occupied subspace
-      if (w90_system%num_valence_bands .le. 0) then
-        call set_error_input(error, 'Please set num_valence_bands in seedname.win', comm)
-        return
-      endif
-
-      ndim = w90_system%num_valence_bands
-
-      allocate (v_matrix(ndim, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating V_matrix in wann_write_vdw_data', comm)
-        return
-      endif
-
-      ! aam: initialise
-      f_w(:, :) = cmplx_0
-      v_matrix(:, :) = cmplx_0
-!~       f_w2(:,:) = cmplx_0
-
-      ! aam: IN THE END ONLY NEED DIAGONAL PART, SO COULD SIMPLIFY...
-      ! aam: calculate V = U_opt . U
-      do s = 1, num_wann
-        do k = 1, ndim
-          do m = 1, num_wann
-            v_matrix(k, s) = v_matrix(k, s) + u_matrix_opt(k, m, 1)*u_matrix(m, s, 1)
-          enddo
-        enddo
-      enddo
-
-      ! aam: calculate f = V^dagger . V
-      do r = 1, num_wann
-        do s = 1, num_wann
-          do k = 1, ndim
-            f_w(r, s) = f_w(r, s) + v_matrix(k, s)*conjg(v_matrix(k, r))
-          enddo
-        enddo
-      enddo
-
-!~       ! original formulation
-!~       do r=1,num_wann
-!~          do s=1,num_wann
-!~             do nkp=1,num_kpts
-!~                do k=1,ndimfroz(nkp)
-!~                   do m=1,num_wann
-!~                      do l=1,num_wann
-!~                         f_w2(r,s) = f_w2(r,s) + &
-!~                              u_matrix_opt(k,m,nkp) * u_matrix(m,s,nkp) * &
-!~                              conjg(u_matrix_opt(k,l,nkp)) * conjg(u_matrix(l,r,nkp))
-!~                      end do
-!~                   end do
-!~                end do
-!~             end do
-!~          end do
-!~       end do
-
-!~       ! test equivalence
-!~       do r=1,num_wann
-!~          do s=1,num_wann
-!~             if (abs(real(f_w(r,s),dp)-real(f_w2(r,s),dp)).gt.eps6) then
-!~                write(*,'(i6,i6,f16.10,f16.10)') r,s,real(f_w(r,s),dp),real(f_w2(r,s),dp)
-!~             endif
-!~             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
-!~                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
-!~             endif
-!~          enddo
-!~       enddo
-!~       write(*,*) ' done vdw '
-
-    else
-      ! for valence only, all occupancies are unity
-      f_w(:, :) = 1.0_dp
-    endif
-
-    ! aam: write the seedname.vdw file directly here
-    vdw_unit = io_file_unit()
-    open (unit=vdw_unit, file=trim(seedname)//'.vdw', action='write')
-    if (have_disentangled) then
-      write (vdw_unit, '(a)') 'disentangle T'
-    else
-      write (vdw_unit, '(a)') 'disentangle F'
-    endif
-    write (vdw_unit, '(a)') 'amalgamate F'
-    write (vdw_unit, '(a,i3)') 'degeneracy', w90_system%num_elec_per_state
-    write (vdw_unit, '(a)') 'num_frag 2'
-    write (vdw_unit, '(a)') 'num_wann'
-    write (vdw_unit, '(i3,1x,i3)') num_wann/2, num_wann/2
-    write (vdw_unit, '(a)') 'tol_occ 0.9'
-    write (vdw_unit, '(a)') 'pxyz'
-    write (vdw_unit, '(a)') 'F F F'
-    write (vdw_unit, '(a)') 'F F F'
-    write (vdw_unit, '(a)') 'tol_dist 0.05'
-    write (vdw_unit, '(a)') 'centres_spreads_occ'
-    write (vdw_unit, '(a)') 'ang'
-    do iw = 1, num_wann
-      write (vdw_unit, '(4(f13.10,1x),1x,f11.8)') wc(1:3, iw), ws(iw), real(f_w(iw, iw))
-    end do
-    close (vdw_unit)
-
-    write (stdout, '(/a/)') ' vdW data written to file '//trim(seedname)//'.vdw'
-
-    if (have_disentangled) then
-      deallocate (v_matrix, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating v_matrix in wann_write_vdw_data', comm)
-        return
-      endif
-    endif
-
-    deallocate (f_w, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating f_w in wann_write_vdw_data', comm)
-      return
-    endif
-
-    return
-
-  end subroutine wann_write_vdw_data
-
-  !================================================!
   subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
                                   timer, error, comm)
     !================================================!
@@ -3059,214 +2672,9 @@ contains
   end subroutine wann_check_unitarity
 
   !================================================!
-  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-    !================================================!
-    !
-    ! Write seedname.r2mn file
-    !
-    !================================================!
-
-    use w90_constants, only: dp
-    use w90_io, only: io_file_unit
-    use w90_types, only: kmesh_info_type
-
-    implicit none
-
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
-
-    integer, intent(in) :: num_kpts, num_wann
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    character(len=50), intent(in)  :: seedname
-
-    integer :: r2mnunit, nw1, nw2, nkp, nn, ierr
-    real(kind=dp) :: r2ave_mn, delta
-
-    ! note that here I use formulas analogue to Eq. 23, and not to the
-    ! shift-invariant Eq. 32 .
-    r2mnunit = io_file_unit()
-    open (r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
-    if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn', comm)
-      return
-    endif
-    do nw1 = 1, num_wann
-      do nw2 = 1, num_wann
-        r2ave_mn = 0.0_dp
-        delta = 0.0_dp
-        if (nw1 .eq. nw2) delta = 1.0_dp
-        do nkp = 1, num_kpts
-          do nn = 1, kmesh_info%nntot
-            r2ave_mn = r2ave_mn + kmesh_info%wb(nn)* &
-                       ! [GP-begin, Apr13, 2012: corrected sign inside "real"]
-                       (2.0_dp*delta - real(m_matrix(nw1, nw2, nn, nkp) + &
-                                            conjg(m_matrix(nw2, nw1, nn, nkp)), kind=dp))
-            ! [GP-end]
-          enddo
-        enddo
-        r2ave_mn = r2ave_mn/real(num_kpts, dp)
-        write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn
-      enddo
-    enddo
-    close (r2mnunit)
-
-    return
-
-  end subroutine wann_write_r2mn
-
-  !================================================!
-  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                              error, comm, stdout)
-    !================================================!
-
-    use w90_comms, only: w90_comm_type
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
-
-    implicit none
-
-    type(print_output_type), intent(in) :: print_output
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(timer_list_type), intent(inout) :: timer
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
-    integer, intent(in) :: num_wann, num_kpts
-    integer, intent(in) :: stdout
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-
-    complex(kind=dp), allocatable :: cv1(:, :), cv2(:, :)
-    complex(kind=dp), allocatable :: cw1(:), cw2(:)
-    complex(kind=dp), allocatable :: cpad1(:)
-    real(kind=dp), allocatable :: singvd(:)
-
-    integer :: ierr, info
-    integer :: nkp, nn, nb, na, ind
-    real(kind=dp) :: omt1, omt2, omt3
-
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch_start('wann: svd_omega_i', timer)
-    endif
-
-    allocate (cw1(10*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw1 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cw2(10*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw2 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cv1(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv1 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cv2(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv2 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (singvd(num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating singvd in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cpad1(num_wann*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cpad1 in wann_svd_omega_i', comm)
-      return
-    endif
-
-    cw1 = cmplx_0; cw2 = cmplx_0; cv1 = cmplx_0; cv2 = cmplx_0; cpad1 = cmplx_0
-    singvd = 0.0_dp
-
-    ! singular value decomposition
-    omt1 = 0.0_dp; omt2 = 0.0_dp; omt3 = 0.0_dp
-    do nkp = 1, num_kpts
-      do nn = 1, kmesh_info%nntot
-        ind = 1
-        do nb = 1, num_wann
-          do na = 1, num_wann
-            cpad1(ind) = m_matrix(na, nb, nn, nkp)
-            ind = ind + 1
-          enddo
-        enddo
-        call zgesvd('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
-                    num_wann, cv2, num_wann, cw1, 10*num_wann, cw2, info)
-        if (info .ne. 0) then
-          call set_error_fatal(error, 'ERROR: Singular value decomp. zgesvd failed', comm)
-          return
-        endif
-
-        do nb = 1, num_wann
-          omt1 = omt1 + kmesh_info%wb(nn)*(1.0_dp - singvd(nb)**2)
-          omt2 = omt2 - kmesh_info%wb(nn)*(2.0_dp*log(singvd(nb)))
-          omt3 = omt3 + kmesh_info%wb(nn)*(acos(singvd(nb))**2)
-        enddo
-      enddo
-    enddo
-    omt1 = omt1/real(num_kpts, dp)
-    omt2 = omt2/real(num_kpts, dp)
-    omt3 = omt3/real(num_kpts, dp)
-    if (print_output%iprint > 0) then
-      write (stdout, *) ' '
-      write (stdout, '(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ', &
-        omt1*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-      write (stdout, '(2x,a,f15.9,1x,a)') '                 -2log s = ', &
-        omt2*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-      write (stdout, '(2x,a,f15.9,1x,a)') '                  acos^2 = ', &
-        omt3*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-    endif
-
-    deallocate (cpad1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cpad1 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (singvd, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating singvd in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cv2, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv2 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cv1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv1 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cw2, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw2 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cw1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw1 in wann_svd_omega_i', comm)
-      return
-    endif
-
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch_stop('wann: svd_omega_i', timer)
-    endif
-
-    return
-
-  end subroutine wann_svd_omega_i
-
-  !================================================!
-  subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
-                             output_file, wann_control, omega, w90_system, print_output, &
-                             wannier_data, m_matrix, u_matrix, u_matrix_opt, &
-                             eigval, real_lattice, mp_grid, num_bands, num_kpts, num_wann, &
-                             have_disentangled, translate_home_cell, seedname, stdout, timer, &
-                             error, comm)
+  subroutine wann_main_gamma(kmesh_info, kpt_latt, wann_control, omega, print_output, &
+                             wannier_data, m_matrix, u_matrix, real_lattice, mp_grid, &
+                             num_kpts, num_wann, stdout, timer, error, comm)
     !================================================!
     !
     ! Calculate the Unitary Rotations to give
@@ -3276,9 +2684,9 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_time, io_stopwatch_start, io_stopwatch_stop
-    use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
+    use w90_wannier90_types, only: wann_control_type, wann_omega_type
     use w90_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type, timer_list_type
+      wannier_data_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90_comm_type
@@ -3292,32 +2700,23 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
     type(wann_omega_type), intent(inout) :: omega
-    type(w90_system_type), intent(in) :: w90_system
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(output_file_type), intent(in) :: output_file
-    type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
-    type(atom_data_type), intent(in) :: atom_data
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_bands
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
-    integer, allocatable, intent(in) :: exclude_bands(:)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
 
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
-    logical, intent(in) :: have_disentangled, translate_home_cell
-    character(len=50), intent(in) :: seedname
+    !logical, intent(in) :: have_disentangled
 
     ! local variables
     type(localisation_vars_type) :: old_spread
@@ -3627,15 +3026,15 @@ contains
       omega%total = wann_spread%om_tot
       omega%tilde = wann_spread%om_d + wann_spread%om_od
 
-      if (ldump) then
-        uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
-        call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
-                                                 kmesh_info, kpt_latt, num_kpts, dis_manifold, &
-                                                 num_bands, num_wann, u_matrix, u_matrix_opt, &
-                                                 m_matrix, mp_grid, real_lattice, omega%invariant, &
-                                                 have_disentangled, stdout, seedname)
-      endif
+!JJ      if (ldump) then
+!        uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
+!        call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
+!        call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
+!                                                 kmesh_info, kpt_latt, num_kpts, dis_manifold, &
+!                                                 num_bands, num_wann, u_matrix, u_matrix_opt, &
+!                                                 m_matrix, mp_grid, real_lattice, omega%invariant, &
+!                                                 have_disentangled, stdout, seedname)
+!      endif
 
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, history, &
@@ -3681,11 +3080,11 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*print_output%lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (output_file%write_xyz) then
-      call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
+!    if (output_file%write_xyz) then
+!      call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
+!                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
+!      if (allocated(error)) return
+!    endif
 
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
@@ -3699,32 +3098,32 @@ contains
                               print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
 
+    !JJ
     ! write extra info regarding omega_invariant
-    if (print_output%iprint > 2) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, comm, stdout)
-      if (allocated(error)) return
-    endif
-
+    !if (print_output%iprint > 2) then
+    !  call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+    !                        error, comm, stdout)
+    !  if (allocated(error)) return
+    !endif
     ! write matrix elements <m|r^2|n> to file
-    if (output_file%write_r2mn) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-      if (allocated(error)) return
-    endif
+    !if (output_file%write_r2mn) then
+    !  call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
+    !  if (allocated(error)) return
+    !endif
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. output_file%write_proj) then
-      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, timer)
-    endif
+    !if (have_disentangled .and. output_file%write_proj) then
+    !  call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
+    !                            dis_manifold%lwindow, print_output%timing_level, &
+    !                            print_output%iprint, stdout, timer)
+    !endif
 
     ! aam: write data required for vdW utility
-    if (output_file%write_vdw_data) then
-      call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                               have_disentangled, w90_system, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
+    !if (output_file%write_vdw_data) then
+    !  call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
+    !                           have_disentangled, w90_system, error, comm, stdout, seedname)
+    !  if (allocated(error)) return
+    !endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (cz, stat=ierr)
