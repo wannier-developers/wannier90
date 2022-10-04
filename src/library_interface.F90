@@ -547,26 +547,19 @@ contains
     endif
     status = 0
     if (helper%gamma_only) then
-      call wann_main_gamma(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
-                           helper%kmesh_info, helper%kpt_latt, wan90%output_file, wan90%wann_control, &
-                           wan90%omega, helper%w90_system, helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
-                           helper%u_matrix, helper%u_opt, helper%eigval, helper%real_lattice, helper%mp_grid, &
-                           helper%num_bands, helper%num_kpts, helper%num_wann, helper%have_disentangled, &
-                           wan90%real_space_ham%translate_home_cell, helper%seedname, output, &
-                           helper%timer, error, comm)
+      call wann_main_gamma(helper%kmesh_info, helper%kpt_latt, wan90%wann_control, wan90%omega, &
+                           helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
+                           helper%u_matrix, helper%real_lattice, helper%mp_grid, helper%num_kpts, &
+                           helper%num_wann, output, helper%timer, error, comm)
     else
-      call wann_main(helper%atom_data, helper%dis_manifold, helper%exclude_bands, &
-                     wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
-                     wan90%real_space_ham, wan90%wann_control, wan90%omega, wan90%sitesym, &
-                     helper%w90_system, helper%print_output, helper%wannier_data, helper%ws_region, &
-                     wan90%w90_calculation, wan90%ham_k, wan90%ham_r, &
-                     wan90%m_matrix_local, helper%u_matrix, helper%u_opt, &
-                     helper%eigval, helper%real_lattice, wan90%wannier_centres_translated, wan90%irvec, &
-                     helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, helper%num_bands, &
-                     helper%num_kpts, wan90%num_proj, helper%num_wann, wan90%optimisation, &
-                     wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
-                     helper%have_disentangled, wan90%lsitesymmetry, helper%seedname, output, &
-                     helper%timer, helper%dist_kpoints, error, comm)
+      call wann_main(wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, wan90%wann_control, &
+                     wan90%omega, wan90%sitesym, helper%print_output, helper%wannier_data, &
+                     helper%ws_region, wan90%w90_calculation, wan90%ham_k, wan90%ham_r, &
+                     wan90%m_matrix_local, helper%u_matrix, helper%real_lattice, &
+                     wan90%wannier_centres_translated, wan90%irvec, helper%mp_grid, wan90%ndegen, &
+                     wan90%nrpts, helper%num_kpts, wan90%num_proj, helper%num_wann, &
+                     wan90%optimisation, wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
+                     wan90%lsitesymmetry, output, helper%timer, helper%dist_kpoints, error, comm)
     endif
     if (allocated(error)) then
       write (outerr, *) 'Error in wannierise', error%code, error%message
@@ -602,7 +595,7 @@ contains
                    helper%u_opt, helper%eigval, helper%real_lattice, wan90%wannier_centres_translated, &
                    physics%bohr, wan90%irvec, helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, &
                    helper%num_bands, helper%num_kpts, helper%num_wann, wan90%rpt_origin, &
-                   wan90%tran%mode, helper%have_disentangled, wan90%lsitesymmetry, helper%w90_system%spinors, &
+                   wan90%tran%mode, helper%have_disentangled, wan90%lsitesymmetry, helper%w90_system, &
                    helper%seedname, output, helper%timer, error, comm)
     if (allocated(error)) then
       write (outerr, *) 'Error in plotting', error%code, error%message
