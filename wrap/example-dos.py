@@ -21,9 +21,9 @@ import numpy
 kpts = numpy.zeros(data.num_kpts, dtype=numpy.int32)
 wan90.w90_helper_types.set_kpoint_distribution(data, kpts)
 
-#m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
+m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
-#wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
+wan90.w90_helper_types.set_m_matrix(w90data, m_matrix)
 wan90.w90_helper_types.set_u_matrix(data, u_matrix)
 #a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
 
