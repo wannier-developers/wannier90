@@ -146,6 +146,7 @@ contains
 
     call w90_readwrite_read_verbosity(print_output, error, comm)
     if (allocated(error)) return
+    if (print_output%iprint >= 2) output_file%svd_omega = .true. ! a printout that does not have its own option flag
 
     call w90_readwrite_read_algorithm_control(optimisation, error, comm)
     if (allocated(error)) return
@@ -2870,13 +2871,13 @@ contains
     if (allocated(error)) return
 
     disentanglement = (num_bands > num_wann)
+    output_file%svd_omega = (print_output%iprint >= 2)
+    write (*, *) "setting svd_omega:", output_file%svd_omega
 
     !______________________________________
-    !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
+    !set iprint to zero on non-root processes
     iprintroot = print_output%iprint
     print_output%iprint = 0
-    call comms_bcast(print_output%iprint, 1, error, comm)
-    if (allocated(error)) return
     if (on_root) print_output%iprint = iprintroot
     !______________________________________
 

@@ -586,17 +586,23 @@ contains
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
 
+    !if (.not. associated(wan90%m_matrix)) then ! (nband*nwann*nknode for wannierise)
+    !  write (outerr, *) 'm_matrix not set for disentangle call'
+    !  status = 1
+    !  return
+    !endif
+
     status = 0
     call plot_main(helper%atom_data, wan90%band_plot, helper%dis_manifold, helper%fermi_energy_list, &
                    wan90%fermi_surface_data, wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, &
                    wan90%output_file, wan90%wvfn_read, wan90%real_space_ham, helper%kpoint_path, &
                    helper%print_output, helper%wannier_data, wan90%wann_plot, helper%ws_region, &
-                   wan90%w90_calculation, wan90%ham_k, wan90%ham_r, wan90%m_matrix, helper%u_matrix, &
+                   wan90%w90_calculation, wan90%ham_k, wan90%ham_r, wan90%m_matrix_local, helper%u_matrix, &
                    helper%u_opt, helper%eigval, helper%real_lattice, wan90%wannier_centres_translated, &
                    physics%bohr, wan90%irvec, helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, &
                    helper%num_bands, helper%num_kpts, helper%num_wann, wan90%rpt_origin, &
                    wan90%tran%mode, helper%have_disentangled, wan90%lsitesymmetry, helper%w90_system, &
-                   helper%seedname, output, helper%timer, error, comm)
+                   helper%seedname, output, helper%timer, helper%dist_kpoints, error, comm)
     if (allocated(error)) then
       write (outerr, *) 'Error in plotting', error%code, error%message
       status = sign(1, error%code)
