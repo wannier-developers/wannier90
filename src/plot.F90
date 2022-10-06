@@ -39,7 +39,7 @@ contains
                        real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
                        transport_mode, have_disentangled, lsitesymmetry, w90_system, seedname, &
-                       stdout, timer, error, comm)
+                       stdout, timer, dist_k, error, comm)
     !================================================!
     !
     !! Main plotting routine
@@ -107,6 +107,7 @@ contains
     integer, intent(inout)              :: nrpts
     integer, intent(inout)              :: rpt_origin
     integer, intent(in)                 :: stdout
+    integer, intent(in) :: dist_k(:)
 
     character(len=20), intent(in) :: transport_mode
     character(len=50), intent(in) :: seedname
@@ -128,6 +129,13 @@ contains
     my_node_id = mpirank(comm)
 
     if (my_node_id == 0) on_root = .true.
+
+    ! write extra info regarding omega_invariant
+    if (output_file%svd_omega) then
+      call plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+                            dist_k, error, comm, stdout)
+      if (allocated(error)) return
+    endif
 
     if (on_root) then
       if (print_output%timing_level > 0) call io_stopwatch_start('plot: main', timer)
@@ -221,14 +229,6 @@ contains
           if (allocated(error)) return
         end if
       end if
-
-      ! write extra info regarding omega_invariant
-      if (print_output%iprint > 2) then
-        call plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                              error, comm, stdout)
-        if (allocated(error)) return
-      endif
-
       ! write matrix elements <m|r^2|n> to file
       if (output_file%write_r2mn) then
         call plot_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
@@ -2644,10 +2644,10 @@ contains
 
   !================================================!
   subroutine plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                              error, comm, stdout)
+                              dist_k, error, comm, stdout)
     !================================================!
 
-    use w90_comms, only: w90_comm_type
+    use w90_comms, only: w90_comm_type, mpirank, comms_allreduce
     use w90_constants, only: dp, cmplx_0
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
@@ -2655,23 +2655,28 @@ contains
 
     implicit none
 
-    type(print_output_type), intent(in) :: print_output
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(timer_list_type), intent(inout) :: timer
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
+    ! arguments
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: dist_k(:)
     integer, intent(in) :: num_wann, num_kpts
     integer, intent(in) :: stdout
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    ! local variables
     complex(kind=dp), allocatable :: cv1(:, :), cv2(:, :)
     complex(kind=dp), allocatable :: cw1(:), cw2(:)
     complex(kind=dp), allocatable :: cpad1(:)
     real(kind=dp), allocatable :: singvd(:)
 
-    integer :: ierr, info
+    integer :: ierr, info, ranknk
     integer :: nkp, nn, nb, na, ind
     real(kind=dp) :: omt1, omt2, omt3
+
+    ranknk = count(dist_k == mpirank(comm)) ! number k this rank, for dimensioning
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
       call io_stopwatch_start('wann: svd_omega_i', timer)
@@ -2713,7 +2718,7 @@ contains
 
     ! singular value decomposition
     omt1 = 0.0_dp; omt2 = 0.0_dp; omt3 = 0.0_dp
-    do nkp = 1, num_kpts
+    do nkp = 1, ranknk
       do nn = 1, kmesh_info%nntot
         ind = 1
         do nb = 1, num_wann
@@ -2736,6 +2741,9 @@ contains
         enddo
       enddo
     enddo
+    call comms_allreduce(omt1, 1, 'SUM', error, comm)
+    call comms_allreduce(omt2, 1, 'SUM', error, comm)
+    call comms_allreduce(omt3, 1, 'SUM', error, comm)
     omt1 = omt1/real(num_kpts, dp)
     omt2 = omt2/real(num_kpts, dp)
     omt3 = omt3/real(num_kpts, dp)

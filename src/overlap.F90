@@ -265,6 +265,7 @@ contains
       return
     endif
     if (nntot_tmp .ne. kmesh_info%nntot) then
+      write (*, *) my_node_id, nntot_tmp, kmesh_info%nntot
       call set_error_file(error, trim(seedname)//'.mmn has not the right number of nearest neighbours', comm)
       return
     endif

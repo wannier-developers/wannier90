@@ -127,12 +127,12 @@ program libv2
   endif
 
   allocate (mloc(nw, nw, nn, nkl))
-!  allocate(m(nw, nw, nn, nk)) ! we don't need global m
+  !allocate (m(nw, nw, nn, nk)) ! we don't need global m
   allocate (u(nw, nw, nk))
   allocate (uopt(nb, nw, nk))
 
   call set_m_matrix_local(w90dat, mloc)
-!  call set_m_matrix(w90dat, m)  ! we don't need global m
+  !call set_m_matrix(w90dat, m)  ! we don't need global m
   call set_u_matrix(w90main, u)
   call set_u_opt(w90main, uopt)
 
@@ -145,6 +145,7 @@ program libv2
   endif
   call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
   if (ierr /= 0) error stop
+
   call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
   if (ierr /= 0) error stop
 

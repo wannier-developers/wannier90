@@ -176,7 +176,6 @@ contains
     call w90_readwrite_get_keyword('unlucky', found, error, comm, i_value=unlucky_rank)
     if (found) then
       if (unlucky_rank > 0) then
-        unlucky_rank = abs(unlucky_rank)
         print_output%timing_level = -unlucky_rank
       endif
     endif
