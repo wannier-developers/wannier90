@@ -1109,9 +1109,9 @@ contains
       logical, intent(inout) :: lconverged, lrandom, lfirst
 
       ! local
-      real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
+      real(kind=dp) :: delta_omega
 
       allocate (temp_hist(wann_control%conv_window), stat=ierr)
       if (ierr /= 0) then
@@ -1185,10 +1185,10 @@ contains
       implicit none
 
       ! arguments
-      real(kind=dp), intent(in) :: conv_noise_amp
       integer, intent(in) :: num_wann
-      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
       integer, intent(in) :: ranknk
+      real(kind=dp), intent(in) :: conv_noise_amp
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
 
       ! local
       integer :: ikp, iw, jw, ierr
@@ -1657,7 +1657,6 @@ contains
       integer :: my_node_id
 
       my_node_id = mpirank(comm)
-      !ranknk = count(dist_k == my_node_id) ! number k this rank, for dimensioning
 
       if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: main: u_and_m', timer)
 

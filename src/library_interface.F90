@@ -136,8 +136,9 @@ module w90_helper_types
     type(transport_type) :: tran
   end type lib_w90_type
 
-  public:: checkpoint, create_kmesh, get_fortran_stdout, get_fortran_stderr, input_reader, &
-           overlaps, plot_files, print_times, transport, wannierise, write_kmesh
+  public:: create_kmesh, get_fortran_stdout, get_fortran_stderr, input_reader, &
+           overlaps, plot_files, print_times, transport, wannierise, write_kmesh, &
+           write_chkpt, read_chkpt
 
   public :: set_option
   interface set_option
@@ -208,6 +209,98 @@ contains
     character(*), intent(in) :: text
     call update_settings(string, .false., text, 0.d0, 0)
   endsubroutine set_option_text
+
+  subroutine write_chkpt(helper, wan90, label, seedname, output, outerr, status, comm)
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
+    use w90_comms, only: w90_comm_type, mpirank
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    character(len=*), intent(in) :: label ! e.g. 'postdis' or 'postwann' after disentanglement, wannierisation
+    integer, intent(in) :: output, outerr
+    integer, intent(inout) :: status
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(in) :: wan90
+    type(w90_comm_type), intent(in) :: comm
+
+    status = 0
+    if (.not. associated(helper%u_matrix)) then
+      write (*, *) 'u_matrix not set for write_chkpt call'
+      write (outerr, *) 'u_matrix not set for write_chkpt call'
+      status = 1
+      return
+    else if (.not. associated(helper%u_opt)) then
+      write (*, *) 'u_opt not set for write_chkpt call'
+      write (outerr, *) 'u_opt not set for write_chkpt call'
+      status = 1
+      return
+    else if (.not. associated(wan90%m_matrix)) then
+      write (*, *) 'm_matrix not set for write_chkpt call'
+      write (outerr, *) 'm_matrix not set for write_chkpt call'
+      status = 1
+      return
+    endif
+
+    if (mpirank(comm) == 0) then
+      call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
+                                               helper%kmesh_info, helper%kpt_latt, &
+                                               helper%num_kpts, helper%dis_manifold, &
+                                               helper%num_bands, helper%num_wann, helper%u_matrix, &
+                                               helper%u_opt, wan90%m_matrix, helper%mp_grid, &
+                                               helper%real_lattice, wan90%omega%invariant, &
+                                               helper%have_disentangled, output, seedname)
+    endif
+  end subroutine write_chkpt
+
+  subroutine read_chkpt(helper, wan90, checkpoint, seedname, output, outerr, status, comm)
+    use w90_comms, only: w90_comm_type
+    use w90_error_base, only: w90_error_type
+    use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    character(len=*), intent(out) :: checkpoint
+    integer, intent(in) :: output, outerr
+    integer, intent(out) :: status
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(inout) :: wan90
+    type(w90_comm_type), intent(in) :: comm
+
+    ! local variables
+    integer :: chk_unit
+    logical :: have_disentangled, ispostw90 = .false.
+    type(w90_error_type), allocatable :: error
+    real(dp) :: omega_invariant
+
+    status = 0
+
+    call w90_readwrite_read_chkpt_header(helper%exclude_bands, helper%kmesh_info, helper%kpt_latt, &
+                                         helper%real_lattice, helper%mp_grid, helper%num_bands, &
+                                         size(helper%exclude_bands), helper%num_kpts, &
+                                         helper%num_wann, checkpoint, have_disentangled, &
+                                         ispostw90, seedname, chk_unit, output, error, comm)
+    if (allocated(error)) call prterr(error, output, outerr, comm)
+
+    call w90_readwrite_read_chkpt_matrices(helper%dis_manifold, helper%kmesh_info, &
+                                           helper%wannier_data, wan90%m_matrix, helper%u_matrix, &
+                                           helper%u_opt, omega_invariant, helper%num_bands, &
+                                           helper%num_kpts, helper%num_wann, have_disentangled, &
+                                           seedname, chk_unit, output, error, comm)
+    if (allocated(error)) call prterr(error, output, outerr, comm)
+
+! scatter from m_matrix_orig to m_matrix_orig_local
+! normally achieved in overlap_read
+! scatter from m_matrix to m_matrix_local
+!  w = num_wann*num_wann*kmesh_info%nntot
+!  call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
+!  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+!call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
+!                              omega%invariant, num_bands, num_kpts, num_wann, checkpoint, &
+!                              have_disentangled, error, comm)
+  end subroutine read_chkpt
 
   subroutine input_reader(helper, wan90, seedname, output, outerr, status, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
@@ -308,37 +401,6 @@ contains
 
     if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_reader
-
-  subroutine checkpoint(helper, wan90, label, output, comm)
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
-    use w90_comms, only: w90_comm_type, mpirank
-
-    ! write_chkpt never fails?  remarkable.
-    ! either before or at start of write_chkpt, a reduction on m_matrix is necessary
-    ! fixme JJ check
-
-    ! fixme, seedname might rather prefer to be an argument
-
-    implicit none
-
-    character(len=*), intent(in) :: label
-    integer, intent(in) :: output
-    type(lib_global_type), intent(inout) :: helper
-    type(lib_w90_type), intent(in) :: wan90
-    type(w90_comm_type), intent(in) :: comm
-
-    if (mpirank(comm) == 0) then
-      ! e.g. label = 'postwann' after wannierisation
-      call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
-                                               helper%kmesh_info, helper%kpt_latt, &
-                                               helper%num_kpts, helper%dis_manifold, &
-                                               helper%num_bands, helper%num_wann, helper%u_matrix, &
-                                               helper%u_opt, wan90%m_matrix, helper%mp_grid, &
-                                               helper%real_lattice, wan90%omega%invariant, &
-                                               helper%have_disentangled, output, helper%seedname)
-    endif
-  end subroutine checkpoint
-
   subroutine create_kmesh(helper, output, outerr, status, comm)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
