@@ -1861,48 +1861,48 @@ contains
     !================================================!
     !! Read checkpoint file
     !! This is used to allocate the matrices.
-    !! If you have them already allocated, e.g. by numpy then call _core directly
     !!
     !! Note on parallelization: this function should be called
     !! from the root node only!
     !!
     !================================================!
 
-    !use w90_constants, only: eps6
     use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
     implicit none
 
-    integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(wannier_data_type), intent(inout) :: wannier_data
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    ! arguments
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(wannier_data_type), intent(inout) :: wannier_data
 
-    integer, intent(in) :: num_kpts
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_bands
+    integer, intent(in) :: num_exclude_bands
+    integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_exclude_bands
 
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    character(len=*), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
+    character(len=*), intent(in)  :: seedname
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
+    ! local variables
     integer :: chk_unit
 
     call w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
@@ -1910,35 +1910,6 @@ contains
                                          num_wann, checkpoint, have_disentangled, ispostw90, &
                                          seedname, chk_unit, stdout, error, comm)
     if (allocated(error)) return
-
-!    if (have_disentangled) then
-!      ! U_matrix_opt
-!      if (.not. allocated(u_matrix_opt)) then
-!        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-!        if (ierr /= 0) then
-!          call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_read_chkpt', comm)
-!          return
-!        endif
-!      endif
-!    endif
-!
-!    ! U_matrix
-!    if (.not. allocated(u_matrix)) then
-!      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-!      if (ierr /= 0) then
-!        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_read_chkpt', comm)
-!        return
-!      endif
-!    endif
-!
-    ! M_matrix
-!    if (.not. allocated(m_matrix)) then
-!      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-!      if (ierr /= 0) then
-!        call set_error_alloc(error, 'Error allocating m_matrix in w90_readwrite_read_chkpt', comm)
-!        return
-!      endif
-!    endif
 
     call w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
                                            u_matrix, u_matrix_opt, omega_invariant, num_bands, &
@@ -2000,8 +1971,7 @@ contains
 
     write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
     io_unit = chk_unit
 
     ! Read comment line
@@ -2110,18 +2080,17 @@ contains
     !!
     !================================================!
 
-    !use w90_constants, only: eps6
     use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
     implicit none
 
-    type(wannier_data_type), intent(inout) :: wannier_data
-    type(kmesh_info_type), intent(in) :: kmesh_info
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(wannier_data_type), intent(inout) :: wannier_data
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands

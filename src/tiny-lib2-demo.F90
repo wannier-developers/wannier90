@@ -17,7 +17,8 @@ program libv2
   implicit none
 
   character(len=100) :: seedname
-  character(len=:), allocatable :: fn
+  character(len=:), allocatable :: fn, cpstatus
+  character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: a(:, :, :)
   !complex(kind=dp), allocatable :: m(:,:,:,:)
   complex(kind=dp), allocatable :: mloc(:, :, :, :)
@@ -30,12 +31,14 @@ program libv2
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
   logical, pointer :: pp
+  logical :: lovlp, ldsnt, lwann, lplot, ltran
   type(lib_global_type), target :: w90main
   type(lib_w90_type), target :: w90dat
   type(w90_comm_type) :: comm
   type(w90_error_type), allocatable :: error
 
   pp => w90dat%w90_calculation%postproc_setup
+  restart => w90dat%w90_calculation%restart
   nw => w90main%num_wann
   nb => w90main%num_bands
   nk => w90main%num_kpts
@@ -136,18 +139,69 @@ program libv2
   call set_u_matrix(w90main, u)
   call set_u_opt(w90main, uopt)
 
-  call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
-  if (ierr /= 0) error stop
+! restart system
+  lovlp = .true.
+  ldsnt = .true.
+  lwann = .true.
+  lplot = .true.
+  ltran = .true.
 
-  if (nw < nb) then ! disentanglement reqired
-    call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
+  if (restart == '') then
+    if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
+  else
+    call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr, comm)
+    if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .true.
+      lplot = .true.
+      ltran = .true.
+    elseif (restart == 'plot' .or. (restart == 'default' .and. cpstatus == 'postwann')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .true.
+      ltran = .true.
+    elseif (restart == 'transport') then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .false.
+      ltran = .true.
+      !else
+      ! illegitimate restart choice
+    endif
+  endif
+! end restart system
+
+  if (lovlp) then
+    call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
     if (ierr /= 0) error stop
   endif
-  call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
-  if (ierr /= 0) error stop
 
-  call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
-  if (ierr /= 0) error stop
+  if (ldsnt) then
+    if (nw < nb) then ! disentanglement reqired
+      call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
+      if (ierr /= 0) error stop
+      !call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
+      !if (ierr /= 0) error stop
+    endif
+  endif
+
+  if (lwann) then
+    call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
+    !call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
+    !if (ierr /= 0) error stop
+  endif
+
+  if (lplot) then
+    call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
+  endif
 
   call print_times(w90main, stdout)
   if (rank == 0) close (unit=stderr, status='delete')
