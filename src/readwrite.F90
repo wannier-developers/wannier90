@@ -280,17 +280,15 @@ contains
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
-  subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, &
-                                          num_bands, num_wann, library_param_read_first_pass, &
-                                          stdout, error, comm)
+  subroutine w90_readwrite_read_num_bands(pw90_effective_model, num_exclude_bands, num_bands, &
+                                          num_wann, stdout, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: pw90_effective_model, library
+    logical, intent(in) :: pw90_effective_model
     integer, intent(in) :: num_exclude_bands
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    logical, intent(in) :: library_param_read_first_pass
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
@@ -299,31 +297,31 @@ contains
 
     call w90_readwrite_get_keyword('num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
-    if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
-      if (found) num_bands = i_temp
-      if (.not. found) num_bands = num_wann
-    end if
-    ! GP: I subtract it here, but only the first time when I pass the total number of bands
-    ! In later calls, I need to pass instead num_bands already subtracted.
-    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
     if (.not. pw90_effective_model) then
-      if (found .and. num_bands < num_wann) then
-        write (stdout, *) 'num_bands', num_bands
-        write (stdout, *) 'num_wann', num_wann
-        call set_error_input(error, 'Error: num_bands must be greater than or equal to num_wann', comm)
-        return
+      if (found) then
+        num_bands = i_temp
+        if (num_bands < num_wann) then
+          write (stdout, *) 'num_bands', num_bands
+          write (stdout, *) 'num_wann', num_wann
+          call set_error_input(error, 'Error: num_bands must be greater than or equal to num_wann', comm)
+          return
+        endif
+      else
+        num_bands = num_wann
       endif
+      !end if
+      ! GP: I subtract it here, but only the first time when I pass the total number of bands
+      ! In later calls, I need to pass instead num_bands already subtracted.
+      !if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
+      !if (.not. pw90_effective_model) then
     endif
   end subroutine w90_readwrite_read_num_bands
 
-  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error, comm)
+  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
-    logical, intent(in) :: library
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
@@ -332,23 +330,17 @@ contains
     ltmp = .false.
     call w90_readwrite_get_keyword('gamma_only', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
-    if (.not. library) then
-      gamma_only = ltmp
-      if (gamma_only .and. (num_kpts .ne. 1)) then
-        call set_error_input(error, 'Error: gamma_only is true, but num_kpts > 1', comm)
-        return
-      endif
-    else
-      if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
+    gamma_only = ltmp
+    if (gamma_only .and. (num_kpts .ne. 1)) then
+      call set_error_input(error, 'Error: gamma_only is true, but num_kpts > 1', comm)
+      return
     endif
   end subroutine w90_readwrite_read_gamma_only
 
-  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, &
-                                        error, comm)
+  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, mp_grid, num_kpts, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    logical, intent(in) :: pw90_effective_model, library
+    logical, intent(in) :: pw90_effective_model
     integer, intent(inout) :: mp_grid(3), num_kpts
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
@@ -358,8 +350,7 @@ contains
 
     call w90_readwrite_get_keyword_vector('mp_grid', found, 3, error, comm, i_value=iv_temp)
     if (allocated(error)) return
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <mp_grid> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
+    if (.not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
         call set_error_input(error, 'Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid', comm)
@@ -372,11 +363,9 @@ contains
     end if
   end subroutine w90_readwrite_read_mp_grid
 
-  subroutine w90_readwrite_read_system(library, w90_system, stdout, error, comm)
+  subroutine w90_readwrite_read_system(w90_system, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    logical, intent(in) :: library
     type(w90_system_type), intent(inout) :: w90_system
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
@@ -386,11 +375,7 @@ contains
     ltmp = .false.  ! by default our WF are not spinors
     call w90_readwrite_get_keyword('spinors', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
-    if (.not. library) then
-      w90_system%spinors = ltmp
-    else
-      if (found) write (stdout, '(a)') ' Ignoring <spinors> in input file'
-    endif
+    w90_system%spinors = ltmp
 !    if(spinors .and. (2*(num_wann/2))/=num_wann) &
 !       call io_error('Error: For spinor WF num_wann must be even')
 
@@ -424,10 +409,10 @@ contains
 
   end subroutine w90_readwrite_read_system
 
-  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, error, comm)
+  subroutine w90_readwrite_read_kpath(kpoint_path, ok, bands_plot, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
-    logical, intent(in) :: library, bands_plot
+    logical, intent(in) :: bands_plot
     type(kpoint_path_type), intent(inout) :: kpoint_path
     logical, intent(out) :: ok
     type(w90_error_type), allocatable, intent(out) :: error
@@ -437,7 +422,7 @@ contains
     logical :: found
 
     bands_num_spec_points = 0
-    call w90_readwrite_get_block_length('kpoint_path', found, i_temp, library, error, comm)
+    call w90_readwrite_get_block_length('kpoint_path', found, i_temp, error, comm)
     if (allocated(error)) return
     if (found) then
       ok = .true.
@@ -603,7 +588,7 @@ contains
   end subroutine w90_readwrite_read_ws_data
 
   subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, &
-                                        w90_plot, disentanglement, eig_found, eigval, library, &
+                                        w90_plot, disentanglement, eig_found, eigval, &
                                         postproc_setup, num_bands, num_kpts, stdout, seedname, &
                                         error, comm)
 
@@ -615,7 +600,7 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     character(len=*), intent(in)  :: seedname
-    logical, intent(in) :: disentanglement, library, postproc_setup
+    logical, intent(in) :: disentanglement, postproc_setup
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     logical, intent(inout) :: eig_found
     type(w90_error_type), allocatable, intent(out) :: error
@@ -624,7 +609,7 @@ contains
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
-    if (.not. library .and. .not. pw90_effective_model) then
+    if (.not. pw90_effective_model) then
 
       if (.not. postproc_setup) then
         inquire (file=trim(seedname)//'.eig', exist=eig_found)
@@ -669,7 +654,7 @@ contains
       end if
     end if
 
-    if (library .and. allocated(eigval)) eig_found = .true.
+    if (allocated(eigval)) eig_found = .true.
 
     return
 
@@ -797,14 +782,13 @@ contains
 
   end subroutine w90_readwrite_read_kmesh_data
 
-  subroutine w90_readwrite_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
-                                        bohr, stdout, error, comm)
+  subroutine w90_readwrite_read_kpoints(pw90_effective_model, kpt_latt, num_kpts, &
+                                        bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
-    logical, intent(in) :: pw90_effective_model, library
+    logical, intent(in) :: pw90_effective_model
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
@@ -819,19 +803,16 @@ contains
       call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
       return
     endif
-    if (.not. library) then
-      allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints', comm)
-        return
-      endif
-    end if
+    allocate (kpt_latt(3, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints', comm)
+      return
+    endif
 
     call w90_readwrite_get_keyword_block('kpoints', found, num_kpts, 3, bohr, error, comm, &
                                          r_value=kpt_cart)
     if (allocated(error)) return
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
+    if (.not. pw90_effective_model) then
       kpt_latt = kpt_cart
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
@@ -853,11 +834,9 @@ contains
 
   end subroutine w90_readwrite_read_kpoints
 
-  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error, comm)
+  subroutine w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: library
-    integer, intent(in) :: stdout
     real(kind=dp), intent(out) :: real_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
@@ -869,21 +848,16 @@ contains
     call w90_readwrite_get_keyword_block('unit_cell_cart', found, 3, 3, bohr, error, comm, &
                                          r_value=real_lattice_tmp)
     if (allocated(error)) return
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
-    if (.not. library) then
-      real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) then
-        call set_error_input(error, 'Error: Did not find the cell information in the input file', comm)
-        return
-      endif
-    end if
+    real_lattice = transpose(real_lattice_tmp)
+    if (.not. found) then
+      call set_error_input(error, 'Error: Did not find the cell information in the input file', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_lattice
 
-  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
+  subroutine w90_readwrite_read_atoms(atom_data, real_lattice, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: library
-    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atom_data
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
@@ -894,30 +868,27 @@ contains
     logical :: found, found2, lunits
 
     ! Atoms
-    if (.not. library) atom_data%num_atoms = 0
-    call w90_readwrite_get_block_length('atoms_frac', found, i_temp, library, error, comm)
+    call w90_readwrite_get_block_length('atoms_frac', found, i_temp, error, comm)
     if (allocated(error)) return
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call w90_readwrite_get_block_length('atoms_cart', found2, i_temp2, library, error, comm, lunits)
+    call w90_readwrite_get_block_length('atoms_cart', found2, i_temp2, error, comm, lunits)
     if (allocated(error)) return
-    if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
-    if (.not. library) then
-      if (found .and. found2) then
-        call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart', comm)
-        return
-      endif
-      if (found .and. i_temp > 0) then
-        lunits = .false.
-        atom_data%num_atoms = i_temp
-      elseif (found2 .and. i_temp2 > 0) then
-        atom_data%num_atoms = i_temp2
-        if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
-      end if
-      if (atom_data%num_atoms > 0) then
-        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, error, comm)
-        if (allocated(error)) return
-      end if
+    if (found .and. found2) then
+      call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart', comm)
+      return
     endif
+    if (found .and. i_temp > 0) then
+      lunits = .false.
+      atom_data%num_atoms = i_temp
+    elseif (found2 .and. i_temp2 > 0) then
+      atom_data%num_atoms = i_temp2
+      ! fixme JJ, what does this logic do???
+      if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
+    end if
+    if (atom_data%num_atoms > 0) then
+      ! fixme JJ, what does this logic do???
+      call readwrite_get_atoms(atom_data, lunits, real_lattice, bohr, error, comm)
+      if (allocated(error)) return
+    end if
   end subroutine w90_readwrite_read_atoms
 
   subroutine w90_readwrite_clear_keywords(comm)
@@ -2175,9 +2146,9 @@ contains
   end subroutine w90_readwrite_read_chkpt_matrices
 
 !================================================!
-  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
-                                      omega_invariant, num_bands, num_kpts, num_wann, checkpoint, &
-                                      have_disentangled, error, comm)
+  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, m_matrix, &
+                                      m_matrix_local, omega_invariant, num_bands, num_kpts, num_wann, &
+                                      nntot, checkpoint, have_disentangled, distk, error, comm)
     !================================================!
     !
     !! Distribute the chk files
@@ -2197,42 +2168,47 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
-    integer, intent(inout) :: num_bands
-    integer, intent(inout) :: num_wann
-    integer, intent(inout) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    integer, intent(in) :: distk(:)
 
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) !only alloc/assigned on root
     real(kind=dp), intent(inout) :: omega_invariant
 
     character(len=*), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
     ! local variables
-    integer :: ierr
-
+    integer :: ierr, ikl, nkl, ikg, rank
     logical :: on_root = .false.
 
-    if (mpirank(comm) == 0) on_root = .true.
+    rank = mpirank(comm)
+    if (rank == 0) on_root = .true.
 
     call comms_bcast(checkpoint, len(checkpoint), error, comm)
     if (allocated(error)) return
 
-    if (.not. on_root .and. .not. allocated(u_matrix)) then
-      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating u_matrix in w90_readwrite_chkpt_dist', comm)
-        return
-      endif
-    endif
+    ! fixme jj document strategy here + warning
+    ! assumes u is alloc'd on all nodes
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
 
-!    if (.not.on_root .and. .not.allocated(m_matrix)) then
-!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-!       if (ierr/=0)&
-!            call io_error('Error allocating m_matrix in w90_readwrite_chkpt_dist')
-!    endif
-!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+    ! assumes m is alloc'd on all nodes
+    call comms_bcast(m_matrix(1, 1, 1, 1), num_wann*num_wann*nntot*num_kpts, error, comm)
+
+    nkl = count(distk(:) == rank)
+    ikl = 1
+    ! should assert that the size is compatible, fixme jj
+    do ikg = 1, num_kpts
+      if (distk(ikg) == rank) then
+        m_matrix_local(:, :, :, ikl) = m_matrix(:, :, :, ikg)
+        ikl = ikl + 1
+      endif
+    enddo
 
     call comms_bcast(have_disentangled, 1, error, comm)
     if (allocated(error)) return
@@ -2240,13 +2216,13 @@ contains
     if (have_disentangled) then
       if (.not. on_root) then
 
-        if (.not. allocated(u_matrix_opt)) then
-          allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-          if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_chkpt_dist', comm)
-            return
-          endif
-        endif
+        !if (.not. allocated(u_matrix_opt)) then
+        !  allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+        !  if (ierr /= 0) then
+        !    call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_chkpt_dist', comm)
+        !    return
+        !  endif
+        !endif
 
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
@@ -2764,7 +2740,7 @@ contains
   end subroutine w90_readwrite_get_keyword_block
 
   !================================================!
-  subroutine w90_readwrite_get_block_length(keyword, found, rows, library, error, comm, lunits)
+  subroutine w90_readwrite_get_block_length(keyword, found, rows, error, comm, lunits)
     !================================================!
     !
     !! Finds the length of the data block
@@ -2783,7 +2759,6 @@ contains
     !! Is keyword present
     integer, intent(out) :: rows
     !! Number of rows
-    logical, intent(in) :: library
     logical, optional, intent(out) :: lunits
     !! Have we found a unit specification
 
@@ -2845,13 +2820,6 @@ contains
 
     found = .true.
 
-    ! Ignore atoms_cart and atoms_frac blocks if running in library mode
-    if (library) then
-      if (trim(keyword) .eq. 'atoms_cart' .or. trim(keyword) .eq. 'atoms_frac') then
-        in_data(line_s:line_e) (1:maxlen) = ' '
-      endif
-    endif
-
     if (present(lunits)) then
       dummy = in_data(line_s + 1)
       read (dummy, *, end=555) atsym, (atpos(i), i=1, 3)
@@ -2877,7 +2845,7 @@ contains
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
-  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, error, comm)
+  subroutine readwrite_get_atoms(atom_data, lunits, real_lattice, bohr, error, comm)
     !================================================!
     !
     !!   Fills the atom data block
@@ -2891,7 +2859,6 @@ contains
     type(atom_data_type), intent(inout) :: atom_data
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
-    logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -2911,7 +2878,7 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
-    call w90_readwrite_get_block_length("atoms_frac", found, i_temp, library, error, comm)
+    call w90_readwrite_get_block_length("atoms_frac", found, i_temp, error, comm)
     if (allocated(error)) return
     if (found) then
       keyword = "atoms_frac"

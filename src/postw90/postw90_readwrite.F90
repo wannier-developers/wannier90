@@ -140,10 +140,9 @@ contains
     integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
-    logical :: disentanglement, library, ok
+    logical :: disentanglement, ok
     character(len=20) :: energy_unit
 
-    library = .false.
     pw90_kslice%corner = 0.0_dp
     pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
     pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]
@@ -166,19 +165,18 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm) !for read_chkpt
     if (allocated(error)) return
-    call w90_readwrite_read_num_bands(effective_model, library, num_exclude_bands, num_bands, &
-                                      num_wann, .false., stdout, error, comm)
+    call w90_readwrite_read_num_bands(effective_model, num_exclude_bands, num_bands, &
+                                      num_wann, stdout, error, comm)
     if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
     !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
-    call w90_readwrite_read_mp_grid(effective_model, library, mp_grid, num_kpts, stdout, &
-                                    error, comm)
+    call w90_readwrite_read_mp_grid(effective_model, mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error, comm)
+    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_system(library, w90_system, stdout, error, comm)
+    call w90_readwrite_read_system(w90_system, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_kpath(library, kpoint_path, ok, .false., error, comm)
+    call w90_readwrite_read_kpath(kpoint_path, ok, .false., error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error, comm)
     if (allocated(error)) return
@@ -214,7 +212,7 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
                                     pw90_calculation%geninterp, dos_plot, disentanglement, &
-                                    eig_found, eigval, library, .false., num_bands, num_kpts, &
+                                    eig_found, eigval, .false., num_bands, num_kpts, &
                                     stdout, seedname, error, comm)
     if (allocated(error)) return
     dis_manifold%win_min = -1.0_dp
@@ -233,14 +231,13 @@ contains
                                                    dis_manifold, fermi_energy_list, eigval, &
                                                    pw90_extra_io, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error, comm)
+    call w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_kmesh_data(kmesh_input, error, comm)
     if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_kpoints(effective_model, library, kpt_latt, num_kpts, &
-                                    bohr, stdout, error, comm)
+    call w90_readwrite_read_kpoints(effective_model, kpt_latt, num_kpts, bohr, error, comm)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(pw90_extra_io%global_kmesh_set, &
                                                    pw90_extra_io%global_kmesh, recip_lattice, &
@@ -251,7 +248,7 @@ contains
                                                   recip_lattice, pw90_extra_io%global_kmesh_set, &
                                                   pw90_extra_io%global_kmesh, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
+    call w90_readwrite_read_atoms(atom_data, real_lattice, bohr, error, comm)
     if (allocated(error)) return
   end subroutine w90_postw90_readwrite_read
 
@@ -310,9 +307,8 @@ contains
     real(kind=dp) :: recip_lattice(3, 3), volume
     logical :: dos_plot
     logical :: found_fermi_energy
-    logical :: disentanglement, library
+    logical :: disentanglement
 
-    library = .false.
     pw90_kslice%corner = 0.0_dp
     pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
     pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]

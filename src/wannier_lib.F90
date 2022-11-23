@@ -326,8 +326,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
                                     tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
                                     eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, &
-                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., &
-                                    .true., lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                                    lsitesymmetry, use_bloch_phases, seedname, stdout, &
                                     error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_readwrite_clean_infile(stdout, seedname, error, comm)
@@ -634,8 +634,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                                     tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
                                     eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, &
-                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, .true., &
-                                    .false., lsitesymmetry, use_bloch_phases, seedname, stdout, &
+                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                                    lsitesymmetry, use_bloch_phases, seedname, stdout, &
                                     error, comm)
   if (allocated(error)) call prterr(error, stdout)
   call w90_readwrite_clean_infile(stdout, seedname, error, comm)
@@ -745,20 +745,16 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   end if
 
   if (gamma_only) then
-    call wann_main_gamma(atoms, dis_window, exclude_bands, kmesh_info, kpt_latt, out_files, &
-                         wannierise, wann_omega, system, verbose, wann_data, m_matrix, &
-                         u_matrix, u_matrix_opt, eigval, real_lattice, mp_grid, &
-                         num_bands, num_kpts, num_wann, have_disentangled, &
-                         rs_region%translate_home_cell, seedname, stdout, timer, error, comm)
+    call wann_main_gamma(kmesh_info, wannierise, wann_omega, verbose, wann_data, m_matrix, &
+                         u_matrix, real_lattice, num_kpts, num_wann, stdout, timer, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   else
-    call wann_main(atoms, dis_window, exclude_bands, hmlg, kmesh_info, kpt_latt, out_files, &
-                   rs_region, wannierise, wann_omega, sym, system, verbose, wann_data, &
-                   ws_region, w90_calcs, ham_k, ham_r, m_matrix_local, u_matrix, u_matrix_opt, eigval, &
-                   real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, &
-                   nrpts, num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
-                   band_plot%mode, tran%mode, have_disentangled, lsitesymmetry, &
-                   seedname, stdout, timer, dist_k, error, comm)
+    call wann_main(hmlg, kmesh_info, kpt_latt, wannierise, wann_omega, sym, verbose, wann_data, &
+                   ws_region, w90_calcs, ham_k, ham_r, m_matrix_local, u_matrix, &
+                   real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
+                   nrpts, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
+                   band_plot%mode, tran%mode, lsitesymmetry, &
+                   stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
   endif
 
@@ -772,12 +768,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. out_files%write_hr) then
     call plot_main(atoms, band_plot, dis_window, fermi_energy_list, fermi_surface_data, hmlg, &
-                   kmesh_info, kpt_latt, out_files, plot, rs_region, spec_points, &
-                   verbose, wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, &
-                   u_matrix, u_matrix_opt, eigval, real_lattice, &
-                   wannier_centres_translated, physics%bohr, irvec, mp_grid, ndegen, shift_vec, &
-                   nrpts, num_bands, num_kpts, num_wann, rpt_origin, tran%mode, have_disentangled, &
-                   lsitesymmetry, system%spinors, seedname, stdout, timer, error, comm)
+                   kmesh_info, kpt_latt, out_files, plot, rs_region, spec_points, verbose, &
+                   wann_data, wann_plot, ws_region, w90_calcs, ham_k, ham_r, m_matrix, u_matrix, &
+                   u_matrix_opt, eigval, real_lattice, wannier_centres_translated, physics%bohr, &
+                   irvec, mp_grid, ndegen, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
+                   rpt_origin, tran%mode, have_disentangled, lsitesymmetry, system, seedname, &
+                   stdout, timer, dist_k, error, comm)
     if (allocated(error)) call prterr(error, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'

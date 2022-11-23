@@ -43,7 +43,7 @@ module w90_conv_spn
 
 contains
 
-  subroutine io_error(error_msg, stdout, seedname)
+  subroutine io_error(error_msg, stdout)
     !================================================
     !
     !! Abort the code giving an error message
@@ -53,7 +53,6 @@ contains
     implicit none
 
     character(len=*), intent(in) :: error_msg
-    character(len=50), intent(in)  :: seedname
     integer :: stdout
 
     close (stdout)
@@ -111,7 +110,7 @@ contains
       call get_command_argument(2, seedname)
     else
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
     ! If on the command line the whole seedname.win was passed, I strip the last ".win"
@@ -133,7 +132,7 @@ contains
     else
       write (stdout, '(A)') 'Wrong command line action: '//trim(ctemp)
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
   end subroutine conv_get_seedname
@@ -174,10 +173,10 @@ contains
     write (stdout, '(1x,a,i0)') "Number of k-points: ", num_kpts
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout)
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout)
     do ik = 1, num_kpts
       read (spn_unit) ((spn_temp(s, m), s=1, 3), m=1, (num_bands*(num_bands + 1))/2)
       counter = 0
@@ -205,14 +204,14 @@ contains
     write (stdout, '(1x,a)') "spn: read."
 
     deallocate (spn_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in deallocating spm_temp in conv_read_spn', stdout)
 
     write (stdout, '(1x,a)') 'read done.'
 
     return
 
-109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout, seedname)
-110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout, seedname)
+109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout)
+110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout)
 
   end subroutine conv_read_spn
 
@@ -252,7 +251,7 @@ contains
     write (stdout, '(1x,a,i0)') "Number of k-points: ", num_kpts
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spn_o in conv_read_spn_fmt', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spn_o in conv_read_spn_fmt', stdout)
 
     do ik = 1, num_kpts
       do m = 1, num_bands
@@ -284,8 +283,8 @@ contains
 
     return
 
-109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout, seedname)
-110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout, seedname)
+109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout)
+110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout)
 
   end subroutine conv_read_spn_fmt
 
@@ -314,7 +313,7 @@ contains
     open (unit=spn_unit, file=trim(seedname)//'.spn', form='unformatted')
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_write_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_write_spn', stdout)
 
     write (spn_unit) header
     write (spn_unit) num_bands, num_kpts
