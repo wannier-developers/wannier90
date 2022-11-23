@@ -62,10 +62,9 @@ contains
       sitesym_type, ham_logical_type
     use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, ws_region_type, &
       timer_list_type
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
-    use w90_comms, only: mpisize, mpirank, comms_allreduce, comms_reduce, w90_comm_type
+    use w90_comms, only: mpisize, mpirank, comms_allreduce, w90_comm_type
     use w90_hamiltonian, only: hamiltonian_setup
 
     implicit none
@@ -268,6 +267,7 @@ contains
       return
     endif
 
+    !fixme jj shift this to writing/plot
     if (wann_control%precond) then
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
@@ -2671,9 +2671,9 @@ contains
   end subroutine wann_check_unitarity
 
   !================================================!
-  subroutine wann_main_gamma(kmesh_info, kpt_latt, wann_control, omega, print_output, &
-                             wannier_data, m_matrix, u_matrix, real_lattice, mp_grid, &
-                             num_kpts, num_wann, stdout, timer, error, comm)
+  subroutine wann_main_gamma(kmesh_info, wann_control, omega, print_output, wannier_data, &
+                             m_matrix, u_matrix, real_lattice, num_kpts, num_wann, stdout, timer, &
+                             error, comm)
     !================================================!
     !
     ! Calculate the Unitary Rotations to give
@@ -2707,10 +2707,8 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
 
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)

@@ -288,9 +288,9 @@ contains
     integer, intent(in) :: optimisation
     integer, intent(in) :: dist_k(:)
 
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
-    complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :) ! (num_bands, num_bands, nntot, num_kpts)
-    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :) ! (num_wann, num_wann, nntot, rank_kpts)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts) -- full array duplicated on all ranks
+    complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :) ! (num_bands, num_bands, nntot, num_kpts) -- only local kpts
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :) ! (num_wann, num_wann, nntot, rank_kpts) -- only local kpts
 
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
@@ -367,11 +367,6 @@ contains
       end do
       close (page_unit)
     endif
-
-    ! collect up the local parts back on root
-    !m = num_wann*num_wann*kmesh_info%nntot
-    !call comms_gatherv(m_matrix_local, m*counts(my_node_id), m_matrix, m*counts, m*displs, error, comm)
-    !if (allocated(error)) return
 
     deallocate (cwb)
     deallocate (cww)

@@ -10,142 +10,114 @@ module w90_helper_types
 
   implicit none
 
-  ! should we have a lib_wannierise_type?
-
+  ! datatype encapsulating types of use in both wannier90 and postw90
   type lib_global_type
-    ! matrices
-    complex(kind=dp), pointer :: u_opt(:, :, :) => null()
-    complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
-
-    integer, pointer :: dist_kpoints(:) => null()
-    !! distk(i) = node operating on k-point i
-
     type(atom_data_type) :: atom_data
-    !type(dis_control_type) :: dis_control
     type(dis_manifold_type) :: dis_manifold
-    !type(dis_spheres_type) :: dis_spheres
     type(kmesh_info_type) :: kmesh_info
     type(kmesh_input_type) :: kmesh_input
     type(kpoint_path_type) :: kpoint_path
-    !type(output_file_type) :: output_file
     type(print_output_type) :: print_output
-    !type(proj_input_type) :: proj
-    !type(proj_input_type) :: proj_input
-    !type(real_space_ham_type) :: real_space_ham
-    !type(select_projection_type) :: select_proj
-    type(w90_system_type) :: w90_system
-    !type(wann_control_type) :: wann_control
-    type(wannier_data_type) :: wannier_data
-    !type(wann_omega_type) :: wann_omega
-    type(ws_region_type) :: ws_region
-    !type(wvfn_read_type) :: wvfn_read
-    type(w90_physical_constants_type) :: physics
-
     type(timer_list_type) :: timer
+    type(w90_physical_constants_type) :: physics
+    type(w90_system_type) :: w90_system
+    type(wannier_data_type) :: wannier_data
+    type(ws_region_type) :: ws_region
 
-    integer, allocatable :: exclude_bands(:)
-    integer :: mp_grid(3)
-    integer :: num_bands
-    integer :: num_kpts
-    !integer :: num_proj = 0
-    integer :: num_wann = -99
-    !integer :: optimisation = 3
+    complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
+    complex(kind=dp), pointer :: u_opt(:, :, :) => null()
+    !! matrices
 
     real(kind=dp), allocatable :: eigval(:, :)
     real(kind=dp), allocatable :: fermi_energy_list(:)
     real(kind=dp), allocatable :: kpt_latt(:, :)
     real(kind=dp) :: real_lattice(3, 3)
-    !!real(kind=dp) :: symmetrize_eps
 
-    !logical :: eig_found = .false.
-    !Projections
-    !logical :: lhasproj = .false.
-    ! RS: symmetry-adapted Wannier functions
-    !logical :: lsitesymmetry = .false.
-    !logical :: use_bloch_phases = .false.
-    !logical :: calc_only_A = .false.
+    integer, pointer :: dist_kpoints(:) => null()
+    !! dist_kpoints(i) = rank operating on k-point i
+
+    integer, allocatable :: exclude_bands(:)
+    integer :: mp_grid(3)
+    integer :: num_bands
+    integer :: num_kpts
+    integer :: num_wann = -99
+
     logical :: gamma_only
-
-    ! added for wannierise
-    !type(wann_omega_type) :: omega
-    !type(ham_logical_type) :: ham_logical
-    !type(sitesym_type) :: sitesym
-    !complex(kind=dp), allocatable :: ham_k(:, :, :)
-    !complex(kind=dp), allocatable :: ham_r(:, :, :)
-    !real(kind=dp), allocatable :: wannier_centres_translated(:, :)
-    !integer, allocatable :: irvec(:, :)
-    !integer, allocatable :: shift_vec(:, :)
-    !integer, allocatable :: ndegen(:)
-    !integer :: rpt_origin
-    !integer :: nrpts
     logical :: have_disentangled = .false.
+
     character(len=128) :: seedname
   end type lib_global_type
 
+  ! datatype encapsulating types of use in wannier90 exclusively
   type lib_w90_type
-    type(w90_calculation_type) :: w90_calculation ! separate this? ... maybe yes (JJ)
-    ! matrices
-    complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
-    complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
-    complex(kind=dp), pointer :: m_matrix_local(:, :, :, :) => null()
-    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()  !m_matrix_orig_local
-
     type(dis_control_type) :: dis_control
     type(dis_spheres_type) :: dis_spheres
+    type(ham_logical_type) :: ham_logical
     type(output_file_type) :: output_file
     type(proj_input_type) :: proj
     type(proj_input_type) :: proj_input
     type(real_space_ham_type) :: real_space_ham
     type(select_projection_type) :: select_proj
+    type(sitesym_type) :: sitesym
+    type(w90_calculation_type) :: w90_calculation ! separate this? ... maybe yes (JJ)
     type(wann_control_type) :: wann_control
+    type(wann_omega_type) :: omega
     type(wann_omega_type) :: wann_omega
-    type(wvfn_read_type) :: wvfn_read
 
-    !type(timer_list_type) :: timer
-
-    integer :: num_proj = 0
-    integer :: optimisation = 3
-
-    logical :: eig_found = .false.
-    !Projections
-    logical :: lhasproj = .false.
-    ! RS: symmetry-adapted Wannier functions
-    logical :: lsitesymmetry = .false.
-    logical :: use_bloch_phases = .false.
-    logical :: calc_only_A = .false.
-
-    ! added for wannierise
     complex(kind=dp), allocatable :: ham_k(:, :, :)
     complex(kind=dp), allocatable :: ham_r(:, :, :)
+    complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
+    complex(kind=dp), pointer :: m_matrix_local(:, :, :, :) => null()
+    complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
+    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()  !m_matrix_orig_local
+
+    real(kind=dp), allocatable :: wannier_centres_translated(:, :)
+
     integer, allocatable :: irvec(:, :)
     integer, allocatable :: ndegen(:)
     integer, allocatable :: shift_vec(:, :)
-    integer :: nrpts
-    integer :: rpt_origin
-    real(kind=dp), allocatable :: wannier_centres_translated(:, :)
-    type(ham_logical_type) :: ham_logical
-    type(sitesym_type) :: sitesym
-    type(wann_omega_type) :: omega
 
-    !plot
+    integer :: nrpts
+    integer :: num_proj = 0
+    integer :: optimisation = 3
+    integer :: rpt_origin
+    logical :: eig_found = .false.
+    logical :: lhasproj = .false.
+
+    ! plot
     type(band_plot_type) :: band_plot
     type(wannier_plot_type) :: wann_plot
     type(fermi_surface_plot_type) :: fermi_surface_data
 
-    !transport
+    ! transport
     type(transport_type) :: tran
+    type(wvfn_read_type) :: wvfn_read
+
+    ! symmetry-adapted Wannier functions
+    logical :: calc_only_A = .false.
+    logical :: lsitesymmetry = .false.
+    logical :: use_bloch_phases = .false.
   end type lib_w90_type
 
-  public:: create_kmesh, get_fortran_stdout, get_fortran_stderr, input_reader, &
-           overlaps, plot_files, print_times, transport, wannierise, write_kmesh, &
-           write_chkpt, read_chkpt
-
+  public :: create_kmesh
+  public :: get_fortran_stderr
+  public :: get_fortran_stdout
+  public :: input_reader
+  public :: overlaps
+  public :: plot_files
+  public :: print_times
+  public :: read_chkpt
   public :: set_option
+  public :: transport
+  public :: wannierise
+  public :: write_chkpt
+  public :: write_kmesh
+
   interface set_option
     module procedure set_option_bool
-    !module procedure set_option_cplx
+    !module procedure set_option_cplx ? useful?
     module procedure set_option_text
-    module procedure set_option_dble
+    module procedure set_option_real
     module procedure set_option_int
   end interface set_option
 
@@ -182,19 +154,12 @@ contains
     call update_settings(string, bool, "", 0.d0, 0)
   endsubroutine set_option_bool
 
-  !subroutine set_option_cplx(string,cval)
-  !  implicit none
-  !  character(*), intent(in) :: string
-  !  complex(kind=dp), intent(in) :: cval
-  !  call update_settings(string, .false., cval, 0.d0, 0)
-  !endsubroutine set_option_cplx
-
-  subroutine set_option_dble(string, rval)
+  subroutine set_option_real(string, rval)
     implicit none
     character(*), intent(in) :: string
     real(kind=dp), intent(in) :: rval
     call update_settings(string, .false., "", rval, 0)
-  endsubroutine set_option_dble
+  endsubroutine set_option_real
 
   subroutine set_option_int(string, ival)
     implicit none
@@ -212,51 +177,103 @@ contains
 
   subroutine write_chkpt(helper, wan90, label, seedname, output, outerr, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
-    use w90_comms, only: w90_comm_type, mpirank
+    use w90_comms, only: comms_reduce, mpirank, w90_comm_type
+    use w90_error_base, only: w90_error_type
     implicit none
 
     ! arguments
-    character(len=*), intent(in) :: seedname
     character(len=*), intent(in) :: label ! e.g. 'postdis' or 'postwann' after disentanglement, wannierisation
+    character(len=*), intent(in) :: seedname
     integer, intent(in) :: output, outerr
     integer, intent(inout) :: status
-    type(lib_global_type), intent(inout) :: helper
+    type(lib_global_type), target, intent(in) :: helper
     type(lib_w90_type), intent(in) :: wan90
     type(w90_comm_type), intent(in) :: comm
 
+    ! local
+    complex(kind=dp), allocatable :: u(:, :, :), uopt(:, :, :), m(:, :, :, :)
+    integer, allocatable :: global_k(:)
+    integer, pointer :: nw, nb, nk, nn
+    integer :: rank, nkl, ikg, ikl
+    type(w90_error_type), allocatable :: error
+
     status = 0
-    if (.not. associated(helper%u_matrix)) then
-      write (*, *) 'u_matrix not set for write_chkpt call'
-      write (outerr, *) 'u_matrix not set for write_chkpt call'
-      status = 1
-      return
-    else if (.not. associated(helper%u_opt)) then
-      write (*, *) 'u_opt not set for write_chkpt call'
+
+    rank = mpirank(comm)
+
+    nb => helper%num_bands
+    nk => helper%num_kpts
+    nn => helper%kmesh_info%nntot
+    nw => helper%num_wann
+
+    if (.not. associated(helper%u_opt)) then
       write (outerr, *) 'u_opt not set for write_chkpt call'
       status = 1
       return
-    else if (.not. associated(wan90%m_matrix)) then
-      write (*, *) 'm_matrix not set for write_chkpt call'
-      write (outerr, *) 'm_matrix not set for write_chkpt call'
+    else if (.not. associated(helper%u_matrix)) then
+      write (outerr, *) 'u_matrix not set for write_chkpt call'
+      status = 1
+      return
+    else if (.not. associated(wan90%m_matrix_local)) then
+      write (outerr, *) 'm_matrix_local not set for write_chkpt call'
       status = 1
       return
     endif
 
-    if (mpirank(comm) == 0) then
-      call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
-                                               helper%kmesh_info, helper%kpt_latt, &
-                                               helper%num_kpts, helper%dis_manifold, &
-                                               helper%num_bands, helper%num_wann, helper%u_matrix, &
-                                               helper%u_opt, wan90%m_matrix, helper%mp_grid, &
-                                               helper%real_lattice, wan90%omega%invariant, &
-                                               helper%have_disentangled, output, seedname)
+    nkl = count(helper%dist_kpoints == rank)
+    allocate (global_k(nkl))
+    global_k = huge(1); ikl = 1
+    do ikg = 1, nk
+      if (helper%dist_kpoints(ikg) == rank) then
+        global_k(ikl) = ikg
+        ikl = ikl + 1
+      endif
+    enddo
+
+    ! allocating and partially assigning the full matrix on all ranks and reducing is a terrible idea at scale
+    ! alternatively, allocate on root and use point-to-point
+    ! or, if required only for checkpoint file writing, then use mpi-io (but needs to be ordered io, alas)
+    ! or, even better, use parallel hdf5
+    ! fixme.  JJ Nov 22
+    allocate (u(nw, nw, nk)) ! all kpts
+    allocate (uopt(nb, nw, nk)) ! all kpts
+    allocate (m(nw, nw, nn, nk)) ! all kpts
+    u(:, :, :) = 0.d0
+    uopt(:, :, :) = 0.d0
+    m(:, :, :, :) = 0.d0
+    do ikl = 1, nkl
+      ikg = global_k(ikl)
+      u(:, :, ikg) = helper%u_matrix(:, :, ikl)
+      uopt(:, :, ikg) = helper%u_opt(:, :, ikl)
+      m(:, :, :, ikg) = wan90%m_matrix_local(:, :, :, ikl)
+    enddo
+    call comms_reduce(u(1, 1, 1), nw*nw*nk, 'SUM', error, comm)
+    call comms_reduce(uopt(1, 1, 1), nb*nw*nk, 'SUM', error, comm)
+    call comms_reduce(m(1, 1, 1, 1), nw*nw*nn*nk, 'SUM', error, comm)
+    if (allocated(error)) then
+      write (*, *) 'problem coalescing matrices for checkpoint write'
+      status = 1
+      return
     endif
+
+    if (rank == 0) then
+      call w90_wannier90_readwrite_write_chkpt(label, helper%exclude_bands, helper%wannier_data, &
+                                               helper%kmesh_info, helper%kpt_latt, nk, &
+                                               helper%dis_manifold, nb, nw, u, uopt, m, &
+                                               helper%mp_grid, helper%real_lattice, &
+                                               wan90%omega%invariant, helper%have_disentangled, &
+                                               output, seedname)
+    endif
+    deallocate (u)
+    deallocate (uopt)
+    deallocate (m)
   end subroutine write_chkpt
 
   subroutine read_chkpt(helper, wan90, checkpoint, seedname, output, outerr, status, comm)
-    use w90_comms, only: w90_comm_type
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_error_base, only: w90_error_type
-    use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices
+    use w90_readwrite, only: w90_readwrite_read_chkpt_header, w90_readwrite_read_chkpt_matrices, &
+      w90_readwrite_chkpt_dist
     implicit none
 
     ! arguments
@@ -264,42 +281,62 @@ contains
     character(len=*), intent(out) :: checkpoint
     integer, intent(in) :: output, outerr
     integer, intent(out) :: status
-    type(lib_global_type), intent(inout) :: helper
+    type(lib_global_type), target, intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
     type(w90_comm_type), intent(in) :: comm
 
     ! local variables
+    complex(kind=dp), allocatable :: m(:, :, :, :)
     integer :: chk_unit
-    logical :: have_disentangled, ispostw90 = .false.
+    integer, pointer :: nw, nb, nk, nn
+    integer :: rank, nexclude = 0
+    logical :: ispostw90 = .false. ! ispostw90 is used to print a different error message in case the chk file is missing (did you run w90 first?)
+    logical :: have_disentangled ! assigned here
     type(w90_error_type), allocatable :: error
-    real(dp) :: omega_invariant
 
     status = 0
 
-    call w90_readwrite_read_chkpt_header(helper%exclude_bands, helper%kmesh_info, helper%kpt_latt, &
-                                         helper%real_lattice, helper%mp_grid, helper%num_bands, &
-                                         size(helper%exclude_bands), helper%num_kpts, &
-                                         helper%num_wann, checkpoint, have_disentangled, &
-                                         ispostw90, seedname, chk_unit, output, error, comm)
-    if (allocated(error)) call prterr(error, output, outerr, comm)
+    rank = mpirank(comm)
 
-    call w90_readwrite_read_chkpt_matrices(helper%dis_manifold, helper%kmesh_info, &
-                                           helper%wannier_data, wan90%m_matrix, helper%u_matrix, &
-                                           helper%u_opt, omega_invariant, helper%num_bands, &
-                                           helper%num_kpts, helper%num_wann, have_disentangled, &
-                                           seedname, chk_unit, output, error, comm)
-    if (allocated(error)) call prterr(error, output, outerr, comm)
+    nb => helper%num_bands
+    nk => helper%num_kpts
+    nn => helper%kmesh_info%nntot
+    nw => helper%num_wann
 
-! scatter from m_matrix_orig to m_matrix_orig_local
-! normally achieved in overlap_read
-! scatter from m_matrix to m_matrix_local
-!  w = num_wann*num_wann*kmesh_info%nntot
-!  call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
-!  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    ! allocating and partially assigning the full matrix on all ranks and reducing is a terrible idea at scale
+    ! alternatively, allocate on root and use point-to-point
+    ! or, if required only for checkpoint file writing, then use mpi-io (but needs to be ordered io, alas)
+    ! or, even better, use parallel hdf5
+    ! fixme.  JJ Nov 22
+    allocate (m(nw, nw, nn, nk)) ! all kpts
 
-!call w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
-!                              omega%invariant, num_bands, num_kpts, num_wann, checkpoint, &
-!                              have_disentangled, error, comm)
+    if (rank == 0) then
+      ! have_disenangled is read from file
+      if (allocated(helper%exclude_bands)) nexclude = size(helper%exclude_bands)
+
+      call w90_readwrite_read_chkpt_header(helper%exclude_bands, helper%kmesh_info, &
+                                           helper%kpt_latt, helper%real_lattice, helper%mp_grid, &
+                                           nb, nexclude, nk, nw, checkpoint, &
+                                           have_disentangled, ispostw90, seedname, chk_unit, &
+                                           output, error, comm)
+      if (allocated(error)) call prterr(error, output, outerr, comm)
+
+      call w90_readwrite_read_chkpt_matrices(helper%dis_manifold, helper%kmesh_info, &
+                                             helper%wannier_data, m, helper%u_matrix, &
+                                             helper%u_opt, wan90%omega%invariant, nb, nk, nw, &
+                                             have_disentangled, seedname, chk_unit, output, error, &
+                                             comm)
+      if (allocated(error)) call prterr(error, output, outerr, comm)
+    endif
+
+    ! scatter from m_matrix to m_matrix_local
+    ! normally achieved in overlap_read
+    call w90_readwrite_chkpt_dist(helper%dis_manifold, helper%wannier_data, helper%u_matrix, &
+                                  helper%u_opt, m, wan90%m_matrix_local, wan90%omega%invariant, &
+                                  nb, nk, nw, nn, checkpoint, have_disentangled, &
+                                  helper%dist_kpoints, error, comm)
+
+    deallocate (m)
   end subroutine read_chkpt
 
   subroutine input_reader(helper, wan90, seedname, output, outerr, status, comm)
@@ -351,8 +388,8 @@ contains
                                       helper%num_bands, helper%num_kpts, wan90%num_proj, &
                                       helper%num_wann, wan90%optimisation, wan90%eig_found, &
                                       wan90%calc_only_A, cp_pp, helper%gamma_only, &
-                                      wan90%lhasproj, .false., .false., wan90%lsitesymmetry, &
-                                      wan90%use_bloch_phases, seedname, output, error, comm)
+                                      wan90%lhasproj, wan90%lsitesymmetry, wan90%use_bloch_phases, &
+                                      seedname, output, error, comm)
 
     ! test mpi error handling using "unlucky" input token
     ! this machinery used to sit in w90_wannier90_readwrite_dist
@@ -401,6 +438,7 @@ contains
 
     if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_reader
+
   subroutine create_kmesh(helper, output, outerr, status, comm)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
@@ -609,10 +647,10 @@ contains
     endif
     status = 0
     if (helper%gamma_only) then
-      call wann_main_gamma(helper%kmesh_info, helper%kpt_latt, wan90%wann_control, wan90%omega, &
+      call wann_main_gamma(helper%kmesh_info, wan90%wann_control, wan90%omega, &
                            helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
-                           helper%u_matrix, helper%real_lattice, helper%mp_grid, helper%num_kpts, &
-                           helper%num_wann, output, helper%timer, error, comm)
+                           helper%u_matrix, helper%real_lattice, helper%num_kpts, helper%num_wann, &
+                           output, helper%timer, error, comm)
     else
       call wann_main(wan90%ham_logical, helper%kmesh_info, helper%kpt_latt, wan90%wann_control, &
                      wan90%omega, wan90%sitesym, helper%print_output, helper%wannier_data, &

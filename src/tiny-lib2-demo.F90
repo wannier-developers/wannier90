@@ -70,11 +70,13 @@ program libv2
   call mpi_init(ierr)
 #endif
 
-  call input_reader(w90main, w90dat, fn, 6, 6, ierr, comm)
+  call get_fortran_stdout(stdout)
+  call get_fortran_stderr(stderr)
+  call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
 
   ! special branch for writing nnkp file
   if (pp) then
-    call write_kmesh(w90main, w90dat, fn, 6, 6, ierr, comm)
+    call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr, comm)
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
@@ -172,7 +174,7 @@ program libv2
       lplot = .false.
       ltran = .true.
       !else
-      ! illegitimate restart choice
+      ! illegitimate restart choice, should declaim the acceptable choices
     endif
   endif
 ! end restart system
@@ -186,16 +188,16 @@ program libv2
     if (nw < nb) then ! disentanglement reqired
       call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
       if (ierr /= 0) error stop
-      !call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
-      !if (ierr /= 0) error stop
+      call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
+      if (ierr /= 0) error stop
     endif
   endif
 
   if (lwann) then
     call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
     if (ierr /= 0) error stop
-    !call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
-    !if (ierr /= 0) error stop
+    call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
   endif
 
   if (lplot) then

@@ -58,9 +58,8 @@ contains
                                           w90_calculation, eigval, real_lattice, bohr, &
                                           symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
                                           num_wann, optimisation, eig_found, calc_only_A, cp_pp, &
-                                          gamma_only, lhasproj, library, &
-                                          library_param_read_first_pass, lsitesymmetry, &
-                                          use_bloch_phases, seedname, stdout, error, comm)
+                                          gamma_only, lhasproj, lsitesymmetry, use_bloch_phases, &
+                                          seedname, stdout, error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -123,8 +122,6 @@ contains
 
     real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
     logical, intent(inout) :: eig_found
-    logical, intent(in) :: library
-    logical, intent(in) :: library_param_read_first_pass
     !Projections
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
@@ -172,22 +169,22 @@ contains
       call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
-                                        num_wann, library_param_read_first_pass, stdout, error, comm)
+      call w90_readwrite_read_num_bands(.false., num_exclude_bands, num_bands, num_wann, stdout, &
+                                        error, comm)
       if (allocated(error)) return
       disentanglement = (num_bands > num_wann)
 
-      call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error, comm)
+      call w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                                    stdout, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, error, comm)
+      call w90_readwrite_read_mp_grid(.false., mp_grid, num_kpts, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error, comm)
+      call w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_post_proc(cp_pp, calc_only_A, w90_calculation%postproc_setup, &
@@ -197,10 +194,10 @@ contains
       call w90_wannier90_readwrite_read_restart(w90_calculation, seedname, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_system(library, w90_system, stdout, error, comm)
+      call w90_readwrite_read_system(w90_system, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, &
+      call w90_readwrite_read_kpath(kpoint_path, has_kpath, w90_calculation%bands_plot, &
                                     error, comm)
       if (allocated(error)) return
 
@@ -239,7 +236,7 @@ contains
       call w90_readwrite_read_eigvals(.false., .false., .false., &
                                       w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
                                       output_file%write_hr, disentanglement, eig_found, &
-                                      eigval, library, w90_calculation%postproc_setup, num_bands, &
+                                      eigval, w90_calculation%postproc_setup, num_bands, &
                                       num_kpts, stdout, seedname, error, comm)
       if (allocated(error)) return
 
@@ -268,23 +265,23 @@ contains
 
       call utility_inverse_mat(real_lattice, inv_lattice)
 
-      call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, error, comm)
+      call w90_readwrite_read_kpoints(.false., kpt_latt, num_kpts, bohr, error, comm)
       if (allocated(error)) return
 
-      call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, &
+      call w90_wannier90_readwrite_read_explicit_kpts(w90_calculation, kmesh_info, &
                                                       num_kpts, bohr, error, comm)
       if (allocated(error)) return
 
       !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
       !                             stdout, seedname)
-      call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
+      call w90_readwrite_read_atoms(atom_data, real_lattice, bohr, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                     wann_control%guiding_centres%enable, &
                                                     proj_input, select_proj, num_proj, &
                                                     atom_data, inv_lattice, num_wann, gamma_only, &
-                                                    w90_system%spinors, library, bohr, stdout, &
+                                                    w90_system%spinors, bohr, stdout, &
                                                     error, comm)
       if (allocated(error)) return
 
@@ -298,8 +295,7 @@ contains
       if (wann_control%constrain%constrain) then
         call w90_wannier90_readwrite_read_constrained_centres(w90_extra_io%ccentres_frac, &
                                                               wann_control, real_lattice, &
-                                                              num_wann, library, stdout, &
-                                                              error, comm)
+                                                              num_wann, stdout, error, comm)
         if (allocated(error)) return
 
       endif
@@ -390,16 +386,11 @@ contains
 
     ! local variables
     integer :: num_exclude_bands
-    !! Units for energy
-    logical :: library
-    logical :: library_param_read_first_pass
     logical :: found_fermi_energy
     logical :: has_kpath
     logical :: disentanglement
     character(len=20) :: energy_unit
 
-    library = .false.
-    library_param_read_first_pass = .false.
     disentanglement = .false.
     call w90_wannier90_readwrite_read_sym(symmetrize_eps, lsitesymmetry, error, comm)
     if (allocated(error)) return
@@ -413,8 +404,8 @@ contains
     call w90_wannier90_readwrite_read_w90_calcs(w90_calculation, error, comm)
     if (allocated(error)) return
 
-    call w90_wannier90_readwrite_read_transport(w90_calculation%transport, tran, w90_calculation%restart, &
-                                                error, comm)
+    call w90_wannier90_readwrite_read_transport(w90_calculation%transport, tran, &
+                                                w90_calculation%restart, error, comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_dist_cutoff(real_space_ham, error, comm)
@@ -431,32 +422,32 @@ contains
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_num_bands(.false., library, num_exclude_bands, num_bands, &
-                                      num_wann, library_param_read_first_pass, stdout, error, comm)
+    call w90_readwrite_read_num_bands(.false., num_exclude_bands, num_bands, num_wann, stdout, &
+                                      error, comm)
     if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
 
-    call w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, error, comm)
+    call w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_wannierise(wann_control, num_wann, w90_extra_io%ccentres_frac, &
                                                  stdout, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_mp_grid(.false., library, mp_grid, num_kpts, stdout, error, comm)
+    call w90_readwrite_read_mp_grid(.false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, error, comm)
+    call w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_restart(w90_calculation, seedname, error, comm)
     if (allocated(error)) return
 
     w90_system%num_valence_bands = num_wann
-    call w90_readwrite_read_system(library, w90_system, stdout, error, comm)
+    call w90_readwrite_read_system(w90_system, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_kpath(library, kpoint_path, has_kpath, w90_calculation%bands_plot, &
+    call w90_readwrite_read_kpath(kpoint_path, has_kpath, w90_calculation%bands_plot, &
                                   error, comm)
     if (allocated(error)) return
 
@@ -495,7 +486,7 @@ contains
     call w90_readwrite_read_eigvals(.false., .false., .false., &
                                     w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
                                     output_file%write_hr, disentanglement, eig_found, &
-                                    eigval, library, w90_calculation%postproc_setup, num_bands, &
+                                    eigval, w90_calculation%postproc_setup, num_bands, &
                                     num_kpts, stdout, seedname, error, comm)
     if (allocated(error)) return
 
@@ -524,21 +515,21 @@ contains
 
     call utility_inverse_mat(real_lattice, inv_lattice)
 
-    call w90_readwrite_read_kpoints(.false., library, kpt_latt, num_kpts, bohr, stdout, error, comm)
+    call w90_readwrite_read_kpoints(.false., kpt_latt, num_kpts, bohr, error, comm)
     if (allocated(error)) return
 
-    call w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, &
+    call w90_wannier90_readwrite_read_explicit_kpts(w90_calculation, kmesh_info, &
                                                     num_kpts, bohr, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, error, comm)
+    call w90_readwrite_read_atoms(atom_data, real_lattice, bohr, error, comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                   wann_control%guiding_centres%enable, &
                                                   proj_input, select_proj, num_proj, &
                                                   atom_data, inv_lattice, num_wann, gamma_only, &
-                                                  w90_system%spinors, library, bohr, stdout, &
+                                                  w90_system%spinors, bohr, stdout, &
                                                   error, comm)
     if (allocated(error)) return
 
@@ -552,7 +543,7 @@ contains
     if (wann_control%constrain%constrain) then
       call w90_wannier90_readwrite_read_constrained_centres(w90_extra_io%ccentres_frac, &
                                                             wann_control, real_lattice, &
-                                                            num_wann, library, stdout, &
+                                                            num_wann, stdout, &
                                                             error, comm)
       if (allocated(error)) return
 
@@ -1513,7 +1504,7 @@ contains
   end subroutine w90_wannier90_readwrite_read_bloch_phase
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_explicit_kpts(library, w90_calculation, kmesh_info, &
+  subroutine w90_wannier90_readwrite_read_explicit_kpts(w90_calculation, kmesh_info, &
                                                         num_kpts, bohr, error, comm)
     !================================================!
 
@@ -1527,7 +1518,6 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calculation
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: bohr
-    logical, intent(in) :: library
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
@@ -1538,7 +1528,7 @@ contains
     logical :: found
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call w90_readwrite_get_block_length('nnkpts', kmesh_info%explicit_nnkpts, rows, library, error, comm)
+    call w90_readwrite_get_block_length('nnkpts', kmesh_info%explicit_nnkpts, rows, error, comm)
     if (allocated(error)) return
 
     if (kmesh_info%explicit_nnkpts) then
@@ -1615,7 +1605,7 @@ contains
   subroutine w90_wannier90_readwrite_read_projections(proj, use_bloch_phases, lhasproj, &
                                                       guiding_centres, proj_input, select_proj, &
                                                       num_proj, atom_data, recip_lattice, &
-                                                      num_wann, gamma_only, spinors, library, &
+                                                      num_wann, gamma_only, spinors, &
                                                       bohr, stdout, error, comm)
     !================================================!
     use w90_error, only: w90_error_type
@@ -1634,7 +1624,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in) :: gamma_only
     logical, intent(in) :: spinors
-    logical, intent(in) :: use_bloch_phases, guiding_centres, library
+    logical, intent(in) :: use_bloch_phases, guiding_centres
     logical, intent(out) :: lhasproj
 
     integer, intent(in) :: stdout
@@ -1649,7 +1639,7 @@ contains
                                    l_value=proj_input%auto_projections)
     if (allocated(error)) return
 
-    call w90_readwrite_get_block_length('projections', found, i_temp, library, error, comm)
+    call w90_readwrite_get_block_length('projections', found, i_temp, error, comm)
     if (allocated(error)) return
     ! check to see that there are no unrecognised keywords
     if (found) then
@@ -1762,7 +1752,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_constrained_centres(ccentres_frac, wann_control, &
-                                                              real_lattice, num_wann, library, &
+                                                              real_lattice, num_wann, &
                                                               stdout, error, comm)
     !================================================!
     implicit none
@@ -1773,13 +1763,12 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    logical, intent(in) :: library
 
     integer :: i_temp
     logical :: found
 
     ! Constrained centres
-    call w90_readwrite_get_block_length('slwf_centres', found, i_temp, library, error, comm)
+    call w90_readwrite_get_block_length('slwf_centres', found, i_temp, error, comm)
     if (allocated(error)) return
 
     if (found) then
