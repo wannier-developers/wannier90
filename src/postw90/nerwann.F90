@@ -535,7 +535,7 @@ contains
     ! The 9* factors are due to the fact that for each (T,mu) pair we have 9 components 3*3
     call comms_gatherv(LEContotz, 9*counts(my_node_id), EContotz, 9*counts, 9*displs, stdout, &
                        seedname, comm) 
-    call comms_gatherv(LSigStotz, 9*counts(my_node_id), SigStotz, 6*counts, 6*displs, stdout, &
+    call comms_gatherv(LSigStotz, 9*counts(my_node_id), SigStotz, 9*counts, 9*displs, stdout, &
                        seedname, comm) 
     call comms_gatherv(LSeebtotz, 9*counts(my_node_id), Seebtotz, 9*counts, 9*displs, stdout, &
                        seedname, comm) 
