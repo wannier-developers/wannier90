@@ -180,7 +180,7 @@ contains
                                               tran%read_ht, stdout, seedname)
     call w90_readwrite_read_ws_data(ws_region, stdout, seedname) !ws_search etc
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call w90_readwrite_read_eigvals(.false., .false., .false., &
+      call w90_readwrite_read_eigvals(.false., .false., .false., .false., &
                                       w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
                                       output_file%write_hr, disentanglement, eig_found, &
                                       eigval, library, w90_calculation%postproc_setup, num_bands, num_kpts, &
