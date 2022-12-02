@@ -62,6 +62,8 @@ module w90_constants
   !! numerical convergence constant
   real(kind=dp), parameter, public    :: eps10 = 1.0e-10_dp
   !! numerical convergence constant
+  real(kind=dp), parameter, public    :: dkpt = 1.0e-5_dp
+  !! numerical finte diference constat
   real(kind=dp), parameter, public    :: smearing_cutoff = 10._dp
   !! Cutoff for the smearing functions
   real(kind=dp), parameter, public    :: min_smearing_binwidth_ratio = 2._dp
