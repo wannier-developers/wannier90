@@ -151,7 +151,7 @@ boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o types.o io.o utility.o postw90_
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
 
 nerwann.o: $(POSTDIR)nerwann.F90 constants.o types.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o postw90_types.o ws_distance.o
-         $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)nerwann.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)nerwann.F90
 
 geninterp.o: $(POSTDIR)geninterp.F90 constants.o types.o io.o get_oper.o postw90_common.o comms.o utility.o wan_ham.o postw90_types.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)geninterp.F90
