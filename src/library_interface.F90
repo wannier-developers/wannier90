@@ -26,9 +26,9 @@ module w90_helper_types
 
     complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: u_opt(:, :, :) => null()
+    real(kind=dp), pointer :: eigval(:, :) => null()
     !! matrices
 
-    real(kind=dp), allocatable :: eigval(:, :)
     real(kind=dp), allocatable :: fermi_energy_list(:)
     real(kind=dp), allocatable :: kpt_latt(:, :)
     real(kind=dp) :: real_lattice(3, 3)
@@ -81,7 +81,6 @@ module w90_helper_types
     integer :: num_proj = 0
     integer :: optimisation = 3
     integer :: rpt_origin
-    logical :: eig_found = .false.
     logical :: lhasproj = .false.
 
     ! plot
@@ -382,14 +381,14 @@ contains
                                       wan90%proj_input, wan90%real_space_ham, wan90%select_proj, &
                                       helper%kpoint_path, helper%w90_system, wan90%tran, &
                                       helper%print_output, wan90%wann_plot, io_params, &
-                                      helper%ws_region, wan90%w90_calculation, helper%eigval, &
+                                      helper%ws_region, wan90%w90_calculation, &
                                       helper%real_lattice, helper%physics%bohr, &
                                       wan90%sitesym%symmetrize_eps, helper%mp_grid, &
                                       helper%num_bands, helper%num_kpts, wan90%num_proj, &
-                                      helper%num_wann, wan90%optimisation, wan90%eig_found, &
-                                      wan90%calc_only_A, cp_pp, helper%gamma_only, &
-                                      wan90%lhasproj, wan90%lsitesymmetry, wan90%use_bloch_phases, &
-                                      seedname, output, error, comm)
+                                      helper%num_wann, wan90%optimisation, wan90%calc_only_A, &
+                                      cp_pp, helper%gamma_only, wan90%lhasproj, &
+                                      wan90%lsitesymmetry, wan90%use_bloch_phases, seedname, &
+                                      output, error, comm)
 
     ! test mpi error handling using "unlucky" input token
     ! this machinery used to sit in w90_wannier90_readwrite_dist
@@ -590,6 +589,10 @@ contains
       return
     else if (.not. associated(helper%dist_kpoints)) then
       write (outerr, *) 'kpt decomp not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%eigval)) then
+      write (outerr, *) 'eigval not set for disentangle call'
       status = 1
       return
     endif
@@ -805,6 +808,17 @@ contains
 
     helper%u_opt => u_opt
   end subroutine set_u_opt
+
+  subroutine set_eigval(helper, eigval)
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    real(kind=dp), intent(inout), target :: eigval(:, :)
+
+    helper%eigval => eigval
+    ! if not already initialised, set disentanglement window to limits of spectrum
+    if (helper%dis_manifold%win_min == -huge(0.0_dp)) helper%dis_manifold%win_min = minval(helper%eigval)
+    if (helper%dis_manifold%win_max == huge(0.0_dp)) helper%dis_manifold%win_max = maxval(helper%eigval)
+  end subroutine set_eigval
 
   subroutine set_kpoint_distribution(helper, dist)
     implicit none

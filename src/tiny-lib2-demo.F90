@@ -1,5 +1,4 @@
 program libv2
-
 #ifdef MPI08
   use mpi_f08
 #endif
@@ -10,7 +9,7 @@ program libv2
 
   use w90_comms, only: w90_comm_type
   use w90_io, only: io_print_timings
-  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_eigvals
+  use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
   use w90_error, only: w90_error_type
 
@@ -25,6 +24,7 @@ program libv2
   complex(kind=dp), allocatable :: morig(:, :, :, :)
   complex(kind=dp), allocatable :: u(:, :, :)
   complex(kind=dp), allocatable :: uopt(:, :, :)
+  real(kind=dp), allocatable :: eigval(:, :)
   integer, allocatable :: distk(:)
   integer :: length, len2, i
   integer :: mpisize, rank, ierr, nkl
@@ -36,9 +36,6 @@ program libv2
   type(lib_w90_type), target :: w90dat
   type(w90_comm_type) :: comm
   type(w90_error_type), allocatable :: error
-
-  !jj temporary home for read_eigvals
-  logical :: eig_found
 
   pp => w90dat%w90_calculation%postproc_setup
   restart => w90dat%w90_calculation%restart
@@ -127,29 +124,6 @@ program libv2
     endif
   endif
 
-  if (.not. (w90dat%w90_calculation%transport .and. w90dat%tran%read_ht)) then
-    call w90_readwrite_read_eigvals(.false., .false., .false., &
-                                    w90dat%w90_calculation%bands_plot .or. w90dat%w90_calculation%fermi_surface_plot .or. &
-                                    w90dat%output_file%write_hr, nw < nb, eig_found, &
-                                    w90main%eigval, w90dat%w90_calculation%postproc_setup, nb, &
-                                    nk, stdout, fn, error, comm)
-    if (allocated(error)) then
-      ierr = error%code
-      deallocate (error)
-      error stop
-    endif
-    ! test for equality just a hack for now to avoid overwriting an assigned variable
-    if (eig_found .and. w90main%dis_manifold%win_min == -huge(0.0_dp)) w90main%dis_manifold%win_min = minval(w90main%eigval)
-    if (eig_found .and. w90main%dis_manifold%win_max == huge(0.0_dp)) w90main%dis_manifold%win_max = maxval(w90main%eigval)
-  endif
-
-  if (nw < nb) then ! disentanglement reqired
-    allocate (a(nb, nw, nk))
-    allocate (morig(nb, nb, nn, nkl))
-    call set_a_matrix(w90dat, a)
-    call set_m_orig(w90dat, morig)
-  endif
-
   allocate (mloc(nw, nw, nn, nkl))
   !allocate (m(nw, nw, nn, nk)) ! we don't need global m
   allocate (u(nw, nw, nk))
@@ -170,6 +144,7 @@ program libv2
   if (restart == '') then
     if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else
+    cpstatus = ''
     call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr, comm)
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -198,18 +173,30 @@ program libv2
   endif
 ! end restart system
 
+  ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
+
+  if (ldsnt) then
+    ! setup arrays before overlap reads
+    allocate (a(nb, nw, nk))
+    allocate (morig(nb, nb, nn, nkl))
+    call set_a_matrix(w90dat, a)
+    call set_m_orig(w90dat, morig)
+  endif
+
+  ! circumstances where eigenvalues are needed are a little overcomplicated
+  call read_eigvals(w90main, w90dat, ldsnt, eigval)
+  ! ends setup
+
   if (lovlp) then
     call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
     if (ierr /= 0) error stop
   endif
 
   if (ldsnt) then
-    if (nw < nb) then ! disentanglement reqired
-      call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
-      if (ierr /= 0) error stop
-      call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
-      if (ierr /= 0) error stop
-    endif
+    call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
+    call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) error stop
   endif
 
   if (lwann) then
@@ -229,4 +216,41 @@ program libv2
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
+
+contains
+  subroutine read_eigvals(w90main, w90dat, ldsnt, eigval)
+    use w90_readwrite, only: w90_readwrite_read_eigvals
+    implicit none
+    type(lib_global_type), intent(inout) :: w90main
+    type(lib_w90_type), intent(in) :: w90dat
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    logical, intent(in) :: ldsnt
+
+    logical :: eig_found, need_eigvals = .false.
+
+    need_eigvals = w90dat%w90_calculation%bands_plot
+    need_eigvals = (need_eigvals .or. w90dat%w90_calculation%fermi_surface_plot)
+    need_eigvals = (need_eigvals .or. w90dat%output_file%write_hr)
+    ! default to false makes this condition redundant? fixme(jj)
+    !if (w90dat%w90_calculation%transport .and. w90dat%tran%read_ht) need_eigvals = .false.
+    need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
+
+    if (need_eigvals) then
+
+      call w90_readwrite_read_eigvals(.false., .false., .false., need_eigvals, nw < nb, eig_found, &
+                                      eigval, .false., nb, nk, stdout, fn, error, comm)
+      if (allocated(error)) then
+        ierr = error%code
+        deallocate (error)
+        error stop
+      endif
+      ! test for whether these limits are already set (via dis_win_min,max keywords)
+      if (eig_found .and. w90main%dis_manifold%win_min == -huge(0.0_dp)) w90main%dis_manifold%win_min = minval(eigval)
+      if (eig_found .and. w90main%dis_manifold%win_max == huge(0.0_dp)) w90main%dis_manifold%win_max = maxval(eigval)
+
+      ! set library pointers to read data
+      call set_eigval(w90main, eigval)
+    endif
+  end subroutine read_eigvals
+
 end program libv2
