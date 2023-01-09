@@ -324,7 +324,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
                                     kmesh_data, kmesh_info, kpt_latt, out_files, plot, wannierise, &
                                     proj, input_proj, rs_region, select_proj, spec_points, system, &
                                     tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
-                                    eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                                    real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, &
                                     eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
                                     lsitesymmetry, use_bloch_phases, seedname, stdout, &

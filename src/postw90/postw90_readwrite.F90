@@ -163,13 +163,11 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_num_wann(num_wann, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm) !for read_chkpt
+    call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_num_bands(effective_model, num_exclude_bands, num_bands, &
-                                      num_wann, stdout, error, comm)
+    call w90_readwrite_read_num_bands(effective_model, num_bands, num_wann, stdout, error, comm)
     if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
-    !call w90_readwrite_read_devel(print_output%devel_flag, stdout, seedname)
     call w90_readwrite_read_mp_grid(effective_model, mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)

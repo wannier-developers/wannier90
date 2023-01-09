@@ -52,9 +52,10 @@ module w90_types
     !!==================================================
     !! Contains physical information about the material being calculated.
     !!==================================================
+    ! fixme(jj) why is the default -99?  catch uninit vars otherwise
     integer :: num_valence_bands = -99 !wannierise, postw90/postw90_common, get_oper and berry
-    integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
-    logical :: spinors  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
+    integer :: num_elec_per_state = 2 !wannierise and postw90 dos and boltzwann
+    logical :: spinors = .false.  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
   ! timer from io.F90

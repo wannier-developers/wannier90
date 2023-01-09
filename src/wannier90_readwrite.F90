@@ -55,9 +55,9 @@ contains
                                           output_file, wvfn_read, wann_control, proj, proj_input, &
                                           real_space_ham, select_proj, kpoint_path, w90_system, &
                                           tran, print_output, wann_plot, w90_extra_io, ws_region, &
-                                          w90_calculation, eigval, real_lattice, bohr, &
+                                          w90_calculation, real_lattice, bohr, &
                                           symmetrize_eps, mp_grid, num_bands, num_kpts, num_proj, &
-                                          num_wann, optimisation, eig_found, calc_only_A, cp_pp, &
+                                          num_wann, optimisation, calc_only_A, cp_pp, &
                                           gamma_only, lhasproj, lsitesymmetry, use_bloch_phases, &
                                           seedname, stdout, error, comm)
     !================================================!
@@ -111,7 +111,6 @@ contains
     integer, intent(inout) :: optimisation
     integer, intent(in) :: stdout
 
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
@@ -121,7 +120,6 @@ contains
     character(len=*), intent(in)  :: seedname
 
     real(kind=dp) :: recip_lattice(3, 3), volume, inv_lattice(3, 3)
-    logical, intent(inout) :: eig_found
     !Projections
     logical, intent(out) :: lhasproj
     ! RS: symmetry-adapted Wannier functions
@@ -169,8 +167,7 @@ contains
       call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_num_bands(.false., num_exclude_bands, num_bands, num_wann, stdout, &
-                                        error, comm)
+      call w90_readwrite_read_num_bands(.false., num_bands, num_wann, stdout, error, comm)
       if (allocated(error)) return
       disentanglement = (num_bands > num_wann)
 
@@ -241,10 +238,6 @@ contains
       !                                num_kpts, stdout, seedname, error, comm)
       !if (allocated(error)) return
 
-      !dis_manifold%win_min = -1.0_dp
-      !dis_manifold%win_max = 0.0_dp
-      !if (eig_found) dis_manifold%win_min = minval(eigval)
-      !if (eig_found) dis_manifold%win_max = maxval(eigval)
       call w90_readwrite_read_dis_manifold(.true., dis_manifold, error, comm)
       if (allocated(error)) return
 
@@ -304,6 +297,11 @@ contains
   end subroutine w90_wannier90_readwrite_read
 
   !================================================!
+
+  ! fixme!(jj) this function seems identical to read() above
+  ! except that the
+  ! if (.not. (w90_calculation%transport .and. tran%read_ht)) then
+  ! condition 110 lines below is commented out
   subroutine w90_wannier90_readwrite_readall(atom_data, band_plot, dis_control, dis_spheres, &
                                              dis_manifold, exclude_bands, fermi_energy_list, &
                                              fermi_surface_data, kmesh_input, kmesh_info, &
@@ -423,8 +421,7 @@ contains
     call w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_num_bands(.false., num_exclude_bands, num_bands, num_wann, stdout, &
-                                      error, comm)
+    call w90_readwrite_read_num_bands(.false., num_bands, num_wann, stdout, error, comm)
     if (allocated(error)) return
     disentanglement = (num_bands > num_wann)
 
@@ -493,8 +490,6 @@ contains
       if (allocated(error)) return
     endif
 
-    dis_manifold%win_min = -1.0_dp
-    dis_manifold%win_max = 0.0_dp
     if (eig_found) dis_manifold%win_min = minval(eigval)
     if (eig_found) dis_manifold%win_max = maxval(eigval)
     call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error, comm)
@@ -1041,6 +1036,8 @@ contains
   !================================================!
   subroutine w90_wannier90_readwrite_read_post_proc(cp_pp, pp_only_A, postproc_setup, error, comm)
     !================================================!
+    !fixme(jj) post_proc_flag is probably obsolete now
+    ! but we need to make the new main() actually check for this in the input file
     use w90_io, only: post_proc_flag
     use w90_error, only: w90_error_type
     implicit none
@@ -1152,10 +1149,10 @@ contains
         call set_error_input(error, 'Error: write_vdw_data may only be used with a single k-point at Gamma', comm)
         return
       endif
-    endif
-    if (output_file%write_vdw_data .and. disentanglement .and. num_valence_bands <= 0) then
-      call set_error_input(error, 'If writing vdw data and disentangling then num_valence_bands must be defined', comm)
-      return
+      if (disentanglement .and. num_valence_bands <= 0) then
+        call set_error_input(error, 'If writing vdw data and disentangling then num_valence_bands must be defined', comm)
+        return
+      endif
     endif
 
     call w90_readwrite_get_keyword('write_u_matrices', found, error, comm, &
@@ -1441,6 +1438,7 @@ contains
     call w90_readwrite_get_keyword('one_dim_axis', found, error, comm, c_value=one_dim_axis)
     if (allocated(error)) return
 
+    !fixme(jj) these error conditions are pretty complicated
     if (index(one_dim_axis, 'x') > 0) real_space_ham%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) real_space_ham%one_dim_dir = 2
     if (index(one_dim_axis, 'z') > 0) real_space_ham%one_dim_dir = 3
@@ -1456,7 +1454,6 @@ contains
       call set_error_input(error, 'Error: one_dim_axis not recognised', comm)
       return
     endif
-
   end subroutine w90_wannier90_readwrite_read_one_dim
 
   !================================================!
@@ -1500,6 +1497,7 @@ contains
     call w90_readwrite_get_keyword('use_bloch_phases', found, error, comm, l_value=use_bloch_phases)
     if (allocated(error)) return
 
+    ! fixme, wouldn't this check be better at the higher level?
     if (disentanglement .and. use_bloch_phases) then
       call set_error_input(error, 'Error: Cannot use bloch phases for disentanglement', comm)
       return
@@ -1535,22 +1533,26 @@ contains
     if (allocated(error)) return
 
     if (kmesh_info%explicit_nnkpts) then
-      kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
         call set_error_input(error, 'The number of rows in nnkpts must be a multiple of num_kpts', comm)
         return
       end if
+      kmesh_info%nntot = rows/num_kpts
+
       if (allocated(nnkpts_block)) deallocate (nnkpts_block)
+      ! fixme (jj) what is the magic number "5" here?  Shouldn't this be nntot??
       allocate (nnkpts_block(5, rows), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnkpts_block in w90_wannier90_readwrite_read', comm)
         return
       endif
+      ! fixme (jj) what is the magic number "5" here?  Shouldn't this be nntot??
       call w90_readwrite_get_keyword_block('nnkpts', found, rows, 5, bohr, error, comm, &
                                            i_value=nnkpts_block)
       if (allocated(error)) return
 
       ! check that postproc_setup is true
+      ! fixme(jj) maybe this routine needs to be put in a special place if only for postproc_setup???
       if (.not. w90_calculation%postproc_setup) then
         call set_error_input(error, 'Input parameter nnkpts_block is allowed only if postproc_setup = .true.', comm)
         return

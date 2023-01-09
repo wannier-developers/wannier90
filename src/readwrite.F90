@@ -31,23 +31,32 @@ module w90_readwrite
 
   private
 
-  ! Private data for processing input file
-  integer :: num_lines
-  character(len=maxlen), allocatable :: in_data(:)
-
+  type settings_data
+    !!==================================================
+    !! structure to hold a scalar setting
+    !!==================================================
+    ! for simplicity, consider arrays of different rank
+    ! as different types; otherwise reshape, etc.
+    character(len=maxlen) :: keyword ! token
+    character(len=maxlen) :: txtdata ! text data item
+    ! integer data
+    integer, allocatable :: i1d(:)
+    integer, allocatable :: i2d(:, :)
+    integer :: idata
+    ! logical data
+    logical, allocatable :: l1d(:)
+    logical :: ldata
+    ! fp data
+    real(kind=dp), allocatable :: r1d(:)
+    real(kind=dp), allocatable :: r2d(:, :)
+    real(kind=dp) :: rdata
+  end type settings_data
   type settings_type
-    !!==================================================
-    !! structure to hold a collection of scalar settings
-    !!==================================================
-    character(len=maxlen), allocatable :: strings(:) ! tokens
-    character(len=maxlen), allocatable :: txtdata(:) ! text data items
-    !complex(kind=dp), allocatable :: cdata(:) ! complex data items
-    integer, allocatable :: idata(:) ! integer data items
-    logical, allocatable :: ldata(:) ! logical data items
-    real(kind=dp), allocatable :: rdata(:) ! real data items
-
-    integer :: cnt, cntmx ! number of strings stored and max
-    logical :: init = .false. ! if allocated (therefore not empty)
+    integer :: num_entries, num_entries_max ! number of keywords stored and max
+    type(settings_data), allocatable :: entries(:)
+    ! Private data for processing input file
+    integer :: num_lines
+    character(len=maxlen), allocatable :: in_data(:) ! contents of .win file
   end type settings_type
   type(settings_type) :: settings
 
@@ -101,60 +110,42 @@ module w90_readwrite
 
 contains
   !================================================!
-  ! jj, this is pretty horrible, maybe array of objects instead of an object with arrays??
-  ! jj, if tokens are found in settings, and they exist in the input file then error (token not cleared from input file)
-
   subroutine init_settings()
     implicit none
     integer :: defsize = 10
-    !allocate(settings%cdata(defsize))
-    allocate (settings%idata(defsize))
-    allocate (settings%ldata(defsize))
-    allocate (settings%rdata(defsize))
-    allocate (settings%strings(defsize))
-    allocate (settings%txtdata(defsize))
-    settings%init = .true.
-    settings%cnt = 1
-    settings%cntmx = defsize
+    allocate (settings%entries(defsize))
+    settings%num_entries = 0
+    settings%num_entries_max = defsize
   end subroutine init_settings
 
   subroutine expand_settings() ! this is a compromise to avoid a fixed size
-    character(len=maxlen), allocatable :: nstr(:) ! tokens
-    character(len=maxlen), allocatable :: ntxt(:) ! text data items
-    integer, allocatable :: ni(:) ! integer data items
-    logical, allocatable :: nl(:) ! logical data items
-    real(kind=dp), allocatable :: nr(:) ! real data items
-
+    type(settings_data), allocatable :: nentries(:); 
     integer :: n, m ! old, new sizes
-    n = settings%cntmx
+    n = settings%num_entries_max
     m = n + 10
-    allocate (ni(m)); ni(1:n) = settings%idata(1:n); call move_alloc(ni, settings%idata) !f2003, note that "new" space not initialised
-    allocate (nl(m)); nl(1:n) = settings%ldata(1:n); call move_alloc(nl, settings%ldata)
-    allocate (nr(m)); nr(1:n) = settings%rdata(1:n); call move_alloc(nr, settings%rdata)
-    allocate (nstr(m)); nstr(1:n) = settings%strings(1:n); call move_alloc(nstr, settings%strings)
-    allocate (ntxt(m)); ntxt(1:n) = settings%txtdata(1:n); call move_alloc(ntxt, settings%txtdata)
-    settings%cntmx = m
+    allocate (nentries(m)); nentries(1:n) = settings%entries(1:n); call move_alloc(nentries, settings%entries) !f2003, note that "new" space not initialised
+    settings%num_entries_max = m
   end subroutine expand_settings
 
-  subroutine update_settings(string, bool, text, rval, ival)
+  subroutine update_settings(keyword, bool, text, rval, ival)
     implicit none
-    character(*), intent(in) :: string
+    character(*), intent(in) :: keyword
     character(*), intent(in) :: text
     !complex(kind=dp), intent(in) :: cval
     logical, intent(in) :: bool
     real(kind=dp), intent(in) :: rval
     integer, intent(in) :: ival
     integer :: i
-    if (.not. settings%init) call init_settings()
-    i = settings%cnt
-    settings%strings(i) = string
-    !settings%cdata(i) = cval
-    settings%txtdata(i) = text
-    settings%idata(i) = ival
-    settings%ldata(i) = bool
-    settings%rdata(i) = rval
-    settings%cnt = i + 1
-    if (settings%cnt == settings%cntmx) call expand_settings()
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries
+    settings%entries(i)%keyword = keyword
+    !settings%entries(i)%cdata(i) = cval
+    settings%entries(i)%txtdata = text
+    settings%entries(i)%idata = ival
+    settings%entries(i)%ldata = bool
+    settings%entries(i)%rdata = rval
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
   end subroutine update_settings
   !================================================!
 
@@ -189,9 +180,9 @@ contains
     use w90_error, only: w90_error_type
     implicit none
     integer, intent(inout) :: optimisation
-    logical :: found
-    type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    logical :: found
 
     call w90_readwrite_get_keyword('optimisation', found, error, comm, i_value=optimisation)
     if (allocated(error)) return
@@ -209,6 +200,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     logical :: found
 
+    !fixme(jj) check that the correct object var is passed to this fun
     call w90_readwrite_get_keyword('energy_unit', found, error, comm, c_value=energy_unit)
     if (allocated(error)) return
 
@@ -217,8 +209,9 @@ contains
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
       call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units', comm)
       return
+    else if (length_unit .eq. 'bohr') then
+      lenconfac = 1.0_dp/bohr
     endif
-    if (length_unit .eq. 'bohr') lenconfac = 1.0_dp/bohr
   end subroutine w90_readwrite_read_units
 
   subroutine w90_readwrite_read_num_wann(num_wann, error, comm)
@@ -280,12 +273,11 @@ contains
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
-  subroutine w90_readwrite_read_num_bands(pw90_effective_model, num_exclude_bands, num_bands, &
-                                          num_wann, stdout, error, comm)
+  subroutine w90_readwrite_read_num_bands(pw90_effective_model, num_bands, num_wann, stdout, &
+                                          error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: pw90_effective_model
-    integer, intent(in) :: num_exclude_bands
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
@@ -294,6 +286,8 @@ contains
 
     integer :: i_temp
     logical :: found
+
+    !fixme(jj) pw90_effective model
 
     call w90_readwrite_get_keyword('num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
@@ -348,6 +342,8 @@ contains
     integer :: iv_temp(3)
     logical :: found
 
+    !fixme(jj) more pw90_effective_model issues!
+
     call w90_readwrite_get_keyword_vector('mp_grid', found, 3, error, comm, i_value=iv_temp)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
@@ -371,31 +367,39 @@ contains
     type(w90_comm_type), intent(in) :: comm
 
     logical :: found, ltmp
+    integer :: itmp
 
     ltmp = .false.  ! by default our WF are not spinors
     call w90_readwrite_get_keyword('spinors', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
-    w90_system%spinors = ltmp
-!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
-!       call io_error('Error: For spinor WF num_wann must be even')
-
+    if (found) then
+      w90_system%spinors = ltmp
+    else
+      w90_system%spinors = .false. ! specify a default behaviour
+    endif
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
     if (w90_system%spinors) then
       w90_system%num_elec_per_state = 1
     else
-      w90_system%num_elec_per_state = 2
+      w90_system%num_elec_per_state = 2 ! the default
     endif
+
     call w90_readwrite_get_keyword('num_elec_per_state', found, error, comm, &
-                                   i_value=w90_system%num_elec_per_state)
+                                   i_value=itmp)
     if (allocated(error)) return
-    if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) then
-      call set_error_input(error, 'Error: num_elec_per_state can be only 1 or 2', comm)
-      return
-    endif
-    if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) then
-      call set_error_input(error, 'Error: when spinors = T num_elec_per_state must be 1', comm)
-      return
+    if (found) then
+      if (itmp /= 1 .and. itmp /= 2) then
+        call set_error_input(error, 'Error: num_elec_per_state can be only 1 or 2', comm)
+        return
+      else
+        if (w90_system%spinors .and. itmp /= 1) then
+          call set_error_input(error, 'Error: when spinors = T num_elec_per_state must be 1', comm)
+          return
+        else
+          w90_system%num_elec_per_state = itmp
+        endif
+      endif
     endif
 
     call w90_readwrite_get_keyword('num_valence_bands', found, error, comm, &
@@ -405,8 +409,6 @@ contains
       call set_error_input(error, 'Error: num_valence_bands should be greater than zero', comm)
       return
     endif
-    ! there is a check on this parameter later
-
   end subroutine w90_readwrite_read_system
 
   subroutine w90_readwrite_read_kpath(kpoint_path, ok, bands_plot, error, comm)
@@ -427,6 +429,7 @@ contains
     if (found) then
       ok = .true.
       bands_num_spec_points = i_temp*2
+      !fixme (JJ) should we check this is nonzero?
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
@@ -447,7 +450,6 @@ contains
     call w90_readwrite_get_keyword('bands_num_points', found, error, comm, &
                                    i_value=kpoint_path%num_points_first_segment)
     if (allocated(error)) return
-    ! checks
     if (bands_plot) then
       if (kpoint_path%num_points_first_segment < 0) then
         call set_error_input(error, 'Error: bands_num_points must be positive', comm)
@@ -480,6 +482,9 @@ contains
       found_fermi_energy = .true.
       n = 1
     endif
+
+    !fixme(JJ) if fermi_energy_min is missing, then _max and _step are not checked for
+    ! and would be diagnosed as unrecognised tokens, which is potentially misleading
 
     fermi_energy_scan = .false.
     call w90_readwrite_get_keyword('fermi_energy_min', found, error, comm, r_value=fermi_energy_min)
@@ -524,13 +529,7 @@ contains
       do i = 1, n
         fermi_energy_list(i) = fermi_energy_min + (i - 1)*fermi_energy_step
       enddo
-!!    elseif(nfermi==0) then
-!!        ! This happens when both found_fermi_energy=.false. and
-!!        ! fermi_energy_scan=.false. Functionalities that require
-!!        ! specifying a Fermi level should give an error message
-!!        allocate(fermi_energy_list(1),stat=ierr) ! helps streamline things
-!!
-!! AAM_2017-03-27: if nfermi is zero (ie, fermi_energy* parameters are not set in input file)
+!! AAM_2017-03-27: if fermi_energy* parameters are not set in input file
 !! then allocate fermi_energy_list with length 1 and set to zero as default.
     else
       if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
@@ -609,47 +608,44 @@ contains
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
-    if (.not. pw90_effective_model) then
+    if (.not. pw90_effective_model .and. .not. postproc_setup) then
 
-      if (.not. postproc_setup) then
-        inquire (file=trim(seedname)//'.eig', exist=eig_found)
-        if (.not. eig_found) then
-          if (disentanglement) then
-            call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
-            return
-          else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
-            call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation', comm)
-            return
-          end if
-        else
-          ! Allocate only here
-          allocate (eigval(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) then
-            call set_error_alloc(error, 'Error allocating eigval in w90_wannier90_readwrite_read', comm)
-            return
-          endif
-
-          open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
-          do k = 1, num_kpts
-            do n = 1, num_bands
-              read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
-              if ((i .ne. n) .or. (j .ne. k)) then
-                write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
-                write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
-                write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
-                write (stdout, '(a)') ' '
-                write (stdout, '(a)') 'A common cause of this error is using the wrong'
-                write (stdout, '(a)') 'number of bands. Check your input files.'
-                write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
-                write (stdout, '(a)') 'to account for these electrons.'
-                write (stdout, '(a)') ' '
-                call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
-                return
-              end if
-            enddo
-          end do
-          close (eig_unit)
+      inquire (file=trim(seedname)//'.eig', exist=eig_found)
+      if (.not. eig_found) then
+        if (disentanglement) then
+          call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
+          return
+        else if (w90_plot .or. pw90_boltzwann .or. pw90_geninterp) then
+          call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation', comm)
+          return
         end if
+      else
+        ! Allocate only here
+        allocate (eigval(num_bands, num_kpts), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating eigval in w90_wannier90_readwrite_read', comm)
+          return
+        endif
+        open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+        do k = 1, num_kpts
+          do n = 1, num_bands
+            read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
+            if ((i .ne. n) .or. (j .ne. k)) then
+              write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
+              write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
+              write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
+              write (stdout, '(a)') ' '
+              write (stdout, '(a)') 'A common cause of this error is using the wrong'
+              write (stdout, '(a)') 'number of bands. Check your input files.'
+              write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
+              write (stdout, '(a)') 'to account for these electrons.'
+              write (stdout, '(a)') ' '
+              call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
+              return
+            end if
+          enddo
+        end do
+        close (eig_unit)
       end if
     end if
 
@@ -724,6 +720,7 @@ contains
                                    i_value=kmesh_input%search_shells)
     if (allocated(error)) return
     if (kmesh_input%search_shells < 0) then
+      ! fixme(JJ) is zero shells an acceptable input here?
       call set_error_input(error, 'Error: search_shells must be positive', comm)
       return
     endif
@@ -798,10 +795,15 @@ contains
     integer :: ierr
     logical :: found
 
-    if (.not. pw90_effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
-      return
+    !fixme jj, this routine needs saving from pw90_effective_model
+
+    ierr = 0
+    if (.not. pw90_effective_model) then
+      allocate (kpt_cart(3, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
+        return
+      endif
     endif
     allocate (kpt_latt(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -809,11 +811,13 @@ contains
       return
     endif
 
+    ! fixme(jj) why are _latt and _cart used like this??
     call w90_readwrite_get_keyword_block('kpoints', found, num_kpts, 3, bohr, error, comm, &
                                          r_value=kpt_cart)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       kpt_latt = kpt_cart
+      ! fixme(jj) is this only an error if not pw90_effective_model?
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
         return
@@ -826,10 +830,12 @@ contains
     !    k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
     !  end do
     !endif
-    deallocate (kpt_cart, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints', comm)
-      return
+    if (.not. pw90_effective_model) then ! fixme(JJ) surely we need this guard?
+      deallocate (kpt_cart, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints', comm)
+        return
+      endif
     endif
 
   end subroutine w90_readwrite_read_kpoints
@@ -875,17 +881,16 @@ contains
     if (found .and. found2) then
       call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart', comm)
       return
-    endif
-    if (found .and. i_temp > 0) then
+    elseif (found .and. i_temp > 0) then
       lunits = .false.
       atom_data%num_atoms = i_temp
     elseif (found2 .and. i_temp2 > 0) then
       atom_data%num_atoms = i_temp2
-      ! fixme JJ, what does this logic do???
+      ! when units are specified, one fewer line than the total contains atom information
       if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
     end if
+    !fixme, other conditions should be flagged as error
     if (atom_data%num_atoms > 0) then
-      ! fixme JJ, what does this logic do???
       call readwrite_get_atoms(atom_data, lunits, real_lattice, bohr, error, comm)
       if (allocated(error)) return
     end if
@@ -1198,14 +1203,15 @@ contains
     integer :: loop, ierr
 
     ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
+    ! assumes settings%in_data is allocated
     call w90_readwrite_clear_keywords(comm)
 
-    if (any(len_trim(in_data(:)) > 0)) then
+    if (any(len_trim(settings%in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
       write (stdout, *)
-      do loop = 1, num_lines
-        if (len_trim(in_data(loop)) > 0) then
-          write (stdout, '(1x,a)') trim(in_data(loop))
+      do loop = 1, settings%num_lines
+        if (len_trim(settings%in_data(loop)) > 0) then
+          write (stdout, '(1x,a)') trim(settings%in_data(loop))
         end if
       end do
       write (stdout, *)
@@ -1213,11 +1219,12 @@ contains
       return
     end if
 
-    deallocate (in_data, stat=ierr)
+    deallocate (settings%in_data, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating in_data in w90_readwrite_clean_infile', comm)
       return
     endif
+    settings%num_lines = 0
 
   end subroutine w90_readwrite_clean_infile
 
@@ -2277,15 +2284,15 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
-    integer           :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
+    integer :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
-    integer           :: pos
+    integer :: pos
     character, parameter :: TABCHAR = char(9)
 
     in_unit = io_file_unit()
     open (in_unit, file=trim(seedname)//'.win', form='formatted', status='old', err=101)
 
-    num_lines = 0; tot_num_lines = 0
+    settings%num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy
       ! [GP-begin, Apr13, 2012]: I convert all tabulation characters to spaces
@@ -2298,7 +2305,7 @@ contains
       dummy = adjustl(dummy)
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
-        if (len(trim(dummy)) > 0) num_lines = num_lines + 1
+        if (len(trim(dummy)) > 0) settings%num_lines = settings%num_lines + 1
       endif
 
     end do
@@ -2310,9 +2317,9 @@ contains
 210 continue
     rewind (in_unit)
 
-    allocate (in_data(num_lines), stat=ierr)
+    allocate (settings%in_data(settings%num_lines), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating in_data in w90_readwrite_in_file', comm)
+      call set_error_alloc(error, 'Error allocating settings%in_data in w90_readwrite_in_file', comm)
       return
     endif
 
@@ -2333,10 +2340,10 @@ contains
       line_counter = line_counter + 1
       in1 = index(dummy, '!')
       in2 = index(dummy, '#')
-      if (in1 == 0 .and. in2 == 0) in_data(line_counter) = dummy
-      if (in1 == 0 .and. in2 > 0) in_data(line_counter) = dummy(:in2 - 1)
-      if (in2 == 0 .and. in1 > 0) in_data(line_counter) = dummy(:in1 - 1)
-      if (in2 > 0 .and. in1 > 0) in_data(line_counter) = dummy(:min(in1, in2) - 1)
+      if (in1 == 0 .and. in2 == 0) settings%in_data(line_counter) = dummy
+      if (in1 == 0 .and. in2 > 0) settings%in_data(line_counter) = dummy(:in2 - 1)
+      if (in2 == 0 .and. in1 > 0) settings%in_data(line_counter) = dummy(:in1 - 1)
+      if (in2 > 0 .and. in1 > 0) settings%in_data(line_counter) = dummy(:min(in1, in2) - 1)
     end do
 
     close (in_unit)
@@ -2377,64 +2384,69 @@ contains
 
     found = .false.
 
-    if (settings%init) then ! check for presence in settings object
-      do loop = 1, settings%cnt  ! this means the first occurance of the variable in settings is used
-        ! memory beyond cnt is not initialised
-        if (settings%strings(loop) == keyword) then
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      !error condition
+    elseif (allocated(settings%entries)) then
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
           if (present(i_value)) then
-            i_value = settings%idata(loop)
+            i_value = settings%entries(loop)%idata
           else if (present(r_value)) then
-            r_value = settings%rdata(loop)
+            r_value = settings%entries(loop)%rdata
           else if (present(l_value)) then
-            l_value = settings%ldata(loop)
+            l_value = settings%entries(loop)%ldata
           else if (present(c_value)) then
-            c_value = settings%txtdata(loop)
+            c_value = settings%entries(loop)%txtdata
           endif
           ! else is a logic error (which should be checked for)
+          ! fixme check for error cases (jj)
           found = .true.
           return
         endif
       enddo
-    endif
-    ! here control returns to scanning the input file; that behaviour may not be desirable
-    ! consider 'else' for exclusive settings or infile
+    else if (allocated(settings%in_data)) then
+      ! by default, scan the input file
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      itmp = in + len(trim(keyword))
-      if (in_data(loop) (itmp:itmp) /= '=' &
-          .and. in_data(loop) (itmp:itmp) /= ':' &
-          .and. in_data(loop) (itmp:itmp) /= ' ') cycle
-      if (found) then
-        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
-        return
-      endif
-      found = .true.
-      dummy = in_data(loop) (kl + 1:)
-      in_data(loop) (1:maxlen) = ' '
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
-
-    if (found) then
-      if (present(c_value)) c_value = dummy
-      if (present(l_value)) then
-        if (index(dummy, 't') > 0) then
-          l_value = .true.
-        elseif (index(dummy, 'f') > 0) then
-          l_value = .false.
-        else
-          call set_error_input(error, 'Error: Problem reading logical keyword '//trim(keyword), comm)
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        itmp = in + len(trim(keyword))
+        if (settings%in_data(loop) (itmp:itmp) /= '=' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ':' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ' ') cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
           return
         endif
-      endif
-      if (present(i_value)) read (dummy, *, err=220, end=220) i_value
-      if (present(r_value)) read (dummy, *, err=220, end=220) r_value
-    end if
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        settings%in_data(loop) (1:maxlen) = ' '
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
+      end do
+
+      if (found) then
+        if (present(c_value)) c_value = dummy
+        if (present(l_value)) then
+          if (index(dummy, 't') > 0) then
+            l_value = .true.
+          elseif (index(dummy, 'f') > 0) then
+            l_value = .false.
+          else
+            call set_error_input(error, 'Error: Problem reading logical keyword '//trim(keyword), comm)
+            return
+          endif
+        endif
+        if (present(i_value)) read (dummy, *, err=220, end=220) i_value
+        if (present(r_value)) read (dummy, *, err=220, end=220) r_value
+      end if
+    else
+      ! error condition
+    endif
 
     return
 220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
@@ -2479,16 +2491,16 @@ contains
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      in = index(settings%in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
         call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
         return
       endif
       found = .true.
-      dummy = in_data(loop) (kl + 1:)
-      in_data(loop) (1:maxlen) = ' '
+      dummy = settings%in_data(loop) (kl + 1:)
+      settings%in_data(loop) (1:maxlen) = ' '
       dummy = adjustl(dummy)
       if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
         dummy = dummy(2:)
@@ -2543,15 +2555,15 @@ contains
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      in = index(settings%in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
         call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
         return
       endif
       found = .true.
-      dummy = in_data(loop) (kl + 1:)
+      dummy = settings%in_data(loop) (kl + 1:)
       dummy = adjustl(dummy)
       if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
         dummy = dummy(2:)
@@ -2628,10 +2640,10 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -2646,10 +2658,10 @@ contains
       return
     end if
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -2695,7 +2707,7 @@ contains
 
     lconvert = .false.
     if (blen == rows + 1) then
-      dummy = in_data(line_s + 1)
+      dummy = settings%in_data(line_s + 1)
       if (index(dummy, 'ang') .ne. 0) then
         lconvert = .false.
       elseif (index(dummy, 'bohr') .ne. 0) then
@@ -2704,14 +2716,14 @@ contains
         call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised', comm)
         return
       endif
-      in_data(line_s) (1:maxlen) = ' '
+      settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     endif
 
 !    r_value=1.0_dp
     counter = 0
     do loop = line_s + 1, line_e - 1
-      dummy = in_data(loop)
+      dummy = settings%in_data(loop)
       counter = counter + 1
       if (present(c_value)) read (dummy, *, err=240, end=240) (c_value(i, counter), i=1, columns)
       if (present(l_value)) then
@@ -2730,7 +2742,7 @@ contains
       endif
     endif
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
     return
 
@@ -2775,10 +2787,10 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -2793,10 +2805,10 @@ contains
       return
     end if
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -2821,14 +2833,14 @@ contains
     found = .true.
 
     if (present(lunits)) then
-      dummy = in_data(line_s + 1)
+      dummy = settings%in_data(line_s + 1)
       read (dummy, *, end=555) atsym, (atpos(i), i=1, 3)
       lunits = .false.
     endif
 
     if (rows <= 0) then !cope with empty blocks
       found = .false.
-      in_data(line_s:line_e) (1:maxlen) = ' '
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     end if
 
     return
@@ -2837,7 +2849,7 @@ contains
 
     if (rows <= 1) then !cope with empty blocks
       found = .false.
-      in_data(line_s:line_e) (1:maxlen) = ' '
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     end if
 
     return
@@ -2891,10 +2903,10 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -2904,10 +2916,10 @@ contains
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -2929,7 +2941,7 @@ contains
 
     lconvert = .false.
     if (lunits) then
-      dummy = in_data(line_s + 1)
+      dummy = settings%in_data(line_s + 1)
       if (index(dummy, 'ang') .ne. 0) then
         lconvert = .false.
       elseif (index(dummy, 'bohr') .ne. 0) then
@@ -2938,13 +2950,13 @@ contains
         call set_error_input(error, 'Error: Units in block atoms_cart not recognised in readwrite_get_atoms', comm)
         return
       endif
-      in_data(line_s) (1:maxlen) = ' '
+      settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     endif
 
     counter = 0
     do loop = line_s + 1, line_e - 1
-      dummy = in_data(loop)
+      dummy = settings%in_data(loop)
       counter = counter + 1
       if (frac) then
         read (dummy, *, err=240, end=240) atoms_label_tmp(counter), (atoms_pos_frac_tmp(i, counter), i=1, 3)
@@ -2953,9 +2965,10 @@ contains
       end if
     end do
 
+    ! fixme(jj) shouldn't this be lenconfac?
     if (lconvert) atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
     if (frac) then
       do loop = 1, atom_data%num_atoms
@@ -3188,17 +3201,17 @@ contains
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      in = index(settings%in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
         call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
         return
       endif
       found = .true.
-      dummy = in_data(loop) (kl + 1:)
+      dummy = settings%in_data(loop) (kl + 1:)
       dummy = adjustl(dummy)
-      if (.not. lcount) in_data(loop) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(loop) (1:maxlen) = ' '
       if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
         dummy = dummy(2:)
         dummy = adjustl(dummy)
@@ -3297,8 +3310,8 @@ contains
     end do
 
     constraint_num = 0
-    do loop1 = 1, num_lines
-      dummy = in_data(loop1)
+    do loop1 = 1, settings%num_lines
+      dummy = settings%in_data(loop1)
       if (constraint_num > 0) then
         if (trim(dummy) == '') cycle
         index1 = index(dummy, 'begin')
@@ -3313,7 +3326,7 @@ contains
             call set_error_input(error, 'Wrong ending of block (need to end slwf_centres)', comm)
             return
           endif
-          in_data(loop1) (1:maxlen) = ' '
+          settings%in_data(loop1) (1:maxlen) = ' '
           exit
         end if
         column = 0
@@ -3342,7 +3355,7 @@ contains
             finish = start
           end if
         end do
-        in_data(loop1) (1:maxlen) = ' '
+        settings%in_data(loop1) (1:maxlen) = ' '
         constraint_num = constraint_num + 1
       end if
       index1 = index(dummy, 'slwf_centres')
@@ -3350,7 +3363,7 @@ contains
         index1 = index(dummy, 'begin')
         if (index1 > 0) then
           constraint_num = 1
-          in_data(loop1) (1:maxlen) = ' '
+          settings%in_data(loop1) (1:maxlen) = ' '
         end if
       end if
     end do
@@ -3560,10 +3573,10 @@ contains
       endif
     endif
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -3573,10 +3586,10 @@ contains
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -3600,29 +3613,29 @@ contains
       return
     end if
 
-    dummy = in_data(line_s + 1)
+    dummy = settings%in_data(line_s + 1)
     lconvert = .false.
     lrandom = .false.
     lpartrandom = .false.
     if (index(dummy, 'ang') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     elseif (index(dummy, 'bohr') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
       lconvert = .true.
     elseif (index(dummy, 'random') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
-      if (index(in_data(line_s + 1), end_st) .ne. 0) then
+      if (index(settings%in_data(line_s + 1), end_st) .ne. 0) then
         lrandom = .true.     ! all projections random
       else
         lpartrandom = .true. ! only some projections random
-        if (index(in_data(line_s + 1), 'ang') .ne. 0) then
-          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+        if (index(settings%in_data(line_s + 1), 'ang') .ne. 0) then
+          if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
-        elseif (index(in_data(line_s + 1), 'bohr') .ne. 0) then
-          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+        elseif (index(settings%in_data(line_s + 1), 'bohr') .ne. 0) then
+          if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
           lconvert = .true.
         endif
@@ -3647,7 +3660,7 @@ contains
           spn_counter = 1
         endif
         ! Strip input line of all spaces
-        dummy = utility_strip(in_data(line))
+        dummy = utility_strip(settings%in_data(line))
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
         if (pos1 == 0) then
@@ -4087,7 +4100,7 @@ contains
     endif
 
     ! I shouldn't get here, but just in case
-    if (.not. lcount) in_data(line_s:line_e) (1:maxlen) = ' '
+    if (.not. lcount) settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
 !~     ! Check
 !~     do loop=1,num_wann
@@ -4198,10 +4211,10 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -4211,10 +4224,10 @@ contains
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -4238,13 +4251,13 @@ contains
     do loop = line_s + 1, line_e - 1
 
       counter = counter + 2
-      dummy = in_data(loop)
+      dummy = settings%in_data(loop)
       read (dummy, *, err=240, end=240) kpoint_path%labels(counter - 1), &
         (kpoint_path%points(i, counter - 1), i=1, 3), &
         kpoint_path%labels(counter), (kpoint_path%points(i, counter), i=1, 3)
     end do
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
     return
 
@@ -4280,10 +4293,10 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
@@ -4293,10 +4306,10 @@ contains
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
@@ -4322,7 +4335,7 @@ contains
         return
       end if
 
-      in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
     end if ! found tags
   end subroutine clear_block
 end module w90_readwrite
