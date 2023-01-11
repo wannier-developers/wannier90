@@ -182,9 +182,9 @@ module w90_types
     !!==================================================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
     !!==================================================
-    real(kind=dp) :: win_min
+    real(kind=dp) :: win_min = -huge(0.0_dp)
     !! lower bound of the disentanglement outer window
-    real(kind=dp) :: win_max
+    real(kind=dp) :: win_max = huge(0.0_dp)
     !! upper bound of the disentanglement outer window
     real(kind=dp) :: froz_min = -1.0_dp
     !! lower bound of the disentanglement inner (frozen) window

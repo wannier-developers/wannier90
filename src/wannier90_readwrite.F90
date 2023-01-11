@@ -233,18 +233,19 @@ contains
     if (allocated(error)) return
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      call w90_readwrite_read_eigvals(.false., .false., .false., &
-                                      w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-                                      output_file%write_hr, disentanglement, eig_found, &
-                                      eigval, w90_calculation%postproc_setup, num_bands, &
-                                      num_kpts, stdout, seedname, error, comm)
-      if (allocated(error)) return
+      !fixme(jj) consider whether this should be here (should not be read in library mode)
+      !call w90_readwrite_read_eigvals(.false., .false., .false., &
+      !                                w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
+      !                                output_file%write_hr, disentanglement, eig_found, &
+      !                                eigval, w90_calculation%postproc_setup, num_bands, &
+      !                                num_kpts, stdout, seedname, error, comm)
+      !if (allocated(error)) return
 
-      dis_manifold%win_min = -1.0_dp
-      dis_manifold%win_max = 0.0_dp
-      if (eig_found) dis_manifold%win_min = minval(eigval)
-      if (eig_found) dis_manifold%win_max = maxval(eigval)
-      call w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error, comm)
+      !dis_manifold%win_min = -1.0_dp
+      !dis_manifold%win_max = 0.0_dp
+      !if (eig_found) dis_manifold%win_min = minval(eigval)
+      !if (eig_found) dis_manifold%win_max = maxval(eigval)
+      call w90_readwrite_read_dis_manifold(.true., dis_manifold, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_disentangle(dis_control, dis_spheres, num_bands, num_wann, &
@@ -482,13 +483,15 @@ contains
     call w90_readwrite_read_ws_data(ws_region, error, comm) !ws_search etc
     if (allocated(error)) return
 
-    !if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-    call w90_readwrite_read_eigvals(.false., .false., .false., &
-                                    w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-                                    output_file%write_hr, disentanglement, eig_found, &
-                                    eigval, w90_calculation%postproc_setup, num_bands, &
-                                    num_kpts, stdout, seedname, error, comm)
-    if (allocated(error)) return
+    ! JJ read eigvals should never be called by the library
+    if (.not. (w90_calculation%transport .and. tran%read_ht)) then
+      call w90_readwrite_read_eigvals(.false., .false., .false., &
+                                      w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
+                                      output_file%write_hr, disentanglement, eig_found, &
+                                      eigval, w90_calculation%postproc_setup, num_bands, &
+                                      num_kpts, stdout, seedname, error, comm)
+      if (allocated(error)) return
+    endif
 
     dis_manifold%win_min = -1.0_dp
     dis_manifold%win_max = 0.0_dp

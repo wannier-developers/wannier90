@@ -10,7 +10,7 @@ program libv2
 
   use w90_comms, only: w90_comm_type
   use w90_io, only: io_print_timings
-  use w90_readwrite, only: w90_readwrite_write_header
+  use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_read_eigvals
   use w90_sitesym, only: sitesym_read
   use w90_error, only: w90_error_type
 
@@ -36,6 +36,9 @@ program libv2
   type(lib_w90_type), target :: w90dat
   type(w90_comm_type) :: comm
   type(w90_error_type), allocatable :: error
+
+  !jj temporary home for read_eigvals
+  logical :: eig_found
 
   pp => w90dat%w90_calculation%postproc_setup
   restart => w90dat%w90_calculation%restart
@@ -122,6 +125,22 @@ program libv2
       deallocate (error)
       error stop
     endif
+  endif
+
+  if (.not. (w90dat%w90_calculation%transport .and. w90dat%tran%read_ht)) then
+    call w90_readwrite_read_eigvals(.false., .false., .false., &
+                                    w90dat%w90_calculation%bands_plot .or. w90dat%w90_calculation%fermi_surface_plot .or. &
+                                    w90dat%output_file%write_hr, nw < nb, eig_found, &
+                                    w90main%eigval, w90dat%w90_calculation%postproc_setup, nb, &
+                                    nk, stdout, fn, error, comm)
+    if (allocated(error)) then
+      ierr = error%code
+      deallocate (error)
+      error stop
+    endif
+    ! test for equality just a hack for now to avoid overwriting an assigned variable
+    if (eig_found .and. w90main%dis_manifold%win_min == -huge(0.0_dp)) w90main%dis_manifold%win_min = minval(w90main%eigval)
+    if (eig_found .and. w90main%dis_manifold%win_max == huge(0.0_dp)) w90main%dis_manifold%win_max = maxval(w90main%eigval)
   endif
 
   if (nw < nb) then ! disentanglement reqired
