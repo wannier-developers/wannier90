@@ -535,8 +535,7 @@ contains
     noise_count = 0
 
     if (.not. wann_control%lfixstep .and. optimisation <= 0) then
-      page_unit = io_file_unit()
-      open (unit=page_unit, status='scratch', form='unformatted')
+      open (newunit=page_unit, status='scratch', form='unformatted')
     endif
 
     ! main iteration loop

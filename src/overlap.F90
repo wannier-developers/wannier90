@@ -242,8 +242,7 @@ contains
     !if (on_root) then - read on local bits on all nodes
 
     ! Read M_matrix_orig from file
-    mmn_in = io_file_unit()
-    open (unit=mmn_in, file=trim(seedname)//'.mmn', &
+    open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
           form='formatted', status='old', action='read', err=101)
 
     if (on_root) write (stdout, '(/a)', advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
@@ -333,8 +332,7 @@ contains
       !if (on_root) then read on all nodes
 
       ! Read A_matrix from file wannier.amn
-      amn_in = io_file_unit()
-      open (unit=amn_in, file=trim(seedname)//'.amn', form='formatted', status='old', err=102)
+      open (newunit=amn_in, file=trim(seedname)//'.amn', form='formatted', status='old', err=102)
 
       if (on_root) write (stdout, '(/a)', advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
 
@@ -635,8 +633,7 @@ contains
 
     if (timing_level > 1) call io_stopwatch_start('overlap: rotate', timer)
 
-    lam_unit = io_file_unit()
-    open (unit=lam_unit, file='lambda.dat', &
+    open (newunit=lam_unit, file='lambda.dat', &
           form='unformatted', status='old', action='read')
     read (lam_unit) lambda
     close (lam_unit)

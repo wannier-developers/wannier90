@@ -629,8 +629,7 @@ contains
             return
           endif
 
-          eig_unit = io_file_unit()
-          open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+          open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
           do k = 1, num_kpts
             do n = 1, num_bands
               read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
@@ -675,6 +674,7 @@ contains
     ! local
     logical :: found, found2
 
+    !fixme(jj) shouldn't we check for both min and max?
     call w90_readwrite_get_keyword('dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
     if (allocated(error)) return
@@ -682,6 +682,7 @@ contains
     call w90_readwrite_get_keyword('dis_win_max', found, error, comm, &
                                    r_value=dis_manifold%win_max)
     if (allocated(error)) return
+    ! fixme(jj) why does the following depend on having read the .eig file?
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement windows', comm)
       return
@@ -707,7 +708,6 @@ contains
         return
       endif
     endif
-    ! ndimwin/lwindow are not read
   end subroutine w90_readwrite_read_dis_manifold
 
   subroutine w90_readwrite_read_kmesh_data(kmesh_input, error, comm)
