@@ -26,39 +26,15 @@ module w90_readwrite
   use w90_constants, only: dp, maxlen
   use w90_types
   use w90_comms, only: w90_comm_type
+  use w90_settings, only: settings_type, update_settings
 
   implicit none
 
   private
 
-  type settings_data
-    !!==================================================
-    !! structure to hold a scalar setting
-    !!==================================================
-    ! for simplicity, consider arrays of different rank
-    ! as different types; otherwise reshape, etc.
-    character(len=maxlen) :: keyword ! token
-    character(len=maxlen) :: txtdata ! text data item
-    ! integer data
-    integer, allocatable :: i1d(:)
-    integer, allocatable :: i2d(:, :)
-    integer :: idata
-    ! logical data
-    logical, allocatable :: l1d(:)
-    logical :: ldata
-    ! fp data
-    real(kind=dp), allocatable :: r1d(:)
-    real(kind=dp), allocatable :: r2d(:, :)
-    real(kind=dp) :: rdata
-  end type settings_data
-  type settings_type
-    integer :: num_entries, num_entries_max ! number of keywords stored and max
-    type(settings_data), allocatable :: entries(:)
-    ! Private data for processing input file
-    integer :: num_lines
-    character(len=maxlen), allocatable :: in_data(:) ! contents of .win file
-  end type settings_type
   type(settings_type) :: settings
+  !! container for input file (.win) data and options set via library interface
+  !! defined in settings.f90
 
   public :: w90_readwrite_chkpt_dist
   public :: w90_readwrite_dealloc
@@ -71,9 +47,6 @@ module w90_readwrite
   public :: w90_readwrite_write_header
   public :: w90_readwrite_get_block_length
   public :: w90_readwrite_get_centre_constraints
-  public :: w90_readwrite_get_keyword
-  public :: w90_readwrite_get_keyword_block
-  public :: w90_readwrite_get_keyword_vector
   public :: w90_readwrite_get_projections
   public :: w90_readwrite_get_range_vector
   public :: w90_readwrite_get_smearing_index
@@ -103,52 +76,12 @@ module w90_readwrite
   public :: w90_readwrite_read_verbosity
   public :: w90_readwrite_read_ws_data
 
-  private :: clear_block
-  private :: init_settings
-  private :: expand_settings
-  public :: update_settings
+  ! these low level functions might be made private?
+  public :: w90_readwrite_get_keyword
+  public :: w90_readwrite_get_keyword_block
+  public :: w90_readwrite_get_keyword_vector
 
 contains
-  !================================================!
-  subroutine init_settings()
-    implicit none
-    integer :: defsize = 10
-    allocate (settings%entries(defsize))
-    settings%num_entries = 0
-    settings%num_entries_max = defsize
-  end subroutine init_settings
-
-  subroutine expand_settings() ! this is a compromise to avoid a fixed size
-    type(settings_data), allocatable :: nentries(:); 
-    integer :: n, m ! old, new sizes
-    n = settings%num_entries_max
-    m = n + 10
-    allocate (nentries(m)); nentries(1:n) = settings%entries(1:n); call move_alloc(nentries, settings%entries) !f2003, note that "new" space not initialised
-    settings%num_entries_max = m
-  end subroutine expand_settings
-
-  subroutine update_settings(keyword, bool, text, rval, ival)
-    implicit none
-    character(*), intent(in) :: keyword
-    character(*), intent(in) :: text
-    !complex(kind=dp), intent(in) :: cval
-    logical, intent(in) :: bool
-    real(kind=dp), intent(in) :: rval
-    integer, intent(in) :: ival
-    integer :: i
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries
-    settings%entries(i)%keyword = keyword
-    !settings%entries(i)%cdata(i) = cval
-    settings%entries(i)%txtdata = text
-    settings%entries(i)%idata = ival
-    settings%entries(i)%ldata = bool
-    settings%entries(i)%rdata = rval
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
-  end subroutine update_settings
-  !================================================!
-
   !================================================!
   subroutine w90_readwrite_read_verbosity(print_output, error, comm)
     use w90_error, only: w90_error_type
@@ -173,7 +106,6 @@ contains
 
     call w90_readwrite_get_keyword('iprint', found, error, comm, i_value=print_output%iprint)
     if (allocated(error)) return
-
   end subroutine w90_readwrite_read_verbosity
 
   subroutine w90_readwrite_read_algorithm_control(optimisation, error, comm)
@@ -186,7 +118,6 @@ contains
 
     call w90_readwrite_get_keyword('optimisation', found, error, comm, i_value=optimisation)
     if (allocated(error)) return
-
   end subroutine w90_readwrite_read_algorithm_control
 
   subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, error, comm)
@@ -657,7 +588,6 @@ contains
     return
 106 call set_error_file(error, 'Error: Problem reading eigenvalue file '//trim(seedname)//'.eig', comm)
     return
-
   end subroutine w90_readwrite_read_eigvals
 
   subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error, comm)
@@ -776,7 +706,6 @@ contains
     call w90_readwrite_get_keyword('skip_b1_tests', found, error, comm, &
                                    l_value=kmesh_input%skip_B1_tests)
     if (allocated(error)) return
-
   end subroutine w90_readwrite_read_kmesh_data
 
   subroutine w90_readwrite_read_kpoints(pw90_effective_model, kpt_latt, num_kpts, &
@@ -837,7 +766,6 @@ contains
         return
       endif
     endif
-
   end subroutine w90_readwrite_read_kpoints
 
   subroutine w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
@@ -1189,7 +1117,6 @@ contains
     deallocate (lxa)
     ! ends list of postw90 keywords
     if (allocated(error)) deallocate (error)
-
   end subroutine w90_readwrite_clear_keywords
 
   subroutine w90_readwrite_clean_infile(stdout, seedname, error, comm)
@@ -1225,7 +1152,6 @@ contains
       return
     endif
     settings%num_lines = 0
-
   end subroutine w90_readwrite_clean_infile
 
   subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
@@ -1320,7 +1246,6 @@ contains
     do i = 1, 3
       mesh(i) = int(floor(blen(i)/spacing)) + 1
     end do
-
   end subroutine w90_readwrite_set_kmesh
 
   function w90_readwrite_get_smearing_type(smearing_index)
@@ -1461,7 +1386,6 @@ contains
       length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
 
     return
-
   end subroutine w90_readwrite_uppercase
 
   subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
@@ -1558,7 +1482,6 @@ contains
     write (stdout, '(1X,A)') '* '//bohr_version_str//'*'
     write (stdout, '(1X,A)') '******************************************************************************'
     write (stdout, *) ''
-
   end subroutine w90_readwrite_write_header
 
 !================================================!
@@ -1747,8 +1670,6 @@ contains
         return
       endif
     endif
-    return
-
   end subroutine w90_readwrite_dealloc
 
 !~  !================================================!
@@ -1893,7 +1814,6 @@ contains
                                            u_matrix, u_matrix_opt, omega_invariant, num_bands, &
                                            num_kpts, num_wann, have_disentangled, seedname, &
                                            chk_unit, stdout, error, comm)
-    return
   end subroutine w90_readwrite_read_chkpt
 
 !================================================!
@@ -2039,8 +1959,6 @@ contains
     else
       call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
     end if
-    return
-
   end subroutine w90_readwrite_read_chkpt_header
 
 !================================================!
@@ -2149,7 +2067,6 @@ contains
     return
 128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
     return
-
   end subroutine w90_readwrite_read_chkpt_matrices
 
 !================================================!
@@ -2262,7 +2179,6 @@ contains
     if (allocated(error)) return
     call comms_bcast(wannier_data%spreads(1), num_wann, error, comm)
     if (allocated(error)) return
-
   end subroutine w90_readwrite_chkpt_dist
 
 !================================================!
@@ -2347,7 +2263,6 @@ contains
     end do
 
     close (in_unit)
-
   end subroutine w90_readwrite_in_file
 
   !================================================!
@@ -2385,6 +2300,7 @@ contains
     found = .false.
 
     if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      !fixme(jj) implement an error here
       !error condition
     elseif (allocated(settings%entries)) then
       do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
@@ -2451,7 +2367,6 @@ contains
     return
 220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
     return
-
   end subroutine w90_readwrite_get_keyword
 
   !================================================!
@@ -2491,40 +2406,63 @@ contains
 
     found = .false.
 
-    do loop = 1, settings%num_lines
-      in = index(settings%in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      if (found) then
-        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
-        return
-      endif
-      found = .true.
-      dummy = settings%in_data(loop) (kl + 1:)
-      settings%in_data(loop) (1:maxlen) = ' '
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
+    ! fixme(jj) (important!) mechanism to determine length!
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      !fixme(jj) implement an error here
+      !error condition
+    elseif (allocated(settings%entries)) then
 
-    if (found) then
-      if (present(c_value)) read (dummy, *, err=230, end=230) (c_value(i), i=1, length)
-      if (present(l_value)) then
-        ! I don't think we need this. Maybe read into a dummy charater
-        ! array and convert each element to logical
-        call set_error_input(error, 'w90_readwrite_get_keyword_vector unimplemented for logicals', comm)
-        return
-      endif
-      if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
-      if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
-    end if
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! fixme(jj) document somewhere the precidence of tokens in different places
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (present(i_value)) then
+            i_value = settings%entries(loop)%i1d
+          else if (present(r_value)) then
+            r_value = settings%entries(loop)%r1d
+            !fixme, are other array types used?
+            !fixme, need method to flag up units for matrix data, or document choice
+          end if
+          found = .true.
+        end if
+      enddo
+
+    else if (allocated(settings%in_data)) then
+
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+          return
+        endif
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        settings%in_data(loop) (1:maxlen) = ' '
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
+      end do
+
+      if (found) then
+        if (present(c_value)) read (dummy, *, err=230, end=230) (c_value(i), i=1, length)
+        if (present(l_value)) then
+          ! I don't think we need this. Maybe read into a dummy charater
+          ! array and convert each element to logical
+          call set_error_input(error, 'w90_readwrite_get_keyword_vector unimplemented for logicals', comm)
+          return
+        endif
+        if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
+        if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
+      end if
+    endif
 
     return
 
 230 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword)//' in w90_readwrite_get_keyword_vector', comm)
     return
-
   end subroutine w90_readwrite_get_keyword_vector
 
 !================================================!
@@ -2592,9 +2530,6 @@ contains
       end do
 
     end if
-
-    return
-
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
@@ -2603,6 +2538,8 @@ contains
     !================================================!
     !
     !!   Finds the values of the required data block
+    ! i.e. matrix data
+    ! applies to: dis_spheres, kpoints, nnkpts, unit_cell_cart
     !
     !================================================!
 
@@ -2630,8 +2567,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
-    integer           :: in, ins, ine, loop, i, line_e, line_s, counter, blen
-    logical           :: found_e, found_s, lconvert
+    integer :: in, ins, ine, loop, i, line_e, line_s, counter, blen
+    logical :: found_e, found_s, lconvert
     character(len=maxlen) :: dummy, end_st, start_st
 
     found_s = .false.
@@ -2640,115 +2577,136 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, settings%num_lines
-      ins = index(settings%in_data(loop), trim(keyword))
-      if (ins == 0) cycle
-      in = index(settings%in_data(loop), 'begin')
-      if (in == 0 .or. in > 1) cycle
-      line_s = loop
-      if (found_s) then
-        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+    ! fixme(jj) (important) columns,rows needs to be determined before calling this block!
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      !fixme(jj) implement an error here
+      !error condition
+    elseif (allocated(settings%entries)) then
+
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! fixme(jj) document somewhere the precidence of tokens in different places
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (present(i_value)) then
+            i_value = settings%entries(loop)%i2d
+          else if (present(r_value)) then
+            r_value = settings%entries(loop)%r2d
+            !fixme, are other array types used?
+            !fixme, need method to flag up units for matrix data, or document choice
+          end if
+          found = .true.
+        end if
+      enddo
+
+    else if (allocated(settings%in_data)) then
+      do loop = 1, settings%num_lines
+        ins = index(settings%in_data(loop), trim(keyword))
+        if (ins == 0) cycle
+        in = index(settings%in_data(loop), 'begin')
+        if (in == 0 .or. in > 1) cycle
+        line_s = loop
+        if (found_s) then
+          call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+          return
+        endif
+        found_s = .true.
+      end do
+
+      if (.not. found_s) then
+        found = .false.
+        return
+      end if
+
+      do loop = 1, settings%num_lines
+        ine = index(settings%in_data(loop), trim(keyword))
+        if (ine == 0) cycle
+        in = index(settings%in_data(loop), 'end')
+        if (in == 0 .or. in > 1) cycle
+        line_e = loop
+        if (found_e) then
+          call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+          return
+        endif
+        found_e = .true.
+      end do
+
+      if (.not. found_e) then
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+        return
+      end if
+
+      if (line_e <= line_s) then
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+        return
+      end if
+
+      ! number of lines of data in block
+      blen = line_e - line_s - 1
+
+      !    if( blen /= rows) then
+      !       if ( index(trim(keyword),'unit_cell_cart').ne.0 ) then
+      !          if ( blen /= rows+1 ) call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      !       else
+      !          call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      !       endif
+      !    endif
+
+      if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) then
+        call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
         return
       endif
-      found_s = .true.
-    end do
 
-    if (.not. found_s) then
-      found = .false.
-      return
-    end if
-
-    do loop = 1, settings%num_lines
-      ine = index(settings%in_data(loop), trim(keyword))
-      if (ine == 0) cycle
-      in = index(settings%in_data(loop), 'end')
-      if (in == 0 .or. in > 1) cycle
-      line_e = loop
-      if (found_e) then
-        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+      if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. &
+          (index(trim(keyword), 'unit_cell_cart') .eq. 0)) then
+        call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
         return
       endif
-      found_e = .true.
-    end do
 
-    if (.not. found_e) then
-      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
-      return
-    end if
+      found = .true.
 
-    if (line_e <= line_s) then
-      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
-      return
-    end if
-
-    ! number of lines of data in block
-    blen = line_e - line_s - 1
-
-    !    if( blen /= rows) then
-    !       if ( index(trim(keyword),'unit_cell_cart').ne.0 ) then
-    !          if ( blen /= rows+1 ) call io_error('Error: Wrong number of lines in block '//trim(keyword))
-    !       else
-    !          call io_error('Error: Wrong number of lines in block '//trim(keyword))
-    !       endif
-    !    endif
-
-    if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) then
-      call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
-      return
-    endif
-
-    if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. &
-        (index(trim(keyword), 'unit_cell_cart') .eq. 0)) then
-      call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
-      return
-    endif
-
-    found = .true.
-
-    lconvert = .false.
-    if (blen == rows + 1) then
-      dummy = settings%in_data(line_s + 1)
-      if (index(dummy, 'ang') .ne. 0) then
-        lconvert = .false.
-      elseif (index(dummy, 'bohr') .ne. 0) then
-        lconvert = .true.
-      else
-        call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised', comm)
-        return
+      lconvert = .false.
+      if (blen == rows + 1) then
+        dummy = settings%in_data(line_s + 1)
+        if (index(dummy, 'ang') .ne. 0) then
+          lconvert = .false.
+        elseif (index(dummy, 'bohr') .ne. 0) then
+          lconvert = .true.
+        else
+          call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised', comm)
+          return
+        endif
+        settings%in_data(line_s) (1:maxlen) = ' '
+        line_s = line_s + 1
       endif
-      settings%in_data(line_s) (1:maxlen) = ' '
-      line_s = line_s + 1
-    endif
 
-!    r_value=1.0_dp
-    counter = 0
-    do loop = line_s + 1, line_e - 1
-      dummy = settings%in_data(loop)
-      counter = counter + 1
-      if (present(c_value)) read (dummy, *, err=240, end=240) (c_value(i, counter), i=1, columns)
-      if (present(l_value)) then
-        ! I don't think we need this. Maybe read into a dummy charater
-        ! array and convert each element to logical
-        call set_error_input(error, 'w90_readwrite_get_keyword_block unimplemented for logicals', comm)
-        return
+      !    r_value=1.0_dp
+      counter = 0
+      do loop = line_s + 1, line_e - 1
+        dummy = settings%in_data(loop)
+        counter = counter + 1
+        if (present(c_value)) read (dummy, *, err=240, end=240) (c_value(i, counter), i=1, columns)
+        if (present(l_value)) then
+          ! I don't think we need this. Maybe read into a dummy charater
+          ! array and convert each element to logical
+          call set_error_input(error, 'w90_readwrite_get_keyword_block unimplemented for logicals', comm)
+          return
+        endif
+        if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
+        if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
+      end do
+
+      if (lconvert) then
+        if (present(r_value)) then
+          r_value = r_value*bohr
+        endif
       endif
-      if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
-      if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
-    end do
 
-    if (lconvert) then
-      if (present(r_value)) then
-        r_value = r_value*bohr
-      endif
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     endif
-
-    settings%in_data(line_s:line_e) (1:maxlen) = ' '
-
     return
 
 240 call set_error_input(error, 'Error: Problem reading block keyword '//trim(keyword), comm)
     return
-
   end subroutine w90_readwrite_get_keyword_block
 
   !================================================!
@@ -2851,9 +2809,6 @@ contains
       found = .false.
       settings%in_data(line_s:line_e) (1:maxlen) = ' '
     end if
-
-    return
-
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
@@ -3049,7 +3004,6 @@ contains
 
 240 call set_error_alloc(error, 'Error: Problem reading block keyword '//trim(keyword), comm)
     return
-
   end subroutine readwrite_get_atoms
 
   !================================================!
@@ -3155,9 +3109,6 @@ contains
       tmp_string = trim(adjustl(utility_lowercase(atom_data%label(loop))))
       atom_data%label(loop) (1:2) = tmp_string(1:2)
     end do
-
-    return
-
   end subroutine w90_readwrite_lib_set_atoms
 
   !================================================!
@@ -3277,7 +3228,6 @@ contains
 
 101 call set_error_input(error, 'Error parsing keyword '//trim(keyword), comm)
     return
-
   end subroutine w90_readwrite_get_range_vector
 
   subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
@@ -4180,7 +4130,6 @@ contains
     return
 106 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state into string '//trim(ctemp3), comm)
     return
-
   end subroutine w90_readwrite_get_projections
 
   !================================================!
@@ -4263,7 +4212,6 @@ contains
 
 240 call set_error_input(error, 'w90_readwrite_get_keyword_kpath: Problem reading kpath '//trim(dummy), comm)
     return
-
   end subroutine w90_readwrite_get_keyword_kpath
 
   !================================================!

@@ -6,7 +6,6 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
-  use w90_readwrite, only: update_settings
 
   implicit none
 
@@ -106,19 +105,10 @@ module w90_helper_types
   public :: plot_files
   public :: print_times
   public :: read_chkpt
-  public :: set_option
   public :: transport
   public :: wannierise
   public :: write_chkpt
   public :: write_kmesh
-
-  interface set_option
-    module procedure set_option_bool
-    !module procedure set_option_cplx ? useful?
-    module procedure set_option_text
-    module procedure set_option_real
-    module procedure set_option_int
-  end interface set_option
 
 contains
 
@@ -145,34 +135,6 @@ contains
 
     open (newunit=output, file=name, form='formatted', status='unknown')
   end subroutine get_fortran_file
-
-  subroutine set_option_bool(string, bool)
-    implicit none
-    character(*), intent(in) :: string
-    logical, intent(in) :: bool
-    call update_settings(string, bool, "", 0.d0, 0)
-  endsubroutine set_option_bool
-
-  subroutine set_option_real(string, rval)
-    implicit none
-    character(*), intent(in) :: string
-    real(kind=dp), intent(in) :: rval
-    call update_settings(string, .false., "", rval, 0)
-  endsubroutine set_option_real
-
-  subroutine set_option_int(string, ival)
-    implicit none
-    character(*), intent(in) :: string
-    integer, intent(in) :: ival
-    call update_settings(string, .false., "", 0.d0, ival)
-  endsubroutine set_option_int
-
-  subroutine set_option_text(string, text)
-    implicit none
-    character(*), intent(in) :: string
-    character(*), intent(in) :: text
-    call update_settings(string, .false., text, 0.d0, 0)
-  endsubroutine set_option_text
 
   subroutine write_chkpt(helper, wan90, label, seedname, output, outerr, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
