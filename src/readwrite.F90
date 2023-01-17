@@ -232,7 +232,7 @@ contains
           return
         endif
       else
-        num_bands = num_wann
+        num_bands = num_wann ! fixme(jj) this is dangerous in "settings" mode
       endif
       !end if
       ! GP: I subtract it here, but only the first time when I pass the total number of bands
@@ -4186,14 +4186,18 @@ contains
       found_e = .true.
     end do
 
-    if (.not. found_e) then
+    if (found_s .and. .not. found_e) then
       call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
       return
     end if
 
-    if (line_e <= line_s) then
-      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
-      return
+    if (found_s .and. found_e) then
+      if (line_e <= line_s) then
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+        return
+      endif
+    else
+      return !just not found
     end if
 
     counter = 0

@@ -27,8 +27,8 @@ module w90_settings
     !!==================================================
     ! for simplicity, consider arrays of different rank
     ! as different types; otherwise reshape, etc.
-    character(len=maxlen) :: keyword ! token
-    character(len=maxlen) :: txtdata ! text data item
+    character(len=:), allocatable :: keyword ! token
+    character(len=:), allocatable :: txtdata ! text data item
     ! integer data
     integer, allocatable :: i1d(:)
     integer, allocatable :: i2d(:, :)
@@ -59,9 +59,9 @@ module w90_settings
     module procedure set_option_logical
     !module procedure set_option_b1d
     module procedure set_option_text
+    module procedure set_option_int
     module procedure set_option_i1d
     module procedure set_option_i2d
-    module procedure set_option_int
     module procedure set_option_r1d
     module procedure set_option_r2d
     module procedure set_option_real
@@ -89,7 +89,7 @@ contains
 
   subroutine update_settings(keyword, bool, text, rval, ival, i1d, i2d, r1d, r2d)
     implicit none
-    character(*), optional, intent(in) :: keyword
+    character(*), intent(in) :: keyword
     character(*), optional, intent(in) :: text
     integer, optional, intent(in) :: i1d(:)
     integer, optional, intent(in) :: i2d(:, :)
@@ -99,17 +99,19 @@ contains
     real(kind=dp), optional, intent(in) :: r2d(:, :)
     real(kind=dp), optional, intent(in) :: rval
     integer :: i
+
+    ! should assert that only one optional arg is supplied fixme(jj)
     if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries
+    i = settings%num_entries + 1
     settings%entries(i)%keyword = keyword
-    settings%entries(i)%txtdata = text
-    settings%entries(i)%i1d = i1d ! this causes an automatic allocation
-    settings%entries(i)%i2d = i2d
-    settings%entries(i)%idata = ival
-    settings%entries(i)%ldata = bool
-    settings%entries(i)%r1d = r1d
-    settings%entries(i)%r2d = r2d
-    settings%entries(i)%rdata = rval
+    if (present(text)) settings%entries(i)%txtdata = text
+    if (present(i1d)) settings%entries(i)%i1d = i1d ! this causes an automatic allocation
+    if (present(i2d)) settings%entries(i)%i2d = i2d
+    if (present(ival)) settings%entries(i)%idata = ival
+    if (present(bool)) settings%entries(i)%ldata = bool
+    if (present(r1d)) settings%entries(i)%r1d = r1d
+    if (present(r2d)) settings%entries(i)%r2d = r2d
+    if (present(rval)) settings%entries(i)%rdata = rval
     settings%num_entries = i + 1
     if (settings%num_entries == settings%num_entries_max) call expand_settings()
   end subroutine update_settings

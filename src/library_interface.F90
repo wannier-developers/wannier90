@@ -6,6 +6,7 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
+  use w90_settings, only: set_option
 
   implicit none
 
@@ -101,6 +102,7 @@ module w90_helper_types
   public :: get_fortran_stderr
   public :: get_fortran_stdout
   public :: input_reader
+  public :: input_setopt
   public :: overlaps
   public :: plot_files
   public :: print_times
@@ -300,6 +302,77 @@ contains
     deallocate (m)
   end subroutine read_chkpt
 
+  subroutine input_setopt(helper, wan90, seedname, output, outerr, status, comm)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
+      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_input
+    use w90_comms, only: w90_comm_type, mpirank, comms_sync_err
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: output, outerr
+    integer, intent(out) :: status
+    type(lib_global_type), intent(inout) :: helper
+    type(lib_w90_type), intent(inout) :: wan90
+    type(w90_comm_type), intent(in) :: comm
+
+    ! local
+    type(w90_error_type), allocatable :: error
+    type(w90_extra_io_type) :: io_params
+    logical :: cp_pp, disentanglement
+    integer :: eunit
+
+    status = 0
+    ! assert that settings%entries alloc'd
+
+    call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
+                                      wan90%dis_spheres, helper%dis_manifold, &
+                                      helper%exclude_bands, helper%fermi_energy_list, &
+                                      wan90%fermi_surface_data, helper%kmesh_input, &
+                                      helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
+                                      wan90%wvfn_read, wan90%wann_control, wan90%proj, &
+                                      wan90%proj_input, wan90%real_space_ham, wan90%select_proj, &
+                                      helper%kpoint_path, helper%w90_system, wan90%tran, &
+                                      helper%print_output, wan90%wann_plot, io_params, &
+                                      helper%ws_region, wan90%w90_calculation, &
+                                      helper%real_lattice, helper%physics%bohr, &
+                                      wan90%sitesym%symmetrize_eps, helper%mp_grid, &
+                                      helper%num_bands, helper%num_kpts, wan90%num_proj, &
+                                      helper%num_wann, wan90%optimisation, wan90%calc_only_A, &
+                                      cp_pp, helper%gamma_only, wan90%lhasproj, &
+                                      wan90%lsitesymmetry, wan90%use_bloch_phases, seedname, &
+                                      output, error, comm)
+    if (allocated(error)) then
+      write (outerr, *) 'Error in reader', error%code, error%message
+      status = sign(1, error%code)
+      deallocate (error)
+    else
+      ! For aesthetic purposes, convert some things to uppercase
+      call w90_readwrite_uppercase(helper%atom_data, helper%kpoint_path, &
+                                   helper%print_output%length_unit)
+
+      disentanglement = (helper%num_bands > helper%num_wann)
+
+      call w90_readwrite_read_final_alloc(disentanglement, helper%dis_manifold, &
+                                          helper%wannier_data, helper%num_wann, &
+                                          helper%num_bands, helper%num_kpts, error, comm)
+      if (allocated(error)) then
+        write (outerr, *) 'Error in read alloc', error%code, error%message
+        status = sign(1, error%code)
+        deallocate (error)
+      endif
+    endif
+    helper%seedname = seedname ! maybe not keep this separate from "blob"? JJ
+
+    if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
+
+    !fixme need a way to deallocate(settings%entries) here
+  end subroutine input_setopt
+
   subroutine input_reader(helper, wan90, seedname, output, outerr, status, comm)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
@@ -334,23 +407,7 @@ contains
       return
     endif
 
-    call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
-                                      wan90%dis_spheres, helper%dis_manifold, &
-                                      helper%exclude_bands, helper%fermi_energy_list, &
-                                      wan90%fermi_surface_data, helper%kmesh_input, &
-                                      helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
-                                      wan90%wvfn_read, wan90%wann_control, wan90%proj, &
-                                      wan90%proj_input, wan90%real_space_ham, wan90%select_proj, &
-                                      helper%kpoint_path, helper%w90_system, wan90%tran, &
-                                      helper%print_output, wan90%wann_plot, io_params, &
-                                      helper%ws_region, wan90%w90_calculation, &
-                                      helper%real_lattice, helper%physics%bohr, &
-                                      wan90%sitesym%symmetrize_eps, helper%mp_grid, &
-                                      helper%num_bands, helper%num_kpts, wan90%num_proj, &
-                                      helper%num_wann, wan90%optimisation, wan90%calc_only_A, &
-                                      cp_pp, helper%gamma_only, wan90%lhasproj, &
-                                      wan90%lsitesymmetry, wan90%use_bloch_phases, seedname, &
-                                      output, error, comm)
+    call input_setopt(helper, wan90, seedname, output, outerr, status, comm)
 
     ! test mpi error handling using "unlucky" input token
     ! this machinery used to sit in w90_wannier90_readwrite_dist
@@ -371,33 +428,12 @@ contains
     endif
     !!!!! end unlucky code
 
-    if (allocated(error)) then
-      write (outerr, *) 'Error in reader', error%code, error%message
-      status = sign(1, error%code)
-      deallocate (error)
-    else
-      ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(helper%atom_data, helper%kpoint_path, &
-                                   helper%print_output%length_unit)
-      disentanglement = (helper%num_bands > helper%num_wann)
-      call w90_readwrite_read_final_alloc(disentanglement, helper%dis_manifold, &
-                                          helper%wannier_data, helper%num_wann, &
-                                          helper%num_bands, helper%num_kpts, error, comm)
-      if (allocated(error)) then
-        write (outerr, *) 'Error in read alloc', error%code, error%message
-        status = sign(1, error%code)
-        deallocate (error)
-      endif
-    endif
     call w90_readwrite_clean_infile(output, seedname, error, comm)
     if (allocated(error)) then
       write (outerr, *) 'Error in input close', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     endif
-    helper%seedname = seedname ! maybe not keep this separate from "blob"? JJ
-
-    if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_reader
 
   subroutine create_kmesh(helper, output, outerr, status, comm)

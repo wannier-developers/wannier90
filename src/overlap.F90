@@ -91,7 +91,7 @@ contains
       if (on_root) then
         allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_read', comm)
+          call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_allocate', comm)
           return
         endif
       else
@@ -99,7 +99,7 @@ contains
       endif
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read', comm)
+        call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_allocate', comm)
         return
       endif
       m_matrix_orig = cmplx_0
@@ -112,7 +112,7 @@ contains
     if (on_root) then
       allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read', comm)
+        call set_error_alloc(error, 'Error in allocating m_matrix in overlap_allocate', comm)
         return
       endif
       m_matrix = cmplx_0
@@ -121,25 +121,25 @@ contains
     endif
     allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read', comm)
+      call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_allocate', comm)
       return
     endif
     m_matrix_local = cmplx_0
 
     allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read', comm)
+      call set_error_alloc(error, 'Error in allocating a_matrix in overlap_allocate', comm)
       return
     endif
     allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_read', comm)
+      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_allocate', comm)
       return
     endif
     u_matrix = cmplx_0
     allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_read', comm)
+      call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_allocate', comm)
       return
     endif
     u_matrix_opt = cmplx_0
