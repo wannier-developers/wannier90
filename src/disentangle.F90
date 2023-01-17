@@ -1828,13 +1828,6 @@ contains
           u_matrix_opt(indxfroz(l, nkp), l, nkp) = cmplx_1
         enddo
       endif
-
-!~         write(stdout,*) 'u_matrix_opt:'
-!~         do m=1,ndimwin(nkp)
-!~            write(stdout,'(6f12.8)') u_matrix_opt(m,1,nkp), &
-!~                 u_matrix_opt(m,ndimfroz(nkp),nkp), u_matrix_opt(m,num_wann,nkp)
-!~         enddo
-
     enddo   ! NKP
 
     deallocate (cqpq, stat=ierr)
@@ -2960,7 +2953,7 @@ contains
 
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :)
-    complex(kind=dp), intent(in) :: cbw(:, :)
+    complex(kind=dp), intent(inout) :: cbw(:, :)
     complex(kind=dp), intent(out) :: cmtrx(:, :)
     !! (M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
     !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
