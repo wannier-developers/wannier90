@@ -1580,21 +1580,44 @@ contains
           '----------------------------------------------------------'
 
         do i = 1, 3
-          do j = 1, 3
-            do k = 1, 3
-              file_name = trim(seedname)//'-ic_'// &
+          !We separate into the symmetric and antisymetric parts with respect to the b <-> c exchange.
+          !The symmetric part is completely real and the antisymmetric one completely imaginary, 
+          !as argued in 10.1038/s41524-020-00462-9 and 10.1038/s41467-019-11832-3.
+
+          do jk = 1, 6
+            j = alpha_S(jk)
+            k = beta_S(jk)
+
+            file_name = trim(seedname)//'-ic_S_'// &
                         achar(119 + i)//achar(119 + j)//achar(119 + k)//'.dat'
-              file_name = trim(file_name)
-              file_unit = io_file_unit()
-              write (stdout, '(/,3x,a)') '* '//file_name
-              open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
-              do ifreq = 1, pw90_berry%kubo_nfreq
-                write (file_unit, '(3E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
-                fac*real(ic_list(i, j, k, ifreq),dp), fac*aimag(ic_list(i, j, k, ifreq))
-              enddo
-              close (file_unit)
+            file_name = trim(file_name)
+            file_unit = io_file_unit()
+            write (stdout, '(/,3x,a)') '* '//file_name
+            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            do ifreq = 1, pw90_berry%kubo_nfreq
+              write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+              0.5_dp*fac*real( ic_list(i, j, k, ifreq) + ic_list(i, k, j, ifreq), dp)
             enddo
+            close (file_unit)
           enddo
+
+          do jk = 1, 3
+            j = alpha_A(jk)
+            k = beta_A(jk)
+
+            file_name = trim(seedname)//'-ic_A_'// &
+                        achar(119 + i)//achar(119 + j)//achar(119 + k)//'.dat'
+            file_name = trim(file_name)
+            file_unit = io_file_unit()
+            write (stdout, '(/,3x,a)') '* '//file_name
+            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            do ifreq = 1, pw90_berry%kubo_nfreq
+              write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+              0.5_dp*fac*aimag(ic_list(i, j, k, ifreq) - ic_list(i, k, j, ifreq))
+            enddo
+            close (file_unit)
+          enddo
+
         enddo
 
       endif
