@@ -177,6 +177,12 @@ contains
     ! shift current
     real(kind=dp), allocatable :: sc_k_list(:, :, :)
     real(kind=dp), allocatable :: sc_list(:, :, :)
+    ! injection current !ALVARO
+    complex(kind=dp), allocatable :: ic_k_list(:, :, :, :)
+    complex(kind=dp), allocatable :: ic_list(:, :, :, :)
+    ! jerk current !ALVARO
+    complex(kind=dp), allocatable :: jc_k_list(:, :, :)
+    complex(kind=dp), allocatable :: jc_list(:, :, :)
     ! kdotp
     complex(kind=dp), allocatable :: kdotp(:, :, :, :, :)
     ! Complex optical conductivity, dividided into Hermitean and
@@ -209,13 +215,14 @@ contains
     real(kind=dp) :: cell_volume
     real(kind=dp) :: kweight, kweight_adpt, kpt(3), db1, db2, db3, fac, rdum, vdum(3)
 
-    integer :: n, i, j, k, jk, ikpt, if, ierr, loop_x, loop_y, loop_z, kdotp_nbands
+    integer :: n, i, j, k, l, jk, il, ikpt, if, ierr, loop_x, loop_y, loop_z, kdotp_nbands !ALVARO
     integer :: loop_xyz, loop_adpt, adpt_counter_list(fermi_n), ifreq, file_unit
     integer :: my_node_id, num_nodes
 
     character(len=120) :: file_name
 
-    logical :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc, eval_kdotp
+    logical :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc, eval_kdotp, &
+               eval_ic, eval_jc!ALVARO
     logical :: ladpt_kmesh
     logical :: ladpt(fermi_n)
 
@@ -247,13 +254,17 @@ contains
     eval_morb = .false.
     eval_kubo = .false.
     eval_sc = .false.
+    eval_ic = .false. !ALVARO
+    eval_jc = .false. !ALVARO
     eval_shc = .false.
     eval_kdotp = .false.
 
     if (index(pw90_berry%task, 'ahc') > 0) eval_ahc = .true.
     if (index(pw90_berry%task, 'morb') > 0) eval_morb = .true.
     if (index(pw90_berry%task, 'kubo') > 0) eval_kubo = .true.
-    if (index(pw90_berry%task, 'sc') > 0) eval_sc = .true.
+    if (index(pw90_berry%task, 'sc') > 0) eval_sc = .true. !ALVARO
+    if (index(pw90_berry%task, 'ic') > 0) eval_ic = .true. !ALVARO
+    if (index(pw90_berry%task, 'jc') > 0) eval_jc = .true.
     if (index(pw90_berry%task, 'shc') > 0) eval_shc = .true.
     if (index(pw90_berry%task, 'kdotp') > 0) eval_kdotp = .true.
 
@@ -365,6 +376,40 @@ contains
       sc_list = 0.0_dp
     endif
 
+    if (eval_ic) then!ALVARO
+      call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                    eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    timer, error, comm)
+      if (allocated(error)) return
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                    comm)
+      if (allocated(error)) return
+      allocate (ic_k_list(3, 3, 3, pw90_berry%kubo_nfreq))
+      allocate (ic_list(3, 3, 3, pw90_berry%kubo_nfreq))
+      ic_k_list = cmplx_0
+      ic_list = cmplx_0
+    endif
+
+    if (eval_jc) then!ALVARO
+      call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                    eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    timer, error, comm)
+      if (allocated(error)) return
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                    comm)
+      if (allocated(error)) return
+      allocate (jc_k_list(6, 6, pw90_berry%kubo_nfreq))
+      allocate (jc_list(6, 6, pw90_berry%kubo_nfreq))
+      jc_k_list = cmplx_0
+      jc_list = cmplx_0
+    endif
+
     if (eval_shc) then
 
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
@@ -454,6 +499,12 @@ contains
 
       if (eval_sc) write (stdout, '(/,3x,a)') &
         '* Shift current'
+
+      if (eval_ic) write (stdout, '(/,3x,a)') &!ALVARO
+        '* Injection current'
+
+      if (eval_jc) write (stdout, '(/,3x,a)') &!ALVARO
+        '* Jerk current'
 
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
@@ -660,6 +711,28 @@ contains
                                   error, comm)
           if (allocated(error)) return
           sc_list = sc_list + sc_k_list*kweight
+        end if
+
+        if (eval_ic) then!ALVARO
+          call berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                                  ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                  ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                  kpt, real_lattice, ic_k_list, mp_grid, scissors_shift, num_bands, &
+                                  num_kpts, num_wann, num_valence_bands, effective_model, &
+                                  have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+          ic_list = ic_list + ic_k_list*kweight
+        end if
+
+        if (eval_jc) then!ALVARO
+          call berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                                  ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                  ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                  kpt, real_lattice, jc_k_list, mp_grid, scissors_shift, num_bands, &
+                                  num_kpts, num_wann, num_valence_bands, effective_model, &
+                                  have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+          jc_list = jc_list + jc_k_list*kweight
         end if
 
         ! ***END COPY OF CODE BLOCK 1***
@@ -870,6 +943,28 @@ contains
           sc_list = sc_list + sc_k_list*kweight
         end if
 
+        if (eval_ic) then!ALVARO
+          call berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                                  ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                  ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                  kpt, real_lattice, ic_k_list, mp_grid, scissors_shift, num_bands, &
+                                  num_kpts, num_wann, num_valence_bands, effective_model, &
+                                  have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+          ic_list = ic_list + ic_k_list*kweight
+        end if
+
+        if (eval_jc) then!ALVARO
+          call berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+                                  ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                  ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                  kpt, real_lattice, jc_k_list, mp_grid, scissors_shift, num_bands, &
+                                  num_kpts, num_wann, num_valence_bands, effective_model, &
+                                  have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+          jc_list = jc_list + jc_k_list*kweight
+        end if
+
         ! ***END CODE BLOCK 1***
 
         if (eval_shc) then
@@ -991,6 +1086,16 @@ contains
 
     if (eval_sc) then
       call comms_reduce(sc_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+    end if
+
+    if (eval_ic) then!ALVARO
+      call comms_reduce(ic_list(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+    end if
+
+    if (eval_jc) then!ALVARO
+      call comms_reduce(jc_list(1, 1, 1), 6*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
       if (allocated(error)) return
     end if
 
@@ -1436,6 +1541,114 @@ contains
             do ifreq = 1, pw90_berry%kubo_nfreq
               write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
                 fac*sc_list(i, jk, ifreq)
+            enddo
+            close (file_unit)
+          enddo
+        enddo
+
+      endif
+
+      if (eval_ic) then!ALVARO
+        ! -----------------------------!
+        ! Injection current
+        ! -----------------------------!
+
+        ! --------------------------------------------------------------------
+        ! At this point jc_list contains
+        !
+        ! (1/N) sum_k r_^{b}_{mn}r^{c}_{nm}*(\partial_{a}eps_{nm})*\delta(w_{nm}-w),
+        !
+        ! an approximation to
+        !
+        ! V_c int dk/(2.pi)^3 r_^{b}_{mn}r^{c}_{nm}*(\partial_{a}eps_{nm})*\delta(w_{nm}-w)
+        !
+        ! (V_c is the cell volume). We want
+        !
+        ! nu_{abc}=(-pi.e^3/(hbar^2)) int dk/(2.pi)^3 [r_^{b}_{mn}r^{c}_{nm}*(\partial_{a}w_{nm})*\delta(w_{nm}-w)].
+        ! --------------------------------------------------------------------
+        ! We have to:
+        ! i) Divide by V_c, so the integrand will be adimensional.
+        ! ii) Multiply by -pi.e^3/(hbar^2). This gets the result on Amperes/Volt^2 Second.
+
+
+        fac = (-1.0_dp)*pi*physics%elem_charge_SI**3/(physics%hbar_SI**(2)*cell_volume)
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to injection current:           '
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+
+        do i = 1, 3
+          do j = 1, 3
+            do k = 1, 3
+              file_name = trim(seedname)//'-ic_'// &
+                        achar(119 + i)//achar(119 + j)//achar(119 + k)//'.dat'
+              file_name = trim(file_name)
+              file_unit = io_file_unit()
+              write (stdout, '(/,3x,a)') '* '//file_name
+              open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+              do ifreq = 1, pw90_berry%kubo_nfreq
+                write (file_unit, '(3E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+                fac*real(ic_list(i, j, k, ifreq),dp), fac*aimag(ic_list(i, j, k, ifreq))
+              enddo
+              close (file_unit)
+            enddo
+          enddo
+        enddo
+
+      endif
+
+      if (eval_jc) then!ALVARO
+        ! -----------------------------!
+        ! Jerk current
+        ! -----------------------------!
+
+        ! --------------------------------------------------------------------
+        ! At this point jc_list contains
+        !
+        ! (1/N) sum_k r_^{b}_{mn}r^{c}_{nm}*(\partial^2_{ad}w_{nm})*\delta(w_{nm}-w),
+        !
+        ! an approximation to
+        !
+        ! V_c int dk/(2.pi)^3 r_^{b}_{mn}r^{c}_{nm}*(\partial^2_{ad}w_{nm})*\delta(w_{nm}-w)
+        !
+        ! (V_c is the cell volume). We want
+        !
+        ! iota_{abcd}=(2*pi.e^4/(hbar^3)) int dk/(2.pi)^3 [r_^{b}_{mn}r^{c}_{nm}*(\partial^2_{ad}w_{nm})*\delta(w_{nm}-w)].
+        ! --------------------------------------------------------------------
+        ! We have to:
+        ! i) Divide by V_c, so the integrand will be in units of Angstroms.
+        ! ii) Multiply by 10^{-10} to pass from Angstrom to Meter.
+        ! iii) Multiply by 2*pi.e^4/(hbar^3)=3.53*10^{27}Amperes/(Seconds^2 Volts^3) to obtain the results in Amperes*Meter/(Seconds^2 Volts^3).
+
+
+        fac = (1.0E-10_dp)*2*pi*physics%elem_charge_SI**4/(physics%hbar_SI**(3)*cell_volume)
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to jerk current:                '
+        write (stdout, '(1x,a)') &
+          'Factor to convert from Angstrom^4 to Amperes*Meter/(Volt^3*Sec^2):'
+        write (stdout,fmt="(2E18.8E3)") fac
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+
+        do il = 1, 6
+          i = alpha_S(il)
+          l = beta_S(il)
+          do jk = 1, 6
+            j = alpha_S(jk)
+            k = beta_S(jk)
+            file_name = trim(seedname)//'-jc_'// &
+                      achar(119 + i)//achar(119 + j)//achar(119 + k)//achar(119 + l)//'.dat'
+            file_name = trim(file_name)
+            file_unit = io_file_unit()
+            write (stdout, '(/,3x,a)') '* '//file_name
+            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            do ifreq = 1, pw90_berry%kubo_nfreq
+              write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+              fac*real(jc_list(il, jk, ifreq),dp)
             enddo
             close (file_unit)
           enddo
@@ -2139,6 +2352,191 @@ contains
 
   end subroutine berry_get_kubo_k
 
+  subroutine berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+    ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+    ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+    kpt, real_lattice, ic_k_list, mp_grid, scissors_shift, num_bands, &
+    num_kpts, num_wann, num_valence_bands, effective_model, &
+    have_disentangled, seedname, stdout, timer, error, comm)!ALVARO
+
+    use w90_constants,      only: dp, cmplx_0, cmplx_i
+    use w90_utility,        only: utility_diagonalize, utility_w0gauss_vec, & 
+                                  utility_rotate, utility_recip_lattice_base
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
+                                  pw90common_fourier_R_to_k_vec_dadb, &
+                                  pw90common_get_occ, &
+                                  pw90common_kmesh_spacing
+    use w90_wan_ham,        only: wham_get_eig_deleig, &
+                                  wham_get_D_h_P_value, &
+                                  wham_get_deleig_a_b
+    use w90_comms,          only: w90comm_type
+    use w90_types,          only: print_output_type, wannier_data_type, &
+                                  dis_manifold_type, kmesh_info_type, &
+                                  ws_region_type, ws_distance_type, timer_list_type
+    use w90_postw90_types,  only: pw90_berry_mod_type, pw90_band_deriv_degen_type, &
+                                  wigner_seitz_type
+
+    implicit none
+    ! Arguments
+    !
+    type(pw90_berry_mod_type),         intent(in)    :: pw90_berry
+    type(dis_manifold_type),           intent(in)    :: dis_manifold
+    type(pw90_band_deriv_degen_type),  intent(in)    :: pw90_band_deriv_degen
+    type(print_output_type),           intent(in)    :: print_output
+    type(ws_region_type),              intent(in)    :: ws_region
+    type(w90comm_type),                intent(in)    :: comm
+    type(wannier_data_type),           intent(in)    :: wannier_data
+    type(wigner_seitz_type),           intent(inout) :: wigner_seitz
+    type(ws_distance_type),            intent(inout) :: ws_distance
+    type(timer_list_type),             intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out)   :: error
+
+    integer, intent(in) :: num_wann, num_bands, num_kpts, &
+                           num_valence_bands, stdout, mp_grid(3)
+    character(len=50),             intent(in)    :: seedname
+    logical,                       intent(in)    :: have_disentangled, effective_model
+    real(kind=dp),                 intent(in)    :: kpt(3), real_lattice(3, 3), &
+                                                    scissors_shift, eigval(:, :), &
+                                                    kpt_latt(:, :)
+    real(kind=dp),    allocatable, intent(in)    :: fermi_energy_list(:)
+    complex(kind=dp),              intent(out)   :: ic_k_list(:, :, :, :)
+    complex(kind=dp),              intent(in)    :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+
+    !LOCALS
+    complex(kind=dp), allocatable :: UU(:, :), AA(:, :, :), &
+                                     r_pos(:,:,:), HH(:, :), &
+                                     HH_da(:, :, :), D_h(:,:,:)
+    real(kind=dp),    allocatable :: eig(:), eig_da(:, :), &
+                                     occ(:)
+    real(kind=dp)                 :: recip_lattice(3, 3), volume, &
+                                     wmin, wmax, wstep, occ_fac, &
+                                     omega(pw90_berry%kubo_nfreq), delta(pw90_berry%kubo_nfreq), &
+                                     eta_smr, Delta_k, vdum(3), joint_level_spacing
+    integer                       :: a, b, c, i, n, m, iend, istart
+
+    allocate (UU(num_wann, num_wann))
+    allocate (AA(num_wann, num_wann, 3))
+    allocate (r_pos(num_wann, num_wann, 3))
+    allocate (HH_da(num_wann, num_wann, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (eig(num_wann))
+    allocate (eig_da(num_wann, 3))
+    allocate (occ(num_wann))
+
+    !Get Hamiltonian matrix, bands, its derivatives, D_h and UU.
+
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
+                                                real_lattice, mp_grid, ws_distance, &
+                                                wigner_seitz, error, comm, &
+                                                OO=HH, &
+                                                OO_da=HH_da(:, :, :))
+    if (allocated(error)) return
+
+    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+    print_output, wannier_data, ws_distance, wigner_seitz, HH_da, HH, &
+    HH_R, u_matrix, UU, v_matrix, eig_da, eig, eigval, kpt, &
+    real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+    num_wann, num_valence_bands, effective_model, have_disentangled, &
+    seedname, stdout, timer, error, comm)
+    if (allocated(error)) return
+
+    call wham_get_D_h_P_value(pw90_berry, HH_da, D_h, UU, eig, num_wann)
+
+    !Get Berry connection AA.
+    call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
+                                                wigner_seitz, AA_R, kpt, real_lattice, mp_grid, &
+                                                num_wann, error, comm, OO_da=AA)
+    if (allocated(error)) return
+    !Obtain the position operator matrix elements in the Hamiltonian basis. 
+    !See Eq. (25) WYSV06.
+    do i = 1, 3
+      r_pos(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann) + cmplx_i*D_h(:,:,i)
+    enddo
+
+    !Get electronic occupations
+    call pw90common_get_occ(fermi_energy_list(1), eig, occ, num_wann)
+
+    !Calculate k-spacing in case of adaptive smearing.
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+    if (pw90_berry%kubo_smearing%use_adaptive) Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
+
+    !Setup for frequency-related quantities.
+    omega = real(pw90_berry%kubo_freq_list(:), dp)
+    wmin  = omega(1)
+    wmax  = omega(pw90_berry%kubo_nfreq)
+    wstep = omega(2) - omega(1)
+
+    !Initialize ic_k_list.
+    ic_k_list = cmplx_0  
+
+    !Loop on every spatial index.
+    do a = 1, 3
+
+      do b = 1, 3
+
+        do c = 1, 3
+
+          !Loop on bands.
+          do n = 1, num_wann
+            do m = 1, num_wann
+
+              !Cycle diagonal matrix elements and bands above the maximum.
+              if (n == m) cycle
+              if (eig(m) > pw90_berry%kubo_eigval_max .or. eig(n) > pw90_berry%kubo_eigval_max) cycle
+              !Setup T=0 occupation factors.
+              occ_fac = (occ(n) - occ(m))
+              if (abs(occ_fac) < 1e-10) cycle
+  
+              !Set delta function smearing.
+              if (pw90_berry%kubo_smearing%use_adaptive) then
+                vdum(:) = eig_da(m, :) - eig_da(n, :)
+                joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+                eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, &
+                          pw90_berry%kubo_smearing%adaptive_max_width)
+              else
+                eta_smr = pw90_berry%kubo_smearing%fixed_width
+              endif
+  
+              !Restrict to energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr].
+              !Outside this range, the two delta functions are virtually zero.
+              if (((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+              (eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr > wmax)) .and. &
+              ((eig(m) - eig(n) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+              (eig(m) - eig(n) - pw90_berry%sc_w_thr*eta_smr > wmax))) cycle
+
+              !Compute delta(E_nm-w),
+              !choose energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr].
+              istart = max(int((eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr - wmin)/wstep + 1), 1)
+              iend = min(int((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr - wmin)/wstep + 1), pw90_berry%kubo_nfreq)
+
+              !Multiply matrix elements with delta function for the relevant frequencies.
+              delta = 0.0_dp
+              if (istart <= iend) then  
+
+                delta(istart:iend) = &
+                utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+                if (allocated(error)) return
+
+                do i=1, pw90_berry%kubo_nfreq
+                  !Compute the integrand of Eq. (33) of 10.1103/PhysRevB.52.14636.
+                  ic_k_list(a,b,c,i) = ic_k_list(a,b,c,i) + (eig_da(m,a)-eig_da(n,a))*r_pos(n,m,b)*r_pos(m,n,c)*occ_fac*delta(i)
+                enddo
+
+              endif
+
+            enddo!m
+          enddo!n
+
+        enddo!c
+      enddo!b
+    enddo!a
+
+  end subroutine berry_get_ic_klist
+
   subroutine berry_get_sc_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, &
                                 ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                 ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -2456,6 +2854,225 @@ contains
     enddo ! bands
 
   end subroutine berry_get_sc_klist
+
+  subroutine berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
+    ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+    ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+    kpt, real_lattice, jc_k_list, mp_grid, scissors_shift, num_bands, &
+    num_kpts, num_wann, num_valence_bands, effective_model, &
+    have_disentangled, seedname, stdout, timer, error, comm)!ALVARO
+
+    use w90_constants,      only: dp, cmplx_0, cmplx_i
+    use w90_utility,        only: utility_diagonalize, utility_w0gauss_vec, & 
+                                  utility_rotate, utility_recip_lattice_base
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
+                                  pw90common_fourier_R_to_k_vec_dadb, &
+                                  pw90common_get_occ, &
+                                  pw90common_kmesh_spacing
+    use w90_wan_ham,        only: wham_get_eig_deleig, &
+                                  wham_get_D_h_P_value, &
+                                  wham_get_deleig_a_b
+    use w90_comms,          only: w90comm_type
+    use w90_types,          only: print_output_type, wannier_data_type, &
+                                  dis_manifold_type, kmesh_info_type, &
+                                  ws_region_type, ws_distance_type, &
+                                  timer_list_type
+    use w90_postw90_types,  only: pw90_berry_mod_type, pw90_band_deriv_degen_type, &
+                                  wigner_seitz_type
+
+    implicit none
+    ! Arguments
+    !
+    type(pw90_berry_mod_type),         intent(in)    :: pw90_berry
+    type(dis_manifold_type),           intent(in)    :: dis_manifold
+    type(pw90_band_deriv_degen_type),  intent(in)    :: pw90_band_deriv_degen
+    type(print_output_type),           intent(in)    :: print_output
+    type(ws_region_type),              intent(in)    :: ws_region
+    type(w90comm_type),                intent(in)    :: comm
+    type(wannier_data_type),           intent(in)    :: wannier_data
+    type(wigner_seitz_type),           intent(inout) :: wigner_seitz
+    type(ws_distance_type),            intent(inout) :: ws_distance
+    type(timer_list_type),             intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out)   :: error
+
+    integer, intent(in) :: num_wann, num_bands, &
+                           num_kpts, num_valence_bands, &
+                           mp_grid(3), stdout
+
+    real(kind=dp),                 intent(in)    :: kpt(3), real_lattice(3, 3), &
+                                                    kpt_latt(:, :), eigval(:, :), &
+                                                    scissors_shift
+    complex(kind=dp),              intent(out)   :: jc_k_list(:, :, :)
+    real(kind=dp),    allocatable, intent(in)    :: fermi_energy_list(:)
+    logical,                       intent(in)    :: have_disentangled, effective_model
+    character(len=50),             intent(in)    :: seedname
+    complex(kind=dp),              intent(in)    :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+
+    !LOCALS
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: AA(:, :, :), r_pos(:,:,:)
+    complex(kind=dp), allocatable :: HH_da(:, :, :)
+    complex(kind=dp), allocatable :: HH_dadb(:, :, :, :)
+    complex(kind=dp), allocatable :: HH(:, :)
+    complex(kind=dp), allocatable :: D_h(:,:,:)
+    real(kind=dp), allocatable    :: eig(:)
+    real(kind=dp), allocatable    :: eig_da(:, :)
+    real(kind=dp), allocatable    :: occ(:)
+    real(kind=dp), allocatable    :: mu(:,:,:)
+    real(kind=dp)                 :: recip_lattice(3, 3), volume
+
+    integer       :: a, ad, b, bc, c, d, &
+                    i, n, m, iend, istart
+    real(kind=dp) :: wmin, wmax, wstep, &
+                     occ_fac, omega(pw90_berry%kubo_nfreq), &
+                     delta(pw90_berry%kubo_nfreq), eta_smr, &
+                     Delta_k, vdum(3), &
+                     joint_level_spacing
+
+    allocate (UU(num_wann, num_wann))
+    allocate (AA(num_wann, num_wann, 3))
+    allocate (r_pos(num_wann, num_wann, 3))
+    allocate (HH_da(num_wann, num_wann, 3))
+    allocate (HH_dadb(num_wann, num_wann, 3, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (eig(num_wann))
+    allocate (eig_da(num_wann, 3))
+    allocate (occ(num_wann))
+    allocate (mu(num_wann,3,3))
+
+    !Get Hamiltonian matrix, bands, its derivatives, D_h and UU.
+
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
+                                                real_lattice, mp_grid, ws_distance, &
+                                                wigner_seitz, error, comm, &
+                                                OO=HH, &
+                                                OO_da=HH_da(:, :, :), &
+                                                OO_dadb=HH_dadb(:, :, :, :))
+    if (allocated(error)) return
+
+    call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+    print_output, wannier_data, ws_distance, wigner_seitz, HH_da, HH, &
+    HH_R, u_matrix, UU, v_matrix, eig_da, eig, eigval, kpt, &
+    real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+    num_wann, num_valence_bands, effective_model, have_disentangled, &
+    seedname, stdout, timer, error, comm)
+    if (allocated(error)) return
+
+    call wham_get_D_h_P_value(pw90_berry, HH_da, D_h, UU, eig, num_wann)
+
+    !Get Berry connection AA.
+    call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, &
+                                                wigner_seitz, AA_R, kpt, real_lattice, mp_grid, &
+                                                num_wann, error, comm, OO_da=AA)
+    if (allocated(error)) return
+    !Obtain the position operator matrix elements in the Hamiltonian basis. 
+    !See Eq. (25) WYSV06.
+    do i = 1, 3
+      r_pos(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann) + cmplx_i*D_h(:,:,i)
+    enddo
+
+    !Get electronic occupations
+    call pw90common_get_occ(fermi_energy_list(1), eig, occ, num_wann)
+
+    !Calculate k-spacing in case of adaptive smearing.
+    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+    if (pw90_berry%kubo_smearing%use_adaptive) Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
+
+    !Setup for frequency-related quantities.
+    omega = real(pw90_berry%kubo_freq_list(:), dp)
+    wmin = omega(1)
+    wmax = omega(pw90_berry%kubo_nfreq)
+    wstep = omega(2) - omega(1)
+
+    !Initialize jc_k_list.
+    jc_k_list = cmplx_0
+
+    !Loop on a, d spatial indices.
+    do ad = 1, 6!Exploit the a <-> d symmetry of the second band derivative.
+
+      a = alpha_S(ad)
+      d = beta_S(ad)
+
+      !Get 2nd band derivative.
+      call wham_get_deleig_a_b(mu(:,a,d), num_wann, eig, HH_da(:, :, a), HH_da(:, :, d), HH_dadb(:, :, a, d), UU, & 
+                               pw90_berry%sc_eta, pw90_band_deriv_degen, comm, error)
+      if (allocated(error)) return
+      mu(:,d,a) = mu(:,a,d)
+
+    enddo
+
+    !Loop on every spatial index.
+    do ad = 1, 6!Exploit the a <-> d symmetry of the jerk current tensor.
+
+      a = alpha_S(ad)
+      d = beta_S(ad)
+
+      do bc = 1, 6!Exploit the b <-> c symmetry of the jerk current tensor.
+
+        b = alpha_S(bc)
+        c = beta_S(bc)
+
+        !Loop on bands.
+        do n = 1, num_wann
+          do m = 1, num_wann
+
+            !Cycle diagonal matrix elements and bands above the maximum.
+            if (n == m) cycle
+            if (eig(m) > pw90_berry%kubo_eigval_max .or. eig(n) > pw90_berry%kubo_eigval_max) cycle
+            !Setup T=0 occupation factors.
+            occ_fac = (occ(n) - occ(m))
+            if (abs(occ_fac) < 1e-10) cycle
+
+            !Set delta function smearing.
+            if (pw90_berry%kubo_smearing%use_adaptive) then
+              vdum(:) = eig_da(m, :) - eig_da(n, :)
+              joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+              eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, &
+                        pw90_berry%kubo_smearing%adaptive_max_width)
+            else
+              eta_smr = pw90_berry%kubo_smearing%fixed_width
+            endif
+
+            !Restrict to energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr].
+            !Outside this range, the two delta functions are virtually zero
+            if (((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+            (eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr > wmax)) .and. &
+            ((eig(m) - eig(n) + pw90_berry%sc_w_thr*eta_smr < wmin) .or. &
+            (eig(m) - eig(n) - pw90_berry%sc_w_thr*eta_smr > wmax))) cycle
+
+
+            !Compute delta(E_nm-w),
+            !choose energy window spanning [-sc_w_thr*eta_smr,+sc_w_thr*eta_smr].
+            istart = max(int((eig(n) - eig(m) - pw90_berry%sc_w_thr*eta_smr - wmin)/wstep + 1), 1)
+            iend = min(int((eig(n) - eig(m) + pw90_berry%sc_w_thr*eta_smr - wmin)/wstep + 1), pw90_berry%kubo_nfreq)
+
+            !Multiply matrix elements with delta function for the relevant frequencies.
+            delta = 0.0_dp
+
+            if (istart <= iend) then   
+
+              delta(istart:iend) = &
+              utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+              if (allocated(error)) return
+
+              do i=1, pw90_berry%kubo_nfreq
+                !Compute the integrand of Eq. (4) of 10.1103/PhysRevB.102.195410.
+                jc_k_list(ad,bc,i) = jc_k_list(ad,bc,i) + (mu(n,a,d)-mu(m,a,d))*r_pos(n,m,b)*r_pos(m,n,c)*occ_fac*delta(i)
+              enddo
+
+            endif
+
+          enddo!m
+        enddo!n
+
+      enddo!bc
+    enddo!ad
+
+  end subroutine berry_get_jc_klist
 
   !================================================!
   subroutine berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &

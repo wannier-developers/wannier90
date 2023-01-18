@@ -439,6 +439,8 @@ contains
     use w90_postw90_types, only: pw90_band_deriv_degen_type
     use w90_comms,         only: w90comm_type
 
+    implicit none
+
     ! Arguments
     !
     integer,                           intent(in)  :: num_wann
@@ -514,6 +516,7 @@ contains
                               !them in the corresponding indices of deleig_a_b.
           call utility_diagonalize(mu_ten_a_b(j:j + g(j) - 1,j:j + g(j) - 1), &
           g(j), deleig_a_b(j:j+g(j)-1), dummy_rot, error, comm)
+          if (allocated(error)) return
           deallocate(dummy_rot)
 
         elseif (g(j) .EQ. 0) then !Cycle for the other values on the degenerate subspace.
