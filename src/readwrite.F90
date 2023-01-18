@@ -26,15 +26,10 @@ module w90_readwrite
   use w90_constants, only: dp, maxlen
   use w90_types
   use w90_comms, only: w90_comm_type
-  use w90_settings, only: settings_type, update_settings
 
   implicit none
 
   private
-
-  type(settings_type) :: settings
-  !! container for input file (.win) data and options set via library interface
-  !! defined in settings.f90
 
   public :: w90_readwrite_chkpt_dist
   public :: w90_readwrite_dealloc
@@ -76,10 +71,27 @@ module w90_readwrite
   public :: w90_readwrite_read_verbosity
   public :: w90_readwrite_read_ws_data
 
-  ! these low level functions might be made private?
   public :: w90_readwrite_get_keyword
   public :: w90_readwrite_get_keyword_block
   public :: w90_readwrite_get_keyword_vector
+
+  type(settings_type) :: settings
+  !! container for input file (.win) data and options set via library interface
+
+  private :: expand_settings
+  private :: init_settings
+  public :: set_option ! interface for setting vars using library
+  interface set_option
+    module procedure set_option_logical
+    !module procedure set_option_b1d
+    module procedure set_option_text
+    module procedure set_option_int
+    module procedure set_option_i1d
+    module procedure set_option_i2d
+    module procedure set_option_r1d
+    module procedure set_option_r2d
+    module procedure set_option_real
+  end interface set_option
 
 contains
   !================================================!
@@ -4290,4 +4302,135 @@ contains
       settings%in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
     end if ! found tags
   end subroutine clear_block
+
+  subroutine init_settings()
+    implicit none
+    integer, parameter :: defsize = 20 ! default size of settings array
+    allocate (settings%entries(defsize))
+    settings%num_entries = 0
+    settings%num_entries_max = defsize
+  end subroutine init_settings
+
+  subroutine expand_settings() ! this is a compromise to avoid a fixed size
+    type(settings_data), allocatable :: nentries(:); 
+    integer :: n, m ! old, new sizes
+    integer, parameter :: incsize = 20 ! default increment when settings array grows
+    n = settings%num_entries_max
+    m = n + incsize
+    allocate (nentries(m)); nentries(1:n) = settings%entries(1:n); call move_alloc(nentries, settings%entries) !f2003, note that "new" space not initialised
+    settings%num_entries_max = m
+  end subroutine expand_settings
+
+  subroutine set_option_text(keyword, text)
+    implicit none
+    character(*), intent(in) :: keyword
+    character(*), intent(in) :: text
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%txtdata = text
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_text
+
+  subroutine set_option_logical(keyword, bool)
+    implicit none
+    character(*), intent(in) :: keyword
+    logical, intent(in) :: bool
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%ldata = bool
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_logical
+
+  subroutine set_option_i1d(keyword, arr)
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: arr(:)
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%i1d = arr ! this causes an automatic allocation
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_i1d
+
+  subroutine set_option_i2d(keyword, arr)
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: arr(:, :)
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%i2d = arr
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_i2d
+
+  subroutine set_option_int(keyword, ival)
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: ival
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%idata = ival
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_int
+
+  subroutine set_option_r1d(keyword, arr)
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: arr(:)
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%r1d = arr
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_r1d
+
+  subroutine set_option_r2d(keyword, arr)
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: arr(:, :)
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%r2d = arr
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_r2d
+
+  subroutine set_option_real(keyword, rval)
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: rval
+    integer :: i
+
+    if (.not. allocated(settings%entries)) call init_settings()
+    i = settings%num_entries + 1
+    settings%entries(i)%keyword = keyword
+    settings%entries(i)%rdata = rval
+    settings%num_entries = i + 1
+    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+  endsubroutine set_option_real
+
 end module w90_readwrite

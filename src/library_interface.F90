@@ -6,7 +6,7 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
-  use w90_settings, only: set_option
+  use w90_readwrite, only: set_option
 
   implicit none
 
@@ -111,7 +111,6 @@ module w90_helper_types
   public :: wannierise
   public :: write_chkpt
   public :: write_kmesh
-
 contains
 
   subroutine get_fortran_stdout(output)
@@ -884,5 +883,4 @@ contains
     !call exit(ie) ! return true fail code (gnu extension)
     stop
   end subroutine prterr
-
 end module w90_helper_types

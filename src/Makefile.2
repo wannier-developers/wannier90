@@ -98,7 +98,7 @@ clean:
 
 library_interface.o : ../library_interface.F90 \
 	comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
-	types.o wannier90_readwrite.o wannier90_types.o wannierise.o settings.o
+	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../library_interface.F90
 
 constants.o: ../constants.F90
@@ -116,11 +116,8 @@ wannier90_types.o: ../wannier90_types.F90 constants.o io.o
 wannier90_readwrite.o: ../wannier90_readwrite.F90 constants.o io.o types.o wannier90_types.o readwrite.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannier90_readwrite.F90
 
-readwrite.o: ../readwrite.F90 types.o constants.o io.o utility.o comms.o settings.o
+readwrite.o: ../readwrite.F90 types.o constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../readwrite.F90
-
-settings.o: ../settings.f90 constants.o
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../settings.f90
 
 types.o: ../types.F90 constants.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../types.F90

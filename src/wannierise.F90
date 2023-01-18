@@ -267,7 +267,6 @@ contains
       return
     endif
 
-    !fixme jj shift this to writing/plot
     if (wann_control%precond) then
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
