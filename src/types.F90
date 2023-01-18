@@ -224,4 +224,37 @@ module w90_types
     real(kind=dp), allocatable :: points(:, :)
   end type kpoint_path_type
 
+  type settings_data
+    !!==================================================
+    !! structure to hold a scalar and array settings
+    !!==================================================
+    ! for simplicity, consider arrays of different rank
+    ! as different types; otherwise reshape, etc.
+    character(len=:), allocatable :: keyword ! token
+    character(len=:), allocatable :: txtdata ! text data item
+    ! integer data
+    integer, allocatable :: i1d(:)
+    integer, allocatable :: i2d(:, :)
+    integer :: idata
+    ! logical data
+    logical, allocatable :: l1d(:)
+    logical :: ldata
+    ! fp data
+    real(kind=dp), allocatable :: r1d(:)
+    real(kind=dp), allocatable :: r2d(:, :)
+    real(kind=dp) :: rdata
+  end type settings_data
+
+  type settings_type
+    !!==================================================
+    !! structure to hold input var/values
+    !! contents of .win file and settings set by library interface
+    !!==================================================
+    integer :: num_entries = 0, num_entries_max = 0 ! number of keywords stored and max
+    type(settings_data), allocatable :: entries(:)
+    ! data for processing input file
+    integer :: num_lines
+    character(len=maxlen), allocatable :: in_data(:) ! contents of .win file
+  end type settings_type
+
 end module w90_types
