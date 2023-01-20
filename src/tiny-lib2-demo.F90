@@ -158,7 +158,7 @@ program libv2
   do i = 1, nk
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
-  call set_kpoint_distribution(w90main, distk)
+  call set_kpoint_distribution(w90main, stderr, ierr, distk)
   nkl = count(distk == rank) ! number of kpoints this rank
 
   ! setup k mesh

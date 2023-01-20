@@ -2,26 +2,6 @@ module aux
   integer, parameter :: dp = kind(1.0d0)
   private dp
 contains
-
-  subroutine read_a(nb, nk, nw, a)
-    character(len=:), allocatable :: junk
-    complex(kind=dp), allocatable, intent(inout) :: a(:, :, :)
-    integer, intent(inout) :: nb, nk, nw
-    real(kind=dp) :: rea, ima
-    open (newunit=iu, file='gaas.amn')
-    read (iu, '(a)') junk
-    read (iu, *) nb, nk, nw
-    allocate (a(nb, nw, nk))
-    do ik = 1, nk
-    do iw = 1, nw
-    do ib = 1, nb
-      read (iu, *) ijunk, ijunk, ijunk, rea, ima
-      a(ib, iw, ik) = cmplx(rea, ima, kind=dp)
-    enddo
-    enddo
-    enddo
-  end subroutine read_a
-
   subroutine read_eval(nb, nk, eval)
     integer, intent(in) :: nb, nk
     real(kind=dp), allocatable, intent(inout) :: eval(:, :)
@@ -33,29 +13,6 @@ contains
     enddo
     enddo
   end subroutine read_eval
-
-  subroutine read_m(nb, nk, nn, m)
-    character(len=:), allocatable :: junk
-    complex(kind=dp), allocatable, intent(inout) :: m(:, :, :, :)
-    integer, intent(in) :: nb, nk
-    integer, intent(out) :: nn
-    real(kind=dp) :: rea, ima
-    open (newunit=iu, file='gaas.mmn')
-    read (iu, '(a)') junk
-    read (iu, *) ijunk, ijunk, nn
-    allocate (m(nb, nb, nn, nk))
-    do ik = 1, nk
-    do in = 1, nn
-      read (iu, *) ijunk, ijunk, ijunk, ijunk, ijunk
-      do jb = 1, nb
-      do ib = 1, nb
-        read (iu, *) rea, ima
-        m(ib, jb, in, ik) = cmplx(rea, ima, kind=dp)
-      enddo
-      enddo
-    enddo
-    enddo
-  end subroutine read_m
 
   subroutine read_kp(nk, kpcart)
     integer, intent(in) :: nk
@@ -102,7 +59,7 @@ program ok
   complex(kind=dp), allocatable :: u(:, :, :)
   complex(kind=dp), allocatable :: uopt(:, :, :)
   integer :: nbas, ierr, stdout, stderr
-  integer :: nb, nk, nn, nw
+  integer :: nb, nk, nn, nw, nkabc(3), exclude(5)
   integer, allocatable :: distk(:)
   real(kind=dp), allocatable :: eval(:, :)
   real(kind=dp), allocatable :: kpcart(:, :) ! cartesian k list
@@ -113,60 +70,77 @@ program ok
   type(lib_w90_type), target :: w90dat
   type(w90_comm_type) :: comm
 
+  nb = 12
+  nw = 8
+  nkabc = (/4, 4, 4/)
+  exclude = (/1, 2, 3, 4, 5/)
+  nk = nkabc(1)*nkabc(2)*nkabc(3)
+  write (*, *) "nb, nw, nk: ", nb, nw, nk
+
   ! MPI
   comm%comm = mpi_comm_world
   call mpi_init(ierr)
-
-  ! accumulate data
-  call read_a(nb, nk, nw, a) ! also assigns to nb, nk, nw
-  call read_eval(nb, nk, eval)
-  call read_kp(nk, kpcart)
-  call read_m(nb, nk, nn, morig)
-  call read_cell(nbas, uccart, xcart)
-  write (*, *) nb, nk, nw, nn, nbas
 
   ! io and k distribution
   call get_fortran_stdout(stdout)
   call get_fortran_stderr(stderr)
   allocate (distk(nk))
   distk = 0
-  call set_kpoint_distribution(w90main, distk)
+  call set_kpoint_distribution(w90main, stderr, ierr, distk)
 
   ! required settings
-  call set_option('num_wann', 8)
+  call set_option('num_wann', nw)
   call set_option('num_bands', nb)
   call set_option('num_kpts', nk)
+  call read_cell(nbas, uccart, xcart)
   call set_option('unit_cell_cart', uccart)
-  call set_option('mp_grid', (/4, 4, 4/))
+  call set_option('mp_grid', nkabc)
+  call read_kp(nk, kpcart)
   call set_option('kpoints', kpcart)
-
-  call set_option('dis_froz_max', 14.0d0) ! not optional for disentanglement? fixme
 
   ! optional settings
   call set_option('conv_tol', 1.d-10)
   call set_option('conv_window', 3)
+  call set_option('dis_froz_max', 14.0d0) ! not optional for disentanglement? fixme
   call set_option('dis_mix_ratio', 1.d0)
+  call set_option('dis_num_iter', 1200)
+  call set_option('dis_win_max', 24.d0)
   call set_option('num_iter', 1000)
   call set_option('num_print_cycles', 40)
+  call set_option('exclude_bands', exclude)
+  !call set_option('iprint', 5)
 
-  ! apply and forget settings
-  call input_setopt(w90main, w90dat, 'jaja', stdout, stderr, ierr, comm)
+  ! apply settings (and discard settings store)
+  call input_setopt(w90main, w90dat, 'gaas', stdout, stderr, ierr, comm)
 
   ! k setup needs attention
+  ! must be done before reading overlaps
   call create_kmesh(w90main, stdout, stderr, ierr, comm)
+  nn = w90main%kmesh_info%nntot
+  write (*, *) "nn: ", nn
 
   ! setup all matrices
-  allocate (m(nw, nw, nn, nk)) !m=mloc, morig=morig
-  allocate (u(nw, nw, nk))
-  allocate (uopt(nb, nw, nk))
-
-  call set_m_matrix_local(w90dat, m)
-  call set_u_matrix(w90main, u)
-  call set_u_opt(w90main, uopt)
+  allocate (a(nb, nw, nk))
   call set_a_matrix(w90dat, a)
-  call set_m_orig(w90dat, morig)
+  allocate (morig(nb, nb, nn, nk))
+  call set_m_orig(w90dat, morig) ! m_matrix_local_orig
+  allocate (m(nw, nw, nn, nk)) ! m also known as m_matrix_local
+  call set_m_matrix_local(w90dat, m)
+  allocate (u(nw, nw, nk))
+  call set_u_matrix(w90main, u)
+  allocate (uopt(nb, nw, nk))
+  call set_u_opt(w90main, uopt)
+
+  ! read from ".mmn" and ".amn"
+  ! and assign to m_orig and a
+  ! (or m and u if not disentangling)
+  call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
+
+  call read_eval(nb, nk, eval)
   call set_eigval(w90main, eval)
 
   call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
   call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+
+  call mpi_finalize()
 end program
