@@ -7,6 +7,7 @@ module w90_helper_types
   use w90_types
   use w90_wannier90_types
   use w90_readwrite, only: set_option
+  use w90_overlap, only: overlap_project
 
   implicit none
 
@@ -253,7 +254,6 @@ contains
     integer, pointer :: nw, nb, nk, nn
     integer :: rank, nexclude = 0
     logical :: ispostw90 = .false. ! ispostw90 is used to print a different error message in case the chk file is missing (did you run w90 first?)
-    logical :: have_disentangled ! assigned here
     type(w90_error_type), allocatable :: error
 
     status = 0
@@ -279,14 +279,14 @@ contains
       call w90_readwrite_read_chkpt_header(helper%exclude_bands, helper%kmesh_info, &
                                            helper%kpt_latt, helper%real_lattice, helper%mp_grid, &
                                            nb, nexclude, nk, nw, checkpoint, &
-                                           have_disentangled, ispostw90, seedname, chk_unit, &
+                                           helper%have_disentangled, ispostw90, seedname, chk_unit, &
                                            output, error, comm)
       if (allocated(error)) call prterr(error, output, outerr, comm)
 
       call w90_readwrite_read_chkpt_matrices(helper%dis_manifold, helper%kmesh_info, &
                                              helper%wannier_data, m, helper%u_matrix, &
                                              helper%u_opt, wan90%omega%invariant, nb, nk, nw, &
-                                             have_disentangled, seedname, chk_unit, output, error, &
+                                             helper%have_disentangled, seedname, chk_unit, output, error, &
                                              comm)
       if (allocated(error)) call prterr(error, output, outerr, comm)
     endif
@@ -295,7 +295,7 @@ contains
     ! normally achieved in overlap_read
     call w90_readwrite_chkpt_dist(helper%dis_manifold, helper%wannier_data, helper%u_matrix, &
                                   helper%u_opt, m, wan90%m_matrix_local, wan90%omega%invariant, &
-                                  nb, nk, nw, nn, checkpoint, have_disentangled, &
+                                  nb, nk, nw, nn, checkpoint, helper%have_disentangled, &
                                   helper%dist_kpoints, error, comm)
 
     deallocate (m)
@@ -513,6 +513,13 @@ contains
 
     status = 0
 
+    if (.not. associated(helper%dist_kpoints)) then
+      write (outerr, *) 'dist_kpoints not set for overlap call'
+      status = 1
+      return
+    endif
+
+    ! fixme jj checkit
     if (helper%num_bands > helper%num_wann) then ! disentanglement case
       if ((.not. associated(wan90%a_matrix)) .or. (.not. associated(wan90%m_orig))) then
         write (outerr, *) 'Matrices not set for overlap call (disentanglement case)'
@@ -626,6 +633,7 @@ contains
     use w90_wannierise, only: wann_main, wann_main_gamma
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type
+    use w90_disentangle, only: dis_main, setup_m_loc
 
     implicit none
 
@@ -639,13 +647,37 @@ contains
     ! local
     type(w90_error_type), allocatable :: error
 
-    if ((.not. associated(wan90%m_matrix_local)) .or. (.not. associated(helper%u_opt)) .or. &
-        (.not. associated(helper%u_matrix)) .or. (.not. associated(helper%dist_kpoints))) then
-      write (outerr, *) 'Matrices not set for wannierise call'
+    status = 0
+
+    if (.not. associated(wan90%m_matrix_local)) then
+      write (outerr, *) 'm_matrix_local not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%u_opt)) then
+      write (outerr, *) 'u_opt not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%u_matrix)) then
+      write (outerr, *) 'u_matrix not set for disentangle call'
+      status = 1
+      return
+    else if (.not. associated(helper%dist_kpoints)) then
+      write (outerr, *) 'dist_kpoints not set for disentangle call'
       status = 1
       return
     endif
-    status = 0
+
+    if (.not. helper%have_disentangled) then
+      ! fixme (jj) there is also a gamma only specialisation of this
+      ! fixme(jj) this probably doesn't want to be exactly here
+      ! rationale: repeated calls to wannierise would reset m unintentionally with this here
+      call overlap_project(wan90%sitesym, wan90%m_matrix_local, helper%u_matrix, &
+                           helper%kmesh_info%nnlist, helper%kmesh_info%nntot, &
+                           helper%num_wann, helper%num_kpts, helper%num_wann, &
+                           1, wan90%lsitesymmetry, output, helper%timer, &
+                           helper%dist_kpoints, error, comm)
+    endif
+
     if (helper%gamma_only) then
       call wann_main_gamma(helper%kmesh_info, wan90%wann_control, wan90%omega, &
                            helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
@@ -817,10 +849,19 @@ contains
     if (helper%dis_manifold%win_max == huge(0.0_dp)) helper%dis_manifold%win_max = maxval(helper%eigval)
   end subroutine set_eigval
 
-  subroutine set_kpoint_distribution(helper, dist)
+  subroutine set_kpoint_distribution(helper, outerr, status, dist)
     implicit none
     type(lib_global_type), intent(inout) :: helper
+    integer, intent(in) :: outerr
+    integer, intent(out) :: status
     integer, intent(inout), target :: dist(:)
+
+    status = 0
+    if (size(dist) < 1) then
+      write (outerr, *) 'Error in k-point distribution, mpisize < 1'
+      status = 1
+      return
+    endif
 
     helper%dist_kpoints => dist
   end subroutine set_kpoint_distribution

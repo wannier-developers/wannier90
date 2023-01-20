@@ -206,8 +206,6 @@ contains
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
 
-    !complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
-
     logical :: disentanglement
     integer :: my_node_id
     logical :: on_root = .false.
@@ -217,8 +215,6 @@ contains
     my_node_id = mpirank(comm)
     if (my_node_id == 0) then
       on_root = .true.
-      !allocate (m_matrix_orig(num_bands, num_bands, kmesh_info%nntot, num_kpts), stat=ierr)
-      !fixme check alloc
     endif
     allocate (map_kpts(num_kpts))
     nkp_loc = 1
@@ -230,14 +226,6 @@ contains
     enddo
 
     if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
-
-    !if (disentanglement) then
-    !  if (on_root) then
-    !    m_matrix_orig = cmplx_0
-    !  endif
-    !  m_matrix_orig_local = cmplx_0
-    !  au_matrix = cmplx_0
-    !endif
 
     !if (on_root) then - read on local bits on all nodes
 
@@ -396,33 +384,20 @@ contains
 
     ! If we don't need to disentangle we can now convert from A to U
     ! And rotate M accordingly
-![ysl-b]
-!       if(.not.disentanglement .and. (.not.cp_pp) .and. (.not. use_bloch_phases )) &
-!            call overlap_project
-!~       if((.not.cp_pp) .and. (.not. use_bloch_phases )) then
-!~         if (.not.disentanglement) then
-!~            if ( .not. gamma_only ) then
-!~               call overlap_project
-!~            else
-!~               call overlap_project_gamma()
-!~            endif
-!~         else
-!~            if (gamma_only) call overlap_symmetrize()
-!~         endif
-!~       endif
-!
-!~[aam]
-    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
-      if (.not. gamma_only) then
-        call overlap_project(sitesym, m_matrix_local, au_matrix, kmesh_info%nnlist, &
-                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
-                             lsitesymmetry, stdout, timer, dist_k, error, comm)
-      else
-        call overlap_project_gamma(m_matrix_local, au_matrix, kmesh_info%nntot, num_wann, &
-                                   timing_level, stdout, timer, error, comm)
-      endif
-      if (allocated(error)) return
-    endif
+
+    ! Jan 2023, Jerome Jackson, moved overlap_project to wannierise() library call
+!    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
+!      if (.not. gamma_only) then
+!        call overlap_project(sitesym, m_matrix_local, au_matrix, kmesh_info%nnlist, &
+!                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
+!                             lsitesymmetry, stdout, timer, dist_k, error, comm)
+!      else
+!        call overlap_project_gamma(m_matrix_local, au_matrix, kmesh_info%nntot, num_wann, &
+!                                   timing_level, stdout, timer, error, comm)
+!      endif
+!      if (allocated(error)) return
+!    endif
+
 !~[aam]
 
     !~      if( gamma_only .and. use_bloch_phases ) then
