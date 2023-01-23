@@ -2789,7 +2789,7 @@ yield an stable spectrum. The default value is set to  $0.04$ eV.
 
 Finally, \verb|sc_phase_conv| controls the phase convention used for the Bloch sums. 
 \verb|sc_phase_conv=1| uses the so-called tight-binding convention, whereby the Wannier centres are included
-into the phase, while   \verb|sc_phase_conv=2| leaves the Wannier centres out of the phase.
+into the phase, while  \verb|sc_phase_conv=2| leaves the Wannier centres out of the phase.
 These two possible conventions are explained in Ref. \cite{pythtb}. 
 Note that the overall shift-current spectrum does not depend on the chosen convention,
 but the individual terms that compose it do.
@@ -2832,16 +2832,16 @@ As in the case of the shift current, this parameter is controlled by \verb|sc_et
 yield an stable spectrum. The default value is set to  $0.04$ eV.
 
 On output, the program generates a set of 36 files named \verb|SEED-jc_****.dat|, 
-which correspond to the different tensor components  of the jerk current
+which correspond to the different tensor components of the jerk-current
 (note that the 45 remaining components until totaling $3\times3\times3\times3=81$ 
 can be obtained from the 36 outputed by taking into account that $\iota^{abcd}$ is 
 symmetric under $a\leftrightarrow d$ and $b\leftrightarrow c$ index exchanges).
-For plotting the finite jerk-current components of GaAs $\iota^{xxxx}, \iota^{xyyx}, \iota^{xyxy}$ (units of Am/V$^{3}$s$^{2}$) as in Fig. [IN PREPARATION] in Ref. [IN PREPARATION],
+For plotting the finite jerk-current components of GaAs $\iota^{xxxx}, \iota^{xyyx}, \iota^{xyxy}$ (units of Am/V$^{3}$s$^{2}$),
 \begin{verbatim}
 myshell> gnuplot
 gnuplot> plot 'GaAs-jc_xxxx.dat' u 1:2 w l
-gnuplot> plot 'GaAs-jc_xyyx.dat' u 1:2 w l
-gnuplot> plot 'GaAs-jc_xxyy.dat' u 1:2 w l
+gnuplot> replot 'GaAs-jc_xyyx.dat' u 1:2 w l
+gnuplot> replot 'GaAs-jc_xxyy.dat' u 1:2 w l
 \end{verbatim} 
 
 \sectiontitle{26: Gallium Arsenide -- Selective localization and constrained centres}
@@ -3831,6 +3831,100 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 
 \end{itemize}
 
+\sectiontitle{34: TaAs -- Injection-current tensor components}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate the nonlinear injection-current of TaAs. In preparation for this example it may be useful to read Ref. [IN PREPARATION] }
+
+
+
+\item Directory: \verb|examples/example34/|
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|TaAs.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|TaAs.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|TaAs.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|TaAs.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+
+
+\end{itemize}
+
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < TaAs.scf > scf.out|
+
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < TaAs.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|TaAs.nnkp| file)
+
+\verb|wannier90.x -pp TaAs|
+
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
+Bloch states (written in the \verb|TaAs.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|TaAs.amn| file)
+
+\end{itemize}
+
+
+\verb|pw2wannier90.x < TaAs.pw2wan > pw2wan.out|
+
+\item Run {\tt wannier90} to  compute MLWFs
+
+\verb|wannier90.x TaAs|
+
+\item Run {\tt postw90} to compute expansion coefficients
+
+\verb|postw90.x TaAs| 
+
+
+\end{enumerate}
+
+\end{itemize}
+
+\subsection*{Injection current $\eta^{abc} = \eta^{abc}_S + \eta^{abc}_A$}
+The injection-current tensor of TaAs has only one independent component that is finite, namely $\eta^{xzx}_A$. For its computation, set
+\begin{verbatim}
+berry = true
+berry_task = ic
+\end{verbatim}
+Like the shift- or the jerk-current, the injection-current is a frequency-dependent quantity. 
+The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and 
+\verb|kubo_freq_step|, as explained in the users guide. 
+
+The injection-current requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|,
+which has been set to 
+\begin{verbatim}
+berry_kmesh = 100 100 100
+ \end{verbatim}
+We also need to input the value of the Fermi level in eV:
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+On output, the program generates a set of $18+9$ files named \verb|SEED-ic_S_***.dat| and \verb|SEED-ic_A_***.dat|, 
+which correspond to the different tensor components of the injection-current, which have been separated into symmetric ($S$) ($18$) and antisymmetric ($A$) ($9$)
+parts with respect to the $b\leftrightarrow c$ index exchange. The symmetric part is completely real, can only be nonzero in materials exhibiting time-reversal symmetry beaking 
+and only provides current in presence of linearly polarized light.
+The antisymmetric part is completely imaginary and only provides current in presence of circularly polarized light.
+For plotting imaginary part of the finite injection-current component of TaAs $\eta^{xzx}_A$ (units of A/V$^{2}$s),
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'TaAs-ic_xzx.dat' u 1:2 w l
+\end{verbatim} 
 
 %\cleardoublepage
 
