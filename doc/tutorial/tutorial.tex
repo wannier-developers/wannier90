@@ -2689,12 +2689,12 @@ and compute the interband natural optical activity\\
 
 \end{enumerate}
 
-\sectiontitle{25: Gallium Arsenide -- Nonlinear shift current}
+\sectiontitle{25: Gallium Arsenide -- Nonlinear optical responses}
 
 \begin{itemize}
 
-\item Outline: \textit{Calculate the nonlinear shift current of inversion asymmetric fcc Gallium Arsenide. In preparation for this example it may be useful to read Ref.
-\cite{ibanez-azpiroz_ab_2018} }
+\item Outline: \textit{Calculate the nonlinear shift- and jerk-currents of inversion asymmetric fcc Gallium Arsenide. In preparation for this example it may be useful to read Ref.
+\cite{ibanez-azpiroz_ab_2018}, [IN PREPARATION] }
 
 
 
@@ -2807,6 +2807,42 @@ myshell> gnuplot
 gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 \end{verbatim} 
 
+\subsection*{Jerk current $\iota^{abcd}$}
+The jerk-current tensor of GaAs has only three independent components that are finite, namely $\iota^{xxxx}, \iota^{xyyx}, \iota^{xxyy}$. For its computation, set
+\begin{verbatim}
+berry = true
+berry_task = jc
+\end{verbatim}
+Like the shift-current, the jerk-current is a frequency-dependent quantity. 
+The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and 
+\verb|kubo_freq_step|, as explained in the users guide. 
+
+The jerk-current requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|,
+which has been set to 
+\begin{verbatim}
+berry_kmesh = 100 100 100
+ \end{verbatim}
+We also need to input the value of the Fermi level in eV:
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+Due to possible degeneracies involved in the calculation of the second band derivatives required to compute the jerk-current tensor components, one needs to consider a small broadening parameter to avoid numerical problems (see parameter $\eta$ in Eq. ([IN PREPARATION]) of Ref. [IN PREPARATION] and related discussion).
+As in the case of the shift current, this parameter is controlled by \verb|sc_eta|. It is normally found that values between 0.01 eV and 0.1 eV 
+yield an stable spectrum. The default value is set to  $0.04$ eV.
+
+On output, the program generates a set of 36 files named \verb|SEED-jc_****.dat|, 
+which correspond to the different tensor components  of the jerk current
+(note that the 45 remaining components until totaling $3\times3\times3\times3=81$ 
+can be obtained from the 36 outputed by taking into account that $\iota^{abcd}$ is 
+symmetric under $a\leftrightarrow d$ and $b\leftrightarrow c$ index exchanges).
+For plotting the finite jerk-current components of GaAs $\iota^{xxxx}, \iota^{xyyx}, \iota^{xyxy}$ (units of Am/V$^{3}$s$^{2}$) as in Fig. [IN PREPARATION] in Ref. [IN PREPARATION],
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-jc_xxxx.dat' u 1:2 w l
+gnuplot> plot 'GaAs-jc_xyyx.dat' u 1:2 w l
+gnuplot> plot 'GaAs-jc_xxyy.dat' u 1:2 w l
+\end{verbatim} 
 
 \sectiontitle{26: Gallium Arsenide -- Selective localization and constrained centres}
 
