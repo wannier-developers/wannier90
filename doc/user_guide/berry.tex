@@ -392,7 +392,7 @@ Please cite Ref.~\cite{ibanez-azpiroz_ab_2018} when publishing shift-current res
 \section{{\tt berry\_task=ic}: injection current}
 
 The injection-current contribution to the second-order response
-is characterized by a frequency-dependent third-rank tensor [IN PREPARATION]
+is characterized by a frequency-dependent third-rank tensor \cite{ruiz-ArXiv2023}
 \begin{equation}\label{eq:injcurrent}
 \begin{split}
 \eta^{abc}(0;\omega,-\omega)=&-\frac{\pi e^3}{\hbar^2 \Omega_c N_k}
@@ -428,17 +428,17 @@ The \verb|S| and \verb|A| labels denote the symmetric and antisymmetric parts of
 	\eta^{abc}_A(\omega) & = \frac{1}{2}\left[\eta^{abc}(\omega) - \eta^{acb}(\omega)\right].\label{eq:inj_asym}
 	\end{align}
 \end{subequations}
-The symmetric part is completely real and only nonvanishing in time-reversal lacking systems and the antisymmetric part is purely imaginary, as argued in [IN PREPARATION].
+The symmetric part is completely real and only nonvanishing in time-reversal lacking systems and the antisymmetric part is purely imaginary, as argued in \cite{ruiz-ArXiv2023}.
 
-Please cite Ref. [IN PREPARATION] when publishing injection-current results using this method.
+Please cite Ref. \cite{ruiz-ArXiv2023} when publishing injection-current results using this method.
 
 \section{{\tt berry\_task=jc}: jerk current}
 
 The jerk-current contribution to the third-order response
-is characterized by a frequency-dependent fourth-rank tensor [IN PREPARATION]
+is characterized by a frequency-dependent fourth-rank tensor \cite{ruiz-ArXiv2023}
 \begin{equation}\label{eq:jerkcurrent}
 \begin{split}
-\eta^{abc}(0;\omega,-\omega, 0)=&\frac{2\pi e^4}{\hbar^3 \Omega_c N_k}
+\iota^{abcd}(0;\omega,-\omega, 0)=&\frac{2\pi e^4}{\hbar^3 \Omega_c N_k}
 \sum_{\bm{k}} \sum_{n,m}(f_{n\bm{k}}-f_{m\bm{k}})
 \times
 \vartheta^{ad}_{nm}(\bm{k})\left(r^b_{ nm}(\bm{k})r^c_{mn}(\bm{k})\right)\\
@@ -455,7 +455,7 @@ and the difference between the inverse effective masses
 	\vartheta^{ad}_{nm} = \frac{\partial^2}{\partial k^a \partial k^d} \omega_{nm\bm{k}},
 \end{equation}
 which is calculated by using the scheme proposed in Ref. \cite{yates-prb07}.
-Aside from that, \eqref{eq:jerkcurrent} is symmetric under the $b\leftrightarrow c$ and $a\leftrightarrow d$ exchanges.
+The jerk-current photoconductivity tensor $\iota^{abcd}$ in \eqref{eq:jerkcurrent} is symmetric under the $b\leftrightarrow c$ and $a\leftrightarrow d$ exchanges.
 
 As in the case of the optical conductivity, the shift-current and injection-current, a broadened delta function can be 
 applied in Eq.~\ref{eq:injcurrent} by means of the parameter
@@ -465,7 +465,7 @@ be employed using the keyword {\tt [kubo\_]adpt\_smr}.
 
 The output files related to the jerk-current take the form \verb|SEED-jc_****.dat|. 
 
-Please cite Ref. [IN PREPARATION] when publishing jerk-current results using this method.
+Please cite Ref. \cite{ruiz-ArXiv2023} when publishing jerk-current results using this method.
 
 
 \section{{\tt berry\_task=kdotp}: $k\cdot p$ coefficients}
