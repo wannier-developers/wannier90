@@ -323,7 +323,6 @@ contains
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
-    integer :: eunit
 
     status = 0
     ! assert that settings%entries alloc'd
@@ -393,7 +392,7 @@ contains
     ! local
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    logical :: cp_pp, disentanglement
+    !logical :: cp_pp ! ? when used?
     integer :: eunit
 
     status = 0
