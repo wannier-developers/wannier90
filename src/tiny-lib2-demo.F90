@@ -118,11 +118,26 @@ program libv2
 #ifdef MPI
   comm%comm = mpi_comm_world
   call mpi_init(ierr)
+  ! setup pplel decomp
+  call mpi_comm_rank(comm%comm, rank, ierr)
+  call mpi_comm_size(comm%comm, mpisize, ierr)
+#else
+  rank = 0
+  mpisize = 1
 #endif
 
   call get_fortran_stdout(stdout)
   call get_fortran_stderr(stderr)
   call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+
+  ! setup k mesh
+  call create_kmesh(w90main, stdout, stderr, ierr, comm)
+  if (ierr /= 0) then
+    write (stderr, *) 'failed to create kmesh'
+    error stop
+  endif
+  write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
+
   if (ierr /= 0) then
     write (stderr, *) 'failed to read input file'
     error stop
@@ -137,7 +152,7 @@ program libv2
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
-    error stop
+    stop
   endif
 
   ! open main output file
@@ -149,15 +164,6 @@ program libv2
   call w90_readwrite_write_header(w90main%physics%bohr_version_str, &
                                   w90main%physics%constants_version_str1, &
                                   w90main%physics%constants_version_str2, stdout) ! (not a library call)
-
-#ifdef MPI
-  ! setup pplel decomp
-  call mpi_comm_rank(comm%comm, rank, ierr)
-  call mpi_comm_size(comm%comm, mpisize, ierr)
-#else
-  rank = 0
-  mpisize = 1
-#endif
 
   allocate (distk(nk))
   nkl = nk/mpisize ! number of kpoints per rank
@@ -171,14 +177,6 @@ program libv2
     error stop
   endif
   nkl = count(distk == rank) ! number of kpoints this rank
-
-  ! setup k mesh
-  call create_kmesh(w90main, stdout, stderr, ierr, comm)
-  if (ierr /= 0) then
-    write (stderr, *) 'failed to create kmesh'
-    error stop
-  endif
-  write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
   if (w90dat%lsitesymmetry) then
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
