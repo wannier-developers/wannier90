@@ -98,14 +98,14 @@ program libv2
   call get_command_argument(1, seedname, length, ierr)
   if (ierr /= 0) then
     write (*, *) 'failed to parse seedname'
-    stop
+    error stop
   endif
   if (seedname == '-pp') then
     pp = .true.
     call get_command_argument(2, seedname, length, ierr)
     if (ierr /= 0) then
       write (*, *) 'failed to parse seedname'
-      stop
+      error stop
     endif
   endif
   do i = 1, length
@@ -123,14 +123,21 @@ program libv2
   call get_fortran_stdout(stdout)
   call get_fortran_stderr(stderr)
   call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
-
+  if (ierr /= 0) then
+    write (stderr, *) 'failed to read input file'
+    error stop
+  endif
   ! special branch for writing nnkp file
   if (pp) then
     call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to write nnkp file'
+      error stop
+    endif
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
-    stop
+    error stop
   endif
 
   ! open main output file
@@ -159,17 +166,26 @@ program libv2
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
   call set_kpoint_distribution(w90main, stderr, ierr, distk)
+  if (ierr /= 0) then
+    write (stderr, *) 'failed to setup kpoint decomposition'
+    error stop
+  endif
   nkl = count(distk == rank) ! number of kpoints this rank
 
   ! setup k mesh
   call create_kmesh(w90main, stdout, stderr, ierr, comm)
+  if (ierr /= 0) then
+    write (stderr, *) 'failed to create kmesh'
+    error stop
+  endif
   write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
   if (w90dat%lsitesymmetry) then
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
-    if (allocated(error)) then
-      ierr = error%code
-      deallocate (error)
+    ierr = error%code
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to setup symmetry'
+      if (allocated(error)) deallocate (error)
       error stop
     endif
   endif
@@ -196,6 +212,11 @@ program libv2
   else
     cpstatus = ''
     call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to read checkpoint file'
+      error stop
+    endif
+
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
       lovlp = .false.
@@ -240,28 +261,47 @@ program libv2
 
   if (lovlp) then
     call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to read overlaps'
+      error stop
+    endif
   endif
 
   if (ldsnt) then
     call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to perform disentangement'
+      error stop
+    endif
     call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to write checkpoint file after disentanglement'
+      error stop
+    endif
   endif
 
   if (lwann) then
     call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to perform wannierisation'
+      error stop
+    endif
     call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to write checkpoint file after wannerisation'
+      error stop
+    endif
   endif
 
   if (lplot) then
     call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) error stop
+    if (ierr /= 0) then
+      write (stderr, *) 'failed to perform plotting tasks'
+      error stop
+    endif
   endif
 
+  ! fixme add transport!
   call print_times(w90main, stdout)
   if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
