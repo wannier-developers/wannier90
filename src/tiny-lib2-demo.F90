@@ -126,8 +126,11 @@ program libv2
   mpisize = 1
 #endif
 
-  call get_fortran_stdout(stdout)
-  call get_fortran_stderr(stderr)
+  ! open main output file
+  open (newunit=stdout, file=fn//'.wout', status="replace")
+  ! open main error file
+  open (newunit=stderr, file=fn//'.werr', status="replace")
+
   call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
 
   ! setup k mesh
@@ -154,12 +157,6 @@ program libv2
 #endif
     stop
   endif
-
-  ! open main output file
-  open (newunit=stdout, file=fn//'.wout', status="replace")
-  ! open main error file
-  open (newunit=stderr, file=fn//'.werr', status="replace")
-
   ! write jazzy header info
   call w90_readwrite_write_header(w90main%physics%bohr_version_str, &
                                   w90main%physics%constants_version_str1, &
