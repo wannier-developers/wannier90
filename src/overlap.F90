@@ -189,7 +189,7 @@ contains
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     !complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
-    logical, intent(in) :: gamma_only
+    logical, intent(in) :: gamma_only ! used in some now commented code below
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: cp_pp, use_bloch_phases
 
@@ -380,33 +380,31 @@ contains
     if (allocated(error)) return
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
-!~      if (gamma_only) call overlap_check_m_symmetry()
-
+    ! if (gamma_only) call overlap_check_m_symmetry()
+    !
     ! If we don't need to disentangle we can now convert from A to U
     ! And rotate M accordingly
-
-    ! Jan 2023, Jerome Jackson, moved overlap_project to wannierise() library call
-!    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
-!      if (.not. gamma_only) then
-!        call overlap_project(sitesym, m_matrix_local, au_matrix, kmesh_info%nnlist, &
-!                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
-!                             lsitesymmetry, stdout, timer, dist_k, error, comm)
-!      else
-!        call overlap_project_gamma(m_matrix_local, au_matrix, kmesh_info%nntot, num_wann, &
-!                                   timing_level, stdout, timer, error, comm)
-!      endif
-!      if (allocated(error)) return
-!    endif
-
-!~[aam]
-
+    ! Jan 2023, Jerome Jackson, moved overlap_project outside of overlap_read
+    !    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
+    !      if (.not. gamma_only) then
+    !        call overlap_project(sitesym, m_matrix_local, au_matrix, kmesh_info%nnlist, &
+    !                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
+    !                             lsitesymmetry, stdout, timer, dist_k, error, comm)
+    !      else
+    !        call overlap_project_gamma(m_matrix_local, au_matrix, kmesh_info%nntot, num_wann, &
+    !                                   timing_level, stdout, timer, error, comm)
+    !      endif
+    !      if (allocated(error)) return
+    !    endif
+    !
+    !~[aam]
     !~      if( gamma_only .and. use_bloch_phases ) then
     !~        write(stdout,'(1x,"+",76("-"),"+")')
     !~        write(stdout,'(3x,a)') 'WARNING: gamma_only and use_bloch_phases                 '
     !~        write(stdout,'(3x,a)') '         M must be calculated from *real* Bloch functions'
     !~        write(stdout,'(1x,"+",76("-"),"+")')
     !~      end if
-![ysl-e]
+    ![ysl-e]
 
     deallocate (map_kpts)
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)

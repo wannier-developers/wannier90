@@ -531,7 +531,7 @@ contains
 
   subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, &
                                         w90_plot, disentanglement, eig_found, eigval, &
-                                        postproc_setup, num_bands, num_kpts, stdout, seedname, &
+                                        num_bands, num_kpts, stdout, seedname, &
                                         error, comm)
 
     use w90_io, only: io_file_unit
@@ -542,7 +542,7 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     character(len=*), intent(in)  :: seedname
-    logical, intent(in) :: disentanglement, postproc_setup
+    logical, intent(in) :: disentanglement
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     logical, intent(inout) :: eig_found
     type(w90_error_type), allocatable, intent(out) :: error
@@ -551,7 +551,7 @@ contains
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
-    if (.not. pw90_effective_model .and. .not. postproc_setup) then
+    if (.not. pw90_effective_model) then
 
       inquire (file=trim(seedname)//'.eig', exist=eig_found)
       if (.not. eig_found) then
@@ -1503,6 +1503,7 @@ contains
     !! release memory from allocated parameters
     !
     !================================================
+    ! fixme(jj) don't need to dealloc input_proj now (already gone?)
     use w90_error, only: w90_error_type, set_error_dealloc
 
     implicit none
@@ -1799,8 +1800,8 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
 
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
 
     real(kind=dp), intent(in) :: kpt_latt(:, :)
@@ -3366,7 +3367,7 @@ contains
   end subroutine get_centre_constraint_from_column
 
   !================================================!
-  subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
+  subroutine w90_readwrite_get_projections(num_proj, atom_data, num_bands, num_wann, input_proj, &
                                            inv_lattice, lcount, spinors, bohr, stdout, error, comm)
     !================================================!
     !
@@ -3383,9 +3384,9 @@ contains
     ! arguments
     type(atom_data_type), intent(in) :: atom_data
     type(proj_input_type), intent(inout) :: input_proj
-    type(proj_input_type), intent(inout) :: proj ! intent(out)?
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    integer, intent(in) :: num_bands ! currently unused
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
@@ -3435,7 +3436,13 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-!     if(spinors) num_proj=num_wann/2
+    ! jj jan23
+    ! hybridised projectors are expanded and entered into the projector list independently
+    ! i.e. sp3 -> s,p,p,p
+    ! therefore the total number of (expanded) projectors may exceed the number of wannier functions
+    ! since this default is used for sizing arrays, we are in trouble
+    ! until we reconfigure this read routine (eg, doing two passes to count the number of pure l proj), the
+    ! only safe limit for proj allocations is num_bands not num_wann (example11 demonstrates: num_wann=4 < num_proj=12)
 
     if (.not. lcount) then
       allocate (input_proj%site(3, num_proj), stat=ierr)
@@ -3482,54 +3489,6 @@ contains
         allocate (input_proj%s_qaxis(3, num_proj), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating input_proj_s_qaxis in w90_readwrite_get_projections', comm)
-          return
-        endif
-      endif
-
-      allocate (proj%site(3, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_site in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%l(num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_l in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%m(num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_m in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%z(3, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_z in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%x(3, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_x in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%radial(num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_radial in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%zona(num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_zona in w90_readwrite_get_projections', comm)
-        return
-      endif
-      if (spinors) then
-        allocate (proj%s(num_wann), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating proj_s in w90_readwrite_get_projections', comm)
-          return
-        endif
-        allocate (proj%s_qaxis(3, num_wann), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating proj_s_qaxis in w90_readwrite_get_projections', comm)
           return
         endif
       endif
@@ -4040,6 +3999,9 @@ contains
 
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
+      num_proj = num_wann ! fixme(jj)
+      ! input_proj is only allocated 1:num_wann when 'random'
+      !do loop = counter + 1, num_bands
       do loop = counter + 1, num_wann
         call random_number(input_proj%site(:, loop))
         input_proj%l(loop) = 0

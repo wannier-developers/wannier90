@@ -34,11 +34,11 @@ contains
     if (need_eigvals) then
       ! jj need_eigvals is here used as the arg "w90_plot"
       call w90_readwrite_read_eigvals(.false., .false., .false., need_eigvals, ldsnt, eig_found, &
-                                      eigval, .false., w90main%num_bands, w90main%num_kpts, stdout, seedname, error, comm)
+                                      eigval, w90main%num_bands, w90main%num_kpts, stdout, seedname, error, comm)
       if (allocated(error)) then
         ierr = error%code
         deallocate (error)
-        error stop
+        stop
       endif
       ! set library pointers to read data
       if (eig_found) call set_eigval(w90main, eigval)
@@ -98,14 +98,14 @@ program libv2
   call get_command_argument(1, seedname, length, ierr)
   if (ierr /= 0) then
     write (*, *) 'failed to parse seedname'
-    error stop
+    stop
   endif
   if (seedname == '-pp') then
     pp = .true.
     call get_command_argument(2, seedname, length, ierr)
     if (ierr /= 0) then
       write (*, *) 'failed to parse seedname'
-      error stop
+      stop
     endif
   endif
   do i = 1, length
@@ -132,56 +132,51 @@ program libv2
   open (newunit=stderr, file=fn//'.werr', status="replace")
 
   call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+  if (ierr /= 0) stop
 
-  ! setup k mesh
-  call create_kmesh(w90main, stdout, stderr, ierr, comm)
-  if (ierr /= 0) then
-    write (stderr, *) 'failed to create kmesh'
-    error stop
-  endif
-  write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
-
-  if (ierr /= 0) then
-    write (stderr, *) 'failed to read input file'
-    error stop
-  endif
-  ! special branch for writing nnkp file
-  if (pp) then
-    call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to write nnkp file'
-      error stop
-    endif
-#ifdef MPI
-    call mpi_finalize(ierr)
-#endif
-    stop
-  endif
   ! write jazzy header info
   call w90_readwrite_write_header(w90main%physics%bohr_version_str, &
                                   w90main%physics%constants_version_str1, &
                                   w90main%physics%constants_version_str2, stdout) ! (not a library call)
 
+  ! setup k mesh
+  if (.not. w90main%kmesh_info%explicit_nnkpts) then
+    call create_kmesh(w90main, stdout, stderr, ierr, comm)
+    if (ierr /= 0) stop
+  endif
+
+  ! setup kpoint distribution
   allocate (distk(nk))
   nkl = nk/mpisize ! number of kpoints per rank
   if (mod(nk, mpisize) > 0) nkl = nkl + 1
   do i = 1, nk
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
+  ! copy distribution to library
   call set_kpoint_distribution(w90main, stderr, ierr, distk)
-  if (ierr /= 0) then
-    write (stderr, *) 'failed to setup kpoint decomposition'
-    error stop
-  endif
+  if (ierr /= 0) stop
+
   nkl = count(distk == rank) ! number of kpoints this rank
+  write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
+
+  ! special branch for writing nnkp file
+  if (pp) then
+    ! please only invoke on rank 0
+    call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) stop
+    if (rank == 0) close (unit=stderr, status='delete')
+#ifdef MPI
+    call mpi_finalize(ierr)
+#endif
+    stop
+  endif
 
   if (w90dat%lsitesymmetry) then
     call sitesym_read(w90dat%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
-    ierr = error%code
-    if (ierr /= 0) then
+    if (allocated(error)) then
       write (stderr, *) 'failed to setup symmetry'
-      if (allocated(error)) deallocate (error)
-      error stop
+      deallocate (error)
+      stop
     endif
   endif
 
@@ -207,10 +202,7 @@ program libv2
   else
     cpstatus = ''
     call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to read checkpoint file'
-      error stop
-    endif
+    if (ierr /= 0) stop
 
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -256,44 +248,31 @@ program libv2
 
   if (lovlp) then
     call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to read overlaps'
-      error stop
+    if (ierr /= 0) stop
+
+    if (.not. ldsnt) then
+      call projovlp(w90main, w90dat, stdout, stderr, ierr, comm)
+      if (ierr /= 0) stop
     endif
   endif
 
   if (ldsnt) then
     call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to perform disentangement'
-      error stop
-    endif
+    if (ierr /= 0) stop
     call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to write checkpoint file after disentanglement'
-      error stop
-    endif
+    if (ierr /= 0) stop
   endif
 
   if (lwann) then
     call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to perform wannierisation'
-      error stop
-    endif
+    if (ierr /= 0) stop
     call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to write checkpoint file after wannerisation'
-      error stop
-    endif
+    if (ierr /= 0) stop
   endif
 
   if (lplot) then
     call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
-    if (ierr /= 0) then
-      write (stderr, *) 'failed to perform plotting tasks'
-      error stop
-    endif
+    if (ierr /= 0) stop
   endif
 
   ! fixme add transport!
