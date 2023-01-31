@@ -739,7 +739,7 @@ contains
   end subroutine kmesh_get
 
   !================================================!
-  subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
+  subroutine kmesh_write(exclude_bands, kmesh_info, proj, print_output, kpt_latt, &
                          real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, timer)
     !==================================================================!
     !                                                                  !
@@ -780,7 +780,7 @@ contains
     integer, allocatable, intent(in) :: exclude_bands(:)
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(proj_input_type), intent(in) :: proj_input
+    type(proj_input_type), intent(in) :: proj
     type(timer_list_type), intent(inout) :: timer
 
     integer, intent(in) :: num_kpts
@@ -832,19 +832,19 @@ contains
     if (spinors) then
       ! Projections
       write (nnkpout, '(a)') 'begin spinor_projections'
-      if (allocated(proj_input%site)) then
+      if (allocated(proj%site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
-            proj_input%l(i), proj_input%m(i), proj_input%radial(i)
+            proj%site(1, i), proj%site(2, i), proj%site(3, i), &
+            proj%l(i), proj%m(i), proj%radial(i)
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
-            proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
-            proj_input%zona(i)
+            proj%z(1, i), proj%z(2, i), proj%z(3, i), &
+            proj%x(1, i), proj%x(2, i), proj%x(3, i), &
+            proj%zona(i)
           write (nnkpout, '(2x,1i3,1x,3f11.7)') &
-            proj_input%s(i), &
-            proj_input%s_qaxis(1, i), proj_input%s_qaxis(2, i), proj_input%s_qaxis(3, i)
+            proj%s(i), &
+            proj%s_qaxis(1, i), proj%s_qaxis(2, i), proj%s_qaxis(3, i)
         enddo
       else
         ! No projections
@@ -854,16 +854,16 @@ contains
     else
       ! Projections
       write (nnkpout, '(a)') 'begin projections'
-      if (allocated(proj_input%site)) then
+      if (allocated(proj%site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
-            proj_input%l(i), proj_input%m(i), proj_input%radial(i)
+            proj%site(1, i), proj%site(2, i), proj%site(3, i), &
+            proj%l(i), proj%m(i), proj%radial(i)
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
-            proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
-            proj_input%zona(i)
+            proj%z(1, i), proj%z(2, i), proj%z(3, i), &
+            proj%x(1, i), proj%x(2, i), proj%x(3, i), &
+            proj%zona(i)
         enddo
       else
         ! No projections
@@ -873,7 +873,7 @@ contains
     endif
 
     ! Info for automatic generation of projections
-    if (proj_input%auto_projections) then
+    if (proj%auto_projections) then
       write (nnkpout, '(a)') 'begin auto_projections'
       write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
@@ -1557,7 +1557,8 @@ contains
     !check b1
 
     b1sat = .true.
-    if (.not. kmesh_input%skip_B1_tests) then
+    !if (.not. kmesh_input%skip_B1_tests) then ! fixme(jj) what is the default for this var?
+    if (.false.) then
       do loop_i = 1, 3
         do loop_j = loop_i, 3
           delta = 0.0_dp
