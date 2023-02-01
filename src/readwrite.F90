@@ -534,7 +534,6 @@ contains
                                         num_bands, num_kpts, stdout, seedname, &
                                         error, comm)
 
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
@@ -1694,7 +1693,7 @@ contains
 !~    !================================================!
 !~
 !~
-!~    use w90_io,        only : io_file_unit,io_error,seedname,io_date
+!~    use w90_io,        only : io_error,seedname,io_date
 !~    implicit none
 !~
 !~    integer :: i,j,k,l,um_unit
@@ -1704,8 +1703,7 @@ contains
 !~    call io_date(cdate, ctime)
 !~    header='written on '//cdate//' at '//ctime
 !~
-!~    um_unit=io_file_unit()
-!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
+!~    open(newunit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
 !~    write(um_unit) header
 !~    write(um_unit) omega_invariant
 !~    write(um_unit) num_wann,num_kpts,num_nnmax
@@ -1725,7 +1723,7 @@ contains
 !~    !                                !
 !~    !================================================!
 !~
-!~    use w90_io,        only : io_file_unit,io_error,seedname
+!~    use w90_io,        only : io_error,seedname
 !~    implicit none
 !~
 !~    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax
@@ -1733,8 +1731,7 @@ contains
 !~    character(len=33) :: header
 !~    real(kind=dp) :: tmp_omi
 !~
-!~    um_unit=io_file_unit()
-!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
+!~    open(newunit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
 !~    read(um_unit) header
 !~    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header
 !~    read(um_unit) tmp_omi
@@ -1779,7 +1776,6 @@ contains
     !!
     !================================================!
 
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
@@ -1845,7 +1841,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
@@ -1989,7 +1984,6 @@ contains
     !!
     !================================================!
 
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
@@ -2093,7 +2087,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time
+    use w90_io, only: io_date, io_time
     use w90_comms, only: comms_bcast, w90_comm_type, mpirank
     use w90_error, only: w90_error_type, set_error_alloc
 
@@ -2204,7 +2198,6 @@ contains
     !================================================!
 
     use w90_utility, only: utility_lowercase
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file
 
     implicit none
@@ -2218,8 +2211,7 @@ contains
     integer :: pos
     character, parameter :: TABCHAR = char(9)
 
-    in_unit = io_file_unit()
-    open (in_unit, file=trim(seedname)//'.win', form='formatted', status='old', err=101)
+    open (newunit=in_unit, file=trim(seedname)//'.win', form='formatted', status='old', err=101)
 
     settings%num_lines = 0; tot_num_lines = 0
     do
@@ -2855,6 +2847,8 @@ contains
     character(len=maxlen) :: ctemp(atom_data%num_atoms)
     character(len=maxlen) :: atoms_label_tmp(atom_data%num_atoms)
     logical           :: lconvert
+
+    call utility_inverse_mat(real_lattice, inv_lattice)
 
     keyword = "atoms_cart"
     frac = .false.

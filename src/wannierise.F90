@@ -57,7 +57,7 @@ contains
     !
     !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop, io_file_unit
+    use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: wann_control_type, w90_calculation_type, wann_omega_type, &
       sitesym_type, ham_logical_type
     use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, ws_region_type, &

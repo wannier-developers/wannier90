@@ -63,7 +63,7 @@ contains
       comms_gatherv, comms_bcast
     use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
-    use w90_io, only: io_file_unit, io_time
+    use w90_io, only: io_time
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
@@ -442,8 +442,7 @@ contains
         ! directly in the pwscf input file (the '1.0_dp' in the second column is
         ! a k-point weight, expected by pwscf)
         !
-        dataunit = io_file_unit()
-        open (dataunit, file=trim(seedname)//'-path.kpt', form='formatted')
+        open (newunit=dataunit, file=trim(seedname)//'-path.kpt', form='formatted')
         write (dataunit, *) total_pts
         do loop_kpt = 1, total_pts
           write (dataunit, '(3f12.6,3x,f4.1)') &
@@ -482,10 +481,9 @@ contains
         !
         ! Data file
         !
-        dataunit = io_file_unit()
         file_name = trim(seedname)//'-bands.dat'
         write (stdout, '(/,3x,a)') file_name
-        open (dataunit, file=file_name, form='formatted')
+        open (newunit=dataunit, file=file_name, form='formatted')
         do i = 1, num_wann
           do loop_kpt = 1, total_pts
             if (pw90_kpath%bands_colour == 'none') then
@@ -507,10 +505,9 @@ contains
         !
         ymin = minval(eig) - 1.0_dp
         ymax = maxval(eig) + 1.0_dp
-        gnuunit = io_file_unit()
         file_name = trim(seedname)//'-bands.gnu'
         write (stdout, '(/,3x,a)') file_name
-        open (gnuunit, file=file_name, form='formatted')
+        open (newunit=gnuunit, file=file_name, form='formatted')
         do i = 1, num_paths - 1
           write (gnuunit, 705) sum(kpath_len(1:i)), ymin, &
             sum(kpath_len(1:i)), ymax
@@ -561,10 +558,9 @@ contains
         !
         ! python script
         !
-        pyunit = io_file_unit()
         file_name = trim(seedname)//'-bands.py'
         write (stdout, '(/,3x,a)') file_name
-        open (pyunit, file=file_name, form='formatted')
+        open (newunit=pyunit, file=file_name, form='formatted')
         write (pyunit, '(a)') 'import pylab as pl'
         write (pyunit, '(a)') 'import numpy as np'
         write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
@@ -622,10 +618,9 @@ contains
       if (plot_curv) then
         ! It is conventional to plot the negative curvature
         curv = -curv
-        dataunit = io_file_unit()
         file_name = trim(seedname)//'-curv.dat'
         write (stdout, '(/,3x,a)') file_name
-        open (dataunit, file=file_name, form='formatted')
+        open (newunit=dataunit, file=file_name, form='formatted')
         do loop_kpt = 1, total_pts
           write (dataunit, '(4E16.8)') xval(loop_kpt), &
             curv(loop_kpt, :)
@@ -640,10 +635,9 @@ contains
           !
           ! gnuplot script
           !
-          gnuunit = io_file_unit()
           file_name = trim(seedname)//'-curv_'//achar(119 + i)//'.gnu'
           write (stdout, '(/,3x,a)') file_name
-          open (gnuunit, file=file_name, form='formatted')
+          open (newunit=gnuunit, file=file_name, form='formatted')
           ymin = minval(curv(:, i))
           ymax = maxval(curv(:, i))
           range = ymax - ymin
@@ -663,10 +657,9 @@ contains
           !
           ! python script
           !
-          pyunit = io_file_unit()
           file_name = trim(seedname)//'-curv_'//achar(119 + i)//'.py'
           write (stdout, '(/,3x,a)') file_name
-          open (pyunit, file=file_name, form='formatted')
+          open (newunit=pyunit, file=file_name, form='formatted')
           write (pyunit, '(a)') 'import pylab as pl'
           write (pyunit, '(a)') 'import numpy as np'
           write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
@@ -714,10 +707,9 @@ contains
       end if ! plot_curv .and. .not.plot_bands
 
       if (plot_morb) then
-        dataunit = io_file_unit()
         file_name = trim(seedname)//'-morb.dat'
         write (stdout, '(/,3x,a)') file_name
-        open (dataunit, file=file_name, form='formatted')
+        open (newunit=dataunit, file=file_name, form='formatted')
         do loop_kpt = 1, total_pts
           write (dataunit, '(4E16.8)') xval(loop_kpt), morb(loop_kpt, :)
         end do
@@ -730,10 +722,9 @@ contains
           !
           ! gnuplot script
           !
-          gnuunit = io_file_unit()
           file_name = trim(seedname)//'-morb_'//achar(119 + i)//'.gnu'
           write (stdout, '(/,3x,a)') file_name
-          open (gnuunit, file=file_name, form='formatted')
+          open (newunit=gnuunit, file=file_name, form='formatted')
           ymin = minval(morb(:, i))
           ymax = maxval(morb(:, i))
           range = ymax - ymin
@@ -753,10 +744,9 @@ contains
           !
           ! python script
           !
-          pyunit = io_file_unit()
           file_name = trim(seedname)//'-morb_'//achar(119 + i)//'.py'
           write (stdout, '(/,3x,a)') file_name
-          open (pyunit, file=file_name, form='formatted')
+          open (newunit=pyunit, file=file_name, form='formatted')
           write (pyunit, '(a)') 'import pylab as pl'
           write (pyunit, '(a)') 'import numpy as np'
           write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
@@ -799,10 +789,9 @@ contains
       end if ! plot_morb .and. .not.plot_bands
 
       if (plot_shc) then
-        dataunit = io_file_unit()
         file_name = trim(seedname)//'-shc.dat'
         write (stdout, '(/,3x,a)') file_name
-        open (dataunit, file=file_name, form='formatted')
+        open (newunit=dataunit, file=file_name, form='formatted')
         do loop_kpt = 1, total_pts
           write (dataunit, '(2E16.8)') xval(loop_kpt), &
             shc(loop_kpt)
@@ -815,10 +804,9 @@ contains
         !
         ! gnuplot script
         !
-        gnuunit = io_file_unit()
         file_name = trim(seedname)//'-shc'//'.gnu'
         write (stdout, '(/,3x,a)') file_name
-        open (gnuunit, file=file_name, form='formatted')
+        open (newunit=gnuunit, file=file_name, form='formatted')
         ymin = minval(shc(:))
         ymax = maxval(shc(:))
         range = ymax - ymin
@@ -838,10 +826,9 @@ contains
         !
         ! python script
         !
-        pyunit = io_file_unit()
         file_name = trim(seedname)//'-shc'//'.py'
         write (stdout, '(/,3x,a)') file_name
-        open (pyunit, file=file_name, form='formatted')
+        open (newunit=pyunit, file=file_name, form='formatted')
         write (pyunit, '(a)') "# uncomment these two lines if you are " &
           //"running in non-GUI environment"
         write (pyunit, '(a)') "#import matplotlib"
@@ -899,10 +886,9 @@ contains
         !
         ! python script
         !
-        pyunit = io_file_unit()
         file_name = trim(seedname)//'-bands+shc'//'.py'
         write (stdout, '(/,3x,a)') file_name
-        open (pyunit, file=file_name, form='formatted')
+        open (newunit=pyunit, file=file_name, form='formatted')
         write (pyunit, '(a)') "# uncomment these two lines if you are " &
           //"running in non-GUI environment"
         write (pyunit, '(a)') "#import matplotlib"
@@ -1017,14 +1003,13 @@ contains
         ! python script
         !
         do i = 1, 3
-          pyunit = io_file_unit()
           if (plot_curv) then
             file_name = trim(seedname)//'-bands+curv_'//achar(119 + i)//'.py'
           else if (plot_morb) then
             file_name = trim(seedname)//'-bands+morb_'//achar(119 + i)//'.py'
           end if
           write (stdout, '(/,3x,a)') file_name
-          open (pyunit, file=file_name, form='formatted')
+          open (newunit=pyunit, file=file_name, form='formatted')
           write (pyunit, '(a)') 'import pylab as pl'
           write (pyunit, '(a)') 'import numpy as np'
           write (pyunit, '(a)') 'from matplotlib.gridspec import GridSpec'

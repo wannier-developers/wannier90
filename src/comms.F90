@@ -251,7 +251,7 @@ contains
 #if defined(MPI) && !defined(DISABLE_ERROR_SYNC)
     abserr = abs(ierr) ! possibility of -ve values, use abs for safety
     call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
-    ! you could check mpiierr, but it would be just too sad... fixme?
+    ! you could check mpiierr here, but truly all bets are off in that case
     if (abserr > 0 .and. ierr == 0) call recv_error(error)
 #endif
   end subroutine comms_sync_err

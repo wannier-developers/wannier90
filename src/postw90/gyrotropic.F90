@@ -82,7 +82,7 @@ contains
     use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, timer_list_type, &
@@ -593,7 +593,6 @@ contains
 
     use w90_comms, only: w90_comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_file_unit
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
@@ -1131,7 +1130,6 @@ contains
     !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type
-    use w90_io, only: io_file_unit
 
     implicit none
 
@@ -1163,9 +1161,8 @@ contains
 
     file_name = trim(seedname)//"-gyrotropic-"//trim(f_out_name)//".dat"
     file_name = trim(file_name)
-    file_unit = io_file_unit()
     write (stdout, '(/,3x,a)') '* '//file_name
-    open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+    open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
 
     if (present(comment)) write (file_unit, *) "#"//trim(comment)
     if (present(units)) write (file_unit, *) "# in units of [ "//trim(units)//" ] "
