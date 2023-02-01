@@ -323,7 +323,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_time, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_types, only: wannier_data_type, kpoint_path_type, print_output_type, ws_region_type, &
@@ -582,8 +582,7 @@ contains
     !
     ! Write out the kpoints in the path
     !
-    bndunit = io_file_unit()
-    open (bndunit, file=trim(seedname)//'_band.kpt', form='formatted')
+    open (newunit=bndunit, file=trim(seedname)//'_band.kpt', form='formatted')
     write (bndunit, *) total_pts
     do loop_spts = 1, total_pts
       write (bndunit, '(3f12.6,3x,a)') (plot_kpoint(loop_i, loop_spts), loop_i=1, 3), "1.0"
@@ -592,8 +591,7 @@ contains
     !
     ! Write out information on high-symmetry points in the path
     !
-    bndunit = io_file_unit()
-    open (bndunit, file=trim(seedname)//'_band.labelinfo.dat', form='formatted')
+    open (newunit=bndunit, file=trim(seedname)//'_band.labelinfo.dat', form='formatted')
     do loop_spts = 1, bands_num_spec_points
       if ((MOD(loop_spts, 2) .eq. 1) .and. &
           (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
@@ -986,7 +984,6 @@ contains
       !================================================!
 
       use w90_constants, only: dp
-      use w90_io, only: io_file_unit
       use w90_types, only: kpoint_path_type
       use w90_wannier90_types, only: band_plot_type
 
@@ -997,10 +994,8 @@ contains
       type(kpoint_path_type), intent(in) :: kpoint_path
       integer, intent(in) :: num_wann, bands_num_spec_points
 
-      bndunit = io_file_unit()
-      open (bndunit, file=trim(seedname)//'_band.dat', form='formatted')
-      gnuunit = io_file_unit()
-      open (gnuunit, file=trim(seedname)//'_band.gnu', form='formatted')
+      open (newunit=bndunit, file=trim(seedname)//'_band.dat', form='formatted')
+      open (newunit=gnuunit, file=trim(seedname)//'_band.gnu', form='formatted')
       !
       ! Gnuplot format
       !
@@ -1038,8 +1033,7 @@ contains
       close (gnuunit)
 
       if (allocated(band_plot%project)) then
-        gnuunit = io_file_unit()
-        open (gnuunit, file=trim(seedname)//'_band_proj.gnu', form='formatted')
+        open (newunit=gnuunit, file=trim(seedname)//'_band_proj.gnu', form='formatted')
         write (gnuunit, '(a)') '#File to plot a colour-mapped Bandstructure'
         write (gnuunit, '(a)') 'set palette defined ( 0 "blue", 3 "green", 6 "yellow", 10 "red" )'
         write (gnuunit, '(a)') 'unset ztics'
@@ -1078,7 +1072,7 @@ contains
       !
       !================================================!
 
-      use w90_io, only: io_file_unit, io_date
+      use w90_io, only: io_date
       use w90_types, only: kpoint_path_type
 
       implicit none
@@ -1111,8 +1105,7 @@ contains
       end do
       xlabel(num_paths + 1) = ctemp(bands_num_spec_points)
 
-      gnuunit = io_file_unit()
-      open (gnuunit, file=trim(seedname)//'_band.agr', form='formatted')
+      open (newunit=gnuunit, file=trim(seedname)//'_band.agr', form='formatted')
       !
       ! Xmgrace format
       !
@@ -1177,7 +1170,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, twopi
-    use w90_io, only: io_file_unit, io_date, io_time, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: fermi_surface_plot_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_warn
     use w90_types, only: timer_list_type
@@ -1311,8 +1304,7 @@ contains
     end do
 
     call io_date(cdate, ctime)
-    bxsf_unit = io_file_unit()
-    open (bxsf_unit, FILE=trim(seedname)//'.bxsf', STATUS='UNKNOWN', FORM='FORMATTED')
+    open (newunit=bxsf_unit, FILE=trim(seedname)//'.bxsf', STATUS='UNKNOWN', FORM='FORMATTED')
     write (bxsf_unit, *) ' BEGIN_INFO'
     write (bxsf_unit, *) '      #'
     write (bxsf_unit, *) '      # this is a Band-XCRYSDEN-Structure-File'
@@ -1366,7 +1358,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type, &
       timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
@@ -2237,7 +2229,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_time, io_date
+    use w90_io, only: io_time, io_date
     use w90_constants, only: dp
 
     implicit none
@@ -2260,8 +2252,7 @@ contains
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
 
-    matunit = io_file_unit()
-    open (matunit, file=trim(seedname)//'_u.mat', form='formatted')
+    open (newunit=matunit, file=trim(seedname)//'_u.mat', form='formatted')
 
     write (matunit, *) header
     write (matunit, *) num_kpts, num_wann, num_wann
@@ -2274,8 +2265,7 @@ contains
     close (matunit)
 
     if (have_disentangled) then
-      matunit = io_file_unit()
-      open (matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
+      open (newunit=matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
       write (matunit, *) header
       write (matunit, *) num_kpts, num_wann, num_bands
       do nkp = 1, num_kpts
@@ -2298,7 +2288,7 @@ contains
     !!
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
     use w90_error, only: w90_error_type, set_error_file
@@ -2316,11 +2306,10 @@ contains
     integer, intent(in) :: num_kpts
     character(len=50), intent(in)  :: seedname
 
-    file_unit = io_file_unit()
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
 
-    open (file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
     write (file_unit, *) header ! Date and time
     write (file_unit, *) num_kpts, kmesh_info%nntot
     do nkp = 1, num_kpts
@@ -2348,7 +2337,6 @@ contains
     use w90_comms, only: w90_comm_type
     use w90_constants, only: dp
     use w90_error, only: w90_error_type, set_error_file
-    use w90_io, only: io_file_unit
     use w90_types, only: kmesh_info_type
 
     implicit none
@@ -2366,8 +2354,7 @@ contains
 
     ! note that here I use formulas analogue to Eq. 23, and not to the
     ! shift-invariant Eq. 32 .
-    r2mnunit = io_file_unit()
-    open (r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
+    open (newunit=r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
     if (ierr /= 0) then
       call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in plot_write_r2mn', comm)
       return
@@ -2476,7 +2463,7 @@ contains
     use w90_constants, only: cmplx_0
     use w90_constants, only: dp
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_input
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_types, only: wannier_data_type, w90_system_type
     use w90_utility, only: utility_translate_home
 
@@ -2800,7 +2787,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_constants, only: dp, cmplx_0
     use w90_utility, only: utility_translate_home
     use w90_error, only: w90_error_type, set_error_file
@@ -2842,8 +2829,7 @@ contains
       write (stdout, *)
     endif
 
-    xyz_unit = io_file_unit()
-    open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
+    open (newunit=xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
     if (ierr /= 0) then
       call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz', comm)
       return

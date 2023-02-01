@@ -649,7 +649,6 @@ contains
   subroutine sitesym_read(sitesym, num_bands, num_kpts, num_wann, seedname, error, comm)
     !================================================!
 
-    use w90_io, only: io_file_unit
     use w90_wannier90_types, only: sitesym_type
     use w90_error, only: w90_error_type, set_error_file, set_error_alloc
 

@@ -27,7 +27,7 @@ module w90_get_oper
 
   use w90_comms, only: comms_bcast, w90_comm_type, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-  use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
+  use w90_io, only: io_stopwatch_start, io_stopwatch_stop
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
 
@@ -115,8 +115,7 @@ contains
       if (on_root) then
         write (stdout, '(/a)') ' Reading real-space Hamiltonian from file ' &
           //trim(seedname)//'_HH_R.dat'
-        file_unit = io_file_unit()
-        open (file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
+        open (newunit=file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
               status='old', err=101)
         read (file_unit, *) ! header
         read (file_unit, *) idum ! num_wann
@@ -343,8 +342,7 @@ contains
       if (on_root) then
         write (stdout, '(/a)') ' Reading position matrix elements from file ' &
           //trim(seedname)//'_AA_R.dat'
-        file_unit = io_file_unit()
-        open (file_unit, file=trim(seedname)//'_AA_R.dat', form='formatted', &
+        open (newunit=file_unit, file=trim(seedname)//'_AA_R.dat', form='formatted', &
               status='old', err=103)
         read (file_unit, *) ! header
         ir = 1
@@ -409,8 +407,7 @@ contains
         endif
       enddo
 
-      mmn_in = io_file_unit()
-      open (unit=mmn_in, file=trim(seedname)//'.mmn', &
+      open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
             form='formatted', status='old', action='read', err=101)
       write (stdout, '(/a)', advance='no') &
         ' Reading overlaps from '//trim(seedname)//'.mmn in get_AA_R   : '
@@ -638,8 +635,7 @@ contains
         endif
       enddo
 
-      mmn_in = io_file_unit()
-      open (unit=mmn_in, file=trim(seedname)//'.mmn', &
+      open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
             form='formatted', status='old', action='read', err=103)
       write (stdout, '(/a)', advance='no') &
         ' Reading overlaps from '//trim(seedname)//'.mmn in get_BB_R   : '
@@ -819,9 +815,8 @@ contains
         endif
       enddo
 
-      uHu_in = io_file_unit()
       if (pw90_oper_read%uHu_formatted) then
-        open (unit=uHu_in, file=trim(seedname)//".uHu", form='formatted', &
+        open (newunit=uHu_in, file=trim(seedname)//".uHu", form='formatted', &
               status='old', action='read', err=105)
         write (stdout, '(/a)', advance='no') &
           ' Reading uHu overlaps from '//trim(seedname)//'.uHu in get_CC_R: '
@@ -1002,8 +997,7 @@ contains
         endif
       enddo
 
-      uIu_in = io_file_unit()
-      open (unit=uIu_in, file=TRIM(seedname)//".uIu", form='unformatted', &
+      open (newunit=uIu_in, file=TRIM(seedname)//".uIu", form='unformatted', &
             status='old', action='read', err=107)
       write (stdout, '(/a)', advance='no') &
         ' Reading uIu overlaps from '//trim(seedname)//'.uIu in get_FF_R: '
@@ -1178,9 +1172,8 @@ contains
       ! Read from .spn file the original spin matrices <psi_nk|sigma_i|psi_mk>
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
-      spn_in = io_file_unit()
       if (pw90_oper_read%spn_formatted) then
-        open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
+        open (newunit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
           ' Reading spin matrices from '//trim(seedname)//'.spn in get_SS_R : '
@@ -1400,9 +1393,8 @@ contains
       ! Read from .spn file the original spin matrices <psi_nk|sigma_i|psi_mk>
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
-      spn_in = io_file_unit()
       if (pw90_oper_read%spn_formatted) then
-        open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
+        open (newunit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
           ' Reading spin matrices from '//trim(seedname)//'.spn in get_SHC_R : '
@@ -1510,8 +1502,7 @@ contains
       allocate (SH_q(num_wann, num_wann, num_kpts, 3))
       allocate (S_o(num_bands, num_bands))
 
-      mmn_in = io_file_unit()
-      open (unit=mmn_in, file=trim(seedname)//'.mmn', &
+      open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
             form='formatted', status='old', action='read', err=101)
       write (stdout, '(/a)', advance='no') &
         ' Reading overlaps from '//trim(seedname)//'.mmn in get_SHC_R   : '
@@ -1765,8 +1756,7 @@ contains
         endif
       enddo
 
-      sHu_in = io_file_unit()
-      open (unit=sHu_in, file=trim(seedname)//".sHu", form='unformatted', &
+      open (newunit=sHu_in, file=trim(seedname)//".sHu", form='unformatted', &
             status='old', action='read', err=111)
       write (stdout, '(/a)', advance='no') &
         ' Reading sHu overlaps from '//trim(seedname)//'.sHu in get_SBB_R: '
@@ -1930,8 +1920,7 @@ contains
         endif
       enddo
 
-      sIu_in = io_file_unit()
-      open (unit=sIu_in, file=trim(seedname)//".sIu", form='unformatted', &
+      open (newunit=sIu_in, file=trim(seedname)//".sIu", form='unformatted', &
             status='old', action='read', err=113)
       write (stdout, '(/a)', advance='no') &
         ' Reading sIu overlaps from '//trim(seedname)//'.sIu in get_SAA_R: '

@@ -1,59 +1,12 @@
-
-module aux
-contains
-  subroutine read_eigvals(w90main, w90dat, ldsnt, eigval, seedname, stdout, comm)
-    !fixme(jj) return ierr
-    use w90_comms, only: w90_comm_type
-    use w90_error, only: w90_error_type
-    use w90_helper_types
-    use w90_readwrite, only: w90_readwrite_read_eigvals
-
-    implicit none
-
-    ! arguments
-    character(len=*), intent(in) :: seedname
-    logical, intent(in) :: ldsnt
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    type(lib_global_type), intent(inout) :: w90main
-    type(lib_w90_type), intent(in) :: w90dat
-    type(w90_comm_type), intent(in) :: comm
-    integer, intent(in) :: stdout
-
-    ! local vars
-    type(w90_error_type), allocatable :: error
-    logical :: eig_found, need_eigvals = .false.
-    integer :: ierr
-
-    need_eigvals = w90dat%w90_calculation%bands_plot
-    need_eigvals = (need_eigvals .or. w90dat%w90_calculation%fermi_surface_plot)
-    need_eigvals = (need_eigvals .or. w90dat%output_file%write_hr)
-    ! default to false makes this condition redundant? fixme(jj)
-    !if (w90dat%w90_calculation%transport .and. w90dat%tran%read_ht) need_eigvals = .false.
-    need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
-
-    if (need_eigvals) then
-      ! jj need_eigvals is here used as the arg "w90_plot"
-      call w90_readwrite_read_eigvals(.false., .false., .false., need_eigvals, ldsnt, eig_found, &
-                                      eigval, w90main%num_bands, w90main%num_kpts, stdout, seedname, error, comm)
-      if (allocated(error)) then
-        ierr = error%code
-        deallocate (error)
-        stop
-      endif
-      ! set library pointers to read data
-      if (eig_found) call set_eigval(w90main, eigval)
-      !fixme(jj) if not found, set error condition
-    endif
-  end subroutine read_eigvals
-end module
-
 program libv2
+
 #ifdef MPI08
   use mpi_f08
 #endif
 #ifdef MPI90
   use mpi
 #endif
+
   use w90_helper_types
 
   use w90_comms, only: w90_comm_type
@@ -61,7 +14,6 @@ program libv2
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
   use w90_error, only: w90_error_type
-  use aux, only: read_eigvals
 
   implicit none
 
@@ -241,7 +193,7 @@ program libv2
   endif
 
   ! circumstances where eigenvalues are needed are a little overcomplicated
-  call read_eigvals(w90main, w90dat, ldsnt, eigval, fn, stdout, comm)
+  call read_eigvals(w90main, w90dat, ldsnt, eigval, fn, stdout, stderr, ierr, comm)
 
   ! ends setup
 

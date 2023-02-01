@@ -207,7 +207,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -219,8 +218,7 @@ contains
 
     write (stdout, '(1x,3a)') 'Reading information from file ', trim(seedname), '.chk :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
 
     ! Read comment line
     read (chk_unit) header
@@ -361,7 +359,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -377,8 +374,7 @@ contains
 
     write (stdout, '(1x,3a)') 'Reading information from formatted file ', trim(seedname), '.chk.fmt :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk.fmt', status='old', position='rewind', form='formatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk.fmt', status='old', position='rewind', form='formatted', err=121)
 
     ! Read comment line
     read (chk_unit, '(A)') header
@@ -572,7 +568,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90chk_parameters
     use wannchk_data
 
@@ -587,8 +583,7 @@ contains
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
 
     write (chk_unit) header                                   ! Date and time from the read file
     write (chk_unit) num_bands                                ! Number of bands
@@ -628,7 +623,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90chk_parameters
     use wannchk_data
 
@@ -643,8 +638,7 @@ contains
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing formatted checkpoint file ', trim(seedname), '.chk.fmt...'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk.fmt', form='formatted', status='replace', position='rewind')
+    open (newunit=chk_unit, file=trim(seedname)//'.chk.fmt', form='formatted', status='replace', position='rewind')
 
     write (chk_unit, '(A33)') header                                   ! Date and time from the read file
     write (chk_unit, '(I0)') num_bands                                ! Number of bands
@@ -724,7 +718,6 @@ program w90chk2chk
   !! Program to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit
   use w90_conv
 
   implicit none
@@ -739,8 +732,7 @@ program w90chk2chk
   character(len=50) :: seedname
   !integer :: num_nodes, ierr
 
-  stdout = io_file_unit()
-  open (unit=stdout, file='w90chk2chk.log')
+  open (newunit=stdout, file='w90chk2chk.log')
 
   call conv_get_seedname(stdout, seedname)
 

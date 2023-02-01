@@ -26,14 +26,13 @@ module w90_io
 
   private
 
-  logical, public, save :: post_proc_flag                        !! Are we in post processing mode
+  !logical, public, save :: post_proc_flag                        !! Are we in post processing mode
   character(len=10), parameter, public :: w90_version = '3.1.0 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop
   public :: io_commandline
   public :: io_date
-  public :: io_file_unit
   public :: io_get_seedname
   public :: io_print_timings
   public :: io_time
@@ -172,6 +171,8 @@ contains
     character(len=50) :: ctemp
     character(len=50), intent(inout)  :: seedname
 
+    logical :: post_proc_flag ! local, routine not used (jj jan 23)
+
     post_proc_flag = .false.
 
     num_arg = command_argument_count()
@@ -224,6 +225,8 @@ contains
     character(len=50), allocatable :: ctemp(:)
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
+
+    logical :: post_proc_flag ! local, routine not used (jj jan 23)
 
     help_flag(1) = '-h    '
     help_flag(2) = '-help '
@@ -438,30 +441,4 @@ contains
     endif
     return
   end function io_wallclocktime
-
-  !================================================
-  function io_file_unit()
-    !================================================
-    !! Returns an unused unit number
-    !! so we can later open a file on that unit.
-    !
-    !================================================
-
-    implicit none
-
-    integer :: io_file_unit, unit
-    logical :: file_open
-
-    unit = 9
-    file_open = .true.
-    do while (file_open)
-      unit = unit + 1
-      inquire (unit, OPENED=file_open)
-    end do
-
-    io_file_unit = unit
-
-    return
-  end function io_file_unit
-
 end module w90_io

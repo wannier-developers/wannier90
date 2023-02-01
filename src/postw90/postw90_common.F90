@@ -65,7 +65,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
     use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
@@ -92,8 +92,7 @@ contains
     if (effective_model) then
       if (on_root) then
         ! nrpts is read from file, together with num_wann
-        file_unit = io_file_unit()
-        open (file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
+        open (newunit=file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
               status='old', err=101)
         read (file_unit, *) !header
         read (file_unit, *) num_wann_loc
@@ -171,7 +170,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time
+    use w90_io, only: io_date, io_time
     use w90_comms, only: mpirank, mpisize, w90_comm_type, comms_bcast
     use w90_postw90_types, only: kpoint_dist_type
 
@@ -192,9 +191,8 @@ contains
 
     if (my_node_id == 0) on_root = .true.
 
-    k_unit = io_file_unit()
     if (on_root) then
-      open (unit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
+      open (newunit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
       read (k_unit, *) kpoint_dist%num_int_kpts
     end if
     call comms_bcast(kpoint_dist%num_int_kpts, 1, error, comm)
@@ -295,7 +293,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time
+    use w90_io, only: io_date, io_time
     use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_types
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
@@ -784,7 +782,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_file_unit, io_date, io_time
+    use w90_io, only: io_date, io_time
     use w90_types, only: dis_manifold_type, wannier_data_type
     use w90_comms, only: w90_comm_type, mpirank, comms_bcast
 

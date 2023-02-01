@@ -302,7 +302,7 @@ contains
     use w90_readwrite, only: w90_readwrite_uppercase, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_input, set_error_fatal
+    !use w90_error, only: set_error_input, set_error_fatal
     use w90_comms, only: w90_comm_type, mpirank, comms_sync_err
 
     implicit none
@@ -321,7 +321,6 @@ contains
     logical :: cp_pp, disentanglement
 
     ierr = 0
-    ! assert that settings%entries alloc'd
 
     call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
                                       wan90%dis_spheres, helper%dis_manifold, &
@@ -361,8 +360,6 @@ contains
     helper%seedname = seedname ! maybe not keep this separate from "blob"? JJ
 
     if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
-
-    !fixme need a way to deallocate(settings%entries) here
   end subroutine input_setopt
 
   subroutine input_reader(helper, wan90, seedname, stdout, stderr, ierr, comm)
@@ -934,4 +931,53 @@ contains
       endif
     endif
   end subroutine prterr
+
+  ! this routine needs revising/moving fixme(jj)
+  subroutine read_eigvals(w90main, w90dat, ldsnt, eigval, seedname, stdout, stderr, ierr, comm)
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_fatal
+    use w90_readwrite, only: w90_readwrite_read_eigvals
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    logical, intent(in) :: ldsnt
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    type(lib_global_type), intent(inout) :: w90main
+    type(lib_w90_type), intent(in) :: w90dat
+    type(w90_comm_type), intent(in) :: comm
+    integer, intent(in) :: stdout, stderr
+
+    ! local vars
+    type(w90_error_type), allocatable :: error
+    logical :: eig_found, need_eigvals = .false.
+    integer :: ierr
+
+    ierr = 0
+
+    need_eigvals = w90dat%w90_calculation%bands_plot
+    need_eigvals = (need_eigvals .or. w90dat%w90_calculation%fermi_surface_plot)
+    need_eigvals = (need_eigvals .or. w90dat%output_file%write_hr)
+    ! default to false makes this condition redundant? fixme(jj)
+    ! fixme, the logic here is too complex
+    !if (w90dat%w90_calculation%transport .and. w90dat%tran%read_ht) need_eigvals = .false.
+    need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
+
+    if (need_eigvals) then
+      ! jj need_eigvals is here used as the arg "w90_plot"
+      call w90_readwrite_read_eigvals(.false., .false., .false., need_eigvals, ldsnt, eig_found, &
+                                      eigval, w90main%num_bands, w90main%num_kpts, stdout, seedname, error, comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, stdout, stderr, comm)
+        return
+      else if (.not. eig_found) then
+        call set_error_fatal(error, 'failed to read eigenvalues file', comm)
+        call prterr(error, ierr, stdout, stderr, comm)
+        return
+      endif
+
+      call set_eigval(w90main, eigval)
+    endif
+  end subroutine read_eigvals
 end module w90_helper_types

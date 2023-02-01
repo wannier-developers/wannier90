@@ -43,7 +43,6 @@ module w90_boltzwann
     comms_allreduce, w90_comm_type
   use w90_constants, only: dp, pw90_physical_constants_type, min_smearing_binwidth_ratio
   use w90_dos, only: dos_get_k, dos_get_levelspacing
-  use w90_io, only: io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
@@ -99,7 +98,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_comms, only: comms_bcast, w90_comm_type, mpirank
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       ws_region_type, w90_system_type, ws_distance_type, timer_list_type
@@ -303,8 +302,7 @@ contains
 
     ! I print on file the TDF
     if (on_root) then
-      tdf_unit = io_file_unit()
-      open (unit=tdf_unit, file=trim(seedname)//'_tdf.dat')
+      open (newunit=tdf_unit, file=trim(seedname)//'_tdf.dat')
       write (tdf_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (tdf_unit, '(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * fs / angstrom)"// &
         " vs energy in eV"
@@ -618,8 +616,7 @@ contains
 
     ! Open files and print
     if (on_root) then
-      elcond_unit = io_file_unit()
-      open (unit=elcond_unit, file=trim(seedname)//'_elcond.dat')
+      open (newunit=elcond_unit, file=trim(seedname)//'_elcond.dat')
       write (elcond_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (elcond_unit, '(A)') "# [Electrical conductivity in SI units, i.e. in 1/Ohm/m]"
       write (elcond_unit, '(A)') "# Mu(eV) Temp(K) ElCond_xx ElCond_xy ElCond_yy ElCond_xz ElCond_yz ElCond_zz"
@@ -632,8 +629,7 @@ contains
       if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Electrical conductivity written on the "//trim(seedname)//"_elcond.dat file."
 
-      sigmas_unit = io_file_unit()
-      open (unit=sigmas_unit, file=trim(seedname)//'_sigmas.dat')
+      open (newunit=sigmas_unit, file=trim(seedname)//'_sigmas.dat')
       write (sigmas_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (sigmas_unit, '(A)') "# [(Electrical conductivity * Seebeck coefficient) in SI units, i.e. in Ampere/m/K]"
       write (sigmas_unit, '(A)') "# Mu(eV) Temp(K) (Sigma*S)_xx (Sigma*S)_xy (Sigma*S)_yy (Sigma*S)_xz (Sigma*S)_yz (Sigma*S)_zz"
@@ -646,8 +642,7 @@ contains
       if (print_output%iprint > 1) write (stdout, '(3X,A)') &
         "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the "//trim(seedname)//"_sigmas.dat file."
 
-      seebeck_unit = io_file_unit()
-      open (unit=seebeck_unit, file=trim(seedname)//'_seebeck.dat')
+      open (newunit=seebeck_unit, file=trim(seedname)//'_seebeck.dat')
       write (seebeck_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (seebeck_unit, '(A)') "# [Seebeck coefficient in SI units, i.e. in V/K]"
       write (seebeck_unit, '(A)') &
@@ -661,8 +656,7 @@ contains
       if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Seebeck coefficient written on the "//trim(seedname)//"_seebeck.dat file."
 
-      kappa_unit = io_file_unit()
-      open (unit=kappa_unit, file=trim(seedname)//'_kappa.dat')
+      open (newunit=kappa_unit, file=trim(seedname)//'_kappa.dat')
       write (kappa_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
       write (kappa_unit, '(A)') "# [K coefficient in SI units, i.e. in W/m/K]"
       write (kappa_unit, '(A)') "# [the K coefficient is defined in the documentation, and is an ingredient of"
@@ -804,7 +798,7 @@ contains
 
     use w90_constants, only: dp
     use w90_comms, only: comms_bcast, w90_comm_type, mpirank
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
@@ -983,8 +977,7 @@ contains
 
     ! I open the output files
     if (pw90_boltzwann%calc_also_dos .and. on_root) then
-      boltzdos_unit = io_file_unit()
-      open (unit=boltzdos_unit, file=trim(seedname)//'_boltzdos.dat')
+      open (newunit=boltzdos_unit, file=trim(seedname)//'_boltzdos.dat')
     end if
 
     if (pw90_boltzwann%calc_also_dos .and. on_root .and. (print_output%iprint > 1)) then

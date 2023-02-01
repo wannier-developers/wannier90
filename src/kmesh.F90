@@ -770,7 +770,7 @@ contains
     ! m and n.                                                         !
     !==================================================================!
 
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_types, only: kmesh_info_type, kmesh_input_type, &
       proj_input_type, print_output_type, timer_list_type
@@ -1600,7 +1600,7 @@ contains
     !================================================
 
     use w90_constants, only: eps7, maxlen
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
@@ -1665,25 +1665,31 @@ contains
       counter = counter + multi(shell)
     end do
 
-    kshell_in = io_file_unit()
-    open (unit=kshell_in, file=trim(seedname)//'.kshell', &
-          form='formatted', status='old', action='read', err=101)
+    open (newunit=kshell_in, file=trim(seedname)//'.kshell', form='formatted', status='old', &
+          action='read', iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: Problem (1) opening input file '//trim(seedname)//'.kshell', comm)
+      return
+    endif
 
     num_lines = 0; tot_num_lines = 0
     do
-      read (kshell_in, '(a)', iostat=ierr, err=200, end=210) dummy
-      dummy = adjustl(dummy)
-      tot_num_lines = tot_num_lines + 1
-      if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
-        if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
-
+      read (kshell_in, '(a)', iostat=ierr) dummy
+      ! fixme(jj) this logic needs a test case; not currently tested?
+      if (ierr == 0) then !read ok, proceed
+        dummy = adjustl(dummy)
+        tot_num_lines = tot_num_lines + 1
+        if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
+          if (len(trim(dummy)) > 0) num_lines = num_lines + 1
+        endif
+      else if (ierr > 0) then !error case
+        call set_error_input(error, 'Error: Problem (2) reading input file '//trim(seedname)//'.kshell', comm)
+        return
+      else if (ierr < 0) then !end of record or end of file
+        exit
+      end if
     end do
 
-200 call set_error_file(error, 'Error: Problem (1) reading input file '//trim(seedname)//'.kshell', comm)
-    return !JJ fixme, restructure
-
-210 continue
     rewind (kshell_in)
     kmesh_input%num_shells = num_lines
 
@@ -1832,8 +1838,6 @@ contains
 
     return
 
-101 call set_error_input(error, 'Error: Problem (2) reading input file '//trim(seedname)//'.kshell', comm)
-    return
 103 call set_error_input(error, 'Error: Problem (3) reading input file '//trim(seedname)//'.kshell', comm)
     return
 230 call set_error_input(error, 'Error: Problem reading in w90_readwrite_get_keyword_vector', comm)

@@ -299,8 +299,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   endif
   pos = 'append'
 
-  stdout = io_file_unit()
-  open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
+  open (newunit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
 
   call w90_readwrite_write_header(physics%bohr_version_str, physics%constants_version_str1, &
                                   physics%constants_version_str2, stdout)
@@ -614,8 +613,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   endif
   pos = 'append'
 
-  stdout = io_file_unit()
-  open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
+  open (newunit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
 
   call io_date(cdate, ctime)
 

@@ -103,7 +103,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R, &
       get_SAA_R, get_SBB_R
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, wannier_data_type, &
       dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_mod_type, &
@@ -1137,8 +1137,7 @@ contains
             '---------------------------------'
           file_name = trim(seedname)//'-ahc-fermiscan.dat'
           write (stdout, '(/,3x,a)') '* '//file_name
-          file_unit = io_file_unit()
-          open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+          open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         endif
         do if = 1, fermi_n
           if (fermi_n > 1) write (file_unit, '(4(F12.6,1x))') &
@@ -1224,8 +1223,7 @@ contains
             '---------------------------------'
           file_name = trim(seedname)//'-morb-fermiscan.dat'
           write (stdout, '(/,3x,a)') '* '//file_name
-          file_unit = io_file_unit()
-          open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+          open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         endif
         do if = 1, fermi_n
           LCtil_list(:, :, if) = (img_list(:, :, if) &
@@ -1295,9 +1293,8 @@ contains
           file_name = trim(seedname)//'-kubo_S_'// &
                       achar(119 + i)//achar(119 + j)//'.dat'
           file_name = trim(file_name)
-          file_unit = io_file_unit()
           write (stdout, '(/,3x,a)') '* '//file_name
-          open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+          open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
           do ifreq = 1, pw90_berry%kubo_nfreq
             if (spin_decomp) then
               write (file_unit, '(9E16.8)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
@@ -1332,9 +1329,8 @@ contains
           file_name = trim(seedname)//'-kubo_A_'// &
                       achar(119 + i)//achar(119 + j)//'.dat'
           file_name = trim(file_name)
-          file_unit = io_file_unit()
           write (stdout, '(/,3x,a)') '* '//file_name
-          open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+          open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
           do ifreq = 1, pw90_berry%kubo_nfreq
             if (spin_decomp) then
               write (file_unit, '(9E16.8)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
@@ -1365,8 +1361,7 @@ contains
         !
         file_name = trim(seedname)//'-jdos.dat'
         write (stdout, '(/,3x,a)') '* '//file_name
-        file_unit = io_file_unit()
-        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         do ifreq = 1, pw90_berry%kubo_nfreq
           if (spin_decomp) then
             write (file_unit, '(5E16.8)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
@@ -1430,9 +1425,8 @@ contains
             file_name = trim(seedname)//'-sc_'// &
                         achar(119 + i)//achar(119 + j)//achar(119 + k)//'.dat'
             file_name = trim(file_name)
-            file_unit = io_file_unit()
             write (stdout, '(/,3x,a)') '* '//file_name
-            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
             do ifreq = 1, pw90_berry%kubo_nfreq
               write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
                 fac*sc_list(i, jk, ifreq)
@@ -1482,9 +1476,8 @@ contains
           file_name = trim(seedname)//'-shc-freqscan'//'.dat'
         endif
         file_name = trim(file_name)
-        file_unit = io_file_unit()
         write (stdout, '(/,3x,a)') '* '//file_name
-        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         if (.not. pw90_spin_hall%freq_scan) then
           write (file_unit, '(a,3x,a,3x,a)') &
             '#No.', 'Fermi energy(eV)', 'SHC((hbar/e)*S/cm)'
@@ -1518,16 +1511,15 @@ contains
         ! zeroth order in k
         file_name = trim(seedname)//'-kdotp_0.dat'
         file_name = trim(file_name)
-        file_unit = io_file_unit()
         write (stdout, '(/,3x,a)') '* '//file_name
-        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         write (file_unit, '(2E18.8E3)') kdotp(:, :, 1, 1, 1)
         close (file_unit)
 
         ! first order in k
         file_name = trim(seedname)//'-kdotp_1.dat'
         write (stdout, '(/,3x,a)') '* '//file_name
-        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         do i = 1, 3
           write (file_unit, '(2E18.8E3)') kdotp(:, :, 2, i, 1)
         end do
@@ -1536,7 +1528,7 @@ contains
         ! second order in k
         file_name = trim(seedname)//'-kdotp_2.dat'
         write (stdout, '(/,3x,a)') '* '//file_name
-        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
         do i = 1, 3
           do j = 1, 3
             write (file_unit, '(2E18.8E3)') kdotp(:, :, 3, i, j)

@@ -298,7 +298,7 @@ contains
     !! of the first one.
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_types, only: ws_distance_type
 
     implicit none
@@ -312,15 +312,18 @@ contains
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
-    integer:: irpt, iw, jw, ideg, file_unit
+    integer:: irpt, iw, jw, ideg, file_unit, ierr
     character(len=100) :: header
     character(len=9)  :: cdate, ctime
 
-    file_unit = io_file_unit()
     call io_date(cdate, ctime)
 
-    open (file_unit, file=trim(seedname)//'_wsvec.dat', form='formatted', &
-          status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'_wsvec.dat', form='formatted', &
+          status='unknown', iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', comm)
+      return
+    endif
 
     if (use_ws_distance) then
       header = '## written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
@@ -355,10 +358,6 @@ contains
     end if
 
     close (file_unit)
-    return
-
-101 call set_error_file(error, 'Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', comm)
-    return
     !================================================!
   end subroutine ws_write_vec
 

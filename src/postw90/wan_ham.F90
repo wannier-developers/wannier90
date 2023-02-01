@@ -444,7 +444,6 @@ contains
     use w90_comms, only: w90_comm_type, mpirank
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
-    use w90_io, only: io_file_unit
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
       ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &

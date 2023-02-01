@@ -304,7 +304,7 @@ contains
     integer, allocatable :: global_k(:)
     integer :: ikg, ikl, my_node_id
 
-    ! JJ this is a bit cumbersome here :-/ maybe stick in a function? fixme
+    ! local-global k index mapping
     my_node_id = mpirank(comm)
     nkloc = count(dist_k == my_node_id)
     allocate (global_k(nkloc), stat=ierr)
@@ -315,14 +315,14 @@ contains
     global_k = huge(1); ikl = 1
     do ikg = 1, num_kpts
       if (dist_k(ikg) == my_node_id) then
-        global_k(ikl) = ikg
+        global_k(ikl) = ikg ! global [1,num_kpts] index corresponding to local [1,nk_this_node] index
         ikl = ikl + 1
       endif
     enddo
 
     if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
 
-    nkloc = count(dist_k == mpirank(comm))
+    nkloc = count(dist_k == my_node_id)
 
     allocate (cwb(num_wann, num_bands), stat=ierr)
     if (ierr /= 0) then

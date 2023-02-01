@@ -66,7 +66,7 @@ contains
     use w90_comms, only: comms_bcast, w90_comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
-    use w90_io, only: io_file_unit, io_time
+    use w90_io, only: io_time
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
@@ -531,7 +531,6 @@ contains
 
       if (allocated(my_zdata)) then
         if (plot_curv .or. plot_morb .or. plot_shc) then
-          dataunit = io_file_unit()
           if (plot_morb) then ! ugly. But to keep the logic the same as other places
             filename = trim(seedname)//'-kslice-morb.dat'
           elseif (plot_curv) then
@@ -540,7 +539,7 @@ contains
             filename = trim(seedname)//'-kslice-shc.dat'
           endif
           write (stdout, '(/,3x,a)') filename
-          open (dataunit, file=filename, form='formatted')
+          open (newunit=dataunit, file=filename, form='formatted')
           if (plot_shc) then
             if (pw90_berry%curv_unit == 'bohr2') zdata = zdata/bohr**2
             do loop_kpt = 1, nkpts
@@ -560,10 +559,9 @@ contains
         !
         ! gnuplot script for black Fermi lines
         !
-        scriptunit = io_file_unit()
         filename = trim(seedname)//'-kslice-fermi_lines.gnu'
         write (stdout, '(/,3x,a)') filename
-        open (scriptunit, file=filename, form='formatted')
+        open (newunit=scriptunit, file=filename, form='formatted')
         write (scriptunit, '(a)') "unset surface"
         write (scriptunit, '(a)') "set contour"
         write (scriptunit, '(a)') "set view map"
@@ -617,10 +615,9 @@ contains
         !
         ! Python script for black Fermi lines
         !
-        scriptunit = io_file_unit()
         filename = trim(seedname)//'-kslice-fermi_lines.py'
         write (stdout, '(/,3x,a)') filename
-        open (scriptunit, file=filename, form='formatted')
+        open (newunit=scriptunit, file=filename, form='formatted')
         call script_common(scriptunit, areab1b2, square, seedname)
         call script_fermi_lines(scriptunit, seedname, fermi_energy_list)
         write (scriptunit, '(a)') " "
@@ -644,10 +641,9 @@ contains
         !
         ! gnuplot script for spin-colored Fermi lines
         !
-        scriptunit = io_file_unit()
         filename = trim(seedname)//'-kslice-fermi_lines.gnu'
         write (stdout, '(/,3x,a)') filename
-        open (scriptunit, file=filename, form='formatted')
+        open (newunit=scriptunit, file=filename, form='formatted')
         write (scriptunit, '(a)') "unset key"
         write (scriptunit, '(a)') "unset tics"
         write (scriptunit, '(a)') "set cbtics"
@@ -666,10 +662,9 @@ contains
         !
         ! python script for spin-colored Fermi lines
         !
-        scriptunit = io_file_unit()
         filename = trim(seedname)//'-kslice-fermi_lines.py'
         write (stdout, '(/,3x,a)') filename
-        open (scriptunit, file=filename, form='formatted')
+        open (newunit=scriptunit, file=filename, form='formatted')
         write (scriptunit, '(a)') "import pylab as pl"
         write (scriptunit, '(a)') "import numpy as np"
         write (scriptunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
@@ -708,25 +703,24 @@ contains
         !
         do i = 1, 3
 
-          scriptunit = io_file_unit()
           if (plot_curv .and. .not. plot_fermi_lines) then
             filename = trim(seedname)//'-kslice-curv_'//achar(119 + i)//'.py'
             write (stdout, '(/,3x,a)') filename
-            open (scriptunit, file=filename, form='formatted')
+            open (newunit=scriptunit, file=filename, form='formatted')
           elseif (plot_curv .and. plot_fermi_lines) then
             filename = trim(seedname)//'-kslice-curv_'//achar(119 + i)// &
                        '+fermi_lines.py'
             write (stdout, '(/,3x,a)') filename
-            open (scriptunit, file=filename, form='formatted')
+            open (newunit=scriptunit, file=filename, form='formatted')
           elseif (plot_morb .and. .not. plot_fermi_lines) then
             filename = trim(seedname)//'-kslice-morb_'//achar(119 + i)//'.py'
             write (stdout, '(/,3x,a)') filename
-            open (scriptunit, file=filename, form='formatted')
+            open (newunit=scriptunit, file=filename, form='formatted')
           elseif (plot_morb .and. plot_fermi_lines) then
             filename = trim(seedname)//'-kslice-morb_'//achar(119 + i)// &
                        '+fermi_lines.py'
             write (stdout, '(/,3x,a)') filename
-            open (scriptunit, file=filename, form='formatted')
+            open (newunit=scriptunit, file=filename, form='formatted')
           endif
           call script_common(scriptunit, areab1b2, square, seedname)
           if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname, fermi_energy_list)
@@ -817,11 +811,10 @@ contains
       endif !heatmap
 
       if (heatmap .and. plot_shc) then
-        scriptunit = io_file_unit()
         if (.not. plot_fermi_lines) then
           filename = trim(seedname)//'-kslice-shc'//'.py'
           write (stdout, '(/,3x,a)') filename
-          open (scriptunit, file=filename, form='formatted')
+          open (newunit=scriptunit, file=filename, form='formatted')
         elseif (plot_fermi_lines) then
           filename = trim(seedname)//'-kslice-shc'//'+fermi_lines.py'
           write (stdout, '(/,3x,a)') filename
@@ -1033,7 +1026,6 @@ contains
   end subroutine kslice_print_info
 
   subroutine write_data_file(stdout, filename, fmt, data)
-    use w90_io, only: io_file_unit
     use w90_constants, only: dp
 
     integer, intent(in) :: stdout
@@ -1043,8 +1035,7 @@ contains
     integer :: n, i, fileunit
 
     write (stdout, '(/,3x,a)') filename
-    fileunit = io_file_unit()
-    open (fileunit, file=filename, form='formatted')
+    open (newunit=fileunit, file=filename, form='formatted')
 
     n = size(data, 2)
     do i = 1, n
@@ -1058,7 +1049,6 @@ contains
   subroutine write_coords_file(stdout, filename, fmt, coords, vals, mask, blocklen)
     !================================================!
 
-    use w90_io, only: io_file_unit
     use w90_constants, only: dp
 
     integer, intent(in) :: stdout
@@ -1070,8 +1060,7 @@ contains
     integer :: n, m, i, j, fileunit, bl
 
     write (stdout, '(/,3x,a)') filename
-    fileunit = io_file_unit()
-    open (fileunit, file=filename, form='formatted')
+    open (newunit=fileunit, file=filename, form='formatted')
 
     n = size(vals, 3)
     m = size(vals, 2)

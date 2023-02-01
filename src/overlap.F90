@@ -159,7 +159,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_info_type, timer_list_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
     use w90_error
@@ -580,7 +580,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_types, only: timer_list_type
 
