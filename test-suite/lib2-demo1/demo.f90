@@ -72,7 +72,7 @@ program ok
   call get_fortran_stderr(stderr)
   allocate (distk(nk))
   distk = 0
-  call set_kpoint_distribution(w90main, stderr, ierr, distk)
+  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr, comm)
 
   ! required settings
   call set_option('num_wann', nw)

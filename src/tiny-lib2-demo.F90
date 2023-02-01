@@ -153,7 +153,7 @@ program libv2
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
   ! copy distribution to library
-  call set_kpoint_distribution(w90main, stderr, ierr, distk)
+  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr, comm)
   if (ierr /= 0) stop
 
   nkl = count(distk == rank) ! number of kpoints this rank
@@ -195,7 +195,7 @@ program libv2
   ldsnt = .true.
   lwann = .true.
   lplot = .true.
-  ltran = .true.
+  ltran = .false.
 
   if (restart == '') then
     if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
@@ -210,14 +210,14 @@ program libv2
       ldsnt = .false.
       lwann = .true.
       lplot = .true.
-      ltran = .true.
+      ltran = .false.
     elseif (restart == 'plot' .or. (restart == 'default' .and. cpstatus == 'postwann')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
       lovlp = .false.
       ldsnt = .false.
       lwann = .false.
       lplot = .true.
-      ltran = .true.
+      ltran = .false.
     elseif (restart == 'transport') then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
       lovlp = .false.
@@ -229,8 +229,7 @@ program libv2
       ! illegitimate restart choice, should declaim the acceptable choices
     endif
   endif
-! end restart system
-
+  ltran = (ltran .or. w90dat%w90_calculation%transport)
   ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
 
   if (ldsnt) then
@@ -275,7 +274,11 @@ program libv2
     if (ierr /= 0) stop
   endif
 
-  ! fixme add transport!
+  if (ltran) then
+    call transport(w90main, w90dat, stdout, stderr, ierr, comm)
+    if (ierr /= 0) stop
+  endif
+
   call print_times(w90main, stdout)
   if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI

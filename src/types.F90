@@ -27,7 +27,6 @@ module w90_types
   !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
   use w90_constants, only: dp, maxlen
-  !use w90_io, only: maxlen
 
   implicit none
 
@@ -52,9 +51,8 @@ module w90_types
     !!==================================================
     !! Contains physical information about the material being calculated.
     !!==================================================
-    ! fixme(jj) why is the default -99?  catch uninit vars otherwise
-    integer :: num_valence_bands = -99 !wannierise, postw90/postw90_common, get_oper and berry
-    integer :: num_elec_per_state = 2 !wannierise and postw90 dos and boltzwann
+    integer :: num_valence_bands !**no sensibe default**
+    integer :: num_elec_per_state = 2 ! used in: wannierise and postw90 dos and boltzwann
     logical :: spinors = .false.  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
