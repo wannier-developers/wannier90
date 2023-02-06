@@ -90,6 +90,7 @@ program ok
   call set_option('num_print_cycles', 13)
   call set_option('use_ws_distance', .false.)
   call set_option('search_shells', 12)
+  call set_option('num_iter', 100)
 
   ! apply settings (and discard settings store)
   call input_setopt(w90main, w90dat, 'wannier', stdout, stderr, ierr, comm)
@@ -109,6 +110,7 @@ program ok
   ! read from ".mmn" and ".amn"
   ! and assign to m and u (or m_orig and a if disentangling)
   call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
+  call projovlp(w90main, w90dat, stdout, stderr, ierr, comm)
   allocate (uopt(nb, nw, nk))
   call set_u_opt(w90main, uopt)
 

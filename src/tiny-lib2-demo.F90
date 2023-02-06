@@ -33,7 +33,7 @@ program libv2
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
   logical, pointer :: pp
-  logical :: lovlp, ldsnt, lwann, lplot, ltran
+  logical :: lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
   type(lib_global_type), target :: w90main
   type(lib_w90_type), target :: w90dat
   type(w90_comm_type) :: comm
@@ -193,7 +193,18 @@ program libv2
   endif
 
   ! circumstances where eigenvalues are needed are a little overcomplicated
-  call read_eigvals(w90main, w90dat, ldsnt, eigval, fn, stdout, stderr, ierr, comm)
+  need_eigvals = .false.
+  need_eigvals = w90dat%w90_calculation%bands_plot
+  need_eigvals = (need_eigvals .or. w90dat%w90_calculation%fermi_surface_plot)
+  need_eigvals = (need_eigvals .or. w90dat%output_file%write_hr)
+  need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
+
+  if (need_eigvals) then
+    allocate (eigval(nb, nk))
+    call read_eigvals(w90main, w90dat, eigval, fn, stdout, stderr, ierr, comm)
+    if (ierr /= 0) stop
+    call set_eigval(w90main, eigval)
+  endif
 
   ! ends setup
 

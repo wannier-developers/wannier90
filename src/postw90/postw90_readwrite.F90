@@ -208,9 +208,9 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_ws_data(ws_region, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_eigvals(effective_model, pw90_calculation%boltzwann, &
-                                    pw90_calculation%geninterp, dos_plot, disentanglement, &
-                                    eig_found, eigval, num_bands, num_kpts, stdout, seedname, &
+
+    allocate (eigval(num_bands, num_kpts)) !fixme(jj) check allocation success
+    call w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, seedname, &
                                     error, comm)
     if (allocated(error)) return
     dis_manifold%win_min = -1.0_dp
