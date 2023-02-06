@@ -14,7 +14,6 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
-  use w90_readwrite, only: set_option
 
   implicit none
 
@@ -26,12 +25,13 @@ module w90_helper_types
     type(kmesh_input_type) :: kmesh_input
     type(kpoint_path_type) :: kpoint_path
     type(print_output_type) :: print_output
+    type(settings_type) :: settings
+    !! container for input file (.win) data and options set via library interface
     type(timer_list_type) :: timer
     type(w90_physical_constants_type) :: physics
     type(w90_system_type) :: w90_system
     type(wannier_data_type) :: wannier_data
     type(ws_region_type) :: ws_region
-    !settings object here
 
     complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: u_opt(:, :, :) => null()
@@ -331,7 +331,7 @@ contains
 
     ierr = 0
 
-    call w90_wannier90_readwrite_read(helper%atom_data, wan90%band_plot, wan90%dis_control, &
+    call w90_wannier90_readwrite_read(helper%settings, helper%atom_data, wan90%band_plot, wan90%dis_control, &
                                       wan90%dis_spheres, helper%dis_manifold, &
                                       helper%exclude_bands, helper%fermi_energy_list, &
                                       wan90%fermi_surface_data, helper%kmesh_input, &
@@ -353,7 +353,7 @@ contains
       return
     else
       ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(helper%atom_data, helper%kpoint_path, &
+      call w90_readwrite_uppercase(helper%settings, helper%atom_data, helper%kpoint_path, &
                                    helper%print_output%length_unit)
 
       disentanglement = (helper%num_bands > helper%num_wann)
@@ -395,7 +395,7 @@ contains
 
     ierr = 0
 
-    call w90_readwrite_in_file(seedname, error, comm)
+    call w90_readwrite_in_file(helper%settings, seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)
       return
@@ -421,7 +421,7 @@ contains
     endif
     !!!!! end unlucky code
 
-    call w90_readwrite_clean_infile(istdout, seedname, error, comm)
+    call w90_readwrite_clean_infile(helper%settings, istdout, seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)
       return
@@ -975,7 +975,7 @@ contains
       return
     endif
 
-    call w90_readwrite_read_eigvals(eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
+    call w90_readwrite_read_eigvals(w90main%settings, eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
                                     istdout, seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)

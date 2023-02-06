@@ -75,9 +75,6 @@ module w90_readwrite
   public :: w90_readwrite_get_keyword_block
   public :: w90_readwrite_get_keyword_vector
 
-  type(settings_type) :: settings
-  !! container for input file (.win) data and options set via library interface
-
   private :: expand_settings
   private :: init_settings
   public :: set_option ! interface for setting vars using library
@@ -95,44 +92,52 @@ module w90_readwrite
 
 contains
   !================================================!
-  subroutine w90_readwrite_read_verbosity(print_output, error, comm)
+  subroutine w90_readwrite_read_verbosity(settings, print_output, error, comm)
     use w90_error, only: w90_error_type
     implicit none
     type(print_output_type), intent(inout) :: print_output
     logical :: found
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
     integer :: unlucky_rank
 
-    call w90_readwrite_get_keyword('timing_level', found, error, comm, i_value=print_output%timing_level)
+    call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm, &
+                                   i_value=print_output%timing_level)
     if (allocated(error)) return
 
     ! special test case; use the timing_level variable to
     ! communicate a kill to remote process, testing error handling
-    call w90_readwrite_get_keyword('unlucky', found, error, comm, i_value=unlucky_rank)
+    call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm, i_value=unlucky_rank)
     if (found) then
       if (unlucky_rank > 0) then
         print_output%timing_level = -unlucky_rank
       endif
     endif
 
-    call w90_readwrite_get_keyword('iprint', found, error, comm, i_value=print_output%iprint)
+    call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm, &
+                                   i_value=print_output%iprint)
     if (allocated(error)) return
   end subroutine w90_readwrite_read_verbosity
 
-  subroutine w90_readwrite_read_algorithm_control(optimisation, error, comm)
+  subroutine w90_readwrite_read_algorithm_control(settings, optimisation, error, comm)
     use w90_error, only: w90_error_type
     implicit none
     integer, intent(inout) :: optimisation
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
+    type(settings_type), intent(inout) :: settings
+
     logical :: found
 
-    call w90_readwrite_get_keyword('optimisation', found, error, comm, i_value=optimisation)
+    call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm, &
+                                   i_value=optimisation)
     if (allocated(error)) return
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(lenconfac, length_unit, energy_unit, bohr, error, comm)
+  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, energy_unit, bohr, error, &
+                                      comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     real(kind=dp), intent(inout) :: lenconfac
@@ -141,13 +146,15 @@ contains
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
     logical :: found
 
     !fixme(jj) check that the correct object var is passed to this fun
-    call w90_readwrite_get_keyword('energy_unit', found, error, comm, c_value=energy_unit)
+    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
     if (allocated(error)) return
 
-    call w90_readwrite_get_keyword('length_unit', found, error, comm, c_value=length_unit)
+    call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm, c_value=length_unit)
     if (allocated(error)) return
     if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
       call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units', comm)
@@ -157,16 +164,17 @@ contains
     endif
   end subroutine w90_readwrite_read_units
 
-  subroutine w90_readwrite_read_num_wann(num_wann, error, comm)
+  subroutine w90_readwrite_read_num_wann(settings, num_wann, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     integer, intent(inout) :: num_wann
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found
 
-    call w90_readwrite_get_keyword('num_wann', found, error, comm, i_value=num_wann)
+    call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm, i_value=num_wann)
     if (allocated(error)) return
 
     if (.not. found) then
@@ -179,7 +187,8 @@ contains
     endif
   end subroutine w90_readwrite_read_num_wann
 
-  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, error, comm)
+  subroutine w90_readwrite_read_exclude_bands(settings, exclude_bands, num_exclude_bands, error, &
+                                              comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
@@ -187,12 +196,14 @@ contains
     integer, intent(out) :: num_exclude_bands
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: ierr
     logical :: found
 
     num_exclude_bands = 0
-    call w90_readwrite_get_range_vector('exclude_bands', found, num_exclude_bands, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
+                                        .true., error, comm)
     if (allocated(error)) return
 
     if (found) then
@@ -206,8 +217,8 @@ contains
         call set_error_alloc(error, 'Error allocating exclude_bands in w90_readwrite_read_exclude_bands', comm)
         return
       endif
-      call w90_readwrite_get_range_vector('exclude_bands', found, num_exclude_bands, .false., &
-                                          error, comm, exclude_bands)
+      call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
+                                          .false., error, comm, exclude_bands)
       if (allocated(error)) return
       if (any(exclude_bands < 1)) then
         call set_error_input(error, 'Error: exclude_bands must contain positive numbers', comm)
@@ -216,8 +227,8 @@ contains
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
-  subroutine w90_readwrite_read_num_bands(pw90_effective_model, num_bands, num_wann, stdout, &
-                                          error, comm)
+  subroutine w90_readwrite_read_num_bands(settings, pw90_effective_model, num_bands, num_wann, &
+                                          stdout, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: pw90_effective_model
@@ -226,13 +237,14 @@ contains
     integer, intent(in) :: stdout
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp
     logical :: found
 
     !fixme(jj) pw90_effective model
 
-    call w90_readwrite_get_keyword('num_bands', found, error, comm, i_value=i_temp)
+    call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       if (found) then
@@ -254,18 +266,19 @@ contains
     endif
   end subroutine w90_readwrite_read_num_bands
 
-  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, error, comm)
+  subroutine w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found, ltmp
 
     ltmp = .false.
-    call w90_readwrite_get_keyword('gamma_only', found, error, comm, l_value=ltmp)
+    call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
     gamma_only = ltmp
     if (gamma_only .and. (num_kpts .ne. 1)) then
@@ -274,20 +287,23 @@ contains
     endif
   end subroutine w90_readwrite_read_gamma_only
 
-  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, mp_grid, num_kpts, error, comm)
+  subroutine w90_readwrite_read_mp_grid(settings, pw90_effective_model, mp_grid, num_kpts, error, &
+                                        comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     logical, intent(in) :: pw90_effective_model
     integer, intent(inout) :: mp_grid(3), num_kpts
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: iv_temp(3)
     logical :: found
 
     !fixme(jj) more pw90_effective_model issues!
 
-    call w90_readwrite_get_keyword_vector('mp_grid', found, 3, error, comm, i_value=iv_temp)
+    call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 3, error, comm, &
+                                          i_value=iv_temp)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
@@ -302,18 +318,19 @@ contains
     end if
   end subroutine w90_readwrite_read_mp_grid
 
-  subroutine w90_readwrite_read_system(w90_system, error, comm)
+  subroutine w90_readwrite_read_system(settings, w90_system, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(w90_system_type), intent(inout) :: w90_system
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found, ltmp
     integer :: itmp
 
     ltmp = .false.  ! by default our WF are not spinors
-    call w90_readwrite_get_keyword('spinors', found, error, comm, l_value=ltmp)
+    call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
     if (found) then
       w90_system%spinors = ltmp
@@ -328,7 +345,7 @@ contains
       w90_system%num_elec_per_state = 2 ! the default
     endif
 
-    call w90_readwrite_get_keyword('num_elec_per_state', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm, &
                                    i_value=itmp)
     if (allocated(error)) return
     if (found) then
@@ -345,7 +362,7 @@ contains
       endif
     endif
 
-    call w90_readwrite_get_keyword('num_valence_bands', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm, &
                                    i_value=w90_system%num_valence_bands)
     if (allocated(error)) return
     if (found .and. (w90_system%num_valence_bands .le. 0)) then
@@ -354,7 +371,7 @@ contains
     endif
   end subroutine w90_readwrite_read_system
 
-  subroutine w90_readwrite_read_kpath(kpoint_path, ok, bands_plot, error, comm)
+  subroutine w90_readwrite_read_kpath(settings, kpoint_path, ok, bands_plot, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(in) :: bands_plot
@@ -362,12 +379,13 @@ contains
     logical, intent(out) :: ok
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
 
     bands_num_spec_points = 0
-    call w90_readwrite_get_block_length('kpoint_path', found, i_temp, error, comm)
+    call w90_readwrite_get_block_length(settings, 'kpoint_path', found, i_temp, error, comm)
     if (allocated(error)) return
     if (found) then
       ok = .true.
@@ -385,12 +403,12 @@ contains
         call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read', comm)
         return
       endif
-      call w90_readwrite_get_keyword_kpath(kpoint_path, error, comm)
+      call w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
       if (allocated(error)) return
     else
       ok = .false.
     end if
-    call w90_readwrite_get_keyword('bands_num_points', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm, &
                                    i_value=kpoint_path%num_points_first_segment)
     if (allocated(error)) return
     if (bands_plot) then
@@ -401,13 +419,15 @@ contains
     endif
   end subroutine w90_readwrite_read_kpath
 
-  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, error, comm)
+  subroutine w90_readwrite_read_fermi_energy(settings, found_fermi_energy, fermi_energy_list, &
+                                             error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(out) :: found_fermi_energy
     real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     real(kind=dp) :: fermi_energy
     logical :: fermi_energy_scan
@@ -419,7 +439,8 @@ contains
 
     n = 0
     found_fermi_energy = .false.
-    call w90_readwrite_get_keyword('fermi_energy', found, error, comm, r_value=fermi_energy)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm, &
+                                   r_value=fermi_energy)
     if (allocated(error)) return
     if (found) then
       found_fermi_energy = .true.
@@ -430,7 +451,8 @@ contains
     ! and would be diagnosed as unrecognised tokens, which is potentially misleading
 
     fermi_energy_scan = .false.
-    call w90_readwrite_get_keyword('fermi_energy_min', found, error, comm, r_value=fermi_energy_min)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm, &
+                                   r_value=fermi_energy_min)
     if (allocated(error)) return
     if (found) then
       if (found_fermi_energy) then
@@ -439,7 +461,7 @@ contains
       endif
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
-      call w90_readwrite_get_keyword('fermi_energy_max', found, error, comm, &
+      call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm, &
                                      r_value=fermi_energy_max)
       if (allocated(error)) return
       if (found .and. fermi_energy_max <= fermi_energy_min) then
@@ -447,7 +469,7 @@ contains
         return
       endif
       fermi_energy_step = 0.01_dp
-      call w90_readwrite_get_keyword('fermi_energy_step', found, error, comm, &
+      call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm, &
                                      r_value=fermi_energy_step)
       if (allocated(error)) return
       if (found .and. fermi_energy_step <= 0.0_dp) then
@@ -486,35 +508,36 @@ contains
     endif
   end subroutine w90_readwrite_read_fermi_energy
 
-  subroutine w90_readwrite_read_ws_data(ws_region, error, comm)
+  subroutine w90_readwrite_read_ws_data(settings, ws_region, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(ws_region_type), intent(inout) :: ws_region
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i
     logical :: found
 
-    call w90_readwrite_get_keyword('use_ws_distance', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm, &
                                    l_value=ws_region%use_ws_distance)
     if (allocated(error)) return
 
-    call w90_readwrite_get_keyword('ws_distance_tol', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'ws_distance_tol', found, error, comm, &
                                    r_value=ws_region%ws_distance_tol)
     if (allocated(error)) return
 
-    call w90_readwrite_get_vector_length('ws_search_size', found, i, error, comm)
+    call w90_readwrite_get_vector_length(settings, 'ws_search_size', found, i, error, comm)
     if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector('ws_search_size', found, 1, error, comm, &
+        call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 1, error, comm, &
                                               i_value=ws_region%ws_search_size)
         if (allocated(error)) return
         ws_region%ws_search_size(2) = ws_region%ws_search_size(1)
         ws_region%ws_search_size(3) = ws_region%ws_search_size(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector('ws_search_size', found, 3, error, comm, &
+        call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 3, error, comm, &
                                               i_value=ws_region%ws_search_size)
         if (allocated(error)) return
       else
@@ -529,8 +552,8 @@ contains
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, seedname, &
-                                        error, comm)
+  subroutine w90_readwrite_read_eigvals(settings, eig_found, eigval, num_bands, num_kpts, stdout, &
+                                        seedname, error, comm)
 
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
@@ -539,12 +562,11 @@ contains
     character(len=*), intent(in)  :: seedname
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
-    !logical, intent(in) :: disentanglement
     logical, intent(inout) :: eig_found
-    !logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
     real(kind=dp), intent(inout) :: eigval(:, :)
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
+    type(settings_type), intent(inout) :: settings
 
     ! local
     integer :: i, j, k, n, eig_unit, ierr
@@ -594,22 +616,25 @@ contains
     return
   end subroutine w90_readwrite_read_eigvals
 
-  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, error, comm)
+  subroutine w90_readwrite_read_dis_manifold(settings, eig_found, dis_manifold, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
+
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
     ! local
     logical :: found, found2
 
     !fixme(jj) shouldn't we check for both min and max?
-    call w90_readwrite_get_keyword('dis_win_min', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
     if (allocated(error)) return
 
-    call w90_readwrite_get_keyword('dis_win_max', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm, &
                                    r_value=dis_manifold%win_max)
     if (allocated(error)) return
     ! fixme(jj) why does the following depend on having read the .eig file?
@@ -618,14 +643,14 @@ contains
       return
     endif
 
-    call w90_readwrite_get_keyword('dis_froz_max', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm, &
                                    r_value=dis_manifold%froz_max)
     if (allocated(error)) return
     if (found) then
       dis_manifold%frozen_states = .true.
       dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
-    call w90_readwrite_get_keyword('dis_froz_min', found2, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_froz_min', found2, error, comm, &
                                    r_value=dis_manifold%froz_min)
     if (allocated(error)) return
     if (eig_found) then
@@ -640,17 +665,18 @@ contains
     endif
   end subroutine w90_readwrite_read_dis_manifold
 
-  subroutine w90_readwrite_read_kmesh_data(kmesh_input, error, comm)
+  subroutine w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: itmp, ierr
     logical :: found
 
-    call w90_readwrite_get_keyword('search_shells', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm, &
                                    i_value=kmesh_input%search_shells)
     if (allocated(error)) return
     if (kmesh_input%search_shells < 0) then
@@ -659,14 +685,16 @@ contains
       return
     endif
 
-    call w90_readwrite_get_keyword('kmesh_tol', found, error, comm, r_value=kmesh_input%tol)
+    call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm, &
+                                   r_value=kmesh_input%tol)
     if (allocated(error)) return
     if (kmesh_input%tol < 0.0_dp) then
       call set_error_input(error, 'Error: kmesh_tol must be positive', comm)
       return
     endif
 
-    call w90_readwrite_get_range_vector('shell_list', found, kmesh_input%num_shells, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
+                                        .true., error, comm)
     if (allocated(error)) return
     if (found) then
       if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) then
@@ -679,8 +707,8 @@ contains
         call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read', comm)
         return
       endif
-      call w90_readwrite_get_range_vector('shell_list', found, kmesh_input%num_shells, .false., &
-                                          error, comm, kmesh_input%shell_list)
+      call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
+                                          .false., error, comm, kmesh_input%shell_list)
       if (allocated(error)) return
       if (any(kmesh_input%shell_list < 1)) then
         call set_error_input(error, 'Error: shell_list must contain positive numbers', comm)
@@ -695,7 +723,7 @@ contains
       endif
     end if
 
-    call w90_readwrite_get_keyword('num_shells', found, error, comm, i_value=itmp)
+    call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm, i_value=itmp)
     if (allocated(error)) return
     if (found .and. (itmp /= kmesh_input%num_shells)) then
       call set_error_input(error, 'Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', comm)
@@ -707,13 +735,13 @@ contains
     ! in kmesh.F90
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
-    call w90_readwrite_get_keyword('skip_b1_tests', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm, &
                                    l_value=kmesh_input%skip_B1_tests)
     if (allocated(error)) return
   end subroutine w90_readwrite_read_kmesh_data
 
-  subroutine w90_readwrite_read_kpoints(pw90_effective_model, kpt_latt, num_kpts, &
-                                        bohr, error, comm)
+  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, bohr, &
+                                        error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
@@ -723,6 +751,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
@@ -745,8 +774,8 @@ contains
     endif
 
     ! fixme(jj) why are _latt and _cart used like this??
-    call w90_readwrite_get_keyword_block('kpoints', found, num_kpts, 3, bohr, error, comm, &
-                                         r_value=kpt_cart)
+    call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
+                                         comm, r_value=kpt_cart)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       kpt_latt = kpt_cart
@@ -772,7 +801,7 @@ contains
     endif
   end subroutine w90_readwrite_read_kpoints
 
-  subroutine w90_readwrite_read_lattice(real_lattice, bohr, error, comm)
+  subroutine w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     real(kind=dp), intent(out) :: real_lattice(3, 3)
@@ -780,11 +809,12 @@ contains
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found
 
-    call w90_readwrite_get_keyword_block('unit_cell_cart', found, 3, 3, bohr, error, comm, &
-                                         r_value=real_lattice_tmp)
+    call w90_readwrite_get_keyword_block(settings, 'unit_cell_cart', found, 3, 3, bohr, error, &
+                                         comm, r_value=real_lattice_tmp)
     if (allocated(error)) return
     real_lattice = transpose(real_lattice_tmp)
     if (.not. found) then
@@ -793,7 +823,7 @@ contains
     endif
   end subroutine w90_readwrite_read_lattice
 
-  subroutine w90_readwrite_read_atoms(atom_data, real_lattice, bohr, error, comm)
+  subroutine w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(atom_data_type), intent(inout) :: atom_data
@@ -801,14 +831,15 @@ contains
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
 
     ! Atoms
-    call w90_readwrite_get_block_length('atoms_frac', found, i_temp, error, comm)
+    call w90_readwrite_get_block_length(settings, 'atoms_frac', found, i_temp, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_get_block_length('atoms_cart', found2, i_temp2, error, comm, lunits)
+    call w90_readwrite_get_block_length(settings, 'atoms_cart', found2, i_temp2, error, comm, lunits)
     if (allocated(error)) return
     if (found .and. found2) then
       call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart', comm)
@@ -823,12 +854,12 @@ contains
     end if
     !fixme, other conditions should be flagged as error
     if (atom_data%num_atoms > 0) then
-      call readwrite_get_atoms(atom_data, lunits, real_lattice, bohr, error, comm)
+      call readwrite_get_atoms(settings, atom_data, lunits, real_lattice, bohr, error, comm)
       if (allocated(error)) return
     end if
   end subroutine w90_readwrite_read_atoms
 
-  subroutine w90_readwrite_clear_keywords(comm)
+  subroutine w90_readwrite_clear_keywords(settings, comm)
     ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
     ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
     ! after removing all valid keys.
@@ -848,6 +879,7 @@ contains
     implicit none
 
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     ! this error is never returned (i.e. errors here are discarded)
     type(w90_error_type), allocatable :: error
@@ -857,285 +889,286 @@ contains
     integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
-    call w90_readwrite_get_keyword_block('dis_spheres', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block('kpoints', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block('nnkpts', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block('unit_cell_cart', found, 0, 0, 0.0_dp, error, comm)
-    call clear_block('projections', error, comm)
-    call clear_block('kpoint_path', error, comm)
-    call w90_readwrite_get_keyword('auto_projections', found, error, comm)
-    call w90_readwrite_get_keyword('bands_num_points', found, error, comm)
-    call w90_readwrite_get_keyword('bands_plot_dim', found, error, comm)
-    call w90_readwrite_get_keyword('bands_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword('bands_plot', found, error, comm)
-    call w90_readwrite_get_keyword('bands_plot_mode', found, error, comm)
-    call w90_readwrite_get_keyword('calc_only_A', found, error, comm)
-    call w90_readwrite_get_keyword('conv_noise_amp', found, error, comm)
-    call w90_readwrite_get_keyword('conv_noise_num', found, error, comm)
-    call w90_readwrite_get_keyword('conv_tol', found, error, comm)
-    call w90_readwrite_get_keyword('conv_window', found, error, comm)
-    call w90_readwrite_get_keyword('cp_pp', found, error, comm)
-    call w90_readwrite_get_keyword('devel_flag', found, error, comm)
-    call w90_readwrite_get_keyword('dis_conv_tol', found, error, comm)
-    call w90_readwrite_get_keyword('dis_conv_window', found, error, comm)
-    call w90_readwrite_get_keyword('dis_froz_max', found, error, comm)
-    call w90_readwrite_get_keyword('dis_froz_min', found, error, comm)
-    call w90_readwrite_get_keyword('dis_mix_ratio', found, error, comm)
-    call w90_readwrite_get_keyword('dis_num_iter', found, error, comm)
-    call w90_readwrite_get_keyword('dis_spheres_first_wann', found, error, comm)
-    call w90_readwrite_get_keyword('dis_spheres_num', found, error, comm)
-    call w90_readwrite_get_keyword('dist_cutoff', found, error, comm)
-    call w90_readwrite_get_keyword('dist_cutoff_hc', found, error, comm)
-    call w90_readwrite_get_keyword('dist_cutoff_mode', found, error, comm)
-    call w90_readwrite_get_keyword('dis_win_max', found, error, comm)
-    call w90_readwrite_get_keyword('dis_win_min', found, error, comm)
-    call w90_readwrite_get_keyword('energy_unit', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_energy', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_surface_num_points', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_surface_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword('fermi_surface_plot', found, error, comm)
-    call w90_readwrite_get_keyword('fixed_step', found, error, comm)
-    call w90_readwrite_get_keyword('gamma_only', found, error, comm)
-    call w90_readwrite_get_keyword('guiding_centres', found, error, comm)
-    call w90_readwrite_get_keyword('hr_cutoff', found, error, comm)
-    call w90_readwrite_get_keyword('hr_plot', found, error, comm)
-    call w90_readwrite_get_keyword('iprint', found, error, comm)
-    call w90_readwrite_get_keyword('kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('kmesh_tol', found, error, comm)
-    call w90_readwrite_get_keyword('length_unit', found, error, comm)
-    call w90_readwrite_get_keyword('num_bands', found, error, comm)
-    call w90_readwrite_get_keyword('num_cg_steps', found, error, comm)
-    call w90_readwrite_get_keyword('num_dump_cycles', found, error, comm)
-    call w90_readwrite_get_keyword('num_elec_per_state', found, error, comm)
-    call w90_readwrite_get_keyword('num_guide_cycles', found, error, comm)
-    call w90_readwrite_get_keyword('num_iter', found, error, comm)
-    call w90_readwrite_get_keyword('num_no_guide_iter', found, error, comm)
-    call w90_readwrite_get_keyword('num_print_cycles', found, error, comm)
-    call w90_readwrite_get_keyword('num_shells', found, error, comm)
-    call w90_readwrite_get_keyword('num_valence_bands', found, error, comm)
-    call w90_readwrite_get_keyword('num_wann', found, error, comm)
-    call w90_readwrite_get_keyword('one_dim_axis', found, error, comm)
-    call w90_readwrite_get_keyword('optimisation', found, error, comm)
-    call w90_readwrite_get_keyword('postproc_setup', found, error, comm)
-    call w90_readwrite_get_keyword('precond', found, error, comm)
-    call w90_readwrite_get_keyword('restart', found, error, comm)
-    call w90_readwrite_get_keyword('search_shells', found, error, comm)
-    call w90_readwrite_get_keyword('site_symmetry', found, error, comm)
-    call w90_readwrite_get_keyword('skip_b1_tests', found, error, comm)
-    call w90_readwrite_get_keyword('slwf_constrain', found, error, comm)
-    call w90_readwrite_get_keyword('slwf_lambda', found, error, comm)
-    call w90_readwrite_get_keyword('slwf_num', found, error, comm)
-    call w90_readwrite_get_keyword('spin', found, error, comm)
-    call w90_readwrite_get_keyword('spinors', found, error, comm)
-    call w90_readwrite_get_keyword('symmetrize_eps', found, error, comm)
-    call w90_readwrite_get_keyword('timing_level', found, error, comm)
-    call w90_readwrite_get_keyword('tran_easy_fix', found, error, comm)
-    call w90_readwrite_get_keyword('tran_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword('tran_group_threshold', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_bandc', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_bb', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_cc', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_cell_ll', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_cell_rr', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_cr', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_lc', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_ll', found, error, comm)
-    call w90_readwrite_get_keyword('tran_num_rr', found, error, comm)
-    call w90_readwrite_get_keyword('tran_read_ht', found, error, comm)
-    call w90_readwrite_get_keyword('translate_home_cell', found, error, comm)
-    call w90_readwrite_get_keyword('transport', found, error, comm)
-    call w90_readwrite_get_keyword('transport_mode', found, error, comm)
-    call w90_readwrite_get_keyword('tran_use_same_lead', found, error, comm)
-    call w90_readwrite_get_keyword('tran_win_max', found, error, comm)
-    call w90_readwrite_get_keyword('tran_win_min', found, error, comm)
-    call w90_readwrite_get_keyword('tran_write_ht', found, error, comm)
-    call w90_readwrite_get_keyword('trial_step', found, error, comm)
-    call w90_readwrite_get_keyword('use_bloch_phases', found, error, comm)
-    call w90_readwrite_get_keyword('use_ws_distance', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_mode', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_radius', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_scale', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_spinor_mode', found, error, comm)
-    call w90_readwrite_get_keyword('wannier_plot_spinor_phase', found, error, comm)
-    call w90_readwrite_get_keyword('write_bvec', found, error, comm)
-    call w90_readwrite_get_keyword('write_hr_diag', found, error, comm)
-    call w90_readwrite_get_keyword('write_hr', found, error, comm)
-    call w90_readwrite_get_keyword('write_proj', found, error, comm)
-    call w90_readwrite_get_keyword('write_r2mn', found, error, comm)
-    call w90_readwrite_get_keyword('write_rmn', found, error, comm)
-    call w90_readwrite_get_keyword('write_tb', found, error, comm)
-    call w90_readwrite_get_keyword('write_u_matrices', found, error, comm)
-    call w90_readwrite_get_keyword('write_vdw_data', found, error, comm)
-    call w90_readwrite_get_keyword('write_xyz', found, error, comm)
-    call w90_readwrite_get_keyword('ws_distance_tol', found, error, comm)
-    call w90_readwrite_get_keyword('wvfn_formatted', found, error, comm)
-    call w90_readwrite_get_keyword_vector('kmesh', found, 0, error, comm) ! the absent arrays have zero length ;-)
-    call w90_readwrite_get_keyword_vector('mp_grid', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('translation_centre_frac', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('wannier_plot_supercell', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('ws_search_size', found, 0, error, comm)
-    call w90_readwrite_get_range_vector('bands_plot_project', found, lx, .true., error, comm)
+    call w90_readwrite_get_keyword_block(settings, 'dis_spheres', found, 0, 0, 0.0_dp, error, comm)
+    call w90_readwrite_get_keyword_block(settings, 'kpoints', found, 0, 0, 0.0_dp, error, comm)
+    call w90_readwrite_get_keyword_block(settings, 'nnkpts', found, 0, 0, 0.0_dp, error, comm)
+    call w90_readwrite_get_keyword_block(settings, 'unit_cell_cart', found, 0, 0, 0.0_dp, error, comm)
+    call clear_block(settings, 'projections', error, comm)
+    call clear_block(settings, 'kpoint_path', error, comm)
+    call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_dim', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'calc_only_A', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_spheres_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff_hc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fixed_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'hr_cutoff', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'hr_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_cg_steps', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_dump_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_no_guide_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_print_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'one_dim_axis', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'postproc_setup', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'precond', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'restart', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'site_symmetry', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_constrain', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_lambda', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'symmetrize_eps', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_easy_fix', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_group_threshold', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_bandc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_bb', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cell_ll', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cell_rr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_lc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_ll', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_rr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_read_ht', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'translate_home_cell', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transport', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transport_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_use_same_lead', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_win_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_win_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_write_ht', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'trial_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_radius', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_scale', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_phase', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_bvec', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_hr_diag', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_hr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_proj', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_r2mn', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_rmn', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_u_matrices', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_vdw_data', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_xyz', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'ws_distance_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wvfn_formatted', found, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kmesh', found, 0, error, comm) ! the absent arrays have zero length ;-)
+    call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'translation_centre_frac', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'wannier_plot_supercell', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 0, error, comm)
+    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('bands_plot_project', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector('wannier_plot_list', found, lx, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('wannier_plot_list', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector('select_projections', found, lx, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('select_projections', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
-    call w90_readwrite_get_keyword('adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword('adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword('adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh', found, error, comm)
-    call w90_readwrite_get_keyword('berry_curv_adpt_kmesh_thresh', found, error, comm)
-    call w90_readwrite_get_keyword('berry_curv_unit', found, error, comm)
-    call w90_readwrite_get_keyword('berry', found, error, comm)
-    call w90_readwrite_get_keyword('berry_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('berry_task', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_2d_dir', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_bandshift_energyshift', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_bandshift_firstband', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_bandshift', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_calc_also_dos', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_dos_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_mu_max', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_mu_min', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_mu_step', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_relax_time', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_tdf_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_tdf_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_tdf_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_temp_max', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_temp_min', found, error, comm)
-    call w90_readwrite_get_keyword('boltz_temp_step', found, error, comm)
-    call w90_readwrite_get_keyword('boltzwann', found, error, comm)
-    call w90_readwrite_get_keyword('degen_thr', found, error, comm)
-    call w90_readwrite_get_keyword('dos_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword('dos_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword('dos_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword('dos_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword('dos_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword('dos_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword('dos', found, error, comm)
-    call w90_readwrite_get_keyword('dos_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('dos_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('dos_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('dos_task', found, error, comm)
-    call w90_readwrite_get_keyword('effective_model', found, error, comm)
-    call w90_readwrite_get_keyword('geninterp_alsofirstder', found, error, comm)
-    call w90_readwrite_get_keyword('geninterp', found, error, comm)
-    call w90_readwrite_get_keyword('geninterp_single_file', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_degen_thresh', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_eigval_max', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_freq_max', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_freq_min', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_freq_step', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_smr_max_arg', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('gyrotropic_task', found, error, comm)
-    call w90_readwrite_get_keyword('kpath_bands_colour', found, error, comm)
-    call w90_readwrite_get_keyword('kpath', found, error, comm)
-    call w90_readwrite_get_keyword('kpath_num_points', found, error, comm)
-    call w90_readwrite_get_keyword('kpath_task', found, error, comm)
-    call w90_readwrite_get_keyword('kslice_fermi_lines_colour', found, error, comm)
-    call w90_readwrite_get_keyword('kslice', found, error, comm)
-    call w90_readwrite_get_keyword('kslice_task', found, error, comm)
-    call w90_readwrite_get_keyword('kdotp_num_bands', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_eigval_max', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_freq_max', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_freq_min', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_freq_step', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('kubo_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('sc_eta', found, error, comm)
-    call w90_readwrite_get_keyword('scissors_shift', found, error, comm)
-    call w90_readwrite_get_keyword('sc_phase_conv', found, error, comm)
-    call w90_readwrite_get_keyword('sc_use_eta_corr', found, error, comm)
-    call w90_readwrite_get_keyword('sc_w_thr', found, error, comm)
-    call w90_readwrite_get_keyword('shc_alpha', found, error, comm)
-    call w90_readwrite_get_keyword('shc_bandshift_energyshift', found, error, comm)
-    call w90_readwrite_get_keyword('shc_bandshift_firstband', found, error, comm)
-    call w90_readwrite_get_keyword('shc_bandshift', found, error, comm)
-    call w90_readwrite_get_keyword('shc_beta', found, error, comm)
-    call w90_readwrite_get_keyword('shc_freq_scan', found, error, comm)
-    call w90_readwrite_get_keyword('shc_gamma', found, error, comm)
-    call w90_readwrite_get_keyword('shc_method', found, error, comm)
-    call w90_readwrite_get_keyword('smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword('smr_max_arg', found, error, comm)
-    call w90_readwrite_get_keyword('smr_type', found, error, comm)
-    call w90_readwrite_get_keyword('spin_axis_azimuth', found, error, comm)
-    call w90_readwrite_get_keyword('spin_axis_polar', found, error, comm)
-    call w90_readwrite_get_keyword('spin_decomp', found, error, comm)
-    call w90_readwrite_get_keyword('spin_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword('spin_moment', found, error, comm)
-    call w90_readwrite_get_keyword('spn_formatted', found, error, comm)
-    call w90_readwrite_get_keyword('transl_inv', found, error, comm)
-    call w90_readwrite_get_keyword('uhu_formatted', found, error, comm)
-    call w90_readwrite_get_keyword('use_degen_pert', found, error, comm)
-    call w90_readwrite_get_keyword('wanint_kpoint_file', found, error, comm)
-    call w90_readwrite_get_keyword_vector('berry_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('boltz_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('dos_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('gyrotropic_box_b1', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('gyrotropic_box_b2', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('gyrotropic_box_b3', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('gyrotropic_box_center', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('gyrotropic_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('kdotp_kpoint', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('kslice_2dkmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('kslice_b1', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('kslice_b2', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('kslice_corner', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector('spin_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, lx, .true., error, comm)
+    call w90_readwrite_get_keyword(settings, 'adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh_thresh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_2d_dir', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_energyshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_firstband', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_calc_also_dos', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_relax_time', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltzwann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'degen_thr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'effective_model', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp_alsofirstder', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp_single_file', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_degen_thresh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_eigval_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_max_arg', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_bands_colour', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice_fermi_lines_colour', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kdotp_num_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_eigval_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_eta', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'scissors_shift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_phase_conv', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_use_eta_corr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_w_thr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_alpha', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift_energyshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift_firstband', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_beta', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_freq_scan', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_gamma', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_method', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_max_arg', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_axis_azimuth', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_axis_polar', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_decomp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_moment', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spn_formatted', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transl_inv', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'uhu_formatted', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_degen_pert', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wanint_kpoint_file', found, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'berry_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'boltz_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'dos_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b1', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b2', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b3', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_center', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kdotp_kpoint', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_2dkmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_b1', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_b2', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_corner', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'spin_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('gyrotropic_band_list', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector('kdotp_bands', found, lx, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('kdotp_bands', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector('dos_project', found, lx, .true., error, comm)
+    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
-    call w90_readwrite_get_range_vector('dos_project', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .false., error, comm, lxa)
     deallocate (lxa)
     ! ends list of postw90 keywords
     if (allocated(error)) deallocate (error)
   end subroutine w90_readwrite_clear_keywords
 
-  subroutine w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  subroutine w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_dealloc
     implicit none
     integer, intent(in) :: stdout
     character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: loop, ierr
 
     ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
     ! assumes settings%in_data is allocated
-    call w90_readwrite_clear_keywords(comm)
+    call w90_readwrite_clear_keywords(settings, comm)
 
     if (any(len_trim(settings%in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
@@ -1304,10 +1337,10 @@ contains
     !! The string read from input
     character(len=*), intent(in) :: keyword
     !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
-    type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
-    integer :: w90_readwrite_get_smearing_index
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    integer :: w90_readwrite_get_smearing_index
     integer :: pos
 
     w90_readwrite_get_smearing_index = 0 ! To avoid warnings of unset variables
@@ -1347,7 +1380,7 @@ contains
   end function w90_readwrite_get_smearing_index
 
 !================================================
-  subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
+  subroutine w90_readwrite_uppercase(settings, atom_data, kpoint_path, length_unit)
     !================================================
     !! Convert a few things to uppercase to look nice in the output
     !
@@ -1355,10 +1388,11 @@ contains
 
     implicit none
 
-    type(atom_data_type), intent(inout) :: atom_data
-    type(kpoint_path_type), intent(inout) :: kpoint_path
     character(len=*), intent(inout) :: length_unit
     integer :: nsp, ic, loop, inner_loop
+    type(atom_data_type), intent(inout) :: atom_data
+    type(kpoint_path_type), intent(inout) :: kpoint_path
+    type(settings_type), intent(inout) :: settings
 
     ! Atom labels (eg, si --> Si)
     do nsp = 1, atom_data%num_species
@@ -1495,22 +1529,21 @@ contains
     !! release memory from allocated parameters
     !
     !================================================
-    ! fixme(jj) don't need to dealloc input_proj now (already gone?)
     use w90_error, only: w90_error_type, set_error_dealloc
 
     implicit none
 
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(atom_data_type), intent(inout) :: atom_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(proj_input_type), intent(inout) :: input_proj
-    type(wannier_data_type), intent(inout) :: wannier_data
-    integer, allocatable, intent(inout) :: exclude_bands(:)
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(wannier_data_type), intent(inout) :: wannier_data
 
     integer :: ierr
 
@@ -2070,9 +2103,10 @@ contains
   end subroutine w90_readwrite_read_chkpt_matrices
 
 !================================================!
-  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, m_matrix, &
-                                      m_matrix_local, omega_invariant, num_bands, num_kpts, num_wann, &
-                                      nntot, checkpoint, have_disentangled, distk, error, comm)
+  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
+                                      m_matrix, m_matrix_local, omega_invariant, num_bands, &
+                                      num_kpts, num_wann, nntot, checkpoint, have_disentangled, &
+                                      distk, error, comm)
     !================================================!
     !
     !! Distribute the chk files
@@ -2182,7 +2216,7 @@ contains
   end subroutine w90_readwrite_chkpt_dist
 
 !================================================!
-  subroutine w90_readwrite_in_file(seedname, error, comm)
+  subroutine w90_readwrite_in_file(settings, seedname, error, comm)
     !================================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
@@ -2198,6 +2232,7 @@ contains
     character(len=*), intent(in)  :: seedname
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
@@ -2264,7 +2299,7 @@ contains
   end subroutine w90_readwrite_in_file
 
   !================================================!
-  subroutine w90_readwrite_get_keyword(keyword, found, error, comm, c_value, l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword(settings, keyword, found, error, comm, c_value, l_value, i_value, r_value)
     !================================================!
     !
     !! Finds the value of the required keyword.
@@ -2289,6 +2324,7 @@ contains
     !! Keyword value
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, itmp
     character(len=maxlen) :: dummy
@@ -2368,7 +2404,7 @@ contains
   end subroutine w90_readwrite_get_keyword
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_vector(keyword, found, length, error, comm, &
+  subroutine w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
                                               c_value, l_value, i_value, r_value)
     !================================================!
     !
@@ -2396,6 +2432,7 @@ contains
     !! Keyword data
     real(kind=dp), optional, intent(inout) :: r_value(length)
     !! Keyword data
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, i
     character(len=maxlen) :: dummy
@@ -2464,7 +2501,7 @@ contains
   end subroutine w90_readwrite_get_keyword_vector
 
 !================================================!
-  subroutine w90_readwrite_get_vector_length(keyword, found, length, error, comm)
+  subroutine w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
     !================================================!
     !
     !! Returns the length of a keyword vector
@@ -2483,6 +2520,7 @@ contains
     !! length of vector
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
@@ -2531,7 +2569,7 @@ contains
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_block(keyword, found, rows, columns, bohr, error, comm, &
+  subroutine w90_readwrite_get_keyword_block(settings, keyword, found, rows, columns, bohr, error, comm, &
                                              c_value, l_value, i_value, r_value)
     !================================================!
     !
@@ -2564,6 +2602,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: in, ins, ine, loop, i, line_e, line_s, counter, blen
     logical :: found_e, found_s, lconvert
@@ -2708,7 +2747,7 @@ contains
   end subroutine w90_readwrite_get_keyword_block
 
   !================================================!
-  subroutine w90_readwrite_get_block_length(keyword, found, rows, error, comm, lunits)
+  subroutine w90_readwrite_get_block_length(settings, keyword, found, rows, error, comm, lunits)
     !================================================!
     !
     !! Finds the length of the data block
@@ -2729,6 +2768,7 @@ contains
     !! Number of rows
     logical, optional, intent(out) :: lunits
     !! Have we found a unit specification
+    type(settings_type), intent(inout) :: settings
 
     integer           :: i, in, ins, ine, loop, line_e, line_s
     logical           :: found_e, found_s
@@ -2810,7 +2850,7 @@ contains
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
-  subroutine readwrite_get_atoms(atom_data, lunits, real_lattice, bohr, error, comm)
+  subroutine readwrite_get_atoms(settings, atom_data, lunits, real_lattice, bohr, error, comm)
     !================================================!
     !
     !!   Fills the atom data block
@@ -2824,6 +2864,7 @@ contains
     type(atom_data_type), intent(inout) :: atom_data
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -2845,7 +2886,7 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
-    call w90_readwrite_get_block_length("atoms_frac", found, i_temp, error, comm)
+    call w90_readwrite_get_block_length(settings, "atoms_frac", found, i_temp, error, comm)
     if (allocated(error)) return
     if (found) then
       keyword = "atoms_frac"
@@ -3007,7 +3048,7 @@ contains
   end subroutine readwrite_get_atoms
 
   !================================================!
-  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
+  subroutine w90_readwrite_lib_set_atoms(settings, atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
                                          real_lattice, error, comm)
     !================================================!
     !
@@ -3025,13 +3066,14 @@ contains
     type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: atoms_label_tmp(atom_data%num_atoms)
     !! Atom labels
-    real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
+    real(kind=dp), intent(in) :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     !! Atom positions
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(settings_type), intent(inout) :: settings
 
-    real(kind=dp)     :: inv_lattice(3, 3)
-    real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
-    integer           :: loop2, max_sites, ierr, ic, loop, counter
+    real(kind=dp) :: inv_lattice(3, 3)
+    real(kind=dp) :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
+    integer :: loop2, max_sites, ierr, ic, loop, counter
     character(len=maxlen) :: ctemp(atom_data%num_atoms)
     character(len=maxlen) :: tmp_string
 
@@ -3112,7 +3154,7 @@ contains
   end subroutine w90_readwrite_lib_set_atoms
 
   !================================================!
-  subroutine w90_readwrite_get_range_vector(keyword, found, length, lcount, error, comm, i_value)
+  subroutine w90_readwrite_get_range_vector(settings, keyword, found, length, lcount, error, comm, i_value)
     !================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
@@ -3133,6 +3175,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     integer, optional, intent(out)   :: i_value(length)
     !! States specified in range vector
+    type(settings_type), intent(inout) :: settings
 
     integer   :: kl, in, loop, num1, num2, i_punc
     integer   :: counter, i_digit, loop_r, range_size
@@ -3230,7 +3273,7 @@ contains
     return
   end subroutine w90_readwrite_get_range_vector
 
-  subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
+  subroutine w90_readwrite_get_centre_constraints(settings, ccentres_frac, ccentres_cart, &
                                                   proj_site, num_wann, real_lattice, error, comm)
     !================================================!
     !!  assigns projection centres as default centre constraints and global
@@ -3247,10 +3290,10 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
-    integer           :: loop1, index1, constraint_num, loop2
-    integer           :: column, start, finish, wann
-    !logical           :: found
+    integer :: loop1, index1, constraint_num, loop2
+    integer :: column, start, finish, wann
     character(len=maxlen) :: dummy
 
     do loop1 = 1, num_wann
@@ -3354,7 +3397,7 @@ contains
   end subroutine get_centre_constraint_from_column
 
   !================================================!
-  subroutine w90_readwrite_get_projections(num_proj, atom_data, num_bands, num_wann, input_proj, &
+  subroutine w90_readwrite_get_projections(settings, num_proj, atom_data, num_bands, num_wann, input_proj, &
                                            inv_lattice, lcount, spinors, bohr, stdout, error, comm)
     !================================================!
     !
@@ -3373,6 +3416,7 @@ contains
     type(proj_input_type), intent(inout) :: input_proj
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
     integer, intent(in) :: num_bands ! currently unused
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
@@ -4094,7 +4138,7 @@ contains
   end subroutine w90_readwrite_get_projections
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_kpath(kpoint_path, error, comm)
+  subroutine w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
     !================================================!
     !
     !!  Fills the kpath data block
@@ -4107,6 +4151,7 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
@@ -4180,7 +4225,7 @@ contains
   end subroutine w90_readwrite_get_keyword_kpath
 
   !================================================!
-  subroutine clear_block(keyword, error, comm)
+  subroutine clear_block(settings, keyword, error, comm)
     !================================================!
     ! a dummy read routine to remove unused but legitimate input block from input stream
     ! needed to preserve input file error checking (i.e. input stream should be empty after all
@@ -4194,6 +4239,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: keyword
+    type(settings_type), intent(inout) :: settings
 
     ! local variables
     integer :: in, ins, ine, loop, line_e, line_s
@@ -4252,16 +4298,20 @@ contains
     end if ! found tags
   end subroutine clear_block
 
-  subroutine init_settings()
+  subroutine init_settings(settings)
+    use w90_helper_types, only: lib_global_type
     implicit none
+    type(settings_type), intent(inout) :: settings
     integer, parameter :: defsize = 20 ! default size of settings array
     allocate (settings%entries(defsize))
     settings%num_entries = 0
     settings%num_entries_max = defsize
   end subroutine init_settings
 
-  subroutine expand_settings() ! this is a compromise to avoid a fixed size
+  subroutine expand_settings(settings) ! this is a compromise to avoid a fixed size
+    use w90_helper_types, only: lib_global_type
     type(settings_data), allocatable :: nentries(:); 
+    type(settings_type), intent(inout) :: settings
     integer :: n, m ! old, new sizes
     integer, parameter :: incsize = 20 ! default increment when settings array grows
     n = settings%num_entries_max
@@ -4270,116 +4320,132 @@ contains
     settings%num_entries_max = m
   end subroutine expand_settings
 
-  subroutine set_option_text(keyword, text)
+  subroutine set_option_text(helper, keyword, text)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     character(*), intent(in) :: text
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%txtdata = text
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%txtdata = text
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_text
 
-  subroutine set_option_logical(keyword, bool)
+  subroutine set_option_logical(helper, keyword, bool)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     logical, intent(in) :: bool
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%ldata = bool
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%ldata = bool
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_logical
 
-  subroutine set_option_i1d(keyword, arr)
+  subroutine set_option_i1d(helper, keyword, arr)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     integer, intent(in) :: arr(:)
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%i1d = arr ! this causes an automatic allocation
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%i1d = arr ! this causes an automatic allocation
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_i1d
 
-  subroutine set_option_i2d(keyword, arr)
+  subroutine set_option_i2d(helper, keyword, arr)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     integer, intent(in) :: arr(:, :)
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%i2d = arr
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%i2d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_i2d
 
-  subroutine set_option_int(keyword, ival)
+  subroutine set_option_int(helper, keyword, ival)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     integer, intent(in) :: ival
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%idata = ival
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%idata = ival
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_int
 
-  subroutine set_option_r1d(keyword, arr)
+  subroutine set_option_r1d(helper, keyword, arr)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     real(kind=dp), intent(in) :: arr(:)
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%r1d = arr
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%r1d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_r1d
 
-  subroutine set_option_r2d(keyword, arr)
+  subroutine set_option_r2d(helper, keyword, arr)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     real(kind=dp), intent(in) :: arr(:, :)
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%r2d = arr
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%r2d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_r2d
 
-  subroutine set_option_real(keyword, rval)
+  subroutine set_option_real(helper, keyword, rval)
+    use w90_helper_types, only: lib_global_type
     implicit none
     character(*), intent(in) :: keyword
     real(kind=dp), intent(in) :: rval
+    type(lib_global_type), intent(inout) :: helper
     integer :: i
 
-    if (.not. allocated(settings%entries)) call init_settings()
-    i = settings%num_entries + 1
-    settings%entries(i)%keyword = keyword
-    settings%entries(i)%rdata = rval
-    settings%num_entries = i + 1
-    if (settings%num_entries == settings%num_entries_max) call expand_settings()
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%rdata = rval
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
   endsubroutine set_option_real
 
 end module w90_readwrite
