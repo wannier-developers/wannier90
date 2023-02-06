@@ -155,9 +155,6 @@ program postw90
 
   real(kind=dp) :: real_lattice(3, 3)
 
-  !parameters derived from input
-  !real(kind=dp) :: recip_lattice(3, 3)
-
   type(kpoint_path_type) :: spec_points
   ! end w90_parameters
   ! data from w90_postw90_types

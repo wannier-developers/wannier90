@@ -529,69 +529,62 @@ contains
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, &
-                                        w90_plot, disentanglement, eig_found, eigval, &
-                                        num_bands, num_kpts, stdout, seedname, &
+  subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, seedname, &
                                         error, comm)
 
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
+
+    character(len=*), intent(in)  :: seedname
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    character(len=*), intent(in)  :: seedname
-    logical, intent(in) :: disentanglement
-    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
+    !logical, intent(in) :: disentanglement
     logical, intent(inout) :: eig_found
-    type(w90_error_type), allocatable, intent(out) :: error
+    !logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
+    real(kind=dp), intent(inout) :: eigval(:, :)
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
     ! local
     integer :: i, j, k, n, eig_unit, ierr
 
     ! Read the eigenvalues from wannier.eig
-    if (.not. pw90_effective_model) then
+    !if (.not. pw90_effective_model) then
 
-      inquire (file=trim(seedname)//'.eig', exist=eig_found)
-      if (.not. eig_found) then
-        if (disentanglement) then
-          call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
-          return
-        else if (w90_plot .or. pw90_boltzwann .or. pw90_geninterp) then
-          call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation', comm)
-          return
-        end if
-      else
-        ! Allocate only here
-        allocate (eigval(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating eigval in w90_wannier90_readwrite_read', comm)
-          return
-        endif
-        open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
-        do k = 1, num_kpts
-          do n = 1, num_bands
-            read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
-            if ((i .ne. n) .or. (j .ne. k)) then
-              write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
-              write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
-              write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
-              write (stdout, '(a)') ' '
-              write (stdout, '(a)') 'A common cause of this error is using the wrong'
-              write (stdout, '(a)') 'number of bands. Check your input files.'
-              write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
-              write (stdout, '(a)') 'to account for these electrons.'
-              write (stdout, '(a)') ' '
-              call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
-              return
-            end if
-          enddo
-        end do
-        close (eig_unit)
-      end if
+    inquire (file=trim(seedname)//'.eig', exist=eig_found)
+    if (.not. eig_found) then
+      !    if (disentanglement) then
+      call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
+      return
+      !    else if (w90_plot .or. pw90_boltzwann .or. pw90_geninterp) then
+      !      call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation', comm)
+      !      return
+      !    end if
+    else
+      ! fixme(jj) test eigenvalue array dimensions here
+      open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+      do k = 1, num_kpts
+        do n = 1, num_bands
+          read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
+          if ((i .ne. n) .or. (j .ne. k)) then
+            write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
+            write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
+            write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
+            write (stdout, '(a)') ' '
+            write (stdout, '(a)') 'A common cause of this error is using the wrong'
+            write (stdout, '(a)') 'number of bands. Check your input files.'
+            write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
+            write (stdout, '(a)') 'to account for these electrons.'
+            write (stdout, '(a)') ' '
+            call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
+            return
+          end if
+        enddo
+      end do
+      close (eig_unit)
     end if
-
-    if (allocated(eigval)) eig_found = .true.
+    !end if
 
     return
 
