@@ -122,6 +122,19 @@ module w90_helper_types
   public :: write_chkpt
   public :: write_kmesh
 
+  public :: set_option ! interface for setting vars using library
+  interface set_option
+    module procedure set_option_logical
+    !module procedure set_option_b1d
+    module procedure set_option_text
+    module procedure set_option_int
+    module procedure set_option_i1d
+    module procedure set_option_i2d
+    module procedure set_option_r1d
+    module procedure set_option_r2d
+    module procedure set_option_real
+  end interface set_option
+
 contains
 
   subroutine get_fortran_stdout(istdout)
@@ -884,6 +897,134 @@ contains
 
     helper%dist_kpoints => dist
   end subroutine set_kpoint_distribution
+
+  subroutine set_option_text(helper, keyword, text)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    character(*), intent(in) :: text
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%txtdata = text
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_text
+
+  subroutine set_option_logical(helper, keyword, bool)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    logical, intent(in) :: bool
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%ldata = bool
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_logical
+
+  subroutine set_option_i1d(helper, keyword, arr)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: arr(:)
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%i1d = arr ! this causes an automatic allocation
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_i1d
+
+  subroutine set_option_i2d(helper, keyword, arr)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: arr(:, :)
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%i2d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_i2d
+
+  subroutine set_option_int(helper, keyword, ival)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    integer, intent(in) :: ival
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%idata = ival
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_int
+
+  subroutine set_option_r1d(helper, keyword, arr)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: arr(:)
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%r1d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_r1d
+
+  subroutine set_option_r2d(helper, keyword, arr)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: arr(:, :)
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%r2d = arr
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_r2d
+
+  subroutine set_option_real(helper, keyword, rval)
+    use w90_readwrite, only: init_settings, expand_settings
+    implicit none
+    character(*), intent(in) :: keyword
+    real(kind=dp), intent(in) :: rval
+    type(lib_global_type), intent(inout) :: helper
+    integer :: i
+
+    if (.not. allocated(helper%settings%entries)) call init_settings(helper%settings)
+    i = helper%settings%num_entries + 1
+    helper%settings%entries(i)%keyword = keyword
+    helper%settings%entries(i)%rdata = rval
+    helper%settings%num_entries = i + 1
+    if (helper%settings%num_entries == helper%settings%num_entries_max) call expand_settings(helper%settings)
+  endsubroutine set_option_real
 
   subroutine prterr(error, ie, istdout, istderr, comm)
     use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90_comm_type, mpirank, mpisize
