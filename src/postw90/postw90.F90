@@ -127,6 +127,8 @@ program postw90
   type(w90_system_type) :: system
   type(wannier_data_type) :: wann_data
   type(ws_region_type) :: ws_region
+  type(settings_type) :: settings
+  !! container for input file (.win) data and options set via library interface
 
   integer :: num_bands
   !! Number of bands
@@ -268,12 +270,12 @@ program postw90
   if (on_root) then
 
     ! copy input file to in_data structure
-    call w90_readwrite_in_file(seedname, error, comm)
+    call w90_readwrite_in_file(settings, seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-    call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, kmesh_data, &
-                                    kpt_latt, num_kpts, dis_window, fermi_energy_list, atoms, &
-                                    num_bands, num_wann, eigval, mp_grid, real_lattice, &
+    call w90_postw90_readwrite_read(settings, ws_region, system, exclude_bands, verbose, &
+                                    kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
+                                    atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
                                     spec_points, pw90_calcs, postw90_oper, scissors_shift, &
                                     effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
                                     berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
@@ -281,7 +283,7 @@ program postw90
                                     seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
 
-    call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+    call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
     ! For aesthetic purposes, convert some things to uppercase
     call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
