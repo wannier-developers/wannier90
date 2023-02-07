@@ -16,7 +16,7 @@ if not data.kmesh_info.explicit_nnkpts :
 
 # create dummy distribution, all done on proc 0
 kpts = numpy.zeros(data.num_kpts, dtype=numpy.int32)
-wan90.w90_helper_types.set_kpoint_distribution(data, kpts)
+wan90.w90_helper_types.set_kpoint_distribution(data, kpts, ftn_output, ftn_error, comm)
 
 #counts = numpy.zeros(1, dtype=numpy.int32)
 #counts[0]=data.num_kpts
@@ -36,6 +36,7 @@ if data.num_wann == data.num_bands:
     u_opt = numpy.zeros((1, 1, 1), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_u_opt(data, u_opt)
     status = wan90.w90_helper_types.overlaps(data, w90data, ftn_output, ftn_error, comm)
+    status = wan90.w90_helper_types.projovlp(data, w90data, ftn_output, ftn_error, comm)
 else:
     a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_a_matrix(w90data, a_matrix)
@@ -44,6 +45,8 @@ else:
     m_orig = numpy.zeros((data.num_bands, data.num_bands, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_helper_types.set_m_orig(w90data, m_orig)
     status = wan90.w90_helper_types.overlaps(data, w90data, ftn_output, ftn_error, comm)
+    # allocate problem here (and seedname, and ierr not out) + set_eigval() "cnt55"
+    wan90.w90_helper_types.read_eigvals(data, w90data, 1, eigval, seedname, output, outerr, ierr, comm)
     status = wan90.w90_helper_types.disentangle(data, w90data, ftn_output, ftn_error, comm)
 
 status = wan90.w90_helper_types.wannierise(data, w90data, ftn_output, ftn_error, comm)

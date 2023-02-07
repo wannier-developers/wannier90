@@ -42,6 +42,10 @@ module w90_lib_all
     type(kpoint_dist_type) :: kpt_dist
     type(ws_distance_type) :: ws_distance
     type(wigner_seitz_type) :: ws_vec
+
+    ! put eigenvalues here for the moment
+    real(kind=dp), allocatable :: eigval(:, :)
+    logical :: eig_found = .false.
   end type lib_postw90_type
 
   public :: read_all_input, read_checkpoint, calc_dos, boltzwann, gyrotropic, berry, kpath, &
@@ -50,12 +54,12 @@ module w90_lib_all
 contains
 
   subroutine read_all_input(wann90, w90only, pw90, seedname, output, outerr, status, comm)
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_readall, w90_extra_io_type
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
-      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_global_type), intent(inout) :: wann90
@@ -74,30 +78,30 @@ contains
     logical :: disentanglement
 
     status = 0
-    call w90_readwrite_in_file(seedname, error, comm)
+    call w90_readwrite_in_file(wann90%settings, seedname, error, comm)
     if (allocated(error)) then
       write (outerr, *) 'Error in input file access', error%code, error%message
       status = sign(1, error%code)
       deallocate (error)
     else
-      call w90_wannier90_readwrite_readall(wann90%atom_data, w90only%band_plot, w90only%dis_control, &
-                                           w90only%dis_spheres, wann90%dis_manifold, &
-                                           wann90%exclude_bands, wann90%fermi_energy_list, &
-                                           w90only%fermi_surface_data, wann90%kmesh_input, &
-                                           wann90%kmesh_info, wann90%kpt_latt, w90only%output_file, &
-                                           w90only%wvfn_read, w90only%wann_control, &
-                                           w90only%proj, w90only%proj_input, &
-                                           w90only%real_space_ham, w90only%select_proj, &
-                                           wann90%kpoint_path, wann90%w90_system, w90only%tran, &
-                                           wann90%print_output, w90only%wann_plot, &
-                                           io_params, wann90%ws_region, w90only%w90_calculation, &
-                                           wann90%eigval, wann90%real_lattice, physics%bohr, &
-                                           w90only%sitesym%symmetrize_eps, wann90%mp_grid, &
-                                           wann90%num_bands, wann90%num_kpts, w90only%num_proj, &
-                                           wann90%num_wann, w90only%optimisation, w90only%eig_found, &
-                                           wann90%gamma_only, w90only%lhasproj, &
-                                           w90only%lsitesymmetry, w90only%use_bloch_phases, &
-                                           seedname, output, error, comm)
+      call w90_wannier90_readwrite_read(wann90%settings, wann90%atom_data, w90only%band_plot, &
+                                        w90only%dis_control, w90only%dis_spheres, &
+                                        wann90%dis_manifold, wann90%exclude_bands, &
+                                        wann90%fermi_energy_list, w90only%fermi_surface_data, &
+                                        wann90%kmesh_input, wann90%kmesh_info, wann90%kpt_latt, &
+                                        w90only%output_file, w90only%wvfn_read, &
+                                        w90only%wann_control, w90only%proj, &
+                                        w90only%real_space_ham, w90only%select_proj, &
+                                        wann90%kpoint_path, wann90%w90_system, w90only%tran, &
+                                        wann90%print_output, w90only%wann_plot, &
+                                        io_params, wann90%ws_region, w90only%w90_calculation, &
+                                        wann90%real_lattice, physics%bohr, &
+                                        w90only%sitesym%symmetrize_eps, wann90%mp_grid, &
+                                        wann90%num_bands, wann90%num_kpts, w90only%num_proj, &
+                                        wann90%num_wann, w90only%optimisation, &
+                                        w90only%calc_only_A, cp_pp, wann90%gamma_only, &
+                                        w90only%lhasproj, w90only%lsitesymmetry, &
+                                        w90only%use_bloch_phases, seedname, output, error, comm)
       wann90%seedname = seedname
       if (mpirank(comm) /= 0) wann90%print_output%iprint = 0
       if (allocated(error)) then
@@ -105,37 +109,47 @@ contains
         status = sign(1, error%code)
         deallocate (error)
       else
-        call w90_postw90_readwrite_readall(wann90%w90_system, wann90%dis_manifold, &
-                                           wann90%fermi_energy_list, wann90%num_bands, &
-                                           wann90%num_wann, wann90%eigval, wann90%real_lattice, &
-                                           wann90%kpoint_path, pw90%calculation, pw90%oper_read, &
-                                           pw90%scissors_shift, pw90%effective_model, pw90%spin, &
-                                           pw90%band_deriv_degen, pw90%kpath, pw90%kslice, &
-                                           pw90%dos, pw90%berry, pw90%spin_hall, pw90%gyrotropic, &
-                                           pw90%geninterp, pw90%boltzwann, pw90_params, error, comm)
+        disentanglement = (wann90%num_bands > wann90%num_wann)
+        call w90_readwrite_read_eigvals(pw90%eig_found, pw90%eigval, wann90%num_bands, &
+                                        wann90%num_kpts, output, seedname, error, comm)
         if (allocated(error)) then
-          write (outerr, *) 'Error in postw90 read', error%code, error%message
+          write (outerr, *) 'Error in wannier90 eigenvalues', error%code, error%message
           status = sign(1, error%code)
           deallocate (error)
         else
-          ! For aesthetic purposes, convert some things to uppercase
-          call w90_readwrite_uppercase(wann90%atom_data, wann90%kpoint_path, &
-                                       wann90%print_output%length_unit)
-          disentanglement = (wann90%num_bands > wann90%num_wann)
-          call w90_readwrite_read_final_alloc(disentanglement, wann90%dis_manifold, &
-                                              wann90%wannier_data, wann90%num_wann, &
-                                              wann90%num_bands, wann90%num_kpts, error, comm)
+          call w90_postw90_readwrite_readall(wann90%settings, wann90%w90_system, &
+                                             wann90%dis_manifold, wann90%fermi_energy_list, &
+                                             wann90%num_bands, wann90%num_wann, pw90%eigval, &
+                                             wann90%real_lattice, wann90%kpoint_path, &
+                                             pw90%calculation, pw90%oper_read, &
+                                             pw90%scissors_shift, pw90%effective_model, pw90%spin, &
+                                             pw90%band_deriv_degen, pw90%kpath, pw90%kslice, &
+                                             pw90%dos, pw90%berry, pw90%spin_hall, &
+                                             pw90%gyrotropic, pw90%geninterp, pw90%boltzwann, &
+                                             pw90_params, error, comm)
           if (allocated(error)) then
-            write (outerr, *) 'Error in read alloc', error%code, error%message
+            write (outerr, *) 'Error in postw90 read', error%code, error%message
+            status = sign(1, error%code)
+            deallocate (error)
+          else
+            ! For aesthetic purposes, convert some things to uppercase
+            call w90_readwrite_uppercase(wann90%atom_data, wann90%kpoint_path, &
+                                         wann90%print_output%length_unit)
+            call w90_readwrite_read_final_alloc(disentanglement, wann90%dis_manifold, &
+                                                wann90%wannier_data, wann90%num_wann, &
+                                                wann90%num_bands, wann90%num_kpts, error, comm)
+            if (allocated(error)) then
+              write (outerr, *) 'Error in read alloc', error%code, error%message
+              status = sign(1, error%code)
+              deallocate (error)
+            endif
+          endif
+          call w90_readwrite_clean_infile(wann90%settings, output, seedname, error, comm)
+          if (allocated(error)) then
+            write (outerr, *) 'Error in input close', error%code, error%message
             status = sign(1, error%code)
             deallocate (error)
           endif
-        endif
-        call w90_readwrite_clean_infile(output, seedname, error, comm)
-        if (allocated(error)) then
-          write (outerr, *) 'Error in input close', error%code, error%message
-          status = sign(1, error%code)
-          deallocate (error)
         endif
       endif
     endif
