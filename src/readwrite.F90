@@ -540,7 +540,7 @@ contains
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(settings, eig_found, eigval, num_bands, num_kpts, stdout, &
+  subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, &
                                         seedname, error, comm)
 
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
@@ -554,7 +554,6 @@ contains
     real(kind=dp), intent(inout) :: eigval(:, :)
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
-    type(settings_type), intent(inout) :: settings
 
     ! local
     integer :: i, j, k, n, eig_unit, ierr
@@ -1368,7 +1367,7 @@ contains
   end function w90_readwrite_get_smearing_index
 
 !================================================
-  subroutine w90_readwrite_uppercase(settings, atom_data, kpoint_path, length_unit)
+  subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
     !================================================
     !! Convert a few things to uppercase to look nice in the output
     !
@@ -1380,7 +1379,6 @@ contains
     integer :: nsp, ic, loop, inner_loop
     type(atom_data_type), intent(inout) :: atom_data
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    type(settings_type), intent(inout) :: settings
 
     ! Atom labels (eg, si --> Si)
     do nsp = 1, atom_data%num_species
@@ -3036,7 +3034,7 @@ contains
   end subroutine readwrite_get_atoms
 
   !================================================!
-  subroutine w90_readwrite_lib_set_atoms(settings, atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
+  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
                                          real_lattice, error, comm)
     !================================================!
     !
@@ -3057,7 +3055,6 @@ contains
     real(kind=dp), intent(in) :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     !! Atom positions
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    type(settings_type), intent(inout) :: settings
 
     real(kind=dp) :: inv_lattice(3, 3)
     real(kind=dp) :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
