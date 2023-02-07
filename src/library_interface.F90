@@ -366,7 +366,7 @@ contains
       return
     else
       ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(helper%settings, helper%atom_data, helper%kpoint_path, &
+      call w90_readwrite_uppercase(helper%atom_data, helper%kpoint_path, &
                                    helper%print_output%length_unit)
 
       disentanglement = (helper%num_bands > helper%num_wann)
@@ -1116,7 +1116,7 @@ contains
       return
     endif
 
-    call w90_readwrite_read_eigvals(w90main%settings, eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
+    call w90_readwrite_read_eigvals(eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
                                     istdout, seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)

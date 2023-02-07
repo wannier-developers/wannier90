@@ -74,6 +74,7 @@ module w90_libv1_types
   type(w90_system_type), save :: system
   type(wannier_data_type), save :: wann_data
   type(ws_region_type), save :: ws_region
+  type(settings_type) :: settings
 
   real(kind=dp), allocatable, save :: fermi_energy_list(:)
   real(kind=dp), allocatable, save :: kpt_latt(:, :) !! kpoints in lattice vecs
@@ -327,20 +328,20 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   num_bands = num_bands_tot
   !library_w90_wannier90_readwrite_read_first_pass = .true.
   ! read infile to in_data structure
-  call w90_readwrite_in_file(seedname, error, comm)
+  call w90_readwrite_in_file(settings, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, &
+  call w90_wannier90_readwrite_read(settings, atoms, band_plot, dis_data, dis_spheres, dis_window, &
                                     exclude_bands, fermi_energy_list, fermi_surface_data, &
                                     kmesh_data, kmesh_info, kpt_latt, out_files, plot, wannierise, &
-                                    proj, input_proj, rs_region, select_proj, spec_points, system, &
+                                    proj, rs_region, select_proj, spec_points, system, &
                                     tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
                                     real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, &
-                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                                    calc_only_A, cp_pp, gamma_only, lhasproj, &
                                     lsitesymmetry, use_bloch_phases, seedname, stdout, &
                                     error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   disentanglement = (num_bands > num_wann)
@@ -644,20 +645,20 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   allocate (dist_k(num_kpts))
   dist_k = 0
   ! read infile to in_data structure
-  call w90_readwrite_in_file(seedname, error, comm)
+  call w90_readwrite_in_file(settings, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_wannier90_readwrite_read(atoms, band_plot, dis_data, dis_spheres, dis_window, &
+  call w90_wannier90_readwrite_read(settings, atoms, band_plot, dis_data, dis_spheres, dis_window, &
                                     exclude_bands, fermi_energy_list, fermi_surface_data, &
                                     kmesh_data, kmesh_info, kpt_latt, out_files, plot, wannierise, &
-                                    proj, input_proj, rs_region, select_proj, spec_points, system, &
+                                    proj, rs_region, select_proj, spec_points, system, &
                                     tran, verbose, wann_plot, write_data, ws_region, w90_calcs, &
-                                    eigval, real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
+                                    real_lattice, physics%bohr, symmetrize_eps, mp_grid, &
                                     num_bands, num_kpts, num_proj, num_wann, optimisation, &
-                                    eig_found, calc_only_A, cp_pp, gamma_only, lhasproj, &
+                                    calc_only_A, cp_pp, gamma_only, lhasproj, &
                                     lsitesymmetry, use_bloch_phases, seedname, stdout, &
                                     error, comm)
   if (allocated(error)) call prterr(error, stdout)
-  call w90_readwrite_clean_infile(stdout, seedname, error, comm)
+  call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
   if (allocated(error)) call prterr(error, stdout)
 
   disentanglement = (num_bands > num_wann)
