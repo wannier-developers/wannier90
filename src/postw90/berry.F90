@@ -30,6 +30,7 @@ module w90_berry
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
   !! *  RPS19  = PRB 99, 235113 (2019)  (spin Hall conductivity - SHC)
   !! *  IAdJS19 = arXiv:1910.06172 (2019) (quasi-degenerate k.p)
+  !! *  PTSIA23 = arXiv:2302.03090 (2023) (jerk and injeciton currents)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -177,10 +178,10 @@ contains
     ! shift current
     real(kind=dp), allocatable :: sc_k_list(:, :, :)
     real(kind=dp), allocatable :: sc_list(:, :, :)
-    ! injection current !ALVARO
+    ! injection current
     complex(kind=dp), allocatable :: ic_k_list(:, :, :, :)
     complex(kind=dp), allocatable :: ic_list(:, :, :, :)
-    ! jerk current !ALVARO
+    ! jerk current
     complex(kind=dp), allocatable :: jc_k_list(:, :, :)
     complex(kind=dp), allocatable :: jc_list(:, :, :)
     ! kdotp
@@ -215,14 +216,14 @@ contains
     real(kind=dp) :: cell_volume
     real(kind=dp) :: kweight, kweight_adpt, kpt(3), db1, db2, db3, fac, rdum, vdum(3)
 
-    integer :: n, i, j, k, l, jk, il, ikpt, if, ierr, loop_x, loop_y, loop_z, kdotp_nbands !ALVARO
+    integer :: n, i, j, k, l, jk, il, ikpt, if, ierr, loop_x, loop_y, loop_z, kdotp_nbands
     integer :: loop_xyz, loop_adpt, adpt_counter_list(fermi_n), ifreq, file_unit
     integer :: my_node_id, num_nodes
 
     character(len=120) :: file_name
 
     logical :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc, eval_kdotp, &
-               eval_ic, eval_jc!ALVARO
+               eval_ic, eval_jc
     logical :: ladpt_kmesh
     logical :: ladpt(fermi_n)
 
@@ -254,16 +255,16 @@ contains
     eval_morb = .false.
     eval_kubo = .false.
     eval_sc = .false.
-    eval_ic = .false. !ALVARO
-    eval_jc = .false. !ALVARO
+    eval_ic = .false.
+    eval_jc = .false.
     eval_shc = .false.
     eval_kdotp = .false.
 
     if (index(pw90_berry%task, 'ahc') > 0) eval_ahc = .true.
     if (index(pw90_berry%task, 'morb') > 0) eval_morb = .true.
     if (index(pw90_berry%task, 'kubo') > 0) eval_kubo = .true.
-    if (index(pw90_berry%task, 'sc') > 0) eval_sc = .true. !ALVARO
-    if (index(pw90_berry%task, 'ic') > 0) eval_ic = .true. !ALVARO
+    if (index(pw90_berry%task, 'sc') > 0) eval_sc = .true.
+    if (index(pw90_berry%task, 'ic') > 0) eval_ic = .true.
     if (index(pw90_berry%task, 'jc') > 0) eval_jc = .true.
     if (index(pw90_berry%task, 'shc') > 0) eval_shc = .true.
     if (index(pw90_berry%task, 'kdotp') > 0) eval_kdotp = .true.
@@ -376,7 +377,7 @@ contains
       sc_list = 0.0_dp
     endif
 
-    if (eval_ic) then!ALVARO
+    if (eval_ic) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
@@ -393,7 +394,7 @@ contains
       ic_list = cmplx_0
     endif
 
-    if (eval_jc) then!ALVARO
+    if (eval_jc) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
                     num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
@@ -500,10 +501,10 @@ contains
       if (eval_sc) write (stdout, '(/,3x,a)') &
         '* Shift current'
 
-      if (eval_ic) write (stdout, '(/,3x,a)') &!ALVARO
+      if (eval_ic) write (stdout, '(/,3x,a)') &
         '* Injection current'
 
-      if (eval_jc) write (stdout, '(/,3x,a)') &!ALVARO
+      if (eval_jc) write (stdout, '(/,3x,a)') &
         '* Jerk current'
 
       if (eval_shc) then
@@ -713,7 +714,7 @@ contains
           sc_list = sc_list + sc_k_list*kweight
         end if
 
-        if (eval_ic) then!ALVARO
+        if (eval_ic) then
           call berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                   ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -724,7 +725,7 @@ contains
           ic_list = ic_list + ic_k_list*kweight
         end if
 
-        if (eval_jc) then!ALVARO
+        if (eval_jc) then
           call berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                   ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -943,7 +944,7 @@ contains
           sc_list = sc_list + sc_k_list*kweight
         end if
 
-        if (eval_ic) then!ALVARO
+        if (eval_ic) then
           call berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                   ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -954,7 +955,7 @@ contains
           ic_list = ic_list + ic_k_list*kweight
         end if
 
-        if (eval_jc) then!ALVARO
+        if (eval_jc) then
           call berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
                                   ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                   ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -1089,12 +1090,12 @@ contains
       if (allocated(error)) return
     end if
 
-    if (eval_ic) then!ALVARO
+    if (eval_ic) then
       call comms_reduce(ic_list(1, 1, 1, 1), 3*3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
       if (allocated(error)) return
     end if
 
-    if (eval_jc) then!ALVARO
+    if (eval_jc) then
       call comms_reduce(jc_list(1, 1, 1), 6*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
       if (allocated(error)) return
     end if
@@ -1548,7 +1549,7 @@ contains
 
       endif
 
-      if (eval_ic) then!ALVARO
+      if (eval_ic) then
         ! -----------------------------!
         ! Injection current
         ! -----------------------------!
@@ -1622,7 +1623,7 @@ contains
 
       endif
 
-      if (eval_jc) then!ALVARO
+      if (eval_jc) then
         ! -----------------------------!
         ! Jerk current
         ! -----------------------------!
@@ -2376,11 +2377,11 @@ contains
   end subroutine berry_get_kubo_k
 
   subroutine berry_get_ic_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
-    ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
-    ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
-    kpt, real_lattice, ic_k_list, mp_grid, scissors_shift, num_bands, &
-    num_kpts, num_wann, num_valence_bands, effective_model, &
-    have_disentangled, seedname, stdout, timer, error, comm)!ALVARO
+                                ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                kpt, real_lattice, ic_k_list, mp_grid, scissors_shift, num_bands, &
+                                num_kpts, num_wann, num_valence_bands, effective_model, &
+                                have_disentangled, seedname, stdout, timer, error, comm)
 
     use w90_constants,      only: dp, cmplx_0, cmplx_i
     use w90_utility,        only: utility_diagonalize, utility_w0gauss_vec, & 
@@ -2545,7 +2546,7 @@ contains
                 if (allocated(error)) return
 
                 do i=1, pw90_berry%kubo_nfreq
-                  !Compute the integrand of Eq. (33) of 10.1103/PhysRevB.52.14636.
+                  !Compute the integrand of Eq. (8) of PTSIA23.
                   ic_k_list(a,b,c,i) = ic_k_list(a,b,c,i) + (eig_da(m,a)-eig_da(n,a))*r_pos(n,m,b)*r_pos(m,n,c)*occ_fac*delta(i)
                 enddo
 
@@ -2879,11 +2880,11 @@ contains
   end subroutine berry_get_sc_klist
 
   subroutine berry_get_jc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
-    ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
-    ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
-    kpt, real_lattice, jc_k_list, mp_grid, scissors_shift, num_bands, &
-    num_kpts, num_wann, num_valence_bands, effective_model, &
-    have_disentangled, seedname, stdout, timer, error, comm)!ALVARO
+                                ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                kpt, real_lattice, jc_k_list, mp_grid, scissors_shift, num_bands, &
+                                num_kpts, num_wann, num_valence_bands, effective_model, &
+                                have_disentangled, seedname, stdout, timer, error, comm)
 
     use w90_constants,      only: dp, cmplx_0, cmplx_i
     use w90_utility,        only: utility_diagonalize, utility_w0gauss_vec, & 
@@ -3083,7 +3084,7 @@ contains
               if (allocated(error)) return
 
               do i=1, pw90_berry%kubo_nfreq
-                !Compute the integrand of Eq. (4) of 10.1103/PhysRevB.102.195410.
+                !Compute the integrand of Eq. (11) of PTSIA23.
                 jc_k_list(ad,bc,i) = jc_k_list(ad,bc,i) + (mu(n,a,d)-mu(m,a,d))*r_pos(n,m,b)*r_pos(m,n,c)*occ_fac*delta(i)
               enddo
 

@@ -58,7 +58,7 @@ module w90_utility
   public :: utility_zgemm
   public :: utility_zgemmm
   public :: utility_zgemm_new
-  public :: utility_get_degen!ALVARO
+  public :: utility_get_degen
 
 contains
 
@@ -166,7 +166,7 @@ contains
 
   end subroutine utility_zgemm_new
   !=============================================================!
-  subroutine utility_get_degen(eig,degen_thr,deg)!ALVARO 
+  subroutine utility_get_degen(eig,degen_thr,deg) 
     !========================================================================!
     !Auxiliary routine to get the degree of degeneracy for a given list eig. !
     !The list is supposed to have it's elements stored in ascending order:   !

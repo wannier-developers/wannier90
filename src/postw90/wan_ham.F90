@@ -30,7 +30,7 @@ module w90_wan_ham
 
   public :: wham_get_D_h
   public :: wham_get_D_h_P_value
-  public :: wham_get_deleig_a_b !ALVARO
+  public :: wham_get_deleig_a_b
   public :: wham_get_eig_deleig
   public :: wham_get_eig_deleig_TB_conv
   public :: wham_get_eig_UU_HH_AA_sc
@@ -427,7 +427,7 @@ contains
   end subroutine wham_get_deleig_a
 
   subroutine wham_get_deleig_a_b(deleig_a_b, num_wann, eig, delHH_a, delHH_b, delHH_a_b, UU, & 
-                                 eta, pw90_band_deriv_degen, comm, error)!ALVARO
+                                 eta, pw90_band_deriv_degen, comm, error)
     !===========================================!
     !                                           !
     !! Second band derivatives d^2E/(dk_a dk_b) !
