@@ -353,6 +353,7 @@ contains
       call set_error_alloc(error, 'Error in allocating LocalKappa in boltzwann_main', comm)
       return
     endif
+    LocalSigmaS = 0._dp
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
     LocalKappa = 0._dp
