@@ -731,6 +731,7 @@ contains
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
         .and. index(pw90_berry%task, 'morb') == 0 &
         .and. index(pw90_berry%task, 'kubo') == 0 .and. index(pw90_berry%task, 'sc') == 0 &
+        .and. index(pw90_berry%task, 'ic') == 0 .and. index(pw90_berry%task, 'jc') == 0 &
         .and. index(pw90_berry%task, 'shc') == 0 .and. index(pw90_berry%task, 'kdotp') == 0) then
 
       call set_error_input(error, 'Error: value of berry_task not recognised in w90_wannier90_readwrite_read', comm)
@@ -2166,6 +2167,16 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
+      if (index(pw90_berry%task, 'ic') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Injection Current                 :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Injection Current                 :', '       F', '|'
+      endif
+      if (index(pw90_berry%task, 'jc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Jerk Current                      :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Jerk Current                      :', '       F', '|'
+      endif
       if (index(pw90_berry%task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       T', '|'
       else
@@ -2196,6 +2207,13 @@ contains
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for shift current   :', &
           pw90_berry%sc_use_eta_corr, '|'
       end if
+      if (index(pw90_berry%task, 'ic') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for injection current   :', pw90_berry%sc_w_thr, '|'
+      endif
+      if (index(pw90_berry%task, 'jc') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Regularization factor for jerk current   :', pw90_berry%sc_eta, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for jerk current      :', pw90_berry%sc_w_thr, '|'
+      endif
       if (index(pw90_berry%task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1x,f8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
           pw90_berry%kdotp_kpoint(1), pw90_berry%kdotp_kpoint(2), pw90_berry%kdotp_kpoint(3), '|'

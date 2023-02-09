@@ -155,6 +155,18 @@ extract_fn = tools parsers.parse_sc_dat.parse
 tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
                (1.0e-6, 1.0e+2, 'shiftcurr'))
 
+[POSTW90_IC_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_ic_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e+7, 1.0e-2, 'injcurr'))
+
+[POSTW90_JC_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_jc_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e+16, 1.0e-2, 'jerkcurr'))
+
 [POSTW90_KDOTP_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_kdotp_dat.parse

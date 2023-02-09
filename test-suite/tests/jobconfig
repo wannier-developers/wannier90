@@ -346,6 +346,18 @@ program = POSTW90_DOS_OK
 inputs_args = ('copper.win', '')
 output = copper-dos.dat
 
+# Test of injection current for Te
+[testpostw90_te_ic_Axyz]
+program = POSTW90_IC_OK
+inputs_args = ('Te.win', '')
+output = Te-ic_A_xyz.dat
+
+# Test of jerk current for GaAs
+[testpostw90_gaas_jc_xxxx/]
+program = POSTW90_JC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-jc_xxxx.dat
+
 # Test of shift current for GaAs
 [testpostw90_gaas_sc_xyz/]
 program = POSTW90_SC_OK
