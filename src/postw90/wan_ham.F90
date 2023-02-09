@@ -426,7 +426,7 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_deleig_a_b(deleig_a_b, num_wann, eig, delHH_a, delHH_b, delHH_a_b, UU, & 
+  subroutine wham_get_deleig_a_b(deleig_a_b, num_wann, eig, delHH_a, delHH_b, delHH_a_b, UU, &
                                  eta, pw90_band_deriv_degen, comm, error)
     !===========================================!
     !                                           !
@@ -434,71 +434,71 @@ contains
     !                                           !
     !===========================================!
 
-    use w90_constants,     only: dp
-    use w90_utility,       only: utility_diagonalize, utility_rotate, utility_get_degen
+    use w90_constants, only: dp
+    use w90_utility, only: utility_diagonalize, utility_rotate, utility_get_degen
     use w90_postw90_types, only: pw90_band_deriv_degen_type
-    use w90_comms,         only: w90comm_type
+    use w90_comms, only: w90comm_type
 
     implicit none
 
     ! Arguments
     !
-    integer,                           intent(in)  :: num_wann
-    real(kind=dp),                     intent(in)  :: eig(:)
-    real(kind=dp),                     intent(in)  :: eta
-    complex(kind=dp),                  intent(in)  :: delHH_a(:, :), delHH_b(:, :), &
-                                                      delHH_a_b(:, :), UU(:, :)
-    type(pw90_band_deriv_degen_type),  intent(in)  :: pw90_band_deriv_degen
+    integer, intent(in)  :: num_wann
+    real(kind=dp), intent(in)  :: eig(:)
+    real(kind=dp), intent(in)  :: eta
+    complex(kind=dp), intent(in)  :: delHH_a(:, :), delHH_b(:, :), &
+                                     delHH_a_b(:, :), UU(:, :)
+    type(pw90_band_deriv_degen_type), intent(in)  :: pw90_band_deriv_degen
 
-    real(kind=dp),                     intent(out) :: deleig_a_b(:)
+    real(kind=dp), intent(out) :: deleig_a_b(:)
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type),                intent(in)  :: comm
+    type(w90comm_type), intent(in)  :: comm
 
     !Misc
     !
-    complex(kind=dp),     allocatable              :: D_b(:,:), delHH_bar_a(:, :), &
-                                                      delHH_bar_b(:, :), delHH_bar_a_b(:,:), &
-                                                      mu_ten_a_b(:,:), dummy_rot(:,:)
-    real(kind=dp),        allocatable              :: dummy_eig(:)
-    integer,              allocatable              :: g(:)
+    complex(kind=dp), allocatable              :: D_b(:, :), delHH_bar_a(:, :), &
+                                                  delHH_bar_b(:, :), delHH_bar_a_b(:, :), &
+                                                  mu_ten_a_b(:, :), dummy_rot(:, :)
+    real(kind=dp), allocatable              :: dummy_eig(:)
+    integer, allocatable              :: g(:)
     integer                                        :: i, j
 
-    allocate (D_b(num_wann, num_wann),delHH_bar_a(num_wann, num_wann), &
-    delHH_bar_b(num_wann, num_wann),  delHH_bar_a_b(num_wann, num_wann), &
-    mu_ten_a_b(num_wann, num_wann))
+    allocate (D_b(num_wann, num_wann), delHH_bar_a(num_wann, num_wann), &
+              delHH_bar_b(num_wann, num_wann), delHH_bar_a_b(num_wann, num_wann), &
+              mu_ten_a_b(num_wann, num_wann))
 
     allocate (g(num_wann))
 
     !Get bar-ed quantities.
-    delHH_bar_a   = utility_rotate(delHH_a,   UU, num_wann)
-    delHH_bar_b   = utility_rotate(delHH_b,   UU, num_wann)
+    delHH_bar_a = utility_rotate(delHH_a, UU, num_wann)
+    delHH_bar_b = utility_rotate(delHH_b, UU, num_wann)
     delHH_bar_a_b = utility_rotate(delHH_a_b, UU, num_wann)
 
     !Get degenerate level indices and dimensions for energy eigenvalues.
-    call utility_get_degen(eig, pw90_band_deriv_degen%degen_thr, g) 
+    call utility_get_degen(eig, pw90_band_deriv_degen%degen_thr, g)
 
     if (maxval(g) .GT. 1) then
 
-      !Degenerate band case. 
+      !Degenerate band case.
       !
 
       !Define the anti-Hermitian matrix D_b as in Eq.(32) YWVS07.
       !Here I have included a regularisation given by eta.
-      !It explains the (small) diference between the previous version of this routine and 
+      !It explains the (small) diference between the previous version of this routine and
       !the deprecated routine wham_get_eig_deleig_massterm.
       !
       do i = 1, num_wann
         do j = 1, num_wann
-            if (abs(eig(i) - eig(j)) .LE. pw90_band_deriv_degen%degen_thr) then 
-                D_b(i, j) = 0.0_dp
-            else
-                D_b(i, j) = delHH_bar_b(i,j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
-            endif
+          if (abs(eig(i) - eig(j)) .LE. pw90_band_deriv_degen%degen_thr) then
+            D_b(i, j) = 0.0_dp
+          else
+            D_b(i, j) = delHH_bar_b(i, j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
+          endif
         enddo
       enddo
 
-      !Compute Eq.(28) YWVS07. 
+      !Compute Eq.(28) YWVS07.
       !
       mu_ten_a_b = matmul(delHH_bar_a, D_b)
       mu_ten_a_b = delHH_bar_a_b + mu_ten_a_b + transpose(conjg(mu_ten_a_b))
@@ -510,14 +510,14 @@ contains
 
         if (g(j) .GT. 1) then !check degeneracy
 
-          allocate(dummy_rot(g(j), g(j)))
-                              !and compute the eigenvalues of mu_ten_a_b in the 
-                              !degenerate band subspace. Then write 
-                              !them in the corresponding indices of deleig_a_b.
-          call utility_diagonalize(mu_ten_a_b(j:j + g(j) - 1,j:j + g(j) - 1), &
-          g(j), deleig_a_b(j:j+g(j)-1), dummy_rot, error, comm)
+          allocate (dummy_rot(g(j), g(j)))
+          !and compute the eigenvalues of mu_ten_a_b in the
+          !degenerate band subspace. Then write
+          !them in the corresponding indices of deleig_a_b.
+          call utility_diagonalize(mu_ten_a_b(j:j + g(j) - 1, j:j + g(j) - 1), &
+                                   g(j), deleig_a_b(j:j + g(j) - 1), dummy_rot, error, comm)
           if (allocated(error)) return
-          deallocate(dummy_rot)
+          deallocate (dummy_rot)
 
         elseif (g(j) .EQ. 0) then !Cycle for the other values on the degenerate subspace.
 
@@ -531,27 +531,27 @@ contains
 
       enddo
 
-    else 
+    else
 
       !Define the anti-Hermitian matrix D_b as in Eq.(32) YWVS07.
       !
       do i = 1, num_wann
         do j = 1, num_wann
-            if (i .EQ. j) then
-                D_b(i, j) = 0.0_dp
-            else
-                D_b(i, j) = delHH_bar_b(i,j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
-            endif
+          if (i .EQ. j) then
+            D_b(i, j) = 0.0_dp
+          else
+            D_b(i, j) = delHH_bar_b(i, j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
+          endif
         enddo
       enddo
 
-      !Compute Eq.(28) YWVS07. 
+      !Compute Eq.(28) YWVS07.
       !The diagonal elements of this matrix are needed in this case.
       !
-      mu_ten_a_b = matmul(delHH_bar_a,D_b)
+      mu_ten_a_b = matmul(delHH_bar_a, D_b)
       mu_ten_a_b = delHH_bar_a_b + mu_ten_a_b + transpose(conjg(mu_ten_a_b))
       do i = 1, num_wann
-        deleig_a_b(i) = real(mu_ten_a_b(i, i),dp)
+        deleig_a_b(i) = real(mu_ten_a_b(i, i), dp)
       enddo
 
     endif
