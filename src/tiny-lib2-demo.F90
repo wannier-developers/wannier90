@@ -142,6 +142,8 @@ program libv2
   call set_u_matrix(w90main, u)
   call set_u_opt(w90main, uopt)
 
+  uopt = 0.d0 ! required when not disentangling
+
 ! restart system
   lovlp = .true.
   ldsnt = .true.
