@@ -90,7 +90,7 @@ contains
                                         wann90%fermi_energy_list, w90only%fermi_surface_data, &
                                         wann90%kmesh_input, wann90%kmesh_info, wann90%kpt_latt, &
                                         w90only%output_file, w90only%wvfn_read, &
-                                        w90only%wann_control, w90only%proj, &
+                                        w90only%wann_control, w90only%proj, w90only%proj_input, &
                                         w90only%real_space_ham, w90only%select_proj, &
                                         wann90%kpoint_path, wann90%w90_system, w90only%tran, &
                                         wann90%print_output, w90only%wann_plot, &

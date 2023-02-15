@@ -1099,11 +1099,11 @@ contains
     type(lib_global_type), intent(inout) :: w90main
     type(lib_w90_type), intent(in) :: w90dat
     type(w90_comm_type), intent(in) :: comm
+    integer, intent(out) :: ierr
 
     ! local vars
     type(w90_error_type), allocatable :: error
     logical :: eig_found
-    integer :: ierr
 
     ierr = 0
 
