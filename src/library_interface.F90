@@ -121,6 +121,7 @@ module w90_helper_types
   public :: wannierise
   public :: write_chkpt
   public :: write_kmesh
+  public :: get_proj
 
   public :: set_option ! interface for setting vars using library
   interface set_option
@@ -1127,4 +1128,120 @@ contains
       return
     endif
   end subroutine read_eigvals
+
+  subroutine get_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, comm, sqa, z, x, rad, zona)
+    use w90_comms, only: w90_comm_type, mpirank
+    use w90_error, only: w90_error_type, set_error_fatal
+    implicit none
+
+    ! returns arrays describing a list of projections derived from the .win input file
+    ! n specifies the number of projections returned
+    ! all other arguments should be of length >= num_band (the maximum possible size?)
+    integer, intent(inout) :: n, l(:), m(:), s(:)
+    real(kind=dp), intent(inout) :: site(:, :)
+
+    type(lib_global_type), intent(in) :: w90main
+    type(lib_w90_type), target, intent(in) :: w90dat
+    type(w90_comm_type), intent(in) :: comm
+    integer, intent(out) :: ierr
+    integer, intent(in) :: istdout, istderr
+
+    ! probably the remaining variables find limited use, allow them to be absent
+    integer, intent(inout), optional :: rad(:)
+    real(kind=dp), intent(inout), optional :: sqa(:, :), z(:, :), x(:, :), zona(:)
+
+    ! local
+    integer :: ip
+    type(proj_type), pointer :: proj
+    type(w90_error_type), allocatable :: error
+
+    ierr = 0
+
+    if (.not. allocated(w90dat%proj_input)) then
+      call set_error_fatal(error, 'projectors are not setup in Wannier90 library when requested via get_proj()', comm)
+      call prterr(error, ierr, istdout, istderr, comm)
+      return
+    endif
+
+    n = size(w90dat%proj_input)
+
+    if (size(site, 2) < n) then
+      call set_error_fatal(error, 'array argument site in get_proj() call is insufficiently sized', comm)
+      call prterr(error, ierr, istdout, istderr, comm)
+      return
+    endif
+    ! fixme, maybe check the others, too?
+
+    do ip = 1, n
+      proj => w90dat%proj_input(ip)
+      l(ip) = proj%l
+      m(ip) = proj%m
+      s(ip) = proj%s
+      site(:, ip) = proj%site(:)
+      if (present(sqa)) sqa(:, ip) = proj%s_qaxis(:)
+      if (present(z)) z(:, ip) = proj%z(:)
+      if (present(x)) x(:, ip) = proj%x(:)
+      if (present(rad)) rad(ip) = proj%radial
+      if (present(zona)) zona(ip) = proj%zona
+    enddo
+  end subroutine
+
+  subroutine set_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, comm, sqa, z, x, rad, zona)
+    use w90_comms, only: w90_comm_type, mpirank
+    use w90_error, only: w90_error_type, set_error_fatal
+    implicit none
+
+    ! sets up projector object describing a list of projections specified by the calling code
+    !
+    ! possibly this function has no use case because the projections are meaningful only to calling code?  fixme(jj)
+    !
+    ! n specifies the number of projections returned
+    ! n specifies the number of projections specified
+    ! all other arguments should be arrays of length n
+    ! site, sqa, z, x must have dimension (3,n)
+    !
+    ! the supplied projections are copied to the 'proj' variable, which is usually the result of masking proj_input
+    ! with mask 'select_projections'
+
+    integer, intent(in) :: n, l(:), m(:), s(:)
+    real(kind=dp), intent(in) :: site(:, :)
+
+    type(lib_global_type), intent(in) :: w90main
+    type(lib_w90_type), target, intent(inout) :: w90dat
+    type(w90_comm_type), intent(in) :: comm
+    integer, intent(out) :: ierr
+    integer, intent(in) :: istdout, istderr
+
+    ! probably the remaining variables find limited use, allow them to be absent
+    integer, intent(in), optional :: rad(:)
+    real(kind=dp), intent(in), optional :: sqa(:, :), z(:, :), x(:, :), zona(:)
+
+    ! local
+    integer :: ip
+    type(proj_type), pointer :: proj
+    !type(w90_error_type), allocatable :: error
+
+    ! fixme(jj) add some checking for size of passed arrays
+    ierr = 0
+
+    if (allocated(w90dat%proj)) then
+      ! error, or just de/realloc?
+      deallocate (w90dat%proj)
+    endif
+    allocate (w90dat%proj(n))
+
+    do ip = 1, n
+      proj => w90dat%proj(ip)
+      proj%l = l(ip)
+      proj%m = m(ip)
+      proj%s = s(ip)
+      proj%site(:) = site(:, ip)
+      if (present(sqa)) proj%s_qaxis(:) = sqa(:, ip)
+      if (present(z)) proj%z(:) = z(:, ip)
+      if (present(x)) proj%x(:) = x(:, ip)
+      if (present(rad)) proj%radial = rad(ip)
+      if (present(zona)) proj%zona = zona(ip)
+    enddo
+  end subroutine
+
 end module w90_helper_types
