@@ -24,7 +24,7 @@ module w90_postw90_readwrite
   use w90_constants, only: dp, maxlen
   use w90_types, only: print_output_type, print_output_type, wannier_data_type, &
     kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
-    proj_input_type, w90_system_type, ws_region_type, settings_type
+    proj_type, w90_system_type, ws_region_type, settings_type
   use w90_readwrite
   use w90_postw90_types
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
@@ -2502,7 +2502,7 @@ contains
 
     type(wannier_data_type), intent(inout) :: wannier_data
     type(kmesh_input_type), intent(inout) :: kmesh_input
-    type(proj_input_type), intent(inout) :: proj_input
+    type(proj_type), allocatable, intent(inout) :: proj_input(:)
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(atom_data_type), intent(inout) :: atom_data
     type(kpoint_path_type), intent(inout) :: kpoint_path
