@@ -149,12 +149,12 @@ module w90_types
     ! using defaults here requires restructuring get_projections() (readwrite.F90)
     ! site, l, m don't have reasonable defaults
     integer :: l, m, s
-    integer :: radial           != 1
-    real(kind=dp) :: site(3)    != (/0.0_dp, 0.0_dp, 0.0_dp/)
-    real(kind=dp) :: s_qaxis(3) != (/0.0_dp, 0.0_dp, 1.0_dp/)
-    real(kind=dp) :: z(3)       != (/0.0_dp, 0.0_dp, 1.0_dp/)
-    real(kind=dp) :: x(3)       != (/1.0_dp, 0.0_dp, 0.0_dp/)
-    real(kind=dp) :: zona       != 1.0_dp
+    integer :: radial = 1
+    real(kind=dp) :: site(3)
+    real(kind=dp) :: s_qaxis(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: z(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: x(3) = (/1.0_dp, 0.0_dp, 0.0_dp/)
+    real(kind=dp) :: zona = 1.0_dp
   end type proj_type
 
   ! kmesh information (set in kmesh)
