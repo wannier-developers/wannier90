@@ -1526,7 +1526,7 @@ contains
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    type(proj_input_type), intent(inout) :: input_proj
+    type(proj_type), allocatable, intent(inout) :: input_proj(:)
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
     type(wannier_data_type), intent(inout) :: wannier_data
@@ -1610,66 +1610,10 @@ contains
         return
       endif
     end if
-    if (allocated(input_proj%site)) then
-      deallocate (input_proj%site, stat=ierr)
+    if (allocated(input_proj)) then
+      deallocate (input_proj, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_site in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%l)) then
-      deallocate (input_proj%l, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_l in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%m)) then
-      deallocate (input_proj%m, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_m in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%s)) then
-      deallocate (input_proj%s, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_s in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%s_qaxis)) then
-      deallocate (input_proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_s_qaxis in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%z)) then
-      deallocate (input_proj%z, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_z in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%x)) then
-      deallocate (input_proj%x, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_x in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%radial)) then
-      deallocate (input_proj%radial, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_radial in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(input_proj%zona)) then
-      deallocate (input_proj%zona, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating input_proj_zona in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating input_proj in w90_readwrite_dealloc', comm)
         return
       endif
     end if
@@ -3398,7 +3342,7 @@ contains
 
     ! arguments
     type(atom_data_type), intent(in) :: atom_data
-    type(proj_input_type), intent(inout) :: input_proj
+    type(proj_type), allocatable, intent(inout) :: input_proj(:)
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
@@ -3461,52 +3405,10 @@ contains
     ! only safe limit for proj allocations is num_bands not num_wann (example11 demonstrates: num_wann=4 < num_proj=12)
 
     if (.not. lcount) then
-      allocate (input_proj%site(3, num_proj), stat=ierr)
+      allocate (input_proj(num_proj), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_site in w90_readwrite_get_projections', comm)
+        call set_error_alloc(error, 'Error allocating input_proj in w90_readwrite_get_projections', comm)
         return
-      endif
-      allocate (input_proj%l(num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_l in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (input_proj%m(num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_m in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (input_proj%z(3, num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_z in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (input_proj%x(3, num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_x in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (input_proj%radial(num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_radial in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (input_proj%zona(num_proj), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating input_proj_zona in w90_readwrite_get_projections', comm)
-        return
-      endif
-      if (spinors) then
-        allocate (input_proj%s(num_proj), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating input_proj_s in w90_readwrite_get_projections', comm)
-          return
-        endif
-        allocate (input_proj%s_qaxis(3, num_proj), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating input_proj_s_qaxis in w90_readwrite_get_projections', comm)
-          return
-        endif
       endif
     endif
 
@@ -3938,22 +3840,22 @@ contains
                 do loop_s = 1, spn_counter
                   counter = counter + 1
                   if (lcount) cycle
-                  input_proj%site(:, counter) = pos_frac
-                  input_proj%l(counter) = loop_l
-                  input_proj%m(counter) = loop_m
-                  input_proj%z(:, counter) = proj_z_tmp
-                  input_proj%x(:, counter) = proj_x_tmp
-                  input_proj%radial(counter) = proj_radial_tmp
-                  input_proj%zona(counter) = proj_zona_tmp
+                  input_proj(counter)%site(:) = pos_frac
+                  input_proj(counter)%l = loop_l
+                  input_proj(counter)%m = loop_m
+                  input_proj(counter)%z(:) = proj_z_tmp
+                  input_proj(counter)%x(:) = proj_x_tmp
+                  input_proj(counter)%radial = proj_radial_tmp
+                  input_proj(counter)%zona = proj_zona_tmp
                   if (spinors) then
                     if (spn_counter == 1) then
-                      if (proj_u_tmp) input_proj%s(counter) = 1
-                      if (proj_d_tmp) input_proj%s(counter) = -1
+                      if (proj_u_tmp) input_proj(counter)%s = 1
+                      if (proj_d_tmp) input_proj(counter)%s = -1
                     else
-                      if (loop_s == 1) input_proj%s(counter) = 1
-                      if (loop_s == 2) input_proj%s(counter) = -1
+                      if (loop_s == 1) input_proj(counter)%s = 1
+                      if (loop_s == 2) input_proj(counter)%s = -1
                     endif
-                    input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                    input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
                   endif
                 end do
               endif
@@ -3969,22 +3871,22 @@ contains
                     if (lcount) cycle
                     call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), &
                                               pos_frac, inv_lattice)
-                    input_proj%site(:, counter) = pos_frac(:)
-                    input_proj%l(counter) = loop_l
-                    input_proj%m(counter) = loop_m
-                    input_proj%z(:, counter) = proj_z_tmp
-                    input_proj%x(:, counter) = proj_x_tmp
-                    input_proj%radial(counter) = proj_radial_tmp
-                    input_proj%zona(counter) = proj_zona_tmp
+                    input_proj(counter)%site(:) = pos_frac(:)
+                    input_proj(counter)%l = loop_l
+                    input_proj(counter)%m = loop_m
+                    input_proj(counter)%z(:) = proj_z_tmp
+                    input_proj(counter)%x(:) = proj_x_tmp
+                    input_proj(counter)%radial = proj_radial_tmp
+                    input_proj(counter)%zona = proj_zona_tmp
                     if (spinors) then
                       if (spn_counter == 1) then
-                        if (proj_u_tmp) input_proj%s(counter) = 1
-                        if (proj_d_tmp) input_proj%s(counter) = -1
+                        if (proj_u_tmp) input_proj(counter)%s = 1
+                        if (proj_d_tmp) input_proj(counter)%s = -1
                       else
-                        if (loop_s == 1) input_proj%s(counter) = 1
-                        if (loop_s == 2) input_proj%s(counter) = -1
+                        if (loop_s == 1) input_proj(counter)%s = 1
+                        if (loop_s == 2) input_proj(counter)%s = -1
                       endif
-                      input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                      input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
                     endif
                   end do
                 end if
@@ -4019,22 +3921,22 @@ contains
       ! input_proj is only allocated 1:num_wann when 'random'
       !do loop = counter + 1, num_bands
       do loop = counter + 1, num_wann
-        call random_number(input_proj%site(:, loop))
-        input_proj%l(loop) = 0
-        input_proj%m(loop) = 1
-        input_proj%z(:, loop) = proj_z_def
-        input_proj%x(:, loop) = proj_x_def
-        input_proj%zona(loop) = proj_zona_def
-        input_proj%radial(loop) = proj_radial_def
+        call random_number(input_proj(loop)%site(:))
+        input_proj(loop)%l = 0
+        input_proj(loop)%m = 1
+        input_proj(loop)%z(:) = proj_z_def
+        input_proj(loop)%x(:) = proj_x_def
+        input_proj(loop)%zona = proj_zona_def
+        input_proj(loop)%radial = proj_radial_def
         if (spinors) then
           if (modulo(loop, 2) == 1) then
-            input_proj%s(loop) = 1
+            input_proj(loop)%s = 1
           else
-            input_proj%s(loop) = -1
+            input_proj(loop)%s = -1
           end if
-          input_proj%s_qaxis(1, loop) = 0.
-          input_proj%s_qaxis(2, loop) = 0.
-          input_proj%s_qaxis(3, loop) = 1.
+          input_proj(loop)%s_qaxis(1) = 0.0_dp
+          input_proj(loop)%s_qaxis(2) = 0.0_dp
+          input_proj(loop)%s_qaxis(3) = 1.0_dp
         end if
       enddo
     endif
@@ -4053,30 +3955,30 @@ contains
     ! Normalise z-axis and x-axis and check/fix orthogonality
     do loop = 1, num_proj
 
-      znorm = sqrt(sum(input_proj%z(:, loop)*input_proj%z(:, loop)))
-      xnorm = sqrt(sum(input_proj%x(:, loop)*input_proj%x(:, loop)))
-      input_proj%z(:, loop) = input_proj%z(:, loop)/znorm             ! normalise z
-      input_proj%x(:, loop) = input_proj%x(:, loop)/xnorm             ! normalise x
-      cosphi = sum(input_proj%z(:, loop)*input_proj%x(:, loop))
+      znorm = sqrt(sum(input_proj(loop)%z(:)*input_proj(loop)%z(:)))
+      xnorm = sqrt(sum(input_proj(loop)%x(:)*input_proj(loop)%x(:)))
+      input_proj(loop)%z(:) = input_proj(loop)%z(:)/znorm             ! normalise z
+      input_proj(loop)%x(:) = input_proj(loop)%x(:)/xnorm             ! normalise x
+      cosphi = sum(input_proj(loop)%z(:)*input_proj(loop)%x(:))
 
       ! Check whether z-axis and z-axis are orthogonal
       if (abs(cosphi) .gt. eps6) then
 
         ! Special case of circularly symmetric projections (pz, dz2, fz3)
         ! just choose an x-axis that is perpendicular to the given z-axis
-        if ((input_proj%l(loop) .ge. 0) .and. (input_proj%m(loop) .eq. 1)) then
-          proj_x_tmp(:) = input_proj%x(:, loop)            ! copy of original x-axis
+        if ((input_proj(loop)%l .ge. 0) .and. (input_proj(loop)%m .eq. 1)) then
+          proj_x_tmp(:) = input_proj(loop)%x(:)            ! copy of original x-axis
           call random_seed()
           call random_number(proj_z_tmp(:))         ! random vector
           ! calculate new x-axis as the cross (vector) product of random vector with z-axis
-          input_proj%x(1, loop) = proj_z_tmp(2)*input_proj%z(3, loop) &
-                                  - proj_z_tmp(3)*input_proj%z(2, loop)
-          input_proj%x(2, loop) = proj_z_tmp(3)*input_proj%z(1, loop) &
-                                  - proj_z_tmp(1)*input_proj%z(3, loop)
-          input_proj%x(3, loop) = proj_z_tmp(1)*input_proj%z(2, loop) &
-                                  - proj_z_tmp(2)*input_proj%z(1, loop)
-          xnorm_new = sqrt(sum(input_proj%x(:, loop)*input_proj%x(:, loop)))
-          input_proj%x(:, loop) = input_proj%x(:, loop)/xnorm_new   ! normalise
+          input_proj(loop)%x(1) = proj_z_tmp(2)*input_proj(loop)%z(3) &
+                                  - proj_z_tmp(3)*input_proj(loop)%z(2)
+          input_proj(loop)%x(2) = proj_z_tmp(3)*input_proj(loop)%z(1) &
+                                  - proj_z_tmp(1)*input_proj(loop)%z(3)
+          input_proj(loop)%x(3) = proj_z_tmp(1)*input_proj(loop)%z(2) &
+                                  - proj_z_tmp(2)*input_proj(loop)%z(1)
+          xnorm_new = sqrt(sum(input_proj(loop)%x(:)*input_proj(loop)%x(:)))
+          input_proj(loop)%x(:) = input_proj(loop)%x(:)/xnorm_new   ! normalise
           goto 555
         endif
 
@@ -4091,15 +3993,15 @@ contains
         ! If projection axes are "reasonably orthogonal", project x-axis
         ! onto plane perpendicular to z-axis to make them more so
         sinphi = sqrt(1 - cosphi*cosphi)
-        proj_x_tmp(:) = input_proj%x(:, loop)               ! copy of original x-axis
+        proj_x_tmp(:) = input_proj(loop)%x(:)               ! copy of original x-axis
         ! calculate new x-axis:
         ! x = z \cross (x_tmp \cross z) / sinphi = ( x_tmp - z(z.x_tmp) ) / sinphi
-        input_proj%x(:, loop) = (proj_x_tmp(:) - cosphi*input_proj%z(:, loop))/sinphi
+        input_proj(loop)%x(:) = (proj_x_tmp(:) - cosphi*input_proj(loop)%z(:))/sinphi
 
         ! Final check
-555     cosphi_new = sum(input_proj%z(:, loop)*input_proj%x(:, loop))
+555     cosphi_new = sum(input_proj(loop)%z(:)*input_proj(loop)%x(:))
         if (abs(cosphi_new) .gt. eps6) then
-          write (stdout, *) ' Projection:', loop
+          write (stdout, *) ' Projection:'
           call set_error_input(error, ' Error: z and x axes are still not orthogonal after projection', comm)
           return
         endif

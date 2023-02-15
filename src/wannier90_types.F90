@@ -252,6 +252,8 @@ module w90_wannier90_types
     !integer, save :: num_select_projections
     !integer, allocatable, save :: select_projections(:)
     integer, allocatable :: proj2wann_map(:)
+    logical :: auto_projections = .false.
+    !! a u t o m a t i c   p r o j e c t i o
   end type select_projection_type
 
   ! from sitesym

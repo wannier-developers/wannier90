@@ -63,7 +63,7 @@ module w90_helper_types
     type(dis_spheres_type) :: dis_spheres
     type(ham_logical_type) :: ham_logical
     type(output_file_type) :: output_file
-    type(proj_input_type) :: proj
+    type(proj_type), allocatable :: proj(:), proj_input(:)
     type(real_space_ham_type) :: real_space_ham
     type(select_projection_type) :: select_proj
     type(sitesym_type) :: sitesym
@@ -344,13 +344,13 @@ contains
 
     ierr = 0
 
-    call w90_wannier90_readwrite_read(helper%settings, helper%atom_data, wan90%band_plot, wan90%dis_control, &
-                                      wan90%dis_spheres, helper%dis_manifold, &
+    call w90_wannier90_readwrite_read(helper%settings, helper%atom_data, wan90%band_plot, &
+                                      wan90%dis_control, wan90%dis_spheres, helper%dis_manifold, &
                                       helper%exclude_bands, helper%fermi_energy_list, &
                                       wan90%fermi_surface_data, helper%kmesh_input, &
                                       helper%kmesh_info, helper%kpt_latt, wan90%output_file, &
                                       wan90%wvfn_read, wan90%wann_control, wan90%proj, &
-                                      wan90%real_space_ham, wan90%select_proj, &
+                                      wan90%proj_input, wan90%real_space_ham, wan90%select_proj, &
                                       helper%kpoint_path, helper%w90_system, wan90%tran, &
                                       helper%print_output, wan90%wann_plot, io_params, &
                                       helper%ws_region, wan90%w90_calculation, &
@@ -489,7 +489,7 @@ contains
     ierr = 0
 
     if (mpirank(comm) == 0) then
-      call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%proj, helper%print_output, &
+      call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%select_proj, wan90%proj_input, helper%print_output, &
                        helper%kpt_latt, helper%real_lattice, helper%num_kpts, wan90%num_proj, &
                        calc_only_A, helper%w90_system%spinors, seedname, helper%timer)
       if (allocated(error)) then

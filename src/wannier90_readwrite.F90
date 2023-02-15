@@ -51,7 +51,7 @@ contains
   subroutine w90_wannier90_readwrite_read(settings, atom_data, band_plot, dis_control, dis_spheres, &
                                           dis_manifold, exclude_bands, fermi_energy_list, &
                                           fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
-                                          output_file, wvfn_read, wann_control, proj, &
+                                          output_file, wvfn_read, wann_control, proj, proj_input, &
                                           real_space_ham, select_proj, kpoint_path, w90_system, &
                                           tran, print_output, wann_plot, w90_extra_io, ws_region, &
                                           w90_calculation, real_lattice, bohr, &
@@ -86,7 +86,7 @@ contains
     type(kpoint_path_type), intent(inout) :: kpoint_path
     type(output_file_type), intent(inout) :: output_file
     type(print_output_type), intent(inout) :: print_output
-    type(proj_input_type), intent(inout) :: proj
+    type(proj_type), allocatable, intent(inout) :: proj(:), proj_input(:)
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(select_projection_type), intent(inout) :: select_proj
     type(settings_type), intent(inout) :: settings
@@ -127,7 +127,7 @@ contains
     logical, intent(inout) :: gamma_only
 
     ! local variables
-    integer :: num_exclude_bands
+    integer :: num_exclude_bands, ip
     !! Units for energy
     logical :: found_fermi_energy
     logical :: has_kpath
@@ -275,18 +275,20 @@ contains
       call w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
       if (allocated(error)) return
 
-      call w90_wannier90_readwrite_read_projections(settings, proj, use_bloch_phases, lhasproj, &
+      call w90_wannier90_readwrite_read_projections(settings, proj, proj_input, use_bloch_phases, lhasproj, &
                                                     wann_control%guiding_centres%enable, &
                                                     select_proj, num_proj, atom_data, inv_lattice, &
                                                     num_bands, num_wann, gamma_only, &
                                                     w90_system%spinors, bohr, stdout, error, comm)
       if (allocated(error)) return
 
-      if (allocated(proj%site)) then
+      if (allocated(proj)) then
         if (allocated(wann_control%guiding_centres%centres)) &
           deallocate (wann_control%guiding_centres%centres)
         allocate (wann_control%guiding_centres%centres(3, num_proj))
-        wann_control%guiding_centres%centres(:, :) = proj%site(:, :)
+        do ip = 1, num_proj
+          wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
+        enddo
       endif
       ! projections needs to be allocated before reading constrained centres
       if (wann_control%constrain%constrain) then
@@ -1415,7 +1417,8 @@ contains
   end subroutine w90_wannier90_readwrite_read_explicit_kpts
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_projections(settings, proj, use_bloch_phases, lhasproj, &
+  subroutine w90_wannier90_readwrite_read_projections(settings, proj, proj_input, &
+                                                      use_bloch_phases, lhasproj, &
                                                       guiding_centres, select_proj, &
                                                       num_proj, atom_data, recip_lattice, &
                                                       num_bands, num_wann, gamma_only, spinors, &
@@ -1435,7 +1438,7 @@ contains
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(atom_data_type), intent(in) :: atom_data
-    type(proj_input_type), intent(inout) :: proj
+    type(proj_type), allocatable, intent(inout) :: proj(:), proj_input(:)
     type(select_projection_type), intent(inout) :: select_proj
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
@@ -1448,11 +1451,10 @@ contains
     integer :: num_select_projections
     integer, allocatable :: select_projections(:)
     integer :: imap, num_proj_final
-    type(proj_input_type) :: proj_input
 
     ! Projections
     call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm, &
-                                   l_value=proj%auto_projections)
+                                   l_value=select_proj%auto_projections)
     if (allocated(error)) return
 
     call w90_readwrite_get_block_length(settings, 'projections', found, i_temp, error, comm)
@@ -1460,7 +1462,7 @@ contains
     ! check to see that there are no unrecognised keywords
 
     if (found) then
-      if (proj%auto_projections) then
+      if (select_proj%auto_projections) then
         call set_error_input(error, 'Error: Cannot specify both auto_projections and projections block', comm)
         return
       endif
@@ -1478,7 +1480,7 @@ contains
       num_proj = num_wann
     end if
 
-    num_select_projections = 0
+    num_select_projections = num_proj !num proj is the size of proj_input
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, num_select_projections, &
                                         .true., error, comm)
     if (allocated(error)) return
@@ -1531,7 +1533,7 @@ contains
 
     if (select_proj%lselproj) then
       do i = 1, num_proj
-        do j = 1, num_wann
+        do j = 1, num_select_projections
           if (select_projections(j) == i) select_proj%proj2wann_map(i) = j
         enddo
       enddo
@@ -1542,66 +1544,15 @@ contains
     endif
 
     if (lhasproj) then
-      ! proj_input is allocated here; need to dealloc
-      ! JJ
       call w90_readwrite_get_projections(settings, num_proj, atom_data, num_bands, num_wann, proj_input, &
                                          recip_lattice, .false., spinors, bohr, stdout, error, comm)
       if (allocated(error)) return
 
-      !if (select_proj%lselproj) then
-      !  num_proj_final = num_select_projections ! update number of projections to that of reduced set
-      !else
-      num_proj_final = num_proj
-      !endif
-
-      allocate (proj%site(3, num_proj_final), stat=ierr)
+      allocate (proj(num_proj), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_site in w90_readwrite_get_projections', comm)
+        call set_error_alloc(error, 'Error allocating proj in w90_readwrite_get_projections', comm)
         return
       endif
-      allocate (proj%l(num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_l in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%m(num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_m in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%z(3, num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_z in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%x(3, num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_x in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%radial(num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_radial in w90_readwrite_get_projections', comm)
-        return
-      endif
-      allocate (proj%zona(num_proj_final), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj_zona in w90_readwrite_get_projections', comm)
-        return
-      endif
-      if (spinors) then
-        allocate (proj%s(num_proj_final), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating proj_s in w90_readwrite_get_projections', comm)
-          return
-        endif
-        allocate (proj%s_qaxis(3, num_proj_final), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating proj_s_qaxis in w90_readwrite_get_projections', comm)
-          return
-        endif
-      endif
-
       do loop = 1, num_proj
         imap = select_proj%proj2wann_map(loop)
         if (imap < 0) cycle
@@ -1610,34 +1561,8 @@ contains
           write (*, *) "logic error, imapping"
           stop
         endif
-        proj%site(:, imap) = proj_input%site(:, loop)
-        proj%l(imap) = proj_input%l(loop)
-        proj%m(imap) = proj_input%m(loop)
-        proj%z(:, imap) = proj_input%z(:, loop)
-        proj%x(:, imap) = proj_input%x(:, loop)
-        proj%radial(imap) = proj_input%radial(loop)
-        proj%zona(imap) = proj_input%zona(loop)
+        proj(imap) = proj_input(loop)
       enddo
-
-      if (spinors) then
-        do loop = 1, num_proj
-          if (imap < 0) cycle
-          proj%s(imap) = proj_input%s(loop)
-          proj%s_qaxis(:, imap) = proj_input%s_qaxis(:, loop)
-        enddo
-      endif
-
-      !deallocate(proj_input%site)
-      !deallocate(proj_input%l)
-      !deallocate(proj_input%m)
-      !deallocate(proj_input%z)
-      !deallocate(proj_input%x)
-      !deallocate(proj_input%radial)
-      !deallocate(proj_input%zona)
-      !if (spinors) deallocate(proj_input%s)
-      !if (spinors) deallocate(proj_input%s_qaxis)
-
-      !num_proj = num_proj_final
     endif
 
   end subroutine w90_wannier90_readwrite_read_projections
@@ -1741,11 +1666,11 @@ contains
     type(transport_type), intent(in) :: tran
     type(atom_data_type), intent(in) :: atom_data
     type(select_projection_type), intent(in) :: select_proj
-    type(proj_input_type), intent(in) :: proj_input
+    type(proj_type), allocatable, intent(in) :: proj_input(:)
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(w90_extra_io_type), intent(in) :: w90_extra_io
     type(wannier_plot_type), intent(in) :: wann_plot
-    type(proj_input_type), intent(in) :: proj
+    type(proj_type), allocatable, intent(in) :: proj(:)
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -1847,7 +1772,7 @@ contains
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
     ! Projections
-    if (print_output%iprint > 1 .and. allocated(proj_input%site)) then
+    if (print_output%iprint > 1 .and. allocated(proj_input)) then
       write (stdout, '(32x,a)') '-----------'
       write (stdout, '(32x,a)') 'PROJECTIONS'
       write (stdout, '(32x,a)') '-----------'
@@ -1857,13 +1782,13 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nsp = 1, num_proj
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)') &
-          '|', proj_input%site(1, nsp), proj_input%site(2, nsp), &
-          proj_input%site(3, nsp), proj_input%l(nsp), &
-          proj_input%m(nsp), proj_input%radial(nsp), &
-          proj_input%z(1, nsp), proj_input%z(2, nsp), &
-          proj_input%z(3, nsp), proj_input%x(1, nsp), &
-          proj_input%x(2, nsp), proj_input%x(3, nsp), &
-          proj_input%zona(nsp), '|'
+          '|', proj_input(nsp)%site(1), proj_input(nsp)%site(2), &
+          proj_input(nsp)%site(3), proj_input(nsp)%l, &
+          proj_input(nsp)%m, proj_input(nsp)%radial, &
+          proj_input(nsp)%z(1), proj_input(nsp)%z(2), &
+          proj_input(nsp)%z(3), proj_input(nsp)%x(1), &
+          proj_input(nsp)%x(2), proj_input(nsp)%x(3), &
+          proj_input(nsp)%zona, '|'
       end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, *) ' '
@@ -1883,10 +1808,10 @@ contains
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
             &              '|', wann_control%guiding_centres%centres(1, nsp), &
             wann_control%guiding_centres%centres(2, nsp), &
-            wann_control%guiding_centres%centres(3, nsp), proj%l(nsp), &
-            proj%m(nsp), proj%radial(nsp), &
-             proj%z(1, nsp), proj%z(2, nsp), proj%z(3, nsp), proj%x(1, nsp), &
-             proj%x(2, nsp), proj%x(3, nsp), proj%zona(nsp), '|'
+            wann_control%guiding_centres%centres(3, nsp), proj(nsp)%l, &
+            proj(nsp)%m, proj(nsp)%radial, &
+             proj(nsp)%z(1), proj(nsp)%z(2), proj(nsp)%z(3), proj(nsp)%x(1), &
+             proj(nsp)%x(2), proj(nsp)%x(3), proj(nsp)%zona, '|'
       end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, *) ' '
@@ -2194,8 +2119,8 @@ contains
     type(select_projection_type), intent(inout) :: select_proj
     type(w90_extra_io_type), intent(inout) :: w90_extra_io
     type(wannier_plot_type), intent(inout) :: wann_plot
-    type(proj_input_type), intent(inout) :: proj
-    type(proj_input_type), intent(inout) :: proj_input
+    type(proj_type), allocatable, intent(inout) :: proj(:)
+    type(proj_type), allocatable, intent(inout) :: proj_input(:)
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
@@ -2246,66 +2171,10 @@ contains
         return
       endif
     end if
-    if (allocated(proj%l)) then
-      deallocate (proj%l, stat=ierr)
+    if (allocated(proj)) then
+      deallocate (proj, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_l in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%site)) then
-      deallocate (proj%site, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_site in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%m)) then
-      deallocate (proj%m, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_m in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%s)) then
-      deallocate (proj%s, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_s in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%s_qaxis)) then
-      deallocate (proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_s_qaxis in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%z)) then
-      deallocate (proj%z, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_z in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%x)) then
-      deallocate (proj%x, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_x in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%radial)) then
-      deallocate (proj%radial, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_radial in w90_readwrite_dealloc', comm)
-        return
-      endif
-    end if
-    if (allocated(proj%zona)) then
-      deallocate (proj%zona, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj_zona in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating proj in w90_readwrite_dealloc', comm)
         return
       endif
     end if
@@ -2439,7 +2308,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(wann_control_type), intent(in) :: wann_control
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(proj_input_type), intent(in) :: proj_input
+    type(proj_type), allocatable, intent(in) :: proj_input(:)
     type(atom_data_type), intent(in) :: atom_data
 
     integer, intent(in) :: num_bands
@@ -2485,7 +2354,7 @@ contains
       mem_param = mem_param + (3*maxval(atom_data%species_num)*atom_data%num_species)*size_real  !atoms_pos_cart
     endif
 
-    if (allocated(proj_input%site)) then
+    if (allocated(proj_input)) then
       mem_param = mem_param + (3*num_proj)*size_real              !input_proj_site
       mem_param = mem_param + (num_proj)*size_int                !input_proj_l
       mem_param = mem_param + (num_proj)*size_int                 !input_proj_m
@@ -2654,7 +2523,7 @@ contains
                                           dis_manifold, exclude_bands, fermi_energy_list, &
                                           fermi_surface_data, kmesh_input, kmesh_info, kpt_latt, &
                                           output_file, wvfn_read, wann_control, wann_omega, &
-                                          proj_input, real_space_ham, w90_system, tran, &
+                                          select_proj, proj_input, real_space_ham, w90_system, tran, &
                                           print_output, wannier_data, wann_plot, ws_region, &
                                           w90_calculation, eigval, real_lattice, symmetrize_eps, &
                                           mp_grid, first_segment, num_bands, num_kpts, num_proj, &
@@ -2684,7 +2553,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(output_file_type), intent(inout) :: output_file
     type(print_output_type), intent(inout) :: print_output
-    type(proj_input_type), intent(inout) :: proj_input
+    type(proj_type), allocatable, intent(inout) :: proj_input(:)
     type(real_space_ham_type), intent(inout) :: real_space_ham
     type(transport_type), intent(inout) :: tran
     type(w90_calculation_type), intent(inout) :: w90_calculation
@@ -2697,6 +2566,7 @@ contains
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
     type(w90_error_type), allocatable, intent(out) :: error
+    type(select_projection_type), intent(inout) :: select_proj
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(inout) :: first_segment
@@ -3294,7 +3164,7 @@ contains
     end if
 
     ! vv: automatic projections
-    call comms_bcast(proj_input%auto_projections, 1, error, comm)
+    call comms_bcast(select_proj%auto_projections, 1, error, comm)
     if (allocated(error)) return
 
     call comms_bcast(num_proj, 1, error, comm)
@@ -3305,9 +3175,9 @@ contains
 
     if (lhasproj) then
       if (.not. on_root) then
-        allocate (proj_input%site(3, num_proj), stat=ierr)
+        allocate (proj_input(num_proj), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating input_proj_site in w90_wannier90_readwrite_dist', comm)
+          call set_error_alloc(error, 'Error allocating input_proj in w90_wannier90_readwrite_dist', comm)
           return
         endif
         allocate (wann_control%guiding_centres%centres(3, num_wann), stat=ierr)
@@ -3316,7 +3186,8 @@ contains
           return
         endif
       endif
-      call comms_bcast(proj_input%site(1, 1), 3*num_proj, error, comm)
+      !fixme(jj) this is now broken for compound type
+      !call comms_bcast(proj_input%site(1, 1), 3*num_proj, error, comm)
       if (allocated(error)) return
 
       call comms_bcast(wann_control%guiding_centres%centres(1, 1), 3*num_wann, error, comm)

@@ -135,7 +135,7 @@ module w90_types
   !AAM: (vi) An external code may also simply supply to w90 an Amn(k) matrix that is has independently
   !AAM: generated, in which case projection_type is not needed.
   !AAM: It makes sense to keep the projection sites separate from the projection_type data below.
-  type proj_input_type
+  type proj_type
     !!==================================================
     !! Contains information that can be provided by the user about the projections
     !!==================================================
@@ -144,19 +144,18 @@ module w90_types
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
     ! REVIEW_2021-07-22: For now, when defining proj_input_type, also define sites inside the
     ! REVIEW_2021-07-22: new guiding centres type.
-    real(kind=dp), allocatable :: site(:, :)
-    integer, allocatable :: l(:)
-    integer, allocatable :: m(:)
-    integer, allocatable :: s(:)
-    real(kind=dp), allocatable :: s_qaxis(:, :)
-    real(kind=dp), allocatable :: z(:, :)
-    real(kind=dp), allocatable :: x(:, :)
-    integer, allocatable :: radial(:)
-    real(kind=dp), allocatable :: zona(:)
-    ! a u t o m a t i c   p r o j e c t i o n s
-    ! vv: Writes a new block in .nnkp
-    logical :: auto_projections = .false.
-  end type proj_input_type
+
+    ! regarding defaults: specific flow in readwrite means all values are assigned anyway
+    ! using defaults here requires restructuring get_projections() (readwrite.F90)
+    ! site, l, m don't have reasonable defaults
+    integer :: l, m, s
+    integer :: radial           != 1
+    real(kind=dp) :: site(3)    != (/0.0_dp, 0.0_dp, 0.0_dp/)
+    real(kind=dp) :: s_qaxis(3) != (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: z(3)       != (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: x(3)       != (/1.0_dp, 0.0_dp, 0.0_dp/)
+    real(kind=dp) :: zona       != 1.0_dp
+  end type proj_type
 
   ! kmesh information (set in kmesh)
   type kmesh_info_type
