@@ -101,7 +101,7 @@ module w90_helper_types
     type(wvfn_read_type) :: wvfn_read
 
     ! symmetry-adapted Wannier functions
-    logical :: calc_only_A = .false.
+    logical :: calc_only_A = .false. ! should find a home in one of the types? fixme(jj)
     logical :: lsitesymmetry = .false.
     logical :: use_bloch_phases = .false.
   end type lib_w90_type
@@ -484,14 +484,14 @@ contains
 
     ! local variables
     type(w90_error_type), allocatable :: error
-    logical :: calc_only_A = .false.! what does this do?
 
     ierr = 0
 
     if (mpirank(comm) == 0) then
-      call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%select_proj, wan90%proj_input, helper%print_output, &
-                       helper%kpt_latt, helper%real_lattice, helper%num_kpts, wan90%num_proj, &
-                       calc_only_A, helper%w90_system%spinors, seedname, helper%timer)
+      call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%select_proj, &
+                       wan90%proj_input, helper%print_output, helper%kpt_latt, &
+                       helper%real_lattice, helper%num_kpts, wan90%num_proj, wan90%calc_only_A, &
+                       helper%w90_system%spinors, seedname, helper%timer)
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, comm)
         return
