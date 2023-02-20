@@ -1,8 +1,0 @@
-#Pathscale
-#=========
-F90= pathf90
-FCOPTS = -O3
-LDOPTS =
-LIBS   = -lacml
-
-# ACML libraries are freely available from http://www.amd.com
