@@ -72,26 +72,14 @@ module w90chk_parameters
 end module w90chk_parameters
 
 module wannchk_data
-
   use w90_constants, only: dp
-  use w90_wannier90_types
 
   implicit none
 
   public
-
-  type(w90_calculation_type), save :: w90_calcs
-  !type(plot_type), save :: plot
-  !type(disentangle_type), save :: dis_data
-  ! RS: symmetry-adapted Wannier functions
+  logical, save :: eig_found
   logical, save :: lsitesymmetry = .false.
   real(kind=dp), save :: symmetrize_eps = 1.d-3
-  type(fermi_surface_plot_type), save :: fermi_surface_data
-  type(transport_type), save :: tran
-  type(select_projection_type), save :: select_proj
-
-  logical, save :: eig_found
-
   ! a_matrix, m_matrix in disentangle and overlap
   complex(kind=dp), allocatable, save :: a_matrix(:, :, :)
   complex(kind=dp), allocatable, save :: m_matrix_orig(:, :, :, :)
@@ -100,9 +88,7 @@ module wannchk_data
   complex(kind=dp), allocatable, save :: m_matrix(:, :, :, :)
   ! in disentangle and overlap
   complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
-
   real(kind=dp), save :: omega_invariant
-
 end module wannchk_data
 
 module w90_conv
