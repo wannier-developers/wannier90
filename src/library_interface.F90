@@ -1082,10 +1082,7 @@ contains
     endif
   end subroutine prterr
 
-  ! this routine needs revising/moving fixme(jj)
-  ! this routine assigns to the array passed as an argument, not to the internal module pointer
-  ! this array must subsequently be the subject of associating the internal module pointer
-  subroutine read_eigvals(w90main, w90dat, eigval, seedname, istdout, istderr, ierr, comm)
+  subroutine read_eigvals(w90main, istdout, istderr, ierr, comm)
     use w90_comms, only: w90_comm_type
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_readwrite, only: w90_readwrite_read_eigvals
@@ -1093,11 +1090,11 @@ contains
     implicit none
 
     ! arguments
-    character(len=*), intent(in) :: seedname
+    !character(len=*), intent(in) :: seedname
     integer, intent(in) :: istdout, istderr
-    real(kind=dp), intent(inout) :: eigval(:, :)
+    !real(kind=dp), intent(inout) :: eigval(:, :)
     type(lib_global_type), intent(inout) :: w90main
-    type(lib_w90_type), intent(in) :: w90dat
+    !type(lib_w90_type), intent(in) :: w90dat
     type(w90_comm_type), intent(in) :: comm
     integer, intent(out) :: ierr
 
@@ -1107,18 +1104,18 @@ contains
 
     ierr = 0
 
-    if (size(eigval, 1) /= w90main%num_bands) then
+    if (size(w90main%eigval, 1) /= w90main%num_bands) then
       call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
       call prterr(error, ierr, istdout, istderr, comm)
       return
-    elseif (size(eigval, 2) /= w90main%num_kpts) then
+    elseif (size(w90main%eigval, 2) /= w90main%num_kpts) then
       call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
       call prterr(error, ierr, istdout, istderr, comm)
       return
     endif
 
-    call w90_readwrite_read_eigvals(eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
-                                    istdout, seedname, error, comm)
+    call w90_readwrite_read_eigvals(eig_found, w90main%eigval, w90main%num_bands, w90main%num_kpts, &
+                                    istdout, w90main%seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)
       return
