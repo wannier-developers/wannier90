@@ -1,8 +1,0 @@
-#======
-# Alpha
-#======
-
-F90    = f90
-FCOPTS = -fast
-LDOPTS = -fast
-LIBS   = -lcxml

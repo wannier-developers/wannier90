@@ -1,0 +1,11 @@
+Name: wannier
+Version: ${PROJECT_VERSION}
+Description: Compute maximally-localised Wannier functions.
+URL: http://www.wannier90.org
+
+Prefix: ${CMAKE_INSTALL_PREFIX}
+Exec_prefix: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
+Includedir: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+Libdir: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+Cflags: -I${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+Libs: -L${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} -lwannier90
