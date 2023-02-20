@@ -322,7 +322,7 @@ contains
 
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), pointer, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
     integer, intent(inout) :: num_kpts
