@@ -44,7 +44,7 @@ module w90_lib_all
     type(wigner_seitz_type) :: ws_vec
 
     ! put eigenvalues here for the moment
-    real(kind=dp), allocatable :: eigval(:, :)
+    !real(kind=dp), allocatable :: eigval(:, :)
     logical :: eig_found = .false.
   end type lib_postw90_type
 
@@ -110,8 +110,13 @@ contains
         deallocate (error)
       else
         disentanglement = (wann90%num_bands > wann90%num_wann)
-        call w90_readwrite_read_eigvals(pw90%eig_found, pw90%eigval, wann90%num_bands, &
-                                        wann90%num_kpts, output, seedname, error, comm)
+        ! If the user is setting values from outside then the eigvals should be associated,
+        ! if they're not then we assume its a 'driver' program that needs to read then
+        if (.not. associated(wann90%eigval)) then
+          allocate (wann90%eigval(wann90%num_bands, wann90%num_kpts))
+          call w90_readwrite_read_eigvals(pw90%eig_found, wann90%eigval, wann90%num_bands, &
+                                          wann90%num_kpts, output, seedname, error, comm)
+        endif
         if (allocated(error)) then
           write (outerr, *) 'Error in wannier90 eigenvalues', error%code, error%message
           status = sign(1, error%code)
@@ -119,7 +124,7 @@ contains
         else
           call w90_postw90_readwrite_readall(wann90%settings, wann90%w90_system, &
                                              wann90%dis_manifold, wann90%fermi_energy_list, &
-                                             wann90%num_bands, wann90%num_wann, pw90%eigval, &
+                                             wann90%num_bands, wann90%num_wann, wann90%eigval, &
                                              wann90%real_lattice, wann90%kpoint_path, &
                                              pw90%calculation, pw90%oper_read, &
                                              pw90%scissors_shift, pw90%effective_model, pw90%spin, &

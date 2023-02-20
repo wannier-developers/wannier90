@@ -9,6 +9,9 @@ data = wan90.w90_helper_types.lib_global_type()
 pw90 = wan90.w90_lib_all.lib_postw90_type()
 w90data = wan90.w90_helper_types.lib_w90_type()
 comm = wan90.w90_comms.w90_comm_type()
+# if you know the eigvals then allocate here and set, otherwise let the reader get them
+#eigval = numpy.zeros((data.num_bands, data.num_kpts), dtype=numpy.double, order='F') #28,8
+#wan90.w90_helper_types.set_eigval(data, eigval)
 status = wan90.w90_lib_all.read_all_input(data, w90data, pw90, "Fe", ftn_output, ftn_error, comm)
 
 if not pw90.effective_model :
@@ -19,7 +22,7 @@ import numpy
 
 # create dummy distribution, all done on proc 0
 kpts = numpy.zeros(data.num_kpts, dtype=numpy.int32)
-wan90.w90_helper_types.set_kpoint_distribution(data, kpts)
+wan90.w90_helper_types.set_kpoint_distribution(data, kpts, ftn_output, ftn_error, comm)
 
 m_matrix = numpy.zeros((data.num_wann, data.num_wann, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
 u_matrix = numpy.zeros((data.num_wann, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')

@@ -141,7 +141,7 @@ program postw90
   ! a_matrix      = projection of trial orbitals on bloch states
   ! m_matrix_orig = overlap of bloch states
   !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
-  real(kind=dp), allocatable :: eigval(:, :)
+  real(kind=dp), pointer :: eigval(:, :)
 
   ! u_matrix_opt in postw90 only for generation of v_matrix
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the

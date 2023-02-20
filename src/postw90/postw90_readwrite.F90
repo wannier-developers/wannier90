@@ -124,7 +124,7 @@ contains
     integer, intent(in) :: stdout
     integer, allocatable, intent(inout) :: exclude_bands(:)
 
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), pointer, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
@@ -305,7 +305,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
 
-    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    real(kind=dp), pointer, intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
@@ -1339,7 +1339,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
 
-    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    real(kind=dp), pointer, intent(in) :: eigval(:, :)
     logical, intent(in) :: do_boltzwann
     character(len=4), intent(out) :: boltz_2d_dir
 
@@ -1387,7 +1387,7 @@ contains
       return
     endif
 
-    if (allocated(eigval)) then
+    if (associated(eigval)) then
       pw90_boltzwann%dos_energy_min = minval(eigval) - 0.6667_dp
     else
       ! Boltz_dos cannot run if eigval is not allocated.
@@ -1397,7 +1397,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_min', found, error, comm, &
                                    r_value=pw90_boltzwann%dos_energy_min)
     if (allocated(error)) return
-    if (allocated(eigval)) then
+    if (associated(eigval)) then
       pw90_boltzwann%dos_energy_max = maxval(eigval) + 0.6667_dp
     else
       ! Boltz_dos cannot run if eigval is not allocated.
@@ -1597,7 +1597,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
-    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    real(kind=dp), pointer, intent(in) :: eigval(:, :)
     type(pw90_extra_io_type), intent(inout) :: pw90_extra_io
 
     integer :: i, ierr
@@ -1605,7 +1605,7 @@ contains
 
     if (dis_manifold%frozen_states) then
       pw90_dos%energy_max = dis_manifold%froz_max + 0.6667_dp
-    elseif (allocated(eigval)) then
+    elseif (associated(eigval)) then
       pw90_dos%energy_max = maxval(eigval) + 0.6667_dp
     else
       pw90_dos%energy_max = dis_manifold%win_max + 0.6667_dp
@@ -1614,7 +1614,7 @@ contains
                                    r_value=pw90_dos%energy_max)
     if (allocated(error)) return
 
-    if (allocated(eigval)) then
+    if (associated(eigval)) then
       pw90_dos%energy_min = minval(eigval) - 0.6667_dp
     else
       pw90_dos%energy_min = dis_manifold%win_min - 0.6667_dp
@@ -1629,7 +1629,7 @@ contains
 
     if (dis_manifold%frozen_states) then
       pw90_extra_io%kubo_freq_max = dis_manifold%froz_max - fermi_energy_list(1) + 0.6667_dp
-    elseif (allocated(eigval)) then
+    elseif (associated(eigval)) then
       pw90_extra_io%kubo_freq_max = maxval(eigval) - minval(eigval) + 0.6667_dp
     else
       pw90_extra_io%kubo_freq_max = dis_manifold%win_max - dis_manifold%win_min + 0.6667_dp
@@ -1699,7 +1699,7 @@ contains
 
     if (dis_manifold%frozen_states) then
       pw90_berry%kubo_eigval_max = dis_manifold%froz_max + 0.6667_dp
-    elseif (allocated(eigval)) then
+    elseif (associated(eigval)) then
       pw90_berry%kubo_eigval_max = maxval(eigval) + 0.6667_dp
     else
       pw90_berry%kubo_eigval_max = dis_manifold%win_max + 0.6667_dp
