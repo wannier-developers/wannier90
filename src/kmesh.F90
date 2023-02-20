@@ -739,7 +739,7 @@ contains
   end subroutine kmesh_get
 
   !================================================!
-  subroutine kmesh_write(exclude_bands, kmesh_info, select_proj, proj, print_output, kpt_latt, &
+  subroutine kmesh_write(exclude_bands, kmesh_info, lauto_proj, proj, print_output, kpt_latt, &
                          real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, timer)
     !==================================================================!
     !                                                                  !
@@ -774,7 +774,6 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     use w90_types, only: kmesh_info_type, kmesh_input_type, &
       proj_type, print_output_type, timer_list_type
-    use w90_wannier90_types, only: select_projection_type
 
     implicit none
 
@@ -784,12 +783,12 @@ contains
     integer, intent(inout) :: num_proj
     logical, intent(in) :: calc_only_A
     logical, intent(in) :: spinors
+    logical, intent(in) :: lauto_proj
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(print_output_type), intent(in) :: print_output
     type(proj_type), allocatable, intent(in) :: proj(:) ! alloc only because allocation status is tested
-    type(select_projection_type), intent(in) :: select_proj
     type(timer_list_type), intent(inout) :: timer
 
     real(kind=dp) :: recip_lattice(3, 3), volume
@@ -874,7 +873,7 @@ contains
     endif
 
     ! Info for automatic generation of projections
-    if (select_proj%auto_projections) then
+    if (lauto_proj) then
       write (nnkpout, '(a)') 'begin auto_projections'
       write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
