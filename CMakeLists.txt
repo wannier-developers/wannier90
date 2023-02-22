@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.12)
 
 project(wannier90 VERSION 4.0.0 LANGUAGES Fortran) # welcome to Wannier90!
 
