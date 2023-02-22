@@ -75,7 +75,6 @@ set(src ${PROJECT_SOURCE_DIR}/src/comms.F90
 # wannier90.x specific
 set(srcw90 ${PROJECT_SOURCE_DIR}/src/disentangle.F90
     ${PROJECT_SOURCE_DIR}/src/hamiltonian.F90
-    ${PROJECT_SOURCE_DIR}/src/library_interface.F90
     ${PROJECT_SOURCE_DIR}/src/overlap.F90
     ${PROJECT_SOURCE_DIR}/src/plot.F90
     ${PROJECT_SOURCE_DIR}/src/sitesym.F90
@@ -99,13 +98,17 @@ set(srcp90 ${PROJECT_SOURCE_DIR}/src/postw90/berry.F90
     ${PROJECT_SOURCE_DIR}/src/postw90/spin.F90
     ${PROJECT_SOURCE_DIR}/src/postw90/wan_ham.F90)
 
+# library specific
+set(srclib ${PROJECT_SOURCE_DIR}/src/library_interface.F90)
+
 # library objects to avoid recompilation of common objects
 add_library(obj_common OBJECT ${src})
 add_library(obj_wann90 OBJECT ${srcw90} $<TARGET_OBJECTS:obj_common>)
 add_library(obj_post90 OBJECT ${srcp90} $<TARGET_OBJECTS:obj_common>)
+add_library(obj_lib OBJECT ${srclib} $<TARGET_OBJECTS:obj_common> $<TARGET_OBJECTS:obj_wann90> )
 
 # shared library
-add_library(dynamic_lib SHARED $<TARGET_OBJECTS:obj_common> $<TARGET_OBJECTS:obj_wann90>)
+add_library(dynamic_lib SHARED $<TARGET_OBJECTS:obj_lib> $<TARGET_OBJECTS:obj_common> $<TARGET_OBJECTS:obj_wann90>)
 set_property(TARGET dynamic_lib PROPERTY VERSION ${PROJECT_VERSION})
 #set(soserial "2") # version 2 of library, but wannier90 version 4.0.0, to messy
 #set_property(TARGET dynamic_lib PROPERTY SOVERSION ${soserial})
@@ -113,7 +116,7 @@ set_property(TARGET dynamic_lib PROPERTY OUTPUT_NAME wannier90)
 install(TARGETS dynamic_lib LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # static library
-add_library(static_lib STATIC $<TARGET_OBJECTS:obj_common> $<TARGET_OBJECTS:obj_wann90>)
+add_library(static_lib STATIC $<TARGET_OBJECTS:obj_lib> $<TARGET_OBJECTS:obj_common> $<TARGET_OBJECTS:obj_wann90>)
 set_property(TARGET static_lib PROPERTY VERSION ${PROJECT_VERSION})
 set_property(TARGET static_lib PROPERTY OUTPUT_NAME wannier90)
 install(TARGETS static_lib ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
