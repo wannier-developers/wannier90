@@ -26,7 +26,7 @@ program libv2
   complex(kind=dp), allocatable :: morig(:, :, :, :)
   complex(kind=dp), allocatable :: u(:, :, :)
   complex(kind=dp), allocatable :: uopt(:, :, :)
-  !real(kind=dp), allocatable :: eigval(:, :)
+  real(kind=dp), allocatable :: eigval(:, :)
   integer, allocatable :: distk(:)
   integer :: length, len2, i
   integer :: mpisize, rank, ierr, nkl
@@ -202,9 +202,10 @@ program libv2
   need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
 
   if (need_eigvals) then
-    allocate (w90main%eigval(nb, nk))
-    call read_eigvals(w90main, stdout, stderr, ierr, comm)
+    allocate (eigval(nb, nk))
+    call read_eigvals(w90main, eigval, stdout, stderr, ierr, comm)
     if (ierr /= 0) stop
+    call set_eigval(w90main, eigval)
   endif
 
   ! ends setup

@@ -869,6 +869,10 @@ contains
     ! if not already initialised, set disentanglement window to limits of spectrum
     if (helper%dis_manifold%win_min == -huge(0.0_dp)) helper%dis_manifold%win_min = minval(helper%eigval)
     if (helper%dis_manifold%win_max == huge(0.0_dp)) helper%dis_manifold%win_max = maxval(helper%eigval)
+    if (helper%dis_manifold%frozen_states) then
+      if (helper%dis_manifold%froz_min == -huge(0.0_dp)) &
+        helper%dis_manifold%froz_min = helper%dis_manifold%win_min
+    endif
   end subroutine set_eigval
 
   subroutine set_kpoint_distribution(helper, dist, istdout, istderr, ierr, comm)
@@ -1082,7 +1086,7 @@ contains
     endif
   end subroutine prterr
 
-  subroutine read_eigvals(w90main, istdout, istderr, ierr, comm)
+  subroutine read_eigvals(w90main, eigval, istdout, istderr, ierr, comm)
     use w90_comms, only: w90_comm_type
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_readwrite, only: w90_readwrite_read_eigvals
@@ -1092,7 +1096,7 @@ contains
     ! arguments
     !character(len=*), intent(in) :: seedname
     integer, intent(in) :: istdout, istderr
-    !real(kind=dp), intent(inout) :: eigval(:, :)
+    real(kind=dp), intent(inout) :: eigval(:, :)
     type(lib_global_type), intent(inout) :: w90main
     !type(lib_w90_type), intent(in) :: w90dat
     type(w90_comm_type), intent(in) :: comm
@@ -1104,17 +1108,17 @@ contains
 
     ierr = 0
 
-    if (size(w90main%eigval, 1) /= w90main%num_bands) then
+    if (size(eigval, 1) /= w90main%num_bands) then
       call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
       call prterr(error, ierr, istdout, istderr, comm)
       return
-    elseif (size(w90main%eigval, 2) /= w90main%num_kpts) then
+    elseif (size(eigval, 2) /= w90main%num_kpts) then
       call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
       call prterr(error, ierr, istdout, istderr, comm)
       return
     endif
 
-    call w90_readwrite_read_eigvals(eig_found, w90main%eigval, w90main%num_bands, w90main%num_kpts, &
+    call w90_readwrite_read_eigvals(eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
                                     istdout, w90main%seedname, error, comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, comm)

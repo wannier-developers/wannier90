@@ -184,9 +184,9 @@ module w90_types
     !! lower bound of the disentanglement outer window
     real(kind=dp) :: win_max = huge(0.0_dp)
     !! upper bound of the disentanglement outer window
-    real(kind=dp) :: froz_min = -1.0_dp
+    real(kind=dp) :: froz_min = -huge(0.0_dp)
     !! lower bound of the disentanglement inner (frozen) window
-    real(kind=dp) :: froz_max = 0.0_dp
+    real(kind=dp) :: froz_max = huge(0.0_dp)
     !! upper bound of the disentanglement inner (frozen) window
     logical :: frozen_states = .false.
     ! disentangle parameters

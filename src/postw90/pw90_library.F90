@@ -48,12 +48,13 @@ module w90_lib_all
     logical :: eig_found = .false.
   end type lib_postw90_type
 
-  public :: read_all_input, read_checkpoint, calc_dos, boltzwann, gyrotropic, berry, kpath, &
-            kslice
+  public :: read_checkpoint, calc_dos, boltzwann, gyrotropic, berry, kpath, kslice, &
+            read_all_input_has_eigs, read_all_input_and_eigs
+  private :: read_all_input
 
 contains
 
-  subroutine read_all_input(wann90, w90only, pw90, seedname, output, outerr, status, comm)
+  subroutine read_all_input_and_eigs(wann90, w90only, pw90, seedname, output, outerr, status, comm)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
@@ -69,10 +70,59 @@ contains
     character(len=*), intent(in) :: seedname
     integer, intent(out) :: status
     type(w90_comm_type), intent(in) :: comm
+    real(kind=dp) :: eigval(1, 1)
+
+    call read_all_input(wann90, w90only, pw90, eigval, .false., seedname, output, outerr, &
+                        status, comm)
+  end subroutine read_all_input_and_eigs
+
+  subroutine read_all_input_has_eigs(wann90, w90only, pw90, eigval, seedname, output, outerr, &
+                                     status, comm)
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90_comm_type, mpirank
+    use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
+      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_w90_type), intent(inout) :: w90only
+    type(lib_postw90_type), intent(inout) :: pw90
+    real(kind=dp), intent(inout) :: eigval(:, :)
+    integer, intent(in) :: output, outerr
+    character(len=*), intent(in) :: seedname
+    integer, intent(out) :: status
+    type(w90_comm_type), intent(in) :: comm
+
+    call read_all_input(wann90, w90only, pw90, eigval, .true., seedname, output, outerr, &
+                        status, comm)
+  end subroutine read_all_input_has_eigs
+
+  subroutine read_all_input(wann90, w90only, pw90, eigval, eig_ok, seedname, output, outerr, &
+                            status, comm)
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: w90_comm_type, mpirank
+    use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
+      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+
+    implicit none
+    type(lib_global_type), intent(inout) :: wann90
+    type(lib_w90_type), intent(inout) :: w90only
+    type(lib_postw90_type), intent(inout) :: pw90
+    real(kind=dp), intent(in) :: eigval(:, :)
+    integer, intent(in) :: output, outerr
+    character(len=*), intent(in) :: seedname
+    integer, intent(out) :: status
+    logical, intent(in) :: eig_ok
+    type(w90_comm_type), intent(in) :: comm
     !
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
+    real(kind=dp), allocatable :: read_eigs(:, :)
     type(pw90_extra_io_type) :: pw90_params
     logical :: cp_pp
     logical :: disentanglement
@@ -112,10 +162,16 @@ contains
         disentanglement = (wann90%num_bands > wann90%num_wann)
         ! If the user is setting values from outside then the eigvals should be associated,
         ! if they're not then we assume its a 'driver' program that needs to read then
-        if (.not. associated(wann90%eigval)) then
-          allocate (wann90%eigval(wann90%num_bands, wann90%num_kpts))
-          call w90_readwrite_read_eigvals(pw90%eig_found, wann90%eigval, wann90%num_bands, &
+        if (eig_ok) then
+          call set_eigval(wann90, eigval)
+          pw90%eig_found = .true.
+        else
+          allocate (read_eigs(wann90%num_bands, wann90%num_kpts))
+          call w90_readwrite_read_eigvals(pw90%eig_found, read_eigs, wann90%num_bands, &
                                           wann90%num_kpts, output, seedname, error, comm)
+          if (.not. allocated(error)) then
+            call set_eigval(wann90, read_eigs)
+          endif
         endif
         if (allocated(error)) then
           write (outerr, *) 'Error in wannier90 eigenvalues', error%code, error%message

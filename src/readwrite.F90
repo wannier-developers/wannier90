@@ -635,7 +635,7 @@ contains
     if (allocated(error)) return
     if (found) then
       dis_manifold%frozen_states = .true.
-      dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
+      !dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
     call w90_readwrite_get_keyword(settings, 'dis_froz_min', found2, error, comm, &
                                    r_value=dis_manifold%froz_min)
