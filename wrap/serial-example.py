@@ -47,8 +47,8 @@ else:
     status = wan90.w90_helper_types.overlaps(data, w90data, ftn_output, ftn_error, comm)
     # allocate problem here (and seedname, and ierr not out) + set_eigval() "cnt55"
     eigval = numpy.zeros((data.num_bands, data.num_kpts), dtype=numpy.double, order='F')
+    status = wan90.w90_helper_types.read_eigvals(data, eigval, ftn_output, ftn_error, comm)
     wan90.w90_helper_types.set_eigval(data, eigval)
-    status = wan90.w90_helper_types.read_eigvals(data, ftn_output, ftn_error, comm)
     status = wan90.w90_helper_types.disentangle(data, w90data, ftn_output, ftn_error, comm)
 
 status = wan90.w90_helper_types.wannierise(data, w90data, ftn_output, ftn_error, comm)
