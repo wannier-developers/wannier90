@@ -122,7 +122,7 @@ contains
     type(w90_physical_constants_type) :: physics
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    real(kind=dp), allocatable :: read_eigs(:, :)
+    real(kind=dp), pointer :: read_eigs(:, :)
     type(pw90_extra_io_type) :: pw90_params
     logical :: cp_pp
     logical :: disentanglement
