@@ -903,6 +903,17 @@ contains
     helper%dist_kpoints => dist
   end subroutine set_kpoint_distribution
 
+  subroutine set_constant_bohr_to_ang(helper, bohr_to_angstrom)
+    ! used to set the bohr_to_angstrom that the library runs with to match that used by the
+    ! SCF code it is linked into.
+    implicit none
+    type(lib_global_type), intent(inout) :: helper
+    real(kind=dp), intent(in) :: bohr_to_angstrom
+
+    helper%physics%bohr = bohr_to_angstrom
+    helper%physics%bohr_version_str = "-> Using Bohr value from linked main code"
+  end subroutine set_constant_bohr_to_ang
+
   subroutine set_option_text(helper, keyword, text)
     use w90_readwrite, only: init_settings, expand_settings
     implicit none
