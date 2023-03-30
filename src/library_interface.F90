@@ -14,6 +14,7 @@ module w90_helper_types
   use w90_constants
   use w90_types
   use w90_wannier90_types
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -42,6 +43,7 @@ module w90_helper_types
     real(kind=dp), allocatable :: kpt_latt(:, :)
     real(kind=dp) :: real_lattice(3, 3)
 
+    type(w90_comm_type) :: comm
     integer, pointer :: dist_kpoints(:) => null()
     !! dist_kpoints(i) = rank operating on k-point i
 
@@ -122,6 +124,8 @@ module w90_helper_types
   public :: write_chkpt
   public :: write_kmesh
   public :: get_proj
+  public :: set_parallel_comms
+  public :: set_kpoint_distribution
 
   public :: set_option ! interface for setting vars using library
   interface set_option
@@ -162,9 +166,9 @@ contains
     open (newunit=output, file=name, form='formatted', status='unknown')
   end subroutine get_fortran_file
 
-  subroutine write_chkpt(helper, wan90, label, seedname, istdout, istderr, ierr, comm)
+  subroutine write_chkpt(helper, wan90, label, seedname, istdout, istderr, ierr)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
-    use w90_comms, only: comms_reduce, mpirank, w90_comm_type
+    use w90_comms, only: comms_reduce, mpirank
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
 
@@ -177,7 +181,6 @@ contains
     integer, intent(inout) :: ierr
     type(lib_global_type), target, intent(in) :: helper
     type(lib_w90_type), intent(in) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     complex(kind=dp), allocatable :: u(:, :, :), uopt(:, :, :), m(:, :, :, :)
@@ -188,7 +191,7 @@ contains
 
     ierr = 0
 
-    rank = mpirank(comm)
+    rank = mpirank(helper%comm)
 
     nb => helper%num_bands
     nk => helper%num_kpts
@@ -196,14 +199,14 @@ contains
     nw => helper%num_wann
 
     if (.not. associated(helper%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for write_chkpt call', comm)
+      call set_error_fatal(error, 'u_opt not set for write_chkpt call', helper%comm)
     else if (.not. associated(helper%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for write_chkpt call', comm)
+      call set_error_fatal(error, 'u_matrix not set for write_chkpt call', helper%comm)
     else if (.not. associated(wan90%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for write_chkpt call', comm)
+      call set_error_fatal(error, 'm_matrix_local not set for write_chkpt call', helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -234,11 +237,11 @@ contains
       uopt(:, :, ikg) = helper%u_opt(:, :, ikl)
       m(:, :, :, ikg) = wan90%m_matrix_local(:, :, :, ikl)
     enddo
-    call comms_reduce(u(1, 1, 1), nw*nw*nk, 'SUM', error, comm)
-    call comms_reduce(uopt(1, 1, 1), nb*nw*nk, 'SUM', error, comm)
-    call comms_reduce(m(1, 1, 1, 1), nw*nw*nn*nk, 'SUM', error, comm)
+    call comms_reduce(u(1, 1, 1), nw*nw*nk, 'SUM', error, helper%comm)
+    call comms_reduce(uopt(1, 1, 1), nb*nw*nk, 'SUM', error, helper%comm)
+    call comms_reduce(m(1, 1, 1, 1), nw*nw*nn*nk, 'SUM', error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -255,8 +258,8 @@ contains
     deallocate (m)
   end subroutine write_chkpt
 
-  subroutine read_chkpt(helper, wan90, checkpoint, seedname, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type, mpirank
+  subroutine read_chkpt(helper, wan90, checkpoint, seedname, istdout, istderr, ierr)
+    use w90_comms, only: mpirank
     use w90_error_base, only: w90_error_type
     use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_chkpt_dist
 
@@ -269,7 +272,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), target, intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     complex(kind=dp), allocatable :: m(:, :, :, :)
@@ -280,7 +282,7 @@ contains
 
     ierr = 0
 
-    rank = mpirank(comm)
+    rank = mpirank(helper%comm)
 
     nb => helper%num_bands
     nk => helper%num_kpts
@@ -297,13 +299,14 @@ contains
     if (rank == 0) then
       if (allocated(helper%exclude_bands)) nexclude = size(helper%exclude_bands)
 
-      call w90_readwrite_read_chkpt(helper%dis_manifold, helper%exclude_bands, helper%kmesh_info, helper%kpt_latt, &
-                                    helper%wannier_data, m, helper%u_matrix, helper%u_opt, &
-                                    helper%real_lattice, wan90%omega%invariant, helper%mp_grid, nb, &
-                                    nexclude, nk, nw, checkpoint, &
-                                    helper%have_disentangled, ispostw90, seedname, istdout, error, comm)
+      call w90_readwrite_read_chkpt(helper%dis_manifold, helper%exclude_bands, helper%kmesh_info, &
+                                    helper%kpt_latt, helper%wannier_data, m, helper%u_matrix, &
+                                    helper%u_opt, helper%real_lattice, wan90%omega%invariant, &
+                                    helper%mp_grid, nb, nexclude, nk, nw, checkpoint, &
+                                    helper%have_disentangled, ispostw90, seedname, istdout, error, &
+                                    helper%comm)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     endif
@@ -313,20 +316,20 @@ contains
     call w90_readwrite_chkpt_dist(helper%dis_manifold, helper%wannier_data, helper%u_matrix, &
                                   helper%u_opt, m, wan90%m_matrix_local, wan90%omega%invariant, &
                                   nb, nk, nw, nn, checkpoint, helper%have_disentangled, &
-                                  helper%dist_kpoints, error, comm)
+                                  helper%dist_kpoints, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
     deallocate (m)
   end subroutine read_chkpt
 
-  subroutine input_setopt(helper, wan90, seedname, istdout, istderr, ierr, comm)
+  subroutine input_setopt(helper, wan90, seedname, istdout, istderr, ierr)
     use w90_readwrite, only: w90_readwrite_uppercase, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     !use w90_error, only: set_error_input, set_error_fatal
-    use w90_comms, only: w90_comm_type, mpirank, comms_sync_err
+    use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
 
@@ -336,7 +339,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -361,9 +363,9 @@ contains
                                       helper%num_wann, wan90%optimisation, wan90%calc_only_A, &
                                       cp_pp, helper%gamma_only, wan90%lhasproj, &
                                       wan90%lsitesymmetry, wan90%use_bloch_phases, seedname, &
-                                      istdout, error, comm)
+                                      istdout, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     else
       ! For aesthetic purposes, convert some things to uppercase
@@ -374,24 +376,24 @@ contains
 
       call w90_readwrite_read_final_alloc(disentanglement, helper%dis_manifold, &
                                           helper%wannier_data, helper%num_wann, &
-                                          helper%num_bands, helper%num_kpts, error, comm)
+                                          helper%num_bands, helper%num_kpts, error, helper%comm)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     endif
     helper%seedname = seedname ! maybe not keep this separate from "blob"? JJ
 
-    if (mpirank(comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
+    if (mpirank(helper%comm) /= 0) helper%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_setopt
 
-  subroutine input_reader(helper, wan90, seedname, istdout, istderr, ierr, comm)
+  subroutine input_reader(helper, wan90, seedname, istdout, istderr, ierr)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_input, set_error_fatal
-    use w90_comms, only: w90_comm_type, mpirank, comms_sync_err
+    use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
 
@@ -401,7 +403,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -409,13 +410,13 @@ contains
 
     ierr = 0
 
-    call w90_readwrite_in_file(helper%settings, seedname, error, comm)
+    call w90_readwrite_in_file(helper%settings, seedname, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
-    call input_setopt(helper, wan90, seedname, istdout, istderr, ierr, comm)
+    call input_setopt(helper, wan90, seedname, istdout, istderr, ierr)
     if (ierr /= 0) then
       return
     endif
@@ -424,28 +425,27 @@ contains
     ! this machinery used to sit in w90_wannier90_readwrite_dist
     ! but that routine is obsolete if input file is read on all ranks
     ! fixme, this should be moved to wannier90 main routine (definately doesn't belong here)
-    if (helper%print_output%timing_level < 0 .and. mpirank(comm) == abs(helper%print_output%timing_level)) then
-      call set_error_input(error, 'received unlucky_rank', comm)
+    if (helper%print_output%timing_level < 0 .and. mpirank(helper%comm) == abs(helper%print_output%timing_level)) then
+      call set_error_input(error, 'received unlucky_rank', helper%comm)
     else
-      call comms_sync_err(comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+      call comms_sync_err(helper%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
     endif
     if (allocated(error)) then ! applies (is t) for all ranks now
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
     !!!!! end unlucky code
 
-    call w90_readwrite_clean_infile(helper%settings, istdout, seedname, error, comm)
+    call w90_readwrite_clean_infile(helper%settings, istdout, seedname, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
   end subroutine input_reader
 
-  subroutine create_kmesh(helper, istdout, istderr, ierr, comm)
+  subroutine create_kmesh(helper, istdout, istderr, ierr)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -453,7 +453,6 @@ contains
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -461,17 +460,17 @@ contains
     ierr = 0
     call kmesh_get(helper%kmesh_input, helper%kmesh_info, helper%print_output, helper%kpt_latt, &
                    helper%real_lattice, helper%num_kpts, helper%gamma_only, istdout, helper%timer, &
-                   error, comm)
+                   error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
   end subroutine create_kmesh
 
-  subroutine write_kmesh(helper, wan90, seedname, istdout, istderr, ierr, comm)
+  subroutine write_kmesh(helper, wan90, seedname, istdout, istderr, ierr)
     use w90_kmesh, only: kmesh_get, kmesh_write
     use w90_error_base, only: w90_error_type
-    use w90_comms, only: w90_comm_type, mpirank, comms_sync_err
+    use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
 
@@ -481,30 +480,28 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     type(w90_error_type), allocatable :: error
 
     ierr = 0
 
-    if (mpirank(comm) == 0) then
+    if (mpirank(helper%comm) == 0) then
       call kmesh_write(helper%exclude_bands, helper%kmesh_info, wan90%select_proj%auto_projections, &
                        wan90%proj_input, helper%print_output, helper%kpt_latt, &
                        helper%real_lattice, helper%num_kpts, wan90%num_proj, wan90%calc_only_A, &
                        helper%w90_system%spinors, seedname, helper%timer)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     endif
-    call comms_sync_err(comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+    call comms_sync_err(helper%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
   end subroutine write_kmesh
 
-  subroutine overlaps(helper, wan90, istdout, istderr, ierr, comm)
+  subroutine overlaps(helper, wan90, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
-    use w90_comms, only: w90_comm_type
     use w90_overlap, only: overlap_read
 
     implicit none
@@ -514,7 +511,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     logical :: cp_pp = .false.
@@ -523,8 +519,8 @@ contains
     ierr = 0
 
     if (.not. associated(helper%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for overlap call', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'dist_kpoints not set for overlap call', helper%comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -539,7 +535,8 @@ contains
                         wan90%m_orig, helper%num_bands, helper%num_kpts, wan90%num_proj, &
                         helper%num_wann, helper%print_output%timing_level, cp_pp, &
                         helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
-                        helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, comm)
+                        helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, &
+                        helper%comm)
     else
       if ((.not. associated(helper%u_matrix)) .or. (.not. associated(wan90%m_matrix_local))) then
         write (istderr, *) 'Matrices not set for overlap call'
@@ -550,19 +547,20 @@ contains
                         wan90%m_matrix_local, helper%num_bands, helper%num_kpts, wan90%num_proj, &
                         helper%num_wann, helper%print_output%timing_level, cp_pp, &
                         helper%gamma_only, wan90%lsitesymmetry, wan90%use_bloch_phases, &
-                        helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, comm)
+                        helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, &
+                        helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
   end subroutine overlaps
 
-  subroutine disentangle(helper, wan90, istdout, istderr, ierr, comm)
+  subroutine disentangle(helper, wan90, istdout, istderr, ierr)
     use w90_disentangle, only: dis_main, setup_m_loc
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
-    use w90_comms, only: w90_comm_type, mpirank
+    use w90_comms, only: mpirank
 
     implicit none
 
@@ -571,7 +569,6 @@ contains
     type(lib_w90_type), intent(inout) :: wan90
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -580,22 +577,22 @@ contains
     ierr = 0
 
     if (.not. associated(wan90%m_orig)) then  ! m_matrix_orig_local (nband*nwann for disentangle)
-      call set_error_fatal(error, 'm_orig not set for disentangle call', comm)
+      call set_error_fatal(error, 'm_orig not set for disentangle call', helper%comm)
     else if (.not. associated(wan90%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', comm)
+      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', helper%comm)
     else if (.not. associated(wan90%a_matrix)) then
-      call set_error_fatal(error, 'a_matrix not set for disentangle call', comm)
+      call set_error_fatal(error, 'a_matrix not set for disentangle call', helper%comm)
     else if (.not. associated(helper%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', comm)
+      call set_error_fatal(error, 'u_matrix not set for disentangle call', helper%comm)
     else if (.not. associated(helper%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for disentangle call', comm)
+      call set_error_fatal(error, 'u_opt not set for disentangle call', helper%comm)
     else if (.not. associated(helper%dist_kpoints)) then
-      call set_error_fatal(error, 'kpt decomp not set for disentangle call', comm)
+      call set_error_fatal(error, 'kpt decomp not set for disentangle call', helper%comm)
     else if (.not. associated(helper%eigval)) then
-      call set_error_fatal(error, 'eigval not set for disentangle call', comm)
+      call set_error_fatal(error, 'eigval not set for disentangle call', helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -604,26 +601,25 @@ contains
                   wan90%m_orig, helper%u_matrix, helper%u_opt, helper%eigval, &
                   helper%real_lattice, wan90%omega%invariant, helper%num_bands, helper%num_kpts, &
                   helper%num_wann, helper%gamma_only, wan90%lsitesymmetry, istdout, helper%timer, &
-                  helper%dist_kpoints, error, comm)
+                  helper%dist_kpoints, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
     ! copy to m_matrix_local from m_matrix_orig_local (aka m_orig)
     call setup_m_loc(helper%kmesh_info, helper%print_output, wan90%m_matrix_local, wan90%m_orig, &
                      helper%u_matrix, helper%num_bands, helper%num_kpts, helper%num_wann, &
-                     optimisation, helper%timer, helper%dist_kpoints, error, comm)
+                     optimisation, helper%timer, helper%dist_kpoints, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
     helper%have_disentangled = .true.
   end subroutine disentangle
 
-  subroutine projovlp(helper, wan90, istdout, istderr, ierr, comm) !fixme(jj) rename more sensibly
-    use w90_comms, only: w90_comm_type
+  subroutine projovlp(helper, wan90, istdout, istderr, ierr) !fixme(jj) rename more sensibly
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_overlap, only: overlap_project
@@ -635,7 +631,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -643,14 +638,14 @@ contains
     ierr = 0
 
     if (.not. associated(wan90%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', comm)
+      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', helper%comm)
     else if (.not. associated(helper%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', comm)
+      call set_error_fatal(error, 'u_matrix not set for disentangle call', helper%comm)
     else if (.not. associated(helper%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', comm)
+      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -660,16 +655,15 @@ contains
                            helper%kmesh_info%nnlist, helper%kmesh_info%nntot, &
                            helper%num_wann, helper%num_kpts, helper%num_wann, &
                            helper%print_output%timing_level, wan90%lsitesymmetry, &
-                           istdout, helper%timer, helper%dist_kpoints, error, comm)
+                           istdout, helper%timer, helper%dist_kpoints, error, helper%comm)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     endif
   end subroutine projovlp
 
-  subroutine wannierise(helper, wan90, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type
+  subroutine wannierise(helper, wan90, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_wannierise, only: wann_main, wann_main_gamma
@@ -681,7 +675,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -689,16 +682,16 @@ contains
     ierr = 0
 
     if (.not. associated(wan90%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', comm)
+      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', helper%comm)
     else if (.not. associated(helper%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for disentangle call', comm)
+      call set_error_fatal(error, 'u_opt not set for disentangle call', helper%comm)
     else if (.not. associated(helper%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', comm)
+      call set_error_fatal(error, 'u_matrix not set for disentangle call', helper%comm)
     else if (.not. associated(helper%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', comm)
+      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -706,9 +699,9 @@ contains
       call wann_main_gamma(helper%kmesh_info, wan90%wann_control, wan90%omega, &
                            helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
                            helper%u_matrix, helper%real_lattice, helper%num_kpts, helper%num_wann, &
-                           istdout, helper%timer, error, comm)
+                           istdout, helper%timer, error, helper%comm)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     else
@@ -719,16 +712,16 @@ contains
                      wan90%wannier_centres_translated, wan90%irvec, helper%mp_grid, wan90%ndegen, &
                      wan90%nrpts, helper%num_kpts, wan90%num_proj, helper%num_wann, &
                      wan90%optimisation, wan90%rpt_origin, wan90%band_plot%mode, wan90%tran%mode, &
-                     wan90%lsitesymmetry, istdout, helper%timer, helper%dist_kpoints, error, comm)
+                     wan90%lsitesymmetry, istdout, helper%timer, helper%dist_kpoints, error, &
+                     helper%comm)
     endif
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
   end subroutine wannierise
 
-  subroutine plot_files(helper, wan90, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type
+  subroutine plot_files(helper, wan90, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
     use w90_plot, only: plot_main
 
@@ -739,7 +732,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper ! inout due to ham_logical -- JJ: eugh, that's nasty, can we change it?
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -757,15 +749,15 @@ contains
                    helper%physics%bohr, wan90%irvec, helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, &
                    helper%num_bands, helper%num_kpts, helper%num_wann, wan90%rpt_origin, &
                    wan90%tran%mode, helper%have_disentangled, wan90%lsitesymmetry, helper%w90_system, &
-                   helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, comm)
+                   helper%seedname, istdout, helper%timer, helper%dist_kpoints, error, helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
   end subroutine plot_files
 
-  subroutine transport(helper, wan90, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type, mpirank
+  subroutine transport(helper, wan90, istdout, istderr, ierr)
+    use w90_comms, only: mpirank
     use w90_error_base, only: w90_error_type
     use w90_transport, only: tran_main
 
@@ -776,7 +768,6 @@ contains
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper ! because of ham_logical
     type(lib_w90_type), intent(inout) :: wan90
-    type(w90_comm_type), intent(in) :: comm
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -786,7 +777,7 @@ contains
     ! fixme(jj) what are our preconditions?
 
     ! fixme(JJ) is tran_main pllel at all?
-    if (mpirank(comm) == 0) then
+    if (mpirank(helper%comm) == 0) then
       call tran_main(helper%atom_data, helper%dis_manifold, helper%fermi_energy_list, &
                      wan90%ham_logical, helper%kpt_latt, wan90%output_file, wan90%real_space_ham, &
                      wan90%tran, helper%print_output, helper%wannier_data, helper%ws_region, &
@@ -795,9 +786,9 @@ contains
                      helper%mp_grid, wan90%ndegen, wan90%shift_vec, wan90%nrpts, helper%num_bands, &
                      helper%num_kpts, helper%num_wann, wan90%rpt_origin, wan90%band_plot%mode, &
                      helper%have_disentangled, wan90%lsitesymmetry, helper%seedname, istdout, &
-                     helper%timer, error, comm)
+                     helper%timer, error, helper%comm)
       if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, comm)
+        call prterr(error, ierr, istdout, istderr, helper%comm)
         return
       endif
     endif
@@ -875,8 +866,24 @@ contains
     endif
   end subroutine set_eigval
 
-  subroutine set_kpoint_distribution(helper, dist, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type
+  subroutine set_parallel_comms(helper, comm)
+
+    implicit none
+
+    ! arguments
+    type(lib_global_type), intent(inout) :: helper
+    !type(w90_comm_type), intent(in) :: comm
+#ifdef MPI08
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
+
+    helper%comm%comm = comm
+  end subroutine set_parallel_comms
+
+  subroutine set_kpoint_distribution(helper, dist, istdout, istderr, ierr)
+    !use w90_comms, only: w90_comm_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
 
@@ -887,16 +894,16 @@ contains
     integer, intent(inout), target :: dist(:)
     integer, intent(out) :: ierr
     type(lib_global_type), intent(inout) :: helper
-    type(w90_comm_type), intent(in) :: comm
-
+    !type(w90_comm_type), intent(in) :: comm
     ! local
     type(w90_error_type), allocatable :: error
 
     ierr = 0
 
-    if (size(dist) < 1) call set_error_fatal(error, 'Error in k-point distribution, mpisize < 1', comm)
+    if (size(dist) < 1) call set_error_fatal(error, 'Error in k-point distribution, mpisize < 1', &
+                                             helper%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, helper%comm)
       return
     endif
 
@@ -1097,8 +1104,7 @@ contains
     endif
   end subroutine prterr
 
-  subroutine read_eigvals(w90main, eigval, istdout, istderr, ierr, comm)
-    use w90_comms, only: w90_comm_type
+  subroutine read_eigvals(w90main, eigval, istdout, istderr, ierr)
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_readwrite, only: w90_readwrite_read_eigvals
 
@@ -1110,7 +1116,6 @@ contains
     real(kind=dp), intent(inout) :: eigval(:, :)
     type(lib_global_type), intent(inout) :: w90main
     !type(lib_w90_type), intent(in) :: w90dat
-    type(w90_comm_type), intent(in) :: comm
     integer, intent(out) :: ierr
 
     ! local vars
@@ -1120,29 +1125,29 @@ contains
     ierr = 0
 
     if (size(eigval, 1) /= w90main%num_bands) then
-      call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', w90main%comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     elseif (size(eigval, 2) /= w90main%num_kpts) then
-      call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', w90main%comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     endif
 
     call w90_readwrite_read_eigvals(eig_found, eigval, w90main%num_bands, w90main%num_kpts, &
-                                    istdout, w90main%seedname, error, comm)
+                                    istdout, w90main%seedname, error, w90main%comm)
     if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     else if (.not. eig_found) then
-      call set_error_fatal(error, 'failed to read eigenvalues file in read_eigvals call', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'failed to read eigenvalues file in read_eigvals call', w90main%comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     endif
   end subroutine read_eigvals
 
-  subroutine get_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, comm, sqa, z, x, rad, zona)
-    use w90_comms, only: w90_comm_type, mpirank
+  subroutine get_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, sqa, z, x, rad, zona)
+    use w90_comms, only: mpirank
     use w90_error, only: w90_error_type, set_error_fatal
     implicit none
 
@@ -1154,7 +1159,6 @@ contains
 
     type(lib_global_type), intent(in) :: w90main
     type(lib_w90_type), target, intent(in) :: w90dat
-    type(w90_comm_type), intent(in) :: comm
     integer, intent(out) :: ierr
     integer, intent(in) :: istdout, istderr
 
@@ -1170,16 +1174,16 @@ contains
     ierr = 0
 
     if (.not. allocated(w90dat%proj_input)) then
-      call set_error_fatal(error, 'projectors are not setup in Wannier90 library when requested via get_proj()', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'projectors are not setup in Wannier90 library when requested via get_proj()', w90main%comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     endif
 
     n = size(w90dat%proj_input)
 
     if (size(site, 2) < n) then
-      call set_error_fatal(error, 'array argument site in get_proj() call is insufficiently sized', comm)
-      call prterr(error, ierr, istdout, istderr, comm)
+      call set_error_fatal(error, 'array argument site in get_proj() call is insufficiently sized', w90main%comm)
+      call prterr(error, ierr, istdout, istderr, w90main%comm)
       return
     endif
     ! fixme, maybe check the others, too?
@@ -1198,8 +1202,8 @@ contains
     enddo
   end subroutine
 
-  subroutine set_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, comm, sqa, z, x, rad, zona)
-    use w90_comms, only: w90_comm_type, mpirank
+  subroutine set_proj(w90main, w90dat, n, site, l, m, s, istdout, istderr, ierr, sqa, z, x, rad, zona)
+    use w90_comms, only: mpirank
     use w90_error, only: w90_error_type, set_error_fatal
     implicit none
 
@@ -1220,7 +1224,6 @@ contains
 
     type(lib_global_type), intent(in) :: w90main
     type(lib_w90_type), target, intent(inout) :: w90dat
-    type(w90_comm_type), intent(in) :: comm
     integer, intent(out) :: ierr
     integer, intent(in) :: istdout, istderr
 
