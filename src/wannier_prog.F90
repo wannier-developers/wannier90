@@ -73,6 +73,7 @@ program libv2
   ! setup pplel decomp
   call mpi_comm_rank(comm%comm, rank, ierr)
   call mpi_comm_size(comm%comm, mpisize, ierr)
+  call set_parallel_comms(comm%comm)
 #else
   rank = 0
   mpisize = 1
@@ -83,7 +84,7 @@ program libv2
   ! open main error file
   open (newunit=stderr, file=fn//'.werr', status="replace")
 
-  call input_reader(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+  call input_reader(w90main, w90dat, fn, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
   ! write jazzy header info
@@ -93,7 +94,7 @@ program libv2
 
   ! setup k mesh
   if (.not. w90main%kmesh_info%explicit_nnkpts) then
-    call create_kmesh(w90main, stdout, stderr, ierr, comm)
+    call create_kmesh(w90main, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
@@ -105,7 +106,7 @@ program libv2
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   enddo
   ! copy distribution to library
-  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr, comm)
+  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
   nkl = count(distk == rank) ! number of kpoints this rank
@@ -114,7 +115,7 @@ program libv2
   ! special branch for writing nnkp file
   if (pp) then
     ! please only invoke on rank 0
-    call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr, comm)
+    call write_kmesh(w90main, w90dat, fn, stdout, stderr, ierr)
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
@@ -155,7 +156,7 @@ program libv2
     if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else
     cpstatus = ''
-    call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr, comm)
+    call read_chkpt(w90main, w90dat, cpstatus, fn, stdout, stderr, ierr)
     if (ierr /= 0) stop
 
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
@@ -203,7 +204,7 @@ program libv2
 
   if (need_eigvals) then
     allocate (eigval(nb, nk))
-    call read_eigvals(w90main, eigval, stdout, stderr, ierr, comm)
+    call read_eigvals(w90main, eigval, stdout, stderr, ierr)
     if (ierr /= 0) stop
     call set_eigval(w90main, eigval)
   endif
@@ -211,36 +212,36 @@ program libv2
   ! ends setup
 
   if (lovlp) then
-    call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
+    call overlaps(w90main, w90dat, stdout, stderr, ierr)
     if (ierr /= 0) stop
 
     if (.not. ldsnt) then
-      call projovlp(w90main, w90dat, stdout, stderr, ierr, comm)
+      call projovlp(w90main, w90dat, stdout, stderr, ierr)
       if (ierr /= 0) stop
     endif
   endif
 
   if (ldsnt) then
-    call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
+    call disentangle(w90main, w90dat, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr, comm)
+    call write_chkpt(w90main, w90dat, 'postdis', fn, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
   if (lwann) then
-    call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+    call wannierise(w90main, w90dat, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr, comm)
+    call write_chkpt(w90main, w90dat, 'postwann', fn, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
   if (lplot) then
-    call plot_files(w90main, w90dat, stdout, stderr, ierr, comm)
+    call plot_files(w90main, w90dat, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
   if (ltran) then
-    call transport(w90main, w90dat, stdout, stderr, ierr, comm)
+    call transport(w90main, w90dat, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
