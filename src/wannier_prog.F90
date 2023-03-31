@@ -73,7 +73,7 @@ program libv2
   ! setup pplel decomp
   call mpi_comm_rank(comm%comm, rank, ierr)
   call mpi_comm_size(comm%comm, mpisize, ierr)
-  call set_parallel_comms(comm%comm)
+  call set_parallel_comms(w90main, comm%comm)
 #else
   rank = 0
   mpisize = 1

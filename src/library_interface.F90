@@ -867,6 +867,9 @@ contains
   end subroutine set_eigval
 
   subroutine set_parallel_comms(helper, comm)
+#ifdef MPI08
+    use mpi_f08
+#endif
 
     implicit none
 
