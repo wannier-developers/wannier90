@@ -1,71 +1,103 @@
-add_test(NAME partestw90_mpierr COMMAND ./run_tests -c partestw90_mpierr)
-add_test(NAME testpostw90_boltzwann COMMAND ./run_tests -c testpostw90_boltzwann)
-add_test(NAME testpostw90_example04_dos COMMAND ./run_tests -c testpostw90_example04_dos)
-add_test(NAME testpostw90_example04_pdos COMMAND ./run_tests -c testpostw90_example04_pdos)
-add_test(NAME testpostw90_fe_ahc COMMAND ./run_tests -c testpostw90_fe_ahc)
-add_test(NAME testpostw90_fe_ahc_adaptandfermi COMMAND ./run_tests -c testpostw90_fe_ahc_adaptandfermi)
-add_test(NAME testpostw90_fe_dos_spin COMMAND ./run_tests -c testpostw90_fe_dos_spin)
-add_test(NAME testpostw90_fe_kpathcurv COMMAND ./run_tests -c testpostw90_fe_kpathcurv)
-add_test(NAME testpostw90_fe_kpathmorbcurv COMMAND ./run_tests -c testpostw90_fe_kpathmorbcurv)
-add_test(NAME testpostw90_fe_kpathmorbcurv_ws COMMAND ./run_tests -c testpostw90_fe_kpathmorbcurv_ws)
-add_test(NAME testpostw90_fe_kslicecurv COMMAND ./run_tests -c testpostw90_fe_kslicecurv)
-add_test(NAME testpostw90_fe_kslicemorb COMMAND ./run_tests -c testpostw90_fe_kslicemorb)
-add_test(NAME testpostw90_fe_kubo_Axy COMMAND ./run_tests -c testpostw90_fe_kubo_Axy)
-add_test(NAME testpostw90_fe_kubo_Szz COMMAND ./run_tests -c testpostw90_fe_kubo_Szz)
-add_test(NAME testpostw90_fe_kubo_jdos COMMAND ./run_tests -c testpostw90_fe_kubo_jdos)
-add_test(NAME testpostw90_fe_morb COMMAND ./run_tests -c testpostw90_fe_morb)
-add_test(NAME testpostw90_fe_morbandahc COMMAND ./run_tests -c testpostw90_fe_morbandahc)
-add_test(NAME testpostw90_fe_spin COMMAND ./run_tests -c testpostw90_fe_spin)
-add_test(NAME testpostw90_gaas_kdotp COMMAND ./run_tests -c testpostw90_gaas_kdotp)
-add_test(NAME testpostw90_gaas_sc_eta_corr COMMAND ./run_tests -c testpostw90_gaas_sc_eta_corr)
-add_test(NAME testpostw90_gaas_sc_xyz COMMAND ./run_tests -c testpostw90_gaas_sc_xyz)
-add_test(NAME testpostw90_gaas_sc_xyz_scphase2 COMMAND ./run_tests -c testpostw90_gaas_sc_xyz_scphase2)
-add_test(NAME testpostw90_gaas_sc_xyz_scphase2_ws COMMAND ./run_tests -c testpostw90_gaas_sc_xyz_scphase2_ws)
-add_test(NAME testpostw90_gaas_sc_xyz_ws COMMAND ./run_tests -c testpostw90_gaas_sc_xyz_ws)
-add_test(NAME testpostw90_gaas_shc COMMAND ./run_tests -c testpostw90_gaas_shc)
-add_test(NAME testpostw90_pt_kpathbandsshc COMMAND ./run_tests -c testpostw90_pt_kpathbandsshc)
-add_test(NAME testpostw90_pt_kpathshc COMMAND ./run_tests -c testpostw90_pt_kpathshc)
-add_test(NAME testpostw90_pt_ksliceshc COMMAND ./run_tests -c testpostw90_pt_ksliceshc)
-add_test(NAME testpostw90_pt_shc COMMAND ./run_tests -c testpostw90_pt_shc)
-add_test(NAME testpostw90_pt_shc_ryoo COMMAND ./run_tests -c testpostw90_pt_shc_ryoo)
-add_test(NAME testpostw90_si_geninterp COMMAND ./run_tests -c testpostw90_si_geninterp)
-add_test(NAME testpostw90_si_geninterp_wsdistance COMMAND ./run_tests -c testpostw90_si_geninterp_wsdistance)
-add_test(NAME testpostw90_te_gyrotropic COMMAND ./run_tests -c testpostw90_te_gyrotropic)
-add_test(NAME testpostw90_te_gyrotropic_C COMMAND ./run_tests -c testpostw90_te_gyrotropic_C)
-add_test(NAME testpostw90_te_gyrotropic_D0 COMMAND ./run_tests -c testpostw90_te_gyrotropic_D0)
-add_test(NAME testpostw90_te_gyrotropic_Dw COMMAND ./run_tests -c testpostw90_te_gyrotropic_Dw)
-add_test(NAME testpostw90_te_gyrotropic_K COMMAND ./run_tests -c testpostw90_te_gyrotropic_K)
-add_test(NAME testpostw90_te_gyrotropic_NOA COMMAND ./run_tests -c testpostw90_te_gyrotropic_NOA)
-add_test(NAME testpostw90_te_gyrotropic_dos COMMAND ./run_tests -c testpostw90_te_gyrotropic_dos)
-add_test(NAME testw90_basic1 COMMAND ./run_tests -c testw90_basic1)
-add_test(NAME testw90_basic2 COMMAND ./run_tests -c testw90_basic2)
-add_test(NAME testw90_benzene_gamma_val COMMAND ./run_tests -c testw90_benzene_gamma_val)
-add_test(NAME testw90_benzene_gamma_val_hexcell COMMAND ./run_tests -c testw90_benzene_gamma_val_hexcell)
-add_test(NAME testw90_benzene_gamma_valcond COMMAND ./run_tests -c testw90_benzene_gamma_valcond)
-add_test(NAME testw90_bvec COMMAND ./run_tests -c testw90_bvec)
-add_test(NAME testw90_cube_format COMMAND ./run_tests -c testw90_cube_format)
-add_test(NAME testw90_disentanglement_sawfs COMMAND ./run_tests -c testw90_disentanglement_sawfs)
-add_test(NAME testw90_example01 COMMAND ./run_tests -c testw90_example01)
-add_test(NAME testw90_example02 COMMAND ./run_tests -c testw90_example02)
-add_test(NAME testw90_example02_restart COMMAND ./run_tests -c testw90_example02_restart)
-add_test(NAME testw90_example03 COMMAND ./run_tests -c testw90_example03)
-add_test(NAME testw90_example03_labelinfo COMMAND ./run_tests -c testw90_example03_labelinfo)
-add_test(NAME testw90_example03_optmem COMMAND ./run_tests -c testw90_example03_optmem)
-add_test(NAME testw90_example04 COMMAND ./run_tests -c testw90_example04)
-add_test(NAME testw90_example05 COMMAND ./run_tests -c testw90_example05)
-add_test(NAME testw90_example07 COMMAND ./run_tests -c testw90_example07)
-add_test(NAME testw90_example11_1 COMMAND ./run_tests -c testw90_example11_1)
-add_test(NAME testw90_example11_2 COMMAND ./run_tests -c testw90_example11_2)
-add_test(NAME testw90_example21_As_sp COMMAND ./run_tests -c testw90_example21_As_sp)
-add_test(NAME testw90_example26 COMMAND ./run_tests -c testw90_example26)
-add_test(NAME testw90_gaas_disentanglement_issue192 COMMAND ./run_tests -c testw90_gaas_disentanglement_issue192)
-add_test(NAME testw90_lavo3_dissphere COMMAND ./run_tests -c testw90_lavo3_dissphere)
-add_test(NAME testw90_na_chain_gamma COMMAND ./run_tests -c testw90_na_chain_gamma)
-add_test(NAME testw90_nnkpt1 COMMAND ./run_tests -c testw90_nnkpt1)
-add_test(NAME testw90_nnkpt2 COMMAND ./run_tests -c testw90_nnkpt2)
-add_test(NAME testw90_nnkpt3 COMMAND ./run_tests -c testw90_nnkpt3)
-add_test(NAME testw90_nnkpt4 COMMAND ./run_tests -c testw90_nnkpt4)
-add_test(NAME testw90_nnkpt5 COMMAND ./run_tests -c testw90_nnkpt5)
-add_test(NAME testw90_precond_1 COMMAND ./run_tests -c testw90_precond_1)
-add_test(NAME testw90_precond_2 COMMAND ./run_tests -c testw90_precond_2)
-add_test(NAME testw90_write_u_matrices COMMAND ./run_tests -c testw90_write_u_matrices)
+set(test_names "")
+list(APPEND test_names
+		partestw90_mpierr
+		testpostw90_boltzwann
+		testpostw90_example04_dos
+		testpostw90_example04_pdos
+		testpostw90_fe_ahc
+		testpostw90_fe_ahc_adaptandfermi
+		testpostw90_fe_dos_spin
+		testpostw90_fe_kpathcurv
+		testpostw90_fe_kpathmorbcurv
+		testpostw90_fe_kpathmorbcurv_ws
+		testpostw90_fe_kslicecurv
+		testpostw90_fe_kslicemorb
+		testpostw90_fe_kubo_Axy
+		testpostw90_fe_kubo_Szz
+		testpostw90_fe_kubo_jdos
+		testpostw90_fe_morb
+		testpostw90_fe_morbandahc
+		testpostw90_fe_spin
+		testpostw90_gaas_kdotp
+		testpostw90_gaas_sc_eta_corr
+		testpostw90_gaas_sc_xyz
+		testpostw90_gaas_sc_xyz_scphase2
+		testpostw90_gaas_sc_xyz_scphase2_ws
+		testpostw90_gaas_sc_xyz_ws
+		testpostw90_gaas_shc
+		testpostw90_pt_kpathbandsshc
+		testpostw90_pt_kpathshc
+		testpostw90_pt_ksliceshc
+		testpostw90_pt_shc
+		testpostw90_pt_shc_ryoo
+		testpostw90_si_geninterp
+		testpostw90_si_geninterp_wsdistance
+		testpostw90_te_gyrotropic
+		testpostw90_te_gyrotropic_C
+		testpostw90_te_gyrotropic_D0
+		testpostw90_te_gyrotropic_Dw
+		testpostw90_te_gyrotropic_K
+		testpostw90_te_gyrotropic_NOA
+		testpostw90_te_gyrotropic_dos
+		testw90_basic1
+		testw90_basic2
+		testw90_benzene_gamma_val
+		testw90_benzene_gamma_val_hexcell
+		testw90_benzene_gamma_valcond
+		testw90_bvec
+		testw90_cube_format
+		testw90_disentanglement_sawfs
+		testw90_example01
+		testw90_example02
+		testw90_example02_restart
+		testw90_example03
+		testw90_example03_labelinfo
+		testw90_example03_optmem
+		testw90_example04
+		testw90_example05
+		testw90_example07
+		testw90_example11_1
+		testw90_example11_2
+		testw90_example21_As_sp
+		testw90_example26
+		testw90_gaas_disentanglement_issue192
+		testw90_lavo3_dissphere
+		testw90_na_chain_gamma
+		testw90_nnkpt1
+		testw90_nnkpt2
+		testw90_nnkpt3
+		testw90_nnkpt4
+		testw90_nnkpt5
+		testw90_precond_1
+		testw90_precond_2
+		testw90_write_u_matrices
+		)
+set(extra_files "")
+list(APPEND extra_files
+		checkpoints
+		run_tests
+		testcode
+		tests
+		tools
+		)
+
+## Prepare test environment
+foreach (extra IN LISTS extra_files)
+	file(COPY ${extra} DESTINATION test-suite)
+endforeach ()
+target_link_libraries(w90chk2chk.x PRIVATE Wannier90_lib)
+target_sources(w90chk2chk.x PRIVATE
+		${PROJECT_SOURCE_DIR}/src/w90chk2chk.F90
+		)
+target_link_libraries(w90spn2spn.x PRIVATE Wannier90_lib)
+target_sources(w90spn2spn.x PRIVATE
+		${PROJECT_SOURCE_DIR}/src/w90spn2spn.F90
+		)
+
+## Define tests
+foreach (test IN LISTS test_names)
+	add_test(NAME ${test}
+			COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_tests -c ${test}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+			)
+endforeach ()

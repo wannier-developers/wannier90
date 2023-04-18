@@ -1,13 +1,31 @@
-wannier90.x
-postw90.x
-.DS_Store
-make.inc
-w90chk2chk.x
-w90spn2spn.x
-libwannier.a
-libwan2.a
-libwannier.so
-libwannier.dylib
-*~
-*.x.dSYM
+### Build system
+cmake-build-*/
+build/
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+
+### Other
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+### IDE files
 .vscode
+/.idea
+
+### Project files
+/CMakeUserPresets.json
