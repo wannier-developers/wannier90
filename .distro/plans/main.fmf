@@ -1,0 +1,9 @@
+discover:
+  how: fmf
+
+adjust+:
+    # Cannot use initiator: fedora-ci reliably yet
+    when: initiator is not defined or initiator != packit
+    discover+:
+      dist-git-source: true
+      dist-git-extract: wannier90-*/
