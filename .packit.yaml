@@ -1,0 +1,79 @@
+specfile_path: .distro/wannier90.spec
+files_to_sync:
+  - src: .distro/
+    dest: ./
+    filters:
+      - "- plans/main.fmf.dist-git"
+      - "- plans/rpminspect.fmf"
+      - "- plans/rpmlint.fmf"
+  - src: .distro/plans/main.fmf.dist-git
+    dest: plans/main.fmf
+  - .packit.yaml
+
+upstream_package_name: wannier90
+downstream_package_name: wannier90
+update_release: false
+upstream_tag_template: v{version}
+
+jobs:
+  - job: copr_build
+    trigger: pull_request
+    owner: lecris
+    project: wannier90
+    update_release: true
+    release_suffix: "{PACKIT_RPMSPEC_RELEASE}"
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+  - job: tests
+    trigger: pull_request
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+    fmf_path: .distro
+  - job: copr_build
+    trigger: commit
+    branch: develop
+    owner: lecris
+    project: nightly
+    additional_repos:
+      - copr://@scikit-build/release
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+  - job: tests
+    trigger: commit
+    branch: develop
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+    fmf_path: .distro
+  - job: copr_build
+    trigger: release
+    owner: lecris
+    project: release
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+  - job: tests
+    trigger: release
+    targets:
+      - fedora-all-x86_64
+      - fedora-all-aarch64
+    fmf_path: .distro
+  - job: propose_downstream
+    trigger: release
+    dist_git_branches:
+      # TODO: Switch to fedora-development and fedora-latest
+      # There is an issue that the commits diverge on different PRs. In the meantime will create PRs on branched fedora
+      # manually
+      # https://github.com/packit/packit/issues/1724
+      - fedora-rawhide
+  - job: koji_build
+    trigger: commit
+    dist_git_branches:
+      - fedora-all
+  - job: bodhi_update
+    trigger: commit
+    dist_git_branches:
+      - fedora-branched
