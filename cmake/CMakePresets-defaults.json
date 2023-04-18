@@ -1,0 +1,89 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default configuration preset",
+      "binaryDir": "cmake-build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Release"
+        }
+      }
+    },
+    {
+      "name": "mpi",
+      "displayName": "MPI configuration preset",
+      "binaryDir": "cmake-build-mpi",
+      "cacheVariables": {
+        "WANNIER90_WITH_MPI": {
+          "type": "BOOL",
+          "value": true
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "displayName": "Default build preset",
+      "configurePreset": "default"
+    },
+    {
+      "name": "mpi",
+      "displayName": "MPI build preset",
+      "configurePreset": "mpi"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "displayName": "Default test preset",
+      "configurePreset": "default"
+    },
+    {
+      "name": "mpi",
+      "displayName": "MPI test preset",
+      "configurePreset": "mpi"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "default",
+      "displayName": "Default workflow",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default"
+        },
+        {
+          "type": "build",
+          "name": "default"
+        },
+        {
+          "type": "test",
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "name": "mpi",
+      "displayName": "MPI workflow",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "mpi"
+        },
+        {
+          "type": "build",
+          "name": "mpi"
+        },
+        {
+          "type": "test",
+          "name": "mpi"
+        }
+      ]
+    }
+  ]
+}

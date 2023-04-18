@@ -1,0 +1,9 @@
+Name: wannier
+Version: @PROJECT_VERSION@
+Description: @PROJECT_DESCRIPTION@
+URL: @PROJECT_HOMEPAGE_URL@
+
+Prefix: @CMAKE_INSTALL_PREFIX@
+Libdir: ${Prefix}/@CMAKE_INSTALL_LIBDIR@
+Cflags: -I${Prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+Libs: -L${Prefix}/@CMAKE_INSTALL_LIBDIR@ -lwannier90
