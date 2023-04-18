@@ -18,8 +18,8 @@ call it from a serial code, or if compiled in parallel, make sure to run
 it from a single MPI process.
 
 You can find a minimal example of how the library mode can be used
-among the tests, in the file 
-\verb|test-suite/library-mode-test/test_library.F90| 
+among the tests, in the file
+\verb|test-suite/library-mode-test/test_library.F90|
 in the Wannier90 git repository.
 
 %\section{Dependencies}
@@ -73,18 +73,18 @@ first-principles calculation (note: including semi-core states).
   $M_{mn}^{\mathbf{(k,b)}}$ are real.
 \item \verb#logical, intent(in) :: spinors#\\ Set to \texttt{.true.} if
   underlying electronic structure calculation has been performed with
-  spinor wavefunctions. 
+  spinor wavefunctions.
 \item \verb#integer, intent(out) :: nntot#\\ The
-  total number of nearest neighbours for each k-point. 
+  total number of nearest neighbours for each k-point.
 \item \verb#integer, dimension(num_kpts,num_nnmax),#
       \verb# intent(out) :: nnlist#\\
       The list of nearest neighbours for each k-point.
 \item \verb#integer,dimension(3,num_kpts,num_nnmax),#
-      \verb# intent(out) :: nncell#\\ 
+      \verb# intent(out) :: nncell#\\
       The vector, in fractional reciprocal lattice co-ordinates, that
       brings the \verb#nn#$^{\mathrm{th}}$ nearest neighbour of
       k-point \verb#nkp# to its periodic image that
-      is needed for computing the overlap 
+      is needed for computing the overlap
       $M_{mn}^{(\mathbf{k,b})}$.
 \item \verb#integer, intent(out) :: num_bands#\\ The number of bands in the
 first-principles calculation used to form the overlap matricies (note: excluding eg. semi-core states).
@@ -97,17 +97,17 @@ vectors.
 \item \verb#integer, dimension(num_bands_tot), intent(out) :: proj_l#\\
  $l$  specifies the angular part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ of the
 projection function  (see Tables~\ref{tab:angular}, \ref{tab:hybrids}
-and \ref{tab:radial}). 
+and \ref{tab:radial}).
 \item \verb#integer, dimension(num_bands_tot), intent(out) :: proj_m#\\
  $m_\mathrm{r}$ specifies the angular part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, of the
 projection function
  (see Tables~\ref{tab:angular}, \ref{tab:hybrids}
-and \ref{tab:radial}). 
+and \ref{tab:radial}).
 \item \verb#integer, dimension(num_bands_tot), intent(out) :: proj_radial#\\
 $\mathrm{r}$ specifies the radial part $R_{\mathrm{r}}(r)$ of the
-projection function 
+projection function
 (see Tables~\ref{tab:angular}, \ref{tab:hybrids}
-and \ref{tab:radial}). 
+and \ref{tab:radial}).
 \item  \verb#real(kind=dp), dimension(3,num_bands_tot), intent(out) :: proj_z#\\
 Defines the axis from which the polar angle
 $\theta$ in spherical polar coordinates is measured. Default is
@@ -122,9 +122,9 @@ coordinates is measured.
 The value of $\frac{Z}{a}$ associated
 with the radial part of the atomic orbital. Units are in reciprocal
 Angstrom.
-\item \verb#integer, dimension(num_bands_tot), intent(out) :: exclude_bands#\\ 
+\item \verb#integer, dimension(num_bands_tot), intent(out) :: exclude_bands#\\
       Kpoints independant list of bands to exclude from the
-      calculation of the MLWF (e.g., semi-core states). 
+      calculation of the MLWF (e.g., semi-core states).
 \item \verb#integer, dimension(num_bands_tot), optional,intent(out) :: proj_s#\\
 '1' or '-1' to denote projection onto up or down spin states
 \item  \verb#real(kind=dp), dimension(3,num_bands_tot), intent(out) :: proj_s_qaxisx#\\
@@ -143,7 +143,7 @@ This subroutine returns the information required to determine the
 required overlap elements $M_{mn}^{(\mathbf{k,b})}$ and
 projections $A_{mn}^{(\mathbf{k})}$,
 i.e., \verb#M_matrix# and \verb#A_matrix#, described in
-Section~\ref{wannier_run}. 
+Section~\ref{wannier_run}.
 
 For the avoidance of doubt, \verb#real_lattice(1,2)# is the
 $y-$component of the first lattice vector $\mathbf{A}_{1}$, etc.
@@ -171,7 +171,7 @@ may be specified in the \wannier\ input file.
   the {Monkhorst-Pack} grid.
 \item \verb#real(kind=dp), dimension(3,3),#
       \verb# intent(in) :: real_lattice#\\ The lattice vectors in
-      Cartesian co-ordinates in units of Angstrom. 
+      Cartesian co-ordinates in units of Angstrom.
 \item \verb#real(kind=dp), dimension(3,3), intent(in) :: recip_lattice#\\
   The reciprical lattice vectors in Cartesian co-ordinates in units of inverse Angstrom.
 \item \verb#real(kind=dp), dimension(3,num_kpts),#
@@ -181,7 +181,7 @@ may be specified in the \wannier\ input file.
 \item \verb#integer, intent(in) :: num_bands#\\ The total number of
       bands to be processed.
 \item \verb#integer, intent(in) :: num_wann#\\ The number of MLWF to
-  be extracted. 
+  be extracted.
 \item \verb#integer, intent(in) :: nntot#\\ The number of
   nearest neighbours for each k-point.
 \item \verb#integer, intent(in) :: num_atoms#\\ The total number of atoms
@@ -199,7 +199,7 @@ may be specified in the \wannier\ input file.
   $M_{mn}^{\mathbf{(k,b)}}$ are real.
 \item \verb#complex(kind=dp),#
       \verb# dimension(num_bands,num_bands,nntot,num_kpts),#\\
-      \verb#                  intent(in) :: M_matrix#\\ 
+      \verb#                  intent(in) :: M_matrix#\\
       The matrices of overlaps between neighbouring periodic parts of
       the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{(k,b)})}$
       (Ref.~\cite{marzari-prb97}, Eq.~(25)).
@@ -220,18 +220,18 @@ may be specified in the \wannier\ input file.
       \verb#               optional, intent(out) :: U_matrix_opt#\\ The
       unitary matrices that describe the optimal sub-space at each
       k-point (see Ref.~\cite{souza-prb01}, Section~{\sc IIIa}). The array is
-      packed (see below) 
-\item \verb#logical, dimension(num_bands,num_kpts), optional, intent(out) :: lwindow#\\ 
+      packed (see below)
+\item \verb#logical, dimension(num_bands,num_kpts), optional, intent(out) :: lwindow#\\
        The element \verb#lwindow(nband,nkpt)# is {\tt .true.} if the band
 {\tt nband} lies within the outer energy window at kpoint {\tt nkpt}.
-\item \verb#real(kind=dp), dimension(3,num_wann), optional, intent(out) :: wann_centres#\\   
-      The centres of the MLWF in Cartesian co-ordinates in Angstrom. 
-\item \verb#real(kind=dp), dimension(num_wann), optional, intent(out) :: wann_spreads#\\ 
+\item \verb#real(kind=dp), dimension(3,num_wann), optional, intent(out) :: wann_centres#\\
+      The centres of the MLWF in Cartesian co-ordinates in Angstrom.
+\item \verb#real(kind=dp), dimension(num_wann), optional, intent(out) :: wann_spreads#\\
       The spread of each MLWF in \AA$^{2}$.
 \item \verb#real(kind=dp), dimension(3), optional, intent(out) ::#
-      \verb#spread#\\ 
+      \verb#spread#\\
       The values of $\Omega$, $\Omega_{\mathrm{I}}$ and
-      $\tilde{\Omega}$ (Ref.~\cite{marzari-prb97}, Eq.~(13)). 
+      $\tilde{\Omega}$ (Ref.~\cite{marzari-prb97}, Eq.~(13)).
 \end{itemize}
 
 Conditions:
@@ -245,7 +245,7 @@ If $\verb#num_bands# = \verb#num_wann#$ then \verb#U_matrix_opt# is the identity
 \verb#lwindow=.true.#
 
 For the avoidance of doubt, \verb#real_lattice(1,2)# is the
-$y-$component of the first lattice 
+$y-$component of the first lattice
 vector $\mathbf{A}_{1}$, etc.
 
 \begin{eqnarray*}
@@ -259,14 +259,13 @@ where
 \begin{eqnarray*}
 \mathbf{k} &=&\verb#kpt_latt(1:3,nkp)#\\
 \mathbf{k+b}&=& \verb#kpt_latt(1:3,nnlist(nkp,nn))# +
-\verb#nncell(1:3,nkp,nn)# 
+\verb#nncell(1:3,nkp,nn)#
 \end{eqnarray*}
 and
 $\left\{|g_{n}\rangle\right\}$ are a set of initial trial
 orbitals. These are
 typically atom or bond-centred Gaussians that are modulated by
-appropriate spherical harmonics. 
+appropriate spherical harmonics.
 
 Additional parameters should be specified in the \wannier\ input
 file.
-

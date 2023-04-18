@@ -22,13 +22,13 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         pieces = l.split()
 
         if len(pieces) == 0:
             # skip blank line
             continue
-        elif len(pieces) == 2: 
+        elif len(pieces) == 2:
             retdict['path'].append(float(pieces[0]))
             retdict['shc'].append(float(pieces[1]))
         else:

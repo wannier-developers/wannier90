@@ -4,7 +4,7 @@
 F90 = gfortran
 
 # Keep these committed - we test for the time being only the serial version
-#COMMS  = mpi 
+#COMMS  = mpi
 #MPIF90 = mpgfortran #mpif90
 
 # Options for debugging  When we move to 4.9 add -fsanitize=leak
@@ -18,4 +18,3 @@ LDOPTS = -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-point
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-

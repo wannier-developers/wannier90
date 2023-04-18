@@ -1,4 +1,4 @@
-&inputpp 
+&inputpp
    outdir = './'
    prefix = 'batio3'
    seedname = 'BaTiO3'

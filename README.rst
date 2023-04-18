@@ -2,12 +2,12 @@
 Wannier90
 =========
 
-The Maximally-Localised Generalised Wannier Functions Code 
+The Maximally-Localised Generalised Wannier Functions Code
 ----------------------------------------------------------
 
 The homepage of the Wannier90 code is http://www.wannier.org
 
-The code is hosted on 
+The code is hosted on
 GitHub_.
 
 .. _GitHub: https://github.com/wannier-developers/wannier90
@@ -16,9 +16,9 @@ How to contribute
 +++++++++++++++++
 
 Discussions about development, roadmap, and further information of interest
-to developers and contributors can be found on the 
+to developers and contributors can be found on the
 `GitHub wiki`_.
-In particular, if you want to contribute, you should first read the 
+In particular, if you want to contribute, you should first read the
 `guide to contributors`_ section.
 
 .. _GitHub wiki: https://github.com/wannier-developers/wannier90/wiki/ContributorsGuide
@@ -26,42 +26,42 @@ In particular, if you want to contribute, you should first read the
 
 How to cite
 +++++++++++
-Please cite the following paper in any publications arising from the use of 
+Please cite the following paper in any publications arising from the use of
 this code:
 
-  G. Pizzi, V. Vitale, R. Arita, S. Blügel, F. Freimuth, G. Géranton, M. Gibertini, 
-  D. Gresch, C. Johnson, T. Koretsune, J Ibañez-Azpiroz, H. Lee, J.M. Lihm, 
-  D. Marchand, A. Marrazzo, Y. Mokrousov, J.I. Mustafa, Y. Nohara, Y. Nomura, 
-  L. Paulatto, S. Poncé, T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin, 
-  M. Wierzbowska, N. Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates, 
-  Wannier90 as a community code: new features and applications, 
+  G. Pizzi, V. Vitale, R. Arita, S. Blügel, F. Freimuth, G. Géranton, M. Gibertini,
+  D. Gresch, C. Johnson, T. Koretsune, J Ibañez-Azpiroz, H. Lee, J.M. Lihm,
+  D. Marchand, A. Marrazzo, Y. Mokrousov, J.I. Mustafa, Y. Nohara, Y. Nomura,
+  L. Paulatto, S. Poncé, T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin,
+  M. Wierzbowska, N. Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates,
+  Wannier90 as a community code: new features and applications,
   `J. Phys. Cond. Matt. 32, 165902`_ (2020)
 
 .. _J. Phys. Cond. Matt. 32, 165902: https://doi.org/10.1088/1361-648X/ab51ff
 
 If you are using versions 2.x of the code, cite instead:
-                                                         
-  A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza, 
-  D Vanderbilt, N Marzari, *An updated version of wannier90: A tool for 
-  obtaining maximally-localised Wannier functions*, 
-  `Comput. Phys. Commun. 185, 2309 (2014)`_ 
+
+  A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza,
+  D Vanderbilt, N Marzari, *An updated version of wannier90: A tool for
+  obtaining maximally-localised Wannier functions*,
+  `Comput. Phys. Commun. 185, 2309 (2014)`_
 
 .. _Comput. Phys. Commun. 185, 2309 (2014): http://doi.org/10.1016/j.cpc.2014.05.003
 
 For the method please cite:
 
   N. Marzari and D. Vanderbilt,
-  *Maximally Localized Generalised Wannier Functions for Composite Energy Bands*,    
+  *Maximally Localized Generalised Wannier Functions for Composite Energy Bands*,
   `Phys. Rev. B 56 12847 (1997)`_
-                                                  
+
   I. Souza, N. Marzari and D. Vanderbilt,
-  *Maximally Localized Wannier Functions for Entangled Energy Bands*, 
+  *Maximally Localized Wannier Functions for Entangled Energy Bands*,
   `Phys. Rev. B 65 035109 (2001)`_
 
-  Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza, 
+  Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza,
   David Vanderbilt,
-  *Maximally localized Wannier functions: Theory and applications*, 
-  `Rev. Mod. Phys. 84, 1419 (2012)`_ 
+  *Maximally localized Wannier functions: Theory and applications*,
+  `Rev. Mod. Phys. 84, 1419 (2012)`_
 
 .. _Phys. Rev. B 56 12847 (1997): http://dx.doi.org/10.1103/PhysRevB.56.12847
 .. _Phys. Rev. B 65 035109 (2001): http://dx.doi.org/10.1103/PhysRevB.65.035109
@@ -71,8 +71,8 @@ For the method please cite:
 Licence
 +++++++
 
-The Wannier90 code is licensed under GPLv2. 
-You can read the licence text in the LICENSE file in the root directory 
+The Wannier90 code is licensed under GPLv2.
+You can read the licence text in the LICENSE file in the root directory
 of the Wannier90 distribution.
 
 FAQ

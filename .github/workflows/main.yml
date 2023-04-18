@@ -5,7 +5,7 @@ on:
   push:
     branches:
     - develop
-    
+
 jobs:
   pre-commit:
     runs-on: ubuntu-20.04

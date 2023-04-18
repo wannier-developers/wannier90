@@ -1,8 +1,8 @@
                        =========
                        WANNIER90
-                       =========                            
-                                                            
- The Maximally-Localised Generalised Wannier Functions Code 
+                       =========
+
+ The Maximally-Localised Generalised Wannier Functions Code
 
 
 
@@ -17,14 +17,14 @@
  Configuration:
    The system dependent parameters (e.g. compiler name) are contained in a file
    called 'make.inc'. Sample files may be found in the ./config/ directory.
-   Choose one that is nearest to your setup and copy it to make.inc. You may 
-   need to edit it, for example to give the correct library path for your 
+   Choose one that is nearest to your setup and copy it to make.inc. You may
+   need to edit it, for example to give the correct library path for your
    machine.
-   
+
     On a linux system with the intel compiler build Wannier90 by typing
 
          cp ./config/make.inc.ifort ./make.inc
-         make 
+         make
 
    IMPORTANT NOTE: a GNU version of the make utility is needed to compile
      Wannier90.
@@ -65,23 +65,23 @@
  The default DESTDIR is empty, and the default PREFIX is /usr.
 
  In order to compile the postw90.x executable in its parallel version, you have
- to specify 
+ to specify
   COMMS=mpi
  inside the make.inc file (some of the example files already contain this line)
  and moreover define the parallel compiler using the MPIF90 flag, for instance:
   MPIF90=mpiifort
- 
+
  Compiler: If your operating system came with a Fortran compiler or you have a
  commercial compiler (such as ifort) this should give the best performance.
-  
+
  Libraries: For Wannier90 to perform well a well optimised BLAS library should
  be used. Many commercial operating systems and compilers provide well optimised
  BLAS libraries.
   ATLAS is one of the fastest implementations
      http://math-atlas.sourceforge.net/
-  ACML AMD provides optimised BLAS for AMD processors 
-    http://developer.amd.com/acml.aspx  
-  LAPACK can be obtained from the netlib website. It also includes a 
+  ACML AMD provides optimised BLAS for AMD processors
+    http://developer.amd.com/acml.aspx
+  LAPACK can be obtained from the netlib website. It also includes a
   non-optimised BLAS.
      http://www.netlib.org/lapack/
 
@@ -101,12 +101,12 @@ Parallel builds
  is to be used to compile wannier90.
 
  The specific interface to be used must be chosen by setting COMMS in make.inc
- to one of "mpi08", "mpi90" or "mpih" (plain "mpi" is the same as "mpi90"). 
+ to one of "mpi08", "mpi90" or "mpih" (plain "mpi" is the same as "mpi90").
 
  Particularly when wannier90 is to be used in library mode, the MPI interface
  specified by COMMS must be the same as that used in the calling code; otherwise
  using the fortran08 is recommended.
- 
+
 
 Linux x86,x86-64
 ----------------
@@ -114,13 +114,13 @@ Linux x86,x86-64
   1- make.inc.ifort
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
-                (ATLAS BLAS is faster for AMD processors) 
+                (ATLAS BLAS is faster for AMD processors)
 
   2- make.inc.pathscale
      Compiler:  Pathscale (pathf90)
-     Libraries: acml 
+     Libraries: acml
 
-  3- make.inc.nag   
+  3- make.inc.nag
      Compiler:  NAG (f95)
      Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
@@ -171,15 +171,15 @@ IBM PowerPC/power series. Linux or AIX
      Compiler:  xlf95
      Libraries: ESSL + LAPACK
        Note: ESSL does not provide a complete lapack installation.
-         If your machine does not have a full LAPACK install, 
+         If your machine does not have a full LAPACK install,
          download the netlib LAPACK. You might want to use
-         the essl wrappers from 
+         the essl wrappers from
          http://www.netlib.org/lapack/essl/
 
 Windows
 -------
  There are many commercial Fortran compilers for windows.
- We haven't included make.inc files for these as we don't 
+ We haven't included make.inc files for these as we don't
  have access to them. Wannier90 should compile just fine.
 
  I use cygwin (http://www.cygwin.com/) which provides a bash shell.
@@ -187,16 +187,16 @@ Windows
   1- make.inc.g95
      Compiler: g95  (within cygwin)
      Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
-     but I think they have been compiled with g77. I had problems making 
+     but I think they have been compiled with g77. I had problems making
      a working executable. I suggest building your own)
 
  2- make.inc.pgf90
     Compiler: Portland Group (pgf90)
     Libaries: pg supplied lapack and blas
- 
+
 PREPROCESSOR FLAGS
 ------------------
-To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the 
+To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the
 make.inc file.
 For instance, if the flag is called EXIT_FLAG, you can simply append
   -DEXIT_FLAG
@@ -214,7 +214,7 @@ at the end of the make.inc file, you can add the lines
 Flags
 -----
 
-* EXIT_FLAG 
+* EXIT_FLAG
   If defined (and if your compiler supports it), returns an exit status =/= 0
   when the code exits due to an error (while it returns 0 on correct
   completion).

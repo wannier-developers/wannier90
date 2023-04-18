@@ -1,10 +1,10 @@
 numwan = 1
-wanlist = 4 
-seedname = pdn2 
+wanlist = 4
+seedname = pdn2
 camera = a2
-isolevel = 3.0 
-trans=0 
-isopm = 2 
+isolevel = 3.0
+trans=0
+isopm = 2
 wancol = 1.0 0.7 0.1
 radialfactor=0.32
 bondrad=0.1

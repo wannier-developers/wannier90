@@ -25,7 +25,7 @@
   WF centre and spread    3  ( -1.973841,  1.973841,  0.866253 )     1.11672024
   WF centre and spread    4  ( -1.973841,  0.866253,  1.973841 )     1.11672024
   Sum of centres and spreads ( -5.680188,  5.680188,  5.680188 )     4.46688098
-  
+
          Spreads (Ang^2)       Omega I      =     3.956862958
         ================       Omega D      =     0.008030049
                                Omega OD     =     0.501987969
@@ -34,10 +34,10 @@
 \end{verbatim}
 }
 \end{tcolorbox}
-The geometric centre lies along the Ga-As bond, slightly closer to As than Ga. To see this, we introduce a measure $\beta$ defined as 
+The geometric centre lies along the Ga-As bond, slightly closer to As than Ga. To see this, we introduce a measure $\beta$ defined as
 $$\beta \triangleq \frac{d\tinysub{Ga-MLWF}}{d\tinysub{Ga-As}},$$
 
-where $d\tinysub{Ga-MLWF}$ is the distance of the Ga atom placed in the origin and the \MLWF{} centre (along the Ga-As bond), and $d\tinysub{Ga-As}$ is the Ga-As bond length, \cf{} Ref.~\cite{marzarivanderbilt1997}. A value of 0.5 corresponds to the \MLWF{} centre being equidistant from the Ga atom and As atom. 
+where $d\tinysub{Ga-MLWF}$ is the distance of the Ga atom placed in the origin and the \MLWF{} centre (along the Ga-As bond), and $d\tinysub{Ga-As}$ is the Ga-As bond length, \cf{} Ref.~\cite{marzarivanderbilt1997}. A value of 0.5 corresponds to the \MLWF{} centre being equidistant from the Ga atom and As atom.
 In our case, we find: $$\beta = \frac{d\tinysub{Ga-MLWF(2)}}{d\tinysub{Ga-As}} = \frac{0.866253\sqrt{3}}{1.4200\sqrt{3}} \approx 0.61 .$$
 Maximum RAM allocated for the wannierisation was 0.06Mb.
 
@@ -51,12 +51,12 @@ $2\times2\times2$ & 4.467 & 3.957 & 0.502 & 0.008 & 0.610 \\\bottomrule[1pt]
 \end{tabular}\label{tab1.1}
 \end{table}
 
-\item {\it Plot the MLWFs.} 
+\item {\it Plot the MLWFs.}
 
-In \Fig{fig1.2} are shown the four valence \MLWFs{} as plotted by \xcrysden{}, where we used the following parameters in the {\tt Tools} $\mapsto$ {\tt Data Grid} section: 
+In \Fig{fig1.2} are shown the four valence \MLWFs{} as plotted by \xcrysden{}, where we used the following parameters in the {\tt Tools} $\mapsto$ {\tt Data Grid} section:
 
 \begin{tcolorbox}[colback=blue!10,hbox,title=Xcrysden: {\tt Tools} $\mapsto$ {\tt Data Grid}]
-{\tt 
+{\tt
 Degree of triCubic Spline = 3;
 Isovolume = 0.95;
 Render +/- isovalue = yes
@@ -78,7 +78,7 @@ Render +/- isovalue = yes
 \item[Extra :] {\it Plot the 3$rd$ MLWFs in a supercell of size 3. Choose a low value for the isosurface (say 0.5). Can
 you explain what you see?}
 
-With \xcrysden{} we can also plot the $3\tinysup{rd}$ \MLWF{} to check its periodicity. The period in each direction is given by the spacing used to sample the first irreducible Brillouin zone, \ie{} the \bfk-point mesh. We used a $2\times2\times2$ \bfk-point mesh, hence we expect to find a periodic image of our \MLWF{} in a supercell which is 2 times larger than the unit cell along each direction. This is shown in \Fig{fig1.3}, where the $3\tinysup{rd}$ has been plotted using both the \xcrysden{} program and the \vesta{} program.   
+With \xcrysden{} we can also plot the $3\tinysup{rd}$ \MLWF{} to check its periodicity. The period in each direction is given by the spacing used to sample the first irreducible Brillouin zone, \ie{} the \bfk-point mesh. We used a $2\times2\times2$ \bfk-point mesh, hence we expect to find a periodic image of our \MLWF{} in a supercell which is 2 times larger than the unit cell along each direction. This is shown in \Fig{fig1.3}, where the $3\tinysup{rd}$ has been plotted using both the \xcrysden{} program and the \vesta{} program.
 \end{enumerate}
 
 \begin{figure}[h!]

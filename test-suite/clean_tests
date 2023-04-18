@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script runs the tests either asking interactively if you want to run 
+This script runs the tests either asking interactively if you want to run
 only one, or runs them all with the proper command-line options.
 
 NOTE: give a look also to 'testcode.py tidy', that however does not do
@@ -16,7 +16,7 @@ import sys
 import glob
 
 # Folder of this file
-this_folder = os.path.abspath(os.path.split(__file__)[0]) 
+this_folder = os.path.abspath(os.path.split(__file__)[0])
 test_folder = os.path.join(
     this_folder, 'tests')
 jobconfig = os.path.join(
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
 
         print("[{}]".format(testname))
-        
+
         entries_to_delete = []
         for pattern in global_patterns_to_delete:
             # Check all files to delete
@@ -143,6 +143,3 @@ if __name__ == "__main__":
     if not is_git_repo:
         print("*** Warning! I am not able to fully clean the test directories ***")
         print("*** as this is not a git repository                            ***")
-
-
-

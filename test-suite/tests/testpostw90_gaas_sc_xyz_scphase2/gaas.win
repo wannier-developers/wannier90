@@ -15,7 +15,7 @@ sc_phase_conv=2
 
 
 num_bands         =   12
-num_wann          =   8 
+num_wann          =   8
 
 num_iter          = 1000
 num_print_cycles  = 40
@@ -31,7 +31,7 @@ bands_plot : true
 bands_num_points : 151
 bands_plot_format : gnuplot
 
-exclude_bands :  1-5 
+exclude_bands :  1-5
 
 begin unit_cell_cart
 bohr
@@ -64,7 +64,7 @@ Ga 0.00  0.00  0.00
 As 0.25  0.25  0.25
 end atoms_frac
 
-mp_grid : 4 4 4    
+mp_grid : 4 4 4
 
 
 begin kpoints

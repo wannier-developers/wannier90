@@ -201,17 +201,17 @@ program = POSTW90_BOLTZWANN_ELCOND_OK
 inputs_args = ('silicon.win', '')
 output = silicon_elcond.dat
 
-# Test of AHC for bcc iron 
+# Test of AHC for bcc iron
 [testpostw90_fe_ahc/]
 program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
-output = Fe.wpout 
+output = Fe.wpout
 
 # Test of AHC for bcc iron with adaptive mesh refinement and Fermi scan
 [testpostw90_fe_ahc_adaptandfermi/]
 program = POSTW90_FERMISCAN_OK
 inputs_args = ('Fe.win', '')
-output = Fe-ahc-fermiscan.dat 
+output = Fe-ahc-fermiscan.dat
 
 # Test of Orbital Magnetisation for bcc iron
 [testpostw90_fe_morb/]
@@ -290,7 +290,7 @@ output = Fe-dos.dat
 [testpostw90_te_gyrotropic/]
 program = POSTW90_GYRO_OK
 inputs_args = ('Te.win', '')
-output = Te-gyrotropic-C.dat 
+output = Te-gyrotropic-C.dat
 
 # testpostw90_te_gyrotropic
 [testpostw90_te_gyrotropic_C/]
@@ -334,11 +334,11 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('silicon.win', '')
 output = silicon.wout
 
-# Test of DOS for Cu 
+# Test of DOS for Cu
 [testpostw90_example04_dos/]
 program = POSTW90_DOS_OK
 inputs_args = ('copper.win', '')
-output = copper-dos.dat 
+output = copper-dos.dat
 
 # Test of PDOS for Cu
 [testpostw90_example04_pdos/]
@@ -386,7 +386,7 @@ output = gaas.wout
 [testpostw90_pt_shc/]
 program = POSTW90_SHCFERMIDAT_OK
 inputs_args = ('Pt.win', '')
-output = Pt-shc-fermiscan.dat 
+output = Pt-shc-fermiscan.dat
 
 # Test of ac SHC for GaAs
 [testpostw90_gaas_shc/]
@@ -404,7 +404,7 @@ output = Pt-shc-freqscan.dat
 [testpostw90_pt_kpathbandsshc/]
 program = POSTW90_SHCKPATHBANDSDAT_OK
 inputs_args = ('Pt.win', '')
-output = Pt-bands.dat 
+output = Pt-bands.dat
 
 # Test of kpath SHC for fcc platinum
 [testpostw90_pt_kpathshc/]
@@ -442,6 +442,6 @@ wannier_only = testw90_*
 postw90_only = testpostw90_*
 all = wannier_only postw90_only
 # specifying min_procs does not remove par only test from the serial job
-# workaround by specifying different test sets 
+# workaround by specifying different test sets
 par = wannier_only postw90_only partest*
 default =  all

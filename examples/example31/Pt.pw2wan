@@ -1,4 +1,4 @@
-&inputpp 
+&inputpp
    outdir = './tempdir/'
    prefix = 'Pt'
    seedname = 'Pt'

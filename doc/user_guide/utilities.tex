@@ -8,7 +8,7 @@ useful in some occasions. In this chapter, we describe their use.
 \label{sec:kmesh}
 The \wannier\ code requires the definition of a full Monkhorst--Pack
 grid of $k$ points.
-In the input file 
+In the input file
 the size of this mesh is given by means of the \texttt{mp\_grid} variable. E.g.,
 setting
 \begin{verbatim}
@@ -16,9 +16,9 @@ mp_grid = 4 4 4
 \end{verbatim}
 tells \wannier\ that we want to use a $4\times 4\times 4$ $k$ grid.
 
-One has then to specify (inside the \texttt{kpoints} block in the 
+One has then to specify (inside the \texttt{kpoints} block in the
 the \texttt{seedname.win} file) the list of $k$ points of the grid.
-Here, the \texttt{kmesh.pl} Perl script becomes 
+Here, the \texttt{kmesh.pl} Perl script becomes
 useful, being able to generate the required list.
 
 The script can be be found in the
@@ -29,7 +29,7 @@ To use it, simply type:
 \end{verbatim}
 where \verb|nx|, \verb|ny| and \verb|nz| define the size of the
 Monkhorst--Pack grid that we want to use (for instance, in the above example of the
-$4\times 4\times 4$ $k$ grid, 
+$4\times 4\times 4$ $k$ grid,
  \verb|nx|$=$\verb|ny|$=$\verb|nz|$=$4).
 
 This produces on output the list of $k$ points in Quantum
@@ -61,7 +61,7 @@ During the calculation of the Wannier functions, \wannier\ produces a
 \verb|.chk| file that contains some information to restart the
 calculation.
 
-This file is also required by the \postw\ code. 
+This file is also required by the \postw\ code.
 In particular, the \postw\ code requires at least the \verb|.chk| file, the
 \verb|.win| input file, and (almost always) the \verb|.eig|
 file. Specific modules may require further files: see the
@@ -76,7 +76,7 @@ first machine, and
 then converted back on the second machine.
 
 To this aim, use the \verb|w90chk2chk.x| executable. Note that this
-executable is not compiled by default: you can obtain it by executing 
+executable is not compiled by default: you can obtain it by executing
 \begin{verbatim}
 make w90chk2chk
 \end{verbatim}
@@ -129,13 +129,13 @@ calculation) of a periodic system using a calculation on a single unit
 cell with a dense k-point mesh.
 
 The utility requires the real-space Hamiltonian in the MLWF basis,
-\verb|seedname_hr.dat|. 
+\verb|seedname_hr.dat|.
 
 The \verb|seedname_hr.dat| file should be copied to a directory containing
 executable for the utility. Within that directory, run:
 
 \begin{verbatim}
-\$> ./PL_assess.x  nk1 nk2 nk3 num_wann 
+\$> ./PL_assess.x  nk1 nk2 nk3 num_wann
 \end{verbatim}
 
 where:
@@ -147,7 +147,7 @@ where:
 
 e.g.,
 
-\begin{verbatim} 
+\begin{verbatim}
 \$> ./PL_assess.x  1 1 20 16
 \end{verbatim}
 
@@ -159,7 +159,7 @@ When prompted, enter the seedname.
 The programme will return an output file \verb|seedname_pl.dat|, containing four columns
 \begin{enumerate}
         \item Unit cell number, $R$
-        \item Average 'on-site' matrix element between MLWFs in 
+        \item Average 'on-site' matrix element between MLWFs in
              the home unit cell, and the unit cell $R$ lattice
              vectors away
         \item Standard devaition of the quantity in (2)
@@ -171,12 +171,12 @@ The programme will return an output file \verb|seedname_pl.dat|, containing four
 
 This utility provides an implementation of a method for calculating
 van der Waals energies based on the idea of density decomposition via
-MLWFs. 
+MLWFs.
 
 For theoretical details, please see the following publication
 and references therein:
 
-Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi, 
+Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi,
 ``Calculating dispersion interactions using maximally localized
 Wannier functions'', \emph{J. Chem. Phys.} \textbf{135}, 154105 (2011).
 
@@ -199,12 +199,12 @@ for more information.
 The \wannier\ code requires the definition of a full Monkhorst--Pack
 grid of $\mathbf{k}$-vectors, which can be obtained by means of the \verb|kmesh.pl| utility.
 In order to perform a GW calculation with the Yambo code, you need to perform a nscf calculation on a grid in the irreducible BZ. Moreover, you may need a finer grid to converge the GW calculation than what you need to interpolate the band structure. The \verb|k_mapper.py| tools helps in finding the $\mathbf{k}$-vectors indexes of a full grid needed for interpolation into the reduced grid needed for the GW calculation with Yambo. \newline \newline
-Usage:\newline 
+Usage:\newline
 
 \verb|path/k_mapper.py nx ny nz QE_nscf_output|\newline
 
-where \verb|path| is the path of \verb|utility| folder, 
-\verb|QE_nscf_output| is the path of the QE nscf output file given to Yambo. 
+where \verb|path| is the path of \verb|utility| folder,
+\verb|QE_nscf_output| is the path of the QE nscf output file given to Yambo.
 \section{$\tt{gw2wannier90.py}$}
 This utility allows to sort in energy the input data of \verb|wannier90| (e.g. overlap matrices and energy eigenvalues). \verb|gw2wannier90.py| allows to use \verb|wannier90| at the $G_0W_0$ level, where quasi-particle corrections can change the energy ordering of eigenvalues (Some \verb|wannier90| modules require states to be ordered in energy).\newline \newline
 Usage:
@@ -222,7 +222,7 @@ write_formatted
 
 If no options are specified, all the files (\verb|mmn, amn, spn, UNK, uHu, uIu|) are considered.
 
-Binary (unformatted Fortran) files are supported, though not reccommended, 
+Binary (unformatted Fortran) files are supported, though not reccommended,
 since they are compiler-dependent.
 A safer choice is to use (bigger) formatted files, with options:
 
@@ -234,26 +234,26 @@ To generate formatted files with unformatted input, use option:
 \label{sec:w90aaa}
 
 \section{$\tt{w90spn2spn.x}$\label{sec:w90spn2spn}}
-The interface between ab-initio code and \wannier\ 
+The interface between ab-initio code and \wannier\
 (e.g. \texttt{pw2wannier90.x}) can produce a
-\verb|.spn| file that is used by \postw\ to 
+\verb|.spn| file that is used by \postw\ to
 calculate some spin related quantities.
 
-The \verb|.spn| file can be 
-written in a machine-dependent or a machine-independent format 
-depending on the input parameter \texttt{spn\_formatted} 
-(the default is \texttt{false} which means the \verb|.spn| file 
-is machine-dependent) of the 
-\texttt{pw2wannier90.x}. If a \verb|.spn| file has been generated 
-on a machine with machine-dependent format, 
-and then one wants to continue the calculation 
-with \postw\ on a different machine 
-(or with \postw\ compiled with a different compiler), 
-the file has to be converted first in a machine-independent 
-``formatted'' format on the first machine. 
+The \verb|.spn| file can be
+written in a machine-dependent or a machine-independent format
+depending on the input parameter \texttt{spn\_formatted}
+(the default is \texttt{false} which means the \verb|.spn| file
+is machine-dependent) of the
+\texttt{pw2wannier90.x}. If a \verb|.spn| file has been generated
+on a machine with machine-dependent format,
+and then one wants to continue the calculation
+with \postw\ on a different machine
+(or with \postw\ compiled with a different compiler),
+the file has to be converted first in a machine-independent
+``formatted'' format on the first machine.
 
 To this aim, use the \verb|w90spn2spn.x| executable. Note that this
-executable is not compiled by default: you can obtain it by executing 
+executable is not compiled by default: you can obtain it by executing
 \begin{verbatim}
 make w90spn2spn
 \end{verbatim}
@@ -272,7 +272,7 @@ A typical use is the following:
 	w90spn2spn.x -u2f seedname
 	\end{verbatim}
 	(replacing \verb|seedname| with the seedname of your calculation).
-	
+
 	This command reads the \verb|seedname.spn| file and creates a
 	formatted file  \verb|seedname.spn.fmt| that is safe to be transferred
 	between different machines.
@@ -287,19 +287,19 @@ A typical use is the following:
 	\begin{verbatim}
 	w90spn2spn.x -f2u seedname
 	\end{verbatim}
-	
+
 	This command reads the \verb|seedname.spn.fmt| file and creates an
 	unformatted file \verb|seedname.spn| ready to be used by \postw.
-	
+
 	\item Run the \postw\ code.
-	
+
 \end{enumerate}
 
-Note if \texttt{spn\_formatted} is set to \texttt{true} in both 
-\texttt{pw2wannier90.x} and \postw\ input files, then the \verb|.spn| file will 
-be written and read as ``formatted'', so \texttt{w90spn2spn.x} is not needed. 
-However, if an ``unformatted'' \verb|seedname.spn| has been created and 
-you do not want to rerun \texttt{pw2wannier90.x}, then 
-\texttt{w90spn2spn.x} can be useful. 
-Also, once a ``formatted'' \verb|seedname.spn| has been generated, the step 4 can be skipped if 
+Note if \texttt{spn\_formatted} is set to \texttt{true} in both
+\texttt{pw2wannier90.x} and \postw\ input files, then the \verb|.spn| file will
+be written and read as ``formatted'', so \texttt{w90spn2spn.x} is not needed.
+However, if an ``unformatted'' \verb|seedname.spn| has been created and
+you do not want to rerun \texttt{pw2wannier90.x}, then
+\texttt{w90spn2spn.x} can be useful.
+Also, once a ``formatted'' \verb|seedname.spn| has been generated, the step 4 can be skipped if
 \texttt{spn\_formatted} is set to \texttt{true} in \postw\ input file \verb|seedname.win|.

@@ -64,7 +64,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 ### New postw90 features, optimizations and new post-processing codes
 
 - Calculation of nonlinear shift currents according to the formalism given in J. Ibañez-Azpiroz, S. S. Tsirkin and I. Souza, arXiv:1804.04030 (2018) + example 25 [[#181]](https://github.com/wannier-developers/wannier90/pull/181) [[#180]](https://github.com/wannier-developers/wannier90/pull/180)
-  
+
 - New gyrotropic module implementing the method described in S. S. Tsirkin, P. Aguado Puente and I. Souza, arXiv:1710.03204 [[#160]](https://github.com/wannier-developers/wannier90/pull/160)
 
 - G0W0 interface for Wannier90 (tested with QE and Yambo) and documentation [[#102]](https://github.com/wannier-developers/wannier90/pull/102) [[#96]](https://github.com/wannier-developers/wannier90/pull/96)
@@ -115,7 +115,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 - Added pre-commit hooks to fix indentation and trailing whitespace [[#203]](https://github.com/wannier-developers/wannier90/pull/203)
 
 - Add support for dynamic library compilation [[#188]](https://github.com/wannier-developers/wannier90/pull/188)
-  
+
 - Added config file for Mac OS X using HomeBrew [[#118]](https://github.com/wannier-developers/wannier90/pull/118)
 
 - Small fix to have some compilers (NAG) not to complain [[#93]](https://github.com/wannier-developers/wannier90/pull/93)

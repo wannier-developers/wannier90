@@ -4,7 +4,7 @@
     pseudo_dir   = '../../pseudo/'
     outdir       = './'
  /
- &system    
+ &system
     ibrav     =  1
     celldm(1) = 30
     nat       =  12
@@ -16,7 +16,7 @@
  /
  &electrons
     diagonalization = 'david'
-    mixing_beta     =  0.2 
+    mixing_beta     =  0.2
     conv_thr        =  1.0e-8
     diago_full_acc  =  true
  /

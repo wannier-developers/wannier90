@@ -8,7 +8,7 @@ else
 COMMS = serial
 endif
 # Only works in serial for now
-# Otherwise, in the future, put back the logic here from 
+# Otherwise, in the future, put back the logic here from
 # Makefile.2
 #COMMS = serial
 
@@ -30,7 +30,7 @@ TEMP1 =
 TEMP2 = $(F90)
 endif
 
-librarytest: POSTOPTS = $(TEMP1) 
+librarytest: POSTOPTS = $(TEMP1)
 librarytest: COMPILER = $(TEMP2)
 librarytest: test_library_serial.x
 

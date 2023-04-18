@@ -1,4 +1,4 @@
-&inputpp 
+&inputpp
    outdir = './tempdir/'
    prefix = 'GaAs'
    seedname = 'GaAs'

@@ -5,17 +5,17 @@
 |         Imperial College, London          |
 ---------------------------------------------
 
-Function: To assess principal layer size of a 
-          system from a single cell many 
+Function: To assess principal layer size of a
+          system from a single cell many
           k-point calculation.
 
 Requirements: <seedname>_hr.dat
 
-Usage: Copy hr file to directory containing 
-       executable. Within that directory, 
+Usage: Copy hr file to directory containing
+       executable. Within that directory,
        type:
 
-./PL_assess.x <nk1> <nk2> <nk3> <num_wann> 
+./PL_assess.x <nk1> <nk2> <nk3> <num_wann>
 
 where:
 
@@ -34,9 +34,8 @@ When prompted, enter the seedname.
 
 Result: <seedname>_pl.dat written. It contains 3 coloumns
         (1): Unit cell number
-        (2): Average 'on-site' between Wannier functions in 
-             true unit cell, and unit cell (1) away due to 
+        (2): Average 'on-site' between Wannier functions in
+             true unit cell, and unit cell (1) away due to
              k-point 'periodicity'
         (3): Standard devaition of (2)
         (4): Maximum absolute Hamiltonian value in unit cell
-

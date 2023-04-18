@@ -24,10 +24,10 @@
    mixing_beta          =  0.5,
  /
 
-ATOMIC_SPECIES 
-  Sr   87.62   Sr.pbe-nsp-van.UPF 
-  Mn   54.938045   Mn.pbe-sp-van.UPF 
-  O   15.9994   O.pbe-rrkjus.UPF 
+ATOMIC_SPECIES
+  Sr   87.62   Sr.pbe-nsp-van.UPF
+  Mn   54.938045   Mn.pbe-sp-van.UPF
+  O   15.9994   O.pbe-rrkjus.UPF
 
 
 ATOMIC_POSITIONS crystal
@@ -38,5 +38,4 @@ ATOMIC_POSITIONS crystal
   O       0.500000000000000   0.500000000000000   0.000000000000000
 
 K_POINTS automatic
-  6   6   6   0   0   0 
-
+  6   6   6   0   0   0

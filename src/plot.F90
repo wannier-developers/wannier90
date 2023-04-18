@@ -2854,4 +2854,3 @@ contains
   end subroutine plot_write_xyz
 
 end module w90_plot
-

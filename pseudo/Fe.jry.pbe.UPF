@@ -1,7 +1,7 @@
 <PP_INFO>
-Generated using Andrea Dal Corso code (rrkj3)                                   
-Andrea Dal Corso   Generation date: 19Jun2005                                   
-Fe                                                                              
+Generated using Andrea Dal Corso code (rrkj3)
+Andrea Dal Corso   Generation date: 19Jun2005
+Fe
     2        The Pseudo was generated with a Fully-Relativistic Calculation
   2.00000000000E+00    Local Potential cutoff radius
 nl pn  l   occ               Rcut            Rcut US             E pseu
@@ -15,7 +15,7 @@ nl pn  l   occ               Rcut            Rcut US             E pseu
 
 <PP_HEADER>
    0                   Version Number
-  Fe                   Element                                               
+  Fe                   Element
    NC                  Norm - Conserving pseudopotential
     T                  Nonlinear Core Correction
  SLA  PW   PBX  PBC    PBE  Exchange-Correlation functional

@@ -22,7 +22,7 @@
 ATOMIC_SPECIES
 W      183.85 W_pbe_v1.2.uspp.F.UPF
 ATOMIC_POSITIONS angstrom
-W            0.0000000000       0.0000000000       0.0000000000 
+W            0.0000000000       0.0000000000       0.0000000000
 K_POINTS automatic
 14 14 14 0 0 0
 CELL_PARAMETERS angstrom

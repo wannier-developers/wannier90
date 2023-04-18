@@ -25,10 +25,10 @@ The code is able to
 The atomic orbitals of the hydrogen atom provide a good
 basis to use for constructing the projection functions: analytical
 mathematical forms exist in terms of the good quantum numbers $n$, $l$
-and $m$; hybrid orbitals (sp, sp$^{2}$, sp$^{3}$, sp$^{3}$d etc.) 
+and $m$; hybrid orbitals (sp, sp$^{2}$, sp$^{3}$, sp$^{3}$d etc.)
 can be constructed by simple linear combination $|\phi\rangle =
 \sum_{nlm} C_{nlm}|nlm\rangle$ for some coefficients
-$C_{nlm}$. 
+$C_{nlm}$.
 
 The angular functions that use as a basis for the
 projections are not the canonical spherical harmonics $Y_{lm}$ of the
@@ -36,18 +36,18 @@ hydrogenic Schr\"{o}dinger equation but rather the
 \textit{real} (in the sense of non-imaginary) states
 $\Theta_{lm_{\mathrm{r}}}$, obtained by a unitary
 transformation. For example, the canonical
-eigenstates associated with $l=1$, $m=\{-1,0,1\}$ are not 
+eigenstates associated with $l=1$, $m=\{-1,0,1\}$ are not
 the real p$_{x}$, p$_{y}$ and p$_{z}$
 that we want. See Section~\ref{sec:orbital-defs} for our mathematical
 conventions regarding projection orbitals for different $n$, $l$ and
 $m_{\mathrm{r}}$.
- 
+
 We use the following format to specify projections in
 \verb#<seedname>.win#:
 
 \noindent
 \verb#Begin Projections#\\
-\verb#[units]#\\ 
+\verb#[units]#\\
 %%\verb#site:ang_mtm:zaxis:xaxis:radial:zona:box-size#\\
 \verb#site:ang_mtm:zaxis:xaxis:radial:zona#\\
 \verb#    #\vdots\\
@@ -59,7 +59,7 @@ Notes:
 \noindent
 \verb#units#:\\
 Optional. Either \verb#Ang# or \verb#Bohr# to specify whether the
-projection centres 
+projection centres
 specified in this block (if given in Cartesian co-ordinates) are in
 units of Angstrom or Bohr, respectively. The default value is \verb#Ang#.
 
@@ -83,14 +83,14 @@ the first line of the projections block (see above).
  \verb#l=-3 # or \verb# sp3# -- four sp$^{3}$ hybrids\\
  Specific hybrid orbitals may be specified as follows:\\
  \verb#l=-3,mr=1,3 # or \verb# sp3-1,sp3-3# -- two specific sp$^{3}$ hybrids\\
- Multiple states may be specified by separating with 
+ Multiple states may be specified by separating with
  `\verb#;#', e.g.,\\
  \verb#sp3;l=0 # or \verb# l=-3;l=0# -- four sp$^{3}$ hybrids and one s orbital
 
 \noindent
 \verb#zaxis# (optional):\\
 \verb#z=1,1,1#  --  set the $z$-axis to be in the (1,1,1) direction. Default
-is \verb#z=0,0,1# 
+is \verb#z=0,0,1#
 
 \noindent
 \verb#xaxis# (optional):\\
@@ -102,7 +102,7 @@ is \verb#z=0,0,1#
 \verb#r=2#      --  use a radial function with one node (ie second highest
 pseudostate with that angular momentum). Default is
 \verb#r=1#. Radial functions associated with different values of
-\verb#r# should be orthogonal to each other. 
+\verb#r# should be orthogonal to each other.
 
 \noindent
 \verb#zona# (optional):\\
@@ -114,7 +114,7 @@ function). Units always in reciprocal Angstrom. Default is \verb#zona=1.0#.
 %%\verb#box-size# (optional):\\
 %%\verb#b=2.0# -- the linear dimension of the real-space
 %%box (or sphere) for calculating the overlap
-%%$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the 
+%%$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the
 %%localised projection function. Units are always in Angstrom. Default
 %%is \verb#b=1.0#. This feature is not currently used.
 
@@ -146,14 +146,14 @@ functions to project onto `up' states and a set to project onto `down'
 states where, for complete flexibility, it is also possible to set the
 local spin quantisation axis.
 
-Note, however, that this feature requires a recent version of the 
+Note, however, that this feature requires a recent version of the
 interface between the ab-initio code and Wannier90 (i.e., written after
-the release of the 2.0 version, in October 2013) supporting 
-spinor projections. 
+the release of the 2.0 version, in October 2013) supporting
+spinor projections.
 
 \noindent
 \verb#Begin Projections#\\
-\verb#[units]#\\ 
+\verb#[units]#\\
 \verb#site:ang_mtm:zaxis:xaxis:radial:zona(spin)[quant_dir]#\\
 \verb#    #\vdots\\
 \verb#End Projections#
@@ -165,13 +165,13 @@ spinor projections.
 Choose projection onto `up' or `down' states\\
 \verb#u#  --  project onto `up' states.\\
 \verb#d#  --  project onto `down' states.\\
- Default is \verb#u,d# 
+ Default is \verb#u,d#
 
 
 \noindent
 \verb#quant_dir# (optional):\\
 \verb#1,0,0#  --  set the spin quantisation axis to be in the (1,0,0) direction. Default
-is \verb#0,0,1# 
+is \verb#0,0,1#
 
 
 \noindent
@@ -179,16 +179,16 @@ is \verb#0,0,1#
 \begin{itemize}
 \item 18 projections on an iron site
 
-\verb#Fe:sp3d2;dxy;dxx;dyz#              
+\verb#Fe:sp3d2;dxy;dxx;dyz#
 
 \item same as above
 
 \verb#Fe:sp3d2;dxy;dxx;dyz(u,d)#
-        
+
 \item same as above
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]#
-  
+
 \item same as above but quantisation axis is now x
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]#
@@ -196,11 +196,11 @@ is \verb#0,0,1#
 \item  now only 9 projections onto up states
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u)#
-           
+
 \item 9 projections onto up-states and 3 on down
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u) #\\
-\verb#Fe:dxy;dxz;dyz(d)#                 
+\verb#Fe:dxy;dxz;dyz(d)#
 
 \item projections onto alternate spin states for two lattice sites (Cr1, Cr2)
 
@@ -242,13 +242,13 @@ $A_{mn}^{(\mathbf{k})} =
 
 The angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
 associated with particular values of $l$ and $m_{\mathrm{r}}$ are given
-in Tables~\ref{tab:angular} and \ref{tab:hybrids}. 
+in Tables~\ref{tab:angular} and \ref{tab:hybrids}.
 
 The radial functions $R_{\mathrm{r}}(r)$ associated with different values of
 $r$ should be orthogonal. One choice would be to take the set of
 solutions to the radial part of the hydrogenic Schr\"{o}dinger
 equation for $l=0$, i.e., the radial parts of the 1s,
-2s, 3s\ldots\ orbitals, which are given in Table~\ref{tab:radial}. 
+2s, 3s\ldots\ orbitals, which are given in Table~\ref{tab:radial}.
 
 
 \begin{table}
@@ -256,15 +256,15 @@ equation for $l=0$, i.e., the radial parts of the 1s,
 \begin{tabular}{|cccc|}
 \hline\hline
 &&&\\
-$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
+$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\
 &&&\\\hline&&&\\
- 0  &  1  &  \verb#s#   & $\frac{1}{\sqrt{4\pi}}$ \\ 
+ 0  &  1  &  \verb#s#   & $\frac{1}{\sqrt{4\pi}}$ \\
 &&&\\\hline&&&\\
  1  &  1  &  \verb#pz#  & $\sqrt{\frac{3}{4\pi}}\cos\theta$ \\
 &&&\\
  1  &  2  &  \verb#px#  & $\sqrt{\frac{3}{4\pi}}\sin\theta\cos\varphi$ \\
 &&&\\
- 1  &  3  &  \verb#py#  & $\sqrt{\frac{3}{4\pi}}\sin\theta\sin\varphi$ \\ 
+ 1  &  3  &  \verb#py#  & $\sqrt{\frac{3}{4\pi}}\sin\theta\sin\varphi$ \\
 &&&\\\hline&&&\\
  2  &  1  &  \verb#dz2# &
 $\sqrt{\frac{5}{16\pi}}(3\cos^{2}\theta -1)$ \\
@@ -281,25 +281,25 @@ $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\cos2\varphi$ \\
  2  &  5  &  \verb#dxy# &
 $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\sin2\varphi$ \\
 &&&\\\hline&&&\\
- 3  &  1  &  \verb#fz3# & 
+ 3  &  1  &  \verb#fz3# &
 $\frac{\sqrt{7}}{4\sqrt{\pi}}(5\cos^{3}\theta-3\cos\theta)$ \\
 &&&\\
- 3  &  2  &  \verb#fxz2# & 
+ 3  &  2  &  \verb#fxz2# &
 $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\cos\varphi$\\
 &&&\\
- 3  &  3  &  \verb#fyz2# & 
+ 3  &  3  &  \verb#fyz2# &
 $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\sin\varphi$\\
 &&&\\
- 3  &  4  &  \verb#fz(x2-y2)# & 
+ 3  &  4  &  \verb#fz(x2-y2)# &
 $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\cos2\varphi$\\
 &&&\\
- 3  &  5  &  \verb#fxyz# & 
+ 3  &  5  &  \verb#fxyz# &
 $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\sin2\varphi$\\
 &&&\\
- 3  &  6  &  \verb#fx(x2-3y2)# & 
+ 3  &  6  &  \verb#fx(x2-3y2)# &
 $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(\cos^{2}\varphi-3\sin^{2}\varphi)\cos\varphi$\\
 &&&\\
- 3  &  7  &  \verb#fy(3x2-y2)# & 
+ 3  &  7  &  \verb#fy(3x2-y2)# &
 $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(3\cos^{2}\varphi-\sin^{2}\varphi)\sin\varphi$\\
 &&&\\\hline\hline
 \end{tabular}
@@ -317,38 +317,38 @@ $l\ge0$.
 \begin{tabular}{|cccc|}
 \hline\hline
 &&&\\
-$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
+$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\
 &&&\\\hline&&&\\
- $-$1  &  1  &  \verb#sp-1#   &  
+ $-$1  &  1  &  \verb#sp-1#   &
 $\frac{1}{\sqrt{2}}$\verb#s# $+\frac{1}{\sqrt{2}}$\verb#px# \\
 &&&\\
- $-$1  &  2  &  \verb#sp-2#   &  
+ $-$1  &  2  &  \verb#sp-2#   &
 $\frac{1}{\sqrt{2}}$\verb#s# $-\frac{1}{\sqrt{2}}$\verb#px# \\
 &&&\\\hline&&&\\
- $-$2  &  1  &  \verb#sp2-1#   &  
+ $-$2  &  1  &  \verb#sp2-1#   &
 $\frac{1}{\sqrt{3}}$\verb#s# $-\frac{1}{\sqrt{6}}$\verb#px#
-$+\frac{1}{\sqrt{2}}$\verb#py# \\  
+$+\frac{1}{\sqrt{2}}$\verb#py# \\
 &&&\\
- $-$2  &  2  &  \verb#sp2-2#   &  
+ $-$2  &  2  &  \verb#sp2-2#   &
 $\frac{1}{\sqrt{3}}$\verb#s# $-\frac{1}{\sqrt{6}}$\verb#px#
-$-\frac{1}{\sqrt{2}}$\verb#py# \\  
+$-\frac{1}{\sqrt{2}}$\verb#py# \\
 &&&\\
- $-$2  &  3  &  \verb#sp2-3#   &  
+ $-$2  &  3  &  \verb#sp2-3#   &
 $\frac{1}{\sqrt{3}}$\verb#s# $+\frac{2}{\sqrt{6}}$\verb#px# \\
 &&&\\\hline&&&\\
- $-$3  &  1  &  \verb#sp3-1#   &  
-$\frac{1}{2}$(\verb#s# $+$ \verb#px# $+$ \verb#py# $+$ \verb#pz#) \\ 
+ $-$3  &  1  &  \verb#sp3-1#   &
+$\frac{1}{2}$(\verb#s# $+$ \verb#px# $+$ \verb#py# $+$ \verb#pz#) \\
 &&&\\
- $-$3  &  2  &  \verb#sp3-2#   &  
-$\frac{1}{2}$(\verb#s# $+$ \verb#px# $-$ \verb#py# $-$ \verb#pz#) \\ 
+ $-$3  &  2  &  \verb#sp3-2#   &
+$\frac{1}{2}$(\verb#s# $+$ \verb#px# $-$ \verb#py# $-$ \verb#pz#) \\
 &&&\\
- $-$3  &  3  &  \verb#sp3-3#   &  
-$\frac{1}{2}$(\verb#s# $-$ \verb#px# $+$ \verb#py# $-$ \verb#pz#) \\ 
+ $-$3  &  3  &  \verb#sp3-3#   &
+$\frac{1}{2}$(\verb#s# $-$ \verb#px# $+$ \verb#py# $-$ \verb#pz#) \\
 &&&\\
- $-$3  &  4  &  \verb#sp3-4#   &  
-$\frac{1}{2}$(\verb#s# $-$ \verb#px# $-$ \verb#py# $+$ \verb#pz#) \\ 
+ $-$3  &  4  &  \verb#sp3-4#   &
+$\frac{1}{2}$(\verb#s# $-$ \verb#px# $-$ \verb#py# $+$ \verb#pz#) \\
 &&&\\\hline&&&\\
- $-$4  &  1  &  \verb#sp3d-1#  & 
+ $-$4  &  1  &  \verb#sp3d-1#  &
 $\frac{1}{\sqrt{3}}$\verb#s# $-\frac{1}{\sqrt{6}}$\verb#px#
 $+\frac{1}{\sqrt{2}}$\verb#py#\\
 &&&\\
@@ -359,33 +359,33 @@ $-\frac{1}{\sqrt{2}}$\verb#py#\\
  $-$4  &  3  &  \verb#sp3d-3#  &
 $\frac{1}{\sqrt{3}}$\verb#s# $+\frac{2}{\sqrt{6}}$\verb#px#\\
 &&&\\
- $-$4  &  4  &  \verb#sp3d-4#  & 
+ $-$4  &  4  &  \verb#sp3d-4#  &
 $\frac{1}{\sqrt{2}}$\verb#pz# $+\frac{1}{\sqrt{2}}$\verb#dz2#\\
 &&&\\
- $-$4  &  5  &  \verb#sp3d-5#  & 
+ $-$4  &  5  &  \verb#sp3d-5#  &
 $-\frac{1}{\sqrt{2}}$\verb#pz# $+\frac{1}{\sqrt{2}}$\verb#dz2#\\
 &&&\\\hline&&&\\
- $-$5  &  1  &  \verb#sp3d2-1# &   
+ $-$5  &  1  &  \verb#sp3d2-1# &
 $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#px#
 -\frac{1}{\sqrt{12}}\verb#dz2#+\frac{1}{2}\verb#dx2-y2#$ \\
 &&&\\
- $-$5  &  2  &  \verb#sp3d2-2# &   
+ $-$5  &  2  &  \verb#sp3d2-2# &
 $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#px#
 -\frac{1}{\sqrt{12}}\verb#dz2#+\frac{1}{2}\verb#dx2-y2#$ \\
 &&&\\
- $-$5  &  3  &  \verb#sp3d2-3# &   
+ $-$5  &  3  &  \verb#sp3d2-3# &
 $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#py#
 -\frac{1}{\sqrt{12}}\verb#dz2#-\frac{1}{2}\verb#dx2-y2#$ \\
 &&&\\
- $-$5  &  4  &  \verb#sp3d2-4# &   
+ $-$5  &  4  &  \verb#sp3d2-4# &
 $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#py#
 -\frac{1}{\sqrt{12}}\verb#dz2#-\frac{1}{2}\verb#dx2-y2#$ \\
 &&&\\
- $-$5  &  5  &  \verb#sp3d2-5# &   
+ $-$5  &  5  &  \verb#sp3d2-5# &
 $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#pz#
 +\frac{1}{\sqrt{3}}\verb#dz2#$ \\
 &&&\\
- $-$5  &  6  &  \verb#sp3d2-6# &  
+ $-$5  &  6  &  \verb#sp3d2-6# &
 $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#pz#
 +\frac{1}{\sqrt{3}}\verb#dz2#$ \\
 &&&\\\hline\hline
@@ -416,7 +416,7 @@ r/3+2\alpha^{2}r^{2}/27)\exp(-\alpha r/3)$ \\
 &\\\hline\hline
 \end{tabular}
 \caption{ One possible choice for the radial functions
-  $R_{\mathrm{r}}(r)$ associated with different values of 
+  $R_{\mathrm{r}}(r)$ associated with different values of
 $r$: the set of
 solutions to the radial part of the hydrogenic Schr\"{o}dinger
 equation for $l=0$, i.e., the radial parts of the 1s,
@@ -429,9 +429,9 @@ equation for $l=0$, i.e., the radial parts of the 1s,
 \section{Projections via the SCDM-\textbf{k} method in pw2wannier90}
 For many systems, such as aperiodic systems, crystals with defects, or novel materials with complex band structure,  it may be extremely hard to identify \emph{a-priori} a good initial guess for the projection functions used to generate the $A_{mn}^{(\mathbf{k})}$ matrices. In these cases, one can use a different approach, known as the SCDM-\textbf{k} method\cite{LinLin-ArXiv2017}, based on a QR factorization with column pivoting (QRCP) of the density matrix from the self-consistent field calculation, which allows one to avoid the tedious step of specifying a projection block altogether, hence to avoid . This method is robust in generating well localised function with the correct spatial orientations and in general in finding the global minimum of the spread functional $\Omega$. Any electronic-structure code should in principle be able to implement the SCDM-\textbf{k} method within their interface with Wannier90, however at the moment (develop branch on the GitHub repository July 2019) only the Quantum ESPRESSO package has this capability implemented in the \texttt{pw2wannier90} interface program.
 Moreover, the \texttt{pw2wannier90} interface program supports also the SCDM-\textbf{k} method for spin-noncollinear systems.
- The SCDM-\textbf{k} can operate in two modes: 
+ The SCDM-\textbf{k} can operate in two modes:
 \begin{enumerate}
-\item In isolation, i.e., without performing a subsequent Wannier90 optimisation (not recommended). This can be achieved by setting {\tt num\_iter=0} and {\tt dis\_num\_iter=0} in the \verb#<seedname>.win# input file. The rationale behind this is that in general the projection functions obtained with the SCDM-\textbf{k} are already well localised with the correct spatial orientations. However, the spreads of the resulting functions are usually larger than the MLWFs ones.  
+\item In isolation, i.e., without performing a subsequent Wannier90 optimisation (not recommended). This can be achieved by setting {\tt num\_iter=0} and {\tt dis\_num\_iter=0} in the \verb#<seedname>.win# input file. The rationale behind this is that in general the projection functions obtained with the SCDM-\textbf{k} are already well localised with the correct spatial orientations. However, the spreads of the resulting functions are usually larger than the MLWFs ones.
 \item In combination with the Marzari-Vanderbilt (recommended option). In this case, the SCDM-\textbf{k} is only used to generate the initial $A_{mn}^{(\mathbf{k})}$ matrices as a replacement scheme for the projection block.
 \end{enumerate}
 

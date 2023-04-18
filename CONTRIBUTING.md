@@ -27,7 +27,7 @@ FORD annotations should be included in all code that is developed
 
 ## Test suite
 A set of tests is provided with Wannier90, in the folder `test-suite`.
-If you add new functionality, **it is required that you also add the respective tests** to make sure the functionality always behaves as expected. 
+If you add new functionality, **it is required that you also add the respective tests** to make sure the functionality always behaves as expected.
 
 Try to add only tests that run within a few seconds. In most cases, this is possible (tests do not need to be converged, just need to check that the functionality is working as expected).
 
@@ -46,7 +46,7 @@ http://nvie.com/posts/a-successful-git-branching-model/
 The main development branch is called `develop`. Typically, a developer:
 * creates a fork of the project
 * creates a new branch, branching off from develop, for each different feature, and makes modifications on their fork/branch
- 
+
   *Note*: using different branches is important. The reason is the following: if you create a pull request, until when it is accepted, if you continue committing in the same branch, the pull request gets updated. Now, if you work at the same time on two features, and one of the two is not yet acceptable, we cannot accept the pull request (so if they come in the same request, neither of them gets accepted). So please work in different branches, and do different pull requests for different features.
 * When ready to merge changes back, a pull request is made on `develop`.
 
@@ -60,7 +60,7 @@ New official releases of the code will be tagged as `vX.Y` (major releases) or `
 Pull requests made on the `develop` branch will go to the Wannier Developers' Group for consideration. Here is a checklist of necessary conditions that must be met for a pull request to be accepted:
 
 * The coding style has been adopted
-* `CHANGE.log` has been updated 
+* `CHANGE.log` has been updated
 * `/doc/user_guide/` has been updated (e.g., if new input parameters, new functionality, or a new input/output files have been added)
 * At least an example has been added to the tutorial set in `/examples`, and `/examples/README` and `/doc/tutorial/` have been updated accordingly (e.g., if new functionality has been added)
 * A test case has been added to `/test-suite/` (e.g., if new functionality has been added)
@@ -69,4 +69,4 @@ Pull requests made on the `develop` branch will go to the Wannier Developers' Gr
 Whilst we expect to accept the majority of pull requests, it is possible that we will not accept all pull requests. In such cases we will always endeavour to explain to the developer our reasons for not doing so.
 
 ## List of contributors
-Prior to each release of the code, the Wannier Developers’ Group will update the list of contributors in the `README` file in the root of the distribution so that contributions are appropriately attributed and contributors receive due recognition for their contributions. 
+Prior to each release of the code, the Wannier Developers’ Group will update the list of contributors in the `README` file in the root of the distribution so that contributions are appropriately attributed and contributors receive due recognition for their contributions.

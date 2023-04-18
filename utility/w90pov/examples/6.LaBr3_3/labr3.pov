@@ -9,13 +9,13 @@ spacing 0.005
 autostop 0
 jitter 0
 }
-} 
+}
 
 #include "colors.inc"
 #include "math.inc"
 #include "glass.inc"
 plane { <0, 0, 1>, -0.0
-     pigment {color rgb 2.0 } 
+     pigment {color rgb 2.0 }
     //pigment {
      // checker color Red, color Blue
     //}
@@ -37,7 +37,7 @@ photons {
       translate -1
     }
   }
- 
+
 
 // wannier stuff
 #include "mydefs.inc"

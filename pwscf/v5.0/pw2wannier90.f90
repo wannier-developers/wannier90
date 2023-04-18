@@ -11,12 +11,12 @@
 ! Arash Mostofi - gamma point and transport things
 ! Timo Thonhauser, Graham Lopez, Ivo Souza
 !         uHu, uIu terms for orbital magnetisation
-! please send bugs and comments to 
+! please send bugs and comments to
 ! Jonathan Yates and Arash Mostofi
 !
 ! Known limitations:
 !  spinors and orbital magnetisation term are not
-!  yet inplimented for ultrasofts or PAW 
+!  yet inplimented for ultrasofts or PAW
 !
 !
 !
@@ -36,7 +36,7 @@ module wannier
         iun_uIu !ivo
    ! end change Lopez, Thonhauser, Souza
    integer  :: n_wannier !number of WF
-   integer  :: n_proj    !number of projection 
+   integer  :: n_proj    !number of projection
    complex(DP), allocatable :: gf(:,:)  ! guding_function(npwx,n_wannier)
    integer               :: ispinw, ikstart, ikstop, iknum
    character(LEN=15)     :: wan_mode    ! running mode
@@ -60,7 +60,7 @@ module wannier
    ! For implementation of wannier_lib
    integer               :: mp_grid(3)            ! dimensions of MP k-point grid
    real(DP)              :: rlatt(3,3),glatt(3,3) ! real and recip lattices (Cartesian co-ords, units of Angstrom)
-   real(DP), allocatable :: kpt_latt(:,:)  ! k-points in crystal co-ords. kpt_latt(3,iknum)  
+   real(DP), allocatable :: kpt_latt(:,:)  ! k-points in crystal co-ords. kpt_latt(3,iknum)
    real(DP), allocatable :: atcart(:,:)    ! atom centres in Cartesian co-ords and Angstrom units. atcart(3,nat)
    integer               :: num_bands      ! number of bands left after exclusions
    character(len=3), allocatable :: atsym(:) ! atomic symbols. atsym(nat)
@@ -129,7 +129,7 @@ PROGRAM pw2wannier90
      !   set default values for variables in namelist
      !
      CALL get_env( 'ESPRESSO_TMPDIR', outdir )
-     IF ( trim( outdir ) == ' ' ) outdir = './'     
+     IF ( trim( outdir ) == ' ' ) outdir = './'
      prefix = ' '
      seedname = 'wannier'
      spin_component = 'none'
@@ -281,7 +281,7 @@ PROGRAM pw2wannier90
         write(stdout,*) ' -----------------------------------'
         write(stdout,*) ' *** Non-collinear calculation is   '
         write(stdout,*) '     required for spin              '
-        write(stdout,*) '     term  to be computed           ' 
+        write(stdout,*) '     term  to be computed           '
         write(stdout,*) ' -----------------------------------'
      endif
      IF(write_uHu.or.write_uIu) THEN
@@ -674,7 +674,7 @@ SUBROUTINE read_nnkp
   USE wannier
 
   IMPLICIT NONE
-  ! 
+  !
   INTEGER, EXTERNAL :: find_free_unit
   !
   real(DP) :: g_(3), gg_
@@ -799,7 +799,7 @@ SUBROUTINE read_nnkp
         CALL scan_file_to('projections',found)
         if(.not.found) then
            WRITE(stdout,*) ' Could not find projections block in '//trim(seedname)//'.nnkp'
-           STOP           
+           STOP
         endif
      endif
      READ(iun_nnkp,*) n_proj
@@ -822,7 +822,7 @@ SUBROUTINE read_nnkp
        l_w(n_proj), mr_w(n_proj), r_w(n_proj), &
        zaxis(3,n_proj), xaxis(3,n_proj), csph(16,n_proj) )
   if(noncolin.and..not.old_spinor_proj) then
-     ALLOCATE( spin_eig(n_proj),spin_qaxis(3,n_proj) ) 
+     ALLOCATE( spin_eig(n_proj),spin_qaxis(3,n_proj) )
   endif
 
   WRITE(stdout,'("  - Number of wannier functions is ok (",i3,")")') n_wannier
@@ -1032,7 +1032,7 @@ SUBROUTINE compute_mmn
    INTEGER :: ikb, jkb, ih, jh, na, nt, ijkb0, ind, nbt
    INTEGER :: ikevc, ikpevcq, s, counter
    COMPLEX(DP), ALLOCATABLE :: phase(:), aux(:), aux2(:), evcq(:,:), &
-                               becp2(:,:), Mkb(:,:), aux_nc(:,:) 
+                               becp2(:,:), Mkb(:,:), aux_nc(:,:)
    real(DP), ALLOCATABLE    :: rbecp2(:,:)
    COMPLEX(DP), ALLOCATABLE :: qb(:,:,:,:), qgm(:)
    real(DP), ALLOCATABLE    :: qg(:), ylm(:,:), dxk(:,:)
@@ -1322,7 +1322,7 @@ SUBROUTINE compute_mmn
       ENDDO !ib
    ENDDO  !ik
 
-   
+
    IF (ionode .and. wan_mode=='standalone') CLOSE (iun_mmn)
 
    IF (gamma_only) DEALLOCATE(aux2)
@@ -1422,7 +1422,7 @@ SUBROUTINE compute_spin
       IF (ionode) then
          iun_spn = find_free_unit()
          CALL date_and_tim( cdate, ctime )
-         header='Created on '//cdate//' at '//ctime 
+         header='Created on '//cdate//' at '//ctime
          if(spn_formatted) then
             OPEN (unit=iun_spn, file=trim(seedname)//".spn",form='formatted')
             WRITE (iun_spn,*) header !ivo
@@ -1478,8 +1478,8 @@ SUBROUTINE compute_spin
              else ! fast unformatted way
                 write(iun_spn) ((spn(s,m),s=1,3),m=1,((num_bands*(num_bands+1))/2))
              endif
-          endif ! end of root activity 
- 
+          endif ! end of root activity
+
 
       ENDIF
 
@@ -1539,7 +1539,7 @@ SUBROUTINE compute_orb
    INTEGER :: ikb, jkb, ih, jh, na, nt, ijkb0, ind, nbt
    INTEGER :: ikevc, ikpevcq, s, counter
    COMPLEX(DP), ALLOCATABLE :: phase(:), aux(:), aux2(:), evcq(:,:), &
-                               becp2(:,:), Mkb(:,:), aux_nc(:,:) 
+                               becp2(:,:), Mkb(:,:), aux_nc(:,:)
    real(DP), ALLOCATABLE    :: rbecp2(:,:)
    COMPLEX(DP), ALLOCATABLE :: qb(:,:,:,:), qgm(:)
    real(DP), ALLOCATABLE    :: qg(:), ylm(:,:)
@@ -1597,8 +1597,8 @@ SUBROUTINE compute_orb
    !====================================================================
    !
    ! The following code was inserted by Timo Thonhauser, Ivo Souza, and
-   ! Graham Lopez in order to calculate the matrix elements 
-   ! <u_n(q+b1)|H(q)|u_m(q+b2)> necessary for the Wannier interpolation 
+   ! Graham Lopez in order to calculate the matrix elements
+   ! <u_n(q+b1)|H(q)|u_m(q+b2)> necessary for the Wannier interpolation
    ! of the orbital magnetization
    !
    !====================================================================
@@ -1615,40 +1615,40 @@ SUBROUTINE compute_orb
      !
      allocate(igk_b1(npwx),igk_b2(npwx),evc_b1(npol*npwx,nbnd),&
           evc_b2(npol*npwx,nbnd),&
-          evc_aux(npol*npwx,nbnd)) 
+          evc_aux(npol*npwx,nbnd))
      !
      if(write_uHu) then
         allocate(H_evc(npol*npwx,nbnd))
-        write(stdout,*) 
+        write(stdout,*)
         write(stdout,*) ' -----------------'
         write(stdout,*) ' *** Compute  uHu '
         write(stdout,*) ' -----------------'
-        write(stdout,*) 
+        write(stdout,*)
         iun_uhu = find_free_unit()
         if (ionode) then
            CALL date_and_tim( cdate, ctime )
-           header='Created on '//cdate//' at '//ctime 
+           header='Created on '//cdate//' at '//ctime
            if(uHu_formatted) then
               open  (unit=iun_uhu, file=TRIM(seedname)//".uHu",form='FORMATTED')
-              write (iun_uhu,*) header 
+              write (iun_uhu,*) header
               write (iun_uhu,*) nbnd, iknum, nnb
            else
               open  (unit=iun_uhu, file=TRIM(seedname)//".uHu",form='UNFORMATTED')
-              write (iun_uhu) header 
+              write (iun_uhu) header
               write (iun_uhu) nbnd, iknum, nnb
            endif
         endif
      endif
-     if(write_uIu) then 
-        write(stdout,*) 
+     if(write_uIu) then
+        write(stdout,*)
         write(stdout,*) ' -----------------'
         write(stdout,*) ' *** Compute  uIu '
         write(stdout,*) ' -----------------'
-        write(stdout,*) 
+        write(stdout,*)
         iun_uIu = find_free_unit()
         if (ionode) then
            CALL date_and_tim( cdate, ctime )
-           header='Created on '//cdate//' at '//ctime 
+           header='Created on '//cdate//' at '//ctime
            if(uIu_formatted) then
               open  (unit=iun_uIu, file=TRIM(seedname)//".uIu",form='FORMATTED')
               write (iun_uIu,*) header
@@ -1703,20 +1703,20 @@ SUBROUTINE compute_orb
                     psic_nc(nls (igk_b2(1:npw_b2) ),ipol ) = evc_b2(istart:iend, n) !ivo igk_b1, npw_b1 --> igk_b2, npw_b2
                     ! multiply by phase in real space - '1' unless neighbor is in a bordering BZ
                     call invfft ('Wave', psic_nc(:,ipol), dffts)
-                    psic_nc(1:dffts%nnr,ipol) = psic_nc(1:dffts%nnr,ipol) * conjg(phase(1:dffts%nnr)) 
+                    psic_nc(1:dffts%nnr,ipol) = psic_nc(1:dffts%nnr,ipol) * conjg(phase(1:dffts%nnr))
                     call fwfft ('Wave', psic_nc(:,ipol), dffts)
                     ! save the result
                     iend=istart+npw-1
-                    evc_aux(istart:iend,n) = psic_nc(nls (igk(1:npw) ),ipol ) 
+                    evc_aux(istart:iend,n) = psic_nc(nls (igk(1:npw) ),ipol )
                  end do
               else ! this is modeled after the pre-existing code at 1162
                  psic = ( 0.0D0, 0.0D0 )
                  ! Graham, changed npw --> npw_b2 on RHS. Do you agree?!
-                 psic(nls (igk_b2(1:npw_b2) ) ) = evc_b2(1:npw_b2, n) 
+                 psic(nls (igk_b2(1:npw_b2) ) ) = evc_b2(1:npw_b2, n)
                  call invfft ('Wave', psic, dffts)
-                 psic(1:dffts%nnr) = psic(1:dffts%nnr) * conjg(phase(1:dffts%nnr)) 
+                 psic(1:dffts%nnr) = psic(1:dffts%nnr) * conjg(phase(1:dffts%nnr))
                  call fwfft ('Wave', psic, dffts)
-                 evc_aux(1:npw,n) = psic(nls (igk(1:npw) ) ) 
+                 evc_aux(1:npw,n) = psic(nls (igk(1:npw) ) )
               end if
            end do !n
 
@@ -1758,25 +1758,25 @@ SUBROUTINE compute_orb
 !                      psic_nc = ( 0.0D0, 0.0D0 ) !ivo
                        istart=(ipol-1)*npwx+1
                        iend=istart+npw_b1-1  !ivo npw_b2 --> npw_b1
-                       psic_nc(nls (igk_b1(1:npw_b1) ),ipol ) = evc_b1(istart:iend, m) !ivo igk_b2,npw_b2 --> igk_b1,npw_b1 
+                       psic_nc(nls (igk_b1(1:npw_b1) ),ipol ) = evc_b1(istart:iend, m) !ivo igk_b2,npw_b2 --> igk_b1,npw_b1
                        ! multiply by phase in real space - '1' unless neighbor is in a different BZ
                        call invfft ('Wave', psic_nc(:,ipol), dffts)
                        !psic_nc(1:nrxxs,ipol) = psic_nc(1:nrxxs,ipol) * conjg(phase(1:nrxxs))
                        psic_nc(1:dffts%nnr,ipol) = psic_nc(1:dffts%nnr,ipol) * conjg(phase(1:dffts%nnr))
                        call fwfft ('Wave', psic_nc(:,ipol), dffts)
                        ! save the result
-                       aux_nc(1:npw,ipol) = psic_nc(nls (igk(1:npw) ),ipol ) 
+                       aux_nc(1:npw,ipol) = psic_nc(nls (igk(1:npw) ),ipol )
                     end do
                  else ! this is modeled after the pre-existing code at 1162
                     aux  = ( 0.0D0 )
                     psic = ( 0.0D0, 0.0D0 )
                     ! Graham, changed npw --> npw_b1 on RHS. Do you agree?!
-                    psic(nls (igk_b1(1:npw_b1) ) ) = evc_b1(1:npw_b1, m) !ivo igk_b2 --> igk_b1 
+                    psic(nls (igk_b1(1:npw_b1) ) ) = evc_b1(1:npw_b1, m) !ivo igk_b2 --> igk_b1
                     call invfft ('Wave', psic, dffts)
-                    !psic(1:nrxxs) = psic(1:nrxxs) * conjg(phase(1:nrxxs)) 
-                    psic(1:dffts%nnr) = psic(1:dffts%nnr) * conjg(phase(1:dffts%nnr)) 
+                    !psic(1:nrxxs) = psic(1:nrxxs) * conjg(phase(1:nrxxs))
+                    psic(1:dffts%nnr) = psic(1:dffts%nnr) * conjg(phase(1:dffts%nnr))
                     call fwfft ('Wave', psic, dffts)
-                    aux(1:npw) = psic(nls (igk(1:npw) ) ) 
+                    aux(1:npw) = psic(nls (igk(1:npw) ) )
                  end if
 
                 !
@@ -1787,7 +1787,7 @@ SUBROUTINE compute_orb
                       if(noncolin) then
                          mmn = ZDOTC (npw, aux_nc(1,1),1,H_evc(1,n),1) + &
                               ZDOTC (npw, aux_nc(1,2),1,H_evc(1+npwx,n),1)
-                      else 
+                      else
                          mmn = ZDOTC (npw, aux,1,H_evc(1,n),1)
                       end if
                       mmn = mmn * rytoev ! because wannier90 works in eV
@@ -1803,7 +1803,7 @@ SUBROUTINE compute_orb
                       if(noncolin) then
                          mmn = ZDOTC (npw, aux_nc(1,1),1,evc_aux(1,n),1) + &
                               ZDOTC (npw, aux_nc(1,2),1,evc_aux(1+npwx,n),1)
-                      else 
+                      else
                          mmn = ZDOTC (npw, aux,1,evc_aux(1,n),1)
                       end if
                       call mp_sum(mmn, intra_pool_comm)
@@ -1883,7 +1883,7 @@ SUBROUTINE compute_orb
    !
    !
    !
-   
+
    IF (gamma_only) DEALLOCATE(aux2)
    DEALLOCATE (phase)
    IF(noncolin) THEN
@@ -2072,7 +2072,7 @@ SUBROUTINE compute_amn
                   ENDDO
                else
                   ! general routine
-                  ! for quantisation axis (a,b,c) 
+                  ! for quantisation axis (a,b,c)
                   ! 'up'    eigenvector is 1/sqrt(1+c) [c+1,a+ib]
                   ! 'down'  eigenvector is 1/sqrt(1-c) [c-1,a+ib]
                   if(spin_eig(iw)==1) then
@@ -2463,7 +2463,7 @@ SUBROUTINE write_parity
          kgamma=1
       ELSE ! NP: "down" component
          kgamma=2
-      ENDIF   
+      ENDIF
    ENDIF
    !
    ! building the evc array corresponding to the Gamma point
@@ -3302,5 +3302,3 @@ SUBROUTINE radialpart(ng, q, alfa, rvalue, lmax, radial)
   DEALLOCATE (bes, func_r, r, rij, aux )
   RETURN
 END SUBROUTINE radialpart
-
-

@@ -38,7 +38,7 @@ class ClusterQueueJob:
             raise exceptions.RunError(err)
     def create_submit_file(self, pattern, string, template):
         '''Create a submit file.
-        
+
 Replace pattern in the template file with string and place the result in
 self.submit_file.
 
@@ -75,7 +75,7 @@ self.submit_file.
         '''Returns when job has finished running on the cluster.'''
         running = True
         # Don't ask the queueing system for the job itself but rather parse the
-        # output from all current jobs and look  gor the job in question. 
+        # output from all current jobs and look  gor the job in question.
         # This works around the problem where the job_id is not a sufficient
         # handle to query the system directly (e.g. on the CMTH cluster).
         qstat_cmd = [self.queue_cmd]

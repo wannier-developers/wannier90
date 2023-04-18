@@ -23,7 +23,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         if l.strip().startswith('#'):
             # Skip headers
             continue
@@ -34,7 +34,7 @@ def parse(fname):
             # skip blank line
             continue
 
-        if len(pieces) == 4 : 
+        if len(pieces) == 4 :
             retdict['fermienergy'].append(float(pieces[0]))
             retdict['ahc_x'].append(float(pieces[1]))
             retdict['ahc_y'].append(float(pieces[2]))

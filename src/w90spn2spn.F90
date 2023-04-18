@@ -409,4 +409,3 @@ program w90spn2spn
   close (unit=stdout)
 
 end program w90spn2spn
-

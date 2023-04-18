@@ -2,7 +2,7 @@
 \chapter{\wannier\ as a post-processing tool} \label{ch:wann-pp}
 
 This is a description of how to use \wannier\ as a
-post-processing tool. 
+post-processing tool.
 
 The code must be run twice. On the first pass either the logical
 keyword \verb#postproc_setup# must be set to \verb#.true.# in the
@@ -33,7 +33,7 @@ no need for the user to edit this file.
 
 Much of the information in \verb#seedname.nnkp# is arranged in blocks
 delimited by the strings \verb#begin block_name# \ldots
-\verb#end block_name#, as described below. 
+\verb#end block_name#, as described below.
 
 
 \subsection{Keywords}
@@ -41,7 +41,7 @@ The first line of the file is a user comment, e.g., the date and time:
 
 \verb#File written on 12Feb2006 at 15:13:12#
 
-\noindent 
+\noindent
 The only logical keyword is \verb#calc_only_A#, eg,
 
 \verb#calc_only_A  :  F#
@@ -93,9 +93,9 @@ lattice vectors.
 \begin{verbatim}
 begin projections
    n_proj
-   centre   l  mr  r   
+   centre   l  mr  r
      z-axis   x-axis   zona
-   centre   l  mr  r   
+   centre   l  mr  r
      z-axis   x-axis   zona
    .
    .
@@ -116,7 +116,7 @@ vectors.
 angular part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and
 $\mathrm{r}$ specifies the radial part $R_{\mathrm{r}}(r)$ of the
 projection function (see Tables~\ref{tab:angular}, \ref{tab:hybrids}
-and \ref{tab:radial}). 
+and \ref{tab:radial}).
 
 \verb#z-axis#: three real numbers; default is
 \verb#0.0 0.0 1.0#; defines the axis from which the polar angle
@@ -143,10 +143,10 @@ Angstrom.
 \begin{verbatim}
 begin spinor_projections
    n_proj
-   centre   l  mr  r   
+   centre   l  mr  r
     z-axis   x-axis   zona
      spin spn_quant
-   centre   l  mr  r   
+   centre   l  mr  r
     z-axis   x-axis   zona
      spin spn_quant
    .
@@ -181,7 +181,7 @@ First line: \verb#nntot#, the number of nearest neighbours belonging
 to each k-point of the Monkhorst-Pack mesh
 
 Subsequent lines: \verb#nntot#$\times$\verb#num_kpts#
-lines, ie, \verb#nntot# lines of data for each k-point of the mesh. 
+lines, ie, \verb#nntot# lines of data for each k-point of the mesh.
 
 Each line of consists of 5 integers. The first is the
 k-point number \verb#nkp#. The second to the fifth specify it's nearest
@@ -194,15 +194,15 @@ the first BZ) to the actual $\mathbf{k+b}$ that we need.
 
 \subsection{{\tt exclude\_bands} block}
 \begin{verbatim}
-begin exclude_bands 
-  8 
-  1 
-  2 
+begin exclude_bands
+  8
+  1
+  2
   .
   .
 end exclude_bands
 \end{verbatim}
-To exclude bands (independent of k-point) from the calculation of the 
+To exclude bands (independent of k-point) from the calculation of the
 overlap and projection matrices, for example to ignore shallow-core states.
 The first line is the number of states to exclude, the following lines give
 the states for be excluded.
@@ -242,19 +242,19 @@ end projections
 \end{verbatim}
 
 and \verb#seedname.nnkp#, generated on the first pass of
-\wannier\ (with \verb#postproc_setup=T#), will contain: 
+\wannier\ (with \verb#postproc_setup=T#), will contain:
 
 \begin{verbatim}
 begin projections
    4
    0.50000    0.50000    0.50000    -1  1  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
    0.50000    0.50000    0.50000    -1  2  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
    0.50000    0.50000    0.50000    -1  3  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
    0.50000    0.50000    0.50000    -1  4  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
 end projections
 \end{verbatim}
 
@@ -266,12 +266,12 @@ and the diffusivity and cut-off radius for the projection orbital.
 
 \textsc{pwscf}, or any other \textit{ab initio} electronic structure
 code, then reads \verb#seedname.nnkp# file, calculates the projections
-and writes them to \verb#seedname.amn#. 
+and writes them to \verb#seedname.amn#.
 
 
-\section{{\tt seedname.mmn} file} 
+\section{{\tt seedname.mmn} file}
 
-INPUT. 
+INPUT.
 
 The file \verb#seedname.mmn# contains the overlaps
 $M_{mn}^{(\mathbf{k,b})}$.
@@ -282,13 +282,13 @@ Second line: 3 integers: \verb#num_bands#, \verb#num_kpts#,
 \verb#nntot#
 
 Then: $\verb#num_kpts#\times\verb#nntot#$ blocks of data:
- 
+
 First line of each block: 5 integers. The first specifies the
 $\mathbf{k}$ (i.e., gives the ordinal corresponding to its position in
 the list  of k-points in \verb#seedname.win#). The 2nd to 5th integers
 specify $\mathbf{k+b}$. The  2nd integer, in particular, points to the
 k-point on the list that is a  periodic image of $\mathbf{k+b}$, and
-in particular is the image that is actually mentioned in the list. The 
+in particular is the image that is actually mentioned in the list. The
 last three integers specify the $\mathbf{G}$ vector, in  reciprocal
 lattice units, that brings the k-point specified by the second
 integer, and that thus lives inside the first BZ zone, to the actual
@@ -314,10 +314,10 @@ First line: a user comment, e.g., the date and time
 
 Second line: 3 integers: \verb#num_bands#, \verb#num_kpts#, \verb#num_wann#
 
-                                     
+
 Subsequently
-$\verb#num_bands#\times\verb#num_wann#\times\verb#num_kpts#$ 
-lines: 3 integers and 2 real numbers on each line. The first 
+$\verb#num_bands#\times\verb#num_wann#\times\verb#num_kpts#$
+lines: 3 integers and 2 real numbers on each line. The first
 two integers are the band index $m$ and the projection index $n$, respectively. The third integer specifies
 the $\mathbf{k}$ by giving the ordinal corresponding to its position
 in the list of $k$-points in \verb#seedname.win#. The real numbers
@@ -340,99 +340,99 @@ $A_{mn}^{(\mathbf{k})}$.
 %\end{itemize}
 
 %In terms of the example of Section~\ref{sec:proj_example}, let us
-%suppose that this flag is set to 0. Then 
+%suppose that this flag is set to 0. Then
 %\verb#seedname.amn# contains the overlaps of a wavefunction
 %$\psi_{m\mathbf{k}}$ with an atomic s and three p-orbitals
 %$\{\verb#s#,\verb#px#,\verb#py#,\verb#pz#\}$.
-%\verb#wannier90# will read 
+%\verb#wannier90# will read
 %\verb#seedname.amn# and calculate the projection
 %$A_{mn}^{(\mathbf{k})}$ of a $\psi_{m\mathbf{k}}$ onto
 %four sp$^3$ orbitals  $\{\phi_{n}\}$ (specified in \verb#seedname.win# by
 %\verb#l=-1#, or the string \verb#sp3#)
-%by linear mixing as follows:  
+%by linear mixing as follows:
 
 %\begin{eqnarray}
 %A_{mn}^{(\mathbf{k})} & = & \langle\psi_{m\mathbf{k}}|\phi_{n}\rangle
 %                      \nonumber \\
 %                      & = &
 %                      \langle\psi_{m\mathbf{k}}|\verb#sp3-n#\rangle
-%                      \nonumber \\ 
+%                      \nonumber \\
 %                      & = &
 % \frac{1}{2}\left[\langle\psi_{m\mathbf{k}}|\verb#s#\rangle \pm
 % \langle\psi_{m\mathbf{k}}|\verb#px#\rangle \pm
 % \langle\psi_{m\mathbf{k}}|\verb#py#\rangle \pm
 % \langle\psi_{m\mathbf{k}}|\verb#pz#\rangle\right], \label{eq:Amn}
-%\end{eqnarray} 
+%\end{eqnarray}
 %
 %where the matrix elements on the right-hand side are taken from
 %\verb#seedname.amn#. Projections corresponding to four sp$^{3}$
 %orbitals \verb#sp3-1#, \verb#sp3-2#, \verb#sp3-3#, and \verb#sp3-4# --
 %see Section~\ref{sec:orbital-defs} -- are
-%obtained with appropriate choice of the signs in Eq.~(\ref{eq:Amn}): 
+%obtained with appropriate choice of the signs in Eq.~(\ref{eq:Amn}):
 %($+$,$+$,$+$), ($+$,$-$,$-$), ($-$,$+$,$-$) and
 %($-$,$-$,$+$).
 
 
-\section{{\tt seedname.dmn} file} 
+\section{{\tt seedname.dmn} file}
 
-INPUT. 
+INPUT.
 
-The file \verb#seedname.dmn# contains the data needed to construct symmetry-adapted Wannier functions~\cite{sakuma-prb13}. 
+The file \verb#seedname.dmn# contains the data needed to construct symmetry-adapted Wannier functions~\cite{sakuma-prb13}.
 Required if \verb#site_symmetry = .true.#
 
 First line: a user comment, e.g., the date and time
 
-Second line: 4 integers: \verb#num_bands#, \verb#nsymmetry#, \verb#nkptirr#, \verb#num_kpts#.  \\ 
+Second line: 4 integers: \verb#num_bands#, \verb#nsymmetry#, \verb#nkptirr#, \verb#num_kpts#.  \\
 \phantom{Second line:} \verb#nsymmetry#: the number of symmetry operations   \\
 \phantom{Second line:}  \verb#nkptirr#: the number of irreducible k-points
 
-Blank line 
+Blank line
 
-\verb#num_kpts# integers: 
-Mapping between full k- and irreducible k-points. 
-Each k-point is related to some k-point in the irreducible BZ. 
-The information of this mapping is written. Each entry corresponds to a k-point in the 
+\verb#num_kpts# integers:
+Mapping between full k- and irreducible k-points.
+Each k-point is related to some k-point in the irreducible BZ.
+The information of this mapping is written. Each entry corresponds to a k-point in the
 full BZ, in the order in which they appear in the k-point list in \verb#seedname.win# file.
-The (integer) value of each entry is the k-point index in the IBZ to which the k-point maps. 
+The (integer) value of each entry is the k-point index in the IBZ to which the k-point maps.
 The number of unique values is equal to the number of k-points in the IBZ.
-The data is written 10 values per line. 
- 
-Blank line 
-
-\verb#nkptirr# integers:  
-List of irreducible k-points. 
-Each entry corresponds to a k-point of the IBZ. The (integer) value of each entry
-is the k-point index corresponding to the k-point list in \verb#seedname.win# file. 
-The values should be between 1 and \verb#num_kpts#. The data is written 10 values per line.
-
-Blank line 
-
-\verb#nkptirr# blocks of  \verb#nsymmetry# integer data (each block separated by a blank line): 
-List of k-points obtained by acting the symmetry operations on the irreducible k-points. 
 The data is written 10 values per line.
 
-Blank line 
+Blank line
+
+\verb#nkptirr# integers:
+List of irreducible k-points.
+Each entry corresponds to a k-point of the IBZ. The (integer) value of each entry
+is the k-point index corresponding to the k-point list in \verb#seedname.win# file.
+The values should be between 1 and \verb#num_kpts#. The data is written 10 values per line.
+
+Blank line
+
+\verb#nkptirr# blocks of  \verb#nsymmetry# integer data (each block separated by a blank line):
+List of k-points obtained by acting the symmetry operations on the irreducible k-points.
+The data is written 10 values per line.
+
+Blank line
 
 $\verb#nsymmetry# \times \verb#nkptirr# $ blocks of data: \\
-The information of $D$ matrix in Eq. (15) of Ref.~\cite{sakuma-prb13}. 
-Each block contains $\verb#num_wann# \times \verb#num_wann#$ lines and is separated by a blank line. 
-The data are stored in  \verb#d_matrix_wann(m,n,isym,ikirr)# with 
-$\verb#m#, \verb#n# \in [1,\verb#num_wann#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$. 
+The information of $D$ matrix in Eq. (15) of Ref.~\cite{sakuma-prb13}.
+Each block contains $\verb#num_wann# \times \verb#num_wann#$ lines and is separated by a blank line.
+The data are stored in  \verb#d_matrix_wann(m,n,isym,ikirr)# with
+$\verb#m#, \verb#n# \in [1,\verb#num_wann#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$.
 The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest).
- 
-Blank line 
+
+Blank line
 
 $\verb#nsymmetry# \times \verb#nkptirr# $ blocks of data: \\
-The information of $\tilde d$ matrix in Eq. (17) of Ref.~\cite{sakuma-prb13}. 
+The information of $\tilde d$ matrix in Eq. (17) of Ref.~\cite{sakuma-prb13}.
 Each block contains $\verb#num_bands# \times \verb#num_bands#$ lines and is separated by a blank line.
-The data are stored in  \verb#d_matrix_band(m,n,isym,ikirr)# with 
-$\verb#m#, \verb#n# \in [1,\verb#num_bands#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$. 
-The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest). 
+The data are stored in  \verb#d_matrix_band(m,n,isym,ikirr)# with
+$\verb#m#, \verb#n# \in [1,\verb#num_bands#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$.
+The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest).
 
 
 \section{{\tt seedname.eig} file}
 
-INPUT. 
+INPUT.
 
 Required if any of \verb#disentanglement#, \verb#plot_bands#,
    \verb#plot_fermi_surface# or \verb#write_hr# are \verb#.true.#
@@ -444,7 +444,7 @@ The file \verb#seedname.eig# contains the Kohn-Sham eigenvalues
 Each line consist of two integers and a real number. The first integer
 is the band index, the second integer gives the ordinal corresponding
 to the $k$-point in the list of $k$-points in \verb#seedname.win#,
-and the real number is the eigenvalue. 
+and the real number is the eigenvalue.
 
 E.g.,
 
@@ -458,9 +458,9 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
-Interfaces between \wannier\ and many ab-initio codes such as \pwscf, 
+Interfaces between \wannier\ and many ab-initio codes such as \pwscf,
 {\sc abinit} (\url{http://www.abinit.org}),
-{\sc siesta} (\url{http://www.icmab.es/siesta/}), 
+{\sc siesta} (\url{http://www.icmab.es/siesta/}),
 {\sc fleur}, {\sc VASP} and {\sc Wien2k} (\url{http://www.wien2k.at}) are
 available.  Here we describe the
 seamless interface between \wannier\ and \pwscf, a
@@ -470,7 +470,7 @@ You will need
 to download and compile \pwscf\ (i.e., the {\tt pw.x} code) and the
 post-processing interface {\tt pw2wannier90.x}. Please refer to the
 documentation that comes with the {\sc Quantum ESPRESSO} distribution
-for instructions. 
+for instructions.
 
 \begin{enumerate}
 \item Run `scf'/`nscf' calculation(s) with \verb#pw#
@@ -483,16 +483,16 @@ for instructions.
   between the direct and reciprocal lattice vectors read from
   \verb#seedname.nnkp# and those defined in the files specified by
   \verb#prefix#. \verb#pw2wannier90# generates \verb#seedname.mmn#,
-  \verb#seedname.amn# and \verb#seedname.eig#. 
-    \verb#seedname.dmn# and  \verb#seedname.sym# files are additionally created when  
-     \verb#write_dmn = .true.# (see below). 
+  \verb#seedname.amn# and \verb#seedname.eig#.
+    \verb#seedname.dmn# and  \verb#seedname.sym# files are additionally created when
+     \verb#write_dmn = .true.# (see below).
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
   disentangle bands (if required), localise MLWF, and use MLWF for
   plotting, bandstructures, Fermi surfaces etc.
 \end{enumerate}
 
 Examples of how the interface with \pwscf\ works are given in the
-\wannier\ Tutorial. 
+\wannier\ Tutorial.
 
 \subsection{{\tt seedname.pw2wan}}
 
@@ -556,7 +556,7 @@ Default is \verb#.false.#
 \item   \verb#write_uIu# -- Set to \verb#.true.# to write out the matrix
    elements of $$\langle  u_{n{\bf k}+{\bf b}_1}\vert
 u_{m{\bf k}+{\bf b}_2}\rangle.
-$$ Default is \verb#.false.# 
+$$ Default is \verb#.false.#
 
 \item   \verb#uIu_formatted# -- Set to \verb#.true.# to write uIu data as a formatted file. Default is \verb#.false.# (only relevant if
    \verb#write_uIu=.true.#)
@@ -566,13 +566,13 @@ $$ Default is \verb#.false.#
 \item   \verb#write_unkg# -- Set to \verb#.true.# to write the first few
    Fourier components of the periodic parts of the Bloch functions.
 
-\item   \verb#write_dmn# -- Set to \verb#.true.# to construct symmetry-adapted Wannier functions.  
+\item   \verb#write_dmn# -- Set to \verb#.true.# to construct symmetry-adapted Wannier functions.
 Default is \verb#.false.#
 
-\item   \verb#read_sym# -- Set to \verb#.true.# to customize symmetry operations to be used in symmetry-adapted mode. 
-When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is required. 
+\item   \verb#read_sym# -- Set to \verb#.true.# to customize symmetry operations to be used in symmetry-adapted mode.
+When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is required.
 Default is \verb#.false.#
-(only relevant if \verb#write_dmn=.true.#). 
+(only relevant if \verb#write_dmn=.true.#).
 
 
 
@@ -583,28 +583,28 @@ For examples of use, refer to the \wannier\ Tutorial.
 
 \subsection{{\tt seedname.sym}}
 
-If \verb#read_sym = .true.#, then this additional input file is required for {\tt pw2wannier90.x}\\ 
-if \verb#read_sym = .false.#, then this file is written by {\tt pw2wannier90.x} (only for reference -- 
+If \verb#read_sym = .true.#, then this additional input file is required for {\tt pw2wannier90.x}\\
+if \verb#read_sym = .false.#, then this file is written by {\tt pw2wannier90.x} (only for reference --
 it is not used in subsequent calculations)
 
-The file \verb#seedname.sym# contains the information of symmetry operations used to create symmetry-adapted Wannier functions.  
-If \verb#read_sym = .false.# (default), {\tt pw2wannier90.x} uses the full symmetry recognized by {\tt pw.x}. 
-If \verb#read_sym = .true.#, you can specify symmetry operations to be used in symmetry-adapted mode.  
+The file \verb#seedname.sym# contains the information of symmetry operations used to create symmetry-adapted Wannier functions.
+If \verb#read_sym = .false.# (default), {\tt pw2wannier90.x} uses the full symmetry recognized by {\tt pw.x}.
+If \verb#read_sym = .true.#, you can specify symmetry operations to be used in symmetry-adapted mode.
 
 
 First line: an integer: \verb#nsymmetry# (number of symmetry operations)
 
 Second line: blank
- 
-Then:   \verb#nsymmetry# blocks of data.  
-Each block (separated by a blank line) consists of four lines.  
-The order of the data in each block is as follows: 
+
+Then:   \verb#nsymmetry# blocks of data.
+Each block (separated by a blank line) consists of four lines.
+The order of the data in each block is as follows:
 \begin{verbatim}
   R(1,1)   R(2,1)   R(3,1)
   R(1,2)   R(2,2)   R(3,2)
   R(1,3)   R(2,3)   R(3,3)
-   t(1)     t(2)     t(3)   
+   t(1)     t(2)     t(3)
 \end{verbatim}
-Here, $R$ is the rotational part of symmetry operations ($3\times3$ matrix), and  $\bf t$ is the fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf). 
-Both data are given in Cartesian coordinates. 
-The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$. 
+Here, $R$ is the rotational part of symmetry operations ($3\times3$ matrix), and  $\bf t$ is the fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf).
+Both data are given in Cartesian coordinates.
+The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$.
