@@ -664,6 +664,7 @@ contains
   end subroutine projovlp
 
   subroutine wannierise(helper, wan90, istdout, istderr, ierr)
+    use w90_comms, only: mpirank, comms_barrier
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_wannierise, only: wann_main, wann_main_gamma
@@ -696,10 +697,17 @@ contains
     endif
 
     if (helper%gamma_only) then
-      call wann_main_gamma(helper%kmesh_info, wan90%wann_control, wan90%omega, &
-                           helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
-                           helper%u_matrix, helper%real_lattice, helper%num_kpts, helper%num_wann, &
-                           istdout, helper%timer, error, helper%comm)
+      if (mpirank(helper%comm) == 0) then
+        call wann_main_gamma(helper%kmesh_info, wan90%wann_control, wan90%omega, &
+                             helper%print_output, helper%wannier_data, wan90%m_matrix_local, &
+                             helper%u_matrix, helper%real_lattice, helper%num_kpts, helper%num_wann, &
+                             istdout, helper%timer, error, helper%comm)
+        if (allocated(error)) then
+          call prterr(error, ierr, istdout, istderr, helper%comm)
+          return
+        endif
+      endif
+      call comms_barrier(error, helper%comm)
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, helper%comm)
         return

@@ -99,6 +99,8 @@ contains
     my_node_id = mpirank(comm)
     on_root = (my_node_id == 0)
     nkloc = count(dist_k == my_node_id)
+    if (nkloc == 0) return
+
     allocate (global_k(nkloc), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating global_k in dis_main', comm)
