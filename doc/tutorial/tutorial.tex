@@ -102,15 +102,15 @@ The following additional programs may be installed in order to
 visualise the output of \wannier\ (they are optional, not all of them
 are necessary)
 \begin{itemize}
-\item {\tt gnuplot} is used to plot bandstructures. It is 
+\item {\tt gnuplot} is used to plot bandstructures. It is
 available for many operating systems and is often installed by default on
  Unix/Linux distributions\\
 \url{http://www.gnuplot.info}
 \item {\tt xmgrace} may also be used to plot bandstructures.\\
 \url{http://plasma-gate.weizmann.ac.il/Grace}
 \item {\tt XCrySDen} is used to visualise crystal structures, MLWFs,
-  and Fermi surfaces. It is available for Unix/Linux, 
-  Windows (using cygwin), and OSX. To correctly display 
+  and Fermi surfaces. It is available for Unix/Linux,
+  Windows (using cygwin), and OSX. To correctly display
 files from \wannier, version 1.4 or later must be used.\\
 \url{http://www.xcrysden.org}
 \item {\tt vmd} can also be used to visualise crystal structures and
@@ -153,22 +153,22 @@ provided.
 
 The second part of the tutorial covers the generation of \wannier\
 input files starting from a full electronic structure calculation. We
-have provided input files for the \pwscf\ interface (\url{http://www.quantum-espresso.org}) to \wannier. 
+have provided input files for the \pwscf\ interface (\url{http://www.quantum-espresso.org}) to \wannier.
 Therefore, you
 will need to install and compile elements of the {\tt
   quantum-espresso} package, namely {\tt pw.x} and {\tt
   pw2wannier90.x}, in order to run these
 examples. Please visit \url{http://www.quantum-espresso.org} to download the
-package, and for installation instructions. 
-The tutorial examples work with \pwscf\ v5.1.x and v6.0.x. The exception are the examples on symmetry adapted Wannier functions which require v6.0.x together with the  
-very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v6.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}. Later versions v6.x.x should have the most up-to-date version 
- of pw2wannier90.f90 already included in the Quantum ESPRESSO  
- distribution. 
+package, and for installation instructions.
+The tutorial examples work with \pwscf\ v5.1.x and v6.0.x. The exception are the examples on symmetry adapted Wannier functions which require v6.0.x together with the
+very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v6.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}. Later versions v6.x.x should have the most up-to-date version
+ of pw2wannier90.f90 already included in the Quantum ESPRESSO
+ distribution.
 
 
 There are interfaces to a number of other electronic structure codes
 including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
-(\url{http://www.flapw.de}),  {\sc OpenMX} (\url{http://www.openmx-square.org/}), 
+(\url{http://www.flapw.de}),  {\sc OpenMX} (\url{http://www.openmx-square.org/}),
 {\sc GPAW} (\url{https://wiki.fysik.dtu.dk/gpaw/}), {\sc VASP} (\url{http://www.vasp.at}), and
 {\sc Wien2k} (\url{http://www.wien2k.at})
 
@@ -176,7 +176,7 @@ including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
 
 If you have any suggestions regarding ways in which this tutorial may
 be improved, then send us an email.
-% at {\tt developers@wannier.org}. 
+% at {\tt developers@wannier.org}.
 
 For other questions, email the \wannier\ forum at {\tt
   wannier@quantum-espresso.org}.  Note that first you will need to
@@ -192,7 +192,7 @@ deleted automatically. You can register by following the links at\\
 
 \begin{itemize}
 \item{Outline: \it{Obtain and plot MLWFs for the four valence
-    bands of GaAs.}} 
+    bands of GaAs.}}
 \item{Generation details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 2$\times$2$\times$2 k-point grid. Starting
     guess: four bond-centred Gaussians.}}
@@ -202,9 +202,9 @@ deleted automatically. You can register by following the links at\\
 \item{ {\tt gaas.win}  {\it The master input file}}
 \item{ {\tt gaas.mmn}  {\it The overlap matrices $\Mkb$}}
 \item{ {\tt gaas.amn}  {\it Projection $\Ak$ of the Bloch states onto a set
-    of trial localised orbitals}} 
+    of trial localised orbitals}}
 \item{ {\tt UNK00001.1}  {\it The Bloch states in the real space unit
-    cell. For plotting only.}} 
+    cell. For plotting only.}}
 \end{itemize}
 \end{itemize}
 
@@ -219,9 +219,9 @@ minimum value after just a few iterations. Note that the geometric centre of
 each MLWF lies along a Ga-As bond, slightly closer to As
 than Ga. Note also that the memory requirement for the minimisation of
 the spread is very low as the MLWFs are defined at each
-k-point by just the 4$\times$4 unitary matrices $\Uk$. 
+k-point by just the 4$\times$4 unitary matrices $\Uk$.
 \item Plot the MLWFs by adding the following keywords to
-  the input file {\tt gaas.win} 
+  the input file {\tt gaas.win}
 {\tt
 \begin{quote}
 wannier\_\-plot = true
@@ -240,7 +240,7 @@ xcrysden \texttt{-{}-}xsf gaas\_00001.xsf
 For large systems, plotting the MLWFs may be time consuming
 and require a lot of memory. Use the keyword {\tt wannier\_plot\_list}
 to plot a subset of the MLWFs. E.g., to plot the
-1st and 3rd MLWFs use 
+1st and 3rd MLWFs use
 {\tt
 \begin{quote}
 wannier\_plot\_list = 1 3
@@ -250,16 +250,16 @@ size of this supercell is set through the keyword {\tt
   wannier\_plot\_supercell}. The default value is 2 (corresponding to a
 supercell with eight times the unit cell volume). We recommend not using
 values great than 3 as the memory and computational cost scales
-cubically with supercell size.  
+cubically with supercell size.
 
 Plot the 3rd MLWFs in a supercell of size 3. Choose a low
-value for the isosurface (say 0.5). Can you explain what you see? 
+value for the isosurface (say 0.5). Can you explain what you see?
 
 {\it Hint:} For a finite k-point mesh, the MLWFs are in fact
 periodic and the period is related to the spacing of the k-point mesh. For
 mesh with $n$ divisions in the $i^{\mathrm{th}}$ direction in the
 Brillouin zone, the MLWFs ``live'' in a supercell $n$ times the
-unit cell. 
+unit cell.
 \end{enumerate}
 
 
@@ -274,16 +274,16 @@ unit cell.
     in lead. Use Wannier interpolation to plot the Fermi surface.}}
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
-    guess: atom-centred sp$^3$ hybrid orbitals}} 
+    guess: atom-centred sp$^3$ hybrid orbitals}}
 \item{Directory: {\tt examples/example2/}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt lead.win}  {\it The master input file}}
 \item{ {\tt lead.mmn}  {\it The overlap matrices $\Mkb$}}
 \item{ {\tt lead.amn}  {\it Projection $\Ak$ of the Bloch states onto a set
-    of trial localised orbitals}} 
+    of trial localised orbitals}}
 \item{ {\tt lead.eig}  {\it The Bloch eigenvalues at each k-point. For
-    interpolation only}} 
+    interpolation only}}
 \end{itemize}
 
 \end{itemize}
@@ -313,13 +313,13 @@ fermi\_energy = 5.2676
 fermi\_surface\_plot = true
 \end{quote} } and re-run \wannier. The value of the Fermi energy
 (5.2676\,eV) was obtained from the initial first principles
-calculation. \wannier\ calculates the band energies, through 
+calculation. \wannier\ calculates the band energies, through
 
 interpolation, on a dense mesh of k-points in the Brillouin zone. The
 density of this grid is controlled by the keyword {\tt
   fermi\_surface\_num\_points}. The default value is 50 (i.e., 50$^3$
 points).  The Fermi surface file {\tt lead.bxsf} can be viewed using
-{\tt XCrySDen}, e.g., 
+{\tt XCrySDen}, e.g.,
 %
 {\tt
 \begin{quote}
@@ -331,7 +331,7 @@ xcrysden \texttt{-{}-}bxsf lead.bxsf
 \begin{center}
 \includegraphics{lead}
 \caption{Bandstructure of lead showing the position of the Fermi
-  level. Only the lowest four bands are included in the calculation.} 
+  level. Only the lowest four bands are included in the calculation.}
 \label{fig:pb-bnd}
 \end{center}
 \end{figure}
@@ -347,23 +347,23 @@ xcrysden \texttt{-{}-}bxsf lead.bxsf
       bandstructure}}
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
-    guess: atom-centred sp$^3$ hybrid orbitals}} 
+    guess: atom-centred sp$^3$ hybrid orbitals}}
 \item{Directory: {\tt examples/example3/}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silicon.win}  {\it The master input file}}
 \item{ {\tt silicon.mmn}  {\it The overlap matrices $\Mkb$}}
 \item{ {\tt silicon.amn}  {\it Projection $\Ak$ of the Bloch states onto a
-    set of trial localised orbitals}} 
+    set of trial localised orbitals}}
 \item{ {\tt silicon.eig}  {\it The Bloch eigenvalues at each k-point}}
 \end{itemize}
 \end{itemize}
 The valence and lower conduction states can be represented by MLWFs
-with $sp^3$-like symmetry. The lower conduction states are not 
+with $sp^3$-like symmetry. The lower conduction states are not
 separated from the higher states by an energy gap. In order to form
 localised WF, we use the disentanglement procedure
 introduced in Ref.~\cite{souza-prb01}. The position of the inner and outer
-energy windows are shown in Fig.~\ref{fig:si.bnd}. 
+energy windows are shown in Fig.~\ref{fig:si.bnd}.
 \begin{enumerate}
 \item Run \wannier.
 {\tt
@@ -384,7 +384,7 @@ restart = plot
 bands\_plot = true
 \end{quote} }
 and re-running \wannier. The files {\tt silicon\_band.dat} and {\tt
-  silicon\_band.gnu} are created. 
+  silicon\_band.gnu} are created.
 To plot the bandstructure using gnuplot
 \smallskip
 {\tt
@@ -394,14 +394,14 @@ myshell> gnuplot
 gnuplot> load `silicon\_band.gnu'
 \end{quote} }
 The k-point path for the bandstructure interpolation is set in the {\tt
-  kpoint\_path} block. Try plotting along different paths. 
+  kpoint\_path} block. Try plotting along different paths.
 \end{enumerate}
 
 \begin{figure}[h]
 \begin{center}
 \includegraphics{si}
 \caption{Bandstructure of silicon showing the position of the outer
-  and inner energy windows.} 
+  and inner energy windows.}
 \label{fig:si.bnd}
 \end{center}
 \end{figure}
@@ -414,10 +414,10 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWFs to describe the states around the
-    Fermi-level in copper}} 
+    Fermi-level in copper}}
 \item{Generation Details: \it{From \pwscf, using ultrasoft
     pseudopotentials~\cite{vanderbilt-prb90} and a
-    4$\times$4$\times$4 k-point grid. Starting guess: five 
+    4$\times$4$\times$4 k-point grid. Starting guess: five
     atom-centred d orbitals, and two s orbitals centred on one of each
     of the two tetrahedral interstices.}}
 \item{Directory: {\tt examples/example4/}}
@@ -426,7 +426,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \item{ {\tt copper.win}  {\it The master input file}}
 \item{ {\tt copper.mmn}  {\it The overlap matrices $\Mkb$}}
 \item{ {\tt copper.amn}  {\it Projection $\Ak$ of the Bloch states onto a
-    set of trial localised orbitals}} 
+    set of trial localised orbitals}}
 \item{ {\tt copper.eig}  {\it The Bloch eigenvalues at each k-point}}
 \end{itemize}
 
@@ -438,10 +438,10 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \begin{quote}
 wannier90.x copper
 \end{quote} }
-Inspect the output file {\tt copper.wout}. 
+Inspect the output file {\tt copper.wout}.
 
 \item Plot the Fermi surface, it should look familiar! The Fermi
-  energy is at 12.2103\,eV. 
+  energy is at 12.2103\,eV.
 
 \item Plot the interpolated bandstructure. A suitable path in k-space is
 \smallskip
@@ -458,7 +458,7 @@ W 0.50  0.75  0.25    L 0.00  0.50  0.00
 L 0.00  0.50  0.00    G 0.00  0.00  0.00
 
 G 0.00  0.00  0.00    K 0.00  0.50 -0.50
- 
+
 end kpoint\_path
 \end{quote} }
 \item Plot the contribution of the interstitial WF to the
@@ -479,7 +479,7 @@ $d$ contribution).
 
 
 Investigate the effect of the outer and inner energy window on the
-interpolated bands. 
+interpolated bands.
 
 
 
@@ -487,7 +487,7 @@ interpolated bands.
 \begin{center}
 \includegraphics{cu}
 \caption{Bandstructure of copper showing the position of the outer
-  and inner energy windows.} 
+  and inner energy windows.}
 \label{fig:cu-bnd}
 \end{center}
 \end{figure}
@@ -500,9 +500,9 @@ interpolated bands.
 The \pwscf\ plane-wave, density-functional theory code, which is
 available as part of the \QE\ distribution (\url{http://www.quantum-espresso.org}), is fully interfaced to \wannier\ via the
 {\tt pw2wannier90} post-processing code that is also available as part
-of \QE. The latest version of {\tt pw2wannier90} is included as part of 
-the \wannier\ distribution. Please see the {\tt pwscf} directory for 
-instructions on how to incorporate it into \pwscf. 
+of \QE. The latest version of {\tt pw2wannier90} is included as part of
+the \wannier\ distribution. Please see the {\tt pwscf} directory for
+instructions on how to incorporate it into \pwscf.
 
 Note that both the {\tt PWSCF} executable {\tt pw.x} {\it and} {\tt
   pw2wannier90.x} can be run in parallel, which for large calculations
@@ -527,9 +527,9 @@ independently of the number used for {\tt pw.x} and {\tt
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt diamond.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt diamond.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt diamond.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt diamond.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -543,12 +543,12 @@ independently of the number used for {\tt pw.x} and {\tt
 {\tt pw.x < diamond.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt diamond.nnkp} file).\\ 
+  into the {\tt diamond.nnkp} file).\\
 {\tt wannier90.x -pp diamond}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt diamond.mmn} and {\tt diamond.amn} files).\\  
+  {\tt diamond.mmn} and {\tt diamond.amn} files).\\
 {\tt pw2wannier90.x < diamond.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -566,9 +566,9 @@ independently of the number used for {\tt pw.x} and {\tt
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt copper.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt copper.nscf}  {\it The \pwscf\ input file to obtain Bloch states
-    on a uniform grid}} 
+    on a uniform grid}}
 \item{ {\tt copper.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt copper.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -583,19 +583,19 @@ independently of the number used for {\tt pw.x} and {\tt
 {\tt pw.x < copper.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt copper.nnkp} file).\\ 
+  into the {\tt copper.nnkp} file).\\
 {\tt wannier90.x -pp copper}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt copper.mmn} and {\tt copper.amn} files).\\  
+  {\tt copper.mmn} and {\tt copper.amn} files).\\
 {\tt pw2wannier90.x < copper.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x copper}
 \end{enumerate}
 
-Inspect the output file {\tt copper.wout}. 
+Inspect the output file {\tt copper.wout}.
 
 \begin{enumerate}
 \item Use Wannier interpolation to obtain the Fermi surface of
@@ -607,7 +607,7 @@ Inspect the output file {\tt copper.wout}.
 \begin{quote}
 restart = plot
 
-fermi\_energy = [insert your value here] 
+fermi\_energy = [insert your value here]
 
 fermi\_surface\_plot = true
 \end{quote} } and re-run \wannier. The value of the Fermi energy can
@@ -639,7 +639,7 @@ W 0.50  0.75  0.25    L 0.00  0.50  0.00
 L 0.00  0.50  0.00    G 0.00  0.00  0.00
 
 G 0.00  0.00  0.00    K 0.00  0.50 -0.50
- 
+
 end kpoint\_path
 \end{quote} }
 \end{enumerate}
@@ -650,7 +650,7 @@ end kpoint\_path
   \pwscf\ bandstructure. Obtain MLWFs using a denser k-point grid.
 To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the small FORTRAN program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}.
 \item Investigate the effects of the outer and inner energy windows on
-  the interpolated bands. 
+  the interpolated bands.
 \item Instead of extracting a subspace of seven states, we could
   extract a nine dimensional space (i.e., with $s$, $p$ and $d$
   character). Examine this case and compare the interpolated
@@ -672,14 +672,14 @@ To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the smal
   $\Gamma$-point sampling}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWFs for the occupied states of molecular
-    silane. $\Gamma$-point sampling}} 
+    silane. $\Gamma$-point sampling}}
 \item{Directory: {\tt examples/example7/}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silane.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt silane.nscf}  {\it The \pwscf\ input file to obtain Bloch states
-    on a uniform grid}} 
+    on a uniform grid}}
 \item{ {\tt silane.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt silane.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -693,12 +693,12 @@ To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the smal
 {\tt pw.x < silane.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt silane.nnkp} file).\\ 
+  into the {\tt silane.nnkp} file).\\
 {\tt wannier90.x -pp silane}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt silane.mmn} and {\tt silane.amn} files).\\  
+  {\tt silane.mmn} and {\tt silane.amn} files).\\
 {\tt pw2wannier90.x < silane.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -719,8 +719,8 @@ To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the smal
 \item{ {\tt iron.scf} {\it The \pwscf\ input file for the
       spin-polarized ground state calculation}}
 \item{ {\tt iron.nscf}  {\it The \pwscf\ input file to obtain Bloch states
-    on a uniform grid}} 
-\item{ {\tt iron\_\{up,down\}.pw2wan}  {\it Input files for {\tt pw2wannier90}}} 
+    on a uniform grid}}
+\item{ {\tt iron\_\{up,down\}.pw2wan}  {\it Input files for {\tt pw2wannier90}}}
 \item{ {\tt iron\_\{up,down\}.win} {\it Input files for {\tt wannier90} and {\tt
           postw90}}}
 \end{itemize}
@@ -784,7 +784,7 @@ myshell> gnuplot
 
 gnuplot> plot `iron\_up\_dos.dat' u (-\$2):(\$1-12.6256) w l,`iron\_dn\_dos.dat' u 2:(\$1-12.6256) w l
 
-\end{quote} 
+\end{quote}
 }
 %
 Energies are referred to the Fermi level (12.6256~eV, from {\tt
@@ -878,7 +878,7 @@ orbital character of the individual trial orbitals.
 With projected WFs the total DOS can be separated into $s$, $p$ and
 $d$ contributions, in a similar way to the orbital decomposition of
 the energy bands in Example~4.
-  
+
 In order to obtain the partial DOS projected onto the $p$-type WFs,
 add to the {\tt .win} files
 %
@@ -889,7 +889,7 @@ dos\_project = 2,3,4
 }
 %
 and re-run {\tt postw90}. Plot the projected DOS for both up- and
-down-spin bands. Repeat for the $s$ and $d$ projections. 
+down-spin bands. Repeat for the $s$ and $d$ projections.
 
 Projected WFs can also be used to quantify more precisely the exchange
 splitting between majority and minority states. Re-run {\tt wannier90}
@@ -922,9 +922,9 @@ Fermi level.
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt batio3.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt batio3.nscf}  {\it The \pwscf\ input file to obtain Bloch states
-    on a uniform grid}} 
+    on a uniform grid}}
 \item{ {\tt batio3.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt  batio3.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -944,19 +944,19 @@ Fermi level.
 {\tt pw.x < BaTiO3.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt BaTiO3.nnkp} file).\\ 
+  into the {\tt BaTiO3.nnkp} file).\\
 {\tt wannier90.x -pp BaTiO3}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt BaTiO3.mmn} and {\tt BaTiO3.amn} files).\\  
+  {\tt BaTiO3.mmn} and {\tt BaTiO3.amn} files).\\
 {\tt pw2wannier90.x < BaTiO3.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x BaTiO3}
 \end{enumerate}
 
-Inspect the output file {\tt BaTiO3.wout}. 
+Inspect the output file {\tt BaTiO3.wout}.
 
 Plot the second MLWF, as described in Section~1, by adding the
 following keywords to the input file {\tt BaTiO3.win}
@@ -974,7 +974,7 @@ xcrysden \texttt{-{}-}xsf BaTiO3\_00002.xsf
 \end{quote} }
 
 We can now simulate the ferroelectric phase by displacing the Ti
-  atom. Change its position to 
+  atom. Change its position to
 {\tt
 \begin{quote}
 Ti 0.505 0.5 0.5
@@ -990,7 +990,7 @@ the second MLWF.
   MLWFs for the whole valence manifold?
 
 \item Following Ref.~\cite{marzari-arxiv98}, compute the Born effective charges from the
-  change in Wannier centres under an atomic displacement. 
+  change in Wannier centres under an atomic displacement.
 \end{itemize}
 
 %\cleardoublepage
@@ -1002,9 +1002,9 @@ the second MLWF.
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt graphite.scf}  {\it The \pwscf\ input file for ground
-    state calculation}} 
+    state calculation}}
 \item{ {\tt graphite.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt graphite.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt graphite.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -1018,12 +1018,12 @@ the second MLWF.
 {\tt pw.x < graphite.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt graphite.nnkp} file).\\ 
+  into the {\tt graphite.nnkp} file).\\
 {\tt wannier90.x -pp graphite}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt graphite.mmn} and {\tt graphite.amn} files).\\  
+  {\tt graphite.mmn} and {\tt graphite.amn} files).\\
 {\tt pw2wannier90.x < graphite.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -1042,9 +1042,9 @@ the second MLWF.
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silicon.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt silicon.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt silicon.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -1056,7 +1056,7 @@ the second MLWF.
 {\tt pw.x < silicon.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid. Note that we request the lower 4 (valence) bands\\ 
+  grid. Note that we request the lower 4 (valence) bands\\
 {\tt pw.x < silicon.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -1077,11 +1077,11 @@ Inspect the output file {\tt silicon.wout}. The total spread converges to its
 minimum value after just a few iterations. Note that the geometric centre of
 each MLWF lies at the centre of the Si-Si bond.
 Note also that the memory requirement for the minimisation of
-the spread is very low as the MLWFs are defined 
-by just the 4$\times$4 unitary matrices $\Uk$. 
+the spread is very low as the MLWFs are defined
+by just the 4$\times$4 unitary matrices $\Uk$.
 
 Plot the MLWFs by adding the following keywords to the input file {\tt
-  silicon.win} 
+  silicon.win}
 {\tt
 \begin{quote}
 wannier\_plot = true
@@ -1102,9 +1102,9 @@ xcrysden \texttt{-{}-}xsf silicon\_00001.xsf
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silicon.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt silicon.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt silicon.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -1119,7 +1119,7 @@ windows are shown in Fig.~\ref{fig:si.bnd}.
 \item Modify the input file and run \pwscf\ and \wannier.\\
 Inspect the output file {\tt silicon.wout}. The minimisation of the
 spread occurs in a two-step procedure. First, we minimise $\Omega_{\rm
-  I}$ -- this is the extraction of the optimal subspace in the 
+  I}$ -- this is the extraction of the optimal subspace in the
 disentanglement procedure. Then, we minimise $\Omega_{\rm
   O}+\Omega_{{\rm OD}}$.
 
@@ -1141,7 +1141,7 @@ myshell> gnuplot
 gnuplot> load `silicon\_band.gnu'
 \end{quote} }
 The k-point path for the bandstructure interpolation is set in the {\tt
-  kpoint\_path} block. Try plotting along different paths. 
+  kpoint\_path} block. Try plotting along different paths.
 
 %\item Shift the conduction bands upwards in energy by
 %    0.65~eV. This {\it ad-hoc} ``scissors correction'' is applied to
@@ -1189,7 +1189,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt benzene.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt benzene.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt benzene.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -1215,10 +1215,10 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \end{enumerate}
 
 Inspect the output file {\tt benzene.wout}. The total spread converges
-to its minimum value after just a few iterations. 
+to its minimum value after just a few iterations.
 
 Plot the MLWFs by adding the following keywords to the input file {\tt
-  benzene.win} 
+  benzene.win}
 {\tt
 \begin{quote}
 restart               = plot\\
@@ -1226,19 +1226,19 @@ wannier\_plot         = true\\
 wannier\_plot\_format = cube\\
 wannier\_plot\_list   = 2-4
 \end{quote} }
-and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}. 
+and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}.
 
 \subsection*{Valence + Conduction States}
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWFs for the valence and low-lying
-    conduction states of benzene.}} 
+    conduction states of benzene.}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt benzene.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt benzene.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states for the conduction states}} 
+    states for the conduction states}}
 \item{ {\tt benzene.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt benzene.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -1246,7 +1246,7 @@ and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}.
 In order to form localised WF we use the disentanglement
 procedure. The position of the inner energy window is set to lie in
 the energy gap; the outer energy window is set to 4.0\,eV. Modify the
-input file appropriately. 
+input file appropriately.
 \begin{enumerate}
 \item Run \pwscf\ and \wannier.\\
 Inspect the output file {\tt benzene.wout}. The minimisation of the
@@ -1262,7 +1262,7 @@ wannier\_plot         = true\\
 wannier\_plot\_format = cube\\
 wannier\_plot\_list   = 1,7,13
 \end{quote} }
-and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}. 
+and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}.
 \end{enumerate}
 
 %\cleardoublepage
@@ -1279,7 +1279,7 @@ and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}.
       \item{ {\tt cnt55.scf}  {\it The \pwscf\ input file for ground state
 	  calculation}}
       \item{ {\tt cnt55.nscf}  {\it The \pwscf\ input file to obtain Bloch
-	  states for the conduction states}} 
+	  states for the conduction states}}
       \item{ {\tt cnt55.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
       \item{ {\tt cnt55.win}  {\it The {\tt wannier90} input file}}
     \end{itemize}
@@ -1324,9 +1324,9 @@ axis.
 cnt55\_band.agr} (since {\tt bands\_plot\_format = xmgr} in the input
 file).
 \item The quantum conductance and density of states are written to the
-files {\tt cnt55\_qc.dat} and {\tt cnt55\_dos.dat}, respectively. 
-Note that this part of the calculation may take some time. You can 
-follow its progress by monitoring the output to these files. 
+files {\tt cnt55\_qc.dat} and {\tt cnt55\_dos.dat}, respectively.
+Note that this part of the calculation may take some time. You can
+follow its progress by monitoring the output to these files.
 Use a package such as {\tt gnuplot} or {\tt xmgrace} in order to visualise
 the data. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
 \end{enumerate}
@@ -1344,7 +1344,7 @@ the data. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
 \begin{center}
 \scalebox{0.8}{\includegraphics{cnt_tran}}
 \caption{Wannier interpolated bandstructure, quantum conductance and
-density of states of (5,5) carbon nanotube. Note that the Fermi level has been shifted 
+density of states of (5,5) carbon nanotube. Note that the Fermi level has been shifted
 by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 \label{fig:cnt.tran}
 \end{center}
@@ -1355,10 +1355,10 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 \sectiontitle{14: Linear Sodium Chain -- Transport properties}
 
 \begin{itemize}
-  \item{Outline: \it{Compare the quantum conductance of a periodic 
+  \item{Outline: \it{Compare the quantum conductance of a periodic
   	linear chain of Sodium atoms with that of a defected chain}}
   \item{\begin{tabbing}
-  Directories: \= {\tt examples/example14/periodic}\\ 
+  Directories: \= {\tt examples/example14/periodic}\\
     				 \> {\tt examples/example14/defected}
     		\end{tabbing}}
   \item{Input Files}
@@ -1366,7 +1366,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
       \item{ {\tt Na\_chain.scf}  {\it The \pwscf\ input file for ground state
 	  calculation}}
       \item{ {\tt Na\_chain.nscf}  {\it The \pwscf\ input file to obtain Bloch
-	  states for the conduction states}} 
+	  states for the conduction states}}
       \item{ {\tt Na\_chain.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
       \item{ {\tt Na\_chain.win}  {\it The {\tt wannier90} input file}}
     \end{itemize}
@@ -1396,10 +1396,10 @@ tran\_num\_bb = 2
 \end{quote} }
 
 The defected system uses a 13 atom supercell with the central atom
-position altered to break symmetry. Setting {\tt transport\_mode = lcr} with tell 
+position altered to break symmetry. Setting {\tt transport\_mode = lcr} with tell
 \wannier\ to treat the system as an infinite system with the defect at its centre.
-The supercell is chosen so that is conforms to the 2c2 geometry (see User Guide 
-for details). Each principal layer is 2 atoms long so that the conductor 
+The supercell is chosen so that is conforms to the 2c2 geometry (see User Guide
+for details). Each principal layer is 2 atoms long so that the conductor
 region contains the defected atom plus a single atom on either side.
 
 The transport section of the input file contains these key differences:
@@ -1418,8 +1418,8 @@ transport properties can be found in the User Guide.
 \begin{enumerate}
 \item Run \pwscf\ and \wannier\ for the periodic system.
 \item Run \pwscf\ and \wannier\ for the defected system.
-\item The quantum conductance is written to the files {\tt periodic/Na\_chain\_qc.dat} 
-and \linebreak{\tt defected/Na\_chain\_dos.dat}, respectively. 
+\item The quantum conductance is written to the files {\tt periodic/Na\_chain\_qc.dat}
+and \linebreak{\tt defected/Na\_chain\_dos.dat}, respectively.
 Compare the quantum conductance of the periodic (bulk) calculation with the
 defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 \end{enumerate}
@@ -1437,7 +1437,7 @@ defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 
 \sectiontitle{15: (5,0) Carbon Nanotube -- Transport properties}
 
-\emph{Note that these systems require reasonably large-scale electronic 
+\emph{Note that these systems require reasonably large-scale electronic
 structure calculations.}
 
 \subsection*{Bulk Transport properties}
@@ -1450,21 +1450,21 @@ structure calculations.}
       \item{ {\tt cnt.scf}  {\it The \pwscf\ input file for ground state
 	  calculation}}
       \item{ {\tt cnt.nscf}  {\it The \pwscf\ input file to obtain Bloch
-	  states for the conduction states}} 
+	  states for the conduction states}}
       \item{ {\tt cnt.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
       \item{ {\tt cnt.win}  {\it The {\tt wannier90} input file}}
     \end{itemize}
 \end{itemize}
 
 
-First we consider a single unit cell, with 10 k-points. With 
-{\tt transport\_mode = bulk} we compute the transport properties 
-of a pristine, infinite, periodic (5,0) carbon nanotube. Later, we will 
+First we consider a single unit cell, with 10 k-points. With
+{\tt transport\_mode = bulk} we compute the transport properties
+of a pristine, infinite, periodic (5,0) carbon nanotube. Later, we will
 compare the quantum conductance of this system with a defected
 nanotube.
 
 \begin{enumerate}
-\item Run \pwscf\ and \wannier.\\ 
+\item Run \pwscf\ and \wannier.\\
 \item The quantum conductance and density of states are written to the
 files {\tt cnt\_qc.dat} and {\tt cnt\_dos.dat}, respectively.
 \end{enumerate}
@@ -1480,7 +1480,7 @@ files {\tt cnt\_qc.dat} and {\tt cnt\_dos.dat}, respectively.
       \item{ {\tt cnt+si.scf}  {\it The \pwscf\ input file for ground state
 	  calculation}}
       \item{ {\tt cnt+si.nscf}  {\it The \pwscf\ input file to obtain Bloch
-	  states for the conduction states}} 
+	  states for the conduction states}}
       \item{ {\tt cnt+si.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
       \item{ {\tt cnt+si.win}  {\it The {\tt wannier90} input file}}
     \end{itemize}
@@ -1494,7 +1494,7 @@ details) with principal layers set to be two unit cells long.
 \begin{enumerate}
 \item Run \pwscf\ and \wannier. Again these are large calculations, progress
 can be monitored by viewing respective output files.\\
-\item The quantum conductance is written to {\tt cnt+si\_qc.dat}. 
+\item The quantum conductance is written to {\tt cnt+si\_qc.dat}.
 Compare the quantum conductance with the periodic (bulk) calculation.
 Your plot should look like Fig.~\ref{fig:cnt_qc}.
 
@@ -1503,8 +1503,8 @@ Your plot should look like Fig.~\ref{fig:cnt_qc}.
 \begin{figure}[h]
 \begin{center}
 \scalebox{0.3}{\includegraphics{cnt_qc}}
-\caption{Quantum conductance of infinite pristine nanotube (black) 
-compared to that of the infinite nanotube with the substitutional silicon 
+\caption{Quantum conductance of infinite pristine nanotube (black)
+compared to that of the infinite nanotube with the substitutional silicon
 defect (red).}
 \label{fig:cnt_qc}
 \end{center}
@@ -1512,11 +1512,11 @@ defect (red).}
 
 \subsection*{Further ideas}
 \begin{itemize}
-\item Set {\tt write\_hr = true} in the bulk case. Consider the magnitude of Hamiltonian 
-	elements between Wannier functions in increasingly distant unit cells. Are two 
+\item Set {\tt write\_hr = true} in the bulk case. Consider the magnitude of Hamiltonian
+	elements between Wannier functions in increasingly distant unit cells. Are two
 	unit cell principal layers really large enough, or are significant errors introduced?
 \item Does one unit cell either side of the defected unit cell shield the disorder
-	so that the leads are ideal? Does the quantum conductance change if these 
+	so that the leads are ideal? Does the quantum conductance change if these
 	`buffer' regions are increased?
 \end{itemize}
 
@@ -1527,7 +1527,7 @@ defect (red).}
 \item{Outline: \it{Obtain MLWFs for the valence and low-lying
     conduction states of Si. Calculate the electrical conductivity, the
     Seebeck coefficient and the thermal conductivity in the constant
-    relaxation time approximation using the \bw\ module.}} 
+    relaxation time approximation using the \bw\ module.}}
 \end{itemize}
 \subsection*{If you want to use Quantum ESPRESSO}
 \begin{itemize}
@@ -1535,9 +1535,9 @@ defect (red).}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt Si.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt Si.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Si.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt Si.win}  {\it The \wannier\ and \postw\ input file}}\
 \end{itemize}
@@ -1550,15 +1550,15 @@ defect (red).}
 \item{ {\tt Si.win}  {\it The \wannier\ and \postw\ input file}}
 \item{ {\tt Si.mmn}  {\it The overlap matrices $\Mkb$}}
 \item{ {\tt Si.amn}  {\it Projection $\Ak$ of the Bloch states onto a set
-    of trial localised orbitals}} 
+    of trial localised orbitals}}
 \item{ {\tt Si.eig}  {\it The Bloch eigenvalues at each k-point. For
-    interpolation only}} 
+    interpolation only}}
 \end{itemize}
 \end{itemize}
 
 Note the first five steps in the following are the same of Example~11, and
 are needed only if you want to use the \texttt{PWscf} code of Quantum ESPRESSO.
-Otherwise, if you have already run Example~11 with Quantum ESPRESSSO 
+Otherwise, if you have already run Example~11 with Quantum ESPRESSSO
 (in particular, the section ``\emph{Valence + Conduction States}'')
 you can start from those files and continue from point 6, after having
 added the \bw\ flags to the input file.
@@ -1572,7 +1572,7 @@ use it, you can start from step 5 using the files in the
 {\tt pw.x < Si.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid. Details on the disentanglement procedure are discussed in Example~11.\\ 
+  grid. Details on the disentanglement procedure are discussed in Example~11.\\
 {\tt pw.x < Si.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -1594,10 +1594,10 @@ You may also want to plot the Wannier functions and the interpolated band struct
 \item Run \postw\ to calculate the transport coefficients.\\
 {\tt postw90.x Si} (serial execution) \\
 {\tt mpirun -np 8 postw90.x Si} (example of parallel execution with 8
-MPI processes) 
+MPI processes)
 \end{enumerate}
 
-Inspect the output file {\tt Si.wpout}. It summarizes the main details of the calculation (more details can be obtained by setting a larger value of the \verb#iprint# flag). 
+Inspect the output file {\tt Si.wpout}. It summarizes the main details of the calculation (more details can be obtained by setting a larger value of the \verb#iprint# flag).
 Check if no warnings are issued. Note that if no special flags are passed to \bw, it assumes that
 the ab-initio calculation did not include magnetization effects, and thus it sets to 2 the
 number of electrons per state.
@@ -1615,7 +1615,7 @@ Using your favourite plotting program, plot columns 1 and 3 of the {\tt Si\_seeb
 \subsection*{Further ideas}
 
 \begin{itemize}
-\item Change the interpolation to a $60\times 60\times 60$ mesh and run again \postw\ to check if the results for the transport properties are converged. 
+\item Change the interpolation to a $60\times 60\times 60$ mesh and run again \postw\ to check if the results for the transport properties are converged.
 
 \item Change the {\tt Si.win} input file so that it calculates the transport coefficients for temperatures from 300 to 700~K, with steps of 200~K. Rerun \postw\ and verify that the increase in execution time is neglibile (in fact, most of the time is spent to interpolate the band structure on the $k$ mesh).
 
@@ -1658,7 +1658,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 \item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
     calculation}}
 \item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 
 \item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
@@ -1684,7 +1684,7 @@ their number.
   {\tt pw.x < Fe.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid\\ 
+  grid\\
 {\tt pw.x < Fe.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -1718,7 +1718,7 @@ their number.
   expectation values.\\
   {\tt postw90.x Fe} (serial execution) \\
   {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
-  8 MPI processes) 
+  8 MPI processes)
 
 \end{enumerate}
 
@@ -1730,7 +1730,7 @@ kpath = true
 
 kpath\_task = bands
 
-kpath\_bands\_colour = spin     
+kpath\_bands\_colour = spin
 
 kpath\_num\_points=500
 \end{quote} }
@@ -1754,7 +1754,7 @@ myshell> python Fe-bands.py
 
 Next we plot the Fermi-surface contours on the (010) plane $k_y=0$,
 using the {\tt kslice} module. Set {\tt kpath = false} and uncomment
-the following instructions in {\tt Fe.win}, 
+the following instructions in {\tt Fe.win},
 %
 {\tt
 \begin{quote}
@@ -1762,7 +1762,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-fermi\_energy = [insert your value here] 
+fermi\_energy = [insert your value here]
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1787,8 +1787,8 @@ gnuplot> load `Fe-kslice-fermi\_lines.gnu'
 \end{quote} }
 %
 %(do not be concerned by the warning messages, they are caused by the
-%fact that not all bands cross the Fermi energy) 
-or 
+%fact that not all bands cross the Fermi energy)
+or
 %
 {\tt
 \begin{quote}
@@ -1820,7 +1820,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-fermi\_energy = [insert your value here] 
+fermi\_energy = [insert your value here]
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1908,7 +1908,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 \item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
     calculation}}
 \item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
 \end{itemize}
@@ -1924,7 +1924,7 @@ file {\tt Fe.win}.
 {\tt pw.x < Fe.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid\\ 
+  grid\\
 {\tt pw.x < Fe.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -1942,7 +1942,7 @@ file {\tt Fe.win}.
 \item Run \postw\ \\
   {\tt postw90.x Fe} (serial execution)\\
   {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
-  8 MPI processes) 
+  8 MPI processes)
 
 \end{enumerate}
 
@@ -1954,7 +1954,7 @@ lines in {\tt Fe.win} are used to calculate the energy bands and the
 Berry curvature (in bohr$^2$) along high-symmetry lines in $k$-space.
 {\tt
 \begin{quote}
-fermi\_energy = [insert your value here] 
+fermi\_energy = [insert your value here]
 
 berry\_curv\_unit = bohr2
 
@@ -1967,19 +1967,19 @@ kpath\_bands\_colour = spin
 kpath\_num\_points = 1000
 \end{quote} }
 
-%The path specification in {\tt Fe.win} is the same as in Example~17, and 
- 
+%The path specification in {\tt Fe.win} is the same as in Example~17, and
+
 
 After executing {\tt postw90}, plot the Berry curvature component
 $\Omega_z({\bf k})=\Omega_{xy}({\bf k})$ along the magnetization
-direction using the script generated at runtime, 
+direction using the script generated at runtime,
 %
 {\tt
 \begin{quote}
 myshell> python Fe-bands+curv\_z.py
 \end{quote} }
 
-and compare with Fig.~2 of Ref.~\cite{yao-prl04}.  
+and compare with Fig.~2 of Ref.~\cite{yao-prl04}.
 
 In Example~17 we plotted the Fermi lines on the (010) plane $k_y=0$.
 To combine them with a heatmap plot of (minus) the Berry curvature set
@@ -2023,7 +2023,7 @@ following lines in {\tt Fe.win}, {\tt
 \begin{quote}
 berry = true
 
-berry\_task = ahc                
+berry\_task = ahc
 
 berry\_kmesh = 25 25 25
 
@@ -2046,13 +2046,13 @@ value.
     mesh around spikes in the Berry curvature, by adding to {\tt
       Fe.win} the lines \smallskip {\tt
       \begin{quote}
-        berry\_curv\_adpt\_kmesh = 5  
-        
+        berry\_curv\_adpt\_kmesh = 5
+
         berry\_curv\_adpt\_kmesh\_thresh = 100.0
       \end{quote} }
 
   \end{itemize}
-    
+
     This adds a $5\times 5\times 5$ fine mesh around those points
     where $\vert{\bm \Omega}({\bf k})\vert$ exceeds 100~bohr$^2$. The
     percentage of points triggering adaptive refinement is reported in
@@ -2098,7 +2098,7 @@ earlier corresponds to $\sigma_{xy}$ in the limit $\omega\rightarrow
 imaginary part which describes magnetic circular dichoism (MCD).
 
 To compute the complex optical conductivity for $\hbar\omega$
-up to 7~eV, replace 
+up to 7~eV, replace
 {\tt
 \begin{quote}
 berry\_task = ahc
@@ -2205,7 +2205,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 \item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
     calculation}}
 \item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt Fe.win} {\it The {\tt wannier90} and {\tt postw90} input
       file}}
@@ -2222,7 +2222,7 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 {\tt pw.x < Fe.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid\\ 
+  grid\\
 {\tt pw.x < Fe.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -2256,7 +2256,7 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 \item Run \postw\ to compute the orbital magnetization.\\
   {\tt postw90.x Fe} (serial execution)\\
   {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
-  8 MPI processes) 
+  8 MPI processes)
 
 
 \end{enumerate}
@@ -2284,7 +2284,7 @@ Ref.~\cite{lopez-prb12}.
 %\footnote{Alternatively, the
 %spin magnetization can be computed by {\tt postw90}. This requires adding the
 %instruction {\tt spin\_moment = T} to {\tt Fe.win}, assuming that {\tt pw2wannier90}
-%was executed with {\tt write\_spn = .true.} in {\tt Fe.pw2wan}.} 
+%was executed with {\tt write\_spn = .true.} in {\tt Fe.pw2wan}.}
 %Both point along $\hat{\bf
 %  z}$, but the orbital contribution is much smaller (it is strongly
 %quenched by the crystal field).
@@ -2303,7 +2303,7 @@ After running {\tt postw90}, issue
 {\tt
 \begin{quote}
 myshell> python Fe-bands+morb\_z.py
-\end{quote} } 
+\end{quote} }
 %
 Compare with Fig.~2 of Ref.~\cite{lopez-prb12}, bearing in mind the
 factor of $-1/2$ difference in the definition of ${\bf M}^{\rm
@@ -2311,14 +2311,14 @@ factor of $-1/2$ difference in the definition of ${\bf M}^{\rm
 
 To plot $M_z^{\rm orb}({\bf k})$ together with the Fermi contours on the
 (010) BZ plane set {\tt kpath = false}, uncomment in {\tt
-  Fe.win} the block of instructions containing 
+  Fe.win} the block of instructions containing
 {\tt
 \begin{quote}
 kslice = true
 
 kslice\_task = morb+fermi\_lines
 \end{quote}
-} 
+}
 re-run {\tt postw90}, and issue
 {\tt
 \begin{quote}
@@ -2340,9 +2340,9 @@ orbital magnetization converges more rapidly with the BZ sampling.
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt LaVO3.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt LaVO3.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt LaV03.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
 \item{ {\tt LaVO3.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -2354,7 +2354,7 @@ orbital magnetization converges more rapidly with the BZ sampling.
 {\tt pw.x < LaVO3.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid.\\ 
+  grid.\\
 {\tt pw.x < LaVO3.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -2383,13 +2383,13 @@ Compare the band structure that Wannier90 produced with the one
 obtained using Quantum ESPRESSO. You should get something similar to Fig.~\ref{fig:lavo3}.
 %%
 Notice how the $t_{2g}$-bands are entangled with other bands at $A$ and the Wannier-interpolated band structure deviates from the Bloch bands only in a small region around that $k$-point.
-It is important to keep in mind that all symmetry equivalent $k$-points within the first Brillouin zone must be written explicitly in the list of sphere centers. 
+It is important to keep in mind that all symmetry equivalent $k$-points within the first Brillouin zone must be written explicitly in the list of sphere centers.
 For instance, the $A$ point in the simple tetragonal lattice of this example is non-degenerate, while the $X$ point has degeneracy two, hence one must specify both $(1/2,0,0)$ and $(0,1/2,0)$ (see the SrMnO$_3$ example here below).
 
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=10cm]{LaVO3}
-\caption{Band structure of epitaxially-strained (tetragonal) LaVO$_3$. Black: Bloch bands; red circles: Wannier-interpolated band structure. The disentanglement was performed only for $k$-points within a sphere of radius 0.2 \AA$^{-1}$ centered in $A$.} 
+\caption{Band structure of epitaxially-strained (tetragonal) LaVO$_3$. Black: Bloch bands; red circles: Wannier-interpolated band structure. The disentanglement was performed only for $k$-points within a sphere of radius 0.2 \AA$^{-1}$ centered in $A$.}
 \label{fig:lavo3}
 \end{center}
 \end{figure}
@@ -2397,11 +2397,11 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
 \subsection*{Further ideas}
 
 \begin{itemize}
-%\item Try to disentangle the Wannier functions without disentanglement, and with standard disentanglement without using the spheres. You will notice that without disentanglement Wannier functions will not converge. With standard disentanglement (without spheres), also bands away from the A point in $k-$space are perturbed, even in regions of $k-$space where there is no entanglement. 
+%\item Try to disentangle the Wannier functions without disentanglement, and with standard disentanglement without using the spheres. You will notice that without disentanglement Wannier functions will not converge. With standard disentanglement (without spheres), also bands away from the A point in $k-$space are perturbed, even in regions of $k-$space where there is no entanglement.
 \item Try to obtain the Wannier functions using the standard disentanglement procedure (without spheres, \verb+dis_spheres_num = 0+). You will notice that the Wannier-interpolated band structure now shows deviations also in regions of $k$-space far away from $A$, where disentanglement is actually not necessary. If you disable the disentanglement completely, instead, the Wannierisation procedure does not converge.
 
 \item In order to illustrate all possible cases, it is instructive to apply this method to SrMnO$_3$, where the $t_{2g}$ bands are entangled with the above-lying $e_g$ bands, and also with the deeper O-$2p$ states.
-  In the SrMnO$_3$ subfolder, you can find input files for building three different sets of Wannier functions: only $t_{2g}$ states, only $e_g$ states, or all V-$3d$-derived states ($t_{2g} + e_g$). In each case one needs to specify different disentanglement spheres, according to which region(s) in $k$-space show entanglement of the targeted bands. 
+  In the SrMnO$_3$ subfolder, you can find input files for building three different sets of Wannier functions: only $t_{2g}$ states, only $e_g$ states, or all V-$3d$-derived states ($t_{2g} + e_g$). In each case one needs to specify different disentanglement spheres, according to which region(s) in $k$-space show entanglement of the targeted bands.
   Also the index \verb+dis_sphere_first_wan+ needs to be adapted to the new disentanglement window, which here contains also states below the lowest-lying Wannier function (at variance with the LaVO$_3$ case).
 \end{itemize}
 
@@ -2412,20 +2412,20 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
 Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
-\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs. 
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs.
 For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example21/atom\_centered\_As\_sp/} \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_p/}    \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_s/}    \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_sp/}    \\
-\phantom{Directory: }{\tt examples/example21/bond\_centered/}    
+\phantom{Directory: }{\tt examples/example21/bond\_centered/}
 }
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt GaAs.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt GaAs.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt GaAs.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt GaAs.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -2439,21 +2439,21 @@ For the theoretical background of the symmetry-adapted Wannier functions, see R.
 {\tt pw.x < GaAs.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt GaAs.nnkp} file).\\ 
+  into the {\tt GaAs.nnkp} file).\\
 {\tt wannier90.x -pp GaAs}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmn} files, respectively).\\  
+  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmn} files, respectively).\\
 {\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x GaAs}
 \end{enumerate}
 
-Each directory creates different kind of symmetry-adapted Wannier function. 
-See more detail in {\tt examples/example21/README}. 
-%Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
+Each directory creates different kind of symmetry-adapted Wannier function.
+See more detail in {\tt examples/example21/README}.
+%Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013).
 
 
 %\cleardoublepage
@@ -2467,16 +2467,16 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example22/s\_at\_0.00/} \\
 \phantom{Directory: }{\tt examples/example22/s\_at\_0.25/}    \\
-\phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}    
+\phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}
 }
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt Cu.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt Cu.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Cu.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
-\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\tt ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\tt ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } } 
+\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\tt ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\tt ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } }
 \item{ {\tt Cu.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
 \end{itemize}
@@ -2489,21 +2489,21 @@ For the theoretical background of the symmetry-adapted Wannier functions, see R.
 {\tt pw.x < Cu.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt Cu.nnkp} file).\\ 
+  into the {\tt Cu.nnkp} file).\\
 {\tt wannier90.x -pp Cu}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmn} files, respectively).\\  
+  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmn} files, respectively).\\
 {\tt pw2wannier90.x < Cu.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Cu}
 \end{enumerate}
 
-Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions. 
-See more detail in {\tt examples/example22/README}. 
-%Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
+Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions.
+See more detail in {\tt examples/example22/README}.
+%Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).
 
 
 \sectiontitle{23: Silicon -- $G_0W_0$ bands structure interpolation}
@@ -2516,11 +2516,11 @@ Note: This example requires a recent version of the {\tt ypp} post-processing co
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silicon.scf}  {\it The \pwscf\ input file for the ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt silicon.nscf }  {\it The \pwscf\ input file to obtain Bloch
     states on a uniform grid}}
 \item{ {\tt silicon.gw.nscf }  {\it The \pwscf\ input file to obtain Bloch
-    states on a reduced grid with many empty bands}}  
+    states on a reduced grid with many empty bands}}
 \item{ {\tt silicon.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
 \item{ {\tt silicon.gw.win}  {\it The {\tt wannier90} input file} (for the $G_0W_0$ step)}
@@ -2538,10 +2538,10 @@ Note: This example requires a recent version of the {\tt ypp} post-processing co
 \item Use the {\tt k\_mapper.py} utility to find the indexes of a 4x4x4 uniform grid into the 8x8x8 reduced grid \\
 {\tt ./k\_mapper.py 4 4 4 "../examples/example23/WORK/nscf.gw.out"}\\
 Use the output to complete the {\tt yambo.in} input file (you also need to specify the on how many bands you want to compute the QP corrections, here you can use all the bands from 1 to 14). Then, you should have obtained something like:\\
- {\tt 
+ {\tt
 1| 1|  1|14| \\
-3| 3|  1|14| \\ 
-5| 5|  1|14| \\ 
+3| 3|  1|14| \\
+5| 5|  1|14| \\
 13| 13|  1|14| \\
 ...\tt}
 \item Enter the {\tt si.save} directory and run {\tt p2y}. A {\tt SAVE} folder is created, you can move it up in the {\tt /WORK/} directory.\\
@@ -2553,12 +2553,12 @@ Use the output to complete the {\tt yambo.in} input file (you also need to speci
 {\tt pw.x < silicon.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt silicon.nnkp} file).\\ 
+  into the {\tt silicon.nnkp} file).\\
 {\tt wannier90.x -pp silicon}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess (written in the
-  {\tt silicon.mmn} and {\tt silicon.amn} respectively).\\  
+  {\tt silicon.mmn} and {\tt silicon.amn} respectively).\\
 {\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -2587,7 +2587,7 @@ After you completed the tutorial for the valence bands only, you can repeat the 
 \item{ {\tt Te.scf} {\it The \pwscf\ input file for ground state
     calculation}}
 \item{ {\tt Te.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt Te.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt Te.win} {\it The {\tt wannier90} input
       file}}
@@ -2603,7 +2603,7 @@ To make things easy, the example treats Te without spin-orbit
 {\tt pw.x < Te.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform {\tt 3x3x4} k-point
-  grid\\ 
+  grid\\
 {\tt pw.x < Te.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -2660,8 +2660,8 @@ gyrotropic\_kmesh=50 50 50
   8 MPI processes) \\
 
 
-The integration in the $k$-space is limited to a small area around the H point. Thus it is valid only for Fermi levels near the band gap. 
-And one needs to multiply the results by 2, to account for the H' point. To integrate over the entire Brillouin zone, one needs to remove the 
+The integration in the $k$-space is limited to a small area around the H point. Thus it is valid only for Fermi levels near the band gap.
+And one needs to multiply the results by 2, to account for the H' point. To integrate over the entire Brillouin zone, one needs to remove the
 {\tt gyrotropic\_box\_$\ldots$} parameters
 
 \item Now change the above lines to \\ {\tt
@@ -2732,8 +2732,8 @@ and compute the interband natural optical activity\\
 \item Run {\tt pw2wannier90} to compute:
 
 \begin{itemize}
-\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
-Bloch states (written in the \verb|GaAs.mmn| file) 
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor
+Bloch states (written in the \verb|GaAs.mmn| file)
 \item[--] The projections for the starting guess (written in the \verb|GaAs.amn| file)
 
 \end{itemize}
@@ -2761,18 +2761,18 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \subsection*{Shift current $\sigma^{abc}$}
 
-The shift current tensor of GaAs has only one independent component that is finite, namely $\sigma^{xyz}$. 
+The shift current tensor of GaAs has only one independent component that is finite, namely $\sigma^{xyz}$.
 For its computation, set
 \begin{verbatim}
 berry = true
 berry_task = sc
 \end{verbatim}
-Like the linear optical conductivity, the shift current is a frequency-dependent quantity. 
-The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and 
-\verb|kubo_freq_step|, as explained in the users guide. 
+Like the linear optical conductivity, the shift current is a frequency-dependent quantity.
+The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and
+\verb|kubo_freq_step|, as explained in the users guide.
 
 The shift current requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|,
-which has been set to 
+which has been set to
 \begin{verbatim}
 berry_kmesh = 100 100 100
  \end{verbatim}
@@ -2781,31 +2781,31 @@ We also need to input the value of the Fermi level in eV:
 fermi_energy = [insert your value here]
 \end{verbatim}
 
-Due to the sum over intermediate states involved in the calculation of the shift current, 
+Due to the sum over intermediate states involved in the calculation of the shift current,
 one needs to consider a small broadening parameter to avoid numerical problems due to possible degeneracies
 (see parameter $\eta$ in Eq. (36) of Ref. \cite{ibanez-azpiroz_ab_2018} and related discussion).
-This parameter is controlled by \verb|sc_eta|. It is normally found that values between 0.01 eV and 0.1 eV 
+This parameter is controlled by \verb|sc_eta|. It is normally found that values between 0.01 eV and 0.1 eV
 yield an stable spectrum. The default value is set to  $0.04$ eV.
 
-Finally, \verb|sc_phase_conv| controls the phase convention used for the Bloch sums. 
+Finally, \verb|sc_phase_conv| controls the phase convention used for the Bloch sums.
 \verb|sc_phase_conv=1| uses the so-called tight-binding convention, whereby the Wannier centres are included
 into the phase, while   \verb|sc_phase_conv=2| leaves the Wannier centres out of the phase.
-These two possible conventions are explained in Ref. \cite{pythtb}. 
+These two possible conventions are explained in Ref. \cite{pythtb}.
 Note that the overall shift-current spectrum does not depend on the chosen convention,
 but the individual terms that compose it do.
 
 
-On output, the program generates a set of 18 files named \verb|SEED-sc_***.dat|, 
+On output, the program generates a set of 18 files named \verb|SEED-sc_***.dat|,
 which correspond to the different tensor components  of the shift current
-(note that the 9 remaining components until totaling $3\times3\times3=27$ 
-can be obtained from the 18 outputed by taking into account that $\sigma^{abc}$ is 
+(note that the 9 remaining components until totaling $3\times3\times3=27$
+can be obtained from the 18 outputed by taking into account that $\sigma^{abc}$ is
 symmetric under $b\leftrightarrow c$ index exchange).
-For plotting the only finite shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as in the upper 
+For plotting the only finite shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as in the upper
 panel of Fig. 3 in Ref. \cite{ibanez-azpiroz_ab_2018},
 \begin{verbatim}
 myshell> gnuplot
 gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
-\end{verbatim} 
+\end{verbatim}
 
 
 \sectiontitle{26: Gallium Arsenide -- Selective localization and constrained centres}
@@ -2849,8 +2849,8 @@ gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 \item Run {\tt pw2wannier90} to compute:
 
 \begin{itemize}
-\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between  
-Bloch states (written in the \verb|GaAs.mmn| file) 
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between
+Bloch states (written in the \verb|GaAs.mmn| file)
 \item[--] The projections for the starting guess (written in the \verb|GaAs.amn| file)
 
 \end{itemize}
@@ -2861,8 +2861,8 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 \item Inspect the {\tt .win} file.
 
 \begin{itemize}
-\item[--] Make sure you understand the new keywords corresponding to the selective localisation algorithm. 
-\item[--] Run {\tt wannier90} to compute the SLWFs, in this case using one objective Wannier function. 
+\item[--] Make sure you understand the new keywords corresponding to the selective localisation algorithm.
+\item[--] Run {\tt wannier90} to compute the SLWFs, in this case using one objective Wannier function.
 
 \end{itemize}
 
@@ -2871,15 +2871,15 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \end{enumerate}
 
-To constrain the centre of the SLWF you need to add \mbox{{\tt slwf\_constrain = true}} and \\ 
-\mbox{{\tt slwf\_lambda = 1}} to the input file and uncomment the \mbox{{\tt slwf\_centres}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom (as explained in Ref.~\cite{Marianetti}, particularly from Eq.~24 to Eq.~35).  
+To constrain the centre of the SLWF you need to add \mbox{{\tt slwf\_constrain = true}} and \\
+\mbox{{\tt slwf\_lambda = 1}} to the input file and uncomment the \mbox{{\tt slwf\_centres}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom (as explained in Ref.~\cite{Marianetti}, particularly from Eq.~24 to Eq.~35).
 
-Look at the value of the penalty functional, is this what you would expect at convergence? 
-Does the chosen value of the Lagrange multiplier {\tt slwf\_lambda} give a SLWF function centred on the As atom?   
+Look at the value of the penalty functional, is this what you would expect at convergence?
+Does the chosen value of the Lagrange multiplier {\tt slwf\_lambda} give a SLWF function centred on the As atom?
 
-Alternatively, you can modify the {\tt slwf\_centres} block to constrain the centre of the SLWF to be on the Ga atom. 
+Alternatively, you can modify the {\tt slwf\_centres} block to constrain the centre of the SLWF to be on the Ga atom.
 Do you need a different value of {\tt slwf\_lambda} in this case to converge?
-Take a look at the result in Vesta and explain what you see. Do these functions transform like the identity under the action of the $T_d$ group? 
+Take a look at the result in Vesta and explain what you see. Do these functions transform like the identity under the action of the $T_d$ group?
 
 
 \end{itemize}
@@ -2891,11 +2891,11 @@ Note: This example requires a recent version of the {\tt pw2wannier90.x} post-pr
 \begin{itemize}
 \item{Outline: \it{For bulk crystalline Silicon, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm  and the corresponding MLWFs for 1) Valence bands 2) Valence bands and 4 low-lying conduction bands 3) Conduction bands only. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.}}
 \item{Directory: {\tt examples/example27/}}
-\item{Input Files: {\tt input\_files}, and in the three subfolders {\tt isolated, erfc} and {\tt gaussian}. 
+\item{Input Files: {\tt input\_files}, and in the three subfolders {\tt isolated, erfc} and {\tt gaussian}.
 The {\tt input\_files} folder contains:}
 \begin{itemize}
 \item{ {\tt si.scf}  {\it The \pwscf\ input file for the ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt si\_4bands.nscf }  {\it The \pwscf\ input file to obtain Bloch
     states on a uniform grid for 4 bands.}}
 \item{ {\tt si\_12bands.nscf }  {\it The \pwscf\ input file to obtain Bloch
@@ -2914,17 +2914,17 @@ The {\tt input\_files} folder contains:}
 
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 4 bands. \\
     {\tt pw.x < si\_4bands.nscf > nscf.out}
-    
+
     \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projections block is present.
     \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
-    into the {\tt si.nnkp} file).\\ 
+    into the {\tt si.nnkp} file).\\
     {\tt wannier90.x -pp si}
     \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Inspect the {\tt .pw2wan} input file. You will find two new keywords, i.e. {\tt scdm\_proj} and {\tt scdm\_entanglement}. The former, will instruct {\tt pw2wannier90.x}  to use the SCDM method when generating the $A_{mn}$ matrix. The latter, defines which formula to adopt for the function $f(\varepsilon_{n\mathbf{k}})$ (see \cite{LinLin-ArXiv2017} and point below).
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
     states and the projections via the SCDM method (written in the
-    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt si.mmn} and {\tt si.amn} respectively).\\
     {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
 
     \item Run \wannier\ to compute the MLWFs.\\
@@ -2941,22 +2941,22 @@ The {\tt input\_files} folder contains:}
 
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
     {\tt pw.x < si\_12bands.nscf > nscf.out}
-    
+
     \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projection block is present.
     \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
-    into the {\tt si.nnkp} file).\\ 
+    into the {\tt si.nnkp} file).\\
     {\tt wannier90.x -pp si}
     \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Inspect the {\tt .pw2wan} input file. You will find other two new keywords, i.e. {\tt scdm\_mu} and {\tt scdm\_sigma}. These are the values in eV of $\mu$ and $\sigma$ in $f(\varepsilon_{n,\mathbf{k}})$, respectively.
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
     states and the projections via the SCDM method (written in the
-    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt si.mmn} and {\tt si.amn} respectively).\\
     {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
 
     \item Run \wannier\ to compute the MLWFs.\\
     {\tt wannier90.x si}\\
-    At this point, you should have obtained 8 localized Wannier functions and the interpolated valence and conduction bands for Silicon. Again, compare the results for the geometric centres and the individual spreads with the ones from Example11. Is the final value of total spread bigger or smaller than the one from Example11? Look at the WFs with Vesta. Can you explain what you see? Where do the major lobes of the $sp3$-like WFs point in this case?  
+    At this point, you should have obtained 8 localized Wannier functions and the interpolated valence and conduction bands for Silicon. Again, compare the results for the geometric centres and the individual spreads with the ones from Example11. Is the final value of total spread bigger or smaller than the one from Example11? Look at the WFs with Vesta. Can you explain what you see? Where do the major lobes of the $sp3$-like WFs point in this case?
   \end{enumerate}
   \item[3]{Conduction bands only: In this case we will compute 4 localized WFs corresponding to the 4 low-lying conduction bands only. As for the previous point, we need to define a modified density matrix\cite{LinLin-ArXiv2017}. Since we are only interested in a subset of the conduction states, within a bounded energy region, a good choice for $f(\varepsilon_{n,\mathbf{k}})$ is: $$f(\varepsilon_{n,\mathbf{k}}) = \exp\left(-\frac{(\varepsilon_{n,\mathbf{k}} - \mu)^2}{\sigma^2}\right).$$}
     \begin{enumerate}
@@ -2966,21 +2966,21 @@ The {\tt input\_files} folder contains:}
 
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
     {\tt pw.x < si\_12bands.nscf > nscf.out}
-    
+
     \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projections block is present.
     \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
-    into the {\tt si.nnkp} file).\\ 
+    into the {\tt si.nnkp} file).\\
     {\tt wannier90.x -pp si}
     \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
     states, the projections for the starting guess via the SCDM method (written in the
-    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt si.mmn} and {\tt si.amn} respectively).\\
     {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
 
     \item Run \wannier\ to compute the MLWFs.\\
     {\tt wannier90.x si}\\
-    At this point, you should have obtained 4 localized Wannier functions and the interpolated conduction bands for Silicon. From chemical intuition, we would expect these functions to be similar to anti-bonding orbitals of molecules with tetrahedral symmetry. Plot the WFs and check if this is confirmed. 
+    At this point, you should have obtained 4 localized Wannier functions and the interpolated conduction bands for Silicon. From chemical intuition, we would expect these functions to be similar to anti-bonding orbitals of molecules with tetrahedral symmetry. Plot the WFs and check if this is confirmed.
   \end{enumerate}
 \end{itemize}
 
@@ -2992,9 +2992,9 @@ The input files for this examples are the same as the ones in example05
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt diamond.scf}  {\it The \pwscf\ input file for ground state
-    calculation}} 
+    calculation}}
 \item{ {\tt diamond.nscf}  {\it The \pwscf\ input file to obtain Bloch
-    states on a uniform grid}} 
+    states on a uniform grid}}
 \item{ {\tt diamond.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 \item{ {\tt diamond.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
@@ -3008,16 +3008,16 @@ The input files for this examples are the same as the ones in example05
 {\tt pw.x < diamond.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt diamond.nnkp} file).\\ 
+  into the {\tt diamond.nnkp} file).\\
 {\tt wannier90.x -pp diamond}
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt diamond.mmn} and {\tt diamond.amn} files).\\  
+  {\tt diamond.mmn} and {\tt diamond.amn} files).\\
 {\tt pw2wannier90.x < diamond.pw2wan > pw2wan.out}
 
-\item When the lattice vectors are non-orthogonal, not all the visualisation programs are capable to plot volumetric data in the Gaussian cube format. 
-One program that can read volumetric data for these systems is VESTA. 
+\item When the lattice vectors are non-orthogonal, not all the visualisation programs are capable to plot volumetric data in the Gaussian cube format.
+One program that can read volumetric data for these systems is VESTA.
 To instruct \wannier\ to output the MLWFs data in Gaussian cube format you need to add the following lines to the {\tt .win} file
 \begin{verbatim}
 wannier_plot           = .true.
@@ -3046,11 +3046,11 @@ unit-cell. The size of the grid is specified by {\tt wannier\_plot\_scale} and {
 \sectiontitle{29: Platinum -- Spin Hall conductivity}
 
 \begin{itemize}
-	\item{Outline: {\it Calculate spin Hall conductivity (SHC) and 
-		plot Berry curvature-like term  
-		of fcc Pt considering spin-orbit coupling. 
-		To gain a better understanding of this example, 
-		it is suggested to read Ref.~\cite{qiao-prb2018} for a detailed 
+	\item{Outline: {\it Calculate spin Hall conductivity (SHC) and
+		plot Berry curvature-like term
+		of fcc Pt considering spin-orbit coupling.
+		To gain a better understanding of this example,
+		it is suggested to read Ref.~\cite{qiao-prb2018} for a detailed
 		description of the theory and Ch.~12.5 of the User Guide.}}
 	\item{Directory: {\tt examples/example29/}}
 	\item{Input files}
@@ -3058,7 +3058,7 @@ unit-cell. The size of the grid is specified by {\tt wannier\_plot\_scale} and {
 		\item{ {\tt Pt.scf} {\it The \pwscf\ input file for ground state
 				calculation}}
 		\item{ {\tt Pt.nscf}  {\it The \pwscf\ input file to obtain Bloch
-				states on a uniform grid}} 
+				states on a uniform grid}}
 		\item{ {\tt Pt.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 		\item{ {\tt Pt.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
 	\end{itemize}
@@ -3067,77 +3067,77 @@ unit-cell. The size of the grid is specified by {\tt wannier\_plot\_scale} and {
 \begin{enumerate}
 	\item Run \pwscf\ to obtain the ground state of platinum\\
 	{\tt pw.x < Pt.scf > scf.out}
-	
+
 	\item Run \pwscf\ to obtain the Bloch states on a uniform $k$-point
-	grid\\ 
+	grid\\
 	{\tt pw.x < Pt.nscf > nscf.out}
-	
+
 	\item Run \wannier\ to generate a list of the required overlaps (written
 	into the {\tt Pt.nnkp} file)\\
 	{\tt wannier90.x -pp Pt}
-	
+
 	\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
 	states and the projections for the starting guess (written in the
 	{\tt Pt.mmn} and {\tt  Pt.amn} files)\\
 	{\tt pw2wannier90.x < Pt.pw2wan > pw2wan.out}
-	
+
 	\item Run \wannier\ to compute the MLWFs\\
 	{\tt wannier90.x Pt}
-	
+
 	\item Run \postw\ \\
 	{\tt postw90.x Pt} (serial execution)\\
 	{\tt mpirun -np 8 postw90.x Pt} (example of parallel execution with
-	8 MPI processes) 
-	
+	8 MPI processes)
+
 \end{enumerate}
 
 \subsection*{Spin Hall conductivity}
 
-The intrinsic spin Hall conductivity  
+The intrinsic spin Hall conductivity
 $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ is proportional to the
-BZ integral of the Berry curvature-like term. 
+BZ integral of the Berry curvature-like term.
 To evaluate the SHC using a $25\times
 25\times 25$ $k$-point mesh, set the
 following lines in {\tt Pt.win}, {\tt
 	\begin{quote}
 		berry = true
-		
-		berry\_task = shc                
-		
+
+		berry\_task = shc
+
 		berry\_kmesh = 25 25 25
-		
-\end{quote} } 
-When calculating SHC, adaptive smearing can be used 
-by commenting the following two lines, 
+
+\end{quote} }
+When calculating SHC, adaptive smearing can be used
+by commenting the following two lines,
 {\tt
 	\begin{quote}
-		
+
 		\#kubo\_adpt\_smr = false
-		
+
 		\#kubo\_smr\_fixed\_en\_width = 1
 \end{quote} }
-Then set the Fermi energy $\varepsilon_F$ to a specific value 
+Then set the Fermi energy $\varepsilon_F$ to a specific value
 {\tt
 	\begin{quote}
 		fermi\_energy = [insert your value here]
-\end{quote} } 
-or invoke Fermi energy scan by setting 
+\end{quote} }
+or invoke Fermi energy scan by setting
 {\tt
 	\begin{quote}
 		fermi\_energy\_min = [insert here your lower range]
-		
+
 		fermi\_energy\_max = [insert here your upper range]
-		
+
 		fermi\_energy\_step = [insert here your step]
-		
+
 \end{quote} }
-and re-run {\tt postw90}. 
+and re-run {\tt postw90}.
 The SHC is written in the
 output file {\tt Pt-shc-fermiscan.dat}.
-If only {\tt fermi\_energy} is set, the output file will contain 
-SHC at this specific energy; if a list of Fermi energies are set, 
-the output file will contain SHC calculated at each  
-energy point in the list: we call this the ``Fermi energy scan'' of SHC. 
+If only {\tt fermi\_energy} is set, the output file will contain
+SHC at this specific energy; if a list of Fermi energies are set,
+the output file will contain SHC calculated at each
+energy point in the list: we call this the ``Fermi energy scan'' of SHC.
 
 To plot the Fermi energy scan of SHC
 $\sigma_{xy}^{\text{spin}z}$ versus $\varepsilon_F$, issue
@@ -3145,65 +3145,65 @@ $\sigma_{xy}^{\text{spin}z}$ versus $\varepsilon_F$, issue
 {\tt
 	\begin{quote}
 		myshell> gnuplot
-		
+
 		gnuplot> plot `Pt-shc-fermiscan.dat' u 2:3 w lp
 \end{quote} }
 
-As a result of the strong and rapid variations of the 
-Berry curvature-like term 
+As a result of the strong and rapid variations of the
+Berry curvature-like term
 across the BZ, the SHC converges rather slowly with $k$-point
 sampling, and a $25\times 25\times 25$ kmesh does not yield a well-converged value.
 
 \begin{itemize}
-	
+
 	\item[{\bf --}] Increase the kmesh density by changing {\tt
 		berry\_kmesh}.
-	
+
 	\item[{\bf --}] To accelerate the convergence, adaptively refine the
 	kmesh around spikes in the Berry curvature-like term, by adding to {\tt
 		Pt.win} the lines \smallskip {\tt
 		\begin{quote}
-			berry\_curv\_adpt\_kmesh = 5  
-			
+			berry\_curv\_adpt\_kmesh = 5
+
 			berry\_curv\_adpt\_kmesh\_thresh = 100.0
 	\end{quote} }
 	This adds a $5\times 5\times 5$ fine mesh around those points
 	where $\vert{\Omega_{\alpha\beta}^{\text{spin}\gamma}}({\bm k})\vert$ exceeds 100~{\tt berry\_curv\_unit}. The
 	percentage of points triggering adaptive refinement is reported in
 	{\tt Pt.wpout}.
-	
+
 \end{itemize}
 
 
 
 Compare the converged SHC value with those obtained in
-Refs.~\cite{qiao-prb2018} and~\cite{guo-prl2008}. 
+Refs.~\cite{qiao-prb2018} and~\cite{guo-prl2008}.
 
-Note some rough estimations of computation progress and time are reported in {\tt Pt.wpout} 
-(see the SHC part of the Solution Booklet). These may be helpful if the computation time is very long. 
+Note some rough estimations of computation progress and time are reported in {\tt Pt.wpout}
+(see the SHC part of the Solution Booklet). These may be helpful if the computation time is very long.
 
 \subsection*{Notes}
 %
 \begin{itemize}
-	\item Since the Kubo formula of SHC involves unoccupied bands, 
-	we need to include some unoccupied bands and construct more MLWF. 
+	\item Since the Kubo formula of SHC involves unoccupied bands,
+	we need to include some unoccupied bands and construct more MLWF.
 	Thus the following parameters should be increased accordingly:\smallskip {\tt
 		\begin{quote}
 			dis\_froz\_max
-			
+
 			dis\_win\_max
-			
+
 			projections
 	\end{quote} }
-	\item Normally we calculate the SHC  
-	$\sigma_{xy}^{\text{spin}z}$, 
-	i.e. $\alpha = x, \beta = y, \gamma = z$. To calculate other components, the following parameters can be set as 
+	\item Normally we calculate the SHC
+	$\sigma_{xy}^{\text{spin}z}$,
+	i.e. $\alpha = x, \beta = y, \gamma = z$. To calculate other components, the following parameters can be set as
 	{\tt 1, 2, 3} \smallskip {\tt
 		\begin{quote}
 			shc\_alpha = [insert here the $\alpha$ direction]
-			
+
 			shc\_beta = [insert here the $\beta$ direction]
-			
+
 			shc\_gamma = [insert here the $\gamma$ direction]
 	\end{quote} }
 	with {\tt 1, 2, 3} standing for {\tt x, y, z} respectively.
@@ -3211,83 +3211,83 @@ Note some rough estimations of computation progress and time are reported in {\t
 
 \subsection*{Berry curvature-like term plots}
 
-The band-projected Berry curvature-like term 
-$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
+The band-projected Berry curvature-like term
+$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$
 is defined in Eq.~(12.22) of the User Guide.  The following
 lines in {\tt Pt.win} are used to calculate the energy bands colored by the
-band-projected Berry curvature-like term 
-$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ (in \AA$^2$), 
-as well as the $k$-resolved Berry curvature-like term 
-$\Omega_{\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
-along high-symmetry lines in $k$-space, i.e. the {\tt kpath} plot. First comment the line {\tt berry = true} and then set 
+band-projected Berry curvature-like term
+$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ (in \AA$^2$),
+as well as the $k$-resolved Berry curvature-like term
+$\Omega_{\alpha\beta}^{\text{spin} \gamma}({\bm k})$
+along high-symmetry lines in $k$-space, i.e. the {\tt kpath} plot. First comment the line {\tt berry = true} and then set
 {\tt
 	\begin{quote}
-		
+
 		kpath = true
-		
+
 		kpath\_task = bands+shc
-		
+
 		kpath\_bands\_colour = shc
-		
+
 		kpath\_num\_points = 400
-		
+
 		kubo\_adpt\_smr = false
-		
+
 		kubo\_smr\_fixed\_en\_width = 1
-		
-		fermi\_energy = [insert your value here] 
-		
+
+		fermi\_energy = [insert your value here]
+
 		berry\_curv\_unit = ang2
 \end{quote} }
 
-After executing {\tt postw90}, four files are generated: {\tt Pt-bands.dat}, {\tt Pt-path.kpt}, {\tt Pt-shc.dat} and {\tt Pt-bands+shc.py}. 
-Then plot the band-projected Berry curvature-like term 
-$\Omega_{n,\alpha\beta}^{\text{spin}\gamma}({\bm k})$ 
-using the script generated at runtime, 
+After executing {\tt postw90}, four files are generated: {\tt Pt-bands.dat}, {\tt Pt-path.kpt}, {\tt Pt-shc.dat} and {\tt Pt-bands+shc.py}.
+Then plot the band-projected Berry curvature-like term
+$\Omega_{n,\alpha\beta}^{\text{spin}\gamma}({\bm k})$
+using the script generated at runtime,
 %
 {\tt
 	\begin{quote}
 		myshell> python Pt-bands+shc.py
 \end{quote} }
 
-and compare with Fig.~2 of Ref.~\cite{qiao-prb2018}. Note a 
-large fixed smearing of 1~eV is used to recover the result in Ref.~\cite{qiao-prb2018}. 
-You can adjust the {\tt kubo\_smr\_fixed\_en\_width} 
-as you like to draw a visually appealing figure. 
-A {\tt kpath} plot of 0.05 eV smearing is shown in the 
-Solution Booklet. 
+and compare with Fig.~2 of Ref.~\cite{qiao-prb2018}. Note a
+large fixed smearing of 1~eV is used to recover the result in Ref.~\cite{qiao-prb2018}.
+You can adjust the {\tt kubo\_smr\_fixed\_en\_width}
+as you like to draw a visually appealing figure.
+A {\tt kpath} plot of 0.05 eV smearing is shown in the
+Solution Booklet.
 
-Besides, you can set {\tt kpath\_task = shc} to only draw 
-$k$-resolved term 
-$\Omega_{\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
-(the lower panel of the figure), or set 
-{\tt kpath\_task = bands} and {\tt kpath\_bands\_colour = shc} 
+Besides, you can set {\tt kpath\_task = shc} to only draw
+$k$-resolved term
+$\Omega_{\alpha\beta}^{\text{spin} \gamma}({\bm k})$
+(the lower panel of the figure), or set
+{\tt kpath\_task = bands} and {\tt kpath\_bands\_colour = shc}
 to only draw energy bands colored by the
-band-projected term 
-$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$  
-(the upper panel of the figure). 
-	
-Similar to that of AHC, we can get a heatmap plot of 
-the $k$-resolved Berry curvature-like term 
-$\Omega_{\alpha\beta}^{\text{spin}\gamma}({\bm k})$, 
-i.e. the {\tt kslice} plot. To move forward, 
+band-projected term
+$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$
+(the upper panel of the figure).
+
+Similar to that of AHC, we can get a heatmap plot of
+the $k$-resolved Berry curvature-like term
+$\Omega_{\alpha\beta}^{\text{spin}\gamma}({\bm k})$,
+i.e. the {\tt kslice} plot. To move forward,
 set {\tt kpath = false} and uncomment the following lines in {\tt Pt.win},\smallskip {\tt
 	\begin{quote}
 		kslice = true
-		
+
 		kslice\_task = shc+fermi\_lines
-		
+
 		kslice\_corner = 0.0  0.0  0.0
-		
+
 		kslice\_b1 =     1.0  0.0  0.0
-		
-		kslice\_b2 =     0.3535533905932738   1.0606601717798214  0.00 
-		
+
+		kslice\_b2 =     0.3535533905932738   1.0606601717798214  0.00
+
 		kslice\_2dkmesh = 200 200
 \end{quote} }
 %
-Note the {\tt kslice\_b2} is actually $(\frac{\sqrt{2}}{4},   \frac{3\sqrt{2}}{4},0.0)$ which leads to a square slice in the BZ, 
-making it easier to plot in the generated {\tt python} script. 
+Note the {\tt kslice\_b2} is actually $(\frac{\sqrt{2}}{4},   \frac{3\sqrt{2}}{4},0.0)$ which leads to a square slice in the BZ,
+making it easier to plot in the generated {\tt python} script.
 Re-run {\tt postw90}, and issue%
 {\tt
 	\begin{quote}
@@ -3295,49 +3295,49 @@ Re-run {\tt postw90}, and issue%
 \end{quote} }
 \medskip
 %
-Compare the generated figure with Fig.~3 in Ref.~\cite{qiao-prb2018}, or 
-the Solution Booklet. 
+Compare the generated figure with Fig.~3 in Ref.~\cite{qiao-prb2018}, or
+the Solution Booklet.
 
 \subsection*{Notes}
 %
 \begin{itemize}
-\item Adaptive smearing depends on a uniform kmesh, so when running 
-{\tt kpath} and {\tt kslice} plots adaptive smearing should not be 
-used. A fixed smearing is needed to avoid 
-near zero number in the denominator of the Kubo formula, 
-Eq.~(12.22) in the User Guide. To add a fixed smearing of 
+\item Adaptive smearing depends on a uniform kmesh, so when running
+{\tt kpath} and {\tt kslice} plots adaptive smearing should not be
+used. A fixed smearing is needed to avoid
+near zero number in the denominator of the Kubo formula,
+Eq.~(12.22) in the User Guide. To add a fixed smearing of
 0.05 eV, add the following keywords in the {\tt Pt.win}, \smallskip {\tt
 	\begin{quote}
 		kubo\_adpt\_smr = .false.
-		
+
 		kubo\_smr\_fixed\_en\_width = 0.05
 \end{quote} }
 \end{itemize}
 
 \subsection*{Input parameters for SHC}
-Finally, we provide a complete list of input parameters that 
-can be used to control the SHC calculation, including 
-the calculation of alternating current (ac) SHC which will be introduced in 
+Finally, we provide a complete list of input parameters that
+can be used to control the SHC calculation, including
+the calculation of alternating current (ac) SHC which will be introduced in
 the next tutorial.
 \begin{itemize}
 \item general controls for SHC
 	\smallskip {\tt
-	\begin{quote}	
+	\begin{quote}
 		shc\_freq\_scan,
 		shc\_alpha,
 		shc\_beta,
 		shc\_gamma,
-		
+
 		kubo\_eigval\_max,
-		exclude\_bands, 
+		exclude\_bands,
 		berry\_curv\_unit
 	\end{quote} }
 \item kmesh
 	\smallskip {\tt
-	\begin{quote}		
+	\begin{quote}
 		berry\_task,
 		berry\_kmesh,
-		
+
 		berry\_curv\_adpt\_kmesh,
 		berry\_curv\_adpt\_kmesh\_thresh
 	\end{quote} }
@@ -3347,13 +3347,13 @@ the next tutorial.
 		kubo\_freq\_min,
 		kubo\_freq\_max,
 		kubo\_freq\_step,
-		
-		shc\_bandshift,		
+
+		shc\_bandshift,
 		shc\_bandshift\_firstband,
 		shc\_bandshift\_energyshift,
-		
+
 		scissors\_shift,
-		num\_valence\_bands	
+		num\_valence\_bands
 	\end{quote} }
 \item smearing
 	\smallskip {\tt
@@ -3361,7 +3361,7 @@ the next tutorial.
 		[kubo\_]adpt\_smr,
 		[kubo\_]adpt\_smr\_fac,
 		[kubo\_]adpt\_smr\_max,
-		
+
 		[kubo\_]smr\_fixed\_en\_width
 	\end{quote} }
 \item Fermi energy
@@ -3374,7 +3374,7 @@ the next tutorial.
 	\end{quote} }
 \item kpath
 	\smallskip {\tt
-	\begin{quote}	
+	\begin{quote}
 		kpath,
 		kpath\_task,
 		kpath\_num\_points,
@@ -3389,7 +3389,7 @@ the next tutorial.
 		kslice\_b1,
 		kslice\_b2,
 		kslice\_2dkmesh,
-		
+
 		kslice\_fermi\_level,
 		kslice\_fermi\_lines\_colour
 	\end{quote} }
@@ -3400,9 +3400,9 @@ Their meanings and usages can be found in Ch.~11.5 of the User Guide.
 
 \begin{itemize}
 	\item{Outline: {\it Calculate the alternating current (ac) spin Hall conductivity
-		of gallium arsenide considering spin-orbit coupling. 
-		To gain a better understanding of this example, 
-		it is suggested to read Ref.~\cite{qiao-prb2018} for a detailed 
+		of gallium arsenide considering spin-orbit coupling.
+		To gain a better understanding of this example,
+		it is suggested to read Ref.~\cite{qiao-prb2018} for a detailed
 		description of the theory and Ch.~12.5 of the User Guide.}}
 	\item{Directory: {\tt examples/example30/}}
 	\item{Input files}
@@ -3410,7 +3410,7 @@ Their meanings and usages can be found in Ch.~11.5 of the User Guide.
 		\item{ {\tt GaAs.scf} {\it The \pwscf\ input file for ground state
 				calculation}}
 		\item{ {\tt GaAs.nscf}  {\it The \pwscf\ input file to obtain Bloch
-				states on a uniform grid}} 
+				states on a uniform grid}}
 		\item{ {\tt GaAs.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 		\item{ {\tt GaAs.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
 	\end{itemize}
@@ -3419,75 +3419,75 @@ Their meanings and usages can be found in Ch.~11.5 of the User Guide.
 \begin{enumerate}
 	\item Run \pwscf\ to obtain the ground state of gallium arsenide\\
 	{\tt pw.x < GaAs.scf > scf.out}
-	
+
 	\item Run \pwscf\ to obtain the Bloch states on a uniform $k$-point
-	grid\\ 
+	grid\\
 	{\tt pw.x < GaAs.nscf > nscf.out}
-	
+
 	\item Run \wannier\ to generate a list of the required overlaps (written
 	into the {\tt GaAs.nnkp} file)\\
 	{\tt wannier90.x -pp GaAs}
-	
+
 	\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
 	states and the projections for the starting guess (written in the
 	{\tt GaAs.mmn} and {\tt  GaAs.amn} files)\\
 	{\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
-	
+
 	\item Run \wannier\ to compute the MLWFs\\
 	{\tt wannier90.x GaAs}
-	
+
 	\item Run \postw\ \\
 	{\tt postw90.x GaAs} (serial execution)\\
 	{\tt mpirun -np 8 postw90.x GaAs} (example of parallel execution with
-	8 MPI processes) 
-	
+	8 MPI processes)
+
 \end{enumerate}
 
 \subsection*{ac spin Hall conductivity}
 
-The spin Hall conductivity is also dependent on the 
-frequency $\omega$ in the Eq.~(12.22) of the User Guide. 
-The direct current (dc) SHC calculated in the previous example 
+The spin Hall conductivity is also dependent on the
+frequency $\omega$ in the Eq.~(12.22) of the User Guide.
+The direct current (dc) SHC calculated in the previous example
 corresponds to $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ in the limit $\omega\rightarrow
-0$ and it is a real number. 
+0$ and it is a real number.
 At finite frequency $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ acquires an imaginary part.
 
 To compute the ac spin Hall conductivity for $\hbar\omega$
-up to 8~eV, 
+up to 8~eV,
 add the lines
 %
 {\tt
 	\begin{quote}
 		shc\_freq\_scan = true
-		
+
 		kubo\_freq\_min = 0.0
-		
+
 		kubo\_freq\_max = 8.0
-		
+
 		kubo\_freq\_step = 0.01
 \end{quote} }
 %
 and re-run {\tt postw90}. The file {\tt GaAs-shc-freqscan.dat} contains the calculated ac SHC. Reasonably converged spectra can be
-obtained with a $250\times 250\times 250$ $k$-point mesh. 
+obtained with a $250\times 250\times 250$ $k$-point mesh.
 To plot the ac SHC, issue the following commands {\tt
 	\begin{quote}
 		myshell> gnuplot
-		
+
 		gnuplot> plot `GaAs-shc-freqscan.dat' u 2:3 w l title `Re', `GaAs-shc-freqscan.dat' u 2:4 w l title `Im'
 \end{quote} }
 and then compare the result with Fig.~4 in
-Ref.~\cite{qiao-prb2018} or the Solution Booklet. 
+Ref.~\cite{qiao-prb2018} or the Solution Booklet.
 
 \subsection*{Notes}
 %
 \begin{itemize}
-	\item When calculating ac SHC, adaptive smearing can be used 
+	\item When calculating ac SHC, adaptive smearing can be used
 	by add the following keywords in the {\tt GaAs.win}, \smallskip {\tt
 		\begin{quote}
 			kubo\_adpt\_smr = true
-						
+
 			kubo\_adpt\_smr\_fac = [insert here your smearing factor]
-			
+
 			kubo\_adpt\_smr\_max = [insert here your maximum smearing]
 	\end{quote} }
 
@@ -3500,23 +3500,23 @@ Ref.~\cite{qiao-prb2018} or the Solution Booklet.
     and in the case of GaAs disentanglement is not adopted so\smallskip {\tt
 	\begin{quote}
 			num\_bands         =   16
-			
+
 			num\_wann          =   16
 	\end{quote} }
-	\item Since the band gap is often under estimated by LDA/GGA calculations, a scissors shift is applied to recover 
-	the experimental band gap by using the 
+	\item Since the band gap is often under estimated by LDA/GGA calculations, a scissors shift is applied to recover
+	the experimental band gap by using the
 	following keywords\smallskip {\tt
 		\begin{quote}
 			shc\_bandshift = true
-						
+
 			shc\_bandshift\_firstband = 9
-			
+
 			shc\_bandshift\_energyshift = 1.117
 	\end{quote} }
 or by\smallskip {\tt
-	\begin{quote}		
+	\begin{quote}
 		num\_valence\_bands = 8
-		
+
 		scissors\_shift = 1.117
 \end{quote} }
 \end{itemize}
@@ -3527,15 +3527,15 @@ or by\smallskip {\tt
 Note: This example requires a recent version of the {\tt pw2wannier90.x} post-processing code of {\tt Quantum ESPRESSO} (v6.3 or above).
 
 \begin{itemize}
-\item Outline: {\it For bulk crystalline platinum with spin-orbit coupling, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm and the corresponding spinor-MLWFs. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.} 
+\item Outline: {\it For bulk crystalline platinum with spin-orbit coupling, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm and the corresponding spinor-MLWFs. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.}
 
 This example focuses on the use of the SCDM method for spin-noncollinear systems. For the overview of the use of SCDM method to spinless systems, please refer to example27.
-\item Directory: {\tt examples/example31/} 
+\item Directory: {\tt examples/example31/}
 
 The input files for this examples are similar to the ones in example 29, except that a coarser k-point grid is used and that the keywords related to {\tt postw90.x} are removed.
-\item Input Files: 
+\item Input Files:
 \begin{itemize}
-\item {\tt Pt.scf}  {\it The \pwscf\ input file for the ground state calculation} 
+\item {\tt Pt.scf}  {\it The \pwscf\ input file for the ground state calculation}
 \item {\tt Pt.nscf}  {\it The \pwscf\ input file to obtain Bloch states on a uniform grid}
 \item {\tt Pt.pw2wan}  {\it The input file for {\tt pw2wannier90} with keywords related to the SCDM method}
 \item {\tt Pt.win}  {\it The {\tt wannier90} input file}
@@ -3549,13 +3549,13 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 \begin{enumerate}
     \item Run \pwscf\ to obtain the ground state of platinum\\
     {\tt pw.x < Pt.scf > scf.out}
-    
+
     \item Run \pwscf\ to obtain the Bloch states on a uniform $7\times 7\times 7$ $k$-point
-    grid\\ 
+    grid\\
     {\tt pw.x < Pt.nscf > nscf.out}
 
     \item Inspect the {\tt Pt.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projection block is present.
-    
+
     \item Run \wannier\ to generate a list of the required overlaps (written
     into the {\tt Pt.nnkp} file)\\
     {\tt wannier90.x -pp Pt}
@@ -3568,7 +3568,7 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
     states and the projections via the SCDM method (written in the
-    {\tt Pt.mmn} and {\tt Pt.amn} respectively).\\  
+    {\tt Pt.mmn} and {\tt Pt.amn} respectively).\\
     {\tt pw2wannier90.x < Pt.pw2wan > pw2wan.out}
 
     \item Inspect the {\tt pw2wan.out} output file.
@@ -3578,7 +3578,7 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
      Number of pivot points with spin down:     9
     \end{verbatim}
     These lines give information on the pivots obtained by the QR decomposition with column pivoting (QRCP) in the SCDM algorithm.     Each pivot determines a point in the real-space grid and a spin state. The basis of the spin state is determined by the basis used in the electronic structure code. In \pwscf, the basis states are spin up and down states along the Cartesian $z$-axis.
-    
+
     \item Run \wannier\ to compute the MLWFs\\
     {\tt wannier90.x Pt}\\
 
@@ -3589,7 +3589,7 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 \begin{itemize}
         \item{Outline: {\it Compute the Wannier interpolated band structure of tungsten (W)
                             using the SCDM method to calculate the initial guess (see Example 27 for more details). The free parameters
-                            in the SCDM method, i.e., $\mu$ and $\sigma$, are obtained by fitting 
+                            in the SCDM method, i.e., $\mu$ and $\sigma$, are obtained by fitting
                             a complementary error
                             function to the projectabilities. The number of MLWFs is given by the number
                             of pseudo-atomic orbitals (PAOs) in the pseudopotential, $21$ in this case. All the steps shown in this example have been automated in the AiiDA\cite{Pizzi_AiiDA} workflow that can be downloaded from the MaterialsCloud website\cite{MaterialsCloudArchiveEntry}}.}
@@ -3610,15 +3610,15 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 \begin{enumerate}
 	\item Run \pwscf\ to obtain the ground state of tungsten\\
 	{\tt pw.x -in W.scf > scf.out}
-	
+
 	\item Run \pwscf\ to obtain the Bloch states on a $10\times10\times10$ uniform $k$-point
-	grid\\ 
+	grid\\
 	{\tt pw.x -in W.nscf > nscf.out}
-	
+
 	\item Run \wannier\ to generate a list of the required overlaps (written
 	into the {\tt W.nnkp} file)\\
 	{\tt wannier90.x -pp W}
-	
+
         \item Run {\tt projwfc} to compute the projectabilities of the Bloch states
               onto the Bloch sums obtained from the PAOs in the pseudopotential \\
         {\tt projwfc.x -in W.proj > proj.out}
@@ -3631,17 +3631,17 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
               $$f(\epsilon;\mu,\sigma) = \frac{1}{2}\mathrm{erfc}(-\frac{\mu - \epsilon}{\sigma}).$$
 		We are going Xmgrace to plot the projectabilities and perform the fitting. Open Xmgrace \\
 	{\tt xmgrace }
-		
+
 	To Import the {\tt p\_vs\_e.dat} file, click on {\tt Data} from the top bar and then {\tt Import -> ASCII...}.
 	At this point a new window {\tt Grace: Read sets} should pop up. Select {\tt p\_vs\_e.dat} in the {\tt Files} section, click {\tt Ok} at the bottom and close the window. You should now be able to see a quite noisy function that is bounded between 1 and 0. You can modify the appearence of the plot by clicking on {\tt Plot} in the top bar and then {\tt Set appearance...}. In the {\tt Main} section of the pop-up window change the symbol type from {\tt None} to {\tt Circle}. Change the line type from straight to none, since the lines added by default by Xmgrace are not meaningful. For the fitting, go to {\tt Data -> Transformations -> Non-linear curve fitting}. In this window, select the source from the {\tt Set} box and in the {\tt Formula} box insert the following \\
-	
+
 	{\tt y = 0.5 * erfc( ( x - A0 ) / A1 )}  \\
 
 Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV. The motivation for this specific choice of $\mu_{fit}$ and $\sigma_{fit}$ may be found in Ref.~\cite{Vitale2019automated}, where the authors also show validation of this approach on a dataset of 200 materials. You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
 
         \item Open {\tt W.pw2wan} and append the following lines
-	{\tt 
-	
+	{\tt
+
 	scdm\_entanglement = \textquotesingle erfc\textquotesingle
 
   	scdm\_mu =  20.0169
@@ -3656,7 +3656,7 @@ Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 
 	states and the projections for the starting guess (written in the
 	{\tt W.mmn} and {\tt  W.amn} files)\\
 	{\tt pw2wannier90.x -in W.pw2wan > pw2wan.out}
-	
+
 	\item Run \wannier\ to obtain the interpolated bandstructure (see Fig. \ref{fig:W_fit}-(b)).\\
 	{\tt wannier90.x W}
 
@@ -3677,7 +3677,7 @@ $\vert n\mathbf{k} \rangle$ as a function of the corresponding energy $\epsilon_
 \begin{itemize}
 
 \item Outline: \textit{Calculate $k\cdot p$ expansion coefficients monolayer BC$_2$N using
-quasi-degenerate (L\"owdin) 
+quasi-degenerate (L\"owdin)
 perturbation theory. In preparation for this example it may be useful to read Ref.
 \cite{ibanez-azpiroz-ArXiv2019} }
 
@@ -3717,8 +3717,8 @@ perturbation theory. In preparation for this example it may be useful to read Re
 \item Run {\tt pw2wannier90} to compute:
 
 \begin{itemize}
-\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
-Bloch states (written in the \verb|bc2n.mmn| file) 
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor
+Bloch states (written in the \verb|bc2n.mmn| file)
 \item[--] The projections for the starting guess (written in the \verb|bc2n.amn| file)
 
 \end{itemize}
@@ -3732,7 +3732,7 @@ Bloch states (written in the \verb|bc2n.mmn| file)
 
 \item Run {\tt postw90} to compute expansion coefficients
 
-\verb|postw90.x bc2n| 
+\verb|postw90.x bc2n|
 
 
 \end{enumerate}
@@ -3740,7 +3740,7 @@ Bloch states (written in the \verb|bc2n.mmn| file)
 
 \subsection*{Expansion coefficients}
 
-For computing $k\cdot p$ expansion coefficients as given by quasi-degenerate (L\"owdin) 
+For computing $k\cdot p$ expansion coefficients as given by quasi-degenerate (L\"owdin)
 perturbation theory, set
 \begin{verbatim}
 berry = true
@@ -3767,20 +3767,20 @@ fermi_energy = [insert your value here]
 
 
 
-On output, the program generates three files, namely \verb|SEED-kdotp_0.dat|, 
-\verb|SEED-kdotp_1.dat| and  \verb|SEED-kdotp_2.dat|, which correspond to the zeroth, first and second 
-order expansion coefficients, respectively. The dimension of the matrix contained in each file 
+On output, the program generates three files, namely \verb|SEED-kdotp_0.dat|,
+\verb|SEED-kdotp_1.dat| and  \verb|SEED-kdotp_2.dat|, which correspond to the zeroth, first and second
+order expansion coefficients, respectively. The dimension of the matrix contained in each file
 is $3^{l}\times N^{2}$, where $N$ is the number of bands set by \verb|kdotp_num_bands|, and $l$
-is the order of the expansion term (currently $l=0,1$ or $2$). 
+is the order of the expansion term (currently $l=0,1$ or $2$).
 
 These coefficients can be used, among other things, to compute the energy dispersion of
-the bands of interest around the chosen k-point. 
+the bands of interest around the chosen k-point.
 The $k\cdot p$ band dispersion can be computed and plotted along $k_x$ (from S to X)
 using python and the file \verb|kdotp_plot.py| provided in the example folder
 \begin{verbatim}
 python kdotp_plot.py
 \end{verbatim}
-For comparison, the exact band structure calculated using Wannier90 (file \verb|bc2n_band.dat|, generated automatically) 
+For comparison, the exact band structure calculated using Wannier90 (file \verb|bc2n_band.dat|, generated automatically)
 is also plotted along (see Fig. \ref{fig:bc2n-bnd}).
 
 
@@ -3788,7 +3788,7 @@ is also plotted along (see Fig. \ref{fig:bc2n-bnd}).
 \begin{center}
 \includegraphics[width=12cm]{kdotp_bands_SX.pdf}
 \caption{Band dispersion of monolayer BC$_{2}$N around $S$ point. Exact results (solid dots)
-are compared to first-order (blue) and second-order (red) $k\cdot p$ model results for valence and conduction bands.} 
+are compared to first-order (blue) and second-order (red) $k\cdot p$ model results for valence and conduction bands.}
 \label{fig:bc2n-bnd}
 \end{center}
 \end{figure}

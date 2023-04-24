@@ -16,7 +16,7 @@
     mixing_beta = 0.7
  /
 ATOMIC_SPECIES
- Cu 63.546 Cu.pz-n-van_ak.UPF 
+ Cu 63.546 Cu.pz-n-van_ak.UPF
 ATOMIC_POSITIONS
  Cu 0.0 0.0 0.0
 K_POINTS (automatic)

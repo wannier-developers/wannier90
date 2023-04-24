@@ -23,7 +23,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         if l.strip().startswith('#'):
             # Skip headers
             continue

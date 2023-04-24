@@ -5,14 +5,14 @@
     pseudo_dir = '../../pseudo/',
     outdir='./'
  /
- &system    
+ &system
     ibrav=  2, celldm(1) =6.1, nat=  2, ntyp= 1,
-    ecutwfc =40.0, 
+    ecutwfc =40.0,
  /
  &electrons
     diagonalization='david'
     mixing_mode = 'plain'
-    mixing_beta = 0.7 
+    mixing_beta = 0.7
     conv_thr =  1.0d-13
  /
 ATOMIC_SPECIES

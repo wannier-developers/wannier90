@@ -25,7 +25,7 @@ near_neigh_re = re.compile("^\s*\|\s+(\d+)\s+([\d\.]+)\s*(\d+)\s*")
 # 4: w_b
 completeness_re = re.compile("^\s*\|\s+(\d+)\s+([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s*([\d\.]+)\s*")
 
-# Match the 'WF centre and spread' line. 
+# Match the 'WF centre and spread' line.
 # Groups:
 # 0: idx
 # 1: centre_x
@@ -134,7 +134,7 @@ def parse(fname):
 
         ###############################################################
         # Nearest-neighbour Shells
-        # Start from the fourth line after 
+        # Start from the fourth line after
         # 'Distance to Nearest-Neighbour Shells',
         # then stop at the line with ------------------
         if "Distance to Nearest-Neighbour Shells" in l:
@@ -142,14 +142,14 @@ def parse(fname):
                 match = near_neigh_re.search(l2)
                 if not match or '--------------------------------------' in l2:
                     break
-                _, dist, mult = match.groups() 
+                _, dist, mult = match.groups()
                 retdict["near_neigh_dist"].append(float(dist))
                 retdict["near_neigh_mult"].append(int(mult))
             continue
-        
+
         ###############################################################
         # Completeness relation
-        # Start from the sixth line after 
+        # Start from the sixth line after
         # 'Completeness relation is fully satisfied',
         # then stop at the line with ------------------
         if "Completeness relation is fully satisfied" in l:
@@ -157,7 +157,7 @@ def parse(fname):
                 match = completeness_re.search(l2)
                 if not match or '--------------------------------------' in l2:
                     break
-                _, bkx, bky, bkz, bkw = match.groups() 
+                _, bkx, bky, bkz, bkw = match.groups()
                 retdict["completeness_x"].append(float(bkx))
                 retdict["completeness_y"].append(float(bky))
                 retdict["completeness_z"].append(float(bkz))
@@ -197,7 +197,7 @@ def parse(fname):
             retdict["omegaTotal"].append(float(match.groups()[0]))
             continue
         ###############################################################
-        
+
 
     retdict = dict(retdict)
     if show_output:

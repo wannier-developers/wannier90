@@ -7,15 +7,15 @@ band energies (and possibly the band derivatives, if also
 of $k$ points provided by the user.
 
 The list of parameters of the Generic Band Interpolation module are
-summarized in Table~\ref{parameter_keywords_geninterp}. 
+summarized in Table~\ref{parameter_keywords_geninterp}.
 The list of input $k$ points for which the band have to be calculated
 is read from the file named {\tt seedname\_geninterp.kpt}. The format
 of this file is
-described below. 
+described below.
 
 \section{Files}
 \subsection{{\tt seedname\_geninterp.kpt}}
-INPUT. Read by \postw\ if {\tt geninterp} is \verb#true#. 
+INPUT. Read by \postw\ if {\tt geninterp} is \verb#true#.
 
 The first line is a comment (its maximum allowed length is 500
 characters).
@@ -25,16 +25,16 @@ $k$-point coordinates are given in crystallographic units,
 i.e., in fractional units with respect to the primitive reciprocal
 lattice vectors.
 Otherwise, it must contain \verb#cart# (or \verb#abs#) if instead the
-$k-$point coordinates are given in absolute 
+$k-$point coordinates are given in absolute
 coordinates (in units of 1/\AA) along the $k_x$, $k_y$ and $k_z$
 axes.
 
-\emph{Note on units}: In the case of absolute coordinates, 
+\emph{Note on units}: In the case of absolute coordinates,
 if $a_{lat}$ is the lattice constant expressed in angstrom,
 and you want to represent for instance the point
 $X=\frac {2\pi}{a_{lat}} [0.5, 0, 0]$, then you have to input for its $x$ coordinate
 $k_x = 0.5 * 2 * \pi / a_{lat}$. As a practical example, if
-$a_{lat}=4$\AA, then $k_x = 0.78539816339745$ in 
+$a_{lat}=4$\AA, then $k_x = 0.78539816339745$ in
 absolute coordinates in units of 1/\AA.
 
 The third line must contain the number $n$ of following $k$ points.
@@ -58,7 +58,7 @@ velocities if the input flag \verb#geninterp_alsofirstder# is \verb#true#).
 If the flag \verb|geninterp_single_file| is \verb|true|, then a single
 file {\tt seedname\_geninterp.dat} is written by the code at the end
 of the calculation. If instead one sets \verb|geninterp_single_file|
-to \verb|false|, each process writes its own output file, named 
+to \verb|false|, each process writes its own output file, named
 {\tt seedname\_geninterp\_00000.dat}, {\tt
   seedname\_geninterp\_00001.dat}, \ldots
 
@@ -108,7 +108,3 @@ are printed, containing the three first derivatives of the bands along the $k_x$
 and $k_z$ directions (in units of eV$\cdot$\AA).
 
 The $k$ point coordinates are in units of 1/\AA, the band energy is in eV.
-
-
-
-

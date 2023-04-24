@@ -22,13 +22,13 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         pieces = l.split()
 
         if len(pieces) == 0:
             # skip blank line
             continue
-        elif len(pieces) == 1: 
+        elif len(pieces) == 1:
             retdict['shc'].append(float(pieces[0]))
         else:
             raise ValueError("Wrong line length ({}, instead of 1); line content: {}".format(

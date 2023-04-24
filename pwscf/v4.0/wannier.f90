@@ -37,7 +37,7 @@ module wannier
    ! For implementation of wannier_lib
    integer               :: mp_grid(3)            ! dimensions of MP k-point grid
    real(DP)              :: rlatt(3,3),glatt(3,3) ! real and recip lattices (Cartesian co-ords, units of Angstrom)
-   real(DP), allocatable :: kpt_latt(:,:)  ! k-points in crystal co-ords. kpt_latt(3,iknum)  
+   real(DP), allocatable :: kpt_latt(:,:)  ! k-points in crystal co-ords. kpt_latt(3,iknum)
    real(DP), allocatable :: atcart(:,:)    ! atom centres in Cartesian co-ords and Angstrom units. atcart(3,nat)
    integer               :: num_bands      ! number of bands left after exclusions
    character(len=3), allocatable :: atsym(:) ! atomic symbols. atsym(nat)
@@ -50,5 +50,3 @@ module wannier
    real(DP), allocatable    :: eigval(:,:)
 end module wannier
 !
-
-

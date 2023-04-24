@@ -290,7 +290,7 @@ Fermi energy in the specified range\\
   \new{\sc write\_hr} & L & \new{Write the Hamiltonian in the WF basis} \\
   \new{\sc write\_rmn } & L & \new{Write the position operator in the WF basis} \\
   \new{\sc write\_bvec } & L & \new{Write to file the matrix elements of the bvectors and their weights} \\
-\new{\sc write\_tb }  & L & \new{Write lattice vectors, 
+\new{\sc write\_tb }  & L & \new{Write lattice vectors,
 Hamiltonian, and position operator in WF basis} \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
   {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
@@ -636,7 +636,7 @@ For details see Section~\ref{sec:proj}.
 
 %\section{Constrains on centres}
 %
-%The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained. 
+%The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained.
 %
 %The block below shows all possible ways of setting the constraints. In particular, assuming $J'=5<J=${\tt num\_wann} :
 %
@@ -741,12 +741,12 @@ For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
 
 \subsection[auto\_projections]{\tt logical :: auto\_projections}
 
-If {\tt .true.} and no projections block is defined, then \wannier\ writes an additional block in the {\tt .nnkp} file during the pre-processing step, to instruct the interface code to automatically generate the $A_{mn}^{(\mathbf{k})}$. 
+If {\tt .true.} and no projections block is defined, then \wannier\ writes an additional block in the {\tt .nnkp} file during the pre-processing step, to instruct the interface code to automatically generate the $A_{mn}^{(\mathbf{k})}$.
 
 For additional information on the behavior and on the added block, see Sec.~\ref{sec:auto-projections-block}.
 
 \textbf{Note:} the interface code (e.g. \texttt{pw2wannier90.x}) must have at least one implementation of a
-method to automatically generate initial projections in order for this option to be usable. 
+method to automatically generate initial projections in order for this option to be usable.
 
 The default value of this parameter is $\verb#false#$.
 
@@ -1140,14 +1140,14 @@ If {\tt slwf\_constrain=true}, then the centres of the objective Wannier functio
 The default is {\tt false}
 
 \subsection[slwf\_lambda]{\tt real(kind=dp) :: slwf\_lambda}
-The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)^2$, where $J'$ is {\tt slwf\_num}, and $\overline{\mathbf{r}}_{n}$ and $\mathbf{r}_{0n}$ are the centre and target centre, respectively, for the $n^{\text{th}}$ objective WF. 
+The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)^2$, where $J'$ is {\tt slwf\_num}, and $\overline{\mathbf{r}}_{n}$ and $\mathbf{r}_{0n}$ are the centre and target centre, respectively, for the $n^{\text{th}}$ objective WF.
 
 The default is {\tt 0.0}.
 
 \subsection{Constraints on centres}
 \label{sec:centre_constraints}
 
-If {\tt slwf\_constrain=true}, then by default the centres to which the {\tt slwf\_num} objective Wannier function centres are constrained are given by the first {\tt slwf\_num} rows of the {\tt projections} block. 
+If {\tt slwf\_constrain=true}, then by default the centres to which the {\tt slwf\_num} objective Wannier function centres are constrained are given by the first {\tt slwf\_num} rows of the {\tt projections} block.
 
 Optionally, the {\tt slwf\_centres} block may be used to define alternative target centres for some or all of the {\tt slwf\_num} objective Wannier functions.
 
@@ -1478,7 +1478,7 @@ The default value is {\tt false}.
 
 \subsection[write\_bvec]{\tt logical :: write\_bvec}
 
-If $\verb#write_bvec#=\verb#true#$, then the the matrix elements of 
+If $\verb#write_bvec#=\verb#true#$, then the the matrix elements of
 bvector and their weights will be written to a file {\tt seedname.bvec}.
 
 The default value is {\tt false}.
@@ -1708,11 +1708,11 @@ The default value is $10^{-5}$.
 
 \subsection[ws\_search\_size]{\tt :: ws\_search\_size}
 Maximum absolute value for the integers $n,m,l$ that identify the super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see chapter~\ref{chap:interpolation})
-when searching for points inside the Wigner-Seitz cell. 
+when searching for points inside the Wigner-Seitz cell.
 If \verb#ws_search_size# is provided as a single integer,
-then the number of repetitions of the Born-von Karman cell is the same 
+then the number of repetitions of the Born-von Karman cell is the same
 along all three linear dimensions; otherwise, if three integers are
-provided, the number of repetitions along the $i-$th linear dimension is \verb#ws_search_size(i)#. 
+provided, the number of repetitions along the $i-$th linear dimension is \verb#ws_search_size(i)#.
 The variable is used both in \verb#hamiltonian.F90# and in \verb#ws_distance.F90#. In the latter case, its value is incremented by one in order to account for WFs whose centre wanders away from the original reference unit cell.\\
 The default value is generally sufficient, but might need to be increased in case of elongated cells.
 

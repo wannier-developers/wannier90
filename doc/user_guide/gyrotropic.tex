@@ -4,7 +4,7 @@
 
 The {\tt gyrotropic} module of {\tt postw90} is called by setting {\tt
   gyrotropic = true} and choosing one or more of the available options for
-{\tt gyrotropic\_task}. The module computes the quantities, studied in 
+{\tt gyrotropic\_task}. The module computes the quantities, studied in
  \cite{tsirkin-arxiv17}, where more details may be found.
 
 \section{{\tt gyrotropic\_task=-d0}: the Berry curvature dipole  }
@@ -40,7 +40,7 @@ generalization of the Berry curvature:
 \end{equation}
 Contrary to the Berry
   curvature, the divergence of $\tilde{\bm\Omega}_{\kk n}(\ww)$ is
-  generally nonzero. As a result, $\wt D(\ww)$ 
+  generally nonzero. As a result, $\wt D(\ww)$
 can have a nonzero trace at finite frequencies, $\tilde{D}_\|\neq-2\tilde{D}_\perp$ in Te.
 
 \section{{\tt gyrotropic\_task=-C}: the ohmic  conductivity }
@@ -62,19 +62,19 @@ units of surface current density (A/cm).
 \section{{\tt gyrotropic\_task=-K}: the kinetic magnetoelectric effect (kME) }
 
 A microscopic theory of the intrinsic kME effect in bulk crystals was
-recently developed~\cite{yoda-sr15,zhong-prl16}.  
+recently developed~\cite{yoda-sr15,zhong-prl16}.
 
 The response is described by
 \beq
 \label{eq:K_ab}
-K_{ab}=\int\dk\sum_n\frac{\partial E_n}{\partial{k_a}} m_n^b 
+K_{ab}=\int\dk\sum_n\frac{\partial E_n}{\partial{k_a}} m_n^b
 \left(-\frac{\partial f_0}{\partial E}\right)_{E=E_n},
 \eeq
 %
 which has the same form as \eq{D_ab}, but with the Berry
 curvature replaced by the intrinsic magnetic moment ${\bm m}_{\kk n}$
 of the Bloch electrons, which has the  spin and orbital components
- given by~\cite{xiao-rmp10} 
+ given by~\cite{xiao-rmp10}
 %
 \bea
 \label{eq:m-spin}
@@ -86,7 +86,7 @@ m^{\rm spin}_{\kk n}&=&-\frac{1}{2}g_s\mu_{\rm B} \me{\psi_{\kk
 (H_\kk-E_{\kk n})\ket{{\bm\partial}_\kk u_{\kk n}},
 \eea
 %
-where $g_s\approx 2$ and we chose $e>0$. 
+where $g_s\approx 2$ and we chose $e>0$.
 
 \section{{\tt gyrotropic\_task=-dos}: the density of states }
 
@@ -111,10 +111,10 @@ with $\partial_c\equiv\partial/\partial k_c$,
 \re\,\gamma_{abc}^{\mathrm{inter}}(\ww)=\frac{e^2}{\varepsilon_0\hbar^2}
 \int[d\kk]
 \sum_{n,l}^{o,e}\,
-\Bigl[ \frac{1}{\ww_{ln}^2-\ww^2} 
+\Bigl[ \frac{1}{\ww_{ln}^2-\ww^2}
 \re\left(A_{ln}^bB_{nl}^{ac}-A_{ln}^aB_{nl}^{bc}\right) \\
--\frac{3\ww_{ln}^2-\ww^2}{(\ww_{ln}^2-\ww^2)^2} 
-\partial_c(E_l+E_n)\im\left(A_{nl}^aA_{ln}^b\right)   
+-\frac{3\ww_{ln}^2-\ww^2}{(\ww_{ln}^2-\ww^2)^2}
+\partial_c(E_l+E_n)\im\left(A_{nl}^aA_{ln}^b\right)
 \Bigr].
 \label{eq:gamma-inter}
 \end{multline}
@@ -157,4 +157,3 @@ Wannier-function basis following Ref.~\cite{yates-prb07}.
 \section{{\tt gyrotropic\_task=-spin}: compute also the spin component of NOA and KME }
 
 Unless this task is specified, only the orbital contributions are calcuated in NOA and KME, thus contributions from \eqs{m-spin}{B-ac-spin} are omitted.
-

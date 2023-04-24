@@ -1,4 +1,4 @@
-all: $(patsubst %.chk.fmt.bz2, %.chk, $(wildcard *.chk.fmt.bz2)) $(patsubst %.mmn.bz2, %.mmn, $(wildcard *.mmn.bz2)) 
+all: $(patsubst %.chk.fmt.bz2, %.chk, $(wildcard *.chk.fmt.bz2)) $(patsubst %.mmn.bz2, %.mmn, $(wildcard *.mmn.bz2))
 
 %.chk: %.chk.fmt.bz2
 	$(eval SEEDNAME:=$(patsubst %.chk.fmt.bz2, %, $<))

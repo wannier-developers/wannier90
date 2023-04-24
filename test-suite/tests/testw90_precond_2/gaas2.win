@@ -1,7 +1,7 @@
 ! Gallium Arsenide: Tutorial Example 1
 ! Test preconditioner with optimisation = 2 (non-GEMM version)
 
- num_wann    =  4 
+ num_wann    =  4
  num_iter    = 40
  precond = true
  optimisation = 2
@@ -19,9 +19,9 @@ end unit_cell_cart
 
 begin atoms_frac
 Ga 0.00   0.00   0.00
-As 0.25  0.25  0.25 
+As 0.25  0.25  0.25
 end atoms_frac
- 
+
 begin projections
 As:sp3
 end projections
@@ -31,14 +31,14 @@ end projections
 mp_grid : 2 2 2
 
 begin kpoints
-0.0 0.0 0.0 
-0.0 0.0 0.5 
-0.0 0.5 0.0 
-0.0 0.5 0.5 
-0.5 0.0 0.0 
-0.5 0.0 0.5 
-0.5 0.5 0.0 
-0.5 0.5 0.5 
+0.0 0.0 0.0
+0.0 0.0 0.5
+0.0 0.5 0.0
+0.0 0.5 0.5
+0.5 0.0 0.0
+0.5 0.0 0.5
+0.5 0.5 0.0
+0.5 0.5 0.5
 end kpoints
 
 !We set this flag to read the bloch states from

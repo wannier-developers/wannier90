@@ -59,7 +59,7 @@ example23: Silicon - G0W0 bands structure interpolation
 
 example24: Tellurium - gyrotropic effects
 
-example25: Gallium Arsenide - Nonlinear shift current  
+example25: Gallium Arsenide - Nonlinear shift current
 
 example26: Gallium Arsenide - Selective localization and constrained centres
 
@@ -73,6 +73,6 @@ example30: Gallium Arsenide - ac spin Hall conductivity
 
 example31: Platinum - Selected columns of density matrix algorithm for spinor wavefunctions
 
-example32: Tungsten - SCDM parameters from projectability 
+example32: Tungsten - SCDM parameters from projectability
 
-example33: BC2N - Expansion coefficients for kdotp bands 
+example33: BC2N - Expansion coefficients for kdotp bands

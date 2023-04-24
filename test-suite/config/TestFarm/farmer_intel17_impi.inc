@@ -14,4 +14,3 @@ LDOPTS=-O3
 
 LIBDIR =  /mnt/buildbot/binary/intel17/compilers_and_libraries/linux/mkl/lib/intel64
 LIBS   = -L/mnt/buildbot/binary/intel17/lib/ -lmpi_mpifh -lmpi  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
-

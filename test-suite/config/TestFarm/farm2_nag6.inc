@@ -1,6 +1,6 @@
 #=======================
-# NAG 
-#======================= 
+# NAG
+#=======================
 
 F90 = nagfor
 MPIF90 = nagfor
@@ -22,4 +22,3 @@ LIBS = -llapack -lblas
 
 # ACML for blas and lapack
 #LIBS = -lacml
-

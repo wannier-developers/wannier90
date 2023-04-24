@@ -44,7 +44,7 @@ and write the curvature as an antisymmetric tensor,
 \begin{equation}
 \label{eq:curv}
 \Omega_{n,\alpha\beta}({\bf k}) =\epsilon_{\alpha\beta\gamma}
-\Omega_{n,\gamma}({\bf k})=-2{\rm Im}\langle 
+\Omega_{n,\gamma}({\bf k})=-2{\rm Im}\langle
 \nabla_{k_\alpha} u_{n\bf k}\vert \nabla_{k_\beta} u_{n\bf k}\rangle.
 \end{equation}
 
@@ -196,7 +196,7 @@ Brillouin zone is
 \langle u_{m\bf k}\vert\nabla_{k_\beta} u_{n\bf k}\rangle,
 \end{equation}
 %
-where we replaced $f_{n\bf k}-f_{m\bf k}$ with 
+where we replaced $f_{n\bf k}-f_{m\bf k}$ with
 $f_{n\bf k}(1-f_{m\bf k})-f_{m\bf k}(1-f_{n\bf k})$.
 
 This expression is not the most convenient for {\it ab initio}
@@ -265,7 +265,7 @@ in the independent-particle approximation reads \cite{qiao-prb2018,ryoo-prb2019,
 {(\epsilon_{n\bm{k}}-\epsilon_{m\bm{k}})^2-(\hbar\omega +i\eta)^2}.
 \end{equation}
 %
-The spin current operator 
+The spin current operator
 $\hat{j}_{\alpha}^{\gamma}=
 \frac{1}{2}\{\hat{s}_{\gamma},\hat{v}_{\alpha}\}$ where the spin operator $\hat{s}_{\gamma}=\frac{\hbar}{2}\hat{\sigma}_{\gamma}$. Indices $\alpha,\beta$ denote Cartesian directions, $\gamma$ denotes the direction of spin, commonly $\alpha = x, \beta = y, \gamma = z$.  $\Omega_c$ is the
 cell volume, $N_k$ is the number of $k$-points used for sampling the
@@ -274,20 +274,20 @@ Fermi-Dirac distribution function. $\hbar\omega$ is the optical
 frequency, and $\eta>0$ is an adjustable smearing parameter with unit
 of energy.
 
-The velocity matrix element in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}), 
-so the only unknown quantity is the spin current matrix $\langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle$. 
+The velocity matrix element in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}),
+so the only unknown quantity is the spin current matrix $\langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle$.
 We can use Wannier interpolation technique to efficiently calculate this matrix, and there are two derivation according to the degree of approximation. A noteworthy difference is the way in which two {\it ab-initio} matrix elements are evaluated,
 \begin{equation}
   \langle u_{n{\bf k}}\vert\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle, \langle u_{n{\bf k}}\vert\sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle, \gamma = x, y, z
 \end{equation}
 These are evaluated by {\tt pw2wannier90} using Ryoo's method. In contrast, Qiao's method does not require {\tt pw2wannier90}, but it assumes an approximation $1\approx\sum_{ l\in ab-initio{\rm \,bands}}|u_{l\bm{k}}\rangle \langle u_{l\bm{k}}|$. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
 
-The Eq.~(\ref{eq:kubo_shc}) can be further separated into 
+The Eq.~(\ref{eq:kubo_shc}) can be further separated into
 band-projected Berry curvature-like term
 \begin{equation}
 \label{eq:kubo_shc_berry}
 \Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k}) = {\hbar}^2 \sum_{
-	m\ne n}\frac{-2\operatorname{Im}[\langle n\bm{k}| 
+	m\ne n}\frac{-2\operatorname{Im}[\langle n\bm{k}|
 	\frac{1}{2}\{\hat{\sigma}_{\gamma},\hat{v}_{\alpha}\}|m\bm{k}\rangle
 	\langle m\bm{k}| \hat{v}_{\beta}|n\bm{k}\rangle]}
 {(\epsilon_{n\bm{k}}-\epsilon_{m\bm{k}})^2-(\hbar\omega+i\eta)^2},
@@ -298,34 +298,34 @@ $k$-resolved term which sums over occupied bands
 \Omega_{\alpha\beta}^{\text{spin}\gamma}(\bm{k}) = \sum_{n}
 f_{n\bm{k}} \Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k}),
 \end{equation}
-and the SHC is 
+and the SHC is
 \begin{equation}
-\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega) = 
+\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega) =
 -\frac{e^2}{\hbar}\frac{1}{\Omega_c N_k}\sum_{\bm{k}}
 \Omega_{\alpha\beta}^{\text{spin}\gamma}(\bm{k}).
 \end{equation}
-The unit of the $\Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k})$ 
-is $\text{length}^{2}$ (Angstrom$^2$ or Bohr$^2$, depending on your 
-choice of {\tt berry\_curv\_unit} in the input file), 
-and the unit of  $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ 
-is $(\hbar/e)$S/cm (the unit is written in the header of the output file). 
-The case of $\omega=0$ corresponds to 
-direct current (dc) SHC while that of $\omega\ne0$ 
-corresponds to alternating current (ac) SHC or frequency-dependent SHC. 
-Note in some papers Eq.~(\ref{eq:kubo_shc_berry}) is called as 
-spin Berry curvature. However, it was pointed out by 
-Ref.~\cite{Gradhand_2012} that this 
-name is misleading, so we use a somewhat awkward name 
-``Berry curvature-like term'' to refer to Eq.~(\ref{eq:kubo_shc_berry}). 
-The $k$-resolved term Eq.~(\ref{eq:kubo_shc_berry_sum}) can be 
-used to draw {\tt kslice} plot, and the band-projected Berry curvature-like term 
+The unit of the $\Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k})$
+is $\text{length}^{2}$ (Angstrom$^2$ or Bohr$^2$, depending on your
+choice of {\tt berry\_curv\_unit} in the input file),
+and the unit of  $\sigma_{\alpha\beta}^{\text{spin}\gamma}$
+is $(\hbar/e)$S/cm (the unit is written in the header of the output file).
+The case of $\omega=0$ corresponds to
+direct current (dc) SHC while that of $\omega\ne0$
+corresponds to alternating current (ac) SHC or frequency-dependent SHC.
+Note in some papers Eq.~(\ref{eq:kubo_shc_berry}) is called as
+spin Berry curvature. However, it was pointed out by
+Ref.~\cite{Gradhand_2012} that this
+name is misleading, so we use a somewhat awkward name
+``Berry curvature-like term'' to refer to Eq.~(\ref{eq:kubo_shc_berry}).
+The $k$-resolved term Eq.~(\ref{eq:kubo_shc_berry_sum}) can be
+used to draw {\tt kslice} plot, and the band-projected Berry curvature-like term
 Eq.~(\ref{eq:kubo_shc_berry})
-can be used to color the {\tt kpath} plot. 
+can be used to color the {\tt kpath} plot.
 
 Same as the case of optical conductivity, the parameter
-$\eta$ contained in the Eq.~(\ref{eq:kubo_shc_berry}) can be chosen using the keyword {\tt[kubo\_]smr\_fixed\_en\_width}. Also, adaptive smearing can 
-be employed by the keyword {\tt [kubo\_]adpt\_smr} 
-(see Examples 29 and 30 in the Tutorial). 
+$\eta$ contained in the Eq.~(\ref{eq:kubo_shc_berry}) can be chosen using the keyword {\tt[kubo\_]smr\_fixed\_en\_width}. Also, adaptive smearing can
+be employed by the keyword {\tt [kubo\_]adpt\_smr}
+(see Examples 29 and 30 in the Tutorial).
 
 Please cite the following paper~\cite{qiao-prb2018} or ~\cite{ryoo-prb2019} when publishing SHC results obtained using this method:
 \begin{quote}
@@ -357,8 +357,8 @@ is characterized by a frequency-dependent third-rank tensor~\cite{sipe-prb00}
 \end{equation}
 where $a,b,c$ are spatial indexes
 and $\omega_{mn\bm{k}}=(\epsilon_{n\bm{k}}-\epsilon_{m\bm{k}})/\hbar$.
-The expression in Eq.~\ref{eq:shiftcurrent} involves 
-the dipole matrix element 
+The expression in Eq.~\ref{eq:shiftcurrent} involves
+the dipole matrix element
 \begin{equation}
 \label{eq:r}
 r^a_{ nm}(\bm{k})=(1-\delta_{nm})A^a_{ nm}(\bm{k}),
@@ -374,18 +374,18 @@ r^{a;b}_{nm}(\bm{k})=\partial_{k_{b}} r^a_{nm}(\bm{k})
 The first-principles evaluation of the
 above expression is technically challenging
 due to the presence of an extra $k$-space derivative.
-The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz_ab_2018}, 
-following the spirit of the Wannier-interpolation 
+The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz_ab_2018},
+following the spirit of the Wannier-interpolation
 method for calculating the AHC~\cite{wang-prb06} by reformulating $k\cdot p$
 perturbation theory within the subspace of wannierized bands.
 This strategy inherits the practical advantages of the sum-over-states
 approach, but without introducing the truncation errors usually associated with this procedure~\cite{sipe-prb00}.
 
-As in the case of the optical conductivity, a broadened delta function can be 
+As in the case of the optical conductivity, a broadened delta function can be
 applied in Eq.~\ref{eq:shiftcurrent} by means of the parameter
-$\eta$ (see Eq.~\ref{eq:lorentzian}) using the keyword 
-{\tt[kubo\_]smr\_fixed\_en\_width}, and adaptive smearing can 
-be employed using the keyword {\tt [kubo\_]adpt\_smr}. 
+$\eta$ (see Eq.~\ref{eq:lorentzian}) using the keyword
+{\tt[kubo\_]smr\_fixed\_en\_width}, and adaptive smearing can
+be employed using the keyword {\tt [kubo\_]adpt\_smr}.
 
 Please cite Ref.~\cite{ibanez-azpiroz_ab_2018} when publishing shift-current results using this method.
 
@@ -402,7 +402,7 @@ are known, and $H^{\prime}$ is a perturbation. In a nutshell, quasi-degenerate
 perturbation theory assumes that the set of eigenfunctions of $H^0$
 can be divided into subsets $A$ and $B$ that are weakly coupled by $H^{\prime}$,
 and that we are only interested in subset $A$.
-This theory asserts that a transformed Hamiltonian $\tilde{H}$ exists 
+This theory asserts that a transformed Hamiltonian $\tilde{H}$ exists
 within subspace $A$ such that
 \beq
 \label{eq:pert-exp}
@@ -417,12 +417,12 @@ According to Appendix B of Ref~\cite{winkler_spin-orbit_2003}, the first three t
 & \tilde{H}^{1}_{mm'} = H^{'}_{mm'},\\
 \label{eq:pert-matelem2}
 & \tilde{H}^{2}_{mm'} = \dfrac{1}{2}\sum_{l}H^{'}_{ml}H^{'}_{lm'}
-\left( 
+\left(
 \dfrac{1}{E_{m}-E_{l}}+\dfrac{1}{E_{m'}-E_{l}}
 \right),
 \eea
 where  $m,m'\in A$ and $l\in B$.
-The approximation $\tilde{H}\sim \tilde{H}^{0}+\tilde{H}^{1}$ amounts to truncating 
+The approximation $\tilde{H}\sim \tilde{H}^{0}+\tilde{H}^{1}$ amounts to truncating
 $H$ to the $A$ subspace. By further including $\tilde{H}^{2}$, the coupling to the $B$
 subspace is incorporated approximately, ``renormalizing'' the elements of the truncated matrix.
 
@@ -436,7 +436,7 @@ H^{(W)}(\bm{k})=H^{(W)}(0)
 +\dfrac{1}{2}\sum_{ab}H_{ab}^{(W)}(0)k_{a}k_{b}
 + \mathcal{O}(k^{3})
 \eeq
-where $a,b=x,y,z$, and 
+where $a,b=x,y,z$, and
 \bea
 &H_{a}^{(W)}(0)=\left. \dfrac{\partial H^{(W)}(\bm{k})}{\partial k_{a}}\right\rvert_{\bm{k}=0}\\
 &H_{ab}^{(W)}(0)=\left. \dfrac{\partial^{2} H^{(W)}(\bm{k})}{\partial k_{a}\partial k_{b}}\right\rvert_{\bm{k}=0}
@@ -459,7 +459,7 @@ terms in Eq. \ref{eq:Hbar} as $H^{\prime}$.
 Collecting terms in \eq{pert-exp} up to second order in $k$
 we get
 \beq\label{eq:Htilde}
- \tilde{H}_{mm'}(\bm{k}) = 
+ \tilde{H}_{mm'}(\bm{k}) =
 \overline{H}_{mm'} + \sum_{a} \left(\overline{H}_{a}\right)_{mm'}k_{a}
  + \dfrac{1}{2}\sum_{a,b}\left[
 \left(\overline{H}_{ab}\right)_{mm'} + \left({T}_{ab}\right)_{mm'}
@@ -468,21 +468,21 @@ we get
 where  $m,m'\in A$ and we have defined the virtual-transition matrix
 \beq\label{eq:Tab}
 \left({T}_{ab}\right)_{mm'}=\sum_{l\in B}
-\left(\overline{H}_{a}\right)_{ml}\left(\overline{H}_{b}\right)_{lm'} 
+\left(\overline{H}_{a}\right)_{ml}\left(\overline{H}_{b}\right)_{lm'}
  \times
-\left( 
+\left(
 \dfrac{1}{E_{m}-E_{l}}+\dfrac{1}{E_{m'}-E_{l}}
 \right)
-= 
+=
 \left({T}_{ab}\right)_{m'm}^{*}.
-\eeq 
-(The $T_{ab}$ term in Eq. \ref{eq:Htilde} gives an Hermitean contribution to 
+\eeq
+(The $T_{ab}$ term in Eq. \ref{eq:Htilde} gives an Hermitean contribution to
 $\tilde{H}(\bm{k})$ only after summing over $a$ and $b$, whereas the other terms
 are Hermitean already before summing.)
 
 
-The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz-ArXiv2019}, 
-and outputs $\overline{H}_{mm'}$ in {\tt   seedname-kdotp\_0.dat}, 
+The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz-ArXiv2019},
+and outputs $\overline{H}_{mm'}$ in {\tt   seedname-kdotp\_0.dat},
 $\left(\overline{H}_{a}\right)_{mm'}$ in {\tt   seedname-kdotp\_1.dat}, and
 $\left[\left(\overline{H}_{ab}\right)_{mm'} + \left({T}_{ab}\right)_{mm'}\right]/2$ in {\tt   seedname-kdotp\_2.dat}.
 
@@ -528,14 +528,14 @@ write\_uHu = .true.
 %\end{quote}
 }
 $$
-The calculation of spin Hall conductivity needs the 
+The calculation of spin Hall conductivity needs the
 spin matrix elements
 %
-$$\langle u_{n{\bf k}}\vert \sigma_\gamma \vert u_{m{\bf k}}\rangle, 
+$$\langle u_{n{\bf k}}\vert \sigma_\gamma \vert u_{m{\bf k}}\rangle,
 \gamma = x, y, z
 $$
-% 
-from the {\it ab-initio} $k$-point mesh. These are also 
+%
+from the {\it ab-initio} $k$-point mesh. These are also
 evaluated by {\tt pw2wannier90} by adding to the input file {\tt
 seedname.pw2wan} the line
 %

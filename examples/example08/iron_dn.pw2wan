@@ -1,4 +1,4 @@
-&inputpp 
+&inputpp
    outdir = './'
    prefix = 'Fe'
    seedname = 'iron_dn'

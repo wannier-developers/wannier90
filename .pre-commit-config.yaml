@@ -1,24 +1,16 @@
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.1.0
-  hooks:
-  - id: check-yaml
-  - id: trailing-whitespace
-    files: (?x)^(
-        config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
-      )$
-  - id: end-of-file-fixer
-    files: (?x)^(
-        config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
-      )$
-- repo: https://github.com/pseewald/fprettify
-  rev: v0.3.3
-  hooks:
-  - id: fprettify
-    args: ['--indent', '2']
-    exclude: (?x)^(
-        pwscf/.*
-      )$
-    verbose: true
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: check-yaml
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+  - repo: https://github.com/pseewald/fprettify
+    rev: v0.3.3
+    hooks:
+      - id: fprettify
+        args: [ '--indent', '2' ]
+        exclude: (?x)^(
+          pwscf/.*
+          )$
+        verbose: true

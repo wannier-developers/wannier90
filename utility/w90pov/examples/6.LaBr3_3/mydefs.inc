@@ -25,7 +25,7 @@ camera{
  }
  background { color rgb<1.0,1.0,1.0>}
 
- light_source {  lookpos+a3+0.3*a1 rgb <1.0,1.0,1.0> 
+ light_source {  lookpos+a3+0.3*a1 rgb <1.0,1.0,1.0>
   photons {
   reflection on
   refraction on
@@ -101,7 +101,7 @@ camera{
 #macro elblob1(level, thenorm, fun, c1, c2, c3, corg, col, trans)
 object{
 
- isosurface { 
+ isosurface {
     function { level/abs(thenorm) - fun( x, y, z)  }
     accuracy 0.00001
     contained_by { box { <0,0,0>,<1.0,1.0,1.0> } }
@@ -109,7 +109,7 @@ object{
     pigment { rgbt <col.red,col.green,col.blue,trans>}
     finish { phong 0.7 phong_size 90 }
     }
-    matrix <      
+    matrix <
      c1.x,c1.y,c1.z,
      c2.x,c2.y,c2.z,
      c3.x,c3.y,c3.z,
@@ -122,7 +122,7 @@ object{
 #macro elblob2(level, thenorm, fun, c1, c2, c3, corg, col, trans)
 object{
 
- isosurface { 
+ isosurface {
     function { level/abs(thenorm) - fun( x, y, z)  }
     accuracy 0.00001
     contained_by { box { <0,0,0>,<1.0,1.0,1.0> } }
@@ -145,11 +145,11 @@ photons{
   target
   reflection on
   refraction on
-  collect off 
+  collect off
 }
 
     }
-    matrix <      
+    matrix <
      c1.x,c1.y,c1.z,
      c2.x,c2.y,c2.z,
      c3.x,c3.y,c3.z,
@@ -164,4 +164,3 @@ photons{
  elblob2(level, maxp, funp, c1, c2, c3, corg, col, trans)
  elblob2(level, minp, funm, c1, c2, c3, corg, CW_angle (col,60), trans)
 #end
- 

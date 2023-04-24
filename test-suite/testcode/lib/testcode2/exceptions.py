@@ -31,4 +31,4 @@ class TestCodeError(Exception):
     '''Top level exception for testcode errors.'''
     pass
 
-signal.signal(signal.SIGINT, signal_handler) # Listen out for Ctrl-C. 
+signal.signal(signal.SIGINT, signal_handler) # Listen out for Ctrl-C.

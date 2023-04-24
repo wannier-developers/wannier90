@@ -19,7 +19,7 @@
 	\item {\it Inspect the output file {\tt LaVO3.wout}. In the initial summary, you will see that the disentanglement was
 performed only within one sphere of radius 0.2 around the point {\tt A = (0.5, 0.5, 0.5)} in reciprocal space:}
 
-{\small 
+{\small
 \begin{tcolorbox}[sharp corners,boxrule=0.5pt]
 \begin{verbatim}
  *------------------------------- DISENTANGLE --------------------------------*
@@ -37,7 +37,7 @@ performed only within one sphere of radius 0.2 around the point {\tt A = (0.5, 0
 \item {\it Compare the band structure that \Wannier{} produced with the one obtained using Quantum ESPRESSO.}
 
 To obtain the band structure from the Quantum ESPRESSO calculation we can use the {\tt bands.x} program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}, see mini-tutorial at the end of Ex.~\ref{sec6:copper}. Here, we only report the {\tt .inp} file used to generate the $k$-point mesh for the non-scf calculation
-{\small 
+{\small
 \begin{tcolorbox}[title=bands.x input file LaVO3.inp,sharp corners,boxrule=0.5pt]
 \begin{verbatim}
 7.03 0.00 0.00
@@ -56,7 +56,7 @@ R       0.50000  0.00000  0.50000  X       0.50000  0.00000  0.00000
 \end{verbatim}
 \end{tcolorbox}
 }
-Remember to add the following line to the {\tt .bands} file in order to show the eigenvalues at each k-point. 
+Remember to add the following line to the {\tt .bands} file in order to show the eigenvalues at each k-point.
 {\tt
 \begin{quote}
 verbosity      = 'high'
@@ -69,7 +69,7 @@ Plot of the interpolated band structure is shown in Fig.~(\ref{fig20.1}). In the
 \begin{itemize}
 	\item {\it Try to obtain the Wannier functions using the standard disentanglement procedure \dots}
 
-	Plots of the band structure of LaVO$_3$ with full disentanglement and no disentanglement are shown in Fig.~(\ref{fig20.2}). These are plotted against the quantum ESPRESSO band structure (solid black lines) and the \Wannier{}-interpolated one with disentanglement performed only within a sphere centred in A (red dots). We see that the other two methods diverge from the DFT calculation in region of $k$-space where the bands of interest are not entangled with other unwanted bands. For example, in the zone between $\Gamma$ and M and Z and A the interpolated bands with full disentanglement and no disentanglement diverge substantially from the DFT calculation.  
+	Plots of the band structure of LaVO$_3$ with full disentanglement and no disentanglement are shown in Fig.~(\ref{fig20.2}). These are plotted against the quantum ESPRESSO band structure (solid black lines) and the \Wannier{}-interpolated one with disentanglement performed only within a sphere centred in A (red dots). We see that the other two methods diverge from the DFT calculation in region of $k$-space where the bands of interest are not entangled with other unwanted bands. For example, in the zone between $\Gamma$ and M and Z and A the interpolated bands with full disentanglement and no disentanglement diverge substantially from the DFT calculation.
 
 	\item {\it In order to illustrate all possible cases, it is instructive to apply this method to SrMnO$_3$ \dots}
 

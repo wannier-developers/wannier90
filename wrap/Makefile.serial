@@ -112,7 +112,7 @@ $(BUILD)/overlap.o: ../src/overlap.F90 $(BUILD)/constants.o $(BUILD)/io.o \
 	$(BUILD)/wannier90_types.o $(BUILD)/comms.o $(BUILD)/error.o
 
 $(BUILD)/kmesh.o: ../src/kmesh.F90 $(BUILD)/constants.o $(BUILD)/io.o \
-	$(BUILD)/utility.o $(BUILD)/types.o 
+	$(BUILD)/utility.o $(BUILD)/types.o
 
 $(BUILD)/error_base.o: ../src/error_base.F90
 

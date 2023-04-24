@@ -18,15 +18,15 @@ written in an unformatted machine-dependent format. If you need to use
 this file on a different machine, or you want to use a version of
 \texttt{postw90.x} compiled with a different compiler, refer to
 Sec.~\ref{sec:w90chk2chk} in the Appendices for a description of how
-to export/import this file. 
+to export/import this file.
 
 \section{Usage}
 {\tt postw90.x} can be run in parallel using MPI libraries to
 reduce the computation time.
 
-For serial execution use: {\tt postw90.x [seedname]} 
+For serial execution use: {\tt postw90.x [seedname]}
 
-\begin{itemize} \item 
+\begin{itemize} \item
 {\tt seedname}: If a seedname string is given the code
 will read its input from a file {\tt seedname.win}. The default
   value is {\tt wannier}. One can also equivalently provide the string
@@ -35,7 +35,7 @@ will read its input from a file {\tt seedname.win}. The default
 
 For parallel execution use: {\tt mpirun -np NUMPROCS postw90.x [seedname]}
 
-\begin{itemize} \item 
+\begin{itemize} \item
 {\tt NUMPROCS}: substitute with the number of processors that you want
 to use.
 \end{itemize}
@@ -55,7 +55,7 @@ configured on your machine.
 The \texttt{postw90.x} uses the same \texttt{seedname.win} input file
 of \texttt{wannier90.x}. The input keywords of \texttt{postw90.x} must
 thus be added to this file, using the same syntax described in
-Sec.~\ref{sec:seednamefile}. 
+Sec.~\ref{sec:seednamefile}.
 
 Note that \texttt{wannier90.x} checks if the syntax of the input file
 is correct, but then ignores the value of the flags that refer only to
@@ -80,21 +80,21 @@ The currently available modules in \texttt{postw90.x} are:
 \item \texttt{dos}: Calculation of the density of states (DOS), projected
   density of states (PDOS), net spin etc.
 \item \texttt{kpath}: Calculation of $k$-space quantities such as
-  energy bands, Berry curvature and Berry curvature-like term 
+  energy bands, Berry curvature and Berry curvature-like term
   of spin Hall conductivity along a piecewise linear path in
   the BZ (see examples 17, 18 and 29 of the tutorial).
 \item \texttt{kslice}: Calculation of $k$-space quantities on a planar
   slice of the BZ (see examples 17, 18 and 29 of the tutorial).
 \item \texttt{berry}: Calculation of properties related to the BZ
-  integral of the Berry curvature, Berry connection and 
+  integral of the Berry curvature, Berry connection and
   Berry curvature-like term of spin Hall conductivity, including
   anomalous Hall conductivity, orbital magnetisation, optical
   conductivity, nonlinear shift current and spin Hall conductivity
   (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29 and 30 of the
   tutorial). It also includes an option to compute $k\cdot p$ expansion coefficients
   (see Sec.~\ref{sec:kdotp} and example 33 of the tutorial).
-\item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
-    including natural and current0induced optical rotation, 
+\item \texttt{gyrotropic}: Calculation of gyrotropic properties,
+    including natural and current0induced optical rotation,
 and the current-induced magnetization
    (see Chap.~\ref{ch:gyrotropic} and examples  of the
   tutorial).
@@ -131,14 +131,14 @@ specific to the modules can be found in the following sections.
   \hline\hline
   \multicolumn{3}{|c|}{Global Parameters of \postw\ } \\
   \hline
-  {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
+  {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh
 (one or three integers) \\
   {\sc kmesh\_spacing}& R & Minimum spacing between $k$ points in
   \AA$^{-1}$\\
   {\sc adpt\_smr}   & L & Use adaptive smearing\\
   {\sc adpt\_smr\_fac}   & R & Adaptive smearing prefactor\\
   {\sc adpt\_smr\_max} & P & Maximum allowed value for the adaptive
-  energy smearing (eV) \\  
+  energy smearing (eV) \\
   {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
@@ -148,13 +148,13 @@ specific to the modules can be found in the following sections.
   up-spin, down-spin, and possibly spin-flip parts\\
   {\sc spin\_axis\_polar}& P & Polar angle of the spin quantization axis (deg)\\
   {\sc spin\_axis\_azimuth}& P & Azimuthal angle of the spin quantization axis (deg)\\
-  {\sc spin\_moment}$^*$& L & Determines whether to evaluate the spin 
-magnetic moment per cell\\ 
+  {\sc spin\_moment}$^*$& L & Determines whether to evaluate the spin
+magnetic moment per cell\\
   {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
 %  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
-{\sc spn\_formatted}  & L & 
+{\sc spn\_formatted}  & L &
   Read a formatted {\tt seedname.spn} file\\
-  {\sc berry\_curv\_unit} & S & Unit of Berry curvature\\ 
+  {\sc berry\_curv\_unit} & S & Unit of Berry curvature\\
  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]  {{\tt
@@ -187,12 +187,12 @@ magnetic moment per cell\\
   computing the DOS (eV)\\
   {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
   {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
-  {\sc [dos\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
+  {\sc [dos\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\
   {\sc [dos\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc [dos\_]adpt\_smr} & L & Use adaptive smearing for the DOS \\
   {\sc [dos\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
   {\sc [dos\_]adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
-  {\sc [dos\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
+  {\sc [dos\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
   {\sc [dos\_]smr\_type} & S & Analytical form used for the broadened delta function
   when computing the DOS. \\
   \hline
@@ -245,10 +245,10 @@ magnetic moment per cell\\
   {\sc kslice\_corner}& R & Position of the corner of the slice\\
   {\sc kslice\_b1}& R & First vector defining the slice\\
   {\sc kslice\_b2}& R & Second vector defining the slice\\
-  {\sc kslice\_2dkmesh}& I & Dimensions of the uniform interpolation 
+  {\sc kslice\_2dkmesh}& I & Dimensions of the uniform interpolation
   $k$-mesh on the slice (one or two integers)\\
    \red{\sc kslice\_fermi\_level}& P & \red{This parameter is not used anymore. Use {\sc fermi\_energy} instead.}\\
- {\sc kslice\_fermi\_lines\_colour}& S & Property used to colour the Fermi 
+ {\sc kslice\_fermi\_lines\_colour}& S & Property used to colour the Fermi
   lines\\
   \hline
 \end{tabular}
@@ -275,13 +275,13 @@ magnetic moment per cell\\
   \hline
   {\sc berry}  & L & Calculate Berry-type quantities \\
   {\sc berry\_task}& S  & List of properties to compute \\
-  {\sc [berry\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
-  (one or three integers)\\ 
-  {\sc [berry\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
+  {\sc [berry\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh
+  (one or three integers)\\
+  {\sc [berry\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in
   \AA$^{-1}$\\
-  {\sc berry\_curv\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous/spin Hall conductivity\\ 
+  {\sc berry\_curv\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous/spin Hall conductivity\\
   {\sc berry\_curv\_adpt\_kmesh\_thresh} & P & Threshold magnitude
-  of the Berry curvature for adaptive refinement\\ 
+  of the Berry curvature for adaptive refinement\\
   {\sc kubo\_freq\_min} & P & Lower limit of the frequency range for
   optical spectra, JDOS, shift current and spin Hall conductivity (eV) \\
   {\sc kubo\_freq\_max}& P & Upper limit of the frequency range for
@@ -290,13 +290,13 @@ magnetic moment per cell\\
 the optical frequency in the specified range\\
   {\sc kubo\_eigval\_max}& P &  Maximum energy eigenvalue
   included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity\\
-  {\sc [kubo\_]adpt\_smr} & L & Use adaptive energy smearing for the 
+  {\sc [kubo\_]adpt\_smr} & L & Use adaptive energy smearing for the
   optical conductivity, JDOS, shift current and spin Hall conductivity \\
   {\sc [kubo\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
-  {\sc[kubo\_]adpt\_smr\_max} & P & Maximum allowed value for the 
+  {\sc[kubo\_]adpt\_smr\_max} & P & Maximum allowed value for the
   adaptive energy smearing (eV) \\
   {\sc [kubo\_]smr\_type} & S & Analytical form used for the broadened delta function
-  when computing the optical conductivity, JDOS, shift current and spin Hall conductivity\\  
+  when computing the optical conductivity, JDOS, shift current and spin Hall conductivity\\
   {\sc [kubo\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
   for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV) \\
   {\sc sc\_eta} & R  & Energy broadening of energy differences in the sum over virtual states when computing shift current\\
@@ -338,9 +338,9 @@ the optical frequency in the specified range\\
   \hline
   {\sc gyrotropic}  & L & Calculate gyrotropic quantities \\
   {\sc gyrotropic\_task}& L  & List of properties to compute \\
-  {\sc [gyrotropic\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
-  (one or three integers)\\ 
-  {\sc [gyrotropic\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
+  {\sc [gyrotropic\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh
+  (one or three integers)\\
+  {\sc [gyrotropic\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in
   \AA$^{-1}$\\
   {\sc gyrotropic\_freq\_min} & P & Lower limit of the frequency range for
   optical rotation (eV) \\
@@ -351,7 +351,7 @@ the optical frequency in the specified range\\
   {\sc gyrotropic\_eigval\_max}& P &  Maximum energy eigenvalue
   included when evaluating the interband natural optical activity\\
   {\sc gyrotropic\_degen\_thresh}& P &  threshold to exclude degenerate bands from the calculation\\
-  {\sc [gyrotropic\_]smr\_type} & S & Analytical form used for the broadened delta function\\  
+  {\sc [gyrotropic\_]smr\_type} & S & Analytical form used for the broadened delta function\\
   {\sc [gyrotropic\_]smr\_fixed\_en\_width} & P  & Energy smearing (eV) \\\hline
   {\sc [gyrotropic\_]band\_list} & I  & list of bands used in the calculation \\\hline
   {\sc gyrotropic\_box\_center} & R  &  \multirow{4}{6cm}{The center and three basis vectors, %
@@ -382,8 +382,8 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{{\tt BoltzWann} Parameters} \\
 \hline
 {\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
-{\sc [boltz\_]kmesh} & I & Dimensions of the uniform interpolation 
-$k$-mesh (one or three integers)\\ 
+{\sc [boltz\_]kmesh} & I & Dimensions of the uniform interpolation
+$k$-mesh (one or three integers)\\
 {\sc [boltz\_]kmesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
 {\sc boltz\_2d\_dir} & S & Non-periodic direction (for 2D systems only)\\
 {\sc boltz\_relax\_time} & P & Relaxation time in fs\\
@@ -429,9 +429,9 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{{\tt geninterp} Parameters} \\
 \hline
 {\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
-{\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
+{\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\
 {\sc geninterp\_single\_file} & L & Write a single file or one for each
-process\\ 
+process\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the geninterp module.]
@@ -447,10 +447,10 @@ physical value, L for a logical value and S for a text string.}
 \section{Global variables}
 \label{sec:postw90-globalflags}
 
-  \subsection[kmesh]{\tt  integer :: kmesh(:)}  
+  \subsection[kmesh]{\tt  integer :: kmesh(:)}
 Dimensions of the interpolation grid used in {\tt postw90.x}.
 
-\emph{Not to be confused with the {\tt mp\_grid} 
+\emph{Not to be confused with the {\tt mp\_grid}
 input flag, which
   instead specifies the Monkhorst--Pack grid used in the ab-initio calculation!}
 
@@ -466,7 +466,7 @@ If you use a module which needs a k-mesh, either {\tt kmesh\_spacing} or {\tt
 An alternative way of specifying the interpolation grid.
 This flag defines the minimum distance for
 neighboring $k$ points along each of the three directions in $k$
-space. 
+space.
 
 The units are \AA$^{-1}$.
 
@@ -476,7 +476,7 @@ If you use a module which needs a k-mesh, either {\tt kmesh\_spacing} or {\tt
 \subsection[adpt\_smr]{\tt logical :: adpt\_smr}
 Determines whether to use an adaptive scheme for broadening the
 DOS and similar quantities defined on the energy axis.
-If \verb#true#, the values for the smearing widths are 
+If \verb#true#, the values for the smearing widths are
 controlled by the flag {\tt adpt\_smr\_fac}.
 
 The default value is \verb#true#.
@@ -490,7 +490,7 @@ band $n$ at point ${\bf k}$ is calculated as
 $$
 \eta_{n{\bf k}}=\alpha\vert \nabla_{\bf k}
 \varepsilon_{n{\bf k}}\vert \Delta k,
-$$ 
+$$
 %
 where $\varepsilon_{n{\bf k}}$ is the energy eigenvalue and the
 dimensionless factor $\alpha$ is given by {\tt
@@ -515,7 +515,7 @@ the computation of the DOS and similar quantities defined on the
 energy axis.
 
 \begin{itemize}
-  
+
 \item
   {\tt gauss}: Gaussian smearing
 
@@ -546,24 +546,24 @@ will be unsmeared (thus the default is to have an unsmeared
 properties when {\tt  adpt\_smr} is set to \verb#false#.).
 
 
-  \subsection{\tt integer :: num\_elec\_per\_state} 
+  \subsection{\tt integer :: num\_elec\_per\_state}
 Number of electrons per state. It can only take the values one or
 two.
 
 The default value is 1 if {\tt spinors=true}, 2 otherwise.
 
-  \subsection{\tt real(kind=dp) :: scissors\_shift} 
+  \subsection{\tt real(kind=dp) :: scissors\_shift}
 Scissors shift applied to the conduction bands.
 
 \textbf{Note!} This variable is deprecated and will be removed in future
 versions of the code. This applies the scissors shift only to the Hamiltonian,
-but also other matrices might need to be updated if a scissors shift is 
-applied. If you are using BoltzWann, consider using \texttt{boltz\_bandshift} instead. 
+but also other matrices might need to be updated if a scissors shift is
+applied. If you are using BoltzWann, consider using \texttt{boltz\_bandshift} instead.
 If you are calculating spin Hall conductivity, consider using \texttt{shc\_bandshift} instead.
 
 The units are eV. The default value is 0~eV (i.e., no scissors shift applied).
 
-  \subsection{\tt integer :: num\_valence\_bands} 
+  \subsection{\tt integer :: num\_valence\_bands}
 Number of valence bands of the system. Used in different modules and
 for the scissors shift.
 
@@ -600,7 +600,7 @@ Polar angle of the spin quantization axis.
 The units are degrees. The default value is 0.
 
 \subsection{\tt real(kind=dp) :: spin\_axis\_azimuth}
-Azimuthal angle of the spin quantization axis. 
+Azimuthal angle of the spin quantization axis.
 
 The units are degrees. The default value is 0.
 
@@ -660,15 +660,15 @@ The default value is {\tt ang2}.
 
 \subsection{\tt real(kind=dp) :: sc\_eta}
 
-The width $\eta$ used to broaden energy differences in denominators of the form 
+The width $\eta$ used to broaden energy differences in denominators of the form
 %
 $$
 \frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}}\rightarrow
 \text{Re}\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}+i\eta}.
-$$ 
+$$
 %
 The above is needed in shift-current calculations in order to avoid numerical problems
-caused by near-degeneracies in the sum over virtual states. 
+caused by near-degeneracies in the sum over virtual states.
 
 The units are eV. The default value is 0.4.
 
@@ -685,7 +685,7 @@ We follow the convention of Ref.~\cite{pythtb}:
 %
 $$
 |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
-$$ 
+$$
 %
 
 \item
@@ -693,14 +693,14 @@ $$
 %
 $$
 |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
-$$ 
+$$
 %
 \end{itemize}
 If {\tt sc\_use\_eta\_corr=true}, the convention does not affect the full shift-current matrix element, but it does affect
 the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}).
 If {\tt sc\_use\_eta\_corr=false}, the convention can affect the full shift-current matrix element (see Ref. \cite{Lihm_shift_eta_2021}).
 
-The default value is 1. 
+The default value is 1.
 
 
 \subsection{\tt real(kind=dp)  :: sc\_w\_thr}
@@ -708,10 +708,10 @@ The default value is 1.
 Parameter $\alpha_{t}$ for speeding up the frequency integration in shift-current calculations.
 It settles the frequency threshold $\omega_{t}=\alpha_{t}\eta_{n{\bf k}}$
 (a factor times the broadening)
-beyond which the delta functions are taken as zero. 
+beyond which the delta functions are taken as zero.
 
 
-The default value is 5.0. 
+The default value is 5.0.
 
 
 \subsection{\tt logical :: sc\_use\_eta\_corr}
@@ -765,7 +765,7 @@ stored in {\tt seedname.eig}, minus 0.6667.
 Upper limit of the energy range for computing the DOS.
 Units are eV.
 
-If an inner energy window was specified, 
+If an inner energy window was specified,
 the default value is the upper bound of the innter energy window, plus 0.6667.
 Otherwise it is  the maximum value of the energy eigenvalues
 stored in {\tt seedname.eig}, plus 0.6667.
@@ -789,7 +789,7 @@ The DOS projected onto a set ${\cal S}$ of orbitals is calculated as
 %
 \begin{align}
 \rho_{\cal S}(E)&=\frac{1}{N_k}\sum_{\bf k}\sum_n
-\langle \psi_{n\bf k}^{({\rm H})}\vert \hat{P}_{\bf k}({\cal S})\vert 
+\langle \psi_{n\bf k}^{({\rm H})}\vert \hat{P}_{\bf k}({\cal S})\vert
 \psi_{n\bf k}^{({\rm H})}\rangle\delta(\varepsilon_{n\bf k}-E)\\
 \hat{P}_{\bf k}({\cal S})&=\sum_{m\in{\cal S}}
 \vert \psi_{n\bf k}^{({\rm W})}\rangle\langle \psi_{n\bf k}^{({\rm W})}\vert,
@@ -838,8 +838,8 @@ Determines whether to enter the kpath routines.
 The default value is \verb#false#.
 
 
-\subsection[kpath\_task]{\tt character(len=20) ::  kpath\_task} 
-The quantities to plot when {\tt kpath=true} 
+\subsection[kpath\_task]{\tt character(len=20) ::  kpath\_task}
+The quantities to plot when {\tt kpath=true}
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -847,8 +847,8 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#bands# Energy bands, in eV. The following files
   are created:
 \begin{itemize}
-  
-   \item[$\cdot$] {\tt seedname-bands.dat} (data file) 
+
+   \item[$\cdot$] {\tt seedname-bands.dat} (data file)
 
    \item[$\cdot$] {\tt seedname-bands.gnu} ({\tt gnuplot} script)
 
@@ -865,7 +865,7 @@ The valid options for this parameter are:
 
 \begin{itemize}
 
-   \item[$\cdot$] {\tt seedname-curv.dat} (data file) 
+   \item[$\cdot$] {\tt seedname-curv.dat} (data file)
 
    \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}.gnu} ({\tt gnuplot} scripts)
 
@@ -894,13 +894,13 @@ Eq.~(\ref{eq:kubo_shc_berry}) of Ch.~\ref{ch:berry}, in units of {\tt
 	berry\_curv\_unit}. The following files are created:
 
 \begin{itemize}
-	
-	\item[$\cdot$] {\tt seedname-shc.dat} (data file) 
-	
+
+	\item[$\cdot$] {\tt seedname-shc.dat} (data file)
+
 	\item[$\cdot$] {\tt seedname-shc.gnu} ({\tt gnuplot} scripts)
-	
+
 	\item[$\cdot$] {\tt seedname-shc.py} ({\tt python} scripts)
-	
+
 \end{itemize}
 
 \item[{\bf --}] Any combination of the above.  The following
@@ -914,10 +914,10 @@ Eq.~(\ref{eq:kubo_shc_berry}) of Ch.~\ref{ch:berry}, in units of {\tt
 
 They generate the following files:
 \begin{itemize}
-  
-   \item[$\cdot$] {\tt seedname-bands.dat} (data file) 
 
-   \item[$\cdot$] {\tt seedname-\{curv,morb,shc\}.dat} (data file) 
+   \item[$\cdot$] {\tt seedname-bands.dat} (data file)
+
+   \item[$\cdot$] {\tt seedname-\{curv,morb,shc\}.dat} (data file)
 
    \item[$\cdot$] {\tt seedname-bands+\{curv,morb\}\_\{x,y,z\}.py} or {\tt seedname-bands+shc.py}
      ({\tt python} scripts)
@@ -937,7 +937,7 @@ The default value is {\tt bands}.
 If $\verb#kpath#=\verb#true#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
-$k$-points. 
+$k$-points.
 
 The default value is 100.
 
@@ -972,7 +972,7 @@ Determines whether to enter the kslice routines.
 The default value is \verb#false#.
 
 \subsection[kslice\_task]{\tt character(len=20) ::  kslice\_task}
-The quantity to plot when {\tt kslice=true} 
+The quantity to plot when {\tt kslice=true}
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -1012,14 +1012,14 @@ Output files:
   \begin{itemize}
 
   \item[$\cdot$] {\tt seedname-kslice-coord.dat} (data files)
-    
+
   \item[$\cdot$] {\tt seedname-kslice-curv.dat} (data file)
 
   \item[$\cdot$] [{\tt seedname-kslice-bands.dat}] (data file)
-    
+
   \item[$\cdot$] {\tt seedname-kslice-curv\_\{x,y,z\}[+fermi\_lines].py} ({\tt
-      python} scripts) 
-    
+      python} scripts)
+
   \end{itemize}
 
 \item[{\bf --}] \verb#morb#[+\verb#fermi_lines#] Heatmap of the
@@ -1029,14 +1029,14 @@ Output files:
   \begin{itemize}
 
   \item[$\cdot$] {\tt seedname-kslice-coord.dat} (data files)
-    
+
   \item[$\cdot$] {\tt seedname-kslice-morb.dat} (data file)
 
   \item[$\cdot$] [{\tt seedname-kslice-bands.dat}] (data file)
-    
+
   \item[$\cdot$] {\tt seedname-kslice-morb\_\{x,y,z\}[+fermi\_lines].py} ({\tt
       python} scripts)
-    
+
   \end{itemize}
 
 \item[{\bf --}] \verb#shc#[+\verb#fermi_lines#] Heatmap of the Berry
@@ -1046,16 +1046,16 @@ contours]. The unit of Berry curvature-like term is {\tt berry\_curv\_unit}.
 Output files:
 
 	\begin{itemize}
-	
+
 	\item[$\cdot$] {\tt seedname-kslice-coord.dat} (data files)
-	
+
 	\item[$\cdot$] {\tt seedname-kslice-shc.dat} (data file)
-	
+
 	\item[$\cdot$] [{\tt seedname-kslice-bands.dat}] (data file)
-	
+
 	\item[$\cdot$] {\tt seedname-kslice-shc[+fermi\_lines].py} ({\tt
-		python} scripts) 
-	
+		python} scripts)
+
 	\end{itemize}
 
 \end{itemize}
@@ -1074,13 +1074,13 @@ Reduced coordinates of the lower-left corner of the slice in k-space.
 The default value is $(0.0,0.0,0.0)$
 
 \subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_b1(3)}
-Reduced coordinates of the first reciprocal-space vector 
+Reduced coordinates of the first reciprocal-space vector
 defining the slice.
 
 The default value is $(1.0,0.0,0.0)$.
 
 \subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_b2(3)}
-Reduced coordinates of the second reciprocal-space vector 
+Reduced coordinates of the second reciprocal-space vector
 defining the slice.
 
 The default value is $(0.0,1.0,0.0)$.
@@ -1201,34 +1201,34 @@ Output files:
 \begin{itemize}
 
 \item[$\cdot$] {\tt seedname-sc\_{\{xxx,xxy,xxz,...\}.dat}}
-  (data files).  The shift current is described by a $3\times3\times3$ tensor $\sigma^{abc}$. 
-  The program outputs a set of 18 files, and the 9 remaining components 
-  can be obtained by taking into account that $\sigma^{abc}$ is 
+  (data files).  The shift current is described by a $3\times3\times3$ tensor $\sigma^{abc}$.
+  The program outputs a set of 18 files, and the 9 remaining components
+  can be obtained by taking into account that $\sigma^{abc}$ is
   symmetric under $b\leftrightarrow c$ index exchange.
   First column: optical frequency $\hbar\omega$ in
-  eV. Second column: nonlinear shift current $\sigma^{abc}(\hbar\omega)$ in A/V$^{2}$. 
-  
+  eV. Second column: nonlinear shift current $\sigma^{abc}(\hbar\omega)$ in A/V$^{2}$.
+
 \end{itemize}
 
 
 \item[{\bf --}] \verb#shc# Spin Hall conductivity (SHC), in $(\hbar/e)$S/cm.  Output files:
 
 	\begin{itemize}
-	
+
 	\item[$\cdot$] {\tt seedname-shc-fermiscan.dat} (data file). The
 	first column is the number of entries in the list, the second column contains the Fermi level $\varepsilon_F$ in eV, and the
 	last column contains the values of
 	$\sigma_{\alpha\beta}^{\text{spin}\gamma}(\varepsilon_F)$.  This file is written if a range of
 	Fermi energies is specified via {\tt fermi\_energy\_min} and {\tt
 		fermi\_energy\_max}.  If a single Fermi energy is given, the file will contain SHC at this specific energy.
-	
+
 	\item[$\cdot$] {\tt seedname-shc-freqscan.dat} (data file). The
 	first column is the number of the entry in the list, the second column contains the frequency $\hbar\omega$ in eV, and the
-	following two columns contain the values of the real part 
+	following two columns contain the values of the real part
 	$\Re[\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega)]$ and imaginary part $\Im[\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega)]$ of ac SHC.  This file is written if a range of
 	frequencies is specified via {\tt kubo\_freq\_min} and {\tt
-		kubo\_freq\_max}. 
-	
+		kubo\_freq\_max}.
+
 	\end{itemize}
 
 \item[{\bf --}] \verb#kdotp# $k\cdot p$ expansion coefficients. Output files:
@@ -1238,7 +1238,7 @@ Output files:
 \item[$\cdot$] {\tt seedname-kdotp\_{\{0,1,2\}.dat}}
   (data files);  respectively, the zeroth, first and second order $k\cdot p$ expansion coefficients,
   in units of eV, eV$\cdot$\AA, and  eV$\cdot$\AA$^{2}$.
-  
+
 \end{itemize}
 
 \end{itemize}
@@ -1321,46 +1321,46 @@ Sec.~\ref{sec:postw90-globalflags}).
 Overrides the \verb#adpt_smr_max# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
-\subsection[optics\_smr\_fixed\_en\_width]{\tt logical :: 
+\subsection[optics\_smr\_fixed\_en\_width]{\tt logical ::
 kubo\_smr\_fixed\_en\_width}
 Overrides the \verb#smr_fixed_en_width# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
-\subsection[optics\_smr\_type]{\tt  character(len=120) :: 
+\subsection[optics\_smr\_type]{\tt  character(len=120) ::
 kubo\_smr\_type}
 Overrides the \verb#smr_type# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
-\subsection[shc\_freq\_scan]{\tt logical :: 
+\subsection[shc\_freq\_scan]{\tt logical ::
 shc\_freq\_scan}
-Determines whether to calculate the frequency scan (i.e. the ac SHC) or the 
+Determines whether to calculate the frequency scan (i.e. the ac SHC) or the
 Fermi energy scan (i.e. the dc SHC) of the spin Hall conductivity.
 
-The default value is \verb#false#, which 
+The default value is \verb#false#, which
 means dc SHC is calculated.
 
 \subsection[shc\_method]{\tt character(len=120) :: shc\_method}
 If it is {\tt qiao/ryoo}, the ac or dc SHC is calculated using Junfeng Qiao's/Jihoon Ryoo's method. To calculate the Kubo formula, the spin current matrix elements are required, and the two methods differ in the degree of approximation. For details, see the section \ref{sec:shc}.
 
 \subsection[shc\_alpha]{\tt integer :: shc\_alpha}
-The $\alpha$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+The $\alpha$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively.
 
 The default value is \verb#1#.
 
 \subsection[shc\_beta]{\tt integer :: shc\_beta}
-The $\beta$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of applied electric field. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+The $\beta$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of applied electric field. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively.
 
 The default value is \verb#2#.
 
 \subsection[shc\_gamma]{\tt integer :: shc\_gamma}
-The $\gamma$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the spin direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+The $\gamma$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the spin direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively.
 
 The default value is \verb#3#.
 
 If all the {\tt shc\_alpha}, {\tt shc\_beta} and {\tt shc\_gamma} are set as default values, the $\sigma_{xy}^{\text{spin}z}$ is computed.
 
 \subsection[shc\_bandshift]{\tt logical :: shc\_bandshift}
-Shift all conduction bands by a given amount (defined by {\tt shc\_bandshift\_energyshift}). 
+Shift all conduction bands by a given amount (defined by {\tt shc\_bandshift\_energyshift}).
 %An exact rigid shift is applied \emph{after} interpolation.
 
 Note: this flag slightly differs from the global {\tt scissors\_shift} flag: with {\tt shc\_bandshift}, an exact rigid shift is applied \emph{after} interpolation; {\tt scissors\_shift} applies instead the shift \emph{before} interpolation. As a consequence, results may slightly differ (and this is why we provide both possibilities). Note also that with {\tt scissors\_shift} you have to provide the number of valence bands {\tt num\_valence\_bands}, while with {\tt shc\_bandshift} you should provide the first band to shift {\tt shc\_bandshift\_firstband} = {\tt num\_valence\_bands}$+1$.
@@ -1384,15 +1384,15 @@ No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be prov
 
 \subsection{\tt real(kind=dp) :: sc\_eta}
 
-The width $\eta$ used to broaden energy differences in denominators of the form 
+The width $\eta$ used to broaden energy differences in denominators of the form
 %
 $$
 \frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}}\rightarrow
 \text{Re}\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}+i\eta}.
-$$ 
+$$
 %
 The above is needed in shift-current calculations in order to avoid numerical problems
-caused by near-degeneracies in the sum over virtual states. 
+caused by near-degeneracies in the sum over virtual states.
 
 The units are eV. The default value is 0.4.
 
@@ -1409,7 +1409,7 @@ We follow the convention of Ref.~\cite{pythtb}:
 %
 $$
 |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
-$$ 
+$$
 %
 
 \item
@@ -1417,13 +1417,13 @@ $$
 %
 $$
 |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
-$$ 
+$$
 %
 \end{itemize}
 The convention does not affect the full shift-current matrix element, but it does affect
-the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}). 
+the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}).
 
-The default value is 1. 
+The default value is 1.
 
 
 \subsection{\tt real(kind=dp)  :: sc\_w\_thr}
@@ -1431,20 +1431,20 @@ The default value is 1.
 Parameter $\alpha_{t}$ for speeding up the frequency integration in shift-current calculations.
 It settles the frequency threshold $\omega_{t}=\alpha_{t}\eta_{n{\bf k}}$
 (a factor times the broadening)
-beyond which the delta functions are taken as zero. 
+beyond which the delta functions are taken as zero.
 
 
-The default value is 5.0. 
+The default value is 5.0.
 
 
 
 \subsection{\tt real(kind=dp)  :: kdotp\_kpoint(3)}
 
-Defines the $k$ point around which the $k\cdot p$  
-expansion is performed. 
+Defines the $k$ point around which the $k\cdot p$
+expansion is performed.
 
 
-The default value is 0.0 0.0 0.0 ($\Gamma$). 
+The default value is 0.0 0.0 0.0 ($\Gamma$).
 
 
 \subsection{\tt integer  :: kdotp\_num\_bands}
@@ -1458,7 +1458,7 @@ No default value.
 \subsection{\tt integer  :: kdotp\_bands(kdotp\_num\_bands)}
 
 Band indexes of bands belonging to $k\cdot p$ basis. Number of entries must
-be equal to the integer defined in {\tt kdotp\_num\_bands}. 
+be equal to the integer defined in {\tt kdotp\_num\_bands}.
 The band labelling follows that of ``wannierised'' bands.
 
 No default value.
@@ -1516,14 +1516,14 @@ Output file: {\tt seedname-gyrotropic-DOS.dat}. First column - energy (eV), seco
 There is no default value.
 
 \subsection{output data format \label{sec:gyrotropic:format}}
-The calculated tensors are written as functions of Fermi level $E_F$ (first column) 
+The calculated tensors are written as functions of Fermi level $E_F$ (first column)
 and frequency $\omega$ (second column).
-If the tensor does not denend on $\omega$, the second column is filled by zeros. 
+If the tensor does not denend on $\omega$, the second column is filled by zeros.
 Data is grouped in blocks of the same $\omega$ separated by two blank lines.
-In case of natural optical activity the columns 3 to 11 contain the independent 
+In case of natural optical activity the columns 3 to 11 contain the independent
 components of $\gamma_{abc}$ (antisymmetric in $ab$): $yzx$, $zxy$ ,$xyz$, $yzy$, $yzz$, $zxz$, $xyy$, $yzz$ and $zxx$.
 For tensors $C_{ab}$, $D_{ab}$, $\widetilde D_{ab}$, $K_{ab}$ the symmetric and antisymmetric components are writted.
-Thus, the columns 3 to 11 are marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, wich correspond ,e.g., for $D_{ab}$ to 
+Thus, the columns 3 to 11 are marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, wich correspond ,e.g., for $D_{ab}$ to
 $D_{xx}$, $D_{yy}$, $D_{zz}$, $(D_{xy}+D_{yx})/2$, $(D_{xz}+D_{zx})/2$, $(D_{yz}+D_{zy})/2$, $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$, $(D_{xy}-D_{yx})/2$
 
 \subsection[gyrotropic\_kmesh]{\tt integer :: gyrotropic\_kmesh(:)}
@@ -1537,7 +1537,7 @@ Sec.~\ref{sec:postw90-globalflags}).
 
 
 \subsection[gyrotropic\_freq\_min]{\tt real(kind=dp) :: gyrotropic\_freq\_min}
-Lower limit of the frequency range for computing the optical activity. 
+Lower limit of the frequency range for computing the optical activity.
 
 Units are eV.
 The default value 0.0.
@@ -1552,7 +1552,7 @@ stored in {\tt seedname.eig}, plus 0.6667.
 
 \subsection[gyrotropic\_freq\_step]{\tt real(kind=dp) :: gyrotropic\_freq\_step}
 Difference between consecutive values of the optical frequency
-between {\tt gyrotropic\_freq\_min} and {\tt gyrotropic\_freq\_max}. 
+between {\tt gyrotropic\_freq\_min} and {\tt gyrotropic\_freq\_max}.
 
 Units are eV.
 The default value is 0.01.
@@ -1668,7 +1668,7 @@ The units are eV.
 The default value is 0.001~eV.
 
 \subsection[boltz\_tdf\_smr\_type]{\tt character(len=120) :: boltz\_tdf\_smr\_type}
-The type of smearing function to be used for the TDF. The available strings are the same of the global {\tt smr\_type} input flag. 
+The type of smearing function to be used for the TDF. The available strings are the same of the global {\tt smr\_type} input flag.
 
 The default value is the one given via the {\tt smr\_type} input flag (if defined).
 

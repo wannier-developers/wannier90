@@ -19,7 +19,7 @@ Below we report Eq. (11.20) from the User Guide, and the total orbital magnetiza
 \label{eq19.2}
 \end{align}
 
-The two snippets below show the components of the total orbital magnetization computed according to Eq.~(\ref{eq19.2}), and the spin magnetisation from the DFT calculation respectively  
+The two snippets below show the components of the total orbital magnetization computed according to Eq.~(\ref{eq19.2}), and the spin magnetisation from the DFT calculation respectively
 {\small
 \begin{tcolorbox}[title=From Fe.wpout,sharp corners,boxrule=0.5pt]
 \begin{verbatim}
@@ -27,7 +27,7 @@ The two snippets below show the components of the total orbital magnetization co
  ------------------------------------------
 
    * Orbital magnetization
-  
+
  Interpolation grid: 25 25 25
 
 
@@ -57,7 +57,7 @@ The two snippets below show the components of the total orbital magnetization co
 
 \item {\it Plot $\mathbf{M}^{\mathrm{orb}}(\bfk)$ along high-symmetry lines and compare the result with Fig.~2 of Ref.~\onlinecite{PhysRevB85}.}
 
-Before comparing the result of our calculation with the result in Fig.~2 of Ref.~\onlinecite{PhysRevB85},  
+Before comparing the result of our calculation with the result in Fig.~2 of Ref.~\onlinecite{PhysRevB85},
 we need to fix a unit-conversion problem in the python script {\tt Fe-bands+morb\_z.py}. In fact, the units of $\mathbf{M}^{\mathrm{orb}}(\bfk)$ are not Ry$\cdot\si{\angstrom}^2$ as stated in the python script but eV$\cdot\si{\angstrom}^2$ instead (as also stated in the User Guide). Moreover, in Ref.~\onlinecite{PhysRevB85} $\mathbf{M}^{\mathrm{orb}}(\bfk)$ is given in atomic units, i.e. Hartree$\cdot$bohr radii$^2$. In order to have a meaningful comparison we need to modify the python script accordingly. Open {\tt Fe-bands+morb\_z.py} and modify the following lines
 {\tt
 \begin{quote}
@@ -69,7 +69,7 @@ y=data[:,3]
 \end{quote}
 }
 
-as 
+as
 
 {\tt
 \begin{quote}
@@ -104,8 +104,8 @@ Now we can run the python script
 \end{quote}
 }
 
-and look at the plot, here shown in \Fig{fig19.1}. 
-The difference between the quantities in the two plot is roughly the $-\frac{1}{2}$ factor due to the two different definitions of $\mathbf{M}^{\mathrm{orb}}$.   
+and look at the plot, here shown in \Fig{fig19.1}.
+The difference between the quantities in the two plot is roughly the $-\frac{1}{2}$ factor due to the two different definitions of $\mathbf{M}^{\mathrm{orb}}$.
 \begin{figure}[t!]
 \centering
 \includegraphics[width=0.6\columnwidth]{figure/example19/Fe-morb_z.pdf}

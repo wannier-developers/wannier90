@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script runs the tests either asking interactively if you want to run 
+This script runs the tests either asking interactively if you want to run
 only one, or runs them all with the proper command-line options.
 """
 from __future__ import print_function
@@ -20,7 +20,7 @@ else:
 
 
 # Folder of this file
-this_folder = os.path.abspath(os.path.split(__file__)[0]) 
+this_folder = os.path.abspath(os.path.split(__file__)[0])
 testcode_exe = os.path.join(
     this_folder, 'testcode', 'bin', 'testcode.py')
 testfolder = os.path.join(
@@ -157,7 +157,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
 
-    verbose_cmd = ["--verbose"] 
+    verbose_cmd = ["--verbose"]
     new_env = os.environ.copy()
     if args.verbose:
         new_env["W90VERBOSETESTS"] = "true"
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         "--jobconfig={}".format(jobconfig),
         "--userconfig={}".format(userconfig)
         ]
-    
+
     if args.numprocs:
         command_pieces.append("--processors={}".format(args.numprocs))
 
@@ -186,4 +186,3 @@ if __name__ == "__main__":
 
     # Exit with the same error code
     sys.exit(return_code)
-

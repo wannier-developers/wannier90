@@ -1,5 +1,5 @@
 tutorial.pdf: tutorial.tex
-	pdflatex tutorial.tex 
+	pdflatex tutorial.tex
 	bibtex tutorial
 	pdflatex tutorial.tex
 	bibtex tutorial

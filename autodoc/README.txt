@@ -6,7 +6,7 @@ The auto-generated documentation is build using FORD (https://github.com/cmacmac
 To create the documentation, install FORD and run
 
     ford project.md
-    
+
 The main page of the documentation will be ./build/index.html
 
 For working on the autodoc, you can use
