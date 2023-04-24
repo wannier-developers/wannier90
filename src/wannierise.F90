@@ -2686,11 +2686,13 @@ contains
       wannier_data_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: w90_comm_type
+    use w90_comms, only: w90_comm_type, mpirank
 
     implicit none
 
-    !JJ this function has not yet been pllelised
+    ! JJ this function is entirely serial
+    ! note that the scaling may be inferior to the non-gamma case
+    ! so this is not necessarily the quicker branch
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
@@ -2710,8 +2712,6 @@ contains
 
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-
-    !logical, intent(in) :: have_disentangled
 
     ! local variables
     type(localisation_vars_type) :: old_spread
@@ -2745,6 +2745,12 @@ contains
     logical :: lprint, ldump
     real(kind=dp), allocatable :: history(:)
     logical :: lconverged
+
+    if (mpirank(comm) > 0) then
+      ! this cannot happen under ordinary circumstances
+      call set_error_alloc(error, 'wann_main_gamma called by non-root rank', comm)
+      return
+    endif
 
     if (print_output%timing_level > 0) call io_stopwatch_start('wann: main_gamma', timer)
 
