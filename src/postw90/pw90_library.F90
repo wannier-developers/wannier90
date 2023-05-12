@@ -4,7 +4,7 @@ module w90_lib_all
   use w90_constants
   use w90_types
   use w90_wannier90_types
-  use w90_helper_types
+  use w90_library
   use w90_postw90_types
 
   ! Todo - initialisation issues that we had to fix
@@ -63,8 +63,8 @@ contains
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
-    type(lib_w90_type), intent(inout) :: w90only
+    type(lib_common_type), intent(inout) :: wann90
+    type(lib_wannier_type), intent(inout) :: w90only
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     character(len=*), intent(in) :: seedname
@@ -86,8 +86,8 @@ contains
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
-    type(lib_w90_type), intent(inout) :: w90only
+    type(lib_common_type), intent(inout) :: wann90
+    type(lib_wannier_type), intent(inout) :: w90only
     type(lib_postw90_type), intent(inout) :: pw90
     real(kind=dp), intent(inout) :: eigval(:, :)
     integer, intent(in) :: output, outerr
@@ -109,8 +109,8 @@ contains
       w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
-    type(lib_w90_type), intent(inout) :: w90only
+    type(lib_common_type), intent(inout) :: wann90
+    type(lib_wannier_type), intent(inout) :: w90only
     type(lib_postw90_type), intent(inout) :: pw90
     real(kind=dp), intent(in) :: eigval(:, :)
     integer, intent(in) :: output, outerr
@@ -223,7 +223,7 @@ contains
     use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
@@ -274,7 +274,7 @@ contains
     use w90_postw90_common, only: pw90common_wanint_setup
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     integer, intent(out) :: status
@@ -298,7 +298,7 @@ contains
     !use w90_comms, only: w90_comm_type, mpirank
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     !integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
@@ -335,7 +335,7 @@ contains
     use w90_dos, only: dos_main
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     !type(lib_plot_type), intent(inout) :: plot
     !type(lib_transport_type), intent(inout) :: transport
@@ -383,7 +383,7 @@ contains
     use w90_boltzwann, only: boltzwann_main
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -421,7 +421,7 @@ contains
     use w90_gyrotropic, only: gyrotropic_main
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -465,7 +465,7 @@ contains
     use w90_berry, only: berry_main
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -523,7 +523,7 @@ contains
     use w90_kpath, only: k_path
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -580,7 +580,7 @@ contains
     use w90_kslice, only: k_slice
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -637,7 +637,7 @@ contains
     use w90_spin, only: spin_get_moment
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
@@ -674,7 +674,7 @@ contains
     use w90_geninterp, only: geninterp_main
 
     implicit none
-    type(lib_global_type), intent(inout) :: wann90
+    type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
     integer, intent(in) :: output, outerr
     !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
