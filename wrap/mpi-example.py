@@ -11,9 +11,9 @@ ftn_error = wan90.w90_library.get_fortran_stderr()
 
 data = wan90.w90_library.lib_common_type()
 w90data = wan90.w90_library.lib_wannier_type()
-#comm = wan90.w90_comms.w90_comm_type()
 
 wan90.w90_library.set_parallel_comms(data, MPI.COMM_WORLD.py2f())
+#data.comm.comm = MPI.COMM_WORLD.py2f()
 
 status = wan90.w90_library.input_reader(data, w90data, "diamond", ftn_output, ftn_error)
 #status = wan90.w90_library.input_reader(data, w90data, "cnt55", ftn_output, ftn_error)
@@ -46,7 +46,7 @@ while k < data.num_kpts:
         if extra_pts == 0:
             pts_per_rank = pts_per_rank - 1
 
-wan90.w90_library.set_kpoint_distribution(data, kpts)
+wan90.w90_library.set_kpoint_distribution(data, kpts, ftn_output, ftn_error)
 
 counts = numpy.zeros(nproc, dtype=numpy.int32)
 #displs = numpy.zeros(nproc, dtype=numpy.int32)
@@ -79,6 +79,7 @@ if data.num_wann == data.num_bands:
     u_opt = numpy.zeros((1, 1, 1), dtype=numpy.cdouble, order='F')
     wan90.w90_library.set_u_opt(data, u_opt)
     status = wan90.w90_library.overlaps(data, w90data, ftn_output, ftn_error)
+    status = wan90.w90_library.projovlp(data, w90data, ftn_output, ftn_error)
 else:
     a_matrix = numpy.zeros((data.num_bands, data.num_wann, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_library.set_a_matrix(w90data, a_matrix)
@@ -87,6 +88,9 @@ else:
     m_orig = numpy.zeros((data.num_bands, data.num_bands, data.kmesh_info.nntot, data.num_kpts), dtype=numpy.cdouble, order='F')
     wan90.w90_library.set_m_orig(w90data, m_orig)
     status = wan90.w90_library.overlaps(data, w90data, ftn_output, ftn_error)
+    eigval = numpy.zeros((data.num_bands, data.num_kpts), dtype=numpy.double, order='F')
+    status = wan90.w90_library.read_eigvals(data, eigval, ftn_output, ftn_error)
+    wan90.w90_library.set_eigval(data, eigval)
     status = wan90.w90_library.disentangle(data, w90data, ftn_output, ftn_error)
     if status == 1:
         exit

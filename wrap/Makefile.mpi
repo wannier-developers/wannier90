@@ -68,7 +68,7 @@ wrap: $(WRAPSRC)
 	$(FWRAP) -m $(PYMOD) -k kind_map $(WRAPSRC)
 
 python: $(DYNLIBRARY) cabort.o
-	f2py -c -m _$(PYMOD) --f90exec=mpif90 -I$(BUILD) f90wrap_*.f90 cabort.o $(DYNLIBRARY)
+	f2py -c -m _$(PYMOD) --f77exec=mpif77 --f90exec=mpif90 -I$(BUILD) f90wrap_*.f90 cabort.o $(DYNLIBRARY)
 
 $(DYNLIBRARY): $(OBJS) $(POST) $(LIBOBJS)
 	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(LIBOBJS) $(OBJS) $(POST) -o $@ $(LIBS)
