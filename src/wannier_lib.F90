@@ -406,8 +406,9 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   end if
 
   if (w90_calcs%postproc_setup) then
-    call kmesh_write(exclude_bands, kmesh_info, select_proj, proj_input, verbose, kpt_latt, real_lattice, &
+    call kmesh_write(exclude_bands, kmesh_info, select_proj%auto_projections, proj_input, verbose, kpt_latt, real_lattice, &
                      num_kpts, num_proj, calc_only_A, system%spinors, seedname, timer)
+
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
