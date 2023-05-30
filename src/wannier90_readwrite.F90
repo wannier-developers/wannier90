@@ -128,11 +128,11 @@ contains
 
     ! local variables
     integer :: num_exclude_bands, ip
-    !! Units for energy
     logical :: found_fermi_energy
     logical :: has_kpath
     logical :: disentanglement
     character(len=20) :: energy_unit
+    !! Units for energy
 
     disentanglement = .false.
     call w90_wannier90_readwrite_read_sym(settings, symmetrize_eps, lsitesymmetry, error, comm)
@@ -233,14 +233,6 @@ contains
     if (allocated(error)) return
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
-      !fixme(jj) consider whether this should be here (should not be read in library mode)
-      !call w90_readwrite_read_eigvals(.false., .false., .false., &
-      !                                w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-      !                                output_file%write_hr, disentanglement, eig_found, &
-      !                                eigval, w90_calculation%postproc_setup, num_bands, &
-      !                                num_kpts, stdout, seedname, error, comm)
-      !if (allocated(error)) return
-
       call w90_readwrite_read_dis_manifold(settings, .true., dis_manifold, error, comm)
       if (allocated(error)) return
 

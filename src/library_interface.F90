@@ -108,24 +108,37 @@ module w90_library
     logical :: use_bloch_phases = .false.
   end type lib_wannier_type
 
-  private :: prterr
   public :: create_kmesh
-  public :: get_fortran_stderr ! to driver
-  public :: get_fortran_stdout ! to driver
+  public :: disentangle
+  public :: get_fortran_file
+  public :: get_fortran_stderr
+  public :: get_fortran_stdout
+  public :: get_proj
   public :: input_reader
   public :: input_setopt
   public :: overlaps !to standalone driver (just reads a file)
   public :: plot_files
   public :: print_times
   public :: projovlp
+  private :: prterr
   public :: read_chkpt
+  public :: read_eigvals
+  public :: set_a_matrix
+  public :: set_constant_bohr_to_ang
+  public :: set_eigval
+  public :: set_kpoint_distribution
+  public :: set_m_matrix
+  public :: set_m_matrix_local
+  public :: set_m_orig
+  public :: set_option_i1d
+  public :: set_parallel_comms
+  public :: set_proj
+  public :: set_u_matrix
+  public :: set_u_opt
   public :: transport
   public :: wannierise
   public :: write_chkpt
   public :: write_kmesh
-  public :: get_proj
-  public :: set_parallel_comms
-  public :: set_kpoint_distribution
 
   public :: set_option ! interface for setting vars using library
   interface set_option
