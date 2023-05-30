@@ -172,6 +172,7 @@ program postw90
   logical :: gamma_only
   logical :: have_disentangled
   logical :: on_root
+  logical :: lpp ! logical preprocessing flag (used only by w90)
 
   real(kind=dp) :: omega_invariant
 
@@ -226,7 +227,7 @@ program postw90
 
   if (on_root) then
     time0 = io_time()
-    call io_commandline(prog, dryrun, seedname)
+    call io_commandline(prog, dryrun, lpp, seedname)
     len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname, 1, error, comm)

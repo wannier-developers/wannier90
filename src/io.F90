@@ -33,7 +33,6 @@ module w90_io
   public :: io_stopwatch_stop
   public :: io_commandline
   public :: io_date
-  public :: io_get_seedname
   public :: io_print_timings
   public :: io_time
   public :: io_wallclocktime
@@ -158,55 +157,7 @@ contains
   end subroutine io_print_timings
 
   !================================================
-  subroutine io_get_seedname(seedname)
-    !================================================
-    !
-    !! Get the seedname from the commandline
-    !
-    !================================================
-
-    implicit none
-
-    integer :: num_arg
-    character(len=50) :: ctemp
-    character(len=50), intent(inout)  :: seedname
-
-    logical :: post_proc_flag ! local, routine not used (jj jan 23)
-
-    post_proc_flag = .false.
-
-    num_arg = command_argument_count()
-    if (num_arg == 0) then
-      seedname = 'wannier'
-    elseif (num_arg == 1) then
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        seedname = 'wannier'
-      end if
-    else
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        call get_command_argument(2, seedname)
-      else
-        call get_command_argument(2, ctemp)
-        if (index(ctemp, '-pp') > 0) post_proc_flag = .true.
-      end if
-
-    end if
-
-    ! If on the command line the whole seedname.win was passed, I strip the last ".win"
-    if (len(trim(seedname)) .ge. 5) then
-      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".win") then
-        seedname = seedname(:len(trim(seedname)) - 4)
-      end if
-    end if
-
-  end subroutine io_get_seedname
-
-  !================================================
-  subroutine io_commandline(prog, dryrun, seedname)
+  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname)
     !================================================
     !
     !! Parse the commandline
@@ -217,7 +168,7 @@ contains
 
     character(len=50), intent(in) :: prog
     !! Name of the calling program
-    logical, intent(out) :: dryrun
+    logical, intent(out) :: dryrun, post_proc_flag
     !! Have we been asked for a dryrun
     character(len=50), intent(inout)  :: seedname
 
@@ -225,8 +176,6 @@ contains
     character(len=50), allocatable :: ctemp(:)
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
-
-    logical :: post_proc_flag ! local, routine not used (jj jan 23)
 
     help_flag(1) = '-h    '
     help_flag(2) = '-help '
