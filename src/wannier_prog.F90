@@ -10,7 +10,7 @@ program libv2
   use w90_library
 
   use w90_comms, only: w90_comm_type
-  use w90_io, only: io_print_timings
+  use w90_io, only: io_print_timings, io_commandline
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
   use w90_error, only: w90_error_type
@@ -18,7 +18,7 @@ program libv2
   implicit none
 
   character(len=100) :: seedname
-  character(len=:), allocatable :: fn, cpstatus
+  character(len=:), allocatable :: cpstatus
   character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: a(:, :, :)
   !complex(kind=dp), allocatable :: m(:,:,:,:)
@@ -28,12 +28,12 @@ program libv2
   complex(kind=dp), allocatable :: uopt(:, :, :)
   real(kind=dp), allocatable :: eigval(:, :)
   integer, allocatable :: distk(:)
-  integer :: length, len2, i
+  integer :: i
   integer :: mpisize, rank, ierr, nkl
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
   logical, pointer :: pp
-  logical :: lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
+  logical :: ld, lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
   type(lib_common_type), target :: common_data
   type(lib_wannier_type), target :: wannier_data
   type(w90_comm_type) :: comm
@@ -46,26 +46,7 @@ program libv2
   nk => common_data%num_kpts
   nn => common_data%kmesh_info%nntot
 
-  ! get seedname and pp flag, if present
-  call get_command_argument(1, seedname, length, ierr)
-  if (ierr /= 0) then
-    write (*, *) 'failed to parse seedname'
-    stop
-  endif
-  if (seedname == '-pp') then
-    pp = .true.
-    call get_command_argument(2, seedname, length, ierr)
-    if (ierr /= 0) then
-      write (*, *) 'failed to parse seedname'
-      stop
-    endif
-  endif
-  do i = 1, length
-    if (seedname(i:i) == '.') exit
-    len2 = i
-  enddo
-  fn = trim(seedname(1:len2))
-  ! end get seedname
+  call io_commandline('wannier90', ld, pp, seedname)
 
 #ifdef MPI
   comm%comm = mpi_comm_world
@@ -80,11 +61,11 @@ program libv2
 #endif
 
   ! open main output file
-  open (newunit=stdout, file=fn//'.wout', status="replace")
+  open (newunit=stdout, file=seedname//'.wout', status="replace")
   ! open main error file
-  open (newunit=stderr, file=fn//'.werr', status="replace")
+  open (newunit=stderr, file=seedname//'.werr', status="replace")
 
-  call input_reader(common_data, wannier_data, fn, stdout, stderr, ierr)
+  call input_reader(common_data, wannier_data, seedname, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
   ! write jazzy header info
@@ -115,7 +96,7 @@ program libv2
   ! special branch for writing nnkp file
   if (pp) then
     ! please only invoke on rank 0
-    call write_kmesh(common_data, wannier_data, fn, stdout, stderr, ierr)
+    call write_kmesh(common_data, wannier_data, seedname, stdout, stderr, ierr)
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
@@ -125,7 +106,7 @@ program libv2
   endif
 
   if (wannier_data%lsitesymmetry) then
-    call sitesym_read(wannier_data%sitesym, nb, nk, nw, fn, error, comm) ! (not a library call)
+    call sitesym_read(wannier_data%sitesym, nb, nk, nw, seedname, error, comm) ! (not a library call)
     if (allocated(error)) then
       write (stderr, *) 'failed to setup symmetry'
       deallocate (error)
@@ -156,7 +137,7 @@ program libv2
     if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else
     cpstatus = ''
-    call read_chkpt(common_data, wannier_data, cpstatus, fn, stdout, stderr, ierr)
+    call read_chkpt(common_data, wannier_data, cpstatus, seedname, stdout, stderr, ierr)
     if (ierr /= 0) stop
 
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
@@ -224,14 +205,14 @@ program libv2
   if (ldsnt) then
     call disentangle(common_data, wannier_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    call write_chkpt(common_data, wannier_data, 'postdis', fn, stdout, stderr, ierr)
+    call write_chkpt(common_data, wannier_data, 'postdis', seedname, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
   if (lwann) then
     call wannierise(common_data, wannier_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    call write_chkpt(common_data, wannier_data, 'postwann', fn, stdout, stderr, ierr)
+    call write_chkpt(common_data, wannier_data, 'postwann', seedname, stdout, stderr, ierr)
     if (ierr /= 0) stop
   endif
 
