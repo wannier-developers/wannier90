@@ -338,7 +338,6 @@ contains
   end subroutine read_chkpt
 
   subroutine input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_comms, only: mpirank, comms_sync_err
@@ -378,26 +377,19 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    else
-      disentanglement = (common_data%num_bands > common_data%num_wann)
-
-      call w90_readwrite_read_final_alloc(disentanglement, common_data%dis_manifold, &
-                                          common_data%wannier_data, common_data%num_wann, &
-                                          common_data%num_bands, common_data%num_kpts, error, common_data%comm)
-      if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
-        return
-      endif
     endif
-    common_data%seedname = seedname
 
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
+
+    common_data%seedname = seedname
+
   end subroutine input_setopt
 
   subroutine input_setopt_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
     use w90_readwrite, only: w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
     use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_alloc
     use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
@@ -435,24 +427,50 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    else
-      disentanglement = (common_data%num_bands > common_data%num_wann)
+    endif
 
-      call w90_readwrite_read_final_alloc(disentanglement, common_data%dis_manifold, &
-                                          common_data%wannier_data, common_data%num_wann, &
-                                          common_data%num_bands, common_data%num_kpts, error, common_data%comm)
-      if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
+    disentanglement = (common_data%num_bands > common_data%num_wann)
+
+    ! fixme error messages
+    if (disentanglement) then
+      !if (allocated(common_datadis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
+      allocate (common_data%dis_manifold%ndimwin(common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', common_data%comm)
+        return
+      endif
+      !if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
+      allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', common_data%comm)
         return
       endif
     endif
+
+    ! these may previously have been allocated, eg, by the chkpt read
+    !if (allocated(common_data%wannier_data%centres)) deallocate (common_data%wannier_data%centres)
+    allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wannier_centres in wannierise', common_data%comm)
+      return
+    endif
+    common_data%wannier_data%centres = 0.0_dp
+
+    !if (allocated(common_data%wannier_data%spreads)) deallocate (common_data%wannier_data%spreads)
+    allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in wannierise', common_data%comm)
+      return
+    endif
+    common_data%wannier_data%spreads = 0.0_dp
+
     common_data%seedname = seedname
 
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_setopt_special
 
   subroutine input_reader(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_input, set_error_fatal
@@ -495,7 +513,7 @@ contains
   end subroutine input_reader
 
   subroutine input_reader_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_input, set_error_fatal
@@ -778,13 +796,13 @@ contains
     ierr = 0
 
     if (.not. associated(wannier_data%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'm_matrix_local not set for wannierise', common_data%comm)
     else if (.not. associated(common_data%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'u_opt not set for wannierise', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'u_matrix not set for wannierise', common_data%comm)
     else if (.not. associated(common_data%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'dist_kpoints not set for wannierise', common_data%comm)
     endif
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)

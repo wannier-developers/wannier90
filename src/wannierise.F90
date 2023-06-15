@@ -1661,9 +1661,9 @@ contains
       do nkp_loc = 1, ranknk
         nkp = global_k(nkp_loc)
         !JJ fixme, review this cycle... currently it causes error
-        !if (lsitesymmetry) then                !YN: RS:
-        !  if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
-        !end if                                 !YN: RS:
+        if (lsitesymmetry) then
+          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle
+        end if
 
         ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
         tmp_cdq(:, :) = cmplx_i*cdq_loc(:, :, nkp_loc)
@@ -2548,8 +2548,7 @@ contains
       if (allocated(error)) return
 
       if (lsitesymmetry) then
-        ! fixme, JJ, interestingly the old results are only reproduced if algorithm 1 (mode 1) is followed by algorithm 2
-        ! in any event this was the old program flow for (mode 1)
+        ! correct behaviour is reproduced if algorithm 1 (mode 1) is followed by algorithm 2
         call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann, error, comm)
         call sitesym_symmetrize_gradient(sitesym, cdodq, 2, num_kpts, num_wann, error, comm)
         do nkp_loc = 1, ranknk
