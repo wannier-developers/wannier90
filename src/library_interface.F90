@@ -9,7 +9,7 @@ module w90_library
   !   the python wrapper uses an intermediate c representation with named arguments
   !   in this wrapper stdout/err are already defined as structs inconsistent
   !   which are inconsistent with the integer unit numbers used here.
-  !   (The slightly 77 style naming here has no particula significance.)
+  !   (The slightly 77 style naming here has no particular significance.)
 
   use w90_constants
   use w90_types
@@ -115,7 +115,9 @@ module w90_library
   public :: get_fortran_stdout
   public :: get_proj
   public :: input_reader
+  public :: input_reader_special
   public :: input_setopt
+  public :: input_setopt_special
   public :: overlaps !to standalone driver (just reads a file)
   public :: plot_files
   public :: print_times
@@ -132,7 +134,6 @@ module w90_library
   public :: set_m_orig
   public :: set_option_i1d
   public :: set_parallel_comms
-  public :: set_proj
   public :: set_u_matrix
   public :: set_u_opt
   public :: transport
@@ -337,10 +338,9 @@ contains
   end subroutine read_chkpt
 
   subroutine input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_uppercase, w90_readwrite_read_final_alloc
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
+    use w90_readwrite, only: w90_readwrite_read_final_alloc
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    !use w90_error, only: set_error_input, set_error_fatal
     use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
@@ -358,7 +358,6 @@ contains
     logical :: cp_pp, disentanglement
 
     ierr = 0
-
     call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
                                       wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
                                       common_data%exclude_bands, common_data%fermi_energy_list, &
@@ -380,10 +379,6 @@ contains
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     else
-      ! For aesthetic purposes, convert some things to uppercase
-      call w90_readwrite_uppercase(common_data%atom_data, common_data%kpoint_path, &
-                                   common_data%print_output%length_unit)
-
       disentanglement = (common_data%num_bands > common_data%num_wann)
 
       call w90_readwrite_read_final_alloc(disentanglement, common_data%dis_manifold, &
@@ -399,9 +394,65 @@ contains
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine input_setopt
 
+  subroutine input_setopt_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    use w90_readwrite, only: w90_readwrite_read_final_alloc
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_comms, only: mpirank, comms_sync_err
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_wannier_type), intent(inout) :: wannier_data
+
+    ! local
+    type(w90_error_type), allocatable :: error
+    type(w90_extra_io_type) :: io_params
+    logical :: cp_pp, disentanglement
+
+    ierr = 0
+    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
+                                              wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
+                                              common_data%exclude_bands, common_data%fermi_energy_list, &
+                                              wannier_data%fermi_surface_data, common_data%kmesh_input, &
+                                              common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
+                                              wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
+                                              wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
+                                              common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
+                                              common_data%print_output, wannier_data%wann_plot, io_params, &
+                                              common_data%ws_region, wannier_data%w90_calculation, &
+                                              common_data%real_lattice, common_data%physics%bohr, &
+                                              wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
+                                              common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
+                                              common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
+                                              cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
+                                              wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
+                                              istdout, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    else
+      disentanglement = (common_data%num_bands > common_data%num_wann)
+
+      call w90_readwrite_read_final_alloc(disentanglement, common_data%dis_manifold, &
+                                          common_data%wannier_data, common_data%num_wann, &
+                                          common_data%num_bands, common_data%num_kpts, error, common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      endif
+    endif
+    common_data%seedname = seedname
+
+    if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
+  end subroutine input_setopt_special
+
   subroutine input_reader(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
-      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_input, set_error_fatal
@@ -422,39 +473,69 @@ contains
 
     ierr = 0
 
+    ! read data from .win file to internal string array
     call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
 
+    ! set options corresponding to string array from .win file
     call input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
     if (ierr /= 0) then
       return
     endif
 
-    ! test mpi error handling using "unlucky" input token
-    ! this machinery used to sit in w90_wannier90_readwrite_dist
-    ! but that routine is obsolete if input file is read on all ranks
-    ! fixme, this should be moved to wannier90 main routine (definately doesn't belong here)
-    if (common_data%print_output%timing_level < 0 &
-        .and. mpirank(common_data%comm) == abs(common_data%print_output%timing_level)) then
-      call set_error_input(error, 'received unlucky_rank', common_data%comm)
-    else
-      call comms_sync_err(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
-    endif
-    if (allocated(error)) then ! applies (is t) for all ranks now
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
-    !!!!! end unlucky code
-
+    ! remove any remaining acceptable keywords; anything that remains is an input error
     call w90_readwrite_clean_infile(common_data%settings, istdout, seedname, error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
   end subroutine input_reader
+
+  subroutine input_reader_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_input, set_error_fatal
+    use w90_comms, only: mpirank, comms_sync_err
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_wannier_type), intent(inout) :: wannier_data
+
+    ! local
+    type(w90_error_type), allocatable :: error
+    !logical :: cp_pp ! ? when used?
+
+    ierr = 0
+
+    ! read data from .win file to internal string array
+    call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+
+    ! set options corresponding to string array from .win file
+    call input_setopt_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    if (ierr /= 0) then
+      return
+    endif
+
+    ! remove any remaining acceptable keywords; anything that remains is an input error
+    call w90_readwrite_clean_infile(common_data%settings, istdout, seedname, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+  end subroutine input_reader_special
 
   subroutine create_kmesh(common_data, istdout, istderr, ierr)
     use w90_kmesh, only: kmesh_get
@@ -1228,63 +1309,6 @@ contains
       if (present(rad)) rad(ip) = proj%radial
       if (present(zona)) zona(ip) = proj%zona
     enddo
-  end subroutine
-
-  subroutine set_proj(common_data, wannier_data, n, site, l, m, s, istdout, istderr, ierr, sqa, z, x, rad, zona)
-    use w90_comms, only: mpirank
-    use w90_error, only: w90_error_type, set_error_fatal
-    implicit none
-
-    ! sets up projector object describing a list of projections specified by the calling code
-    !
-    ! possibly this function has no use case because the projections are meaningful only to calling code?  fixme(jj)
-    !
-    ! n specifies the number of projections returned
-    ! n specifies the number of projections specified
-    ! all other arguments should be arrays of length n
-    ! site, sqa, z, x must have dimension (3,n)
-    !
-    ! the supplied projections are copied to the 'proj' variable, which is usually the result of masking proj_input
-    ! with mask 'select_projections'
-
-    integer, intent(in) :: n, l(:), m(:), s(:)
-    real(kind=dp), intent(in) :: site(:, :)
-
-    type(lib_common_type), intent(in) :: common_data
-    type(lib_wannier_type), target, intent(inout) :: wannier_data
-    integer, intent(out) :: ierr
-    integer, intent(in) :: istdout, istderr
-
-    ! probably the remaining variables find limited use, allow them to be absent
-    integer, intent(in), optional :: rad(:)
-    real(kind=dp), intent(in), optional :: sqa(:, :), z(:, :), x(:, :), zona(:)
-
-    ! local
-    integer :: ip
-    type(proj_type), pointer :: proj
-    !type(w90_error_type), allocatable :: error
-
-    ! fixme(jj) add some checking for size of passed arrays
-    ierr = 0
-
-    if (allocated(wannier_data%proj)) then
-      ! error, or just de/realloc?
-      deallocate (wannier_data%proj)
-    endif
-    allocate (wannier_data%proj(n))
-
-    do ip = 1, n
-      proj => wannier_data%proj(ip)
-      proj%l = l(ip)
-      proj%m = m(ip)
-      proj%s = s(ip)
-      proj%site(:) = site(:, ip)
-      if (present(sqa)) proj%s_qaxis(:) = sqa(:, ip)
-      if (present(z)) proj%z(:) = z(:, ip)
-      if (present(x)) proj%x(:) = x(:, ip)
-      if (present(rad)) proj%radial = rad(ip)
-      if (present(zona)) proj%zona = zona(ip)
-    enddo
-  end subroutine
+  end subroutine get_proj
 
 end module w90_library

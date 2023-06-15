@@ -37,8 +37,7 @@ program postw90
   use w90_postw90_readwrite
   use w90_postw90_types
   use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header, &
-    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, &
-    w90_readwrite_uppercase
+    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
   use w90_spin
   use w90_types
 
@@ -62,8 +61,9 @@ program postw90
 #endif
 
   character(len=20) :: checkpoint
-  character(len=50) :: prog
-  character(len=50) :: seedname
+  character(len=:), allocatable :: prog
+  character(len=:), allocatable :: seednamedyn
+  character(len=50), allocatable :: seedname
   character(len=9) :: stat, pos
   integer :: nkp, len_seedname
   integer :: stdout, stderr
@@ -199,7 +199,7 @@ program postw90
   stdout = 6 ! stdout stream
   stderr = 0 ! stderr stream
   prog = "postw90"
-  seedname = "wannier"
+  seednamedyn = "wannier"
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
@@ -227,7 +227,8 @@ program postw90
 
   if (on_root) then
     time0 = io_time()
-    call io_commandline(prog, dryrun, lpp, seedname)
+    call io_commandline(prog, dryrun, lpp, seednamedyn, stderr)
+    seedname = seednamedyn(1:len(seednamedyn))
     len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname, 1, error, comm)
@@ -286,8 +287,6 @@ program postw90
 
     call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
-    ! For aesthetic purposes, convert some things to uppercase
-    call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
     call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
                                         num_bands, num_kpts, error, comm)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)

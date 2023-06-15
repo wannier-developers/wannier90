@@ -265,7 +265,7 @@ contains
     logical :: found_fermi_energy
     logical :: has_kpath
     logical :: disentanglement
-    character(len=20) :: energy_unit
+    character(len=20) :: energy_unit  ! is this not used???
     !! Units for energy
 
     disentanglement = .false.
