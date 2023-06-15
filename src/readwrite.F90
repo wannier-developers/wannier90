@@ -238,7 +238,7 @@ contains
     integer :: i_temp
     logical :: found
 
-    !fixme(jj) pw90_effective model
+    !fixme(jj) consider pw90_effective model case
 
     call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
@@ -252,13 +252,8 @@ contains
           return
         endif
       else
-        num_bands = num_wann ! fixme(jj) this is dangerous in "settings" mode
+        num_bands = num_wann
       endif
-      !end if
-      ! GP: I subtract it here, but only the first time when I pass the total number of bands
-      ! In later calls, I need to pass instead num_bands already subtracted.
-      !if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
-      !if (.not. pw90_effective_model) then
     endif
   end subroutine w90_readwrite_read_num_bands
 
@@ -296,7 +291,7 @@ contains
     integer :: iv_temp(3)
     logical :: found
 
-    !fixme(jj) more pw90_effective_model issues!
+    !fixme(jj) consider pw90_effective_model case
 
     call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 3, error, comm, &
                                           i_value=iv_temp)
@@ -442,9 +437,6 @@ contains
       n = 1
     endif
 
-    !fixme(JJ) if fermi_energy_min is missing, then _max and _step are not checked for
-    ! and would be diagnosed as unrecognised tokens, which is potentially misleading
-
     fermi_energy_scan = .false.
     call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm, &
                                    r_value=fermi_energy_min)
@@ -549,6 +541,7 @@ contains
 
   subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, &
                                         seedname, error, comm)
+    !! Read the eigenvalues from wannier.eig
 
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
@@ -565,20 +558,11 @@ contains
     ! local
     integer :: i, j, k, n, eig_unit, ierr
 
-    ! Read the eigenvalues from wannier.eig
-    !if (.not. pw90_effective_model) then
-
     inquire (file=trim(seedname)//'.eig', exist=eig_found)
     if (.not. eig_found) then
-      !    if (disentanglement) then
       call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
       return
-      !    else if (w90_plot .or. pw90_boltzwann .or. pw90_geninterp) then
-      !      call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for interpolation', comm)
-      !      return
-      !    end if
     else
-      ! fixme(jj) test eigenvalue array dimensions here
       open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
       do k = 1, num_kpts
         do n = 1, num_bands
@@ -600,7 +584,6 @@ contains
       end do
       close (eig_unit)
     end if
-    !end if
 
     return
 
@@ -674,7 +657,6 @@ contains
                                    i_value=kmesh_input%search_shells)
     if (allocated(error)) return
     if (kmesh_input%search_shells < 0) then
-      ! fixme(JJ) is zero shells an acceptable input here?
       call set_error_input(error, 'Error: search_shells must be positive', comm)
       return
     endif
@@ -751,7 +733,7 @@ contains
     integer :: ierr
     logical :: found
 
-    !fixme jj, this routine needs saving from pw90_effective_model
+    !fixme(jj) consider pw90_effective_model case case
 
     ierr = 0
     if (.not. pw90_effective_model) then
@@ -767,26 +749,17 @@ contains
       return
     endif
 
-    ! fixme(jj) why are _latt and _cart used like this??
     call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
                                          comm, r_value=kpt_cart)
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       kpt_latt = kpt_cart
-      ! fixme(jj) is this only an error if not pw90_effective_model?
+      ! fixme(jj) why is this only an error if not pw90_effective_model?
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
         return
       endif
-    end if
 
-    ! Calculate the kpoints in cartesian coordinates
-    !if (.not. pw90_effective_model) then
-    !  do nkp = 1, num_kpts
-    !    k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
-    !  end do
-    !endif
-    if (.not. pw90_effective_model) then ! fixme(JJ) surely we need this guard?
       deallocate (kpt_cart, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints', comm)
@@ -846,7 +819,6 @@ contains
       ! when units are specified, one fewer line than the total contains atom information
       if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
     end if
-    !fixme, other conditions should be flagged as error
     if (atom_data%num_atoms > 0) then
       call readwrite_get_atoms(settings, atom_data, lunits, real_lattice, bohr, error, comm)
       if (allocated(error)) return
@@ -1203,6 +1175,8 @@ contains
     !   wannier_data%centres(3, num_wann)
     !   wannier_data%spreads(num_wann)
     !     small arrays... maybe overkill here?
+    !
+    !   this is currenty only called by the legacy library (Jun 23)
     !================================================== !
     use w90_error, only: w90_error_type, set_error_alloc
     implicit none
@@ -2058,9 +2032,9 @@ contains
     ! assumes m is alloc'd on all nodes
     call comms_bcast(m_matrix(1, 1, 1, 1), num_wann*num_wann*nntot*num_kpts, error, comm)
 
+    ! copy global m into local m
     nkl = count(distk(:) == rank)
     ikl = 1
-    ! should assert that the size is compatible, fixme jj
     do ikg = 1, num_kpts
       if (distk(ikg) == rank) then
         m_matrix_local(:, :, :, ikl) = m_matrix(:, :, :, ikg)
@@ -2206,7 +2180,7 @@ contains
     !
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -2234,8 +2208,9 @@ contains
     found = .false.
 
     if (allocated(settings%entries) .and. allocated(settings%in_data)) then
-      !fixme(jj) implement an error here
-      !error condition
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
     elseif (allocated(settings%entries)) then
       do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
         ! memory beyond num_entries is not initialised
@@ -2248,9 +2223,10 @@ contains
             l_value = settings%entries(loop)%ldata
           else if (present(c_value)) then
             c_value = settings%entries(loop)%txtdata
+          else
+            call set_error_fatal(error, 'Error: keyword sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
           endif
-          ! else is a logic error (which should be checked for)
-          ! fixme check for error cases (jj)
           found = .true.
           return
         endif
@@ -2312,7 +2288,7 @@ contains
     !
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -2341,22 +2317,22 @@ contains
 
     found = .false.
 
-    ! fixme(jj) (important!) mechanism to determine length!
     if (allocated(settings%entries) .and. allocated(settings%in_data)) then
-      !fixme(jj) implement an error here
-      !error condition
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
     elseif (allocated(settings%entries)) then
 
       do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
-        ! fixme(jj) document somewhere the precidence of tokens in different places
         ! memory beyond num_entries is not initialised
         if (settings%entries(loop)%keyword == keyword) then
           if (present(i_value)) then
             i_value = settings%entries(loop)%i1d
           else if (present(r_value)) then
             r_value = settings%entries(loop)%r1d
-            !fixme, are other array types used?
-            !fixme, need method to flag up units for matrix data, or document choice
+          else
+            call set_error_fatal(error, 'Error: vector sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
           end if
           found = .true.
         end if
@@ -2479,7 +2455,7 @@ contains
     !
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -2514,22 +2490,21 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    ! fixme(jj) (important) columns,rows needs to be determined before calling this block!
     if (allocated(settings%entries) .and. allocated(settings%in_data)) then
-      !fixme(jj) implement an error here
-      !error condition
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
     elseif (allocated(settings%entries)) then
 
       do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
-        ! fixme(jj) document somewhere the precidence of tokens in different places
-        ! memory beyond num_entries is not initialised
         if (settings%entries(loop)%keyword == keyword) then
           if (present(i_value)) then
             i_value = settings%entries(loop)%i2d
           else if (present(r_value)) then
             r_value = settings%entries(loop)%r2d
-            !fixme, are other array types used?
-            !fixme, need method to flag up units for matrix data, or document choice
+          else
+            call set_error_fatal(error, 'Error: block sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
           end if
           found = .true.
         end if
@@ -2861,7 +2836,6 @@ contains
       end if
     end do
 
-    ! fixme(jj) shouldn't this be lenconfac?
     if (lconvert) atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
 
     settings%in_data(line_s:line_e) (1:maxlen) = ' '
@@ -3892,9 +3866,8 @@ contains
 
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
-      num_proj = num_wann ! fixme(jj)
-      ! input_proj is only allocated 1:num_wann when 'random'
-      !do loop = counter + 1, num_bands
+      num_proj = num_wann
+      ! input_proj is allocated 1:num_wann when 'random'
       do loop = counter + 1, num_wann
         call random_number(input_proj(loop)%site(:))
         input_proj(loop)%l = 0

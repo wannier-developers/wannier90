@@ -1674,7 +1674,6 @@ contains
     num_lines = 0; tot_num_lines = 0
     do
       read (kshell_in, '(a)', iostat=ierr) dummy
-      ! fixme(jj) this logic needs a test case; not currently tested?
       if (ierr == 0) then !read ok, proceed
         dummy = adjustl(dummy)
         tot_num_lines = tot_num_lines + 1
