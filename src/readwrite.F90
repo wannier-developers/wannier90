@@ -48,7 +48,6 @@ module w90_readwrite
   public :: w90_readwrite_get_vector_length
   public :: w90_readwrite_in_file
   public :: w90_readwrite_set_kmesh
-  public :: w90_readwrite_uppercase
   public :: w90_readwrite_clean_infile
   public :: w90_readwrite_clear_keywords
   public :: w90_readwrite_read_algorithm_control
@@ -136,20 +135,29 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
 
+    integer :: ic
     logical :: found
 
-    !fixme(jj) check that the correct object var is passed to this fun
     call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
     if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm, c_value=length_unit)
     if (allocated(error)) return
-    if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
-      call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units', comm)
-      return
-    else if (length_unit .eq. 'bohr') then
-      lenconfac = 1.0_dp/bohr
+    if (found) then ! if not specified, it may take already have capitalised values, Ang or Bohr
+      if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
+        call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units', comm)
+        return
+      else if (length_unit .eq. 'bohr') then
+        lenconfac = 1.0_dp/bohr
+      endif
     endif
+
+    ! Length unit (ang --> Ang, bohr --> Bohr)
+    ! this is set to uppercase only for printout...
+    ic = ichar(length_unit(1:1))
+    if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+      length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
+
   end subroutine w90_readwrite_read_units
 
   subroutine w90_readwrite_read_num_wann(settings, num_wann, error, comm)
@@ -378,7 +386,6 @@ contains
     if (found) then
       ok = .true.
       bands_num_spec_points = i_temp*2
-      !fixme (JJ) should we check this is nonzero?
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
@@ -876,12 +883,16 @@ contains
     integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
-    call w90_readwrite_get_keyword_block(settings, 'dis_spheres', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block(settings, 'kpoints', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block(settings, 'nnkpts', found, 0, 0, 0.0_dp, error, comm)
-    call w90_readwrite_get_keyword_block(settings, 'unit_cell_cart', found, 0, 0, 0.0_dp, error, comm)
-    call clear_block(settings, 'projections', error, comm)
+
+    call clear_block(settings, 'atoms_cart', error, comm)
+    call clear_block(settings, 'atoms_frac', error, comm)
+    call clear_block(settings, 'dis_spheres', error, comm)
     call clear_block(settings, 'kpoint_path', error, comm)
+    call clear_block(settings, 'kpoints', error, comm)
+    call clear_block(settings, 'nnkpts', error, comm)
+    call clear_block(settings, 'projections', error, comm)
+    call clear_block(settings, 'slwf_centres', error, comm)
+    call clear_block(settings, 'unit_cell_cart', error, comm)
     call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'bands_plot_dim', found, error, comm)
@@ -1007,6 +1018,10 @@ contains
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
     if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_read_exclude_bands(settings, lxa, lx, error, comm)
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
@@ -1367,51 +1382,6 @@ contains
   end function w90_readwrite_get_smearing_index
 
 !================================================
-  subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
-    !================================================
-    !! Convert a few things to uppercase to look nice in the output
-    !
-    !================================================
-
-    implicit none
-
-    character(len=*), intent(inout) :: length_unit
-    integer :: nsp, ic, loop, inner_loop
-    type(atom_data_type), intent(inout) :: atom_data
-    type(kpoint_path_type), intent(inout) :: kpoint_path
-
-    ! Atom labels (eg, si --> Si)
-    do nsp = 1, atom_data%num_species
-      ic = ichar(atom_data%label(nsp) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atom_data%label(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    enddo
-
-    do nsp = 1, atom_data%num_species
-      ic = ichar(atom_data%symbol(nsp) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atom_data%symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    enddo
-
-    ! Bands labels (eg, x --> X)
-    if (allocated(kpoint_path%labels)) then
-      do loop = 1, size(kpoint_path%labels)
-        do inner_loop = 1, len(kpoint_path%labels(loop))
-          ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
-          if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-            kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
-        enddo
-      enddo
-    endif
-
-    ! Length unit (ang --> Ang, bohr --> Bohr)
-    ic = ichar(length_unit(1:1))
-    if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-      length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
-
-    return
-  end subroutine w90_readwrite_uppercase
-
   subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
                                         constants_version_str2, stdout)
     !! Write a suitable header for the calculation - version authors etc
@@ -3079,6 +3049,11 @@ contains
       atom_data%symbol(loop) (1:2) = tmp_string(1:2)
       tmp_string = trim(adjustl(utility_lowercase(atom_data%label(loop))))
       atom_data%label(loop) (1:2) = tmp_string(1:2)
+
+      ! Upper case the atom labels (eg, si --> Si)
+      ic = ichar(atom_data%label(loop) (1:1))
+      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+        atom_data%label(loop) (1:1) = char(ic + ichar('Z') - ichar('z'))
     end do
   end subroutine w90_readwrite_lib_set_atoms
 
@@ -4041,7 +4016,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     character(len=20) :: keyword
-    integer           :: in, ins, ine, loop, i, line_e, line_s, counter
+    integer           :: ic, in, ins, ine, loop, inner_loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
     character(len=maxlen) :: dummy, end_st, start_st
 
@@ -4102,6 +4077,17 @@ contains
         (kpoint_path%points(i, counter - 1), i=1, 3), &
         kpoint_path%labels(counter), (kpoint_path%points(i, counter), i=1, 3)
     end do
+
+    ! Upper case bands labels (eg, x --> X)
+    if (allocated(kpoint_path%labels)) then
+      do loop = 1, size(kpoint_path%labels)
+        do inner_loop = 1, len(kpoint_path%labels(loop))
+          ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
+          if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+            kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+        enddo
+      enddo
+    endif
 
     settings%in_data(line_s:line_e) (1:maxlen) = ' '
 

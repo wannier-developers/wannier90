@@ -157,7 +157,7 @@ contains
   end subroutine io_print_timings
 
   !================================================
-  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname)
+  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname, stderr)
     !================================================
     !
     !! Parse the commandline
@@ -166,13 +166,13 @@ contains
 
     implicit none
 
-    character(len=50), intent(in) :: prog
+    character(len=:), allocatable, intent(in) :: prog
     !! Name of the calling program
     logical, intent(out) :: dryrun, post_proc_flag
     !! Have we been asked for a dryrun
-    character(len=50), intent(inout)  :: seedname
+    character(len=:), allocatable, intent(inout)  :: seedname
 
-    integer :: num_arg, loop
+    integer :: num_arg, loop, stderr
     character(len=50), allocatable :: ctemp(:)
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)

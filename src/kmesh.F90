@@ -1557,8 +1557,7 @@ contains
     !check b1
 
     b1sat = .true.
-    !if (.not. kmesh_input%skip_B1_tests) then ! fixme(jj) what is the default for this var?
-    if (.false.) then
+    if (.not. kmesh_input%skip_B1_tests) then
       do loop_i = 1, 3
         do loop_j = loop_i, 3
           delta = 0.0_dp

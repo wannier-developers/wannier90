@@ -9,7 +9,7 @@ program libv2
 
   use w90_library
 
-  use w90_comms, only: w90_comm_type
+  use w90_comms, only: w90_comm_type, comms_sync_err
   use w90_io, only: io_print_timings, io_commandline
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
@@ -17,8 +17,7 @@ program libv2
 
   implicit none
 
-  character(len=100) :: seedname
-  character(len=:), allocatable :: cpstatus
+  character(len=:), allocatable :: seedname, progname, cpstatus
   character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: a(:, :, :)
   !complex(kind=dp), allocatable :: m(:,:,:,:)
@@ -46,7 +45,8 @@ program libv2
   nk => common_data%num_kpts
   nn => common_data%kmesh_info%nntot
 
-  call io_commandline('wannier90', ld, pp, seedname)
+  progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
+  call io_commandline(progname, ld, pp, seedname, stderr)
 
 #ifdef MPI
   comm%comm = mpi_comm_world
@@ -65,8 +65,27 @@ program libv2
   ! open main error file
   open (newunit=stderr, file=seedname//'.werr', status="replace")
 
+  call input_reader_special(common_data, wannier_data, seedname, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
   call input_reader(common_data, wannier_data, seedname, stdout, stderr, ierr)
   if (ierr /= 0) stop
+
+  ! test mpi error handling using "unlucky" input token
+  ! this machinery used to sit in w90_wannier90_readwrite_dist
+  ! but that routine is obsolete if input file is read on all ranks
+  ! fixme, this should be moved to wannier90 main routine (definately doesn't belong here)
+  if (common_data%print_output%timing_level < 0 &
+      .and. rank == abs(common_data%print_output%timing_level)) then
+!    call set_error_input(error, 'received unlucky_rank', common_data%comm)
+  else
+    call comms_sync_err(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+  endif
+  if (allocated(error)) then ! applies (is t) for all ranks now
+!    call prterr(error, ierr, istdout, istderr, common_data%comm)
+!    return
+  endif
+  !!!!! end unlucky code
 
   ! write jazzy header info
   call w90_readwrite_write_header(common_data%physics%bohr_version_str, &

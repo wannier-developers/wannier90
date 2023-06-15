@@ -2076,7 +2076,6 @@ contains
     close (unit=file_unit)
 
     return
-!fixme(jj) restructure
 102 call set_error_file(error, 'Error: Problem reading input file '//h_file, comm)
 
   end subroutine tran_read_htC

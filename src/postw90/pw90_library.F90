@@ -59,8 +59,8 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
-      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
+      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -80,8 +80,8 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
-      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
+      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -100,8 +100,8 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_uppercase, &
-      w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
+      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -187,9 +187,6 @@ contains
             ierr = sign(1, error%code)
             deallocate (error)
           else
-            ! For aesthetic purposes, convert some things to uppercase
-            call w90_readwrite_uppercase(wann90%atom_data, wann90%kpoint_path, &
-                                         wann90%print_output%length_unit)
             call w90_readwrite_read_final_alloc(disentanglement, wann90%dis_manifold, &
                                                 wann90%wannier_data, wann90%num_wann, &
                                                 wann90%num_bands, wann90%num_kpts, error, wann90%comm)
