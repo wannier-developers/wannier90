@@ -48,8 +48,7 @@ end module
 program ok
   use aux
   use mpi_f08
-  use w90_helper_types
-  use w90_comms, only: w90_comm_type
+  use w90_library
 
   implicit none
 
@@ -58,7 +57,8 @@ program ok
   complex(kind=dp), allocatable :: morig(:, :, :, :)
   complex(kind=dp), allocatable :: u(:, :, :)
   complex(kind=dp), allocatable :: uopt(:, :, :)
-  integer :: nbas, ierr, stdout, stderr
+  integer :: ib, ic, nbas, ierr, stdout, stderr
+  integer :: i, nkl, mpisize, mpirank
   integer :: nb, nk, nn, nw, nkabc(3), exclude(5)
   integer, allocatable :: distk(:)
   real(kind=dp), allocatable :: eval(:, :)
@@ -66,58 +66,64 @@ program ok
   real(kind=dp), allocatable :: xcart(:, :) ! cartesian atom positions
   real(kind=dp) :: uccart(3, 3) ! cartesian unit cell
 
-  type(lib_global_type), target :: w90main
-  type(lib_w90_type), target :: w90dat
-  type(w90_comm_type) :: comm
+  type(lib_common_type), target :: w90main
+  type(lib_wannier_type), target :: w90dat
 
+  ! collect data
   nb = 12
   nw = 8
   nkabc = (/4, 4, 4/)
   exclude = (/1, 2, 3, 4, 5/)
   nk = nkabc(1)*nkabc(2)*nkabc(3)
-  write (*, *) "nb, nw, nk: ", nb, nw, nk
+  call read_cell(nbas, uccart, xcart)
+  call read_eval(nb, nk, eval)
+  call read_kp(nk, kpcart)
 
-  ! MPI
-  comm%comm = mpi_comm_world
+  ! setup MPI
   call mpi_init(ierr)
+  call mpi_comm_size(mpi_comm_world, mpisize, ierr)
+  call mpi_comm_rank(mpi_comm_world, mpirank, ierr)
+  call set_parallel_comms(w90main, mpi_comm_world)
 
   ! io and k distribution
   call get_fortran_stdout(stdout)
   call get_fortran_stderr(stderr)
   allocate (distk(nk))
-  distk = 0
-  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr, comm)
+  nkl = nk/mpisize ! number of kpoints per rank
+  if (mod(nk, mpisize) > 0) nkl = nkl + 1
+  do i = 1, nk
+    distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
+  enddo
+  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr)
 
   ! required settings
-  call set_option('num_wann', nw)
-  call set_option('num_bands', nb)
-  call set_option('num_kpts', nk)
-  call read_cell(nbas, uccart, xcart)
-  call set_option('unit_cell_cart', uccart)
-  call set_option('mp_grid', nkabc)
-  call read_kp(nk, kpcart)
-  call set_option('kpoints', kpcart)
+  call set_option(w90main, 'num_wann', nw)
+  call set_option(w90main, 'num_bands', nb)
+  call set_option(w90main, 'num_kpts', nk)
+  call set_option(w90main, 'unit_cell_cart', uccart)
+  call set_option(w90main, 'mp_grid', nkabc)
+  call set_option(w90main, 'kpoints', kpcart)
+  ! apply settings (and discard settings store)
+  call input_setopt_special(w90main, w90dat, 'gaas', stdout, stderr, ierr)
 
   ! optional settings
-  call set_option('conv_tol', 1.d-10)
-  call set_option('conv_window', 3)
-  call set_option('dis_froz_max', 14.0d0) ! not optional for disentanglement? fixme
-  call set_option('dis_mix_ratio', 1.d0)
-  call set_option('dis_num_iter', 1200)
-  call set_option('dis_win_max', 24.d0)
-  call set_option('num_iter', 1000)
-  call set_option('num_print_cycles', 40)
-  call set_option('exclude_bands', exclude)
-  !call set_option('iprint', 5)
-
+  call set_option(w90main, 'conv_tol', 1.d-10)
+  call set_option(w90main, 'conv_window', 3)
+  call set_option(w90main, 'dis_froz_max', 14.0d0) ! not optional for disentanglement? fixme
+  call set_option(w90main, 'dis_mix_ratio', 1.d0)
+  call set_option(w90main, 'dis_num_iter', 1200)
+  call set_option(w90main, 'dis_win_max', 24.d0)
+  call set_option(w90main, 'num_iter', 1000)
+  call set_option(w90main, 'num_print_cycles', 40)
+  call set_option(w90main, 'exclude_bands', exclude)
+  call set_option(w90main, 'iprint', 0)
   ! apply settings (and discard settings store)
-  call input_setopt(w90main, w90dat, 'gaas', stdout, stderr, ierr, comm)
+  call input_setopt(w90main, w90dat, 'gaas', stdout, stderr, ierr)
 
   ! k setup needs attention
   ! must be done before reading overlaps
-  call create_kmesh(w90main, stdout, stderr, ierr, comm)
+  call create_kmesh(w90main, stdout, stderr, ierr)
   nn = w90main%kmesh_info%nntot
-  write (*, *) "nn: ", nn
 
   ! setup all matrices
   allocate (a(nb, nw, nk))
@@ -134,13 +140,19 @@ program ok
   ! read from ".mmn" and ".amn"
   ! and assign to m_orig and a
   ! (or m and u if not disentangling)
-  call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
+  call overlaps(w90main, w90dat, stdout, stderr, ierr)
 
-  call read_eval(nb, nk, eval)
   call set_eigval(w90main, eval)
 
-  call disentangle(w90main, w90dat, stdout, stderr, ierr, comm)
-  call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+  call disentangle(w90main, w90dat, stdout, stderr, ierr)
+  call wannierise(w90main, w90dat, stdout, stderr, ierr)
+
+  if (mpirank == 0) then ! we print the results
+    write (stderr, *) "nb, nw, nk: ", nb, nw, nk
+    do ib = 1, nw
+      write (stdout, *) (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
+    enddo
+  endif
 
   call mpi_finalize()
 end program

@@ -198,7 +198,7 @@ program postw90
 
   stdout = 6 ! stdout stream
   stderr = 0 ! stderr stream
-  prog = "postw90"
+  prog = "postw90" ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
   seednamedyn = "wannier"
 
 #ifdef MPI
@@ -227,7 +227,7 @@ program postw90
 
   if (on_root) then
     time0 = io_time()
-    call io_commandline(prog, dryrun, lpp, seednamedyn, stderr)
+    call io_commandline(prog, dryrun, lpp, seednamedyn)
     seedname = seednamedyn(1:len(seednamedyn))
     len_seedname = len(seedname)
   end if

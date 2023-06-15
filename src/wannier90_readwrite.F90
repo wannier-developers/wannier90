@@ -1369,7 +1369,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'one_dim_axis', found, error, comm, c_value=one_dim_axis)
     if (allocated(error)) return
 
-    !fixme(jj) these error conditions are pretty complicated
     if (index(one_dim_axis, 'x') > 0) real_space_ham%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) real_space_ham%one_dim_dir = 2
     if (index(one_dim_axis, 'z') > 0) real_space_ham%one_dim_dir = 3
@@ -1430,7 +1429,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm, l_value=use_bloch_phases)
     if (allocated(error)) return
 
-    ! fixme, wouldn't this check be better at the higher level?
     if (disentanglement .and. use_bloch_phases) then
       call set_error_input(error, 'Error: Cannot use bloch phases for disentanglement', comm)
       return
@@ -1474,19 +1472,16 @@ contains
       kmesh_info%nntot = rows/num_kpts
 
       if (allocated(nnkpts_block)) deallocate (nnkpts_block)
-      ! fixme (jj) what is the magic number "5" here?  Shouldn't this be nntot??
       allocate (nnkpts_block(5, rows), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnkpts_block in w90_wannier90_readwrite_read', comm)
         return
       endif
-      ! fixme (jj) what is the magic number "5" here?  Shouldn't this be nntot??
       call w90_readwrite_get_keyword_block(settings, 'nnkpts', found, rows, 5, bohr, error, comm, &
                                            i_value=nnkpts_block)
       if (allocated(error)) return
 
       ! check that postproc_setup is true
-      ! fixme(jj) maybe this routine needs to be put in a special place if only for postproc_setup???
       if (.not. w90_calculation%postproc_setup) then
         call set_error_input(error, 'Input parameter nnkpts_block is allowed only if postproc_setup = .true.', comm)
         return
@@ -1591,7 +1586,7 @@ contains
         return
       endif
       lhasproj = .true.
-      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_bands, num_wann, proj_input, &
+      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
                                          recip_lattice, .true., spinors, bohr, stdout, error, comm)
       if (allocated(error)) return
       ! num_proj is assigned in get_projections() call
@@ -1668,7 +1663,7 @@ contains
     endif
 
     if (lhasproj) then
-      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_bands, num_wann, proj_input, &
+      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
                                          recip_lattice, .false., spinors, bohr, stdout, error, comm)
       if (allocated(error)) return
 

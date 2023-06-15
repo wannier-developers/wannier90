@@ -37,8 +37,7 @@ end module
 program ok
   use aux
   use mpi_f08
-  use w90_helper_types
-  use w90_comms, only: w90_comm_type
+  use w90_library
 
   implicit none
 
@@ -52,54 +51,43 @@ program ok
   real(kind=dp), allocatable :: xcart(:, :) ! cartesian atom positions
   real(kind=dp) :: uccart(3, 3) ! cartesian unit cell
 
-  type(lib_global_type), target :: w90main
-  type(lib_w90_type), target :: w90dat
-  type(w90_comm_type) :: comm
+  type(lib_common_type), target :: w90main
+  type(lib_wannier_type), target :: w90dat
 
   nb = 4
   nw = 4
   nkabc = (/2, 2, 2/)
   nk = nkabc(1)*nkabc(2)*nkabc(3)
-  write (*, *) "nb, nw, nk: ", nb, nw, nk
+  call read_kp(nk, kpcart)
+  call read_cell(nbas, uccart, xcart)
 
   ! MPI
-  comm%comm = mpi_comm_world
   call mpi_init(ierr)
 
   ! io and k distribution
-  !call get_fortran_stdout(stdout)
-  open (newunit=stdout, file='/dev/null')
+  call get_fortran_stdout(stdout)
+  !open (newunit=stdout, file='/dev/null')
   call get_fortran_stderr(stderr)
   allocate (distk(nk))
   distk = 0
-  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr, comm)
+  call set_kpoint_distribution(w90main, distk, stdout, stderr, ierr)
 
   ! required settings
-  call set_option('num_wann', nw)
-  call set_option('num_bands', nb)
-  call set_option('num_kpts', nk)  ! why are we providing nk and nkabc and kpcart (aka kpt_latt)?
-  call set_option('mp_grid', nkabc)
-  call read_kp(nk, kpcart)
-  call set_option('kpoints', kpcart)
+  call set_option(w90main, 'num_wann', nw)
+  call set_option(w90main, 'num_bands', nb)
+  call set_option(w90main, 'num_kpts', nk)  ! why are we providing nk and nkabc and kpcart (aka kpt_latt)?
+  call set_option(w90main, 'mp_grid', nkabc)
+  call set_option(w90main, 'kpoints', kpcart)
+  call set_option(w90main, 'unit_cell_cart', uccart)
+  call input_setopt_special(w90main, w90dat, 'wannier', stdout, stderr, ierr)
 
-  ! xtal
-  call read_cell(nbas, uccart, xcart)
-  call set_option('unit_cell_cart', uccart) ! atomic positions not used
-
-  ! optional settings (copied from ".win" file)
-  call set_option('num_print_cycles', 13)
-  call set_option('use_ws_distance', .false.)
-  call set_option('search_shells', 12)
-  call set_option('num_iter', 100)
-
-  ! apply settings (and discard settings store)
-  call input_setopt(w90main, w90dat, 'wannier', stdout, stderr, ierr, comm)
+  ! read some other settings from win file
+  call input_reader(w90main, w90dat, 'wannier', stdout, stderr, ierr)
 
   ! k setup needs attention
   ! must be done before reading overlaps
-  call create_kmesh(w90main, stdout, stderr, ierr, comm)
+  call create_kmesh(w90main, stdout, stderr, ierr)
   nn = w90main%kmesh_info%nntot
-  write (*, *) "nn: ", nn
 
   ! setup all matrices
   allocate (m(nw, nw, nn, nk)) ! m also known as m_matrix_local
@@ -109,21 +97,21 @@ program ok
 
   ! read from ".mmn" and ".amn"
   ! and assign to m and u (or m_orig and a if disentangling)
-  call overlaps(w90main, w90dat, stdout, stderr, ierr, comm)
-  call projovlp(w90main, w90dat, stdout, stderr, ierr, comm)
+  call overlaps(w90main, w90dat, stdout, stderr, ierr)
+  call projovlp(w90main, w90dat, stdout, stderr, ierr)
   allocate (uopt(nb, nw, nk))
   call set_u_opt(w90main, uopt)
 
-  call wannierise(w90main, w90dat, stdout, stderr, ierr, comm)
+  call wannierise(w90main, w90dat, stdout, stderr, ierr)
 
   ! printout result
   nbas = size(w90main%wannier_data%centres, 2)
-  write (*, *) "wannier centres and spreads"
+  write (stdout, *) "wannier centres and spreads"
   do ib = 1, nbas
-    write (*, *) (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
+    write (stdout, *) (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
   enddo
-  write (*, *) "sum"
-  write (*, *) (sum(w90main%wannier_data%centres(ic, :)), ic=1, 3), sum(w90main%wannier_data%spreads(:))
+  write (stdout, *) "sum"
+  write (stdout, *) (sum(w90main%wannier_data%centres(ic, :)), ic=1, 3), sum(w90main%wannier_data%spreads(:))
 
   call mpi_finalize()
 end program

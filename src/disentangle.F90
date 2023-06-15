@@ -118,7 +118,7 @@ contains
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
 
-    if (on_root) write (stdout, '(/1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '*------------------------------- DISENTANGLE --------------------------------*'
 
     ! Allocate arrays
@@ -138,7 +138,8 @@ contains
 
     ! Construct the unitarized projection
     call dis_project(a_matrix, u_matrix_opt, dis_manifold%ndimwin, nfirstwin, num_bands, num_kpts, &
-                     num_wann, print_output%timing_level, on_root, timer, error, stdout, comm)
+                     num_wann, print_output%timing_level, on_root, print_output%iprint, timer, &
+                     error, stdout, comm)
     if (allocated(error)) return
 
     ! If there is an inner window, need to modify projection procedure
@@ -149,13 +150,13 @@ contains
                              comm)
         return
       endif
-      if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
+      if (print_output%iprint > 0) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(u_matrix_opt, indxfroz, ndimfroz, dis_manifold%ndimwin, &
                          print_output%iprint, num_bands, num_kpts, num_wann, &
                          print_output%timing_level, lfrozen, on_root, timer, error, stdout, comm)
       if (allocated(error)) return
     else
-      if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
+      if (print_output%iprint > 0) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
 
     ! Debug
@@ -929,24 +930,24 @@ contains
 
     linner = .false.
 
-    if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 0) write (stdout, '(1x,a)') &
       '+----------------------------------------------------------------------------+'
-    if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 0) write (stdout, '(1x,a)') &
       '|                              Energy  Windows                               |'
-    if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 0) write (stdout, '(1x,a)') &
       '|                              ---------------                               |'
-    if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+    if (iprint > 0) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
       '|                   Outer: ', dis_manifold%win_min, '  to ', dis_manifold%win_max, &
       '  (eV)                   |'
     if (dis_manifold%frozen_states) then
-      if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+      if (iprint > 0) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
         '|                   Inner: ', dis_manifold%froz_min, '  to ', dis_manifold%froz_max, &
         '  (eV)                   |'
     else
-      if (on_root) write (stdout, '(1x,a)') &
+      if (iprint > 0) write (stdout, '(1x,a)') &
         '|                   No frozen states were specified                          |'
     endif
-    if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 0) write (stdout, '(1x,a)') &
       '+----------------------------------------------------------------------------+'
 
     do nkp = 1, num_kpts
@@ -1005,7 +1006,7 @@ contains
       !~~ GS-end
 
       if (dis_manifold%ndimwin(nkp) .lt. num_wann) then
-        if (on_root) write (stdout, '(1x, a17, i4, a8, i3, a9, i3)') 'Error at k-point ', nkp, &
+        if (iprint > 0) write (stdout, '(1x, a17, i4, a8, i3, a9, i3)') 'Error at k-point ', nkp, &
           ' ndimwin=', dis_manifold%ndimwin(nkp), ' num_wann=', num_wann
         call set_error_fatal(error, 'dis_windows: Energy window contains fewer states than number of target WFs', comm)
         return
@@ -1124,38 +1125,38 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (iprint > 1) then
-      if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 1) then ! iprint > 0 implies rank > 0
+      write (stdout, '(1x,a)') &
         '|                        K-points with Frozen States                         |'
-      if (on_root) write (stdout, '(1x,a)') &
+      write (stdout, '(1x,a)') &
         '|                        ---------------------------                         |'
       i = 0
       do nkp = 1, num_kpts
         if (ndimfroz(nkp) .gt. 0) then
           i = i + 1
           if (i .eq. 1) then
-            if (on_root) write (stdout, '(1x,a,i6)', advance='no') '|', nkp
+            write (stdout, '(1x,a,i6)', advance='no') '|', nkp
           else if ((i .gt. 1) .and. (i .lt. 12)) then
-            if (on_root) write (stdout, '(i6)', advance='no') nkp
+            write (stdout, '(i6)', advance='no') nkp
           else if (i .eq. 12) then
-            if (on_root) write (stdout, '(i6,a)') nkp, '    |'
+            write (stdout, '(i6,a)') nkp, '    |'
             i = 0
           endif
         endif
       enddo
       if (i .ne. 0) then
         do j = 1, 12 - i
-          if (on_root) write (stdout, '(6x)', advance='no')
+          write (stdout, '(6x)', advance='no')
         enddo
-        if (on_root) write (stdout, '(a)') '    |'
+        write (stdout, '(a)') '    |'
       endif
-      if (on_root) write (stdout, '(1x,a)') &
+      write (stdout, '(1x,a)') &
         '+----------------------------------------------------------------------------+'
     endif
 
-    if (on_root) write (stdout, '(3x,a,i4)') 'Number of target bands to extract: ', num_wann
+    if (iprint > 0) write (stdout, '(3x,a,i4)') 'Number of target bands to extract: ', num_wann
     if (iprint > 1) then
-      if (on_root) write (stdout, '(4(1x,a,/),(1x,a))') &
+      write (stdout, '(4(1x,a,/),(1x,a))') &
         '+----------------------------------------------------------------------------+', &
         '|                                  Windows                                   |', &
         '|                                  -------                                   |', &
@@ -1163,10 +1164,10 @@ contains
         '|               ----------------------------------------------               |'
 
       do nkp = 1, num_kpts
-        if (on_root) write (stdout, 403) nkp, dis_manifold%ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
+        write (stdout, 403) nkp, dis_manifold%ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
       enddo
 403   format(1x, '|', 14x, i6, 7x, i6, 7x, i6, 6x, i6, 18x, '|')
-      if (on_root) write (stdout, '(1x,a)') &
+      write (stdout, '(1x,a)') &
         '+----------------------------------------------------------------------------+'
     endif
 
@@ -1177,7 +1178,7 @@ contains
   end subroutine dis_windows
 
   subroutine dis_project(a_matrix, u_matrix_opt, ndimwin, nfirstwin, num_bands, num_kpts, &
-                         num_wann, timing_level, on_root, timer, error, stdout, comm)
+                         num_wann, timing_level, on_root, iprint, timer, error, stdout, comm)
     !================================================!
     !
     !! Construct projections for the start of the disentanglement routine
@@ -1237,7 +1238,7 @@ contains
 
     integer, intent(in) :: ndimwin(:), nfirstwin(:)
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: stdout, timing_level
+    integer, intent(in) :: stdout, timing_level, iprint
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
@@ -1258,12 +1259,12 @@ contains
 
     if (timing_level > 1) call io_stopwatch_start('dis: project', timer)
 
-    if (on_root) write (stdout, '(/1x,a)') &
+    if (iprint > 0) write (stdout, '(/1x,a)') &
       '                  Unitarised projection of Wannier functions                  '
-    if (on_root) write (stdout, '(1x,a)') &
+    if (iprint > 0) write (stdout, '(1x,a)') &
       '                  ------------------------------------------                  '
-    if (on_root) write (stdout, '(3x,a)') 'A_mn = <psi_m|g_n> --> S = A.A^+ --> U = S^-1/2.A'
-    if (on_root) write (stdout, '(3x,a)', advance='no') 'In dis_project...'
+    if (iprint > 0) write (stdout, '(3x,a)') 'A_mn = <psi_m|g_n> --> S = A.A^+ --> U = S^-1/2.A'
+    if (iprint > 0) write (stdout, '(3x,a)', advance='no') 'In dis_project...'
 
     allocate (svals(num_bands), stat=ierr)
     if (ierr /= 0) then
@@ -1426,7 +1427,7 @@ contains
       return
     endif
 
-    if (on_root) write (stdout, '(a)') ' done'
+    if (iprint > 0) write (stdout, '(a)') ' done'
 
     if (timing_level > 1) call io_stopwatch_stop('dis: project', timer)
 
@@ -1522,7 +1523,7 @@ contains
 
     if (timing_level > 1) call io_stopwatch_start('dis: proj_froz', timer)
 
-    if (on_root) write (stdout, '(3x,a)', advance='no') 'In dis_proj_froz...'
+    if (iprint > 0) write (stdout, '(3x,a)', advance='no') 'In dis_proj_froz...'
 
     allocate (iwork(5*num_bands), stat=ierr)
     if (ierr /= 0) then
@@ -1888,7 +1889,7 @@ contains
       return
     endif
 
-    if (on_root) write (stdout, '(a)') ' done'
+    if (iprint > 0) write (stdout, '(a)') ' done'
 
     if (timing_level > 1) call io_stopwatch_stop('dis: proj_froz', timer)
 
@@ -2014,9 +2015,9 @@ contains
 
     if (print_output%timing_level > 1) call io_stopwatch_start('dis: extract', timer)
 
-    if (on_root) write (stdout, '(/1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
-    if (on_root) write (stdout, '(1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(1x,a)') &
       '                  ------------------------------------------                  '
 
     allocate (cwb(num_wann, num_bands), stat=ierr)
@@ -2167,11 +2168,11 @@ contains
     ! TO DO: Check if this is the best place to initialize icompflag
     icompflag = 0
 
-    if (on_root) write (stdout, '(1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(1x,a)') &
       '+---------------------------------------------------------------------+<-- DIS'
-    if (on_root) write (stdout, '(1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(1x,a)') &
       '|  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS'
-    if (on_root) write (stdout, '(1x,a)') &
+    if (print_output%iprint > 0) write (stdout, '(1x,a)') &
       '+---------------------------------------------------------------------+<-- DIS'
 
     dis_converged = .false.
@@ -2489,7 +2490,7 @@ contains
 
       if (print_output%timing_level > 1) call io_stopwatch_stop('dis: extract_4', timer)
 
-      if (on_root) then
+      if (print_output%iprint > 0) then
         write (stdout, 124) iter, womegai1*print_output%lenconfac**2, &
           womegai*print_output%lenconfac**2, delta_womegai, io_wallclocktime()
       endif
@@ -2527,7 +2528,7 @@ contains
       if (allocated(error)) return
 
       if (dis_converged) then
-        if (on_root) then
+        if (print_output%iprint > 0) then
           write (stdout, '(/13x,a,es10.3,a,i2,a)') '<<<      Delta <', dis_control%conv_tol, &
             '  over ', dis_control%conv_window, ' iterations     >>>'
           write (stdout, '(13x,a)') '<<< Disentanglement convergence criteria satisfied >>>'
@@ -2608,7 +2609,7 @@ contains
     ! Write the final womegai. This should remain unchanged during the
     ! subsequent minimization of Omega_tilde in wannierise.f90
     ! We store it in the checkpoint file as a sanity check
-    if (on_root) write (stdout, '(/8x,a,f14.8,a/)') 'Final Omega_I ', &
+    if (print_output%iprint > 0) write (stdout, '(/8x,a,f14.8,a/)') 'Final Omega_I ', &
       womegai*print_output%lenconfac**2, ' ('//trim(print_output%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
@@ -2860,7 +2861,7 @@ contains
       return
     endif
 
-    if (on_root) write (stdout, '(1x,a/)') &
+    if (print_output%iprint > 0) write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
     if (print_output%timing_level > 1) call io_stopwatch_stop('dis: extract', timer)

@@ -556,7 +556,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local
-    integer :: i, j, k, n, eig_unit, ierr
+    integer :: i, j, k, n, eig_unit
 
     inquire (file=trim(seedname)//'.eig', exist=eig_found)
     if (.not. eig_found) then
@@ -614,7 +614,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm, &
                                    r_value=dis_manifold%win_max)
     if (allocated(error)) return
-    ! fixme(jj) why does the following depend on having read the .eig file?
+    !fixme(jj) why does the following depend on having read the .eig file?
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement windows', comm)
       return
@@ -754,7 +754,7 @@ contains
     if (allocated(error)) return
     if (.not. pw90_effective_model) then
       kpt_latt = kpt_cart
-      ! fixme(jj) why is this only an error if not pw90_effective_model?
+      !fixme(jj) why is this only an error if not pw90_effective_model?
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
         return
@@ -2025,7 +2025,7 @@ contains
     call comms_bcast(checkpoint, len(checkpoint), error, comm)
     if (allocated(error)) return
 
-    ! fixme jj document strategy here + warning
+    !fixme jj document strategy here + warning
     ! assumes u is alloc'd on all nodes
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
 
@@ -3275,7 +3275,7 @@ contains
   end subroutine get_centre_constraint_from_column
 
   !================================================!
-  subroutine w90_readwrite_get_projections(settings, num_proj, atom_data, num_bands, num_wann, input_proj, &
+  subroutine w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, input_proj, &
                                            inv_lattice, lcount, spinors, bohr, stdout, error, comm)
     !================================================!
     !
@@ -3295,7 +3295,6 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
-    integer, intent(in) :: num_bands ! currently unused
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
@@ -3344,14 +3343,6 @@ contains
 
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
-
-    ! jj jan23
-    ! hybridised projectors are expanded and entered into the projector list independently
-    ! i.e. sp3 -> s,p,p,p
-    ! therefore the total number of (expanded) projectors may exceed the number of wannier functions
-    ! since this default is used for sizing arrays, we are in trouble
-    ! until we reconfigure this read routine (eg, doing two passes to count the number of pure l proj), the
-    ! only safe limit for proj allocations is num_bands not num_wann (example11 demonstrates: num_wann=4 < num_proj=12)
 
     if (.not. lcount) then
       allocate (input_proj(num_proj), stat=ierr)

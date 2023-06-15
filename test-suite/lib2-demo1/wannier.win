@@ -4,6 +4,7 @@ use_ws_distance .false.
 search_shells 12
 num_iter 100
 mp_grid 2 2 2 
+iprint 0
 
 begin atoms_cart
 Bohr

@@ -151,7 +151,7 @@ contains
   !================================================!
   subroutine overlap_read(kmesh_info, select_projection, sitesym, au_matrix, &
                           m_matrix_local, num_bands, num_kpts, num_proj, &
-                          num_wann, timing_level, cp_pp, gamma_only, lsitesymmetry, &
+                          num_wann, print_output, timing_level, cp_pp, gamma_only, lsitesymmetry, &
                           use_bloch_phases, seedname, stdout, timer, dist_k, error, comm)
     !================================================!
     !! Read the Mmn and Amn from files
@@ -160,7 +160,7 @@ contains
     !================================================!
 
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: kmesh_info_type, timer_list_type
+    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
     use w90_error
 
@@ -168,11 +168,12 @@ contains
 
     ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(print_output_type), intent(in)      :: print_output
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
-    type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: dist_k(:)
     integer, intent(in) :: num_bands
@@ -233,11 +234,11 @@ contains
     open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
           form='formatted', status='old', action='read', err=101)
 
-    if (on_root) write (stdout, '(/a)', advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
+    if (print_output%iprint > 0) write (stdout, '(/a)', advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
 
     ! Read the comment line
     read (mmn_in, '(a)', err=103, end=103) dummy
-    if (on_root) write (stdout, '(a)') trim(dummy)
+    if (print_output%iprint > 0) write (stdout, '(a)') trim(dummy)
 
     ! Read the number of bands, k-points and nearest neighbours
     read (mmn_in, *, err=103, end=103) nb_tmp, nkp_tmp, nntot_tmp
@@ -322,11 +323,11 @@ contains
       ! Read A_matrix from file wannier.amn
       open (newunit=amn_in, file=trim(seedname)//'.amn', form='formatted', status='old', err=102)
 
-      if (on_root) write (stdout, '(/a)', advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
+      if (print_output%iprint > 0) write (stdout, '(/a)', advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
 
       ! Read the comment line
       read (amn_in, '(a)', err=104, end=104) dummy
-      if (on_root) write (stdout, '(a)') trim(dummy)
+      if (print_output%iprint > 0) write (stdout, '(a)') trim(dummy)
 
       ! Read the number of bands, k-points and wannier functions
       read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp

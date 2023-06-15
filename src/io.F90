@@ -157,7 +157,7 @@ contains
   end subroutine io_print_timings
 
   !================================================
-  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname, stderr)
+  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname)
     !================================================
     !
     !! Parse the commandline
@@ -172,7 +172,7 @@ contains
     !! Have we been asked for a dryrun
     character(len=:), allocatable, intent(inout)  :: seedname
 
-    integer :: num_arg, loop, stderr
+    integer :: num_arg, loop
     character(len=50), allocatable :: ctemp(:)
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
