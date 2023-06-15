@@ -1660,7 +1660,6 @@ contains
 
       do nkp_loc = 1, ranknk
         nkp = global_k(nkp_loc)
-        !JJ fixme, review this cycle... currently it causes error
         if (lsitesymmetry) then
           if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle
         end if

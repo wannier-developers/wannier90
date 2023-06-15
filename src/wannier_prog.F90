@@ -35,7 +35,6 @@ program libv2
   logical :: ld, lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
   type(lib_common_type), target :: common_data
   type(lib_wannier_type), target :: wannier_data
-  type(w90_comm_type) :: comm
   type(w90_error_type), allocatable :: error
 
   pp => wannier_data%w90_calculation%postproc_setup
@@ -46,15 +45,14 @@ program libv2
   nn => common_data%kmesh_info%nntot
 
   progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
-  call io_commandline(progname, ld, pp, seedname, stderr)
+  call io_commandline(progname, ld, pp, seedname)
 
 #ifdef MPI
-  comm%comm = mpi_comm_world
   call mpi_init(ierr)
   ! setup pplel decomp
-  call mpi_comm_rank(comm%comm, rank, ierr)
-  call mpi_comm_size(comm%comm, mpisize, ierr)
-  call set_parallel_comms(common_data, comm%comm)
+  call mpi_comm_rank(mpi_comm_world, rank, ierr) ! the type of comm_world depends on interface used
+  call mpi_comm_size(mpi_comm_world, mpisize, ierr)
+  call set_parallel_comms(common_data, mpi_comm_world)
 #else
   rank = 0
   mpisize = 1
@@ -72,9 +70,6 @@ program libv2
   if (ierr /= 0) stop
 
   ! test mpi error handling using "unlucky" input token
-  ! this machinery used to sit in w90_wannier90_readwrite_dist
-  ! but that routine is obsolete if input file is read on all ranks
-  ! fixme, this should be moved to wannier90 main routine (definately doesn't belong here)
   if (common_data%print_output%timing_level < 0 &
       .and. rank == abs(common_data%print_output%timing_level)) then
 !    call set_error_input(error, 'received unlucky_rank', common_data%comm)
@@ -83,7 +78,6 @@ program libv2
   endif
   if (allocated(error)) then ! applies (is t) for all ranks now
 !    call prterr(error, ierr, istdout, istderr, common_data%comm)
-!    return
   endif
   !!!!! end unlucky code
 
@@ -125,7 +119,7 @@ program libv2
   endif
 
   if (wannier_data%lsitesymmetry) then
-    call sitesym_read(wannier_data%sitesym, nb, nk, nw, seedname, error, comm) ! (not a library call)
+    call sitesym_read(wannier_data%sitesym, nb, nk, nw, seedname, error, common_data%comm) ! (not a library call)
     if (allocated(error)) then
       write (stderr, *) 'failed to setup symmetry'
       deallocate (error)

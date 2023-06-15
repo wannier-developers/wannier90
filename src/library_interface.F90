@@ -103,7 +103,7 @@ module w90_library
     type(wvfn_read_type) :: wvfn_read
 
     ! symmetry-adapted Wannier functions
-    logical :: calc_only_A = .false. ! should find a home in one of the types? fixme(jj)
+    logical :: calc_only_A = .false. ! used only in kmesh
     logical :: lsitesymmetry = .false.
     logical :: use_bloch_phases = .false.
   end type lib_wannier_type
@@ -354,7 +354,12 @@ contains
     ! local
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    logical :: cp_pp, disentanglement
+    logical :: cp_pp
+
+    if (allocated(common_data%settings%entries) .and. allocated(common_data%settings%in_data)) then
+      write (istderr, *) ' readinput and setopt clash'
+      stop
+    endif
 
     ierr = 0
     call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
@@ -382,6 +387,9 @@ contains
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
 
     common_data%seedname = seedname
+
+    ! clear any settings (from settings interface --entries--)
+    if (allocated(common_data%settings%entries)) deallocate (common_data%settings%entries)
 
   end subroutine input_setopt
 
@@ -433,13 +441,11 @@ contains
 
     ! fixme error messages
     if (disentanglement) then
-      !if (allocated(common_datadis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
       allocate (common_data%dis_manifold%ndimwin(common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', common_data%comm)
         return
       endif
-      !if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
       allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', common_data%comm)
@@ -467,6 +473,10 @@ contains
     common_data%seedname = seedname
 
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
+
+    ! clear any settings (from settings interface --entries--)
+    if (allocated(common_data%settings%entries)) deallocate (common_data%settings%entries)
+
   end subroutine input_setopt_special
 
   subroutine input_reader(common_data, wannier_data, seedname, istdout, istderr, ierr)
@@ -491,6 +501,12 @@ contains
 
     ierr = 0
 
+    if (allocated(common_data%settings%entries)) then
+      write (istderr, *) 'Error: input reader called when unspent options present (call setopt)'
+      ierr = 1
+      return
+    endif
+
     ! read data from .win file to internal string array
     call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
     if (allocated(error)) then
@@ -510,6 +526,7 @@ contains
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
+    if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine input_reader
 
   subroutine input_reader_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
@@ -553,6 +570,7 @@ contains
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
+    if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine input_reader_special
 
   subroutine create_kmesh(common_data, istdout, istderr, ierr)
@@ -646,7 +664,7 @@ contains
       endif
       call overlap_read(common_data%kmesh_info, wannier_data%select_proj, wannier_data%sitesym, wannier_data%a_matrix, &
                         wannier_data%m_orig, common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                        common_data%num_wann, common_data%print_output%timing_level, cp_pp, &
+                        common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
                         common_data%gamma_only, wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, &
                         common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
                         common_data%comm)
@@ -658,7 +676,7 @@ contains
       endif
       call overlap_read(common_data%kmesh_info, wannier_data%select_proj, wannier_data%sitesym, common_data%u_matrix, &
                         wannier_data%m_matrix_local, common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                        common_data%num_wann, common_data%print_output%timing_level, cp_pp, &
+                        common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
                         common_data%gamma_only, wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, &
                         common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
                         common_data%comm)
@@ -901,7 +919,8 @@ contains
     ierr = 0
 
     ! fixme(jj) what are our preconditions?
-    ! fixme(JJ) is tran_main pllel at all?
+
+    ! currently tran_main is entirely serial
     if (mpirank(common_data%comm) == 0) then
       call tran_main(common_data%atom_data, common_data%dis_manifold, common_data%fermi_energy_list, &
                      wannier_data%ham_logical, common_data%kpt_latt, wannier_data%output_file, &
@@ -1197,7 +1216,7 @@ contains
     mesg = 'not set'
 
     if (mpirank(comm) == 0) then
-      ! fixme, report all failing ranks
+      ! fixme, report all failing ranks instead of lowest failing rank (current stand)
       do j = mpisize(comm) - 1, 1, -1
         call comms_no_sync_recv(je, 1, j, le, comm)
 
@@ -1301,19 +1320,64 @@ contains
     ierr = 0
 
     if (.not. allocated(wannier_data%proj_input)) then
-      call set_error_fatal(error, 'projectors are not setup in Wannier90 library when requested via get_proj()', common_data%comm)
+      call set_error_fatal(error, 'Projectors are not setup in Wannier90 library when requested via get_proj()', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
 
     n = size(wannier_data%proj_input)
 
-    if (size(site, 2) < n) then
-      call set_error_fatal(error, 'array argument site in get_proj() call is insufficiently sized', common_data%comm)
+    ! check allocation of main output arrays
+    if (size(l) < n) then
+      call set_error_fatal(error, 'Array argument l in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    ! fixme, maybe check the others, too?
+    if (size(m) < n) then
+      call set_error_fatal(error, 'Array argument m in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (size(s) < n) then
+      call set_error_fatal(error, 'Array argument s in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (size(site, 2) < n) then
+      call set_error_fatal(error, 'Array argument site in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(sqa) .and. size(sqa, 2) < n) then
+      call set_error_fatal(error, 'Optional array argument sqa in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(sqa) .and. size(sqa, 2) < n) then
+      call set_error_fatal(error, 'Optional array argument sqa in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(z) .and. size(z, 2) < n) then
+      call set_error_fatal(error, 'Optional array argument z in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(x) .and. size(x, 2) < n) then
+      call set_error_fatal(error, 'Optional array argument x in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(rad) .and. size(rad) < n) then
+      call set_error_fatal(error, 'Optional array argument rad in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (present(zona) .and. size(zona) < n) then
+      call set_error_fatal(error, 'Optional array argument zona in get_proj() call is insufficiently sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
 
     do ip = 1, n
       proj => wannier_data%proj_input(ip)
