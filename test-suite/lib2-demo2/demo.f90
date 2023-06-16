@@ -103,8 +103,6 @@ program ok
   call set_option(w90main, 'unit_cell_cart', uccart)
   call set_option(w90main, 'mp_grid', nkabc)
   call set_option(w90main, 'kpoints', kpcart)
-  ! apply settings (and discard settings store)
-  call input_setopt_special(w90main, w90dat, 'gaas', stdout, stderr, ierr)
 
   ! optional settings
   call set_option(w90main, 'conv_tol', 1.d-10)
@@ -117,7 +115,7 @@ program ok
   call set_option(w90main, 'num_print_cycles', 40)
   call set_option(w90main, 'exclude_bands', exclude)
   call set_option(w90main, 'iprint', 0)
-  ! apply settings (and discard settings store)
+  ! apply settings (requires full set of options)
   call input_setopt(w90main, w90dat, 'gaas', stdout, stderr, ierr)
 
   ! k setup needs attention

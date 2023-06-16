@@ -79,7 +79,7 @@ program ok
   call set_option(w90main, 'mp_grid', nkabc)
   call set_option(w90main, 'kpoints', kpcart)
   call set_option(w90main, 'unit_cell_cart', uccart)
-  call input_setopt_special(w90main, w90dat, 'wannier', stdout, stderr, ierr)
+  call input_setopt(w90main, w90dat, 'wannier', stdout, stderr, ierr)
 
   ! read some other settings from win file
   call input_reader(w90main, w90dat, 'wannier', stdout, stderr, ierr)
