@@ -117,7 +117,6 @@ module w90_library
   public :: input_reader
   public :: input_reader_special
   public :: input_setopt
-  public :: input_setopt_special
   public :: overlaps !to standalone driver (just reads a file)
   public :: plot_files
   public :: print_times
@@ -340,6 +339,7 @@ contains
   subroutine input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
     use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_alloc
     use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
@@ -354,13 +354,70 @@ contains
     ! local
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
-    logical :: cp_pp
+    logical :: cp_pp, disentanglement
 
-    if (allocated(common_data%settings%entries) .and. allocated(common_data%settings%in_data)) then
+    if (allocated(common_data%settings%in_data)) then
       write (istderr, *) ' readinput and setopt clash'
       stop
     endif
 
+    ierr = 0
+    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
+                                              wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
+                                              common_data%exclude_bands, common_data%fermi_energy_list, &
+                                              wannier_data%fermi_surface_data, common_data%kmesh_input, &
+                                              common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
+                                              wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
+                                              wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
+                                              common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
+                                              common_data%print_output, wannier_data%wann_plot, io_params, &
+                                              common_data%ws_region, wannier_data%w90_calculation, &
+                                              common_data%real_lattice, common_data%physics%bohr, &
+                                              wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
+                                              common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
+                                              common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
+                                              cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
+                                              wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
+                                              istdout, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+
+    disentanglement = (common_data%num_bands > common_data%num_wann)
+
+    ! fixme error messages
+    if (disentanglement) then
+      allocate (common_data%dis_manifold%ndimwin(common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', common_data%comm)
+        return
+      endif
+      allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', common_data%comm)
+        return
+      endif
+    endif
+
+    ! these may previously have been allocated, eg, by the chkpt read
+    !if (allocated(common_data%wannier_data%centres)) deallocate (common_data%wannier_data%centres)
+    allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wannier_centres in wannierise', common_data%comm)
+      return
+    endif
+    common_data%wannier_data%centres = 0.0_dp
+
+    !if (allocated(common_data%wannier_data%spreads)) deallocate (common_data%wannier_data%spreads)
+    allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in wannierise', common_data%comm)
+      return
+    endif
+    common_data%wannier_data%spreads = 0.0_dp
+
+    ! all other variables
     ierr = 0
     call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
                                       wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
@@ -393,11 +450,84 @@ contains
 
   end subroutine input_setopt
 
-  subroutine input_setopt_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_read_final_alloc
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
+  subroutine input_reader(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
     use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_alloc
+    use w90_error, only: set_error_input, set_error_fatal, set_error_alloc
+    use w90_comms, only: mpirank, comms_sync_err
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_wannier_type), intent(inout) :: wannier_data
+
+    ! local
+    type(w90_error_type), allocatable :: error
+    type(w90_extra_io_type) :: io_params
+    logical :: cp_pp
+
+    ierr = 0
+
+    if (allocated(common_data%settings%entries)) then
+      write (istderr, *) 'Error: input reader called when unspent options present (call setopt)'
+      ierr = 1
+      return
+    endif
+
+    ! read data from .win file to internal string array
+    call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+
+    ! set options corresponding to string array from .win file
+    ierr = 0
+    call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
+                                      wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
+                                      common_data%exclude_bands, common_data%fermi_energy_list, &
+                                      wannier_data%fermi_surface_data, common_data%kmesh_input, &
+                                      common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
+                                      wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
+                                      wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
+                                      common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
+                                      common_data%print_output, wannier_data%wann_plot, io_params, &
+                                      common_data%ws_region, wannier_data%w90_calculation, &
+                                      common_data%real_lattice, common_data%physics%bohr, &
+                                      wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
+                                      common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
+                                      common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
+                                      cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
+                                      wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
+                                      istdout, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+
+    if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
+
+    common_data%seedname = seedname
+
+    ! remove any remaining acceptable keywords; anything that remains is an input error
+    call w90_readwrite_clean_infile(common_data%settings, istdout, seedname, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+    if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
+  end subroutine input_reader
+
+  subroutine input_reader_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read_special, w90_extra_io_type
+    use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_input, set_error_fatal, set_error_alloc
     use w90_comms, only: mpirank, comms_sync_err
 
     implicit none
@@ -413,6 +543,15 @@ contains
     type(w90_error_type), allocatable :: error
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
+
+    ierr = 0
+
+    ! read data from .win file to internal string array
+    call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
 
     ierr = 0
     call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
@@ -473,96 +612,6 @@ contains
     common_data%seedname = seedname
 
     if (mpirank(common_data%comm) /= 0) common_data%print_output%iprint = 0 ! supress printing non-rank-0
-
-    ! clear any settings (from settings interface --entries--)
-    if (allocated(common_data%settings%entries)) deallocate (common_data%settings%entries)
-
-  end subroutine input_setopt_special
-
-  subroutine input_reader(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
-    use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_input, set_error_fatal
-    use w90_comms, only: mpirank, comms_sync_err
-
-    implicit none
-
-    ! arguments
-    character(len=*), intent(in) :: seedname
-    integer, intent(in) :: istdout, istderr
-    integer, intent(out) :: ierr
-    type(lib_common_type), intent(inout) :: common_data
-    type(lib_wannier_type), intent(inout) :: wannier_data
-
-    ! local
-    type(w90_error_type), allocatable :: error
-    !logical :: cp_pp ! ? when used?
-
-    ierr = 0
-
-    if (allocated(common_data%settings%entries)) then
-      write (istderr, *) 'Error: input reader called when unspent options present (call setopt)'
-      ierr = 1
-      return
-    endif
-
-    ! read data from .win file to internal string array
-    call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
-    if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
-
-    ! set options corresponding to string array from .win file
-    call input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    if (ierr /= 0) then
-      return
-    endif
-
-    ! remove any remaining acceptable keywords; anything that remains is an input error
-    call w90_readwrite_clean_infile(common_data%settings, istdout, seedname, error, common_data%comm)
-    if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
-    if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
-  end subroutine input_reader
-
-  subroutine input_reader_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type
-    use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_input, set_error_fatal
-    use w90_comms, only: mpirank, comms_sync_err
-
-    implicit none
-
-    ! arguments
-    character(len=*), intent(in) :: seedname
-    integer, intent(in) :: istdout, istderr
-    integer, intent(out) :: ierr
-    type(lib_common_type), intent(inout) :: common_data
-    type(lib_wannier_type), intent(inout) :: wannier_data
-
-    ! local
-    type(w90_error_type), allocatable :: error
-    !logical :: cp_pp ! ? when used?
-
-    ierr = 0
-
-    ! read data from .win file to internal string array
-    call w90_readwrite_in_file(common_data%settings, seedname, error, common_data%comm)
-    if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
-
-    ! set options corresponding to string array from .win file
-    call input_setopt_special(common_data, wannier_data, seedname, istdout, istderr, ierr)
-    if (ierr /= 0) then
-      return
-    endif
 
     ! remove any remaining acceptable keywords; anything that remains is an input error
     call w90_readwrite_clean_infile(common_data%settings, istdout, seedname, error, common_data%comm)
