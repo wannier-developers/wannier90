@@ -269,7 +269,7 @@ code, then reads \verb#seedname.nnkp# file, calculates the projections
 and writes them to \verb#seedname.amn#. 
 
 
-\section{{\tt seedname.mmn} file} 
+\section{{\tt seedname.mmn} file}\label{sec:mmn}
 
 INPUT. 
 
@@ -301,7 +301,7 @@ $M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1,\verb#num_bands#]$. The
 order of these elements is such that the first index $m$ is fastest.
 
 
-\section{{\tt seedname.amn} file}
+\section{{\tt seedname.amn} file}\label{sec:amn}
 
 INPUT.
 
@@ -430,7 +430,7 @@ $\verb#m#, \verb#n# \in [1,\verb#num_bands#]$, $\verb#isym# \in [1,\verb#nsymmet
 The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest). 
 
 
-\section{{\tt seedname.eig} file}
+\section{{\tt seedname.eig} file}\label{sec:eig}
 
 INPUT. 
 
@@ -574,6 +574,7 @@ When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is requir
 Default is \verb#.false.#
 (only relevant if \verb#write_dmn=.true.#). 
 
+\item   \verb#irr_bz# -- Set to \verb#.true.# to use the irreducible BZ calculation (see Section~\ref{sec:ibz}).
 
 
 \end{itemize}
@@ -608,3 +609,125 @@ The order of the data in each block is as follows:
 Here, $R$ is the rotational part of symmetry operations ($3\times3$ matrix), and  $\bf t$ is the fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf). 
 Both data are given in Cartesian coordinates. 
 The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$. 
+
+\section{Irreducible BZ calculation}\label{sec:ibz}
+
+This section explains how to calculate Wannier functions using the wave functions in the irreducible BZ (IBZ).
+Currently, this feature is implemented only in the interface code with {\sc Quantum ESPRESSO}.
+The procedure is as follows.
+
+
+\begin{enumerate}
+\item Run `scf'/`nscf' calculation(s) with \verb#pw#. In the `nscf' calculation, users only have to calculate k points in the IBZ.
+
+E.g.,
+\begin{verbatim}
+    K_POINTS {automatic}
+    4 4 4 0 0 0
+\end{verbatim}
+Users also have the option to skip the `nscf' calculation.
+
+\item Run \wannier\ with \verb#postproc_setup#~=~\verb#.true.# to
+  generate \verb#seedname.nnkp#.
+\item Run {\tt pw2wannier90} with \verb#irr_bz = .true.# in the input file.
+  \verb#pw2wannier90# generates \verb#seedname.immn#,
+  \verb#seedname.iamn#, \verb#seedname.ieig# and
+  \verb#seedname.isym#.
+\item Run a python code, \verb#write_full_data.py#, in {\tt symWannier} package to generate
+  \verb#seedname.mmn#, \verb#seedname.amn#, and \verb#seedname.eig#.
+  See also https://github.com/wannier-utils-dev/symWannier.
+\item Run \verb#wannier90# with \verb#postproc_setup#.
+\end{enumerate}
+
+
+
+\subsection{{\tt seedname.immn} file}
+
+INPUT.
+
+The format is the same as \verb#seedname.mmn#, except that the number of kpoints is the number of k points in the IBZ.
+See also Section~\ref{sec:mmn}.
+
+\subsection{{\tt seedname.iamn} file}
+
+INPUT.
+
+The format is the same as \verb#seedname.amn#, except that the number of kpoints is the number of k points in the IBZ.
+See also Section~\ref{sec:amn}.
+
+\subsection{{\tt seedname.ieig} file}
+
+INPUT.
+
+The format is the same as \verb#seedname.eig#, except that the number of kpoints is the number of k points in the IBZ.
+See also Section~\ref{sec:eig}.
+
+\subsection{{\tt seedname.isym} file}
+
+INPUT.
+
+The file \verb#seedname.isym# contains the data needed to construct Wannier functions from Mmn, Amn and Eig in the irreducible BZ.
+
+First line: a user comment, e.g., the date and time
+
+Second line: 2 integers: \verb#nsymmetry#, \verb#spinors#\\
+\phantom{Second line:} \verb#nsymmetry#: the number of symmetry operations\\
+\phantom{Second line:}  \verb#spinors#: '1' for spinor case or '0' for non-spinor case.
+
+
+Then: \verb#nsymmetry# blocks of data.
+Each block describes a symmetry operation, $\hat{g}$, and consists of 7 lines (11 lines for spinor case).
+The order of the data in each block is as follows:
+\begin{verbatim}
+  a comment
+  R(1,1)   R(2,1)   R(3,1)
+  R(1,2)   R(2,2)   R(3,2)
+  R(1,3)   R(2,3)   R(3,3)
+   t(1)     t(2)     t(3)
+   T
+  u(1,1).real  u(1,1).imag  (spinor case)
+  u(2,1).real  u(2,1).imag  (spinor case)
+  u(1,2).real  u(1,2).imag  (spinor case)
+  u(2,2).real  u(2,2).imag  (spinor case)
+   invs
+\end{verbatim}
+Here, $R$ is the rotational part of symmetry operations, ($3\times3$ integer matrix), and  $\bf t$ is the fractional translation in the crystal coordinates.
+The symmetry operations act on a point $\bf r$ in the crystal coordinates as $\hat{g} {\bf r} = {\bf r} R - {\bf t}$.
+$T=1 (T=0)$ indicates that this symmetry operation includes (does not include) time-reversal operation.
+$u$ is the SU(2) rotation matrix for the spinor part.
+$\verb#invs#$ represents the symmetry operation corresponding to $\hat{g}^{-1}$.
+
+2 blank lines
+
+Then: An integer: \verb#nk_ibz#:
+A number of k points in the IBZ.
+
+Then: $\verb#nk_ibz#$ lines: 3 real numbers on each line corresponding to a list of k points in the IBZ in the crystal coordinates.
+
+2 blank lines
+
+%Then: An integer: $\verb#num_bands#$: The number of bands.
+Then: 2 integer: $\verb#num_bands#$, \verb#nblocks#
+
+Then: \verb#nblocks# blocks of data for $h_{mn}({\bf k})$. \verb#nblocks# is a number of symmetry operations, $\hat{h}({\bf k})$, where $\hat{h} \bf k = \bf k$ and $\bm k \in {\rm IBZ}$.
+
+First line of each block: 3 integers. These specify the k point in the IBZ (a number from 1 to $\verb#nk_ibz#$), the symmetry operation, $\hat{h}({\bf k})$, (a number from 1 to $\verb#nsymmetry#$) and a number of non-zero elements of $\hat{h}({\bf k})$.
+
+%Second line of each block: 2 real numbers. Sum of the diagonal part of $h_{mn}({\bf k})$, $i.e.$, ${\rm Tr} h({\bf k})$.
+
+Subsequent lines of each block: 2 integers and 2 real numbers per line.
+These specify band indeces, $m$ and $n$, and real and imaginary parts of $h_{mn}({\bf k})$.
+Only nonzero components of $h_{mn}({\bf k})$ are written.
+
+2 blank lines
+
+Then: An integer: $\verb#num_wann#$: The number of Wannier functions.
+
+Then: $\verb#nsymmetry#$ blocks of data.
+
+First line of each block: 2 integers. These specify the symmetry operation, $\hat{g}$, and a number of non-zero elements of the rotation matrix, $D_{mn}(\hat{g})$.
+
+Subsequent lines of each block: 2 integers and 2 real numbers per line.
+These specify indeces of Wannier functions, $m$ and $n$, and real and imaginary parts of $D_{mn}(\hat{g})$.
+
+
