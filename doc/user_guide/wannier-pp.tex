@@ -612,10 +612,12 @@ The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$.
 
 \section{Irreducible BZ calculation}\label{sec:ibz}
 
-This section explains how to calculate Wannier functions using the wave functions in the irreducible BZ (IBZ).
-Currently, this feature is implemented only in the interface code with {\sc Quantum ESPRESSO}.
-The procedure is as follows.
+This section explains how to construct Wannier functions using wave functions in the irreducible BZ (IBZ).
+Using this option, users only have to calculate wave functions, overlap matrices (Mmn) and projection matrices (Amn) in the IBZ, which will reduce the computational cost.
+Currently, this feature is implemented only in the interface code with {\sc Quantum ESPRESSO} and requires additional python package, {\sc symWannier}(\url{https://github.com/wannier-utils-dev/symWannier}).
+See also the website of {\sc symWannier} and Ref.~\cite{Koretsune2023}.\footnote{{\sc symWannier} package also has the ability to contruct symmetry-adapted Wannier functions only from the Mmn, Amn and Eig files in the IBZ and symmetry information.}
 
+The procedure is as follows.
 
 \begin{enumerate}
 \item Run `scf'/`nscf' calculation(s) with \verb#pw#. In the `nscf' calculation, users only have to calculate k points in the IBZ.
@@ -633,10 +635,14 @@ Users also have the option to skip the `nscf' calculation.
   \verb#pw2wannier90# generates \verb#seedname.immn#,
   \verb#seedname.iamn#, \verb#seedname.ieig# and
   \verb#seedname.isym#.
-\item Run a python code, \verb#write_full_data.py#, in {\tt symWannier} package to generate
-  \verb#seedname.mmn#, \verb#seedname.amn#, and \verb#seedname.eig#.
-  See also https://github.com/wannier-utils-dev/symWannier.
-\item Run \verb#wannier90# with \verb#postproc_setup#.
+\item Run a python code, \verb#write_full_data.py#, in {\sc symWannier} package.
+	Install the package from \url{https://github.com/wannier-utils-dev/symWannier} and run the script as
+\begin{verbatim}
+	python write_full_data.py seedname
+\end{verbatim}
+	This python script generates Mmn and Amn matrices and Kohn-Sham eigenvalues in the full BZ (\verb#seedname.mmn#, \verb#seedname.amn#, and \verb#seedname.eig#) from those in the IBZ (\verb#seedname.immn#, \verb#seedname.iamn#, and \verb#seedname.ieig#) by using the symmetry information (\verb#seedname.isym#).
+	The relations between these quantites in the IBZ and full BZ are explained in Ref.~\cite{Koretsune2023}.
+\item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.#.
 \end{enumerate}
 
 
@@ -672,12 +678,14 @@ First line: a user comment, e.g., the date and time
 
 Second line: 2 integers: \verb#nsymmetry#, \verb#spinors#\\
 \phantom{Second line:} \verb#nsymmetry#: the number of symmetry operations\\
-\phantom{Second line:}  \verb#spinors#: '1' for spinor case or '0' for non-spinor case.
+\phantom{Second line:}  \verb#spinors#: `1' for spinor case or `0' for non-spinor case.
 
 
 Then: \verb#nsymmetry# blocks of data.
 Each block describes a symmetry operation, $\hat{g}$, and consists of 7 lines (11 lines for spinor case).
 The order of the data in each block is as follows:
+
+non-spinor case:
 \begin{verbatim}
   a comment
   R(1,1)   R(2,1)   R(3,1)
@@ -685,12 +693,24 @@ The order of the data in each block is as follows:
   R(1,3)   R(2,3)   R(3,3)
    t(1)     t(2)     t(3)
    T
-  u(1,1).real  u(1,1).imag  (spinor case)
-  u(2,1).real  u(2,1).imag  (spinor case)
-  u(1,2).real  u(1,2).imag  (spinor case)
-  u(2,2).real  u(2,2).imag  (spinor case)
    invs
 \end{verbatim}
+
+spinor case:
+\begin{verbatim}
+  a comment
+  R(1,1)   R(2,1)   R(3,1)
+  R(1,2)   R(2,2)   R(3,2)
+  R(1,3)   R(2,3)   R(3,3)
+   t(1)     t(2)     t(3)
+   T
+  u(1,1).real  u(1,1).imag
+  u(2,1).real  u(2,1).imag
+  u(1,2).real  u(1,2).imag
+  u(2,2).real  u(2,2).imag
+   invs
+\end{verbatim}
+
 Here, $R$ is the rotational part of symmetry operations, ($3\times3$ integer matrix), and  $\bf t$ is the fractional translation in the crystal coordinates.
 The symmetry operations act on a point $\bf r$ in the crystal coordinates as $\hat{g} {\bf r} = {\bf r} R - {\bf t}$.
 $T=1 (T=0)$ indicates that this symmetry operation includes (does not include) time-reversal operation.
