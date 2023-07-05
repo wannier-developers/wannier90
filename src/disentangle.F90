@@ -80,7 +80,6 @@ contains
     integer :: nkp, nkp2, nn, j, ierr, nkp_global
     logical :: linner                         !! Is there a frozen window
     logical :: lfrozen(num_bands, num_kpts)   !! true if the i-th band inside outer window is frozen
-    integer :: nfirstwin(num_kpts)            !! index of lowest band inside outer window at nkp-th
     integer :: ndimfroz(num_kpts)             !! number of frozen bands at nkp-th k point
     integer :: indxfroz(num_bands, num_kpts)  !! number of bands inside outer window at nkp-th k point
     integer :: indxnfroz(num_bands, num_kpts) !! outer-window band index for the i-th non-frozen state
@@ -131,13 +130,13 @@ contains
 
     ! Set up energy windows
     call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
-                     indxnfroz, ndimfroz, nfirstwin, print_output%iprint, num_bands, num_kpts, &
+                     indxnfroz, ndimfroz, print_output%iprint, num_bands, num_kpts, &
                      num_wann, print_output%timing_level, lfrozen, linner, on_root, &
                      stdout, timer, error, comm)
     if (allocated(error)) return
 
     ! Construct the unitarized projection
-    call dis_project(a_matrix, u_matrix_opt, dis_manifold%ndimwin, nfirstwin, num_bands, num_kpts, &
+    call dis_project(a_matrix, u_matrix_opt, dis_manifold%ndimwin, dis_manifold%nfirstwin, num_bands, num_kpts, &
                      num_wann, print_output%timing_level, on_root, print_output%iprint, timer, &
                      error, stdout, comm)
     if (allocated(error)) return
@@ -165,14 +164,14 @@ contains
     if (allocated(error)) return
 
     ! Slim down the original Mmn(k,b)
-    call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
+    call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, dis_manifold%nfirstwin, kmesh_info%nnlist, &
                          kmesh_info%nntot, num_bands, print_output%timing_level, timer, dist_k, &
                          global_k, error, comm)
     if (allocated(error)) return
 
     dis_manifold%lwindow = .false.
     do nkp = 1, num_kpts
-      do j = nfirstwin(nkp), nfirstwin(nkp) + dis_manifold%ndimwin(nkp) - 1
+      do j = dis_manifold%nfirstwin(nkp), dis_manifold%nfirstwin(nkp) + dis_manifold%ndimwin(nkp) - 1
         dis_manifold%lwindow(j, nkp) = .true.
       end do
     end do
@@ -856,7 +855,7 @@ contains
   end subroutine internal_find_u_gamma
 
   subroutine dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
-                         indxnfroz, ndimfroz, nfirstwin, iprint, num_bands, num_kpts, num_wann, &
+                         indxnfroz, ndimfroz, iprint, num_bands, num_kpts, num_wann, &
                          timing_level, lfrozen, linner, on_root, stdout, timer, error, comm)
     !================================================!
     !
@@ -911,7 +910,6 @@ contains
     integer, intent(inout) :: ndimfroz(:)
     integer, intent(inout) :: indxfroz(:, :)
     integer, intent(inout) :: indxnfroz(:, :)
-    integer, intent(inout) :: nfirstwin(:)
 
     real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: eigval_opt(:, :)
@@ -965,6 +963,9 @@ contains
         endif
       endif
 
+      dis_manifold%ndimwin(nkp) = num_bands
+      dis_manifold%nfirstwin(nkp) = 1
+
       ! Note: we assume that eigvals are ordered from the bottom up
       imin = 0
       do i = 1, num_bands
@@ -976,10 +977,8 @@ contains
         if (eigval_opt(i, nkp) .le. dis_manifold%win_max) imax = i
       enddo
 
-      ! JJ, warning, imax may be used uninitialised here (if above condition never met)
       dis_manifold%ndimwin(nkp) = imax - imin + 1
-
-      nfirstwin(nkp) = imin
+      dis_manifold%nfirstwin(nkp) = imin
 
       !~~ GS-start
       ! disentangle at the current k-point only if it is within one of the
@@ -1000,7 +999,7 @@ contains
         ! this kpoint is not included in any sphere: no disentaglement
         if (.not. dis_ok) then
           dis_manifold%ndimwin(nkp) = num_wann
-          nfirstwin(nkp) = dis_spheres%first_wann
+          dis_manifold%nfirstwin(nkp) = dis_spheres%first_wann
         endif
       endif
       !~~ GS-end
@@ -1096,7 +1095,7 @@ contains
 
       ! Slim down eigval vector at present k
       do i = 1, dis_manifold%ndimwin(nkp)
-        j = nfirstwin(nkp) + i - 1
+        j = dis_manifold%nfirstwin(nkp) + i - 1
         eigval_opt(i, nkp) = eigval_opt(j, nkp)
       enddo
 
@@ -1164,7 +1163,7 @@ contains
         '|               ----------------------------------------------               |'
 
       do nkp = 1, num_kpts
-        write (stdout, 403) nkp, dis_manifold%ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
+        write (stdout, 403) nkp, dis_manifold%ndimwin(nkp), ndimfroz(nkp), dis_manifold%nfirstwin(nkp)
       enddo
 403   format(1x, '|', 14x, i6, 7x, i6, 7x, i6, 6x, i6, 18x, '|')
       write (stdout, '(1x,a)') &

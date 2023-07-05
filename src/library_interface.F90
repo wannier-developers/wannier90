@@ -15,6 +15,7 @@ module w90_library
   use w90_types
   use w90_wannier90_types
   use w90_comms, only: w90_comm_type
+  use iso_c_binding
 
   implicit none
 
@@ -108,6 +109,8 @@ module w90_library
     logical :: use_bloch_phases = .false.
   end type lib_wannier_type
 
+  public :: get_centres
+  public :: get_spreads
   public :: create_kmesh
   public :: disentangle
   public :: get_fortran_file
@@ -131,10 +134,10 @@ module w90_library
   public :: set_m_matrix
   public :: set_m_matrix_local
   public :: set_m_orig
-  public :: set_option_i1d
   public :: set_parallel_comms
   public :: set_u_matrix
   public :: set_u_opt
+  public :: set_exclude
   public :: transport
   public :: wannierise
   public :: write_chkpt
@@ -263,7 +266,7 @@ contains
                                                common_data%dis_manifold, nb, nw, u, uopt, m, &
                                                common_data%mp_grid, common_data%real_lattice, &
                                                wannier_data%omega%invariant, common_data%have_disentangled, &
-                                               istdout, seedname)
+                                               common_data%print_output%iprint, istdout, seedname)
     endif
     deallocate (u)
     deallocate (uopt)
@@ -386,16 +389,20 @@ contains
 
     disentanglement = (common_data%num_bands > common_data%num_wann)
 
-    ! fixme error messages
     if (disentanglement) then
       allocate (common_data%dis_manifold%ndimwin(common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', common_data%comm)
+        call set_error_alloc(error, 'Error allocating ndimwin in input_setopt() library call', common_data%comm)
+        return
+      endif
+      allocate (common_data%dis_manifold%nfirstwin(common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating nfirstwin in input_setopt() library call', common_data%comm)
         return
       endif
       allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', common_data%comm)
+        call set_error_alloc(error, 'Error allocating lwindow in input_setopt() library call', common_data%comm)
         return
       endif
     endif
@@ -578,16 +585,20 @@ contains
 
     disentanglement = (common_data%num_bands > common_data%num_wann)
 
-    ! fixme error messages
     if (disentanglement) then
       allocate (common_data%dis_manifold%ndimwin(common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', common_data%comm)
+        call set_error_alloc(error, 'Error allocating ndimwin in input_reader_special() call', common_data%comm)
+        return
+      endif
+      allocate (common_data%dis_manifold%nfirstwin(common_data%num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating nfirstwin in input_reader_special() call', common_data%comm)
         return
       endif
       allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', common_data%comm)
+        call set_error_alloc(error, 'Error allocating lwindow in input_reader_special() call', common_data%comm)
         return
       endif
     endif
@@ -1006,6 +1017,16 @@ contains
     common_data%a_matrix => a_matrix
   end subroutine set_a_matrix
 
+  subroutine set_exclude(common_data, exclude_bands, nexcl)
+    implicit none
+    type(lib_common_type), intent(inout) :: common_data
+    integer, intent(in) :: exclude_bands(:), nexcl
+
+    !allocate(common_data%exclude_bands(size(exclude_bands)))
+    allocate (common_data%exclude_bands(nexcl)) ! should match the size...
+    common_data%exclude_bands = exclude_bands
+  end subroutine set_exclude
+
   subroutine set_m_matrix(common_data, m_matrix)
     implicit none
     type(lib_wannier_type), intent(inout) :: common_data
@@ -1083,11 +1104,13 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
 
+    use w90_comms, only: mpirank, mpisize
+
     implicit none
 
     ! arguments
     integer, intent(in) :: istderr, istdout
-    integer, intent(inout), target :: dist(:)
+    integer, intent(in), target :: dist(:)
     integer, intent(out) :: ierr
     type(lib_common_type), intent(inout) :: common_data
     ! local
@@ -1340,6 +1363,55 @@ contains
       return
     endif
   end subroutine read_eigvals
+
+!      do nkp = 1, num_kpts
+!      do nn = 1, kmesh_info%nntot
+!        write (nnkpout, '(2i6,3x,3i4)') &
+!          nkp, kmesh_info%nnlist(nkp, nn), (kmesh_info%nncell(i, nkp, nn), i=1, 3)
+!      end do
+!    end do
+
+  subroutine get_nn(common_data, nn)
+    use w90_error, only: w90_error_type, set_error_fatal
+    implicit none
+
+    ! arguments
+    integer, intent(out) :: nn
+    type(lib_common_type), intent(in) :: common_data
+
+    nn = common_data%kmesh_info%nntot
+  end subroutine get_nn
+
+  subroutine get_nnkp(common_data, nnkp)
+    use w90_error, only: w90_error_type, set_error_fatal
+    implicit none
+
+    ! arguments
+    integer, intent(out) :: nnkp(:, :)
+    type(lib_common_type), intent(in) :: common_data
+
+    nnkp = common_data%kmesh_info%nnlist
+  end subroutine get_nnkp
+
+  subroutine get_centres(common_data, centres)
+    implicit none
+
+    ! arguments
+    real(kind=dp), intent(out) :: centres(:, :)
+    type(lib_common_type), intent(in) :: common_data
+
+    centres = common_data%wannier_data%centres
+  endsubroutine get_centres
+
+  subroutine get_spreads(common_data, spreads)
+    implicit none
+
+    ! arguments
+    real(kind=dp), intent(out) :: spreads(:)
+    type(lib_common_type), intent(in) :: common_data
+
+    spreads = common_data%wannier_data%spreads
+  endsubroutine get_spreads
 
   subroutine get_proj(common_data, wannier_data, n, site, l, m, s, istdout, istderr, ierr, sqa, z, x, rad, zona)
     use w90_comms, only: mpirank

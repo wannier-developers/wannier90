@@ -194,8 +194,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   use w90_kmesh
   use w90_libv1_types
   use w90_readwrite, only: w90_readwrite_write_header, w90_readwrite_lib_set_atoms, &
-    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, &
-    w90_readwrite_uppercase
+    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
   use w90_sitesym
   use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_write, &
     w90_wannier90_readwrite_w90_dealloc, w90_extra_io_type
@@ -348,7 +347,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 
   if (.not. (w90_calcs%transport .and. tran%read_ht)) then
     ! For aesthetic purposes, convert some things to uppercase
-    call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
+    !call w90_readwrite_uppercase(atoms, spec_points, verbose%length_unit)
     ! Initialise
     wann_omega%total = -999.0_dp
     wann_omega%tilde = -999.0_dp
@@ -479,7 +478,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_comms, only: comms_array_split, comms_scatterv, w90_comm_type, &
     mpisize, mpirank
   use w90_readwrite, only: w90_readwrite_lib_set_atoms, w90_readwrite_in_file, &
-    w90_readwrite_clean_infile, w90_readwrite_read_final_alloc, w90_readwrite_uppercase
+    w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
   use w90_error
 
 #ifdef MPI
