@@ -297,8 +297,8 @@ contains
       endif
 
       if (output_file%write_u_matrices) then
-        call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, num_wann, &
-                             num_kpts, num_bands, seedname)
+        call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, have_disentangled, &
+                             num_wann, num_kpts, num_bands, seedname)
       endif
 
       if (print_output%timing_level > 0) call io_stopwatch_stop('plot: main', timer)
@@ -2221,33 +2221,34 @@ contains
   end subroutine plot_wannier
 
   !================================================!
-  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled, num_wann, &
-                             num_kpts, num_bands, seedname)
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, &
+                             have_disentangled, num_wann, num_kpts, num_bands, seedname)
     !================================================!
     !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
     !
     !================================================!
 
-    use w90_io, only: io_time, io_date
     use w90_constants, only: dp
+    use w90_io, only: io_time, io_date
+    use w90_types, only: dis_manifold_type
 
     implicit none
 
+    character(len=50), intent(in)  :: seedname
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: kpt_latt(:, :)
+    type(dis_manifold_type), intent(in) :: dis_manifold
 
-    integer             :: matunit
-    integer             :: i, j, nkp
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
-
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_bands
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    logical, intent(in) :: have_disentangled
-    character(len=50), intent(in)  :: seedname
+    complex(kind=dp), allocatable :: utmp(:, :) ! re-indexed u_matrix_opt for printout
+    integer :: matunit, i, j, nkp, ioff, nbw
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -2265,15 +2266,23 @@ contains
     close (matunit)
 
     if (have_disentangled) then
+      allocate (utmp(num_bands, num_wann))
+
       open (newunit=matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
       write (matunit, *) header
       write (matunit, *) num_kpts, num_wann, num_bands
       do nkp = 1, num_kpts
+        utmp = 0.d0
+        ioff = dis_manifold%nfirstwin(nkp)
+        nbw = dis_manifold%ndimwin(nkp)
+        utmp(ioff:ioff + nbw - 1, :) = u_matrix_opt(1:nbw, :, nkp)
         write (matunit, *)
         write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
-        write (matunit, '(f15.10,sp,f15.10)') ((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann)
+        !write (matunit, '(f15.10,sp,f15.10)') ((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann)
+        write (matunit, '(f15.10,sp,f15.10)') ((utmp(i, j), i=1, num_bands), j=1, num_wann)
       end do
       close (matunit)
+      deallocate (utmp)
     endif
 
   end subroutine plot_u_matrices
@@ -2573,7 +2582,6 @@ contains
 !~             endif
 !~          enddo
 !~       enddo
-!~       write(*,*) ' done vdw '
 
     else
       ! for valence only, all occupancies are unity

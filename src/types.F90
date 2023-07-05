@@ -192,6 +192,9 @@ module w90_types
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
+    !! number of bands in outer window at each k
+    integer, allocatable :: nfirstwin(:)
+    !! index of first band in outer window at each k
     logical, allocatable :: lwindow(:, :)
   end type dis_manifold_type
 

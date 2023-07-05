@@ -351,6 +351,11 @@ contains
         return
       endif
 
+      if (.not. allocated(select_projection%proj2wann_map)) then
+        call set_error_fatal(error, 'select_projection%proj2wann_map not allocated in overlap_read call', comm)
+        return
+      endif
+
       ! Read the projections
       num_amn = num_bands*num_proj*num_kpts
       do ncount = 1, num_amn

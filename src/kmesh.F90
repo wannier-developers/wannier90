@@ -81,6 +81,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     logical, intent(in) :: gamma_only
@@ -104,7 +105,6 @@ contains
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnshell(num_kpts, kmesh_input%search_shells)
     integer :: nnsh, nn, nnx, loop, i, j
-    integer :: stdout
 
     if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: get', timer)
 
@@ -136,8 +136,9 @@ contains
           l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
           !
           vkpp = kpt_cart(:, nkp) + matmul(lmn(:, loop), recip_lattice)
-          dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
-                      + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
+          !dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
+          !            + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
+          dist = sqrt(vkpp(1)**2 + vkpp(2)**2 + vkpp(3)**2) !just assume a gamma-centred mesh JJ
           !
           if ((dist .gt. kmesh_input%tol) .and. (dist .gt. dnn0 + kmesh_input%tol)) then
             if (dist .lt. dnn1 - kmesh_input%tol) then
@@ -1164,6 +1165,9 @@ contains
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
     endif
+
+    ! note allocation of kmesh_input%shell list in subroutine w90_readwrite_read_kmesh_data()
+    ! kmesh_input%num_shells = 0 in same place
 
     b1sat = .false.
     do shell = 1, kmesh_input%search_shells

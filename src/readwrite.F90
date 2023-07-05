@@ -616,7 +616,8 @@ contains
     if (allocated(error)) return
     !fixme(jj) why does the following depend on having read the .eig file?
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
-      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement windows', comm)
+      call set_error_input(error, &
+                           'Error: w90_readwrite_read_dis_manifold: check disentanglement windows (win_max < win_min !)', comm)
       return
     endif
 
@@ -677,7 +678,7 @@ contains
         call set_error_input(error, 'Error: number of shell in shell_list must be between zero and six', comm)
         return
       endif
-      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      !if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read', comm)
@@ -691,7 +692,8 @@ contains
         return
       endif
     else
-      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      !if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      ! this is the default allocation of the shell_list--used by kmesh_shell_automatic()
       allocate (kmesh_input%shell_list(max_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating shell_list in w90_readwrite_read_kmesh_data', comm)
@@ -802,6 +804,8 @@ contains
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
+
+    if (allocated(settings%entries)) return ! don't attempt this read in library mode
 
     ! Atoms
     call w90_readwrite_get_block_length(settings, 'atoms_frac', found, i_temp, error, comm)
@@ -1170,8 +1174,9 @@ contains
     !================================================== !
     ! Some checks and initialisations !
     ! conditionally allocates:
-    !   dis_manifold%ndimwin(num_kpts)
     !   dis_manifold%lwindow(num_bands, num_kpts)
+    !   dis_manifold%ndimwin(num_kpts)
+    !   dis_manifold%nfirstwin(num_kpts)
     !   wannier_data%centres(3, num_wann)
     !   wannier_data%spreads(num_wann)
     !     small arrays... maybe overkill here?
@@ -1193,13 +1198,19 @@ contains
       if (allocated(dis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
       allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_read_final_alloc()', comm)
+        return
+      endif
+      if (allocated(dis_manifold%nfirstwin)) deallocate (dis_manifold%nfirstwin)
+      allocate (dis_manifold%nfirstwin(num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating nfirstwin in w90_wannier90_read_final_alloc()', comm)
         return
       endif
       if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
       allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_read_final_alloc()', comm)
         return
       endif
     endif
@@ -2384,7 +2395,7 @@ contains
     !
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -2401,47 +2412,76 @@ contains
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
 
-    kl = len_trim(keyword)
+    ! get_vector_length only is meaningful for human text in input file
+    ! not suitable for data passed via library interface (data in settings%entries)
+    !if (.not.allocated(settings%in_data)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_vector_length called with no input file (seeking '//trim(keyword)//')', comm)
+    !  return
+    !elseif (allocated(settings%entries)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_vector_length called with unspent option arrays', comm)
+    !  return
+    !endif
 
-    found = .false.
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
+    elseif (allocated(settings%entries)) then
 
-    do loop = 1, settings%num_lines
-      in = index(settings%in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      if (found) then
-        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
-        return
-      endif
-      found = .true.
-      dummy = settings%in_data(loop) (kl + 1:)
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (allocated(settings%entries(loop)%i1d)) then
+            length = size(settings%entries(loop)%i1d)
+          else if (allocated(settings%entries(loop)%r1d)) then
+            length = size(settings%entries(loop)%r1d)
+          else
+            call set_error_input(error, 'lib array not i or r', comm)
+          endif
+          found = .true.
+        end if
+      enddo
 
-    length = 0
-    if (found) then
-      if (len_trim(dummy) == 0) then
-        call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
-        return
-      endif
-      length = 1
-      dummy = adjustl(dummy)
-      do
-        pos = index(dummy, ' ')
-        dummy = dummy(pos + 1:)
-        dummy = adjustl(dummy)
-        if (len_trim(dummy) > 0) then
-          length = length + 1
-        else
-          exit
+    else if (allocated(settings%in_data)) then
+
+      kl = len_trim(keyword)
+      found = .false.
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+          return
         endif
-
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
       end do
 
-    end if
+      length = 0
+      if (found) then
+        if (len_trim(dummy) == 0) then
+          call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
+          return
+        endif
+        length = 1
+        dummy = adjustl(dummy)
+        do
+          pos = index(dummy, ' ')
+          dummy = dummy(pos + 1:)
+          dummy = adjustl(dummy)
+          if (len_trim(dummy) > 0) then
+            length = length + 1
+          else
+            exit
+          endif
+        end do
+      end if
+    endif ! in_data
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
@@ -2629,7 +2669,7 @@ contains
     !
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -2650,6 +2690,19 @@ contains
     character(len=maxlen) :: end_st, start_st, dummy
     character(len=2)  :: atsym
     real(kind=dp)     :: atpos(3)
+
+    ! get_block_length only is meaningful for human text in input file
+    ! not suitable for data passed via library interface (data in settings%entries)
+    !if (.not. allocated(settings%in_data)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_block_length called with no input file (seeking '//trim(keyword)//')', comm)
+    !  return
+    !elseif (allocated(settings%entries)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_block_length called with unspent option arrays', comm)
+    !  return
+    !endif
+
+    found = .false.
+    if (allocated(settings%entries)) return ! don't try to do this in library mode
 
     rows = 0
     found_s = .false.
@@ -3037,7 +3090,7 @@ contains
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
     !================================================!
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
@@ -3063,6 +3116,26 @@ contains
     character(len=3), parameter :: c_sep = " ,;"
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
+
+    character(len=0) :: c_value(0)
+    real(8) :: r_value(0)
+    logical :: l_value(0)
+
+    ! get_range_vector only is meaningful for human text in input file
+    ! not suitable for data passed via library interface (data in settings%entries)
+    !if (.not.allocated(settings%in_data)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_range_vector TTT with no input file (seeking '//trim(keyword)//')', comm)
+    !  return
+    if (allocated(settings%entries)) then
+      if (lcount) then
+        call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
+        return
+      else
+        call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
+                                              c_value, l_value, i_value, r_value)
+        return
+      endif
+    endif
 
     if (lcount .and. present(i_value)) then
       call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)

@@ -153,7 +153,6 @@ contains
 
     num_proj = num_wann !default, no projections specified
 
-    !call w90_readwrite_read_mp_grid(settings, mp_grid, num_kpts, error, comm)
     call w90_readwrite_read_mp_grid(settings, .false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
@@ -166,8 +165,8 @@ contains
     !call w90_wannier90_readwrite_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, &
     !                             stdout, seedname)
 
-    call w90_wannier90_readwrite_read_explicit_kpts(settings, w90_calculation, kmesh_info, &
-                                                    num_kpts, bohr, error, comm)
+!JJLL    call w90_wannier90_readwrite_read_explicit_kpts(settings, w90_calculation, kmesh_info, &
+!                                                    num_kpts, bohr, error, comm)
     if (allocated(error)) return
 
     call utility_inverse_mat(real_lattice, inv_lattice)
@@ -326,19 +325,19 @@ contains
       call w90_readwrite_read_system(settings, w90_system, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_kpath(settings, kpoint_path, has_kpath, w90_calculation%bands_plot, &
-                                    error, comm)
+!JJLL      call w90_readwrite_read_kpath(settings, kpoint_path, has_kpath, w90_calculation%bands_plot, &
+!                                    error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_plot_info(settings, wvfn_read, error, comm)
       if (allocated(error)) return
 
-      call w90_wannier90_readwrite_read_band_plot(settings, band_plot, num_wann, has_kpath, &
-                                                  w90_calculation%bands_plot, error, comm)
+!JJLL      call w90_wannier90_readwrite_read_band_plot(settings, band_plot, num_wann, has_kpath, &
+!                                                  w90_calculation%bands_plot, error, comm)
       if (allocated(error)) return
 
-      call w90_wannier90_readwrite_read_wann_plot(settings, wann_plot, num_wann, &
-                                                  w90_calculation%wannier_plot, error, comm)
+!JJLL      call w90_wannier90_readwrite_read_wann_plot(settings, wann_plot, num_wann, &
+!                                                  w90_calculation%wannier_plot, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_fermi_surface(settings, fermi_surface_data, &
@@ -1570,6 +1569,8 @@ contains
     integer :: num_select_projections
     integer, allocatable :: select_projections(:)
     integer :: imap, num_proj_final
+
+    !if (allocated(settings%entries)) return ! don't attempt this read in library mode JJ
 
     ! Projections
     call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm, &

@@ -268,6 +268,16 @@ contains
       read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (stdout, '(a)') "lwindow: read."
 
+      ! nfirstwin
+      ! this info is not presently codified in the ckpt file (although it belongs with ndimwin)
+      ! -JJ
+      !if (.not. allocated(dis_manifold%nfirstwin)) then
+      !  allocate (dis_manifold%nfirstwin(num_kpts), stat=ierr)
+      !  if (ierr /= 0) call io_error('Error allocating nfirstwin in conv_read_chkpt', stdout)
+      !endif
+      !read (chk_unit, err=123) (dis_manifold%nfirstwin(nkp), nkp=1, num_kpts)
+      !write (stdout, '(a)') "nfirstwin: read."
+
       ! ndimwin
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
