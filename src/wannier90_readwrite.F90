@@ -2788,6 +2788,15 @@ contains
     call comms_bcast(dis_manifold%froz_max, 1, error, comm)
     if (allocated(error)) return
 
+    call comms_bcast(dis_manifold%frozen_proj, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(dis_manifold%proj_min, 1, error, comm)
+    if (allocated(error)) return
+
+    call comms_bcast(dis_manifold%proj_max, 1, error, comm)
+    if (allocated(error)) return
+
     call comms_bcast(dis_control%num_iter, 1, error, comm)
     if (allocated(error)) return
 
