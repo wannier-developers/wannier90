@@ -162,6 +162,9 @@ Keyword & Type & Description \\
 {\sc dis\_win\_max }   & P & Top of the outer energy window \\
 {\sc dis\_froz\_min }   & P & Bottom of the inner (frozen) energy window \\
 {\sc dis\_froz\_max }   & P & Top of the inner (frozen) energy window \\
+{\sc dis\_froz\_proj }   & L & To activate projectability disentanglement \\
+{\sc dis\_proj\_min }   & P & Lower threshold for projectability disentanglement \\
+{\sc dis\_proj\_max }   & P & Upper threshold for projectability disentanglement \\
 {\sc dis\_num\_iter }   & I & Number of iterations for the minimisation
 of $\omi$ \\
 {\sc dis\_mix\_ratio }   & R & Mixing ratio during the minimisation of $\omi$\\
@@ -861,6 +864,47 @@ disentanglement procedure. If \verb#dis_froz_max# is not specified,
 then there are no frozen states. Units are eV.
 
 No default.
+
+\subsection[dis\_froz\_proj]{\tt logical :: dis\_froz\_proj}
+To activate projectability disentanglement procedure, which selectively
+discard/disentangle/freeze state $\ket{n \mathbf{k}}$ based on its projectability
+onto some localized atomic orbitals.
+
+Note: this requires the \verb#amn# file is properly normalized, i.e.,
+projectability computed from $A A^\dagger$ must be smaller than or equal to 1.
+The pseudo-atomic projection satisfies such requirement, see \ref{sec:proj_pdwf}.
+
+Additionally, one can combine projectability disentanglement with energy
+disentanglement, i.e., enable both \verb#dis_proj_min/max# and
+\verb#dis_froz_min/max# simultaneously in the \verb#win# file.
+These settings will freeze the union of inner energy window and
+high-projectability states, and exclude the union of states outside
+outer energy window and having low projectability.
+
+\subsection[dis\_proj\_min]{\tt real(kind=dp) :: dis\_proj\_min}
+The lower bound for the projectability disentanglement procedure.
+
+For states with projectabilities smaller than \verb#dis_proj_min#, they
+will be discarded in the disentanglement procedure, i.e., similar to the case
+of outside of the outer energy window.
+
+For states with projectabilities larger than or equal to \verb#dis_proj_min#,
+they will be included in the disentanglement procedure, i.e., similar to the
+case of inside the outer energy window.
+
+No unit.
+
+The default value is 0.95.
+
+\subsection[dis\_proj\_max]{\tt real(kind=dp) :: dis\_proj\_max}
+The upper bound for the projectability disentanglement procedure.
+For states with projectability larger than or equal to \verb#dis_proj_max#, they
+will be freezed in the disentanglement procedure, i.e., similar to the case of
+inside the inner energy window.
+
+No unit.
+
+The default value is 0.01.
 
 \subsection[dis\_num\_iter]{\tt integer :: dis\_num\_iter}
 In the disentanglement procedure, the

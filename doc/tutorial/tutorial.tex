@@ -3947,7 +3947,7 @@ generate a PDF file {\tt silicon\_bandsdiff.pdf}, see Fig.~\ref{fig:silicon_band
 
 \begin{enumerate}
   \item Try changing the {\tt atom\_proj\_exclude} in {\tt silicon.pw2wan} file,
-  i.e., these the commented lines
+  i.e., these commented lines
   {\tt
   \begin{quote}
     ! for excluding specific projectors\\
@@ -3961,6 +3961,19 @@ generate a PDF file {\tt silicon\_bandsdiff.pdf}, see Fig.~\ref{fig:silicon_band
   \item Now that $3d$ projectors provide us a larger space for optimization, you
   can try increasing the \verb#dis_froz_max# to freeze higher energy bands, if
   you are targeting at reproducing those eigenvalues.
+
+  Note that the \verb#dis_proj_min/max# and \verb#dis_froz_min/max# can be
+  enabled simultaneously: the union of inner energy window and
+  high-projectability states will be freezed, and the union of states outside
+  outer energy window and having low projectability will be discared.
+  Thus, you can still use energy window to make sure near-Fermi energy states
+  are well reproduced, and use ``projectability window'' to selectively
+  freeze atomic-like states in the conduction region.
+
+  \item The default \verb|dis_proj_max = 0.95| might not freeze all the states you want, try changing this value
+  and see the band interpolation results.
+  For other materials, it might worth trying decreasing
+  this value to freeze more states.
 \end{enumerate}
 
 %\cleardoublepage
