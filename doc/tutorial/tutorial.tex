@@ -3798,6 +3798,176 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 
 %\cleardoublepage
 
+\sectiontitle{34: Graphene --- Projectability-disentangled Wannier functions}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWFs for graphene using projectability disentanglement. For more details on the methodology, see Ref.~\cite{Qiao2023-pdwf}}}
+\item{Directory: {\tt examples/example34/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt graphene.scf}  {\it The \pwscf\ input file for ground
+    state calculation}}
+\item{ {\tt graphene.bands}  {\it The \pwscf\ input file for band structure calculation}}
+\item{ {\tt graphene.bandsx}  {\it The {\tt bands.x} input file for extracting band structure eigenvalues}}
+\item{ {\tt graphene.projwfc}  {\it The {\tt projwfc.x} input file for projectability calculation}}
+\item{ {\tt graphene.plotband}  {\it The {\tt plotband.x} input file for plotting band structure}}
+\item{ {\tt graphene.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt graphene.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt graphene.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of graphene\\
+{\tt pw.x < graphene.scf > scf.out}
+
+\item Run \pwscf\ to obtain the band structure of graphene\\
+{\tt pw.x < graphene.bands > bands.out}
+
+\item Run \pwscf\ to obtain the band structure projectability of graphene\\
+{\tt projwfc.x < graphene.projwfc > projwfc.out}
+
+\item Run {\tt bands.x} to obtain a {\tt graphene.bands.dat} file containing the band structure of graphene\\
+{\tt bands.x < graphene.bandsx > bandsx.out}
+
+\item Run {\tt plotband.x} to plot the band structure with projectability for graphene\\
+(note: run {\tt plotband.x} interactively to see the meaning of each line in the input file)
+\begin{enumerate}
+\item First rename file so that it can be recognized by {\tt plotband.x}\\
+{\tt mv graphene.bands.dat.proj.projwfc\_up graphene.bands.dat.proj}
+
+\item Run {\tt plotband.x}\\
+{\tt plotband.x < graphene.plotband > plotband.out}
+
+\item Generate a {\tt graphene.projbands.gnu\_projected.ps} file\\
+{\tt gnuplot graphene.projbands.gnu}
+
+\item Generate a {\tt graphene.projbands.gnu\_projected.pdf} file, see Fig.~\ref{fig:graphene_projbands}\\
+{\tt ps2pdf graphene.projbands.gnu\_projected.ps}
+\end{enumerate}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < graphene.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt graphene.nnkp} file).\\
+(note: see {\tt win} input file, no need to specify initial projections, they are automatically chosen from the pseudo-atomic orbitals inside pseudopotentials used in the scf calculation)\\
+{\tt wannier90.x -pp graphene}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt graphene.mmn} and {\tt graphene.amn} files).\\  
+{\tt pw2wannier90.x < graphene.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x graphene}
+
+\item Run {\tt gnuplot} to compare DFT and Wannier-interpolated bands, this will
+generate a PDF file {\tt graphene\_bandsdiff.pdf}, see Fig.~\ref{fig:graphene_bandsdiff}.\\
+{\tt ./graphene\_bandsdiff.gnu}
+
+Notice that high-projectability states in the conduction region
+are properly reproduced.
+Try commenting out the {\tt dis\_froz\_proj, dis\_proj\_max/min} lines in the {\tt win} input file, and use the energy disentanglement {\tt dis\_froz\_max/min}, and compare the band interpolations.
+\begin{figure}
+  \begin{center}
+    \subfloat[Band structure of graphene with projectability\label{fig:graphene_projbands}]{\includegraphics[width=0.51\textwidth]{graphene_projbands.pdf}}
+    \subfloat[Comparison of DFT and Wannier bands\label{fig:graphene_bandsdiff}]{\includegraphics[width=0.42\textwidth]{graphene_bandsdiff.pdf}}
+  \caption{Results of example 34.}
+  \end{center}
+\end{figure}
+
+\item (Optional) Clean up all output files\\
+{\tt make clean}
+\end{enumerate}
+
+%\cleardoublepage
+
+\sectiontitle{35: Silicon --- Projectability-disentangled Wannier functions with custom projectors}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWFs for silicon using projectability disentanglement,
+with additional $3d$ projectors to discribe high-energy conduction bands.
+For more details on the methodology, see Ref.~\cite{Qiao2023-pdwf}}}
+\item{Directory: {\tt examples/example35/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt silicon.scf}  {\it The \pwscf\ input file for ground
+    state calculation}}
+\item{ {\tt silicon.bands}  {\it The \pwscf\ input file for band structure calculation}}
+\item{ {\tt silicon.projwfc}  {\it The {\tt projwfc.x} input file for projectability calculation}}
+\item{ {\tt silicon.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt silicon.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of silicon\\
+{\tt pw.x < silicon.scf > scf.out}
+
+\item Run \pwscf\ to obtain the band structure of silicon\\
+{\tt pw.x < silicon.bands > bands.out}
+
+\item Run \pwscf\ to obtain the band structure projectability of silicon\\
+{\tt projwfc.x < silicon.projwfc > projwfc.out}
+
+\item Run {\tt bands.x} to obtain a {\tt silicon.bands.dat} file containing the band structure of silicon\\
+{\tt bands.x < silicon.bandsx > bandsx.out}
+
+\item Run {\tt plotband.x} to plot the band structure with projectability for silicon\\
+(note: run {\tt plotband.x} interactively to see the meaning of each line in the input file)
+\begin{enumerate}
+\item First rename file so that it can be recognized by {\tt plotband.x}\\
+{\tt mv silicon.bands.dat.proj.projwfc\_up silicon.bands.dat.proj}
+
+\item Run {\tt plotband.x}\\
+{\tt plotband.x < silicon.plotband > plotband.out}
+
+\item Generate a {\tt silicon.projbands.gnu\_projected.ps} file\\
+{\tt gnuplot silicon.projbands.gnu}
+
+\item Generate a {\tt silicon.projbands.gnu\_projected.pdf} file, see Fig.~\ref{fig:silicon_projbands}\\
+{\tt ps2pdf silicon.projbands.gnu\_projected.ps}
+\end{enumerate}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < silicon.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt silicon.nnkp} file).\\
+(note: see {\tt win} input file, no need to specify initial projections, they are automatically chosen from the pseudo-atomic orbitals inside pseudopotentials used in the scf calculation)\\
+{\tt wannier90.x -pp silicon}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt silicon.mmn} and {\tt silicon.amn} files).\\  
+{\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x silicon}
+
+\item Run {\tt gnuplot} to compare DFT and Wannier-interpolated bands, this will
+generate a PDF file {\tt silicon\_bandsdiff.pdf}, see Fig.~\ref{fig:silicon_bandsdiff}.\\
+{\tt ./silicon\_bandsdiff.gnu}
+
+Notice that high-projectability states in the conduction region
+are properly reproduced.
+Try commenting out the {\tt dis\_froz\_proj, dis\_proj\_max/min} lines in the {\tt win} input file, and use the energy disentanglement {\tt dis\_froz\_max/min}, and compare the band interpolations.
+\begin{figure}
+  \begin{center}
+    \subfloat[Band structure of silicon with projectability\label{fig:silicon_projbands}]{\includegraphics[width=0.51\textwidth]{silicon_projbands.pdf}}
+    \subfloat[Comparison of DFT and Wannier bands\label{fig:silicon_bandsdiff}]{\includegraphics[width=0.42\textwidth]{silicon_bandsdiff.pdf}}
+  \caption{Results of example 34.}
+  \end{center}
+\end{figure}
+
+\item (Optional) Clean up all output files\\
+{\tt make clean}
+\end{enumerate}
+
+%\cleardoublepage
+
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}
 
