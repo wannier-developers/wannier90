@@ -1,0 +1,11 @@
+&PROJWFC
+  deltae =   2.0000000000d-01
+  kresolveddos = .false.
+  lbinary_data = .false.
+  lsym = .false.
+  lwrite_overlaps = .false.
+  outdir = './out/'
+  plotboxes = .false.
+  prefix = 'silicon'
+  tdosinboxes = .false.
+/
