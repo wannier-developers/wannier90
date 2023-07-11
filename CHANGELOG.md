@@ -1,5 +1,9 @@
 # CHANGELOG of Wannier90
 
+### New postw90 features
+
+- Calculation of linear optical response and nonlinear second-harmonic generation for semiconductors and metals with the possibility to include many-body excitonis effects within the static long-range approximation according to the formalism given in P. Garcia-Goiricelaya, J. Krishna and J. Ibañez-Azpiroz, Phys. Rev. B 107, 205101 (2023) + example 34 + example35
+
 ## v3.1.0 (5th March 2020)
 
 ### New features
