@@ -37,6 +37,7 @@ module w90_postw90_common
   public :: pw90common_fourier_R_to_k_vec_dadb
   public :: pw90common_fourier_R_to_k_vec_dadb_TB_conv
   public :: pw90common_get_occ
+  public :: pw90common_get_occ_T
   public :: pw90common_kmesh_spacing
   public :: pw90common_wanint_data_dist
   public :: pw90common_wanint_get_kpoint_file
@@ -506,6 +507,10 @@ contains
     if (allocated(error)) return
     call comms_bcast(pw90_berry%sc_use_eta_corr, 1, error, comm)
     if (allocated(error)) return
+    call comms_bcast(pw90_berry%temperature, 1, error, comm)
+    if (allocated(error)) return
+    call comms_bcast(pw90_berry%smr_gamma, 1, error, comm)
+    if (allocated(error)) return
 ! ----------------------------------------------
 !
 ! New input variables in development
@@ -965,6 +970,38 @@ contains
 !    end if
 
   end subroutine pw90common_get_occ
+
+  subroutine pw90common_get_occ_T(ef, eig, occ, num_wann, kt)
+    !=====================================================================!
+    !
+    !! Compute the electronic occupancy with T-dependent FD distributions
+    !
+    !=====================================================================!
+
+    use w90_constants, only: dp
+
+    ! arguments
+    integer, intent(in) :: num_wann
+
+    real(kind=dp), intent(in)  :: eig(num_wann)
+    !! Eigenvalues
+    real(kind=dp), intent(in)  :: ef
+    !! Fermi level
+    real(kind=dp), intent(out) :: occ(num_wann)
+    !! Occupancy of states
+    real(kind=dp), intent(in) :: kt
+    !! temperature smearing
+
+    ! local variables
+    integer :: i
+
+    ! Use a Fermi-Dirac occupancy (T=smear_temp, in Kelvin)
+    !
+    do i = 1, num_wann
+      occ(i) = 1.0_dp/(exp((eig(i) - ef)/kt) + 1.0_dp)
+    end do
+
+  end subroutine pw90common_get_occ_T
 
   !================================================
   function kmesh_spacing_singleinteger(num_points, recip_lattice)
