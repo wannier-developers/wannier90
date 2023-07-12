@@ -346,6 +346,12 @@ program = POSTW90_DOS_OK
 inputs_args = ('copper.win', '')
 output = copper-dos.dat
 
+# Test of optical dielectric tensor for GaAs
+[testpostw90_gaas_eps_xx/]
+program = POSTW90_EPS_OK
+inputs_args = ('gaas.win', '')
+output = gaas-eps_xx.dat
+
 # Test of shift current for GaAs
 [testpostw90_gaas_sc_xyz/]
 program = POSTW90_SC_OK
@@ -375,6 +381,12 @@ output = gaas-sc_xyz.dat
 program = POSTW90_SC_OK
 inputs_args = ('gaas.win', '')
 output = gaas-sc_xyz.dat
+
+# Test of second-harmonic generation for GaAs
+[testpostw90_gaas_shg_xyz/]
+program = POSTW90_SHG_OK
+inputs_args = ('gaas.win', '')
+output = gaas-shg_xyz.dat
 
 # Test of selective localization and constrained centres
 [testw90_example26]
