@@ -30,6 +30,7 @@ module w90_berry
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
   !! *  RPS19  = PRB 99, 235113 (2019)  (spin Hall conductivity - SHC)
   !! *  IAdJS19 = arXiv:1910.06172 (2019) (quasi-degenerate k.p)
+  !! *  GGKIA23 = PRB 107, 205101 (2023) (linear optical response - EPS & second-harmonic generaction - SHG)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -86,7 +87,7 @@ contains
                         SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         fermi_n, num_wann, num_kpts, num_bands, num_valence_bands, &
                         effective_model, have_disentangled, spin_decomp, seedname, stdout, timer, &
-                        error, comm)
+                        error, comm, num_elec_per_state)
     !================================================!
     !
     !! Computes the following quantities:
@@ -99,7 +100,7 @@ contains
     !================================================!
 
     use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
-    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants_type
+    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, pw90_physical_constants_type
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R, &
       get_SAA_R, get_SBB_R
@@ -153,7 +154,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands, fermi_n
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands, fermi_n, num_elec_per_state
     integer, intent(in) :: stdout
 
     character(len=50), intent(in) :: seedname
@@ -174,9 +175,23 @@ contains
     real(kind=dp) :: ahc_list(3, 3, fermi_n)
     real(kind=dp) :: LCtil_list(3, 3, fermi_n), ICtil_list(3, 3, fermi_n), Morb_list(3, 3, fermi_n)
     real(kind=dp) :: imf_k_list_dummy(3, 3, fermi_n) ! adaptive refinement of AHC
+    ! Linear polarizability/susceptibility
+    complex(kind=dp), allocatable :: alpha_k_list(:, :, :)
+    complex(kind=dp), allocatable :: alpha_list(:, :, :)
+    ! Linear conductivity
+    complex(kind=dp), allocatable :: sigma_k_list(:, :, :)
+    complex(kind=dp), allocatable :: sigma_list(:, :, :)
+    ! Dielectric tensor
+    complex(kind=dp), allocatable :: eps_list(:, :, :)
     ! shift current
     real(kind=dp), allocatable :: sc_k_list(:, :, :)
     real(kind=dp), allocatable :: sc_list(:, :, :)
+    ! SHG polarizability/susceptibility
+    complex(kind=dp), allocatable :: shg_alpha_k_list(:, :, :)
+    complex(kind=dp), allocatable :: shg_alpha_list(:, :, :)
+    ! SHG conductivity
+    complex(kind=dp), allocatable :: shg_sigma_k_list(:, :, :)
+    complex(kind=dp), allocatable :: shg_sigma_list(:, :, :)
     ! kdotp
     complex(kind=dp), allocatable :: kdotp(:, :, :, :, :)
     ! Complex optical conductivity, dividided into Hermitean and
@@ -207,7 +222,9 @@ contains
     real(kind=dp), allocatable :: shc_k_fermi_dummy(:)
 
     real(kind=dp) :: cell_volume
-    real(kind=dp) :: kweight, kweight_adpt, kpt(3), db1, db2, db3, fac, rdum, vdum(3)
+    real(kind=dp) :: kweight, kweight_adpt, kpt(3), db1, db2, db3, fac, rdum, vdum(3), &
+                     fac_sigma, fac_alpha, fac_au
+    complex(kind=dp) :: e1w
 
     integer :: n, i, j, k, jk, ikpt, if, ierr, loop_x, loop_y, loop_z, kdotp_nbands
     integer :: loop_xyz, loop_adpt, adpt_counter_list(fermi_n), ifreq, file_unit
@@ -215,7 +232,7 @@ contains
 
     character(len=120) :: file_name
 
-    logical :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc, eval_kdotp
+    logical :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_eps, eval_sc, eval_shg, eval_shc, eval_kdotp
     logical :: ladpt_kmesh
     logical :: ladpt(fermi_n)
 
@@ -246,14 +263,18 @@ contains
     eval_ahc = .false.
     eval_morb = .false.
     eval_kubo = .false.
+    eval_eps = .false.
     eval_sc = .false.
+    eval_shg = .false.
     eval_shc = .false.
     eval_kdotp = .false.
 
     if (index(pw90_berry%task, 'ahc') > 0) eval_ahc = .true.
     if (index(pw90_berry%task, 'morb') > 0) eval_morb = .true.
     if (index(pw90_berry%task, 'kubo') > 0) eval_kubo = .true.
+    if (index(pw90_berry%task, 'eps') > 0) eval_eps = .true.
     if (index(pw90_berry%task, 'sc') > 0) eval_sc = .true.
+    if (index(pw90_berry%task, 'shg') > 0) eval_shg = .true.
     if (index(pw90_berry%task, 'shc') > 0) eval_shc = .true.
     if (index(pw90_berry%task, 'kdotp') > 0) eval_kdotp = .true.
 
@@ -348,6 +369,31 @@ contains
       endif
     endif
 
+    if (eval_eps) then
+      call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                    eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    timer, error, comm)
+      if (allocated(error)) return
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                    comm)
+      if (allocated(error)) return
+      allocate (alpha_k_list(3, 3, pw90_berry%kubo_nfreq))
+      allocate (alpha_list(3, 3, pw90_berry%kubo_nfreq))
+      allocate (sigma_k_list(3, 3, pw90_berry%kubo_nfreq))
+      allocate (sigma_list(3, 3, pw90_berry%kubo_nfreq))
+      alpha_k_list = cmplx_0
+      alpha_list = cmplx_0
+      sigma_k_list = cmplx_0
+      sigma_list = cmplx_0
+      imf_list = 0.0_dp
+      adpt_counter_list = 0
+      allocate (eps_list(3, 3, pw90_berry%kubo_nfreq))
+      eps_list = cmplx_0
+    endif
+
     if (eval_sc) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                     eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
@@ -363,6 +409,27 @@ contains
       allocate (sc_list(3, 6, pw90_berry%kubo_nfreq))
       sc_k_list = 0.0_dp
       sc_list = 0.0_dp
+    endif
+
+    if (eval_shg) then
+      call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                    eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                    num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                    timer, error, comm)
+      if (allocated(error)) return
+      call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, AA_R, HH_R, &
+                    v_matrix, eigval, wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, &
+                    num_wann, effective_model, have_disentangled, seedname, stdout, timer, error, &
+                    comm)
+      if (allocated(error)) return
+      allocate (shg_alpha_k_list(3, 6, pw90_berry%kubo_nfreq))
+      allocate (shg_alpha_list(3, 6, pw90_berry%kubo_nfreq))
+      allocate (shg_sigma_k_list(3, 6, pw90_berry%kubo_nfreq))
+      allocate (shg_sigma_list(3, 6, pw90_berry%kubo_nfreq))
+      shg_alpha_k_list = cmplx_0
+      shg_alpha_list = cmplx_0
+      shg_sigma_k_list = cmplx_0
+      shg_sigma_list = cmplx_0
     endif
 
     if (eval_shc) then
@@ -452,8 +519,12 @@ contains
         endif
       endif
 
+      if (eval_eps) write (stdout, '(/,3x,a)') '* Linear optical response'
+
       if (eval_sc) write (stdout, '(/,3x,a)') &
         '* Shift current'
+
+      if (eval_shg) write (stdout, '(/,3x,a)') '* Second-harmonic generation'
 
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
@@ -650,6 +721,71 @@ contains
           endif
         endif
 
+        if (eval_eps) then
+          ! compute the interband part (see Eq.(B1a) of GGKIA23) and
+          ! the first term of the intraband part (see Eq.(B1b) of GGKIA23) of the linear optical response
+          ! compute the polarizability and the conductivity
+          call berry_get_eps_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
+                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
+                                   wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, &
+                                   v_matrix, eigval, kpt, real_lattice, alpha_k_list, sigma_k_list, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                                   timer, error, comm, physics)
+          if (allocated(error)) return
+          alpha_list = alpha_list + alpha_k_list*kweight
+          sigma_list = sigma_list + sigma_k_list*kweight
+
+          ! compute the second term of the intraband part (see Eq.(B1b) of GGKIA23) of the linear optical response
+          ! that corresponds to the anomalous Hall conductivity (see Eq.(1) of WYSV06),
+          ! i.e. related with the integral of the Berry curvature weighted by the occupation factor of each state
+          ! (same procedure as in eval_ahc = .true.)
+          call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                   BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                   real_lattice, imf_k_list, scissors_shift, mp_grid, num_bands, &
+                                   num_kpts, num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+
+          ladpt = .false.
+          do if = 1, fermi_n
+            vdum(1) = sum(imf_k_list(:, 1, if))
+            vdum(2) = sum(imf_k_list(:, 2, if))
+            vdum(3) = sum(imf_k_list(:, 3, if))
+            if (pw90_berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
+            rdum = sqrt(dot_product(vdum, vdum))
+            if (rdum > pw90_berry%curv_adpt_kmesh_thresh) then
+              adpt_counter_list(if) = adpt_counter_list(if) + 1
+              ladpt(if) = .true.
+            else
+              imf_list(:, :, if) = imf_list(:, :, if) + imf_k_list(:, :, if)*kweight
+            endif
+          enddo
+          if (any(ladpt)) then
+            do loop_adpt = 1, pw90_berry%curv_adpt_kmesh**3
+              ! Using imf_k_list here would corrupt values for other
+              ! frequencies, hence dummy. Only if-th element is used
+              call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                       print_output, wannier_data, ws_distance, wigner_seitz, &
+                                       AA_R, BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, &
+                                       kpt(:) + adkpt(:, loop_adpt), real_lattice, &
+                                       imf_k_list_dummy, scissors_shift, mp_grid, num_bands, &
+                                       num_kpts, num_wann, num_valence_bands, effective_model, &
+                                       have_disentangled, seedname, stdout, timer, error, comm, &
+                                       ladpt=ladpt)
+              if (allocated(error)) return
+
+              do if = 1, fermi_n
+                if (ladpt(if)) then
+                  imf_list(:, :, if) = imf_list(:, :, if) &
+                                       + imf_k_list_dummy(:, :, if)*kweight_adpt
+                endif
+              enddo
+            end do
+          endif
+        end if
+
         if (eval_sc) then
           call berry_get_sc_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
@@ -660,6 +796,19 @@ contains
                                   error, comm)
           if (allocated(error)) return
           sc_list = sc_list + sc_k_list*kweight
+        end if
+
+        if (eval_shg) then
+          call berry_get_shg_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
+                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
+                                   wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, u_matrix, &
+                                   v_matrix, eigval, kpt, real_lattice, shg_alpha_k_list, shg_sigma_k_list, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                   effective_model, have_disentangled, seedname, stdout, timer, &
+                                   error, comm, physics)
+          if (allocated(error)) return
+          shg_alpha_list = shg_alpha_list + shg_alpha_k_list*kweight
+          shg_sigma_list = shg_sigma_list + shg_sigma_k_list*kweight
         end if
 
         ! ***END COPY OF CODE BLOCK 1***
@@ -857,6 +1006,71 @@ contains
           endif
         endif
 
+        if (eval_eps) then
+          ! compute the interband part (see Eq.(B1a) of GGKIA23) and
+          ! the first term of the intraband part (see Eq.(B1b) of GGKIA23) of the linear optical response
+          ! compute the polarizability and the conductivity
+          call berry_get_eps_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
+                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
+                                   wannier_data, ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, &
+                                   v_matrix, eigval, kpt, real_lattice, alpha_k_list, sigma_k_list, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
+                                   num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
+                                   timer, error, comm, physics)
+          if (allocated(error)) return
+          alpha_list = alpha_list + alpha_k_list*kweight
+          sigma_list = sigma_list + sigma_k_list*kweight
+
+          ! compute the second term of the intraband part (see Eq.(B1b) of GGKIA23) of the linear optical response
+          ! that corresponds to the anomalous Hall conductivity (see Eq.(1) of WYSV06),
+          ! i.e. related with the integral of the Berry curvature weighted by the occupation factor of each state
+          ! (same procedure as in eval_ahc = .true.)
+          call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                                   BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                                   real_lattice, imf_k_list, scissors_shift, mp_grid, num_bands, &
+                                   num_kpts, num_wann, num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+
+          ladpt = .false.
+          do if = 1, fermi_n
+            vdum(1) = sum(imf_k_list(:, 1, if))
+            vdum(2) = sum(imf_k_list(:, 2, if))
+            vdum(3) = sum(imf_k_list(:, 3, if))
+            if (pw90_berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
+            rdum = sqrt(dot_product(vdum, vdum))
+            if (rdum > pw90_berry%curv_adpt_kmesh_thresh) then
+              adpt_counter_list(if) = adpt_counter_list(if) + 1
+              ladpt(if) = .true.
+            else
+              imf_list(:, :, if) = imf_list(:, :, if) + imf_k_list(:, :, if)*kweight
+            endif
+          enddo
+          if (any(ladpt)) then
+            do loop_adpt = 1, pw90_berry%curv_adpt_kmesh**3
+              ! Using imf_k_list here would corrupt values for other
+              ! frequencies, hence dummy. Only if-th element is used
+              call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                                       print_output, wannier_data, ws_distance, wigner_seitz, &
+                                       AA_R, BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, &
+                                       kpt(:) + adkpt(:, loop_adpt), real_lattice, &
+                                       imf_k_list_dummy, scissors_shift, mp_grid, num_bands, &
+                                       num_kpts, num_wann, num_valence_bands, effective_model, &
+                                       have_disentangled, seedname, stdout, timer, error, comm, &
+                                       ladpt=ladpt)
+              if (allocated(error)) return
+
+              do if = 1, fermi_n
+                if (ladpt(if)) then
+                  imf_list(:, :, if) = imf_list(:, :, if) &
+                                       + imf_k_list_dummy(:, :, if)*kweight_adpt
+                endif
+              enddo
+            end do
+          endif
+        end if
+
         if (eval_sc) then
           call berry_get_sc_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
@@ -868,6 +1082,20 @@ contains
           if (allocated(error)) return
 
           sc_list = sc_list + sc_k_list*kweight
+        end if
+
+        if (eval_shg) then
+          call berry_get_shg_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, &
+                                   kpt_latt, ws_region, print_output, pw90_band_deriv_degen, &
+                                   wannier_data, ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, u_matrix, &
+                                   v_matrix, eigval, kpt, real_lattice, shg_alpha_k_list, shg_sigma_k_list, &
+                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                   effective_model, have_disentangled, seedname, stdout, timer, &
+                                   error, comm, physics)
+          if (allocated(error)) return
+
+          shg_alpha_list = shg_alpha_list + shg_alpha_k_list*kweight
+          shg_sigma_list = shg_sigma_list + shg_sigma_k_list*kweight
         end if
 
         ! ***END CODE BLOCK 1***
@@ -989,8 +1217,26 @@ contains
       endif
     endif
 
+    if (eval_eps) then
+      call comms_reduce(alpha_list(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(sigma_list(1, 1, 1), 3*3*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(adpt_counter_list(1), fermi_n, 'SUM', error, comm)
+      if (allocated(error)) return
+    end if
+
     if (eval_sc) then
       call comms_reduce(sc_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+    end if
+
+    if (eval_shg) then
+      call comms_reduce(shg_alpha_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
+      if (allocated(error)) return
+      call comms_reduce(shg_sigma_list(1, 1, 1), 3*6*pw90_berry%kubo_nfreq, 'SUM', error, comm)
       if (allocated(error)) return
     end if
 
@@ -1010,7 +1256,7 @@ contains
 
       if (print_output%timing_level > 1) call io_stopwatch_stop('berry: k-interpolation', timer)
       write (stdout, '(1x,a)') ' '
-      if (eval_ahc .and. pw90_berry%curv_adpt_kmesh .ne. 1) then
+      if ((eval_eps .or. eval_ahc) .and. pw90_berry%curv_adpt_kmesh .ne. 1) then
         if (.not. pw90_berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
           'Regular interpolation grid: ', pw90_berry%kmesh%mesh
         write (stdout, '(1x,a28,3(i0,1x))') 'Adaptive refinement grid: ', &
@@ -1085,6 +1331,12 @@ contains
         if (abs(scissors_shift) > 1.0e-7_dp) then
           write (stdout, '(1X,A,I0,A,G18.10,A)') "Using scissors_shift to shift energy bands with index > ", &
             num_valence_bands, " by ", scissors_shift, " eV."
+        endif
+        if (pw90_berry%temperature > 1.0e-7_dp) then
+          write (stdout, '(1X,A,f8.3,A)') "Using Fermi-Dirac occupations with T = ", &
+            pw90_berry%temperature, " K."
+        else
+          write (stdout, '(1X,A)') "Using step-function occupations (T = 0 K)."
         endif
         if (pw90_spin_hall%bandshift) then
           write (stdout, '(1X,A,I0,A,G18.10,A)') "Using shc_bandshift to shift energy bands with index >= ", &
@@ -1379,6 +1631,69 @@ contains
         close (file_unit)
       endif
 
+      if (eval_eps) then
+        ! -----------------------------------------------!
+        ! Linear optical polarizability and conductivity
+        ! -----------------------------------------------!
+
+        ! convert polarizability from angstrom^2/eV to dimensionless susceptibility
+        fac_alpha = 1.0e10_dp*num_elec_per_state*physics%eV_seconds*physics%elem_charge_SI**2/ &
+                    (physics%hbar_SI*cell_volume*physics%eps0_SI)
+
+        ! convert conductivity from angstrom^2 to S/cm=1/(Ohm*cm)
+        fac_sigma = 1.0e8_dp*num_elec_per_state*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
+
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to linear optical response:     '
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+
+        ! Add AHC to both linear optical polarizability and conductivity
+        do ifreq = 1, pw90_berry%kubo_nfreq
+          e1w = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*pw90_berry%smr_gamma
+          alpha_list(:, :, ifreq) = alpha_list(:, :, ifreq) - imf_list(:, :, 1)*real(1.d0/e1w, dp)
+          sigma_list(:, :, ifreq) = sigma_list(:, :, ifreq) - imf_list(:, :, 1)
+        enddo
+
+        ! --------------------------!
+        ! Optical dielectric tensor
+        ! --------------------------!
+
+        ! calculate the optical dielectric tensor from the linear optical polarizability: eps_rpa=1+alpha*vc (RPA)
+        ! pass the polarizability (alpha) to a.u. to do it easier
+        fac_au = num_elec_per_state/cell_volume*physics%bohr/physics%eV_au
+        do i = 1, 3
+          do j = 1, 3
+            if (i .eq. j) then
+              eps_list(i, j, :) = 1.d0 + 4.d0*pi*alpha_list(i, j, :)*fac_au
+            elseif (i .ne. j) then
+              eps_list(i, j, :) = 4.d0*pi*alpha_list(i, j, :)*fac_au
+            endif
+          enddo
+        enddo
+
+        do i = 1, 3
+          do j = 1, 3
+            file_name = trim(seedname)//'-eps_'// &
+                        achar(119 + i)//achar(119 + j)//'.dat'
+            file_name = trim(file_name)
+            file_unit = io_file_unit()
+            write (stdout, '(/,3x,a)') '* '//file_name
+            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            do ifreq = 1, pw90_berry%kubo_nfreq
+              write (file_unit, '(7E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+                fac_alpha*alpha_list(i, j, ifreq), &
+                fac_sigma*sigma_list(i, j, ifreq), &
+                eps_list(i, j, ifreq)
+            enddo
+            close (file_unit)
+          enddo
+        enddo
+
+      endif
+
       if (eval_sc) then
         ! -----------------------------!
         ! Nonlinear shift current
@@ -1436,6 +1751,44 @@ contains
             do ifreq = 1, pw90_berry%kubo_nfreq
               write (file_unit, '(2E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
                 fac*sc_list(i, jk, ifreq)
+            enddo
+            close (file_unit)
+          enddo
+        enddo
+
+      endif
+
+      if (eval_shg) then
+        ! ----------------------------!
+        ! Second-harmonic generation
+        ! ----------------------------!
+
+        fac_alpha = num_elec_per_state*physics%elem_charge_SI**3/(physics%hbar_SI**2*cell_volume)* &
+                    physics%eV_seconds**2/physics%eps0_SI*1.0e12_dp ! bohr^3/eV to pm/V
+        fac_sigma = num_elec_per_state*physics%eV_seconds*physics%elem_charge_SI**3/ &
+                    (physics%hbar_SI**2*cell_volume) !bohr^2/eV to A/V^2
+!        fac_sigma=physics%elem_charge_SI/(physics%hbar_SI*cell_volume)*physics%eV_seconds !bohr^2/eV to e^2/hbar/V
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to second-harmonic generation:  '
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+
+        do i = 1, 3
+          do jk = 1, 6
+            j = alpha_S(jk)
+            k = beta_S(jk)
+            file_name = trim(seedname)//'-shg_'// &
+                        achar(119 + i)//achar(119 + j)//achar(119 + k)//'.dat'
+            file_name = trim(file_name)
+            file_unit = io_file_unit()
+            write (stdout, '(/,3x,a)') '* '//file_name
+            open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+            do ifreq = 1, pw90_berry%kubo_nfreq
+              write (file_unit, '(5E18.8E3)') real(pw90_berry%kubo_freq_list(ifreq), dp), &
+                fac_alpha*shg_alpha_list(i, jk, ifreq), &
+                fac_sigma*shg_sigma_list(i, jk, ifreq)
             enddo
             close (file_unit)
           enddo
@@ -2139,6 +2492,297 @@ contains
 
   end subroutine berry_get_kubo_k
 
+  subroutine berry_get_eps_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, &
+                                 ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                 ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
+                                 kpt, real_lattice, alpha_k_list, sigma_k_list, scissors_shift, &
+                                 mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
+                                 have_disentangled, seedname, stdout, timer, error, comm, physics)
+    !================================================!
+    !
+    !  Contribution from point k to the linear optical response
+    !  [integrand of Eq.8 IATS18]
+    !  Notation correspondence with IATS18:
+    !  AA_da_bar              <-->   \mathbbm{b}
+    !  AA_bar                 <-->   \mathbbm{a}
+    !  HH_da_bar              <-->   \mathbbm{v}
+    !  HH_dadb_bar            <-->   \mathbbm{w}
+    !  D_h(n,m)               <-->   \mathbbm{v}_{nm} * Re[1/(E_{m}-E_{n}+i*sc_eta)]
+    !  D_h_no_eta(n,m)        <-->   \mathbbm{v}_{nm} / (E_{m}-E_{n})
+    !  sum_AD                 <-->   summatory of Eq. 32 IATS18
+    !  sum_HD                 <-->   summatory of Eq. 30 IATS18
+    !  eig_da(n)-eig_da(m)    <-->   \mathbbm{Delta}_{nm}
+    !
+    !================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, pw90_physical_constants_type
+    use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
+    use w90_types, only: print_output_type, wannier_data_type, &
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
+      pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_get_occ_T, &
+      pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
+    use w90_wan_ham, only: wham_get_D_h, &
+      wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, wham_get_D_h_P_value, &
+      wham_get_eig_deleig_TB_conv, wham_get_eig_UU_HH_AA_sc_TB_conv
+    use w90_comms, only: w90comm_type
+    use w90_utility, only: utility_rotate, utility_zdotu, utility_recip_lattice_base
+
+    implicit none
+
+    ! arguments
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(print_output_type), intent(in) :: print_output
+    type(pw90_physical_constants_type), intent(in) :: physics
+    type(ws_region_type), intent(in) :: ws_region
+    type(w90comm_type), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    complex(kind=dp), intent(out) :: alpha_k_list(:, :, :), sigma_k_list(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+    character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
+
+    ! local variables
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: AA(:, :, :), AA_bar(:, :, :)
+    complex(kind=dp), allocatable :: AA_da(:, :, :, :), AA_da_bar(:, :, :, :)
+    complex(kind=dp), allocatable :: HH_da(:, :, :), HH_da_bar(:, :, :)
+    complex(kind=dp), allocatable :: HH_dadb(:, :, :, :), HH_dadb_bar(:, :, :, :)
+    complex(kind=dp), allocatable :: HH(:, :)
+    complex(kind=dp), allocatable :: D_h(:, :, :), D_h_no_eta(:, :, :)
+
+    real(kind=dp), allocatable :: eig(:)
+    real(kind=dp), allocatable :: eig_da(:, :)
+    real(kind=dp), allocatable :: occ(:)
+
+    real(kind=dp) :: recip_lattice(3, 3), volume
+    complex(kind=dp) :: r_nm(3), r_mn(3)
+    integer :: a, b, n, m, ifreq
+    complex(kind=dp) :: I_nm_ter(3, 3), I_n_tra(3, 3)
+    real(kind=dp) :: joint_level_spacing
+    real(kind=dp) :: eta_smr, Delta_k, vdum(3), occ_fac
+
+    complex(kind=dp) :: e1w, e1wmn
+    real(kind=dp) :: arg1w, delta1w, arg1wmn, delta1wmn, fermi_energy, kt, docc_fac
+
+    allocate (UU(num_wann, num_wann))
+    allocate (AA(num_wann, num_wann, 3))
+    allocate (AA_bar(num_wann, num_wann, 3))
+    allocate (AA_da(num_wann, num_wann, 3, 3))
+    allocate (AA_da_bar(num_wann, num_wann, 3, 3))
+    allocate (HH_da(num_wann, num_wann, 3))
+    allocate (HH_da_bar(num_wann, num_wann, 3))
+    allocate (HH_dadb(num_wann, num_wann, 3, 3))
+    allocate (HH_dadb_bar(num_wann, num_wann, 3, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (D_h_no_eta(num_wann, num_wann, 3))
+    allocate (eig(num_wann))
+    allocate (occ(num_wann))
+    allocate (eig_da(num_wann, 3))
+
+    ! Initialize linear optical response array at point k
+    alpha_k_list = cmplx_0
+    sigma_k_list = cmplx_0
+
+    ! Gather W-gauge matrix objects !
+
+    ! choose the convention for the FT sums
+    if (pw90_berry%sc_phase_conv .eq. 1) then ! use Wannier centres in the FT exponentials (so called TB convention)
+      ! get Hamiltonian and its first and second derivatives
+      ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
+      ! maintaining the gauge-covariance of the whole matrix element
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, &
+                                            ws_region, print_output, wannier_data, ws_distance, &
+                                            wigner_seitz, AA_R, HH, HH_da, HH_dadb, HH_R, &
+                                            u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                            real_lattice, scissors_shift, mp_grid, num_bands, &
+                                            num_kpts, num_wann, num_valence_bands, &
+                                            effective_model, have_disentangled, seedname, stdout, &
+                                            timer, error, comm)
+      if (allocated(error)) return
+      ! get position operator and its derivative
+      ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
+                                                      wigner_seitz, AA_R, kpt, real_lattice, &
+                                                      mp_grid, num_wann, error, comm, OO_da=AA, &
+                                                      OO_dadb=AA_da)
+      if (allocated(error)) return
+
+      ! get eigenvalues and their k-derivatives
+      call wham_get_eig_deleig_TB_conv(pw90_band_deriv_degen, HH_da, UU, eig, eig_da, num_wann, &
+                                       error, comm)
+      if (allocated(error)) return
+    elseif (pw90_berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
+      ! same as above
+      call wham_get_eig_UU_HH_AA_sc(dis_manifold, kpt_latt, ws_region, print_output, wannier_data, &
+                                    ws_distance, wigner_seitz, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
+                                    v_matrix, eig, eigval, kpt, real_lattice, scissors_shift, &
+                                    mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                    effective_model, have_disentangled, seedname, stdout, timer, &
+                                    error, comm)
+      if (allocated(error)) return
+
+      call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                              AA_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                              comm, OO_da=AA, OO_dadb=AA_da)
+      if (allocated(error)) return
+
+      call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
+                               ws_distance, wigner_seitz, HH_da, HH, HH_R, u_matrix, UU, v_matrix, &
+                               eig_da, eig, eigval, kpt, real_lattice, scissors_shift, mp_grid, &
+                               num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
+                               have_disentangled, seedname, stdout, timer, error, comm)
+      if (allocated(error)) return
+
+    end if
+
+    ! correct the fermi level if using scissors shift
+    fermi_energy = fermi_energy_list(1) + scissors_shift/2.d0
+
+    ! get electronic occupations
+    if (pw90_berry%temperature > 1.0e-7_dp) then
+      ! temperature in eV
+      kt = physics%k_B_SI*pw90_berry%temperature/physics%elem_charge_SI
+      ! FD function - T .neq. 0 K
+      call pw90common_get_occ_T(fermi_energy, eig, occ, num_wann, kt)
+    else
+      ! step function - T = 0 K
+      call pw90common_get_occ(fermi_energy, eig, occ, num_wann)
+    endif
+
+    ! get D_h (Eq. (24) WYSV06)
+    call wham_get_D_h(HH_da, D_h_no_eta, UU, eig, num_wann)
+
+    ! calculate k-spacing in case of adaptive smearing
+    if (pw90_berry%kubo_smearing%use_adaptive) then
+      call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+      Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
+    endif
+
+    ! rotate quantities from W to H gauge (we follow wham_get_D_h for delHH_bar_i)
+    do a = 1, 3
+      ! Berry connection A
+      AA_bar(:, :, a) = utility_rotate(AA(:, :, a), UU, num_wann)
+    enddo
+
+    ! loop on initial and final bands
+    do n = 1, num_wann
+      do m = 1, num_wann
+        ! cycle diagonal matrix elements and bands above the maximum
+        if (n == m) cycle
+        if (eig(m) > pw90_berry%kubo_eigval_max .or. eig(n) > pw90_berry%kubo_eigval_max) cycle
+        ! setup T=0 occupation factors
+        occ_fac = (occ(n) - occ(m))
+        if (abs(occ_fac) < 1e-10) cycle
+
+        ! set delta function smearing
+        if (pw90_berry%kubo_smearing%use_adaptive) then
+          vdum(:) = eig_da(m, :) - eig_da(n, :)
+          joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+          eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, &
+                        pw90_berry%kubo_smearing%adaptive_max_width)
+        else
+          eta_smr = pw90_berry%kubo_smearing%fixed_width
+        endif
+
+        ! dipole matrix element
+        r_nm(:) = AA_bar(n, m, :) + cmplx_i*D_h_no_eta(n, m, :)
+        r_mn(:) = AA_bar(m, n, :) + cmplx_i*D_h_no_eta(m, n, :)
+
+        ! construct 2-band interband transition matrix elements (see Eq. (B1a) of GGKIA23)
+        do a = 1, 3
+          do b = 1, 3
+            I_nm_ter(a, b) = r_nm(a)*r_mn(b)
+          enddo ! b
+        enddo ! a
+
+        do ifreq = 1, pw90_berry%kubo_nfreq
+          ! compute 1/(E_mn-w)
+          e1wmn = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+          arg1wmn = (eig(m) - eig(n) - real(e1wmn, dp))/eta_smr
+          delta1wmn = utility_w0gauss(arg1wmn, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+          if (allocated(error)) return
+
+          ! compute the interband term of linear polarizability (see Eq. (B1a) of GGKIA23)
+          alpha_k_list(:, :, ifreq) = alpha_k_list(:, :, ifreq) &
+                                      + occ_fac*I_nm_ter(:, :) &
+                                      *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn)
+
+          ! compute the interband term of linear conductivity (see Eq. (B1a) of GGKIA23)
+          ! polarizability is passed to conductivity by multiplying it by -i*w and simplifying it
+          sigma_k_list(:, :, ifreq) = sigma_k_list(:, :, ifreq) &
+                                      - cmplx_i*occ_fac*I_nm_ter(:, :)*((eig(m) - eig(n)) &
+                                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) - 1.d0)
+        enddo
+
+      enddo ! bands
+
+      ! compute the 1st term of the intraband part (see Eq. (B2a) of GGKIA23)
+      ! this term only contributes in metals with finite temperature
+      if (pw90_berry%temperature .le. 1.0e-7_dp) cycle
+
+      ! derivative of the occupations w.r.t. energy: docc_fac=-delta(eig(n)-eF)
+      ! with delta(eig(n)-eF) approximated to a gaussian with temperature smearing
+      docc_fac = 0.d0
+      if (abs(eig(n) - fermi_energy) .le. 5.d0*kt) then
+        docc_fac = -exp(-0.5d0*((eig(n) - fermi_energy)/kt)**2)/(kt*sqrt(2.d0*pi))
+      else
+        cycle
+      endif
+
+      ! construct the Drude-like 1-band intraband transition matrix elements (see Eq. (B1a) of GGKIA23)
+      do a = 1, 3
+        do b = 1, 3
+          I_n_tra(a, b) = docc_fac*eig_da(n, a)*eig_da(n, b)
+        enddo
+      enddo
+
+      do ifreq = 1, pw90_berry%kubo_nfreq
+        ! compute 1/w
+        e1w = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*pw90_berry%smr_gamma
+        arg1w = real(e1w, dp)/pw90_berry%smr_gamma
+        delta1w = utility_w0gauss(arg1w, pw90_berry%kubo_smearing%type_index, error, comm)/pw90_berry%smr_gamma
+        if (allocated(error)) return
+
+        ! compute the Drude-like intraband term of linear polarizability (see Eq. (B2a) of GGKIA23)
+        ! conductivity is passed to polarizability by multiplying it by 1/(-i*w)
+        alpha_k_list(:, :, ifreq) = alpha_k_list(:, :, ifreq) &
+                                    + I_n_tra(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)
+
+        ! compute Drude-like intraband term of linear conductivity (see Eq. (B2a) of GGKIA23)
+        sigma_k_list(:, :, ifreq) = sigma_k_list(:, :, ifreq) &
+                                    - cmplx_i*I_n_tra(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)
+      enddo
+
+    enddo ! bands
+
+  end subroutine berry_get_eps_klist
+
   subroutine berry_get_sc_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, &
                                 ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
                                 ws_distance, wigner_seitz, AA_R, HH_R, u_matrix, v_matrix, eigval, &
@@ -2456,6 +3100,573 @@ contains
     enddo ! bands
 
   end subroutine berry_get_sc_klist
+
+  subroutine berry_get_shg_klist(pw90_berry, dis_manifold, fermi_energy_list, kmesh_info, kpt_latt, &
+                                 ws_region, print_output, pw90_band_deriv_degen, wannier_data, &
+                                 ws_distance, wigner_seitz, AA_R, BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, &
+                                 kpt, real_lattice, shg_alpha_k_list, shg_sigma_k_list, scissors_shift, mp_grid, &
+                                 num_bands, num_kpts, num_wann, num_valence_bands, effective_model, &
+                                 have_disentangled, seedname, stdout, timer, error, comm, physics)
+    !================================================!
+    !
+    !  Contribution from point k to the nonlinear shift current
+    !  [integrand of Eq.8 IATS18]
+    !  Notation correspondence with IATS18:
+    !  AA_da_bar              <-->   \mathbbm{b}
+    !  AA_bar                 <-->   \mathbbm{a}
+    !  HH_da_bar              <-->   \mathbbm{v}
+    !  HH_dadb_bar            <-->   \mathbbm{w}
+    !  D_h(n,m)               <-->   \mathbbm{v}_{nm} * Re[1/(E_{m}-E_{n}+i*sc_eta)]
+    !  D_h_no_eta(n,m)        <-->   \mathbbm{v}_{nm} / (E_{m}-E_{n})
+    !  sum_AD                 <-->   summatory of Eq. 32 IATS18
+    !  sum_HD                 <-->   summatory of Eq. 30 IATS18
+    !  eig_da(n)-eig_da(m)    <-->   \mathbbm{Delta}_{nm}
+    !
+    !================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, pw90_physical_constants_type
+    use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
+    use w90_types, only: print_output_type, wannier_data_type, &
+      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
+    use w90_postw90_types, only: pw90_berry_mod_type, pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
+      pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, pw90common_get_occ_T, &
+      pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
+    use w90_wan_ham, only: wham_get_D_h, &
+      wham_get_eig_UU_HH_AA_sc, wham_get_eig_del2eig, wham_get_D_h_P_value, &
+      wham_get_eig_del2eig_TB_conv, wham_get_eig_UU_HH_AA_sc_TB_conv
+    use w90_comms, only: w90comm_type
+    use w90_utility, only: utility_rotate, utility_zdotu, utility_recip_lattice_base
+
+    implicit none
+
+    ! arguments
+    type(pw90_berry_mod_type), intent(in) :: pw90_berry
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(print_output_type), intent(in) :: print_output
+    type(pw90_physical_constants_type), intent(in) :: physics
+    type(ws_region_type), intent(in) :: ws_region
+    type(w90comm_type), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    integer, intent(in) :: num_wann, num_bands, num_kpts, num_valence_bands
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), allocatable, intent(in) :: fermi_energy_list(:)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    complex(kind=dp), intent(out) :: shg_alpha_k_list(:, :, :), shg_sigma_k_list(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: AA_R(:, :, :, :) ! <0n|r|Rm>
+    complex(kind=dp), allocatable, intent(inout) :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
+    complex(kind=dp), allocatable, intent(inout) :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+    character(len=50), intent(in) :: seedname
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
+
+    ! local variables
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: AA(:, :, :), AA_bar(:, :, :)
+    complex(kind=dp), allocatable :: AA_da(:, :, :, :), AA_da_bar(:, :, :, :)
+    complex(kind=dp), allocatable :: HH_da(:, :, :), HH_da_bar(:, :, :)
+    complex(kind=dp), allocatable :: HH_dadb(:, :, :, :), HH_dadb_bar(:, :, :, :)
+    complex(kind=dp), allocatable :: HH(:, :)
+    complex(kind=dp), allocatable :: D_h(:, :, :), D_h_no_eta(:, :, :)
+
+    real(kind=dp), allocatable :: eig(:)
+    real(kind=dp), allocatable :: eig_da(:, :)
+    real(kind=dp), allocatable :: eig_dadb(:, :, :)
+    real(kind=dp), allocatable :: occ(:)
+    real(kind=dp), allocatable :: occ_fake(:)
+
+    real(kind=dp) :: recip_lattice(3, 3), volume
+    complex(kind=dp) :: sum_ADnm(3, 3), sum_HDnm(3, 3), r_nm(3), gen_r_nm(3, 3), &
+                        sum_ADmn(3, 3), sum_HDmn(3, 3), r_mn(3), gen_r_mn(3, 3), &
+                        r_mp(3), r_np(3), r_pm(3), r_pn(3)
+    integer :: a, b, c, bc, n, m, p, ifreq
+    complex(kind=dp) :: I_nm_ter_1(3, 6), I_nm_ter_2(3, 6), I_nm_ter_3(3, 6), &
+                        I_nm_tra_1(3, 6), I_nm_tra_2(3, 6), &
+                        I_nmp_ter_1(3, 6), I_nmp_ter_2(3, 6), I_nmp_ter_3(3, 6), &
+                        I_n_tra_1(3, 6), I_n_tra_2(3, 6)
+    real(kind=dp) :: joint_level_spacing
+    real(kind=dp) :: eta_smr, Delta_k, vdum(3), occ_fac, docc_fac, ddocc_fac
+
+    complex(kind=dp) :: e1w, e1wmn, e1wnm, e2wmn
+    real(kind=dp) :: arg1w, delta1w, arg1wmn, delta1wmn, arg1wnm, delta1wnm, arg2wmn, delta2wmn, fermi_energy, kt, &
+                     imf_k(3, 3, 1)
+
+    allocate (UU(num_wann, num_wann))
+    allocate (AA(num_wann, num_wann, 3))
+    allocate (AA_bar(num_wann, num_wann, 3))
+    allocate (AA_da(num_wann, num_wann, 3, 3))
+    allocate (AA_da_bar(num_wann, num_wann, 3, 3))
+    allocate (HH_da(num_wann, num_wann, 3))
+    allocate (HH_da_bar(num_wann, num_wann, 3))
+    allocate (HH_dadb(num_wann, num_wann, 3, 3))
+    allocate (HH_dadb_bar(num_wann, num_wann, 3, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (D_h_no_eta(num_wann, num_wann, 3))
+    allocate (eig(num_wann))
+    allocate (occ(num_wann))
+    allocate (eig_da(num_wann, 3))
+    allocate (eig_dadb(num_wann, 3, 3))
+    allocate (occ_fake(num_wann))
+
+    ! Initialize SHG array at point k
+    shg_alpha_k_list = cmplx_0
+    shg_sigma_k_list = cmplx_0
+
+    ! Gather W-gauge matrix objects !
+
+    ! choose the convention for the FT sums
+    if (pw90_berry%sc_phase_conv .eq. 1) then ! use Wannier centres in the FT exponentials (so called TB convention)
+      ! get Hamiltonian and its first and second derivatives
+      ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for
+      ! maintaining the gauge-covariance of the whole matrix element
+      call wham_get_eig_UU_HH_AA_sc_TB_conv(pw90_berry, dis_manifold, kmesh_info, kpt_latt, &
+                                            ws_region, print_output, wannier_data, ws_distance, &
+                                            wigner_seitz, AA_R, HH, HH_da, HH_dadb, HH_R, &
+                                            u_matrix, UU, v_matrix, eig, eigval, kpt, &
+                                            real_lattice, scissors_shift, mp_grid, num_bands, &
+                                            num_kpts, num_wann, num_valence_bands, &
+                                            effective_model, have_disentangled, seedname, stdout, &
+                                            timer, error, comm)
+      if (allocated(error)) return
+      ! get position operator and its derivative
+      ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(ws_region, wannier_data, ws_distance, &
+                                                      wigner_seitz, AA_R, kpt, real_lattice, &
+                                                      mp_grid, num_wann, error, comm, OO_da=AA, &
+                                                      OO_dadb=AA_da)
+      if (allocated(error)) return
+
+      ! get eigenvalues and their first and second k-derivatives
+      call wham_get_eig_del2eig_TB_conv(pw90_band_deriv_degen, HH_dadb, HH_da, UU, eig, eig_dadb, eig_da, &
+                                        num_wann, error, comm, pw90_berry%sc_eta)
+      if (allocated(error)) return
+
+    elseif (pw90_berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
+      ! same as above
+      call wham_get_eig_UU_HH_AA_sc(dis_manifold, kpt_latt, ws_region, print_output, wannier_data, &
+                                    ws_distance, wigner_seitz, HH, HH_da, HH_dadb, HH_R, u_matrix, UU, &
+                                    v_matrix, eig, eigval, kpt, real_lattice, scissors_shift, &
+                                    mp_grid, num_bands, num_kpts, num_wann, num_valence_bands, &
+                                    effective_model, have_disentangled, seedname, stdout, timer, &
+                                    error, comm)
+      if (allocated(error)) return
+
+      call pw90common_fourier_R_to_k_vec_dadb(ws_region, wannier_data, ws_distance, wigner_seitz, &
+                                              AA_R, kpt, real_lattice, mp_grid, num_wann, error, &
+                                              comm, OO_da=AA, OO_dadb=AA_da)
+      if (allocated(error)) return
+
+      call wham_get_eig_del2eig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                print_output, wannier_data, ws_distance, wigner_seitz, HH_dadb, HH_da, HH, &
+                                HH_R, u_matrix, UU, v_matrix, eig_dadb, eig_da, eig, eigval, kpt, &
+                                real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                seedname, stdout, timer, error, comm, pw90_berry%sc_eta)
+      if (allocated(error)) return
+
+    end if
+
+    ! correct the fermi level if using scissors shift
+    fermi_energy = fermi_energy_list(1) + scissors_shift/2.d0
+
+    ! get electronic occupations
+    if (pw90_berry%temperature > 1.0e-7_dp) then
+      !temperature in eV
+      kt = physics%k_B_SI*pw90_berry%temperature/physics%elem_charge_SI
+      ! FD function - T .neq. 0 K
+      call pw90common_get_occ_T(fermi_energy, eig, occ, num_wann, kt)
+    else
+      ! step function - T = 0 K
+      call pw90common_get_occ(fermi_energy, eig, occ, num_wann)
+    endif
+
+    ! get D_h (Eq. (24) WYSV06)
+    call wham_get_D_h_P_value(pw90_berry, HH_da, D_h, UU, eig, num_wann)
+    call wham_get_D_h(HH_da, D_h_no_eta, UU, eig, num_wann)
+
+    ! calculate k-spacing in case of adaptive smearing
+    if (pw90_berry%kubo_smearing%use_adaptive) then
+      call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+      Delta_k = pw90common_kmesh_spacing(pw90_berry%kmesh%mesh, recip_lattice)
+    endif
+
+    ! rotate quantities from W to H gauge (we follow wham_get_D_h for delHH_bar_i)
+    do a = 1, 3
+      ! Berry connection A
+      AA_bar(:, :, a) = utility_rotate(AA(:, :, a), UU, num_wann)
+      ! first derivative of Hamiltonian dH_da
+      HH_da_bar(:, :, a) = utility_rotate(HH_da(:, :, a), UU, num_wann)
+      do b = 1, 3
+        ! derivative of Berry connection dA_da
+        AA_da_bar(:, :, a, b) = utility_rotate(AA_da(:, :, a, b), UU, num_wann)
+        ! second derivative of Hamiltonian d^{2}H_dadb
+        HH_dadb_bar(:, :, a, b) = utility_rotate(HH_dadb(:, :, a, b), UU, num_wann)
+      enddo
+    enddo
+
+    ! loop on initial and final bands
+    do n = 1, num_wann
+      do m = 1, num_wann
+        ! cycle diagonal matrix elements and bands above the maximum
+        if (n == m) cycle
+        if (eig(m) > pw90_berry%kubo_eigval_max .or. eig(n) > pw90_berry%kubo_eigval_max) cycle
+        ! setup T=0 occupation factors
+        occ_fac = (occ(n) - occ(m))
+        if (abs(occ_fac) < 1e-10) cycle
+
+        ! set delta function smearing
+        if (pw90_berry%kubo_smearing%use_adaptive) then
+          vdum(:) = eig_da(m, :) - eig_da(n, :)
+          joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+          eta_smr = min(joint_level_spacing*pw90_berry%kubo_smearing%adaptive_prefactor, &
+                        pw90_berry%kubo_smearing%adaptive_max_width)
+        else
+          eta_smr = pw90_berry%kubo_smearing%fixed_width
+        endif
+
+        ! first compute the two sums over intermediate states between AA_bar and HH_da_bar with D_h
+        ! appearing in Eqs. (30) and (32) of IATS18
+        sum_ADnm = cmplx_0
+        sum_HDnm = cmplx_0
+        sum_ADmn = cmplx_0
+        sum_HDmn = cmplx_0
+        do a = 1, 3
+          do c = 1, 3
+            ! Note that we substract diagonal elements in AA_bar and
+            ! HH_da_bar to match the convention in IATS18
+            ! (diagonals in D_h are automatically zero, so we do not substract them)
+            sum_ADnm(c, a) = (utility_zdotu(AA_bar(n, :, c), D_h(:, m, a)) - AA_bar(n, n, c)*D_h(n, m, a)) &
+                             - (utility_zdotu(D_h(n, :, a), AA_bar(:, m, c)) - D_h(n, m, a)*AA_bar(m, m, c))
+            sum_HDnm(c, a) = (utility_zdotu(HH_da_bar(n, :, c), D_h(:, m, a)) - HH_da_bar(n, n, c)*D_h(n, m, a)) &
+                             - (utility_zdotu(D_h(n, :, a), HH_da_bar(:, m, c)) - D_h(n, m, a)*HH_da_bar(m, m, c))
+            sum_ADmn(c, a) = (utility_zdotu(AA_bar(m, :, c), D_h(:, n, a)) - AA_bar(m, m, c)*D_h(m, n, a)) &
+                             - (utility_zdotu(D_h(m, :, a), AA_bar(:, n, c)) - D_h(m, n, a)*AA_bar(n, n, c))
+            sum_HDmn(c, a) = (utility_zdotu(HH_da_bar(m, :, c), D_h(:, n, a)) - HH_da_bar(m, m, c)*D_h(m, n, a)) &
+                             - (utility_zdotu(D_h(m, :, a), HH_da_bar(:, n, c)) - D_h(m, n, a)*HH_da_bar(n, n, c))
+          enddo
+        enddo
+
+        ! dipole matrix element
+        r_nm(:) = AA_bar(n, m, :) + cmplx_i*D_h_no_eta(n, m, :)
+        r_mn(:) = AA_bar(m, n, :) + cmplx_i*D_h_no_eta(m, n, :)
+
+        ! loop over direction of generalized derivative
+        do a = 1, 3
+          ! store generalized derivative as an array on the additional spatial index,
+          ! its composed of 8 terms in total, see Eq (34) combined with (30) and
+          ! (32) of IATS18
+          gen_r_nm(:, a) = (AA_da_bar(n, m, :, a) &
+                            + ((AA_bar(n, n, :) - AA_bar(m, m, :))*D_h_no_eta(n, m, a) + &
+                               (AA_bar(n, n, a) - AA_bar(m, m, a))*D_h_no_eta(n, m, :)) &
+                            - cmplx_i*AA_bar(n, m, :)*(AA_bar(n, n, a) - AA_bar(m, m, a)) &
+                            + sum_ADnm(:, a) &
+                            + cmplx_i*(HH_dadb_bar(n, m, :, a) &
+                                       + sum_HDnm(:, a) &
+                                       + (D_h_no_eta(n, m, :)*(eig_da(n, a) - eig_da(m, a)) + &
+                                          D_h_no_eta(n, m, a)*(eig_da(n, :) - eig_da(m, :)))) &
+                            /(eig(m) - eig(n)))
+          gen_r_mn(:, a) = (AA_da_bar(m, n, :, a) &
+                            + ((AA_bar(m, m, :) - AA_bar(n, n, :))*D_h_no_eta(m, n, a) + &
+                               (AA_bar(m, m, a) - AA_bar(n, n, a))*D_h_no_eta(m, n, :)) &
+                            - cmplx_i*AA_bar(m, n, :)*(AA_bar(m, m, a) - AA_bar(n, n, a)) &
+                            + sum_ADmn(:, a) &
+                            + cmplx_i*(HH_dadb_bar(m, n, :, a) &
+                                       + sum_HDmn(:, a) &
+                                       + (D_h_no_eta(m, n, :)*(eig_da(m, a) - eig_da(n, a)) + &
+                                          D_h_no_eta(m, n, a)*(eig_da(m, :) - eig_da(n, :)))) &
+                            /(eig(n) - eig(m)))
+
+          ! Correction term due to finite sc_eta
+          ! See Eq. (19) of Phys. Rev. B 103, 247101 (2021)
+          if (pw90_berry%sc_use_eta_corr) then
+            do p = 1, num_wann
+              if (p == n .or. p == m) cycle
+              gen_r_nm(:, a) = gen_r_nm(:, a) &
+                               - pw90_berry%sc_eta**2/((eig(p) - eig(m))**2 &
+                                                       + pw90_berry%sc_eta**2)/(eig(n) - eig(m)) &
+                               *(AA_bar(n, p, :)*HH_da_bar(p, m, a) &
+                                 - (HH_da_bar(n, p, :) + cmplx_i*(eig(n) &
+                                                                  - eig(p))*AA_bar(n, p, :))*AA_bar(p, m, a)) &
+                               + pw90_berry%sc_eta**2/((eig(n) - eig(p))**2 &
+                                                       + pw90_berry%sc_eta**2)/(eig(n) - eig(m)) &
+                               *(HH_da_bar(n, p, a)*AA_bar(p, m, :) &
+                                 - AA_bar(n, p, a)*(HH_da_bar(p, m, :) + cmplx_i*(eig(p) - eig(m))*AA_bar(p, m, :)))
+              gen_r_mn(:, a) = gen_r_mn(:, a) &
+                               - pw90_berry%sc_eta**2/((eig(p) - eig(n))**2 &
+                                                       + pw90_berry%sc_eta**2)/(eig(m) - eig(n)) &
+                               *(AA_bar(m, p, :)*HH_da_bar(p, n, a) &
+                                 - (HH_da_bar(m, p, :) + cmplx_i*(eig(m) &
+                                                                  - eig(p))*AA_bar(m, p, :))*AA_bar(p, n, a)) &
+                               + pw90_berry%sc_eta**2/((eig(m) - eig(p))**2 &
+                                                       + pw90_berry%sc_eta**2)/(eig(m) - eig(n)) &
+                               *(HH_da_bar(m, p, a)*AA_bar(p, n, :) &
+                                 - AA_bar(m, p, a)*(HH_da_bar(p, n, :) + cmplx_i*(eig(p) - eig(n))*AA_bar(p, n, :)))
+            enddo
+          endif
+        enddo
+
+        ! construct 2-band transition matrix elements (see Eqs. (22.a) and (22.b) of GGKIA23)
+        ! note that SHG is symmetric under b <--> c exchange,
+        ! so avoid computing all combinations using alpha_S and beta_S
+        do a = 1, 3
+          do bc = 1, 6
+            b = alpha_S(bc)
+            c = beta_S(bc)
+            I_nm_ter_1(a, bc) = r_nm(a)*(gen_r_mn(b, c) + gen_r_mn(c, b))
+            I_nm_ter_2(a, bc) = gen_r_nm(a, b)*r_mn(c) + gen_r_nm(a, c)*r_mn(b)
+            I_nm_ter_3(a, bc) = r_nm(a)* &
+                                (r_mn(b)*(eig_da(m, c) - eig_da(n, c)) + r_mn(c)*(eig_da(m, b) - eig_da(n, b))) &
+                                /(eig(m) - eig(n))
+            I_nm_tra_1(a, bc) = gen_r_nm(b, a)*r_mn(c) + gen_r_nm(c, a)*r_mn(b)
+            I_nm_tra_2(a, bc) = (eig_da(n, a) - eig_da(m, a))*(r_nm(b)*r_mn(c) + r_nm(c)*r_mn(b))
+          enddo ! bc
+        enddo ! a
+
+        do ifreq = 1, pw90_berry%kubo_nfreq
+          ! compute 1/(E_mn-w)
+          e1wmn = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+          arg1wmn = (eig(m) - eig(n) - real(e1wmn, dp))/eta_smr
+          delta1wmn = utility_w0gauss(arg1wmn, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+          if (allocated(error)) return
+          ! compute 1/(E_mn-2w)
+          e2wmn = 2.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+          arg2wmn = (eig(m) - eig(n) - real(e2wmn, dp))/eta_smr
+          delta2wmn = utility_w0gauss(arg2wmn, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+          if (allocated(error)) return
+          ! compute 1/w
+          e1w = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*pw90_berry%smr_gamma
+          arg1w = real(e1w, dp)/pw90_berry%smr_gamma
+          delta1w = utility_w0gauss(arg1w, pw90_berry%kubo_smearing%type_index, error, comm)/pw90_berry%smr_gamma
+          if (allocated(error)) return
+
+          ! compute 2-band terms of SHG polarizability
+          ! see 2-band terms of Eqs. (22.a) -SHG interband polarizability- and (22.b) -SHG intraband conductivity-.
+          ! conductivity is passed to polarizability by multiplying it by 1/(-i*2*w)
+          shg_alpha_k_list(:, :, ifreq) = shg_alpha_k_list(:, :, ifreq) &
+                                          + 0.5d0*cmplx_i*occ_fac*( &
+                                          2.d0*I_nm_ter_1(:, :)/(eig(m) - eig(n)) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn) &
+                                          + I_nm_ter_2(:, :)/(eig(m) - eig(n)) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          + I_nm_ter_3(:, :)/(eig(m) - eig(n)) &
+                                          *(1.d0*(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                            - 4.d0*(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn)) &
+                                          + (I_nm_ter_1(:, :) + I_nm_ter_2(:, :) - I_nm_ter_3(:, :))/(eig(m) - eig(n)) &
+                                          *real(1.d0/e1w, dp) &
+                                          - 0.5d0*I_nm_tra_1(:, :)/(eig(m) - eig(n)) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          - 0.5d0*I_nm_tra_1(:, :)/(eig(m) - eig(n)) &
+                                          *real(1.d0/e1w, dp) &
+                                          - 0.25d0*I_nm_tra_2(:, :) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          *real(1.d0/e1w, dp)**2)
+
+          ! compute 2-band terms of SHG conductivity
+          ! see 2-band terms of Eqs. (22.a) -SHG interband polarizability- and (22.b) -SHG intraband conductivity-.
+          ! polarizability is passed to conductivity by multiplying it by -i*2*w and simplifying it
+          shg_sigma_k_list(:, :, ifreq) = shg_sigma_k_list(:, :, ifreq) &
+                                          + occ_fac*( &
+                                          I_nm_ter_1(:, :) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn) &
+                                          + I_nm_ter_2(:, :) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          + I_nm_ter_3(:, :) &
+                                          *(1.d0*(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                            - 2.d0*(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn)) &
+                                          - 0.5d0*I_nm_tra_1(:, :) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          - 0.25d0*I_nm_tra_2(:, :) &
+                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                          *real(1.d0/e1w, dp))
+        enddo
+
+        ! loop on intermediate band
+        do p = 1, num_wann
+          ! cycle diagonal matrix elements and bands above the maximum
+          if (n == m .or. p == n .or. p == m) cycle
+          if (eig(p) > pw90_berry%kubo_eigval_max) cycle
+
+          ! dipole matrix element
+          r_mp(:) = AA_bar(m, p, :) + cmplx_i*D_h(m, p, :)
+          r_pm(:) = AA_bar(p, m, :) + cmplx_i*D_h(p, m, :)
+          r_pn(:) = AA_bar(p, n, :) + cmplx_i*D_h(p, n, :)
+          r_np(:) = AA_bar(n, p, :) + cmplx_i*D_h(n, p, :)
+
+          ! construct the 3-band transition matrix elements (see 1st term of Eq. (22.a) of GGKIA23)
+          ! note that second-harmonic generation is symmetric under b <--> c exchange,
+          ! so avoid computing all combinations using alpha_S and beta_S
+          do a = 1, 3
+            do bc = 1, 6
+              b = alpha_S(bc)
+              c = beta_S(bc)
+              I_nmp_ter_1(a, bc) = r_nm(a)*(r_mp(b)*r_pn(c) + r_mp(c)*r_pn(b)) &
+                                   *real(1.d0/(eig(p) - eig(n) - eig(m) + eig(p) + cmplx_i*pw90_berry%sc_eta), dp)
+              I_nmp_ter_2(a, bc) = r_mp(a)*(r_pn(b)*r_nm(c) + r_pn(c)*r_nm(b)) &
+                                   *real(1.d0/(eig(n) - eig(m) - eig(p) + eig(n) + cmplx_i*pw90_berry%sc_eta), dp)
+              I_nmp_ter_3(a, bc) = r_pn(a)*(r_nm(b)*r_mp(c) + r_nm(c)*r_mp(b)) &
+                                   *real(1.d0/(eig(m) - eig(p) - eig(n) + eig(m) + cmplx_i*pw90_berry%sc_eta), dp)
+            enddo !bc
+          enddo !a
+
+          do ifreq = 1, pw90_berry%kubo_nfreq
+            ! compute 1/(E_nm-w)
+            e1wnm = real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+            arg1wnm = (eig(n) - eig(m) - real(e1wnm, dp))/eta_smr
+            delta1wnm = utility_w0gauss(arg1wnm, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+            if (allocated(error)) return
+            ! compute 1/(E_mn-2w)
+            e2wmn = 2.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+            arg2wmn = (eig(m) - eig(n) - real(e2wmn, dp))/eta_smr
+            delta2wmn = utility_w0gauss(arg2wmn, pw90_berry%kubo_smearing%type_index, error, comm)/eta_smr
+            if (allocated(error)) return
+
+            ! compute 3-band terms of SHG polarizability
+            ! see 3-band terms of Eqs. (22.a) -SHG interband polarizability-
+            shg_alpha_k_list(:, :, ifreq) = shg_alpha_k_list(:, :, ifreq) &
+                                            + 0.5d0*occ_fac*( &
+                                            2.d0*I_nmp_ter_1(:, :) &
+                                            *(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn) &
+                                            + I_nmp_ter_2(:, :) &
+                                            *(real(1.d0/(eig(n) - eig(m) - e1wnm), dp) + cmplx_i*pi*delta1wnm) &
+                                            + I_nmp_ter_3(:, :) &
+                                            *(real(1.d0/(eig(n) - eig(m) - e1wnm), dp) + cmplx_i*pi*delta1wnm))
+
+            ! compute 3-band terms of SHG conductivity
+            ! see 3-band terms of Eq. (22.a) -SHG interband polarizability-
+            ! polarizability is passed to conductivity by multiplying it by -i*2*w and simplifying it
+            shg_sigma_k_list(:, :, ifreq) = shg_sigma_k_list(:, :, ifreq) &
+                                            - cmplx_i*occ_fac*( &
+                                            I_nmp_ter_1(:, :)*(eig(m) - eig(n)) &
+                                            *(real(1.d0/(eig(m) - eig(n) - e2wmn), dp) + cmplx_i*pi*delta2wmn) &
+                                            + I_nmp_ter_2(:, :)*(eig(n) - eig(m)) &
+                                            *(real(1.d0/(eig(n) - eig(m) - e1wnm), dp) + cmplx_i*pi*delta1wnm) &
+                                            + I_nmp_ter_3(:, :)*(eig(n) - eig(m)) &
+                                            *(real(1.d0/(eig(n) - eig(m) - e1wnm), dp) + cmplx_i*pi*delta1wnm))
+          enddo
+
+        enddo !bands
+
+      enddo ! bands
+
+      ! Now, compute the semiclassical 1-band term of Eq. (22b) of GGKIA23
+      ! this term only contributes in metals with finite temperature
+      if (pw90_berry%temperature .le. 1.0e-7_dp) cycle
+
+      ! derivative of the occupations w.r.t. energy: docc_fac=-delta(eig(n)-eF)
+      ! with delta(eig(n)-eF) approximated to a gaussian with temperature smearing
+      docc_fac = 0.d0
+      ddocc_fac = 0.d0
+      if (abs(eig(n) - fermi_energy) .le. 5.d0*kt) then
+        docc_fac = -exp(-0.5d0*((eig(n) - fermi_energy)/kt)**2)/(kt*sqrt(2.d0*pi))
+        ddocc_fac = -(eig(n) - fermi_energy)/(kt**2)*docc_fac
+      else
+        cycle
+      endif
+
+      ! construct the semiclassical 1-band intraband transition matrix elements
+      ! (see Eq. (22.b) of GGKIA23)
+      ! note that SHG is symmetric under b <--> c exchange,
+      ! so avoid computing all combinations using alpha_S and beta_S
+      do a = 1, 3
+        do bc = 1, 6
+          b = alpha_S(bc)
+          c = beta_S(bc)
+          I_n_tra_1(a, bc) = ddocc_fac*eig_da(n, a)*eig_da(n, b)*eig_da(n, c) + docc_fac*eig_da(n, a)*eig_dadb(n, b, c)
+        enddo
+      enddo
+
+      do ifreq = 1, pw90_berry%kubo_nfreq
+        ! compute 1/w
+        e1w = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*pw90_berry%smr_gamma
+        arg1w = real(e1w, dp)/pw90_berry%smr_gamma
+        delta1w = utility_w0gauss(arg1w, pw90_berry%kubo_smearing%type_index, error, comm)/pw90_berry%smr_gamma
+        if (allocated(error)) return
+
+        ! compute the semiclassical 1-band intraband term of linear polarizability (see Eq. (22b) of GGKIA23)
+        ! conductivity is passed to polarizability by multiplying it by 1/(-i*w)
+        shg_alpha_k_list(:, :, ifreq) = shg_alpha_k_list(:, :, ifreq) &
+                                       - cmplx_i*0.25d0*I_n_tra_1(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)**2
+
+        ! compute the semiclassical 1-band intraband term of linear conductivity (see Eq. (22b) of GGKIA23)
+        shg_sigma_k_list(:, :, ifreq) = shg_sigma_k_list(:, :, ifreq) &
+                                        - 0.5d0*I_n_tra_1(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)
+      enddo
+
+      ! Now, compute the Berry curvature dipole 1-band term of Eq. (22b) GGKIA23 or Eq. (2) of TPS18
+      ! Filter of metal and temperature already passed
+      ! ***ADJUSTABLE PARAMETER***
+      ! avoid degeneracies
+      !---------------------------------------------------
+      if (n > 1) then
+        if (eig(n) - eig(n - 1) <= pw90_band_deriv_degen%degen_thr) cycle
+      endif
+      if (n < num_wann) then
+        if (eig(n + 1) - eig(n) <= pw90_band_deriv_degen%degen_thr) cycle
+      endif
+
+      occ_fake(:) = 0.0_dp
+      occ_fake(n) = 1.0_dp
+
+      call berry_get_imf_klist(dis_manifold, fermi_energy_list, kpt_latt, ws_region, &
+                               print_output, wannier_data, ws_distance, wigner_seitz, AA_R, &
+                               BB_R, CC_R, HH_R, u_matrix, v_matrix, eigval, kpt, &
+                               real_lattice, imf_k, scissors_shift, mp_grid, num_bands, &
+                               num_kpts, num_wann, num_valence_bands, effective_model, &
+                               have_disentangled, seedname, stdout, timer, error, comm, occ_fake)
+      if (allocated(error)) return
+
+      ! construct the Berry curvature dipole 1-band intraband transition matrix elements
+      ! (see Eq. (22.b) of GGKIA23 and Eq. (2) of TPS18)
+      ! note that SHG is symmetric under b <--> c exchange,
+      ! so avoid computing all combinations using alpha_S and beta_S
+      do a = 1, 3
+        do bc = 1, 6
+          b = alpha_S(bc)
+          c = beta_S(bc)
+          I_n_tra_2(a, bc) = docc_fac*(eig_da(n, b)*imf_k(a, c, 1) + eig_da(n, c)*imf_k(a, b, 1))
+        enddo
+      enddo
+
+      do ifreq = 1, pw90_berry%kubo_nfreq
+        ! compute 1/w
+        e1w = 1.d0*real(pw90_berry%kubo_freq_list(ifreq), dp) + cmplx_i*pw90_berry%smr_gamma
+        arg1w = real(e1w, dp)/pw90_berry%smr_gamma
+        delta1w = utility_w0gauss(arg1w, pw90_berry%kubo_smearing%type_index, error, comm)/pw90_berry%smr_gamma
+        if (allocated(error)) return
+
+        ! compute the Berry curvature dipole 1-band intraband term of linear polarizability
+        ! (see Eq. (22b) of GGKIA23 and Eq. (2) of TPS18)
+        ! conductivity is passed to polarizability by multiplying it by 1/(-i*w)
+        shg_alpha_k_list(:, :, ifreq) = shg_alpha_k_list(:, :, ifreq) &
+                                        - 0.25d0*I_n_tra_2(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)
+
+        ! compute the Berry curvature dipole 1-band intraband term of linear conductivity
+        ! (see Eq. (22b) of GGKIA23 and Eq. (2) of TPS18)
+        shg_sigma_k_list(:, :, ifreq) = shg_sigma_k_list(:, :, ifreq) &
+                                        + 0.5d0*cmplx_i*I_n_tra_2(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)
+      enddo
+
+    enddo ! bands
+
+  end subroutine berry_get_shg_klist
 
   !================================================!
   subroutine berry_get_shc_klist(pw90_berry, dis_manifold, fermi_energy_list, kpt_latt, &
