@@ -466,7 +466,7 @@ program postw90
                     SAA_R, SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                     mp_grid, fermi_n, num_wann, num_kpts, num_bands, system%num_valence_bands, &
                     effective_model, have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, &
-                    timer, error, comm)
+                    timer, error, comm, system%num_elec_per_state)
     if (allocated(error)) call prterr(error, stdout, stderr, comm)
   end if
   ! -----------------------------------------------------------------
