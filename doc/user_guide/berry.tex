@@ -54,7 +54,7 @@ and write the curvature as an antisymmetric tensor,
 The Kubo-Greenwood formula for the optical conductivity of a crystal
 in the independent-particle approximation reads
 %
-\begin{equation}
+\begin{equation}\label{eq:kubo}
 \sigma_{\alpha\beta}(\hbar\omega)=\frac{ie^2\hbar}{N_k\Omega_c}
 \sum_{\bf k}\sum_{n,m}
 \frac{f_{m{\bf k}}-f_{n{\bf k}}}
@@ -150,7 +150,7 @@ by adjusting the value of $\eta$ for each pair of states, i.e.,
 $\eta\rightarrow \eta_{nm\bf k}$. This is done as follows (see
 description of the keyword {\tt adpt\_smr\_fac})
 %
-\begin{equation}
+\begin{equation}\label{eq:etanmk}
 \eta_{nm{\bf k}}=\alpha\vert \bm{\nabla}_{\bf k}
 (\varepsilon_{m{\bf k}}-\varepsilon_{n{\bf k}})\vert \Delta k.
 \end{equation}
@@ -175,6 +175,7 @@ whose independent components are written as a function of frequency
 onto nine separate files.
 
 \section{{\tt berry\_task=ahc}: anomalous Hall conductivity}
+\label{sec:ahc}
 
 The antisymmetric tensor $\sigma^{\rm A}_{\alpha\beta}$ is odd under
 time reversal, and therefore vanishes in non-magnetic systems, while
@@ -340,9 +341,8 @@ or
 	Phys. Rev. B. 99, 235113 (2019), DOI:10.1103/PhysRevB.99.235113.
 \end{quote}
 
-
 \section{{\tt berry\_task=sc}: shift current}
-
+\label{sec:sc}
 
 The shift-current contribution to the second-order response
 is characterized by a frequency-dependent third-rank tensor~\cite{sipe-prb00}
@@ -574,3 +574,130 @@ $$
 %original formulation of Ref.~\cite{wang-prb06} (the two are
 %equivalent, and should produce identical results to within numerical
 %accuracy).
+
+\section{{\tt berry\_task=eps}: linear optical response}
+\label{sec:eps}
+
+The linear optical response is characterized by a frequency-dependent second-rank tensor that can be expressed, respectively, in terms of conductivity and susceptibility
+\begin{subequations}
+ \begin{equation}
+  \sigma^{ab}(\omega)=-i\omega\varepsilon_{0}\chi^{ab}_{\mathrm{ter}}(\omega)+\sigma^{ab}_{\mathrm{tra}}(\omega),
+ \end{equation}
+ \begin{equation}
+  \chi^{ab}(\omega)=\chi^{ab}_{\mathrm{ter}}(\omega)+i\frac{\sigma^{ab}_{\mathrm{tra}}(\omega)}{\omega\varepsilon_{0}},
+ \end{equation}
+\end{subequations}
+where, following Ref.~\cite{sipe-prb00}, the linear optical interband (ter) susceptibility and intraband (tra) conductivity in the independent-particle approximation are given, respectively, by~\cite{garcia-goiricelaya-prb23}
+\begin{subequations}
+ \begin{equation}\label{eq:linterchi}
+  \chi^{ab}_{\mathrm{ter}}(\omega)=\frac{e^{2}}{\hbar\varepsilon_{0}}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\sum_{m,n}f_{nm\mathbf{k}}\frac{r^{a}_{nm\mathbf{k}}r^{b}_{mn\mathbf{k}}}{\omega_{mn\mathbf{k}}-\tilde{\omega}},
+ \end{equation}
+ \begin{equation}\label{eq:lintrasigma}
+  \sigma^{ab}_{\mathrm{tra}}(\omega)=-\frac{e^{2}}{\hbar}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\sum_{n}\left(f_{n\mathbf{k}}\epsilon_{cab}\Omega^{c}_{n\mathbf{k}}+\frac{i}{\hbar\tilde{\omega}}\frac{\partial \varepsilon_{n\mathbf{k}}}{\partial k^{a}}\frac{\partial f_{n\mathbf{k}}}{\partial k^{b}}\right).
+ \end{equation}
+\end{subequations}
+Above, $a$ and $b$ are spatial indexes; $\epsilon_{abc}$ is the Levi-Civita symbol; $e$, $\hbar$ and $\varepsilon_{0}$ are the elementary charge, the Planck constant and the vacuum permittivity, respectively; $\Omega_{c}$ and $N_{k}$ are the unit-cell volume and the number of $k$-points in the Brillouin zone, respectively; $m$ and $n$ are band indexes; $\omega_{mn\mathbf{k}}=(\varepsilon_{m\mathbf{k}}-\varepsilon_{n\mathbf{k}})/\hbar$ and $f_{nm\mathbf{k}}=f_{n\mathbf{k}}-f_{m\mathbf{k}}$ where $f_{n\mathbf{k}}=f(\varepsilon_{n\mathbf{k}})$ is the Fermi-Dirac occupation distribution function, and $\varepsilon_{n\mathbf{k}}$ is the energy of the state with crystal momentum $\mathbf{k}$ and band index $n$; $r^{a}_{nm\mathbf{k}}\equiv r^{a}_{mn}(\mathbf{k})$ is the interband dipole matrix element defined in Eq.~\ref{eq:r}; $\epsilon_{cab}\Omega^{c}_{n\mathbf{k}}=\Omega^{ab}_{n\mathbf{k}}\equiv\Omega^{ab}_{n}(\mathbf{k})$ is the Berry curvature (see Eq.~\ref{eq:curv}); and $\tilde{\omega}=\omega+i\eta/\hbar$ where $\omega$ is the optical frequency and $\eta>0$ is an adjustable smearing parameter with units of energy. Physically, the latter can be related with the lifetime or relaxation time of electrons to account for damping effects.
+
+The expression in Eq.~\ref{eq:linterchi} corresponds to the Kubo-Greenwood formula for the optical susceptibility, instead of that for the optical conductivity presented in Eq.~\ref{eq:kubo}. On the other hand, the first term on the right-hand side of Eq.~\ref{eq:lintrasigma} correspond to the AHC discussed in Sec.~\ref{sec:ahc}, which is odd under time-reversal symmetry~\cite{wang-prb06}. The second term can be rewritten as a Fermi-surface integral related to the ohmic conductivity tensor $C^{ab}$ (see the overview of the \verb|gyrotropic| module) or equivalently to the Drude-weight tensor~\cite{PhysRevB.102.205123} using the chain rule
+\begin{equation}\label{eq:lintradw}
+ \begin{split}
+  -\frac{ie^{2}}{\hbar^{2}\tilde{\omega}}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\sum_{n}\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{a}}\frac{\partial f_{n\mathbf{k}}}{\partial k^{b}}=-\frac{ie^{2}}{\hbar^{2}\tilde{\omega}}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\sum_{n}\frac{\partial f_{n\mathbf{k}}}{\partial\varepsilon_{n\mathbf{k}}}\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{a}}\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{b}}=\frac{ie}{\hbar\tilde{\omega}}C^{ab}.
+ \end{split}
+\end{equation}
+Due to the presence of the first-order derivatives of the Fermi-Dirac occupation distribution functions, Eq.~\ref{eq:lintradw} only contributes for metals, representing the Drude peak near zero frequency. Then, the linear optical intraband conductivity can be rewritten
+\begin{equation}
+ \sigma^{ab}_{\mathrm{tra}}(\omega)=\sigma_{\mathrm{AH}}^{abc}+\frac{ie}{\hbar\tilde{\omega}}C^{ab}.
+\end{equation}
+
+As in the case of the optical conductivity, the energy denominators in Eq.~\ref{eq:linterchi} and Eq.~\ref{eq:lintrasigma} can be decomposed, respectively, into a principal value and a broadened delta function as
+\begin{subequations}
+ \begin{equation}
+ \frac{1}{\omega_{mn\mathbf{k}}-\tilde{\omega}}=\frac{1}{\omega_{mn\mathbf{k}}-(\omega+i\eta/\hbar)}=\frac{\omega_{mn\mathbf{k}}-\omega}{(\omega_{mn\mathbf{k}}-\omega)^{2}+(\eta/\hbar)^{2}}+i\pi\overline{\delta}(\omega_{mn\mathbf{k}}-\omega).
+ \end{equation}
+ \begin{equation}\label{eq:1/w}
+  \frac{1}{\tilde{\omega}}=\frac{1}{\omega+i\gamma/\hbar}=\frac{\omega}{\omega^{2}+(\gamma/\hbar)^{2}}-i\pi\overline{\delta}(\omega)
+ \end{equation}
+\end{subequations}
+The analytical form of $\overline{\delta}(\omega_{mn\mathbf{k}}-\omega)$ is controlled by the keyword {\tt [kubo\_]smr\_type} whose smearing value is controlled by means of the parameter $\eta$ (see Eq.~\ref{eq:lorentzian}) using the keyword {\tt[kubo\_]smr\_fixed\_en\_width} (in eV), or employing an adaptive smearing using the keyword {\tt [kubo\_]adpt\_smr} as in Eq.~\ref{eq:etanmk}. In the case of $\overline{\delta}(\omega)$, its analytical form is also controlled by the keyword {\tt [kubo\_]smr\_type} and its smearing value by the parameter $\gamma$ (see Eq.~\ref{eq:1/w}) using the keyword {\tt smr\_gamma} (in eV). No adaptive smearing can be used in this case.
+
+Regarding the derivative of the Fermi-Dirac occupation distribution functions in the Fermi-surface integration in Eq.~\ref{eq:lintradw}, in the low-temperature limit ($T\to0$) this function is modeled by a Gaussian distribution with a standard deviation equal to the temperature-dependent smearing energy $\sigma_{T}=k_{\mathrm{B}}T$ and the temperature is controlled by means of the parameter $T$ (in K) using the keyword {\tt temperature}.
+ 
+From the linear optical response, it is straightforward to evaluate the optical dielectric tensor in the independent-particle approximation by means of the linear optical susceptibility and conductivity, respectively, as
+\begin{subequations}
+ \begin{equation}\label{eq:chi2eps}
+  \varepsilon^{ab}(\omega)=\delta_{ab}+\chi^{ab}(\omega),
+ \end{equation}
+ \begin{equation}\label{eq:sigma2eps}
+  \varepsilon^{ab}(\omega)=\delta_{ab}+i\frac{\sigma^{ab}(\omega)}{\varepsilon_{0}\omega}.
+ \end{equation}
+\end{subequations}
+The calculation of the optical dielectric tensor is priorized through Eq.~\ref{eq:chi2eps} in order to avoid the divergence of Eq.~\ref{eq:sigma2eps} as $\omega$ approaches zero. This procedure works for semiconductors with time-reversal symmetry, for which $\chi^{abc}(\omega)=\chi^{abc}_{\mathrm{ter}}(\omega)$. Nevertheless, for metals and/or time-reversal symmetry breaking, the $\omega\to0$ divergence is unavoidable.
+
+Please cite Ref.~\cite{garcia-goiricelaya-prb23} when publishing optical dielectric tensor results using this method.
+
+\section{{\tt berry\_task=shg}: second-harmonic generation}
+
+The contribution of the second-harmonic generation (SHG) to the second-order response is characterized by a frequency-dependent third-rank tensor that can be expressed, respectively, in terms of conductivity or susceptibility~\cite{garcia-goiricelaya-prb23}
+\begin{subequations}
+ \begin{equation}
+  \sigma^{abc}(2\omega;\omega,\omega)=-i2\omega\varepsilon_{0}\chi_{\text{ter}}^{abc}(2\omega;\omega,\omega)+\sigma_{\text{tra}}^{abc}(2\omega;\omega,\omega),
+ \end{equation}
+ \begin{equation}
+  \chi^{abc}(2\omega;\omega,\omega)=\chi_{\text{ter}}^{abc}(2\omega;\omega,\omega)+i\frac{\sigma_{\text{tra}}^{abc}((2\omega;\omega,\omega)}{2\omega\varepsilon_{0}},
+ \end{equation}
+\end{subequations}
+where, following Ref.~\cite{sipe-prb00}, the SHG interband (ter) susceptibility and intraband (tra) conductivity within the independent-particle approximation are given, respectively, by
+\begin{subequations}
+ \begin{equation}\label{eq:shgtersusc}
+  \begin{split}
+   &\chi^{abc}_{\mathrm{ter}}(2\omega;\omega,\omega)=\frac{e^{3}}{2\hbar^{2}\varepsilon_{0}}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\Bigg(\sum_{l,m,n}I^{abc}_{lmn\mathbf{k}}\bigg(\frac{2f_{nm\mathbf{k}}}{\omega_{mn\mathbf{k}}-2\tilde{\omega}}+\frac{f_{ln\mathbf{k}}}{\omega_{ln\mathbf{k}}-\tilde{\omega}}+\frac{f_{ml\mathbf{k}}}{\omega_{ml\mathbf{k}}-\tilde{\omega}}\bigg)\\&+i\sum_{m,n}\Bigg\{f_{nm\mathbf{k}}\Bigg[\frac{2{I_{1}}^{abc}_{mn\mathbf{k}}}{\omega_{mn\mathbf{k}}\left(\omega_{mn\mathbf{k}}-2\tilde{\omega}\right)}+\frac{{I_{2}}^{abc}_{mn\mathbf{k}}}{\omega_{mn\mathbf{k}}\left(\omega_{mn\mathbf{k}}-\tilde{\omega}\right)}+\frac{{I_{3}}^{abc}_{mn\mathbf{k}}}{\omega_{mn\mathbf{k}}}\bigg(\frac{1}{\omega_{mn\mathbf{k}}-\tilde{\omega}}-\frac{4}{\omega_{mn\mathbf{k}}-2\tilde{\omega}}\bigg)\\&\quad\quad\quad\quad\quad\quad\quad\! +\frac{{I_{1}}^{abc}_{mn\mathbf{k}}+{I_{1}}^{abc}_{mn\mathbf{k}}-{I_{3}}^{abc}_{mn\mathbf{k}}}{\omega_{mn\mathbf{k}}\tilde{\omega}}\Bigg]\Bigg)
+  \end{split}
+ \end{equation}
+ \begin{equation}\label{eq:shgtracond}
+  \begin{split}
+   \sigma^{abc}_{\mathrm{tra}}(2\omega;\omega,\omega)=\frac{e^{3}}{2\hbar^{2}\varepsilon_{0}}\frac{1}{\Omega_{c}N_{k}}\sum_{\mathbf{k}}\Bigg\{-&\sum_{m,n}f_{nm\mathbf{k}}\bigg[\frac{{I_{4}}^{abc}_{nm\mathbf{k}}}{\omega_{mn\mathbf{k}}-\tilde{\omega}}+\frac{{I_{5}}^{abc}_{nm\mathbf{k}}}{2}\left(\frac{1}{\tilde{\omega}}+\frac{1}{\omega_{mn\mathbf{k}}-\tilde{\omega}}\right)\bigg]\\+&\sum_{n}\bigg[i\frac{{I_{1}}^{abc}_{n\mathbf{k}}}{\tilde{\omega}}-\frac{{I_{2}}^{abc}_{n\mathbf{k}}}{\tilde{\omega}^{2}}\bigg]\Bigg\}.
+  \end{split}
+ \end{equation}
+\end{subequations}
+The three-band transition matrix element entering in Eq.~\ref{eq:shgtersusc} is defined as
+\begin{equation}\label{eq:shg3btme}
+  I^{abc}_{lmn\mathbf{k}}=\frac{r^{a}_{nm\mathbf{k}}\left[r^{b}_{ml\mathbf{k}}r^{c}_{ln\mathbf{k}}+r^{c}_{ml\mathbf{k}}r^{b}_{ln\mathbf{k}}\right]}{\omega_{ln\mathbf{k}}-\omega_{ml\mathbf{k}}},
+ \end{equation} 
+the two-band transition matrix elements entering in Eqs.~\ref{eq:shgtersusc} and \ref{eq:shgtracond} are defined as
+\begin{subequations}
+ \begin{equation}\label{eq:shg2b1tme}
+  {I_{1}}^{abc}_{mn\mathbf{k}}=r^{a}_{nm\mathbf{k}}\left[r^{b;c}_{mn\mathbf{k}}+r^{c;b}_{mn\mathbf{k}}\right],
+ \end{equation}
+ \begin{equation}\label{eq:shg2b2tme}
+  {I_{2}}^{abc}_{mn\mathbf{k}}=r^{a;b}_{nm\mathbf{k}}r^{c}_{mn\mathbf{k}}+r^{a;c}_{nm\mathbf{k}}r^{b}_{mn\mathbf{k}},
+ \end{equation}
+ \begin{equation}
+  {I_{3}}^{abc}_{mn\mathbf{k}}=\frac{r^{a}_{nm\mathbf{k}}\left[r^{b}_{mn\mathbf{k}}\Lambda^{c}_{mn\mathbf{k}}+r^{c}_{mn\mathbf{k}}\Lambda^{b}_{mn\mathbf{k}}\right]}{\omega_{mn\mathbf{k}}},
+ \end{equation}
+ \begin{equation}\label{eq:shg2b4tme}
+  {I_{4}}^{abc}_{mn\mathbf{k}}=r^{b;a}_{nm\mathbf{k}}r^{c}_{mn\mathbf{k}}+r^{c;a}_{nm\mathbf{k}}r^{b}_{mn\mathbf{k}},
+ \end{equation}
+ \begin{equation}
+  {I_{5}}^{abc}_{mn\mathbf{k}}=\frac{\Lambda^{a}_{nm\mathbf{k}}\left[r^{b}_{mn\mathbf{k}}r^{c}_{nm\mathbf{k}}+r^{c}_{mn\mathbf{k}}r^{b}_{nm\mathbf{k}}\right]}{\omega_{mn\mathbf{k}}},
+ \end{equation}
+\end{subequations}
+and the one-band transition matrix elements in Eq.~\ref{eq:shgtracond} are defined as
+\begin{subequations}
+ \begin{equation}
+  {I_{1}}^{abc}_{n\mathbf{k}}=\left(\frac{\partial f_{n\mathbf{k}}}{\partial k^{b}}\varepsilon_{dac}+\frac{\partial f_{n\mathbf{k}}}{\partial k^{c}}\varepsilon_{dab}\right)\Omega^{d}_{n\mathbf{k}}=\frac{\partial f_{n\bm{k}}}{\partial\varepsilon_{n\mathbf{k}}}\left[\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{b}}\epsilon_{dac}+\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{c}}\epsilon_{dab}\right]\Omega^{d}_{n\mathbf{k}},
+ \end{equation}
+ \begin{equation}
+  {I_{2}}^{abc}_{n\mathbf{k}}=v^{a}_{n\mathbf{k}}\frac{\partial^{2}f_{n\mathbf{k}}}{\partial k^{b}\partial k^{c}}=v^{a}_{n\mathbf{k}}\left(\frac{\partial^{2}f_{n\mathbf{k}}}{\partial\varepsilon^{2}_{n\mathbf{k}}}\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{b}}\frac{\partial\varepsilon_{n\mathbf{k}}}{\partial k^{c}}+\frac{\partial f_{n\mathbf{k}}}{\partial\varepsilon_{n\mathbf{k}}}\frac{\partial^{2}\varepsilon_{n\mathbf{k}}}{\partial k^{b}\partial k^{c}}\right).
+ \end{equation}
+\end{subequations}
+
+All the quantities appearing in these expressions above have been introduced in Sec.~\ref{sec:eps} except for $r^{a;b}_{nm\mathbf{k}}\equiv r^{a;b}_{nm}(\mathbf{k})$, which is the generalized derivative of the interband dipole matrix element (see Eq.~\ref{eq:gen-der}), and $\Lambda^{a}_{nm\mathbf{k}}\equiv\partial\omega_{nm\mathbf{k}}/\partial k^{a}\equiv v^{a}_{m\mathbf{k}}-v^{a}_{n\mathbf{k}}$ with $v^{a}_{n\mathbf{k}}\equiv\partial(\varepsilon_{n\mathbf{k}}/\hbar)/\partial k^{a}$ the band velocity matrix element. ${I_{1}}^{abc}_{n\mathbf{k}}$ transition matrix elements are related to the Berry curvature dipole (see the overview of the \verb|gyroptropic| module) and ${I_{2}}^{abc}_{n\mathbf{k}}$ transition matrix elements are of semiclassical character~\cite{PhysRevLett.115.216806} with the presence of the band inverse effective mass matrix element, $\partial^{2}\varepsilon_{n\mathbf{k}}/(\partial k^{a}\partial k^{b})$. Both one-band terms include the presence of the linear and quadtratic derivatives of the Fermi-Dirac occupation distribution functions, leading to Fermi-surface integrations that will only contribute for metals. In the low-temperature limit ($T\to0$), these functions are modeled by Gaussian functions with a standard deviation equal to the temperature-dependent smearing energy $\sigma_{T}=k_{\mathrm{B}}T$ and the temperature is controlled by means of the parameter $T$ (in K) using the keyword {\tt temperature}.
+
+As for the shift current contribution (see Sec.~\ref{sec:sc}), the SHG two-band transition matrix elements in Eqs.~\ref{eq:shg2b1tme}, \ref{eq:shg2b2tme} and \ref{eq:shg2b4tme} include the evaluation of the generalzed derivative of the interband dipole matrix element whose implementation was proposed in Ref.~\cite{ibanez-azpiroz_ab_2018}. In addition, in the SHG three-band transition matrix element in Eq.~\ref{eq:shg3btme}, the energy denominators involve virtual intermediate states that are regularized as principal values by means of a smearing factor $\eta_{r}$ controlled by the keyword {\tt sc\_eta} in order to avoid numerical divergent problems caused by near degeneracies. Practically, we perform the following regularization procedure
+\begin{equation}
+ \frac{1}{\omega_{ln\mathbf{k}}-\omega_{ml\mathbf{k}}}\to\frac{\omega_{ln\mathbf{k}}-\omega_{ml\mathbf{k}}}{\left(\omega_{ln\mathbf{k}}-\omega_{ml\mathbf{k}}\right)^{2}+\eta^{2}_{r}}.
+\end{equation}
+
+As for the linear response theory, the energy denominators of the type $1/\omega_{mn\mathbf{k}}-\tilde{\omega}$ and those of the type $1/\tilde{\omega}$ in Eqs.~\ref{eq:shgtersusc} and \ref{eq:shgtracond} are controlled by different parameters (see Sec.~\ref{sec:eps}). 
+
+Please cite Ref.~\cite{garcia-goiricelaya-prb23} when publishing second-harmonic-generation results using this method.
