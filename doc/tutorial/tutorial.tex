@@ -3795,6 +3795,261 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 
 \end{itemize}
 
+\sectiontitle{34: Sodium - Linear optical response and optical plasmon peak}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate the linear optical response of the metallic bcc bulk sodium within the independent-particle approximation. From the optical dielectric function, calculate the electron energy loss function and visualize the plasmon peak. In preparation for this example it may be useful to read Ref.~\cite{garcia-goiricelaya-prb23} or the Overview of the {\tt berry} module of the User Guide~\cite{UserGuide}.}
+
+\item Directory: \verb|examples/example34/|
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|Na.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|Na.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|Na.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|Na.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+\item[--] \verb|run_eel.py| \textit{The post-processing file for calculating the electron energy loss function} 
+
+\end{itemize}
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Sodium
+
+\verb|pw.x < Na.scf > scf.out|
+
+\item Run {\tt PWSCF} to obtain the ground state of Sodium
+
+\verb|pw.x < Na.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|Na.nnkp| file)
+
+\verb|wannier90.x -pp Na|
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
+Bloch states (written in the \verb|Na.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|Na.amn| file)
+\end{itemize}
+
+\verb|pw2wannier90.x < Na.pw2wan > pw2wan.out|
+
+\item Run {\tt wannier90} to compute MLWFs
+
+\verb|wannier90.x Na|
+
+\item Run {\tt postw90} to compute the linear optical response
+
+\verb|postw90.x Na| (serial execution)
+
+\verb|mpirun -np 8 postw90.x Na| (example of parallel execution with 8 MPI processes)
+
+\item Run \verb|run_eel.py| to compute the electron energy loss function
+
+\verb|python3 run_eel.py|
+
+\end{enumerate}
+
+\subsection*{Linear optical response}
+
+The linear optical response tensor of Na is diagonal and isotropic with only one independent component that is finite, namely $\varepsilon^{xx}(\omega)\equiv\varepsilon^{yy}(\omega)\equiv\varepsilon^{zz}(\omega)$ for the dielectric function, due to its cubic crystal structure. For its computation, set
+\begin{verbatim}
+berry = true
+berry_task = eps
+\end{verbatim}
+In this step, the linear optical susceptibility, conductivity and dielectric function are calculated, all of them being frequency-dependent quantities. 
+The frequency window and step are controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and \verb|kubo_freq_step|, as explained in the User Guide. 
+
+The linear optical response requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|, which has been set to 
+\begin{verbatim}
+berry_kmesh = 100 100 100
+ \end{verbatim}
+We also need to input the value of the Fermi level in eV:
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+For interband transitions \{see Eq.~(B1a) of Ref.~\cite{garcia-goiricelaya-prb23}\}, \textit{i.e.~}terms involving energy denominators of the type $1/(\omega_{m\mathbf{k}}-\omega_{n\mathbf{k}}-\omega)$ with $\hbar\omega_{n\mathbf{k}}\equiv\varepsilon_{n}$ being the eigenvalue for the state with crystal momentum $\mathbf{k}$ and band index $n$, one can use a fixed smearing parameter controlled by the keyword \verb|[kubo]smr_fixed_en_width| or an adaptative smearing parameter employing the keyword \verb|[kubo]adpt_smr|.
+On the contrary, for intraband transitions \{see Eq.~(B1b) of Ref.~\cite{garcia-goiricelaya-prb23}\}, \textit{i.e.~}terms involving energy denominators of the type $1/\omega$, one must use a fixed smearing parameter controlled by the keyword \verb|smr_gamma|, since no adaptative smearing can be used in this case.
+The default values of \verb|[kubo]adpt_smr| and \verb|smr_gamma| are set to \verb|true| and $0.1~\mathrm{eV}$, respectively.
+In the case of non-adaptative smearing for interband transitions, one has to set the keyword \verb|[kubo]adpt_smr| to \verb|false| and use a finite value for \verb|[kubo]smr_fixed_en_width|.
+Moreover, intraband transitions involve Fermi-surface integrations, and therefore, derivatives of the Fermi-Dirac occupation distribution functions in the Brillouin-zone integration. These derivatives are modeled by Gaussian functions whose smearing values are dependent on the temperature parameter controlled by the keyword \verb|temperature| with a default value equal to $0~\mathrm{K}$. For this calculation, set 
+
+\begin{verbatim}
+ temperature = 300
+\end{verbatim}
+
+\begin{figure}[h]
+\centering
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./na_eps.pdf}}
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./na_eel.pdf}}
+\caption{(a) Real and imaginary parts of the optical dielectric function and (b) electron energy loss function of bulk sodium. The real part of the dielectric function crosses the energy axis at $\omega\approx5.8~\mathrm{eV}$.}
+\label{fig:na_epseel}
+\end{figure}
+
+On output, the program generates a set of 9 files named \verb|Na-eps_**.dat|, 
+which correspond to the different tensor components of the linear response.
+For plotting the only finite dimensionless optical dielectric component $\varepsilon^{xx}(\omega)$ as in the left panel of Fig.~\ref{fig:na_epseel},
+
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'Na-eps_xx.dat' u 1:6 w l
+gnuplot> replot 'Na-eps_xx.dat' u 1:7 w l
+\end{verbatim}
+
+In addition, to calculate the electron energy loss (EEL) function, \textit{i.e.~}$-\mathrm{Im}[\varepsilon^{xx}(\omega)]^{-1}$, run the python script \verb|run_eel.py| which writes as output a set of files named \verb|Na-eel_**.dat|. For plotting the EEL function as in the right panel of Fig.~\ref{fig:na_epseel},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'Na-eel_xx.dat' u 1:2 w l
+\end{verbatim}
+
+\end{itemize}
+
+\sectiontitle{35: Gallium Arsenide -- Nonlinear second-harmonic generation and many-body effects}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate the nonlinear second-harmonic generation of inversion asymmetric fcc Gallium Arsenide and include into it many-body excitonic effects. In preparation for this example it may be useful to read Ref.~\cite{garcia-goiricelaya-prb23} and/or the Overview of the {\tt berry} module of the User Guide~\cite{UserGuide}.}
+
+\item Directory: \verb|examples/example35/|
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|GaAs.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|GaAs.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|GaAs.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|GaAs.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+
+\end{itemize}
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.scf > scf.out|
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|GaAs.nnkp| file)
+
+\verb|wannier90.x -pp GaAs|
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
+Bloch states (written in the \verb|GaAs.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|GaAs.amn| file)
+\end{itemize}
+
+\verb|pw2wannier90.x < GaAs.pw2wan > pw2wan.out|
+
+\item Run {\tt wannier90} to  compute MLWFs
+
+\verb|wannier90.x GaAs|
+
+\item Run {\tt postw90} to compute nonlinear second-harmonic generation
+
+\verb|postw90.x GaAs| (serial execution)
+
+\verb|mpirun -np 8 postw90.x GaAs| (example of parallel execution with 8 MPI processes)
+
+\item Include many-body excitonic effects into the second-harmonic generation \textit{via} an attractive Coulomb-like long-range contribution to the tensorial exchange-correlation kernel:
+
+\begin{itemize}
+\item[--] Please, answer the questions that the script launches. For best performance, use the self-consistent bootstrap calculation of the coefficients governing the static Coulomb-like long-range contribution to the tensorial exchange-correlation kernel.
+\end{itemize}
+
+\verb|python3 utility/mb.py|
+
+\end{enumerate}
+
+\subsection*{Second-harmonic generation $\chi^{abc}$ and/or $\sigma^{abc}$}
+
+The second-harmonic generation tensor of GaAs has only one independent component that is finite, namely $\chi^{xyz}$ for susceptibility and $\sigma^{xyz}$ for conductivity. For its computation, set
+\begin{verbatim}
+berry = true
+berry_task = shg
+\end{verbatim}
+Nevertheless, as this tutorial also looks for the inclusion of many-body excitonic effects, it is also necessary to compute the linear optical response. Hence, it is recommended to set
+\begin{verbatim}
+berry_task = eps+shg
+\end{verbatim}
+Like the linear optical response and the shift current, the second-harmonic generation is a frequency-dependent quantity. The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and \verb|kubo_freq_step|, as explained in the User Guide. 
+
+The second-harmonic generation requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|, which has been set to 
+\begin{verbatim}
+berry_kmesh = 100 100 100
+ \end{verbatim}
+We also need to input the value of the Fermi level in eV:
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+As for shift current, due to the sum over intermediate states involved in the calculation of several second-harmonic generation terms, one needs to consider a small broadening parameter to avoid numerical problems due to possible degeneracies \{see parameter $\eta$ in Eq.~(36) of Ref.~\cite{ibanez-azpiroz_ab_2018} and related discussion\}. This parameter is controlled by \verb|sc_eta|. It is normally found that values between $0.01~\mathrm{eV}$ and $0.1~\mathrm{eV}$ yield an stable spectrum. The default value is set to $0.04~\mathrm{eV}$. Likewise, \verb|sc_phase_conv| controls the phase convention used for the Bloch sums (see Ref.~\cite{pythtb}). Note that the overall second-harmonic generation spectrum does not depend on the chosen convention, but the individual terms that compose it do.
+
+Regarding how to account for interband and intraband transitions of the second-harmonic generation \{see Eqs.(22a) and (22b) of Ref.~\cite{garcia-goiricelaya-prb23}\}, one can refer to the linear optical response tutorial where these details are already explained. Just add that since GaAs is a semiconductor with a gap, there is no Fermi surface, and therefore, no need of accounting for temperature. Nevertheless, in the case of metals or semimetals, it is highly recommended to set a finite temperature, in order to account for Fermi-surface contributions.
+
+Finally, at room temperature, the band-gap energy of GaAs is equal to $1.42~\mathrm{eV}$~\cite{PhysRevB.45.1638}. Since the band gap is often under estimated by LDA/GGA calculations, a scissors shift is applied to recover the experimental band gap by using the following keywords
+\begin{verbatim}
+ scissors_shift = [insert your value here]
+ num_bands = 4
+\end{verbatim}
+
+On output, the program generates a set of 18 files named \verb|SEED-shg_***.dat|. In order to include the many-body excitonic effects in the static long-range limit, we recommend to run the \verb|python| script \verb|mb.py| in the \verb|utility| folder, which writes as output a new set of 18 files named \verb|SEED-shg-mb_***.dat|. For both sets, the 18 files correspond to the different tensor components of the second-harmonic generation (note that the 9 remaining components until totaling $3\times3\times3=27$ can be obtained from the 18 outputed by taking into account that $\alpha^{abc}$ and $\sigma^{abc}$ are both symmetric under $b\leftrightarrow c$ index exchange).
+
+\begin{figure}[h]
+\centering
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./gaas_shg_chi.pdf}}
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./gaas_shg_sigma.pdf}}
+\caption{Absolute value of the second-harmonic generation (a) susceptibility and (b) conductivity of bulk GaAs. Comparison between the Kohn-Sham (KS) picture within independent-quasiparticle appoximation (IQA) and the many-body (MB) picture within the long-range contribution (LRC) to the tensorial exchange-correlation kernel.}
+\label{fig:gaas_shg}
+\end{figure}
+
+For plotting the only finite second-harmonic generation susceptibility component of GaAs $\chi^{xyz}$ (units of pm/V) as in the left panel of Fig.~\ref{fig:gaas_shg},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-shg_xyz.dat' u 1:(sqrt($2**2+$3**2)) w l
+gnuplot> replot 'GaAs-shg-mb_xyz.dat' u 1:(sqrt($2**2+$3**2)) w l
+\end{verbatim}
+In addition, for plotting the only finite second-harmonic generation conductivity component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as in the right panel of Fig.~\ref{fig:gaas_shg},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-shg_xyz.dat' u 1:(sqrt($4**2+$5**2)) w l
+gnuplot> replot 'GaAs-shg-mb_xyz.dat' u 1:(sqrt($4**2+$5**2)) w l
+\end{verbatim}
+
+\begin{figure}[h]
+\centering
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./gaas_eps_re.pdf}}
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./gaas_eps_im.pdf}}
+\caption{(a) Real and (b) imaginary parts of the linear dielectric function of bulk GaAs. Comparison between the Kohn-Sham (KS) picture within independent-quasiparticle appoximation (IQA) and the many-body (MB) picture within the long-range contribution (LRC) to the tensorial exchange-correlation kernel.}
+\label{fig:gaas_eps}
+\end{figure}
+
+Note that the inclusion of many-body excitonic effects within the static long-range approximation can be also done for the linear optical response and the nonlinear shif current using the \verb|python| script \verb|mb.py|. In fact, the inclusion of many-body effects into both nonlinear responses needs the inclusion into the linear response. For plotting the only finite component of the real part of the dimensionless linear optical dielectric function of GaAs $\varepsilon^{xx}\equiv\varepsilon^{yy}\equiv\varepsilon^{zz}$ as in the left panel of Fig.~\ref{fig:gaas_eps},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-eps_xx.dat' u 1:2 w l
+gnuplot> replot 'GaAs-eps-mb_xx.dat' u 1:2 w l
+\end{verbatim}
+And for the imaginary part as in the right panel of Fig.~\ref{fig:gaas_eps},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-eps_xx.dat' u 1:3 w l
+gnuplot> replot 'GaAs-eps-mb_xx.dat' u 1:3 w l
+\end{verbatim}
+
+\end{itemize}
 
 %\cleardoublepage
 

@@ -1,0 +1,28 @@
+&control
+ calculation='scf',
+ verbosity='high',
+ restart_mode='from_scratch',
+ prefix='Na',
+ pseudo_dir='../../pseudo/',
+ outdir='./',
+ wf_collect=.true.,
+/
+&system
+ ibrav=3,
+ celldm(1)=8.11, 
+ nat=1,
+ ntyp=1,                                
+ ecutwfc=50,     
+ occupations='smearing',
+ smearing='methfessel-paxton',
+ degauss=0.02d0,
+/
+&electrons
+ conv_thr=1.0e-13,
+/
+ATOMIC_SPECIES
+Na 11 Na.pz-nlcc-sr-nc.UPF
+ATOMIC_POSITIONS 
+Na  0.000000  0.000000  0.000000 0 0 0
+K_POINTS {automatic} 
+16 16 16 0 0 0 

@@ -89,8 +89,8 @@ The currently available modules in \texttt{postw90.x} are:
   integral of the Berry curvature, Berry connection and 
   Berry curvature-like term of spin Hall conductivity, including
   anomalous Hall conductivity, orbital magnetisation, optical
-  conductivity, nonlinear shift current and spin Hall conductivity
-  (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29 and 30 of the
+  conductivity, nonlinear shift current, spin Hall conductivity, optical dielectric tensor and nonlinear second-harmonic generation
+  (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29, 30, 34 and 35 of the
   tutorial). It also includes an option to compute $k\cdot p$ expansion coefficients
   (see Sec.~\ref{sec:kdotp} and example 33 of the tutorial).
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
@@ -155,6 +155,8 @@ magnetic moment per cell\\
 {\sc spn\_formatted}  & L & 
   Read a formatted {\tt seedname.spn} file\\
   {\sc berry\_curv\_unit} & S & Unit of Berry curvature\\ 
+  {\sc temperature} & P & Temperature for Fermi-Dirac occupation distribution functions and their derivatives (K)\\
+  {\sc smr\_gamma} & P & Energy smearing -- intraband terms \\
  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]  {{\tt
@@ -720,6 +722,33 @@ If {\tt sc\_use\_eta\_corr=true}, apply the finite-eta correction of the shift c
 
 The default value is {\tt true}.
 
+\subsection{\tt logical :: temperature}
+
+The temperature $T$ is used for Fermi-Dirac occupation distribution functions by means of a temperature-dependent smearing energy $\sigma_{T}=k_{\mathrm{B}}T$, with $k_{\mathrm{B}}$ being the Boltzmann constant, as
+%
+$$
+f_{n\mathbf{k}}\equiv f(\varepsilon_{n\mathbf{k}})=\frac{1}{1+\exp[(\varepsilon_{n\mathbf{k}}-\varepsilon_F)/\sigma_{T}]},
+$$
+%
+where $\varepsilon_F$ is the Fermi energy.
+In the low-temperature limit ($T\to0$), the derivatives of the occupation distributions can be described by ``broadened'' Dirac delta functions; $\overline{\delta}(\varepsilon_{n\mathbf{k}}-\varepsilon_F)$. These functions can be analytically modeled by Gaussian functions with standard deviations equal to the temperature-dependent smearing energy $\sigma_{T}=k_{\mathrm{B}}T$. At first order, the derivatives of the Fermi-Dirac occupation distribution functions are modeled as
+$$
+f'_{n\mathbf{k}}\equiv\frac{\partial f_{n\mathbf{k}}}{\partial\varepsilon_{n\mathbf{k}}}=-\overline{\delta}(\varepsilon_{n\mathbf{k}}-\varepsilon_F)=-\frac{\exp[-(\varepsilon_{n\mathbf{k}}-\varepsilon_F)^{2}/(2\sigma^{2}_{T})]}{\sigma_{T}\sqrt{2\pi}},
+$$
+and at second order as
+$$
+f''_{n\mathbf{k}}\equiv\frac{\partial^{2} f_{n\mathbf{k}}}{\partial\varepsilon^{2}_{n\mathbf{k}}}=-\frac{\varepsilon_{n\mathbf{k}}-\varepsilon_F}{\sigma^{2}_{T}}\times-\frac{\exp[-(\varepsilon_{n\mathbf{k}}-\varepsilon_F)^{2}/(2\sigma^{2}_{T})]}{\sigma_{T}\sqrt{2\pi}}=-\frac{\varepsilon_{n\mathbf{k}}-\varepsilon_F}{\sigma^{2}_{T}}f'_{n\mathbf{k}}.
+$$
+
+The above functions are used in the linear optical response and second-harmonic generation calculations for metals and semimetals.
+
+The default value is $0~\mathrm{K}$ (\textit{i.e.~}, step-function occupations are used). Note that a finite temperature $(T>0~\mathrm{K})$ is always needed in order to account for Fermi-surface integrations.
+
+\subsection{\tt logical :: smr\_gamma}
+
+Energy width for the smearing function of intraband excitations governed by $1/\omega$ inverse functions for the linear optical response and the second-harmonic generation. Useful for avoiding divergences in the static limit $\omega=0$.
+
+The units are eV. The default value is $0.1~\mathrm{eV}$.
 
 \clearpage
 \section{DOS}
@@ -1210,7 +1239,6 @@ Output files:
   
 \end{itemize}
 
-
 \item[{\bf --}] \verb#shc# Spin Hall conductivity (SHC), in $(\hbar/e)$S/cm.  Output files:
 
 	\begin{itemize}
@@ -1238,6 +1266,31 @@ Output files:
 \item[$\cdot$] {\tt seedname-kdotp\_{\{0,1,2\}.dat}}
   (data files);  respectively, the zeroth, first and second order $k\cdot p$ expansion coefficients,
   in units of eV, eV$\cdot$\AA, and  eV$\cdot$\AA$^{2}$.
+  
+\end{itemize}
+
+\item[{\bf --}] \verb#eps# Linear ptical response. Output files:
+
+\begin{itemize}
+
+\item[$\cdot$] {\tt seedname-eps\_{\{xx,xy,xz,yx,yy,yz,zx,zy,zz\}.dat}}
+  (data files).
+  First column: optical frequency $\hbar\omega$ in
+  eV. Second \& third columns: real and imaginary parts, respectively, of the dimensionless optical susceptibility $\chi^{ab}(\hbar\omega)$. Fourth \& fifth columns: real and imaginary parts, respectively, of the optical conductivity $\sigma^{ab}(\hbar\omega)$ in S/cm. Sixth \& seventh columns: real and imaginary parts, respectively, of the dimensionless optical dielectric tensor $\varepsilon^{ab}(\hbar\omega)$.
+  
+\end{itemize}
+
+\item[{\bf --}] \verb#shg# Nonlinear second-harmonic generation. Output files:
+
+\begin{itemize}
+
+\item[$\cdot$] {\tt seedname-shg\_{\{xxx,xxy,xxz,...\}.dat}}
+  (data files).  The second-harmonic generation is described by a $3\times3\times3$ tensor $\chi^{abc}$ or $\sigma^{abc}$. 
+  The program outputs a set of 18 files, and the 9 remaining components 
+  can be obtained by taking into account that $\sigma^{abc}$ is 
+  symmetric under $b\leftrightarrow c$ index exchange.
+  First column: optical frequency $\hbar\omega$ in
+  eV. Second \& third columns: real and imaginary parts, respectively, of the nonlinear second-harmonic generation susceptibility $\chi^{abc}(\hbar\omega)$ in pm/V. Fourth \& fifth columns: real and imaginary parts, respectively, of the nonlinear second-harmonic generation conductivity $\sigma^{abc}(\hbar\omega)$ in A/V$^{2}$. 
   
 \end{itemize}
 

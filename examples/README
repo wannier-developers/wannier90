@@ -75,4 +75,8 @@ example31: Platinum - Selected columns of density matrix algorithm for spinor wa
 
 example32: Tungsten - SCDM parameters from projectability 
 
-example33: BC2N - Expansion coefficients for kdotp bands 
+example33: BC2N - Expansion coefficients for kdotp bands
+
+example34: Sodium - Linear optical response and optical plasmon peak
+
+example35: Gallium Arsenide - Nonlinear second-harmonic generation and many-body effects

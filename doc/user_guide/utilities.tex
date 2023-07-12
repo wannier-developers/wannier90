@@ -303,3 +303,65 @@ you do not want to rerun \texttt{pw2wannier90.x}, then
 \texttt{w90spn2spn.x} can be useful. 
 Also, once a ``formatted'' \verb|seedname.spn| has been generated, the step 4 can be skipped if 
 \texttt{spn\_formatted} is set to \texttt{true} in \postw\ input file \verb|seedname.win|.
+
+\section{$\tt{mb.py}$\label{sec:mb}}
+This utility allows to incorporate many-body excitonic effects into the independent-particle linear and quadratic optical responses by means of time-dependent current-density functional theory including the electron-hole attraction \textit{via} a tensorial long-range exchange-correlation kernel, as explained in Ref.~\cite{garcia-goiricelaya-prb23}.
+
+At first order, the utility requires the linear optical response file, {\tt seedname-eps\_ij.dat}, where the $ij$ components of the complex linear optical susceptibility and conductivity and those of the complex optical dielectric tensor within the independent-particle approximation are written as a function of energy. At the microscopic (m) level, the optical dielectric tensor including long-range excitonic effects reads as
+\begin{equation}
+ \varepsilon^{ab}_{\mathrm{m}}(\omega)=\delta_{ab}+\sum_{c}\left(\delta_{ac}-\frac{\alpha^{ac}_{\mathrm{LRC}}}{4\pi}\right)\chi^{cb}(\omega),
+\end{equation}
+with the coefficients $\alpha^{ab}_{\mathrm{LRC}}$ governing the screening of the attractive Coulomb-like potential acting as the long-range contribution (LRC) of the tensorial exchange-correlation kernel. At the macroscopic (M) level, the inverse of the optical dielectric tensor including long-range excitonic effects reads as
+\begin{equation}
+ \varepsilon^{-1,ab}_{\mathrm{M}}(\omega)=\delta_{ab}-\chi_{\mathrm{m}}^{ab}(\omega),
+\end{equation}
+where the linear optical susceptibility including long-range excitonic effects at the microscopic and macroscopic levels are given, respectively, by
+\begin{subequations}
+ \begin{equation}
+  \chi_{\mathrm{m}}^{ab}(\omega)=\sum_{c}\chi^{ac}(\omega)\varepsilon^{cb}_{\mathrm{m}}(\omega),
+ \end{equation}
+ \begin{equation}
+  \chi_{\mathrm{M}}^{ab}(\omega)=\sum_{c}\chi_{\mathrm{m}}^{ac}(\omega)\varepsilon^{cb}_{\mathrm{M}}(\omega).
+ \end{equation}
+\end{subequations}
+In the first two equations, all magnitudes are evaluated in atomic units in order to ensure optical dielectric tensors are dimensionless. In the last two equations, long-range excitonic effects are included into the optical susceptibility, as it can be also done for the optical conductivity.
+
+As output, the utility writes the $ij$ components of the complex linear optical susceptibility and conductivity and those of the complex optical dielectric tensor including long-range excitonic effects in the files {\tt seedname-eps-mb\_ij.dat}.
+
+At second order, the utility requires the linear optical response file, {\tt seedname-eps\_ij.dat}, and the quadratic optical response file: in the case of shift-current, the file {\tt seedname-sc\_ijk.dat}, and in the case of second-harmonic generation, the file {\tt seedname-shg\_ijk.dat}, where the $ijk$ components of the complex quadratic optical susceptibility and conductivity within the independent-particle approximation are written as a function of energy. The quadratic optical susceptibility tensor including only linear long-range excitonic effects at the microscopic and macroscopic level, respectively, read as
+\begin{subequations}
+ \begin{equation}
+  \chi^{abc}_{\mathrm{m}}(\omega_{12};\omega_{1},\omega_{2})=\sum_{def}\varepsilon^{-1,ad}_{\mathrm{m}}(\omega_{12})\chi^{def}(\omega_{12};\omega_{1},\omega_{2})\varepsilon^{-1,eb}_{\mathrm{m}}(\omega_{1})\varepsilon^{-1,fc}_{\mathrm{m}}(\omega_{2}),
+ \end{equation}
+ \begin{equation}
+  \chi^{abc}_{\mathrm{M}}(\omega_{12};\omega_{1},\omega_{2})=\sum_{def}\varepsilon^{ad}_{\mathrm{M}}(\omega_{12})\chi^{def}_{\mathrm{m}}(\omega_{12};\omega_{1},\omega_{2})\varepsilon^{eb}_{\mathrm{M}}(\omega_{1})\varepsilon^{fc}_{\mathrm{M}}(\omega_{2}),
+ \end{equation}
+\end{subequations}
+where quadratic long-range excitonic effects (\textit{i.e.}, exchange-correlation kernels at second order) are neglected because even their expression is unknown.
+
+As output, the utility writes the $ijk$ components of the quadratic optical susceptibility and conductivity including long-range excitonic effects in the files {\tt seedname-sc-mb\_ijk.dat} and {\tt seedname-shg-mb\_ijk.dat} for the shift current and second-harmonic generation contributions, respectively.
+
+A typical use is the following:
+
+\begin{verbatim}
+\$> path/mb.py
+\end{verbatim}
+
+where \verb|path| is the utility folder. Once executed:
+
+\begin{enumerate}
+ \item The user is asked to write the \verb|seedname| of the calculation
+ \item The user is asked to choose an optical process. The valid options are:
+ \begin{enumerate}
+  \item \verb|eps|: linear optical response
+  \item \verb|sc|: shift current contribution to the quadratic optical response
+  \item \verb|shg|: second-harmonic-generation contribution to the quadratic optical response
+ \end{enumerate}
+ \item Depending on the chosen optical process, it is checked if all the necessary files are present and if they have the same energy values in the same energy range. Then, the user is asked to choose the procedure for estimating the long-range excitonic screening coefficients $\alpha^{ab}_{\mathrm{LRC}}$:
+ \begin{enumerate}
+  \item A non-selfconsistent bootstrap calculation, also known as RPA-bootstrap (RBO)~\cite{PhysRevLett.114.146402,PhysRevLett.115.137402}
+  \item A self-consistent bootstrap calculation (BO)~\cite{PhysRevLett.107.186401}
+  \item Empirical values
+ \end{enumerate}
+ \item If the non-selfconsistent or the self-consistent bootstrap procedure is chosen, the user is asked wether the material is metallic. If yes, the user is informed that bootstrap approximations can not be used for metals, and the user must start again using empirical values. On the contrary, if the material is not metallic, bootstrap approximations can be used. Finally, the coefficients $\alpha^{ab}_{\mathrm{LRC}}$ of the used tensorial LRC exchange-correlation kernel are prompted, and the chosen optical response including long-range excitonic effects is written as output.
+\end{enumerate}

@@ -165,6 +165,8 @@ module w90_postw90_types
     integer :: kubo_nfreq
     complex(kind=dp), allocatable :: kubo_freq_list(:)
     real(kind=dp) :: kubo_eigval_max
+    real(kind=dp) :: temperature
+    real(kind=dp) :: smr_gamma
   end type pw90_berry_mod_type
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)

@@ -731,6 +731,7 @@ contains
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
         .and. index(pw90_berry%task, 'morb') == 0 &
         .and. index(pw90_berry%task, 'kubo') == 0 .and. index(pw90_berry%task, 'sc') == 0 &
+        .and. index(pw90_berry%task, 'eps') == 0 .and. index(pw90_berry%task, 'shg') == 0 &
         .and. index(pw90_berry%task, 'shc') == 0 .and. index(pw90_berry%task, 'kdotp') == 0) then
 
       call set_error_input(error, 'Error: value of berry_task not recognised in w90_wannier90_readwrite_read', comm)
@@ -825,6 +826,14 @@ contains
 
     pw90_berry%sc_eta = 0.04
     call w90_readwrite_get_keyword('sc_eta', found, error, comm, r_value=pw90_berry%sc_eta)
+    if (allocated(error)) return
+
+    pw90_berry%temperature = 0.d0
+    call w90_readwrite_get_keyword('temperature', found, error, comm, r_value=pw90_berry%temperature)
+    if (allocated(error)) return
+
+    pw90_berry%smr_gamma = 0.1
+    call w90_readwrite_get_keyword('smr_gamma', found, error, comm, r_value=pw90_berry%smr_gamma)
     if (allocated(error)) return
 
     pw90_berry%sc_w_thr = 5.0d0
@@ -2161,10 +2170,20 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :', '       F', '|'
       endif
+      if (index(pw90_berry%task, 'eps') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Linear Optical Response           :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Linear Optical Response           :', '       F', '|'
+      endif
       if (index(pw90_berry%task, 'sc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
+      endif
+      if (index(pw90_berry%task, 'shg') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Second-Harmonic Generation        :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Second-Harmonic Generation        :', '       F', '|'
       endif
       if (index(pw90_berry%task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       T', '|'
@@ -2188,6 +2207,11 @@ contains
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for optical responses           :', &
         pw90_extra_io%kubo_freq_step, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue for optical responses    :', pw90_berry%kubo_eigval_max, '|'
+      if (index(pw90_berry%task, 'eps') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width for intraband terms        :', pw90_berry%smr_gamma, '|'
+        if (pw90_berry%temperature > 1.0e-7_dp) &
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Temperature for occupations               :', pw90_berry%temperature, '|'
+      end if
       if (index(pw90_berry%task, 'sc') > 0) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing factor for shift current         :', pw90_berry%sc_eta, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for shift current      :', pw90_berry%sc_w_thr, '|'
@@ -2195,6 +2219,16 @@ contains
           trim(w90_readwrite_get_convention_type(pw90_berry%sc_phase_conv)), '|'
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for shift current   :', &
           pw90_berry%sc_use_eta_corr, '|'
+      end if
+      if (index(pw90_berry%task, 'shg') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width for intraband terms        :', pw90_berry%smr_gamma, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing factor for SHG                   :', pw90_berry%sc_eta, '|'
+        write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
+          trim(w90_readwrite_get_convention_type(pw90_berry%sc_phase_conv)), '|'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Finite eta correction for SHG             :', &
+          pw90_berry%sc_use_eta_corr, '|'
+        if (pw90_berry%temperature > 1.0e-7_dp) &
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Temperature for occupations               :', pw90_berry%temperature, '|'
       end if
       if (index(pw90_berry%task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1x,f8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
