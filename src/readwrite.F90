@@ -1106,6 +1106,8 @@ contains
     call w90_readwrite_get_keyword('kubo_freq_step', found, error, comm)
     call w90_readwrite_get_keyword('kubo_smr_fixed_en_width', found, error, comm)
     call w90_readwrite_get_keyword('kubo_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword('temperature', found, error, comm)
+    call w90_readwrite_get_keyword('smr_gamma', found, error, comm)
     call w90_readwrite_get_keyword('sc_eta', found, error, comm)
     call w90_readwrite_get_keyword('scissors_shift', found, error, comm)
     call w90_readwrite_get_keyword('sc_phase_conv', found, error, comm)
