@@ -149,11 +149,31 @@ tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
               (1.0e-4, None, 'gyro_z'),
                (1.0e-4, 1.0e+2, 'imcond'))
 
+[POSTW90_EPS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_eps_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-2, 1.0e+1, 're_chi'),
+               (1.0e-2, 1.0e+1, 'im_chi'),
+               (1.0e-0, 1.0e+2, 're_sigma'),
+               (1.0e-0, 1.0e+2, 'im_sigma'),
+               (1.0e-2, 1.0e+1, 're_eps'),
+               (1.0e-2, 1.0e+1, 'im_eps'))
+
 [POSTW90_SC_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_sc_dat.parse
 tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
                (1.0e-6, 1.0e+2, 'shiftcurr'))
+
+[POSTW90_SHG_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shg_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-0, 1.0e+1, 're_chi'),
+               (1.0e-0, 1.0e+1, 'im_chi'),
+               (1.0e-7, 1.0e-0, 're_sigma'),
+               (1.0e-7, 1.0e-0, 'im_sigma'))
 
 [POSTW90_KDOTP_OK]
 exe = ../../postw90.x
