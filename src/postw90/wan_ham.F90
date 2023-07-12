@@ -36,6 +36,8 @@ module w90_wan_ham
   public :: wham_get_eig_UU_HH_AA_sc_TB_conv
   public :: wham_get_eig_UU_HH_JJlist
   public :: wham_get_occ_mat_list
+  public :: wham_get_eig_del2eig
+  public :: wham_get_eig_del2eig_TB_conv
 
 contains
 
@@ -820,5 +822,339 @@ contains
     if (allocated(error)) return
 
   end subroutine wham_get_eig_UU_HH_AA_sc
+
+  subroutine wham_get_del2eig_a_b(deleig_a_b, num_wann, eig, delHH_a, delHH_b, delHH_a_b, UU, &
+                                  eta, pw90_band_deriv_degen, comm, error)
+    !===========================================!
+    !                                           !
+    !! Second band derivatives d^2E/(dk_a dk_b) !
+    !                                           !
+    !===========================================!
+
+    use w90_constants, only: dp
+    use w90_utility, only: utility_diagonalize, utility_rotate, utility_get_degen
+    use w90_postw90_types, only: pw90_band_deriv_degen_type
+    use w90_comms, only: w90comm_type
+
+    implicit none
+
+    ! Arguments
+    !
+    integer, intent(in)  :: num_wann
+    real(kind=dp), intent(in)  :: eig(:)
+    real(kind=dp), intent(in)  :: eta
+    complex(kind=dp), intent(in)  :: delHH_a(:, :), delHH_b(:, :), &
+                                     delHH_a_b(:, :), UU(:, :)
+    type(pw90_band_deriv_degen_type), intent(in)  :: pw90_band_deriv_degen
+
+    real(kind=dp), intent(out) :: deleig_a_b(:)
+
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in)  :: comm
+
+    !Misc
+    !
+    complex(kind=dp), allocatable              :: D_b(:, :), delHH_bar_a(:, :), &
+                                                  delHH_bar_b(:, :), delHH_bar_a_b(:, :), &
+                                                  mu_ten_a_b(:, :), dummy_rot(:, :)
+    real(kind=dp), allocatable              :: dummy_eig(:)
+    integer, allocatable              :: g(:)
+    integer                                        :: i, j
+
+    allocate (D_b(num_wann, num_wann), delHH_bar_a(num_wann, num_wann), &
+              delHH_bar_b(num_wann, num_wann), delHH_bar_a_b(num_wann, num_wann), &
+              mu_ten_a_b(num_wann, num_wann))
+
+    allocate (g(num_wann))
+
+    !Get bar-ed quantities.
+    delHH_bar_a = utility_rotate(delHH_a, UU, num_wann)
+    delHH_bar_b = utility_rotate(delHH_b, UU, num_wann)
+    delHH_bar_a_b = utility_rotate(delHH_a_b, UU, num_wann)
+
+    !Get degenerate level indices and dimensions for energy eigenvalues.
+    call utility_get_degen(eig, pw90_band_deriv_degen%degen_thr, g)
+
+    if (maxval(g) .GT. 1) then
+
+      !Degenerate band case.
+      !
+
+      !Define the anti-Hermitian matrix D_b as in Eq.(32) YWVS07.
+      !Here I have included a regularisation given by eta.
+      !It explains the (small) diference between the previous version of this routine and
+      !the deprecated routine wham_get_eig_deleig_massterm.
+      !
+      do i = 1, num_wann
+        do j = 1, num_wann
+          if (abs(eig(i) - eig(j)) .LE. pw90_band_deriv_degen%degen_thr) then
+            D_b(i, j) = 0.0_dp
+          else
+            D_b(i, j) = delHH_bar_b(i, j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
+          endif
+        enddo
+      enddo
+
+      !Compute Eq.(28) YWVS07.
+      !
+      mu_ten_a_b = matmul(delHH_bar_a, D_b)
+      mu_ten_a_b = delHH_bar_a_b + mu_ten_a_b + transpose(conjg(mu_ten_a_b))
+
+      !The mass tensor mu_ten_a_b must be diagonalized in the degenerate subspaces.
+      !The eigenvalues are the needed results.
+
+      do j = 1, num_wann      !For each eigenvalue,
+
+        if (g(j) .GT. 1) then !check degeneracy
+
+          allocate (dummy_rot(g(j), g(j)))
+          !and compute the eigenvalues of mu_ten_a_b in the
+          !degenerate band subspace. Then write
+          !them in the corresponding indices of deleig_a_b.
+          call utility_diagonalize(mu_ten_a_b(j:j + g(j) - 1, j:j + g(j) - 1), &
+                                   g(j), deleig_a_b(j:j + g(j) - 1), dummy_rot, error, comm)
+          if (allocated(error)) return
+          deallocate (dummy_rot)
+
+        elseif (g(j) .EQ. 0) then !Cycle for the other values on the degenerate subspace.
+
+          cycle
+
+        else !Nondegenerate eigenvalue case, just diagonal elements.
+
+          deleig_a_b(j) = real(mu_ten_a_b(j, j), dp)
+
+        endif
+
+      enddo
+
+    else
+
+      !Define the anti-Hermitian matrix D_b as in Eq.(32) YWVS07.
+      !
+      do i = 1, num_wann
+        do j = 1, num_wann
+          if (i .EQ. j) then
+            D_b(i, j) = 0.0_dp
+          else
+            D_b(i, j) = delHH_bar_b(i, j)*((eig(j) - eig(i))/((eig(j) - eig(i))**2 + eta**2))
+          endif
+        enddo
+      enddo
+
+      !Compute Eq.(28) YWVS07.
+      !The diagonal elements of this matrix are needed in this case.
+      !
+      mu_ten_a_b = matmul(delHH_bar_a, D_b)
+      mu_ten_a_b = delHH_bar_a_b + mu_ten_a_b + transpose(conjg(mu_ten_a_b))
+      do i = 1, num_wann
+        deleig_a_b(i) = real(mu_ten_a_b(i, i), dp)
+      enddo
+
+    endif
+
+  end subroutine wham_get_del2eig_a_b
+
+  !================================================!
+  subroutine wham_get_eig_del2eig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                  print_output, wannier_data, ws_distance, wigner_seitz, del2HH, delHH, HH, &
+                                  HH_R, u_matrix, UU, v_matrix, del2_eig, del_eig, eig, eigval, kpt, &
+                                  real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                  num_wann, num_valence_bands, effective_model, have_disentangled, &
+                                  seedname, stdout, timer, error, comm, eta)
+    !================================================!
+    !
+    !! Given a k point, this function returns eigenvalues E,
+    !! first derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a, and
+    !! second derivatives of the eigenvalues d^2E/dk_adk_b, using wham_get_del2eig_a_b
+    !
+    !================================================!
+
+    use w90_constants, only: dp
+    use w90_postw90_types, only: pw90_band_deriv_degen_type, wigner_seitz_type
+    use w90_comms, only: w90comm_type, mpirank
+    use w90_constants, only: dp, cmplx_0
+    use w90_get_oper, only: get_HH_R
+    use w90_io, only: io_file_unit
+    use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
+      ws_region_type, ws_distance_type, timer_list_type
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
+      pw90common_fourier_R_to_k
+    use w90_utility, only: utility_diagonalize
+
+    implicit none
+
+    ! arguments
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(print_output_type), intent(in) :: print_output
+    type(ws_region_type), intent(in) :: ws_region
+    type(w90comm_type), intent(in) :: comm
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    integer, intent(in) :: num_wann, num_kpts, num_bands, num_valence_bands
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
+
+    real(kind=dp), intent(in) :: kpt(3)!! the three coordinates of the k point vector (in relative coordinates)
+    real(kind=dp), intent(out) :: eig(num_wann)!! the calculated eigenvalues at kpt
+    real(kind=dp), intent(out) :: del_eig(num_wann, 3)
+    !! the calculated first derivatives of the eigenvalues at kpt [first component: band; second component: 1,2,3
+    !! for the derivatives along the three k directions]
+    real(kind=dp), intent(out) :: del2_eig(num_wann, 3, 3)
+    !! the calculated second derivatives of the eigenvalues at kpt [first component: band; second and third
+    !!component: 1,2,3 for the derivatives along the three k directions]
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: scissors_shift
+    real(kind=dp), intent(in) :: eta
+
+    complex(kind=dp), intent(out)   :: HH(:, :)
+    !! the Hamiltonian matrix at kpt
+    complex(kind=dp), intent(out) :: delHH(:, :, :)
+    !! the delHH matrix (first derivative of H) at kpt
+    complex(kind=dp), intent(out) :: del2HH(:, :, :, :)
+    !! the del2HH matrix (second derivative of H) at kpt
+    complex(kind=dp), intent(out)   :: UU(:, :)
+    !! the rotation matrix that gives the eigenvectors of HH
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :), v_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :) !  <0n|r|Rm>
+
+    character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: effective_model
+
+    ! I call it to be sure that it has been called already once,
+    ! and that HH_R contains the actual matrix.
+    ! Further calls should return very fast.
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  num_valence_bands, effective_model, have_disentangled, seedname, stdout, timer, &
+                  error, comm)
+    if (allocated(error)) return
+
+    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, num_wann, ws_region, wannier_data, &
+                                                real_lattice, mp_grid, ws_distance, wigner_seitz, &
+                                                error, comm, HH, delHH, del2HH)
+    if (allocated(error)) return
+    call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
+    if (allocated(error)) return
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 1), num_wann, eig, delHH(:, :, 1), delHH(:, :, 1), del2HH(:, :, 1, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 2), num_wann, eig, delHH(:, :, 1), delHH(:, :, 2), del2HH(:, :, 1, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 3), num_wann, eig, delHH(:, :, 1), delHH(:, :, 3), del2HH(:, :, 1, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 1), num_wann, eig, delHH(:, :, 2), delHH(:, :, 1), del2HH(:, :, 2, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 2), num_wann, eig, delHH(:, :, 2), delHH(:, :, 2), del2HH(:, :, 2, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 3), num_wann, eig, delHH(:, :, 2), delHH(:, :, 3), del2HH(:, :, 2, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 1), num_wann, eig, delHH(:, :, 3), delHH(:, :, 1), del2HH(:, :, 3, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 2), num_wann, eig, delHH(:, :, 3), delHH(:, :, 2), del2HH(:, :, 3, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 3), num_wann, eig, delHH(:, :, 3), delHH(:, :, 3), del2HH(:, :, 3, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+
+  end subroutine wham_get_eig_del2eig
+
+  !================================================!
+  subroutine wham_get_eig_del2eig_TB_conv(pw90_band_deriv_degen, del2HH, delHH, UU, &
+                                          eig, del2_eig, del_eig, num_wann, error, comm, eta)
+    !================================================!
+    ! modified version of wham_get_eig_del2eig for the TB convention
+    ! avoids recalculating del2HH, delHH and UU, works with input values
+    !
+    !! Given a k point, this function returns eigenvalues E,
+    !! first derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a, and
+    !! second derivatives of the eigenvalues d^2E/dk_adk_b, using wham_get_del2eig_a_b
+    !
+    !================================================!
+
+    use w90_postw90_types, only: pw90_band_deriv_degen_type
+    use w90_comms, only: w90comm_type
+
+    ! arguments
+    type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    integer, intent(in) :: num_wann
+
+    real(kind=dp), intent(out) :: del2_eig(num_wann, 3, 3)
+    real(kind=dp), intent(out) :: del_eig(num_wann, 3)
+    real(kind=dp), intent(in) :: eig(num_wann)
+    real(kind=dp), intent(in) :: eta
+
+    complex(kind=dp), intent(in) :: del2HH(:, :, :, :)
+    !! the del2HH matrix (second derivative of H) at kpt
+    complex(kind=dp), intent(in) :: delHH(:, :, :)
+    !! the delHH matrix (first derivative of H) at kpt
+    complex(kind=dp), intent(in) :: UU(:, :)
+    !! the rotation matrix that gives the eigenvectors of HH
+
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, num_wann, &
+                           pw90_band_deriv_degen, error, comm)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 1), num_wann, eig, delHH(:, :, 1), delHH(:, :, 1), del2HH(:, :, 1, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 2), num_wann, eig, delHH(:, :, 1), delHH(:, :, 2), del2HH(:, :, 1, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 1, 3), num_wann, eig, delHH(:, :, 1), delHH(:, :, 3), del2HH(:, :, 1, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 1), num_wann, eig, delHH(:, :, 2), delHH(:, :, 1), del2HH(:, :, 2, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 2), num_wann, eig, delHH(:, :, 2), delHH(:, :, 2), del2HH(:, :, 2, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 2, 3), num_wann, eig, delHH(:, :, 2), delHH(:, :, 3), del2HH(:, :, 2, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 1), num_wann, eig, delHH(:, :, 3), delHH(:, :, 1), del2HH(:, :, 3, 1), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 2), num_wann, eig, delHH(:, :, 3), delHH(:, :, 2), del2HH(:, :, 3, 2), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+    call wham_get_del2eig_a_b(del2_eig(:, 3, 3), num_wann, eig, delHH(:, :, 3), delHH(:, :, 3), del2HH(:, :, 3, 3), &
+                              UU, eta, pw90_band_deriv_degen, comm, error)
+    if (allocated(error)) return
+
+  end subroutine wham_get_eig_del2eig_TB_conv
 
 end module w90_wan_ham
