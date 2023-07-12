@@ -2735,10 +2735,7 @@ contains
 
           ! compute the interband term of linear conductivity (see Eq. (B1a) of GGKIA23)
           ! polarizability is passed to conductivity by multiplying it by -i*w and simplifying it
-          sigma_k_list(:, :, ifreq) = sigma_k_list(:, :, ifreq) &
-                                      - cmplx_i*occ_fac*I_nm_ter(:, :)*((eig(m) - eig(n)) &
-                                                                *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
-                                                                        - 1.d0)
+          sigma_k_list(:, :, ifreq) = sigma_k_list(:, :, ifreq)- cmplx_i*occ_fac*I_nm_ter(:, :)*((eig(m) - eig(n))*(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) - 1.d0)
         enddo
 
       enddo ! bands
