@@ -2737,7 +2737,8 @@ contains
           ! polarizability is passed to conductivity by multiplying it by -i*w and simplifying it
           sigma_k_list(:, :, ifreq) = sigma_k_list(:, :, ifreq) &
                                       - cmplx_i*occ_fac*I_nm_ter(:, :)*((eig(m) - eig(n)) &
-                                                          *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) - 1.d0)
+                                                                *(real(1.d0/(eig(m) - eig(n) - e1wmn), dp) + cmplx_i*pi*delta1wmn) &
+                                                                        - 1.d0)
         enddo
 
       enddo ! bands
@@ -3603,7 +3604,8 @@ contains
         ! compute the semiclassical 1-band intraband term of linear polarizability (see Eq. (22b) of GGKIA23)
         ! conductivity is passed to polarizability by multiplying it by 1/(-i*w)
         shg_alpha_k_list(:, :, ifreq) = shg_alpha_k_list(:, :, ifreq) &
-                                       - cmplx_i*0.25d0*I_n_tra_1(:, :)*(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)**2
+                                        - cmplx_i*0.25d0*I_n_tra_1(:, :) &
+                                        *(real(1.d0/e1w, dp) - cmplx_i*delta1w)*real(1.d0/e1w, dp)**2
 
         ! compute the semiclassical 1-band intraband term of linear conductivity (see Eq. (22b) of GGKIA23)
         shg_sigma_k_list(:, :, ifreq) = shg_sigma_k_list(:, :, ifreq) &
