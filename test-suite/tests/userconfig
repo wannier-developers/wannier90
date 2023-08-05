@@ -224,7 +224,15 @@ tolerance = ( (10., 1.0e-4, 'elcond_xx'),
 [POSTW90_NERNST_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_nernst_dat.parse
-tolerance = ( (1.0e-1, 5.0e-2, 'Nernst_T'))
+tolerance = ( (1.0e-1, 5.0e-2, 'tdf2_xxz'),
+              (1.0e-1, 5.0e-2, 'tdf2_xyz'),
+              (1.0e-1, 5.0e-2, 'tdf2_yyz'),
+              (1.0e-1, 5.0e-2, 'tdf2_xzz'),
+              (1.0e-1, 5.0e-2, 'tdf2_yzz'),
+              (1.0e-1, 5.0e-2, 'tdf2_zzz'),
+              (1.0e-1, 5.0e-2, 'tdf2_yxz'),
+              (1.0e-1, 5.0e-2, 'tdf2_zxz'),
+              (1.0e-1, 5.0e-2, 'tdf2_zyz'))
 
 [WANNIER90_DISENTANGLEMENT_SAWFS]
 exe = ../../wannier90.x

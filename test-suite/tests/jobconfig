@@ -424,11 +424,11 @@ program = WANNIER90_DISENTANGLEMENT_SAWFS
 inputs_args = ('H3S.win', '')
 output = H3S.wout
 
-# Test of the isothermal Nernst coefficient in NerWann
+# Test of the Nernst coefficient in NerWann
 [testpostw90_nerwann/]
 program = POSTW90_NERNST_OK
-inputs_args = ('ZnSe.win', '')
-output = ZnSe_Nernst_T.dat
+inputs_args = ('InSb.win', '')
+output = InSb_tdf2.dat
 
 [categories]
 wannier_only = testw90_*
