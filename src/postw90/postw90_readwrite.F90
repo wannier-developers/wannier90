@@ -54,7 +54,6 @@ module w90_postw90_readwrite
     logical :: global_kmesh_set
     ! [gp-end]
     character(len=4) :: boltz_2d_dir ! this could be local to read_boltzwann
-    character(len=4) :: ner_2d_dir ! nerwann
   end type pw90_extra_io_type
 
   public :: pw90_extra_io_type
@@ -186,7 +185,7 @@ contains
                                                 pw90_calculation%boltzwann, pw90_extra_io%boltz_2d_dir, stdout, &
                                                 seedname)
     call w90_wannier90_readwrite_read_nerwann(pw90_nerwann, eigval,pw90_extra_io%smear, &
-                                                pw90_calculation%nerwann,pw90_extra_io%ner_2d_dir, stdout, &
+                                                pw90_calculation%nerwann, stdout, &
                                                 seedname)
     call w90_wannier90_readwrite_read_energy_range(pw90_berry, pw90_dos, pw90_gyrotropic, dis_manifold, &
                                                    fermi_energy_list, eigval, pw90_extra_io, stdout, seedname)
@@ -1161,7 +1160,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_nerwann(pw90_nerwann, eigval,pw90_smearing, do_nerwann, &
-                                                    ner_2d_dir, stdout,seedname)
+                                                    stdout,seedname)
     !================================================!
     ! [gp-begin, Jun 1, 2012]
     ! General band interpolator (pw90_geninterp)
@@ -1176,7 +1175,6 @@ contains
     integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     logical, intent(in) :: do_nerwann
-    character(len=4), intent(out) :: ner_2d_dir
     character(len=50), intent(in)  :: seedname
 
     logical :: found, found2
@@ -1189,62 +1187,7 @@ contains
     pw90_nerwann%TDF_smearing%use_adaptive = .false.
 
 
-    ! 0 means the normal 3d case for the calculation of the response tensors
-    ! The other valid possibilities are 1,2,3 for x,y,z respectively
-    pw90_nerwann%dir_num_2d = 0
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_2d_dir', found,c_value=ner_2d_dir)
-    if (found) then
-      if (trim(ner_2d_dir) == 'no') then
-        pw90_nerwann%dir_num_2d = 0
-      elseif (trim(ner_2d_dir) == 'x') then
-        pw90_nerwann%dir_num_2d = 1
-      elseif (trim(ner_2d_dir) == 'y') then
-        pw90_nerwann%dir_num_2d = 2
-      elseif (trim(ner_2d_dir) == 'z') then
-        pw90_nerwann%dir_num_2d = 3
-      else
-        call io_error('Error: ner_2d_dir can only be "no", "x", "y" or "z".',stdout, seedname)
-      end if
-    end if
 
-    pw90_nerwann%mu_min = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_min', found,r_value=pw90_nerwann%mu_min)
-    if ((.not. found) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_mu_min provided',stdout, seedname)
-    pw90_nerwann%mu_max = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_max', found2,r_value=pw90_nerwann%mu_max)
-    if ((.not. found2) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_mu_max provided',stdout, seedname)
-    if (found .and. found2 .and. (pw90_nerwann%mu_max < pw90_nerwann%mu_min)) &
-      call io_error('Error: ner_mu_max must be greater than ner_mu_min', stdout,seedname)
-    pw90_nerwann%mu_step = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_mu_step', found,r_value=pw90_nerwann%mu_step)
-    if ((.not. found) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_mu_step provided',stdout, seedname)
-    if (found .and. (pw90_nerwann%mu_step <= 0._dp)) &
-      call io_error('Error: ner_mu_step must be greater than zero', stdout,seedname)
-
-    pw90_nerwann%temp_min = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_min', found, &
-                                   r_value=pw90_nerwann%temp_min)
-    if ((.not. found) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_temp_min provided',stdout, seedname)
-    pw90_nerwann%temp_max = -999._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_max', found2, &
-                                   r_value=pw90_nerwann%temp_max)
-    if ((.not. found2) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_temp_max provided',stdout, seedname)
-    if (found .and. found2 .and. (pw90_nerwann%temp_max < pw90_nerwann%temp_min)) &
-      call io_error('Error: ner_temp_max must be greater than ner_temp_min',stdout, seedname)
-    if (found .and. (pw90_nerwann%temp_min <= 0._dp)) &
-      call io_error('Error: ner_temp_min must be greater than zero', stdout,seedname)
-    pw90_nerwann%temp_step = 0._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_temp_step', found, &
-                                   r_value=pw90_nerwann%temp_step)
-    if ((.not. found) .and. do_nerwann) &
-      call io_error('Error: NERWann required but no ner_temp_step provided',stdout, seedname)
-    if (found .and. (pw90_nerwann%temp_step <= 0._dp)) &
-      call io_error('Error: ner_temp_step must be greater than zero', stdout,seedname)
 
     ! The interpolation mesh is read later on
 
@@ -1269,11 +1212,6 @@ contains
     call w90_readwrite_get_keyword(stdout, seedname, 'ner_tdf_smr_type', found,c_value=ctmp)
     if (found) pw90_nerwann%tdf_smearing%type_index =w90_readwrite_get_smearing_index(ctmp, &
                                                                                          'ner_tdf_smr_type',stdout, seedname)
-
-    ! By default: 10 fs relaxation time
-    pw90_nerwann%relax_time = 10._dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ner_relax_time', found, &
-                                   r_value=pw90_nerwann%relax_time)
 
     pw90_nerwann%bext(1) = 0._dp
     pw90_nerwann%bext(2) = 0._dp
@@ -2156,19 +2094,7 @@ contains
       write (stdout, '(1x,a78)') '*-------------------------------- NERWANN-----------------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Thermomagnetic coefficients               :', &
         pw90_calculation%nerwann, '|'
-      if (pw90_nerwann%dir_num_2d > 0) then
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :', &
-          trim(pw90_extra_io%ner_2d_dir), '|'
-      else
-        write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
-      endif
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Relaxation Time (fs)                      :', pw90_nerwann%relax_time, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Chemical Potential (eV)  :', pw90_nerwann%mu_min, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Chemical Potential (eV)  :', pw90_nerwann%mu_max, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Chemical Potential (eV)     :', pw90_nerwann%mu_step, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Temperature (K)          :', pw90_nerwann%temp_min, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', pw90_nerwann%temp_max, '|'
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature(K)              :', pw90_nerwann%temp_step, '|'
+      write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
       write (stdout, '(1x,a46,2x,3F8.3,1x,a5)') &
         '|  External magnetic field                   :   ', (pw90_nerwann%bext(i), i=1, 3), '|'
 
@@ -2346,10 +2272,8 @@ contains
 
       ! A large value for estimaation
       TDF_exceeding_energy = 2._dp
-      NumPoints1 = int(floor((pw90_nerwann%temp_max - pw90_nerwann%temp_min)/ &
-                             pw90_nerwann%temp_step)) + 1 ! Temperature
-      NumPoints2 = int(floor((pw90_nerwann%mu_max - pw90_nerwann%mu_min)/ &
-                             pw90_nerwann%mu_step)) + 1  ! chemical potential
+      NumPoints1 = 999._dp
+      NumPoints2 = 9999._dp 
       NumPoints3 = int(floor((dis_manifold%win_max - dis_manifold%win_min &
                               + 2._dp*TDF_exceeding_energy)/ &
                              pw90_nerwann%tdf_energy_step)) + 1      !Energy array for TDFtot

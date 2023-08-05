@@ -85,8 +85,6 @@ contains
     !!  3. The Nernst Coefficient in SI units (V/K)
     !!  4. The Ettingshausen Coefficient in SI units (m.K/Amp)
     !!
-    !! Files from 2 to 4 are printed out on a grid of (mu,T) points, where mu is the chemical potential in eV and
-    !! T is the temperature in Kelvin. The grid is defined in the input.
   !================================================!
 
     use w90_constants, only: dp,dkpt
@@ -134,25 +132,13 @@ contains
 
     ! local variables
 
-    integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
-    integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
-    real(kind=dp), allocatable :: TempArray(:), MuArray(:), KTArray(:)
+    integer :: TDFEnergyNumPoints
+    integer :: i, j, ierr, EnIdx
     real(kind=dp), allocatable :: TDFtotEnergyArr(:)
-    integer :: tdftotz_unit,NumZeroDettotz,ndim
+    integer :: tdf1_unit,ndim
+    integer :: tdf2_unit
 !Total TDF 1st+2nd along Bz 
-    real(kind=dp), allocatable :: TDFtotz(:, :, :) ! (coordinate,Energy) 
-    integer :: Nernst_T_unit,Hall_T_unit,kappatotz_unit,Etn_unit 
-    real(kind=dp) ::TEContotz(3,3),EConInvtotz(3,3),SigS_FPtotz(3,3),& 
-                    TSeebtotz(3,3),seeb2(3,3),sigs2T(3,3),TKco(3,3),Tkaptotz(3,3)
-    real(kind=dp) :: TECon2dtotz(2,2),EConInv2dtotz(2,2)
-    real(kind=dp) :: Dettotz
-    real(kind=dp), allocatable :: SigStotz(:, :, :),Seebtotz(:, :, :),Kappatotz(:, :, :) ! (coordinate,Temp, mu) 
-    real(kind=dp), allocatable :: EContotz(:, :, :),Hall_T(:, :, :) ! (coordinate,Temp, mu) 
-    real(kind=dp), allocatable :: LEContotz(:, :) ! (coordinate,Temp+mu combined index)
-    real(kind=dp), allocatable :: LSigStotz(:, :) ! (coordinate,Temp+mu combined index) 
-    real(kind=dp), allocatable :: LSeebtotz(:, :),LHitz(:, :) ! (coordinate,Temp+mu combined index) 
-    real(kind=dp), allocatable :: LKappatotz(:, :),LKco(:, :) ! (coordinate,Temp+mu combined index) 
-    real(kind=dp), allocatable :: IntegrandArraytot(:, :) !(coordinate, Energy) at a given T and mu 
+    real(kind=dp), allocatable :: TDF1totz(:, :, :),TDF2totz(:, :, :)! (coordinate,Energy) 
 
     integer :: LocalIdx, GlobalIdx
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects
@@ -189,47 +175,6 @@ contains
       write (stdout, *)
     end if 
 
-    if (print_output%iprint > 0) then
-      if (pw90_nerwann%dir_num_2d /= 0) then
-        write (stdout, '(1x,a)') '>                                                                           <'
-        write (stdout, '(1x,a)') '> NOTE! Using the 2D version for thermomagnetic calculations                <'
-        if (pw90_nerwann%dir_num_2d == 1) then
-          write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is x.                 <'
-        elseif (pw90_nerwann%dir_num_2d == 2) then
-          write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is y.                 <'
-        elseif (pw90_nerwann%dir_num_2d == 3) then
-          write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is z.                 <'
-        end if
-        write (stdout, '(1x,a)') '>                                                                           <'
-        write (stdout, '(1x,a)') ''
-      end if
-    end if
-	
-    ! unacceptable directions for a 2d system
-    if (pw90_nerwann%dir_num_2d < 0 .or. pw90_nerwann%dir_num_2d > 3) then
-      call io_error('Unrecognized value of pw90_nerwann_2d_dir_num', stdout, seedname)
-    endif
-
-    ! Temperature and chemical potential Arrays
-	TempNumPoints = int(floor((pw90_nerwann%temp_max - pw90_nerwann%temp_min)/pw90_nerwann%temp_step)) + 1
-    allocate (TempArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TempArray in nerwann_main', stdout, seedname)
-    do i = 1, TempNumPoints
-          TempArray(i) = pw90_nerwann%temp_min + real(i - 1, dp)*pw90_nerwann%temp_step
-    end do
-
-    ! Boltzmann csnt*Temperature Array in units of eV
-    allocate (KTArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating KTArray in nerwann_main', stdout, seedname)
-    ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
-    KTArray = TempArray*physics%k_B_SI/physics%elem_charge_SI
-
-    MuNumPoints = int(floor((pw90_nerwann%mu_max - pw90_nerwann%mu_min)/pw90_nerwann%mu_step)) + 1
-    allocate (MuArray(MuNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating MuArray in nerwann_main', stdout, seedname)
-    do i = 1, MuNumPoints
-      MuArray(i) = pw90_nerwann%mu_min + real(i - 1, dp)*pw90_nerwann%mu_step
-    end do
 
     if (pw90_nerwann%tdf_smearing%use_adaptive) then
       call io_error('Adaptive smearing not allowed in Nerwann TDF', stdout, seedname)
@@ -253,41 +198,68 @@ contains
     end if
 
     !Allocation for  TDF tensor with 9 components
-    allocate (TDFtotz(9, TDFEnergyNumPoints, ndim), stat=ierr) !total TDF 1st+2nd along Bz
-    if (ierr /= 0) call io_error('Error in allocating TDFtotz in nerwann_main', stdout, seedname)
+    allocate (TDF1totz(9, TDFEnergyNumPoints, ndim), stat=ierr) !total TDF 1st+2nd along Bz
+    if (ierr /= 0) call io_error('Error in allocating TDF1totz in nerwann_main', stdout, seedname)
+    allocate (TDF2totz(9, TDFEnergyNumPoints, ndim), stat=ierr) !total TDF 1st+2nd along Bz
+    if (ierr /= 0) call io_error('Error in allocating TDF2totz in nerwann_main', stdout, seedname)
 	call calcTDFtot(pw90_nerwann, dis_manifold, kpt_latt, postw90_oper, pw90_band_deriv_degen, pw90_spin, &
                        ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, &
-                       v_matrix, eigval, real_lattice, TDFtotz, TDFtotEnergyArr, &
+                       v_matrix, eigval, real_lattice, TDF1totz,TDF2totz, TDFtotEnergyArr, &
                        cell_volume, scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                        w90_system%num_valence_bands, w90_system%num_elec_per_state, effective_model, &
                        have_disentangled, spin_decomp, seedname, stdout, comm)
 
 !================================!
-!Total TDF 1st term +2nd along Bz
+!Total TDF 1st term
 !================================!
     if (on_root) then
-      tdftotz_unit = io_file_unit()
-      open (unit=tdftotz_unit, file=trim(seedname)//'_tdftotz.dat')
-      write (tdftotz_unit, '(A)') "# Developed by  NerWann module of the Wannier90 code."
-     write (tdftotz_unit, '(A)') "# Total Transport distribution function (in SI units of m^2*C^3/S^3)"// &
+      tdf1_unit = io_file_unit()
+      open (unit=tdf1_unit, file=trim(seedname)//'_tdf1.dat')
+      write (tdf1_unit, '(A)') "# Developed by  NerWann module of the Wannier90 code."
+     write (tdf1_unit, '(A)') "# Total Transport distribution function (in SI units of C^2/kg/m^3)"// &
        " vs energy in eV"
-      write (tdftotz_unit, '(A)') "# Content of the columns:"
-      write (tdftotz_unit, '(A)') "# Energy xxz xyz yyz xzz yzz zzz yxz zxz zyz"
-      write (tdftotz_unit, '(A)') '#   (if spin decomposition is required, 18 further columns are provided, with the 9'
-      write (tdftotz_unit, '(A)') '#    components of the TDFtot for the spin up, followed by those for the spin down)'
+      write (tdf1_unit, '(A)') "# Content of the columns:"
+      write (tdf1_unit, '(A)') "# Energy xxz xyz yyz xzz yzz zzz yxz zxz zyz"
+      write (tdf1_unit, '(A)') '#   (if spin decomposition is required, 18 further columns are provided, with the 9'
+      write (tdf1_unit, '(A)') '#    components of the TDFtot for the spin up, followed by those for the spin down)'
       do i = 1, size(TDFtotEnergyArr)
         if (ndim .eq. 1) then
-          write (tdftotz_unit, 104) TDFtotEnergyArr(i), TDFtotz(:, i, 1)
+          write (tdf1_unit, 104) TDFtotEnergyArr(i), TDF1totz(:, i, 1)
         else
-          write (tdftotz_unit, 104) TDFtotEnergyArr(i), TDFtotz(:, i, :)
+          write (tdf1_unit, 104) TDFtotEnergyArr(i), TDF1totz(:, i, :)
         end if
       end do
-      close (tdftotz_unit)
+      close (tdf1_unit)
 	    if (print_output%iprint > 1) &
         write (stdout, '(3X,A)') "Total Transport distribution function along Bz written on the " &
-&              //trim(seedname)//"_tdftotz.dat file."
+&              //trim(seedname)//"_tdf1.dat file."
     end if
 
+!================================!
+!Total TDF 1st term
+!================================!
+    if (on_root) then
+      tdf2_unit = io_file_unit()
+      open (unit=tdf2_unit, file=trim(seedname)//'_tdf2.dat')
+      write (tdf2_unit, '(A)') "# Developed by  NerWann module of the Wannier90 code."
+     write (tdf2_unit, '(A)') "# Total Transport distribution function (in SI units of C^2/kg/m^3/S)"// &
+       " vs energy in eV"
+      write (tdf2_unit, '(A)') "# Content of the columns:"
+      write (tdf2_unit, '(A)') "# Energy xxz xyz yyz xzz yzz zzz yxz zxz zyz"
+      write (tdf2_unit, '(A)') '#   (if spin decomposition is required, 18 further columns are provided, with the 9'
+      write (tdf2_unit, '(A)') '#    components of the TDFtot for the spin up, followed by those for the spin down)'
+      do i = 1, size(TDFtotEnergyArr)
+        if (ndim .eq. 1) then
+          write (tdf2_unit, 104) TDFtotEnergyArr(i), TDF2totz(:, i, 1)
+        else
+          write (tdf2_unit, 104) TDFtotEnergyArr(i), TDF2totz(:, i, :)
+        end if
+      end do
+      close (tdf2_unit)
+	    if (print_output%iprint > 1) &
+        write (stdout, '(3X,A)') "Total Transport distribution function along Bz written on the " &
+&              //trim(seedname)//"_tdf2.dat file."
+    end if
 
 
     ! *********************************************************************************
@@ -297,314 +269,23 @@ contains
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
-    call comms_array_split(TempNumPoints*MuNumPoints, counts, displs, comm)
 
 
 
 !!!Allocation for  response functions along Bz 
-    allocate (LEContotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalElCond2ndz in nerwann_main', stdout, seedname)
-    allocate (LSigStotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSigmaS2ndz in nerwann_main', stdout, seedname)
-    allocate (LSeebtotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck2ndz in nerwann_main', stdout, seedname)
-    allocate (LHitz(1, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck2ndz in nerwann_main', stdout, seedname)
-    allocate (LKappatotz(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalKappa2ndz in nerwann_main', stdout, seedname)
-    allocate (LKco(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LKco in nerwann_main', stdout, seedname)
-    LEContotz = 0._dp
-    LSeebtotz = 0._dp
-    LHitz = 0._dp
-    LKappatotz = 0._dp
-    LKco = 0._dp
 !!!END  
-    allocate (IntegrandArraytot(9, TDFEnergyNumPoints), stat=ierr) 
-    if (ierr /= 0) call io_error('Error in allocating FermiDerivArray in nerwann_main', stdout, seedname) 
-    NumZeroDettotz = 0 
 
 
- ! Now, I calculate the various spectra for all mu and T values
     do LocalIdx = 1, counts(my_node_id)
-      ! GlobalIdx is an index from 0 to TempNumPoints*MuNumPoints-1
       GlobalIdx = displs(my_node_id) + (LocalIdx - 1)
-      ! MuIdx goes from 1 to MuNumPoints
-      MuIdx = GlobalIdx/TempNumPoints + 1
-      ! TempIdx goes from 1 to TempNumPoints
-      TempIdx = GlobalIdx - TempNumPoints*(MuIdx - 1) + 1
 
-      ! For the calculation of the properties, I only use the total TDF (i.e., unresolved for spin)
-      IntegrandArraytot = TDFtotz(:, :, 1) !!!TDFtotz for transport 
-
-      do EnIdx = 1, TDFEnergyNumPoints
-        IntegrandArraytot(:, EnIdx) = IntegrandArraytot(:, EnIdx)* &
-                                   MinusFermiDerivative(E=TDFtotEnergyArr(EnIdx), mu=MuArray(MuIdx), KT=KTArray(TempIdx))
-        end do
-      ! Now, IntegrandArray contains (-dn/dE) * TDF_ij(E), where n is the Fermi distribution function
-      ! Its integral is ElCond_ij/e^2
-      LEContotz(:, LocalIdx) = sum(IntegrandArraytot, DIM=2)*pw90_nerwann%tdf_energy_step 
-
-
-      ! ElCond contains TDFtot in SI units of m^2C^3/S^3
-      ! Minus Derivative of Fermi with respect to energy is in units of 1/eV
-      ! ElCond has the same units of TDFtot)
-
-      ! I store in TEContotz the conductivity tensor in standard format
-      ! Sequence xx xy xz yx yy yz zx zy zz
-      do j = 1, 3
-        do i = 1, j
-          TEContotz(i, j) = LEContotz(i + ((j - 1)*j)/2, LocalIdx) 
-            if (j.eq.2 .and. i.eq.1) then
-              TEContotz(j, i) = LEContotz(i+ 5 + ((j - 1)*j)/2, LocalIdx) 
-            end if
-            if (j.eq.3 .and. i.ne.3) then
-              TEContotz(j, i) = LEContotz(i + 4 + ((j - 1)*j)/2, LocalIdx) 
-            end if
-       end do
-      end do
-
-
-      ! Inverse of the totla conductivity matrix
-      if (pw90_nerwann%dir_num_2d /= 0) then
-        ! Invert only the appropriate 2x2 submatrix
-        if (pw90_nerwann%dir_num_2d == 1) then
-          TECon2dtotz(1, 1) = TEContotz(2, 2) 
-          TECon2dtotz(1, 2) = TEContotz(2, 3) 
-          TECon2dtotz(2, 1) = TEContotz(3, 2) 
-          TECon2dtotz(2, 2) = TEContotz(3, 3) 
-        elseif (pw90_nerwann%dir_num_2d == 2) then
-          TECon2dtotz(1, 1) = TEContotz(1, 1) 
-          TECon2dtotz(1, 2) = TEContotz(1, 3) 
-          TECon2dtotz(2, 1) = TEContotz(3, 1) 
-          TECon2dtotz(2, 2) = TEContotz(3, 3) 
-        elseif (pw90_nerwann%dir_num_2d == 3) then
-          TECon2dtotz(1, 1) = TEContotz(1, 1) 
-          TECon2dtotz(1, 2) = TEContotz(1, 2) 
-          TECon2dtotz(2, 1) = TEContotz(2, 1) 
-          TECon2dtotz(2, 2) = TEContotz(2, 2) 
-        end if
-        call utility_inv2(TECon2dtotz, EConInv2dtotz, Dettotz) 
-        EConInvtotz  = 0._dp
-        if (pw90_nerwann%dir_num_2d == 1) then
-          EConInvtotz(2, 2) = EConInv2dtotz(1, 1) 
-          EConInvtotz(2, 3) = EConInv2dtotz(1, 2) 
-          EConInvtotz(3, 2) = EConInv2dtotz(2, 1) 
-          EConInvtotz(3, 3) = EConInv2dtotz(2, 2) 
-        elseif (pw90_nerwann%dir_num_2d == 2) then
-          EConInvtotz(1, 1) = EConInv2dtotz(1, 1) 
-          EConInvtotz(1, 3) = EConInv2dtotz(1, 2) 
-          EConInvtotz(3, 1) = EConInv2dtotz(2, 1) 
-          EConInvtotz(3, 3) = EConInv2dtotz(2, 2) 
-        elseif (pw90_nerwann%dir_num_2d == 3) then
-          EConInvtotz(1, 1) = EConInv2dtotz(1, 1) 
-          EConInvtotz(1, 2) = EConInv2dtotz(1, 2) 
-          EConInvtotz(2, 1) = EConInv2dtotz(2, 1) 
-          EConInvtotz(2, 2) = EConInv2dtotz(2, 2) 
-        end if
-      else
-        call utility_inv3(TEContotz, EConInvtotz, Dettotz) 
-      end if !end of if (ner_2d_dir_num /= 0) then
-!Total dterminant
-      if (Dettotz .eq. 0._dp) then
-        NumZeroDettotz = NumZeroDettotz + 1
-      else
-        ! This is the adjoint of TEContotz
-        !  inverse= EConInvtotz / Dettotz
-        EConInvtotz = EConInvtotz/Dettotz 
-      end if
-
-      ! IntegrandArraytot is multiplied by (E-mu): then, IntegrandArray contains
-      ! (-dn/dE) * TDFtot_ij(E) * (E-mu) and its integral is (Total El Conductivity*Seebeck)_ij * Tempreature (T)
-      do EnIdx = 1, TDFEnergyNumPoints
-        IntegrandArraytot(:, EnIdx) = IntegrandArraytot(:, EnIdx)*(TDFtotEnergyArr(EnIdx) - MuArray(MuIdx)) 
-   end do
-
-      LSigStotz(:, LocalIdx) = sum(IntegrandArraytot, DIM=2)*pw90_nerwann%tdf_energy_step/TempArray(TempIdx) 
-
-!right sequence xx xy xz yx yy yz zx zy zz
-   do j = 1, 3
-        do i = 1, j
-          SigS_FPtotz(i, j) = LSigStotz(i + ((j - 1)*j)/2, LocalIdx)
-          if (j.eq.2 .and. i.eq.1) then
-             SigS_FPtotz(j, i) = LSigStotz(i+ 5 + ((j - 1)*j)/2, LocalIdx)
-         end if
-          if (j.eq.3 .and. i.ne.3) then
-              SigS_FPtotz(j, i) = LSigStotz(i + 4 + ((j - 1)*j)/2, LocalIdx)
-         end if
-        end do
-   end do
-
-
-     ! TotalSeebeck* Total El Conductivity in a full tensor with 9 components
-
-     ! Sequence xx xy xz yx yy yz zx zy zz
-     ! A sign due to the electron charge 
-      TSeebtotz = -matmul(EConInvtotz, SigS_FPtotz) 
-      LHitz(1,LocalIdx) = EConInvtotz(2,1)
-
-! Total Seebeck squared and electrical conductivity sqaured multiplied by T for
-! electronic thermal conductivity
-      seeb2=matmul(TSeebtotz,TSeebtotz) !Total Seebeck^2 
-      sigs2T=-matmul(TEContotz,seeb2)*TempArray(TempIdx) !Total sig*Total Seebeck^2 
-
-     ! Sequence xx,xy,yy,xz,yz,zz,yx,zx,zy
-      do j = 1, 3
-        do i = 1, 3
-          LSeebtotz((i - 1)*3 + j, LocalIdx) = TSeebtotz(i, j) 
-        end do
-      end do
-
-      ! Total Seebeck coefficient is in SI units volt / Kelvin. In fact:
-
-      ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
-      ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (Kappa)_ij * T
-      do EnIdx = 1, TDFEnergyNumPoints
-        IntegrandArraytot(:, EnIdx) = IntegrandArraytot(:, EnIdx)*(TDFtotEnergyArr(EnIdx) - MuArray(MuIdx)) 
-      end do
-!This is K-coefficient integral not the electronic thermal conductivity yet
-      LKco(:, LocalIdx) = sum(IntegrandArraytot, DIM=2)*pw90_nerwann%tdf_energy_step/TempArray(TempIdx) 
-!right sequence xx xy xz yx yy yz zx zy zz
-   do j = 1, 3
-        do i = 1, j
-          TKco(i, j) = LKco(i + ((j - 1)*j)/2, LocalIdx)
-          if (j.eq.2 .and. i.eq.1) then
-             TKco(j, i) = LKco(i+ 5 + ((j - 1)*j)/2, LocalIdx)
-         end if
-          if (j.eq.3 .and. i.ne.3) then
-              TKco(j, i) = LKco(i + 4 + ((j - 1)*j)/2, LocalIdx)
-         end if
-        end do
-   end do
-
-!kappa=K-sig*S^2*T
-!kappa= Total Electronic thermal conductivity
-!right sequence xx xy xz yx yy yz zx zy zz
-      do j = 1, 3
-        do i = 1, 3
-          Tkaptotz(i,j) = TKco(i,j)-sigs2T(i,j) 
-        end do
-      end do
-!Storing in an array
-      do j = 1, 3
-        do i = 1, 3
-          LKappatotz((i - 1)*3 + j, LocalIdx) = Tkaptotz(i, j) 
-        end do
-      end do
 
     end do
-    ! I check if there were (mu,T) pairs for which we got sigma = 0
-    call comms_reduce(NumZeroDettotz, 1, 'SUM', stdout, seedname, comm)
-    if (on_root) then
-      if ((NumZeroDettotz .gt. 0)) then
-        write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumZeroDettotz, " (mu,T)pairs for which the electrical"
-        write (stdout, '(1X,A)') ">          conductivity has zero determinant."
-        write (stdout, '(1X,A)') ">          Nernst coefficient set to zero for those pairs."
-        write (stdout, '(1X,A)') ">          Check if this is physical or not."
-        write (stdout, '(1X,A)') ">          (If you are dealing with a 2D system, set the pw90_nerwann_2d_dir flag.)"
-        write (stdout, '(1X,A)') ""
-      end if
-    end if
-
-
-    ! Now I send the different pieces to the local node
-    if (on_root) then
-      allocate (EContotz(9, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating EContotz in nerwann_main', stdout, seedname) 
-      allocate (SigStotz(9, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating SigStotz in nerwann_main', stdout, seedname) 
-      allocate (Seebtotz(9, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Seebtotz in nerwann_main', stdout, seedname) 
-      allocate (Kappatotz(9, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Kappatotz in nerwann_main', stdout, seedname) 
-      allocate (Hall_T(1, TempNumPoints, MuNumPoints), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Hall_T in nerwann_main', stdout, seedname) 
-    else
-      allocate (EContotz(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating EContotz in nerwann_main (2)', stdout, seedname) 
-      allocate (SigStotz(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating SigStotz in nerwann_main (2)', stdout, seedname) 
-      allocate (Seebtotz(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Seebtotz in nerwann_main (2)', stdout, seedname) 
-      allocate (Kappatotz(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Kappatotz in nerwann_main (2)', stdout, seedname) 
-      allocate (Hall_T(1, 1, 1), stat=ierr) 
-      if (ierr /= 0) call io_error('Error in allocating Hall_T in nerwann_main (2)', stdout, seedname) 
-    end if
-
-    ! The 9* factors are due to the fact that for each (T,mu) pair we have 9 components 3*3
-    call comms_gatherv(LEContotz, 9*counts(my_node_id), EContotz, 9*counts, 9*displs, stdout, &
-                       seedname, comm) 
-    call comms_gatherv(LSigStotz, 9*counts(my_node_id), SigStotz, 9*counts, 9*displs, stdout, &
-                       seedname, comm) 
-    call comms_gatherv(LSeebtotz, 9*counts(my_node_id), Seebtotz, 9*counts, 9*displs, stdout, &
-                       seedname, comm) 
-    call comms_gatherv(LHitz, 1*counts(my_node_id), Hall_T, 1*counts, 1*displs, stdout, &
-                       seedname, comm) 
-    call comms_gatherv(LKappatotz, 9*counts(my_node_id), Kappatotz, 9*counts, 9*displs, stdout, &
-                       seedname, comm) 
 
 
     if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('nerwann_main: calc_props', 2, stdout, seedname)
 
     ! Open files and print
-    if (on_root) then
-!!!Isothermal Nernst along Bz !!!!
-      Nernst_T_unit = io_file_unit() 
-      open (unit=Nernst_T_unit, file=trim(seedname)//'_Nernst_T.dat') 
-      write (Nernst_T_unit, '(A)') "# NerWann module of the Wannier90 code ." 
-      write (Nernst_T_unit, '(A)') "# [Isothermal Nernst along Bz in SI units, i.e. in V/K]" 
-      write (Nernst_T_unit, '(A)') "# [the isothermal Nernst coefficient is defined in the documentation,"
-      write (Nernst_T_unit, '(A)') "#  the Isothermal Nernst along Bz.]" 
-      write (Nernst_T_unit, '(A)') "# Mu(eV) Temp(K) Nernst_T" 
-      do MuIdx = 1, MuNumPoints
-        do TempIdx = 1, TempNumPoints
-          write (Nernst_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Seebtotz(4,TempIdx,MuIdx)
-        end do
-      end do
-      close (Nernst_T_unit)
-    if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Nernst coefficient Bz on the "//trim(seedname)//"_Nernst_T.dat file." 
-
-
-!!!Isothermal Hall along Bz 
-      Hall_T_unit = io_file_unit() 
-      open (unit=Hall_T_unit, file=trim(seedname)//'_Hall_T.dat') 
-      write (Hall_T_unit, '(A)') "# NerWann module of the Wannier90 code." 
-      write (Hall_T_unit, '(A)') "# [Isothermal Hall along Bz in SI units, i.e. in m3/C]" 
-      write (Hall_T_unit, '(A)') "# [the isothermal Hall coefficient is defined in the documentation" 
-      write (Hall_T_unit, '(A)') "#  the Isothermal Hall along Bz.]" 
-      write (Hall_T_unit, '(A)') "# Mu(eV) Temp(K) Hall_T" 
-      do MuIdx = 1, MuNumPoints
-        do TempIdx = 1, TempNumPoints
-          write (Hall_T_unit, 104) MuArray(MuIdx), TempArray(TempIdx), Hall_T(1, TempIdx, MuIdx) 
-        end do
-      end do
-      close (Hall_T_unit)
-    if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Hall coefficient on the "//trim(seedname)//"_Hall_T.dat file." 
-
-!Ettinghausen Coefficient along Bz
-      Etn_unit = io_file_unit() 
-      open (unit=Etn_unit, file=trim(seedname)//'_Etn.dat') 
-      write (Etn_unit, '(A)') "# NerWann module of the Wannier90 code." 
-      write (Etn_unit, '(A)') "# [Ettingshausen along Bz in SI units, i.e. in m.K/Amp]" 
-      write (Etn_unit, '(A)') "# [the Ettingshausen coefficient is defined in the documentation," 
-      write (Etn_unit, '(A)') "#  the Ettingshausen coefficient along Bz]" 
-      write (Etn_unit, '(A)') "# Mu(eV) Temp(K) Ettingshausen" 
-      do MuIdx = 1, MuNumPoints
-        do TempIdx = 1, TempNumPoints
-          write (Etn_unit, 104) MuArray(MuIdx), TempArray(TempIdx), TempArray(TempIdx)*&
-        Seebtotz(4,TempIdx,MuIdx)/Kappatotz(5,TempIdx,MuIdx) 
-        end do
-      end do
-      close (Etn_unit)
-    if (print_output%iprint > 1) & 
-	  write (stdout, '(3X,A)') "Ettingshausen coefficient on the "//trim(seedname)//"_Etn.dat file." 
-
-
-
-end if 
     if (on_root) then
       write (stdout, '(3X,A)') "Thermomagnetic coefficients calculated."
       write (stdout, *)
@@ -615,40 +296,12 @@ end if
     end if
 
     ! Before ending, I deallocate memory
-    deallocate (TempArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TempArray in nerwann_main', stdout, seedname)
-    deallocate (KTArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating KTArray in nerwann_main', stdout, seedname)
-    deallocate (MuArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating MuArray in nerwann_main', stdout, seedname)
     deallocate (TDFtotEnergyArr, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating TDFtotEnergyArr in nerwann_main', stdout, seedname)
-    deallocate (TDFtotz, stat=ierr) 
-    if (ierr /= 0) call io_error('Error in deallocating TDFtotz in nerwann_main', stdout, seedname)
-    deallocate (LEContotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LEContotz in nerwann_main', stdout, seedname)
-    deallocate (LSigStotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LSigStotz in nerwann_main', stdout, seedname)
-    deallocate (LSeebtotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LSeebtotz in nerwann_main', stdout, seedname)
-    deallocate (LHitz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LHitz in nerwann_main', stdout, seedname)
-    deallocate (LKappatotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LKappatotz in nerwann_main', stdout, seedname)
-    deallocate (LKco, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LKco in nerwann_main', stdout, seedname)
-    deallocate (EContotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating EContotz in nerwann_main', stdout, seedname)
-    deallocate (SigStotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating SigStotz in nerwann_main', stdout, seedname)
-    deallocate (Seebtotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Seebtotz in nerwann_main', stdout, seedname)
-    deallocate (Kappatotz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Kappatotz in nerwann_main', stdout, seedname)
-    deallocate (Hall_T, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Hall_T in nerwann_main', stdout, seedname)
-    deallocate (IntegrandArraytot, stat=ierr) 
-    if (ierr /= 0) call io_error('Error in deallocating IntegrandArraytot in nerwann_main', stdout, seedname) 
+    deallocate (TDF1totz, stat=ierr) 
+    if (ierr /= 0) call io_error('Error in deallocating TDF1totz in nerwann_main', stdout, seedname)
+    deallocate (TDF2totz, stat=ierr) 
+    if (ierr /= 0) call io_error('Error in deallocating TDF2totz in nerwann_main', stdout, seedname)
 
 
     if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('nerwann_main', 2, stdout, seedname)
@@ -661,7 +314,7 @@ end if
 
   subroutine calcTDFtot(pw90_nerwann, dis_manifold, kpt_latt, postw90_oper, pw90_band_deriv_degen, &
                            pw90_spin, ws_region, print_output, wannier_data, ws_distance, wigner_seitz, HH_R, &
-                           SS_R, u_matrix, v_matrix, eigval, real_lattice, TDFtotz, TDFtotEnergyArr, &
+                           SS_R, u_matrix, v_matrix, eigval, real_lattice, TDF1totz,TDF2totz,TDFtotEnergyArr, &
                            cell_volume, scissors_shift, mp_grid, num_bands, &
                            num_kpts, num_wann, num_valence_bands, num_elec_per_state, &
                            effective_model, have_disentangled, spin_decomp, seedname, stdout, comm)
@@ -715,7 +368,7 @@ end if
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: stdout
 
-    real(kind=dp), intent(out)   :: TDFtotz(:,:,:)
+    real(kind=dp), intent(out)   :: TDF1totz(:,:,:),TDF2totz(:,:,:)
     real(kind=dp), intent(in)      :: TDFtotEnergyArr(:)
 
     !! TDFtotEnergyArr The array with the energies for which the TDF is calculated, in eV
@@ -750,7 +403,7 @@ end if
     real(kind=dp) :: eig(num_wann), eigpp(num_wann),eignn(num_wann), levelspacing_k(num_wann) 
     real(kind=dp)::omga_bndx(num_wann),omga_bndy(num_wann),omga_bndz(num_wann) 
 
-    real(kind=dp), allocatable :: TDFtot_kz(:,:,:) 
+    real(kind=dp), allocatable :: TDF1_kz(:,:,:),TDF2_kz(:,:,:)
     real(kind=dp)              :: kweight
     integer                    :: ndim, i, j, k, EnIdx
 
@@ -788,16 +441,22 @@ end if
     end if
 
     ! Initial check of sizes
-    if (size(TDFtotz, 1) /= 9 .or. size(TDFtotz, 2) /= size(TDFtotEnergyArr) .or. size(TDFtotz, 3) /= ndim) then
-      call io_error('Wrong size for the TDFtotz array in calcTDFtot', stdout, seedname)
+    if (size(TDF1totz, 1) /= 9 .or. size(TDF1totz, 2) /= size(TDFtotEnergyArr) .or. size(TDF1totz, 3) /= ndim) then
+      call io_error('Wrong size for the TDF1totz array in calcTDFtot', stdout, seedname)
+    end if
+    if (size(TDF2totz, 1) /= 9 .or. size(TDF2totz, 2) /= size(TDFtotEnergyArr) .or. size(TDF2totz, 3) /= ndim) then
+      call io_error('Wrong size for the TDF2totz array in calcTDFtot', stdout, seedname)
     end if
 
     ! I zero the TDF array before starting
-    TDFtotz = 0.0_dp !Setting TDFtotz to Zero 
+    TDF1totz = 0.0_dp !Setting TDFtotz to Zero 
+    TDF2totz = 0.0_dp !Setting TDFtotz to Zero 
 
 
-    allocate (TDFtot_kz(9, size(TDFtotEnergyArr), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDFtot_kz in calcTDFtot', stdout, seedname) 
+    allocate (TDF1_kz(9, size(TDFtotEnergyArr), ndim), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating TDF1_kz in calcTDFtot', stdout, seedname) 
+    allocate (TDF2_kz(9, size(TDFtotEnergyArr), ndim), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating TDF2_kz in calcTDFtot', stdout, seedname)
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating HH in calcTDFtot', stdout, seedname)
     allocate (HHpp(num_wann, num_wann), stat=ierr)
@@ -835,7 +494,6 @@ end if
       write (stdout, '(5X,A,I0,A,I0,A,I0)') "k-grid used for band interpolation in NerWann: ", &
         pw90_nerwann%kmesh%mesh(1), 'x', pw90_nerwann%kmesh%mesh(2), 'x', pw90_nerwann%kmesh%mesh(3)
       write (stdout, '(5X,A,I1)') "Number of electrons per state: ", num_elec_per_state
-      write (stdout, '(5X,A,G18.10)') "Relaxation time (fs): ", pw90_nerwann%relax_time
       write (stdout, '(5X,A,G18.10,G18.10,G18.10)') "External magnetic field in NerWann: ", &
         pw90_nerwann%bext(1), pw90_nerwann%bext(2), pw90_nerwann%bext(3)
       if (print_output%iprint > 1) then
@@ -902,20 +560,19 @@ call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       end if
 !!Calling Transport Functions
       call TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distance, wigner_seitz, HH_R, SS_R, &
-                   eig, vel, omga_bndx, omga_bndy,omga_bndz, TDFtotEnergyArr, kpt, real_lattice, TDFtot_kz,mp_grid, &
-                   num_wann, num_elec_per_state, physics, spin_decomp, seedname, stdout)
+                   eig, vel, omga_bndx, omga_bndy,omga_bndz, TDFtotEnergyArr,kpt,&
+                   real_lattice, TDF1_kz,TDF2_kz,mp_grid,num_wann, num_elec_per_state, physics, spin_decomp, seedname, stdout)
 
 
-      TDFtotz = TDFtotz + TDFtot_kz*kweight/cell_volume 
-
-
+      TDF1totz = TDF1totz + TDF1_kz*kweight/cell_volume 
+      TDF2totz = TDF2totz + TDF2_kz*kweight/cell_volume 
     end do
 
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
-    call comms_allreduce(TDFtotz(1, 1, 1), size(TDFtotz), 'SUM', stdout, seedname, comm)
-
+    call comms_allreduce(TDF1totz(1, 1, 1), size(TDF1totz), 'SUM', stdout, seedname, comm)
+    call comms_allreduce(TDF2totz(1, 1, 1), size(TDF2totz), 'SUM', stdout, seedname, comm)
 
     if (on_root .and. (print_output%timing_level > 0)) call io_stopwatch('calcTDFtot', 2, stdout, seedname)
     if (on_root) then
@@ -942,8 +599,10 @@ call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     if (ierr /= 0) call io_error('Error in deallocating UUpp in calcTDFtot', stdout, seedname)
     deallocate (UUnn, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating UUnn in calcTDFtot', stdout, seedname)
-    deallocate (TDFtot_kz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDFtot_kz in calcTDFtot', stdout, seedname) 
+    deallocate (TDF1_kz, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating TDF1_kz in calcTDFtot', stdout, seedname) 
+    deallocate (TDF2_kz, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating TDF2_kz in calcTDFtot', stdout, seedname) 
   end subroutine calcTDFtot
 
 
@@ -984,8 +643,8 @@ call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
   
 
 subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distance, wigner_seitz, HH_R, SS_R, &
-                      eig_k,vel_k, omg_bnd1, omg_bnd2, omg_bnd3, EnergyArray, kpt, real_lattice, TDFtot_kz, &
-                     mp_grid, num_wann, num_elec_per_state, physics, spin_decomp,seedname, stdout)
+                      eig_k,vel_k, omg_bnd1, omg_bnd2, omg_bnd3,EnergyArray,kpt,&
+                      real_lattice,TDF1_kz,TDF2_kz,mp_grid, num_wann, num_elec_per_state, physics, spin_decomp,seedname, stdout)
     !================================================!
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
@@ -1020,7 +679,7 @@ subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distan
     real(kind=dp), intent(in)::omg_bnd1(:),omg_bnd2(:),omg_bnd3(:)
     logical, intent(in) :: spin_decomp
     integer, intent(in) :: num_elec_per_state
-    real(kind=dp), intent(out):: TDFtot_kz(:, :, :) 
+    real(kind=dp), intent(out):: TDF1_kz(:, :, :),TDF2_kz(:, :, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     type(pw90_physical_constants_type), intent(in) :: physics
 
@@ -1046,7 +705,8 @@ subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distan
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
-    TDFtot_kz=0.0_dp !Putting initial value zero
+    TDF1_kz=0.0_dp !Putting initial value zero
+    TDF2_kz=0.0_dp !Putting initial value zero
 
     do BandIdx = 1, num_wann
       if (spin_decomp) then
@@ -1058,7 +718,6 @@ subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distan
       end if
 
       ! Do not use an adaptive smearing here, it would require the knowledge of second derivatives
-      ! And typically, when working at not too small temperatures, smearing is not needed
 
       ! Faster optimization: I precalculate the indices
       ! Value of the smearing in eV; default = 0 eV, i.e. no smearing
@@ -1091,112 +750,123 @@ subroutine TDFtot_kpt(pw90_nerwann, ws_region, pw90_spin, wannier_data,ws_distan
 
 !  write(*,6)'loop,rdum,occ,vel=',loop_f,rdum,r_num_elec_per_state,vel(BandIdx,1:3) !Added by Dr.Keivan main write
 !Total TDF 1st+2nd along Bz
-        TDFtot_kz(XX, loop_f, 1) = TDFtot_kz(XX, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*& 
-                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/ & 
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XY, loop_f, 1) = TDFtot_kz(XY, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YY, loop_f, 1) = TDFtot_kz(YY, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&             
-                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XZ, loop_f, 1) = TDFtot_kz(XZ, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YZ, loop_f, 1) = TDFtot_kz(YZ, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZZ, loop_f, 1) = TDFtot_kz(ZZ, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YX, loop_f, 1) = TDFtot_kz(YX, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZX, loop_f, 1) = TDFtot_kz(ZX, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZY, loop_f, 1) = TDFtot_kz(ZY, loop_f,1)+rdum*(pw90_nerwann%relax_time**(-1))*r_num_elec_per_state*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e-5_dp + rdum* &
-                               r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/ &
-                                physics%hbar_SI**3*1.e-40_dp
+        TDF1_kz(XX, loop_f, 1) = TDF1_kz(XX, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(XX, loop_f, 1) = TDF2_kz(XX, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XY, loop_f, 1) = TDF1_kz(XY, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(XY, loop_f, 1) = TDF2_kz(XY, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YX, loop_f, 1) = TDF1_kz(YX, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,2)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(YX, loop_f, 1) = TDF2_kz(YX, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YY, loop_f, 1) = TDF1_kz(YY, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(YY, loop_f, 1) = TDF2_kz(YY, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XZ, loop_f, 1) = TDF1_kz(XZ, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(XZ, loop_f, 1) = TDF2_kz(XZ, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YZ, loop_f, 1) = TDF1_kz(YZ, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(YZ, loop_f, 1) = TDF2_kz(YZ, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZZ, loop_f, 1) = TDF1_kz(ZZ, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(ZZ, loop_f, 1) = TDF2_kz(ZZ, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZX, loop_f, 1) = TDF1_kz(ZX, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,3)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(ZX, loop_f, 1) = TDF2_kz(ZX, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZY, loop_f, 1) = TDF1_kz(ZY, loop_f,1)+rdum*r_num_elec_per_state*& 
+                        vel_k(BandIdx,3)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp 
+        TDF2_kz(ZY, loop_f, 1) = TDF2_kz(ZY, loop_f,1)+rdum*r_num_elec_per_state*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*& 
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
 
         if (spin_decomp) then
 
           ! Spin-up contribution
-        TDFtot_kz(XX, loop_f, 2) = TDFtot_kz(XX, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*& 
-                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XY, loop_f, 2) = TDFtot_kz(XY, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YY, loop_f, 2) = TDFtot_kz(YY, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&             
-                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XZ, loop_f, 2) = TDFtot_kz(XZ, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YZ, loop_f, 2) = TDFtot_kz(YZ, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZZ, loop_f, 2) = TDFtot_kz(ZZ, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YX, loop_f, 2) = TDFtot_kz(YX, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZX, loop_f, 2) = TDFtot_kz(ZX, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZY, loop_f, 2) = TDFtot_kz(ZY, loop_f,2)+rdum*(pw90_nerwann%relax_time**(-1))*alpha_sq*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               alpha_sq*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-
-
-           
+        TDF1_kz(XX, loop_f,2) = TDF1_kz(XX, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XX, loop_f,2) = TDF2_kz(XX,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XY, loop_f,2) = TDF1_kz(XY, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XY, loop_f,1) = TDF2_kz(XY,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YX, loop_f,2) = TDF1_kz(YX, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YX, loop_f,2) = TDF2_kz(YX,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YY, loop_f,2) = TDF1_kz(YY, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YY, loop_f,2) = TDF2_kz(YY,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XZ, loop_f,2) = TDF1_kz(XZ, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XZ, loop_f,2) = TDF2_kz(XZ,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YZ, loop_f,2) = TDF1_kz(YZ, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YZ, loop_f,2) = TDF2_kz(YZ,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZZ, loop_f,2) = TDF1_kz(ZZ, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZZ, loop_f,2) = TDF2_kz(ZZ,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZX, loop_f,2) = TDF1_kz(ZX, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZX, loop_f,2) = TDF2_kz(ZX,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZY, loop_f,2) = TDF1_kz(ZY, loop_f,2)+rdum*alpha_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZY, loop_f,2) = TDF2_kz(ZY,loop_f,2)+rdum*alpha_sq*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
        	!Spin-down contribution
-        TDFtot_kz(XX, loop_f, 3) = TDFtot_kz(XX, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*& 
-                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XY, loop_f, 3) = TDFtot_kz(XY, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YY, loop_f, 3) = TDFtot_kz(YY, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&             
-                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(XZ, loop_f, 3) = TDFtot_kz(XZ, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YZ, loop_f, 3) = TDFtot_kz(YZ, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZZ, loop_f, 3) = TDFtot_kz(ZZ, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(YX, loop_f, 3) = TDFtot_kz(YX, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZX, loop_f, 3) = TDFtot_kz(ZX, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-        TDFtot_kz(ZY, loop_f, 3) = TDFtot_kz(ZY, loop_f,3)+rdum*(pw90_nerwann%relax_time**(-1))*beta_sq*&
-                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp + rdum* &
-                               beta_sq*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-40_dp
-
-
+        TDF1_kz(XX, loop_f,3) = TDF1_kz(XX, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XX, loop_f,3) = TDF2_kz(XX,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,1)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XY, loop_f,3) = TDF1_kz(XY, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XY, loop_f,3) = TDF2_kz(XY,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,1)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YX, loop_f,3) = TDF1_kz(YX, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YX, loop_f,3) = TDF2_kz(YX,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,2)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YY, loop_f,3) = TDF1_kz(YY, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YY, loop_f,3) = TDF2_kz(YY,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,2)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(XZ, loop_f,3) = TDF1_kz(XZ, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,1)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(XZ, loop_f,3) = TDF2_kz(XZ,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,1)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(YZ, loop_f,3) = TDF1_kz(YZ, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,2)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(YZ, loop_f,3) = TDF2_kz(YZ,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,2)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZZ, loop_f,3) = TDF1_kz(ZZ, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,3)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZZ, loop_f,3) = TDF2_kz(ZZ,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,3)*omg_bnd3(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZX, loop_f,3) = TDF1_kz(ZX, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,1)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZX, loop_f,3) = TDF2_kz(ZX,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,3)*omg_bnd1(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
+        TDF1_kz(ZY, loop_f,3) = TDF1_kz(ZY, loop_f,3)+rdum*beta_sq*&
+                        vel_k(BandIdx,3)*vel_k(BandIdx,2)*physics%elem_charge_SI**3/physics%hbar_SI**2*1.e10_dp
+        TDF2_kz(ZY, loop_f,3) = TDF2_kz(ZY,loop_f,3)+rdum*beta_sq*vel_k(BandIdx,3)*omg_bnd2(BandIdx)*&
+                                physics%elem_charge_SI**4/physics%hbar_SI**3*1.e-10_dp
         end if
       end do
     end do !loop over bands
 
-    ! multiplication by a constant relaxation time value (CRTA)
-    TDFtot_kz= TDFtot_kz*pw90_nerwann%relax_time**2 
   end subroutine TDFtot_kpt
 
  
