@@ -3795,53 +3795,52 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 
 \end{itemize}
 
-\sectiontitle{34: ZnSe -- Nernst effect}
+\sectiontitle{34: InSb -- Nernst effect}
 \begin{itemize}
 \item{Outline: \it{Achieve MLWFs for the valence and low-lying
-    conduction bands of ZnSe. Compute the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients  within the constant relaxation time approximation the \nw\ module.}} 
+    conduction bands of InSb. Compute the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients  within the constant relaxation time approximation the \nw\ module.}} 
 \end{itemize}
 \begin{itemize}
   \item{Directory: {\tt examples/example34}}
   \item{Input Files}
     \begin{itemize}
-      \item{ {\tt ZnSe.scf}  {\it The \pwscf\ input file for ground state
+      \item{ {\tt InSb.scf}  {\it The \pwscf\ input file for ground state
 	  calculation}}
-      \item{ {\tt ZnSe.nscf}  {\it The \pwscf\ input file to achieve Bloch
+      \item{ {\tt InSb.nscf}  {\it The \pwscf\ input file to achieve Bloch
 	  states for the conduction states}} 
-      \item{ {\tt ZnSe.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
-      \item{ {\tt ZnSe.win}  {\it The {\tt wannier90} input file}}
+      \item{ {\tt InSb.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt InSb.win}  {\it The {\tt wannier90} input file}}
     \end{itemize}
 \end{itemize}
 
 
 \begin{enumerate}
-\item Run \pwscf\ to achieve the ground bands of ZnSe\\  
-{\tt pw.x < ZnSe.scf > scf.out}
+\item Run \pwscf\ to achieve the ground bands of InSb\\  
+{\tt pw.x < InSb.scf > scf.out}
 
 \item Run \pwscf\ to achieve the Bloch states on a uniform k-point
   grid.\\ 
-{\tt pw.x < ZnSe.nscf > nscf.out}
+{\tt pw.x < InSb.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt ZnSe.nnkp} file).\\
-{\tt wannier90.x -pp ZnSe}
+  into the {\tt InSb.nnkp} file).\\
+{\tt wannier90.x -pp InSb}
 
 \item Run {\tt pw2wannier90} to obtain the overlap between Bloch
   states and the projections for the starting guess (written in the
-  {\tt ZnSe.mmn} and {\tt  ZnSe.amn} files).\\
-{\tt pw2wannier90.x < ZnSe.pw2wan > pw2wan.out}
+  {\tt InSb.mmn} and {\tt  InSb.amn} files).\\
+{\tt pw2wannier90.x < InSb.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
-{\tt wannier90.x ZnSe}
+{\tt wannier90.x InSb}
 
 
 \item Run \postw\ to calculate thermomagnetic responses.\\
-{\tt postw90.x ZnSe} (serial execution) \\
-{\tt mpirun -np 8 postw90.x ZnSe} (parallel execution) 
+{\tt postw90.x InSb} (serial execution) \\
+{\tt mpirun -np 8 postw90.x InSb} (parallel execution) 
 \end{enumerate}
 
-The output file {\tt ZnSe.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . A constant relaxation time of $\tau=10$~fs is assumed as an arbitrary value and in reality thermomagnetic coefficients depend on the relaxation time value. You can plot the isothermal Hall conductivity ({\tt ZnSe\_Hall_T.dat}), isothermal Nernst coefficient ({\tt ZnSe\_Nernst_T.dat}), and Ettingshausen coefficient ({\tt ZnSe\_Etn.dat}).
-
+The output file {\tt InSb.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . The first order ({\tt InSb\_tdf1.dat}) and second order ({\tt InSb\_tdf2.dat}) transport distribution functions are saved in two files. You will need to download the post processing "NERTAW.py" code form the GitHub page of the author (Emad-Rezaei) to calculate the isothermal Hall conductivity ({\tt InSb\_Hall_T.dat}), isothermal Nernst coefficient ({\tt InSb\_Nernst_T.dat}), and Ettingshausen coefficient ({\tt InSb\_Etn.dat}). The detailed information is available in the documentation of the "NERTAW" code. 
 Please keep in mind that this is only a representative example and the results have to converge with respect to interpolation mesh which often requires a reasonably fine mesh.  
 
 \subsection*{Further ideas}
