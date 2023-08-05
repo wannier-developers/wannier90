@@ -1,8 +1,0 @@
-# Developed by  NerWann module of the Wannier90 code.
-# Total Transport distribution function (in SI units of C^2/kg/m^3/S) vs energy in eV
-# Content of the columns:
-# Energy xxz xyz yyz xzz yzz zzz yxz zxz zyz
-#   (if spin decomposition is required, 18 further columns are provided, with the 9
-#    components of the TDFtot for the spin up, followed by those for the spin down)
-  -4.687851084     -0.8773175675E+29 -0.1139844781E+32 -0.4193373042E+28  0.6344920981E+29 -0.1083595666E+30  0.1212960826E+30  0.1143332540E+32 -0.5933968241E+28 -0.1183292806E+29
-   15.31214892      0.1893809122E+31 -0.2950466128E+32  0.4200895954E+31  0.1296160219E+31 -0.7888508494E+30  0.3168298186E+31  0.2860226232E+32  0.4987161895E+30 -0.4585278380E+31

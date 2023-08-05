@@ -1,6 +1,0 @@
-# NerWann module of the Wannier90 code .
-# [Isothermal Nernst along Bz in SI units, i.e. in V/K]
-# [the isothermal Nernst coefficient is defined in the documentation,
-#  the Isothermal Nernst along Bz.]
-# Mu(eV) Temp(K) Nernst_T
-   8.000000000       300.0000000      0.6529480814E-05
