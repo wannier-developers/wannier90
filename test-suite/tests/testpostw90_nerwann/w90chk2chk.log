@@ -1,14 +1,14 @@
- Reading information from file ZnSe.chk :
- written on 24Apr2022 at 20:57:44
-Number of bands: 4
-Excluded bands: 1,2,3,4,5,6,7,8,9,10,15,16,17,18.
+ Reading information from formatted file InSb.chk.fmt :
+ written on  5Aug2023 at 09:29:36
+Number of bands: 8
+Excluded bands: 1,2,3,4,5,6,7,8,9,10.
 Real lattice: read.
 Reciprocal lattice: read.
-Num kpts:512
+Num kpts:216
 mp_grid: read.
 kpt_latt: read.
 nntot:8
-num_wann:4
+num_wann:8
 checkpoint: postwann
 have_disentangled: FALSE
 U_matrix: read.
@@ -18,5 +18,5 @@ wannier_spreads: read.
  ... done
 
 
- Writing formatted checkpoint file ZnSe.chk.fmt... done
+ Writing checkpoint file InSb.chk... done
 
