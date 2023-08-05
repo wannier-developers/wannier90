@@ -728,7 +728,7 @@ call wham_get_eig_deltwoeig(dis_manifold, kpt_latt, pw90_band_deriv_degen,print_
                                   real_lattice,scissors_shift,mp_grid,num_bands, num_kpts, &
                                   num_wann, num_valence_bands, effective_model,have_disentangled, &
                                   seedname, stdout, comm, recip_lattice,del2_eig)
-
+!dv/dk part
 omg_bndx(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(del2_eig(:,1,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
 deleig(:,3)*pw90_ner%bext(2))+ del2_eig(:,1,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+ &
 del2_eig(:,1,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
@@ -738,6 +738,10 @@ del2_eig(:,2,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
 omg_bndz(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(del2_eig(:,3,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
 deleig(:,3)*pw90_ner%bext(2))+del2_eig(:,3,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+& 
 del2_eig(:,3,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
+!dtau/dk part
+!omgtau_bndx(:)=-1*physics%elem_charge_SI/physics%hbar_SI*(deleig(:,1)*(deleig(:,2)*pw90_ner%bext(3)- & 
+!deleig(:,3)*pw90_ner%bext(2))+ deleig(:,2)*(deleig(:,3)*pw90_ner%bext(1)-deleig(:,1)*pw90_ner%bext(3))+ &
+!deleig(:,3)*(deleig(:,1)*pw90_ner%bext(2)-deleig(:,2)*pw90_ner%bext(1)))
 end subroutine Omega_operator 
 
   !================================================!
