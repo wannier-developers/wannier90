@@ -1,5 +1,5 @@
 """
-Parser function parse() to parse the <seedname>_Nernst_T.dat output file of postw90.x.
+Parser function parse() to parse the <seedname>_tdf2.dat output file of postw90.x.
 """
 from __future__ import print_function
 
@@ -29,12 +29,19 @@ def parse(fname):
             continue
 
         pieces = l.split()
-        if len(pieces) == 3 : # No derivatives
-            retdict['mu'].append(float(pieces[0]))
-            retdict['Temp'].append(float(pieces[1]))
-            retdict['Nernst_T'].append(float(pieces[2]))
+        if len(pieces) == 10 : # No derivatives
+            retdict['energy'].append(float(pieces[0]))
+            retdict['tdf2_xxz'].append(float(pieces[1]))
+            retdict['tdf2_xyz'].append(float(pieces[2]))
+            retdict['tdf2_yyz'].append(float(pieces[3]))
+            retdict['tdf2_xzz'].append(float(pieces[4]))
+            retdict['tdf2_yzz'].append(float(pieces[5]))
+            retdict['tdf2_zzz'].append(float(pieces[6]))
+            retdict['tdf2_yxz'].append(float(pieces[7]))
+            retdict['tdf2_zxz'].append(float(pieces[8]))
+            retdict['tdf2_zyz'].append(float(pieces[9]))
         else:
-            raise ValueError("Wrong line length ({}, instead of 3 ); line content: {}".format(
+            raise ValueError("Wrong line length ({}, instead of 10 ); line content: {}".format(
                 len(pieces)), l)
 
 
