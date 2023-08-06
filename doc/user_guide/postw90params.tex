@@ -265,10 +265,10 @@ magnetic moment per cell\\
 
 
 
-\begin{longtable}{|c|c|p{6cm}|}
-%\begin{table}[h!]
-%\begin{center}
-%\begin{tabular}{|c|c|p{6cm}|}
+%\begin{longtable}{|c|c|p{6cm}|}
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
   \hline
   Keyword & Type & Description \\
   &      &             \\
@@ -317,16 +317,16 @@ the optical frequency in the specified range\\
   {\sc kdotp\_num\_bands} & I & Number of bands for $k\cdot p$ expansion \\
   {\sc kdotp\_bands} & I & Band indexes corresponding to the $k\cdot p$ bands \\
   \hline
-%\end{tabular}
+\end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
     seedname.win} file keywords controlling the {\tt berry}
   module. Argument types are represented by, I for a integer, R for a
   real number, P for a physical value, L for a logical value and S for
   a text string.}
 \label{parameter_keywords_berry}
-%\end{center}
-%\end{table}
-\end{longtable}
+\end{center}
+\end{table}
+%\end{longtable}
 
 
 \begin{table}[h!]
@@ -435,21 +435,13 @@ Keyword & Type & Description \\
 {\sc [ner\_]kmesh} & I & Dimensions of the uniform interpolation 
 $k$-mesh (one or three integers)\\ 
 {\sc [ner\_]kmesh\_spacing} & R & Minimum distance between $k$ points in \AA$^{-1}$\\
-{\sc ner\_2d\_dir} & S & Non-periodic direction in 2D systems\\
-{\sc ner\_mu\_min} & P & Minimum value of the chemical potential in eV\\
-{\sc ner\_mu\_max} & P & Maximum value of the chemical potential in eV\\
-{\sc ner\_mu\_step} & R & Step size of chemical potential in eV\\
-{\sc ner\_temp\_min} & P & Minimum value of the temperature~$T$ in Kelvin \\
-{\sc ner\_temp\_max} & P & Maximum value of the temperature~$T$ in Kelvin \\
-{\sc ner\_temp\_step} & R & Step size of temperature in Kelvin \\
 {\sc ner\_tdf\_energy\_step} & R & Energy step size for the total transport distribution (eV) \\
 {\sc ner\_tdf\_smr\_type} & S & Smearing type for the total transport distribution \\
 {\sc ner\_tdf\_smr\_fixed\_en\_width} & P & Smearing for the total transport distribution (eV) \\
 {\sc ner\_bandshift} & L & shift of the conduction bands\\
 {\sc ner\_bandshift\_firstband} & I & Index of the first band to be shifted\\
 {\sc ner\_bandshift\_energyshift} & P & Energy shift of the conduction bands in eV\\
-{\sc ner\_relax\_time} & P & Constant relaxation time in fs\\
-{\sc ner_bext} & R & External magnetic field in T\\
+{\sc ner\_bext} & R & External magnetic field in T\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the \nw\ module.]
@@ -1804,49 +1796,6 @@ It specifies the interpolation $k$ mesh used to calculate the total transport di
 Overrides the \verb#kmesh_spacing# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
-\subsection[ner\_2d\_dir]{\tt  character(len=4) :: ner\_2d\_dir}
-\label{sec:boltz2ddir}
-It is the direction along which the system is non-periodic in 2D systems.
-
-The default value is \texttt{no}.
-
-\subsection[ner\_relax\_time]{\tt real(kind=dp) :: ner\_relax\_time}
-The value of the constant relaxation time in fs to be used in the total transport distribution function.
-
-The default value is 10~fs.
-
-\subsection[ner\_mu\_min]{\tt real(kind=dp) :: ner\_mu\_min}
-Minimum value of the chemical potential $\mu$ for which thermomagnetic properties are calculated.
-
-The units are eV.
-No default value.
-
-\subsection[ner\_mu\_max]{\tt real(kind=dp) :: ner\_mu\_max}
-Maximum value of the chemical potential $\mu$ for which thermomagnetic properties are calculated.
-
-The units are eV.
-No default value.
-
-\subsection[ner\_mu\_step]{\tt real(kind=dp) :: ner\_mu\_step}
-Energy step for the grid of chemical potentials from ner\_mu\_min to ner\_mu\_max in eV. 
-
-No default value.
-
-\subsection[ner\_temp\_min]{\tt real(kind=dp) :: ner\_temp\_min}
-Minimum value of temperature for which thermomagnetic properties are calculated.
-
-The units are K and there is no default value.
-
-\subsection[ner\_temp\_max]{\tt real(kind=dp) :: ner\_temp\_max}
-Maximum value of temperature for which thermomagnetic properties are calculated.
-
-The units are K and there is no default value.
-
-\subsection[ner\_temp\_step]{\tt real(kind=dp) :: ner\_temp\_step}
-Energy step for the grid of temperatures from ner\_temp\_min to ner\_temp\_max.
-
-The units are K and there is no default value.
-
 \subsection[ner\_tdf\_energy\_step]{\tt real(kind=dp) :: ner\_tdf\_energy\_step}
 Energy step for the grid of energies in the total transport distribution function.
 
@@ -1877,7 +1826,7 @@ The units are eV and it has to be specified if {\tt ner\_bandshift} is \verb#tru
 \subsection[ner\_bandshift\_energyshift]{\tt real(kind=dp) :: ner\_bandshift\_energyshift}
 Energy shift of the conduction bands in the unit of eV. It has to be provided if {\tt ner\_bandshift} is \verb#true#.
 
-\subsection[ner_bext]{\tt real(kind=dp) :: ner_bext(3)}
+\subsection[ner\_bext]{\tt real(kind=dp) :: bext(3)}
 The external magnetic field vector in units of Tesla for the calculation of thermomagnetic properties. The default value is (0.0,0.0,0.0)
 
 \clearpage
