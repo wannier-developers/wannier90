@@ -3798,7 +3798,7 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 \sectiontitle{34: InSb -- Nernst effect}
 \begin{itemize}
 \item{Outline: \it{Achieve MLWFs for the valence and low-lying
-    conduction bands of InSb. Compute the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients  within the constant relaxation time approximation the \nw\ module.}} 
+    conduction bands of InSb. Compute the isothermal Nernst, isothermal Hall, and Ettingshausen coefficients  within the relaxation time approximation the \nw\ module.}} 
 \end{itemize}
 \begin{itemize}
   \item{Directory: {\tt examples/example34}}
@@ -3840,7 +3840,7 @@ are compared to first-order (blue) and second-order (red) $k\cdot p$ model resul
 {\tt mpirun -np 8 postw90.x InSb} (parallel execution) 
 \end{enumerate}
 
-The output file {\tt InSb.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . The first order ({\tt InSb\_tdf1.dat}) and second order ({\tt InSb\_tdf2.dat}) transport distribution functions are saved in two files. You will need to download the post processing "NERTAW.py" code form the GitHub page of the author (Emad-Rezaei) to calculate the isothermal Hall conductivity ({\tt InSb\_Hall_T.dat}), isothermal Nernst coefficient ({\tt InSb\_Nernst_T.dat}), and Ettingshausen coefficient ({\tt InSb\_Etn.dat}). The detailed information is available in the documentation of the "NERTAW" code. 
+The output file {\tt InSb.wpout} shows the details of the calculation. Ensure that there are no errors and no unwanted flags are passed to \nw . The first order ({\tt InSb\_tdf1.dat}) and second order ({\tt InSb\_tdf2.dat}) transport distribution functions are saved in two files. You will need to download the post processing "NERTAW.py" code form the GitHub page of the author (Emad-Rezaei) to calculate the isothermal Hall conductivity, isothermal Nernst coefficient, and Ettingshausen coefficient. The detailed information is available in the documentation of the "NERTAW" code. 
 Please keep in mind that this is only a representative example and the results have to converge with respect to interpolation mesh which often requires a reasonably fine mesh.  
 
 \subsection*{Further ideas}
