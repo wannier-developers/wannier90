@@ -76,3 +76,5 @@ example31: Platinum - Selected columns of density matrix algorithm for spinor wa
 example32: Tungsten - SCDM parameters from projectability 
 
 example33: BC2N - Expansion coefficients for kdotp bands 
+
+example34: InSb - Thermomagnetic effects for InSb
