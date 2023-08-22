@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 
+#[==============================================================================================[
+#                                   Basic project definition                                   #
+]==============================================================================================]
+
 project(Wannier90
 		VERSION 4.0.0
 		DESCRIPTION "Compute maximally-localised Wannier functions."
@@ -7,13 +11,32 @@ project(Wannier90
 		LANGUAGES Fortran
 		)
 
-## Options
+# Back-porting to PROJECT_IS_TOP_LEVEL to older cmake
+# TODO: Remove when requiring cmake >= 3.21
+if (NOT DEFINED Spglib_IS_TOP_LEVEL)
+	if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+		set(PROJECT_IS_TOP_LEVEL ON)
+	else ()
+		set(PROJECT_IS_TOP_LEVEL OFF)
+	endif ()
+endif ()
+if (NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif ()
+
+#[==============================================================================================[
+#                                            Options                                            #
+]==============================================================================================]
+
 option(WANNIER90_WITH_MPI "Wannier90: Build library as a shared library" OFF)
 option(WANNIER90_SHARED_LIBS "Wannier90: Build library as a shared library" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_INSTALL "Wannier90: Install files" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_TEST "Wannier90: Build unit tests" ${PROJECT_IS_TOP_LEVEL})
 
-## Variable setup
+#[==============================================================================================[
+#                                     Project configuration                                     #
+]==============================================================================================]
+
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif ()
@@ -26,6 +49,10 @@ if (NOT CMAKE_Fortran_MODULE_DIRECTORY)
 endif ()
 set(BUILD_SHARED_LIBS ${WANNIER90_SHARED_LIBS})
 
+#[==============================================================================================[
+#                                       External packages                                       #
+]==============================================================================================]
+
 ## Third-party libraries
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
@@ -33,17 +60,21 @@ if (WANNIER90_WITH_MPI)
 	find_package(MPI REQUIRED)
 endif ()
 
+#[==============================================================================================[
+#                                        Main definition                                        #
+]==============================================================================================]
+
 ## Main targets
 add_executable(Wannier90_exe)
 set_target_properties(Wannier90_exe PROPERTIES
 		OUTPUT_NAME wannier90.x
 		EXPORT_NAME exe)
-#add_library(Wannier90::exe ALIAS Wannier90_exe)
+add_executable(Wannier90::exe ALIAS Wannier90_exe)
 add_executable(Wannier90_post)
 set_target_properties(Wannier90_post PROPERTIES
 		OUTPUT_NAME postw90.x
 		EXPORT_NAME post)
-#add_library(Wannier90::post ALIAS Wannier90_post)
+add_executable(Wannier90::post ALIAS Wannier90_post)
 add_library(Wannier90_lib)
 set_target_properties(Wannier90_lib PROPERTIES
 		OUTPUT_NAME wannier90
@@ -62,6 +93,10 @@ if (WANNIER90_TEST)
 	add_executable(w90spn2spn.x)
 	add_subdirectory(test-suite)
 endif ()
+
+#[==============================================================================================[
+#                                       Install or Export                                       #
+]==============================================================================================]
 
 ## Installs
 if (WANNIER90_INSTALL)
