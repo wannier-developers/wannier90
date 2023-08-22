@@ -29,14 +29,10 @@ target_sources(Wannier90_exe PRIVATE
 ## Linking targets
 target_link_libraries(Wannier90_exe PRIVATE
 		Wannier90_lib)
-set_target_properties(Wannier90_lib PROPERTIES
-		PUBLIC_HEADER library_interface.F90
-		PUBLIC_HEADER ${CMAKE_Fortran_MODULE_DIRECTORY}/w90_helper_types.mod
-		)
-target_include_directories(Wannier90_lib PUBLIC
-		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 target_link_libraries(Wannier90_lib PRIVATE
 		BLAS::BLAS LAPACK::LAPACK)
+target_include_directories(Wannier90_lib PUBLIC
+		"$<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>")
 if (WANNIER90_WITH_MPI)
 	target_link_libraries(Wannier90_lib PUBLIC MPI::MPI_Fortran)
 endif ()
@@ -45,12 +41,17 @@ add_subdirectory(postw90)
 
 ## Installs
 if (WANNIER90_INSTALL)
+	target_include_directories(Wannier90_lib PUBLIC
+			"$<INSTALL_INTERFACE:${CMAKE_INSTALL_MODULEDIR}>")
 	install(TARGETS Wannier90_lib
 			EXPORT Wannier90Targets
 			LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Wannier90_Runtime NAMELINK_COMPONENT Wannier90_Development
 			ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Wannier90_Development
-			PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Wannier90_Development
 			)
+	install(FILES ${CMAKE_Fortran_MODULE_DIRECTORY}/w90_helper_types.mod
+			DESTINATION ${CMAKE_INSTALL_MODULEDIR}
+			COMPONENT Wannier90_Development
+	)
 	install(TARGETS Wannier90_exe
 			EXPORT Wannier90Targets
 			RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Wannier90_Runtime

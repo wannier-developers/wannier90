@@ -40,14 +40,40 @@ option(WANNIER90_TEST "Wannier90: Build unit tests" ${PROJECT_IS_TOP_LEVEL})
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif ()
-if (WANNIER90_INSTALL)
-	include(GNUInstallDirs)
-	include(CMakePackageConfigHelpers)
-endif ()
 if (NOT CMAKE_Fortran_MODULE_DIRECTORY)
 	set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_mods)
 endif ()
 set(BUILD_SHARED_LIBS ${WANNIER90_SHARED_LIBS})
+
+if (WANNIER90_INSTALL)
+	include(GNUInstallDirs)
+	include(CMakePackageConfigHelpers)
+
+	# TODO: Remove when requiring cmake >= 3.20
+	if (NOT COMMAND cmake_path)
+		# Note: This is not an actual replacement of cmake_path, just a minimal implementation for
+		# this project
+		include(cmake/compat/cmake_path.cmake)
+	endif ()
+
+	# CMake does not properly support fortran module installation paths.
+	# Adapting the standard from fortran-stdlib
+	# https://gitlab.kitware.com/cmake/cmake/-/issues/19608
+	# https://discourse.cmake.org/t/api-design-c-modules-source-listings-and-interface-properties/5389/14
+	cmake_path(APPEND CMAKE_INSTALL_INCLUDEDIR ${PROJECT_NAME} "${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}"
+			OUTPUT_VARIABLE _DEFAULT_CMAKE_INSTALL_MODULEDIR)
+	set(CMAKE_INSTALL_MODULEDIR ${_DEFAULT_CMAKE_INSTALL_MODULEDIR}
+			CACHE STRING
+			"Fortran module installation path (Not a cmake native variable)"
+	)
+	cmake_path(IS_ABSOLUTE CMAKE_INSTALL_MODULEDIR _is_absolute)
+	if (_is_absolute)
+		set(CMAKE_INSTALL_FULL_MODULEDIR ${CMAKE_INSTALL_MODULEDIR})
+	else ()
+		cmake_path(APPEND CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_MODULEDIR}
+				OUTPUT_VARIABLE CMAKE_INSTALL_FULL_MODULEDIR)
+	endif ()
+endif ()
 
 #[==============================================================================================[
 #                                       External packages                                       #
