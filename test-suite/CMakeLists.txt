@@ -1,5 +1,6 @@
-set(test_names "")
-list(APPEND test_names
+find_package(Python3 REQUIRED)
+
+set(test_names
 		partestw90_mpierr
 		testpostw90_boltzwann
 		testpostw90_example04_dos
@@ -71,33 +72,32 @@ list(APPEND test_names
 		testw90_precond_1
 		testw90_precond_2
 		testw90_write_u_matrices
-		)
-set(extra_files "")
-list(APPEND extra_files
+)
+set(extra_files
 		checkpoints
 		run_tests
 		testcode
 		tests
 		tools
-		)
+)
 
 ## Prepare test environment
 foreach (extra IN LISTS extra_files)
-	file(COPY ${extra} DESTINATION test-suite)
+	file(COPY ${extra} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endforeach ()
 target_link_libraries(w90chk2chk.x PRIVATE Wannier90_lib)
 target_sources(w90chk2chk.x PRIVATE
 		${PROJECT_SOURCE_DIR}/src/w90chk2chk.F90
-		)
+)
 target_link_libraries(w90spn2spn.x PRIVATE Wannier90_lib)
 target_sources(w90spn2spn.x PRIVATE
 		${PROJECT_SOURCE_DIR}/src/w90spn2spn.F90
-		)
+)
 
 ## Define tests
 foreach (test IN LISTS test_names)
 	add_test(NAME ${test}
-			COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_tests -c ${test}
+			COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/run_tests -c ${test}
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			)
+	)
 endforeach ()
