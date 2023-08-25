@@ -1,7 +1,6 @@
 find_package(Python3 REQUIRED)
 
 set(test_names
-		partestw90_mpierr
 		testpostw90_boltzwann
 		testpostw90_example04_dos
 		testpostw90_example04_pdos
@@ -73,6 +72,11 @@ set(test_names
 		testw90_precond_2
 		testw90_write_u_matrices
 )
+if (WANNIER90_WITH_MPI)
+	list(APPEND test_names
+			partestw90_mpierr
+	)
+endif ()
 set(extra_files
 		checkpoints
 		run_tests

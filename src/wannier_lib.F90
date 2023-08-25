@@ -199,25 +199,14 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
   use w90_wannier90_libv1_types
   use w90_error, only: w90_error_type
 
-#ifdef MPI
-#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
-#    error "You need to define which MPI interface you are using"
-#  endif
-#endif
-
-#ifdef MPI08
+#ifdef MPI_Fortran_HAVE_F08_MODULE
   use mpi_f08 ! use f08 interface if possible
 #endif
-#ifdef MPI90
+#ifdef MPI_Fortran_HAVE_F90_MODULE
   use mpi ! next best, use fortran90 interface
 #endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
-
   type(w90_physical_constants_type) :: physics
   character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
@@ -443,24 +432,14 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_readwrite, only: w90_readwrite_lib_set_atoms
   use w90_error
 
-#ifdef MPI
-#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
-#    error "You need to define which MPI interface you are using"
-#  endif
-#endif
-
-#ifdef MPI08
+#ifdef MPI_Fortran_HAVE_F08_MODULE
   use mpi_f08 ! use f08 interface if possible
 #endif
-#ifdef MPI90
+#ifdef MPI_Fortran_HAVE_F90_MODULE
   use mpi ! next best, use fortran90 interface
 #endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   type(w90_physical_constants_type) :: physics
   character(len=*), intent(in) :: seed__name
