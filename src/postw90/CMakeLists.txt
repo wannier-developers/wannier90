@@ -19,4 +19,4 @@ target_sources(Wannier90_post PRIVATE
 #		pw90_library.F90
 #		)
 target_link_libraries(Wannier90_post PRIVATE
-		Wannier90_lib)
+		Wannier90_lib BLAS::BLAS LAPACK::LAPACK)
