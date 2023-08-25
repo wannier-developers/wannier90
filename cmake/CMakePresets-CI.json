@@ -32,10 +32,20 @@
         "CMAKE_Fortran_COMPILER": {
           "type": "FILEPATH",
           "value": "gfortran"
-        },
-        "CMAKE_LINKER": {
+        }
+      }
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "Configure preset for LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "binaryDir": "cmake-build-gcc",
+      "cacheVariables": {
+        "CMAKE_Fortran_COMPILER": {
           "type": "FILEPATH",
-          "value": "ld"
+          "value": "flang-new"
         }
       }
     },
@@ -72,6 +82,14 @@
       "configurePreset": "gcc-ci"
     },
     {
+      "name": "llvm-ci",
+      "displayName": "Build preset for LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "llvm-ci"
+    },
+    {
       "name": "intel-ci",
       "displayName": "Build preset for Intel toolchain",
       "inherits": [
@@ -100,6 +118,14 @@
       "configurePreset": "gcc-ci"
     },
     {
+      "name": "llvm-ci",
+      "displayName": "Test preset for LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "llvm-ci"
+    },
+    {
       "name": "intel-ci",
       "displayName": "Test preset for Intel toolchain",
       "inherits": [
@@ -124,6 +150,24 @@
         {
           "type": "test",
           "name": "gcc-ci"
+        }
+      ]
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "CI test for LLVM toolchain",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "llvm-ci"
+        },
+        {
+          "type": "build",
+          "name": "llvm-ci"
+        },
+        {
+          "type": "test",
+          "name": "llvm-ci"
         }
       ]
     },
