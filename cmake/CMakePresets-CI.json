@@ -15,6 +15,10 @@
         "WANNIER90_TEST": {
           "type": "BOOL",
           "value": true
+        },
+        "WANNIER90_WITH_MPI": {
+          "type": "BOOL",
+          "value": "$env{WITH_MPI}"
         }
       },
       "errors": {
