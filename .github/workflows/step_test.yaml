@@ -1,0 +1,82 @@
+name: test
+run-name: Run tests
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    name: Check pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+      - uses: pre-commit/action@v3.0.0
+
+  tests:
+    name: Check on ${{ matrix.toolchain }} toolchain
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    container: ${{ !matrix.os && 'ghcr.io/lecrisut/dev-env:main' || '' }}
+    needs: [ pre-commit ]
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [ gcc, llvm, intel ]
+        include:
+          # flang is missing features in 16.0.6
+          - toolchain: llvm
+            experimental: true
+    steps:
+      - name: Install missing packages
+        run: dnf install -y bzip2 python-unversioned-command
+      - name: Enable msvc toolchain on windows
+        uses: ilammy/msvc-dev-cmd@v1
+        if: contains(matrix.os, 'windows')
+      - name: Activate Intel compilers
+        # Not elegant, it will propagate all environment variable.
+        # Intel does not provide a way to output the environment variables to a file
+        # Note: PATH needs to be exported to GITHUB_PATH otherwise it can be overwritten
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          printenv >> $GITHUB_ENV
+          echo $PATH >> $GITHUB_PATH
+        if: matrix.toolchain == 'intel'
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+      - name: Run CMake configuration for ${{ matrix.toolchain }} toolchain
+        uses: lukka/run-cmake@v10.3
+        with:
+          workflowPreset: "${{ matrix.toolchain }}-ci"
+
+  coverage:
+    name: Check test coverage
+    runs-on: ubuntu-latest
+    needs: [ tests ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+      - name: Get test coverage
+        uses: lukka/run-cmake@v10.3
+        with:
+          workflowPreset: ci-coverage
+      - name: Get lcov data
+        uses: danielealbano/lcov-action@v3
+        with:
+          # Note lcov-action prepends and appends wild-cards *. Account for those
+          # https://github.com/danielealbano/lcov-action/issues/11
+          remove_patterns: /test/,/cmake-build*/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          name: ${{ matrix.coverage }} coverage
+          files: coverage.info
+          flags: ${{ matrix.coverage }}
+          verbose: true

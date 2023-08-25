@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ develop ]
+  push:
+    branches: [ develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    uses: ./.github/workflows/step_test.yaml
