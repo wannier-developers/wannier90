@@ -144,7 +144,7 @@ if (WANNIER90_INSTALL)
 			COMPONENT Spglib_Development)
 	install(EXPORT Wannier90Targets
 			FILE Wannier90Targets.cmake
-			NAMESPACE ${ARGS_PROJECT}::
+			NAMESPACE Wannier90::
 			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Wannier90
 			COMPONENT Wannier90_Development)
 	export(EXPORT Wannier90Targets
