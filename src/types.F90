@@ -189,7 +189,14 @@ module w90_types
     !! lower bound of the disentanglement inner (frozen) window
     real(kind=dp) :: froz_max
     !! upper bound of the disentanglement inner (frozen) window
+    real(kind=dp) :: proj_min
+    !! lower threshold of the projectability disentanglement, below are discarded
+    real(kind=dp) :: proj_max
+    !! upper threshold of the projectability disentanglement, equal and above are frozen
     logical :: frozen_states
+    !! whether to use energy frozen window, i.e., froz_min/froz_max
+    logical :: frozen_proj
+    !! whether to use projectability frozen window, i.e., proj_min/proj_max
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)

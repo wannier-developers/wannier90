@@ -132,11 +132,20 @@ contains
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
-                     indxnfroz, ndimfroz, nfirstwin, print_output%iprint, num_bands, num_kpts, &
-                     num_wann, print_output%timing_level, lfrozen, linner, on_root, &
-                     stdout, timer, error, comm)
-    if (allocated(error)) return
+    if (dis_manifold%frozen_proj) then
+      call dis_windows_proj(dis_spheres, dis_manifold, eigval_opt, a_matrix, m_matrix_orig, &
+                            m_matrix_orig_local, kpt_latt, recip_lattice, indxfroz, &
+                            indxnfroz, ndimfroz, nfirstwin, print_output%iprint, kmesh_info%nnlist, &
+                            kmesh_info%nntot, num_bands, num_kpts, num_wann, num_nodes, my_node_id, &
+                            print_output%timing_level, lfrozen, linner, on_root, stdout, timer, error, comm)
+      if (allocated(error)) return
+    else
+      call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
+                       indxnfroz, ndimfroz, nfirstwin, print_output%iprint, num_bands, num_kpts, &
+                       num_wann, print_output%timing_level, lfrozen, linner, on_root, &
+                       stdout, timer, error, comm)
+      if (allocated(error)) return
+    endif
 
     ! Construct the unitarized projection
     call dis_project(a_matrix, u_matrix_opt, dis_manifold%ndimwin, nfirstwin, num_bands, num_kpts, &
@@ -165,18 +174,21 @@ contains
                                   print_output%timing_level, on_root, timer, error, stdout, comm)
     if (allocated(error)) return
 
-    ! Slim down the original Mmn(k,b)
-    call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
-                         kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, timer, &
-                         error, comm)
-    if (allocated(error)) return
+    ! For frozen_proj, these are done inside dis_windows_proj()
+    if (.not. dis_manifold%frozen_proj) then
+      ! Slim down the original Mmn(k,b)
+      call internal_slim_m(m_matrix_orig_local, dis_manifold%ndimwin, nfirstwin, kmesh_info%nnlist, &
+                           kmesh_info%nntot, num_bands, num_kpts, print_output%timing_level, timer, &
+                           error, comm)
+      if (allocated(error)) return
 
-    dis_manifold%lwindow = .false.
-    do nkp = 1, num_kpts
-      do j = nfirstwin(nkp), nfirstwin(nkp) + dis_manifold%ndimwin(nkp) - 1
-        dis_manifold%lwindow(j, nkp) = .true.
+      dis_manifold%lwindow = .false.
+      do nkp = 1, num_kpts
+        do j = nfirstwin(nkp), nfirstwin(nkp) + dis_manifold%ndimwin(nkp) - 1
+          dis_manifold%lwindow(j, nkp) = .true.
+        end do
       end do
-    end do
+    endif
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix_opt, num_bands, num_bands, num_kpts, &
@@ -1164,6 +1176,414 @@ contains
     return
     !================================================!
   end subroutine dis_windows
+
+  subroutine dis_windows_proj(dis_spheres, dis_manifold, eigval_opt, a_matrix, m_matrix_orig, m_matrix_orig_local, &
+                              kpt_latt, recip_lattice, indxfroz, indxnfroz, ndimfroz, nfirstwin, iprint, nnlist, &
+                              nntot, num_bands, num_kpts, num_wann, num_nodes, my_node_id, timing_level, lfrozen, &
+                              linner, on_root, stdout, timer, error, comm)
+    !==================================================================!
+    !                                                                  !
+    !! This subroutine selects the states for disentanglement and frozen
+    !! based on projectability. States with projectability < dis_proj_min
+    !! are discarded, states with projectability >= dis_proj_min are
+    !! included in the disentanglement, states with projectability
+    !! >= dis_proj_max are frozen.
+    !                                                                  !
+    !==================================================================!
+
+    ! OUTPUT:
+    !     ndimwin(nkp)   number of bands inside outer window at nkp-th k point
+    !     ndimfroz(nkp)  number of frozen bands at nkp-th k point
+    !     lfrozen(i,nkp) true if the i-th band inside outer window is frozen
+    !     linner         true if there is an inner window
+    !     indxfroz(i,nkp) outer-window band index for the i-th frozen state
+    !                     (equals 1 if it is the bottom of outer window.
+    !                      The indexes are reordered after excluding
+    !                      low-projectability states.)
+    !     indxnfroz(i,nkp) outer-window band index for the i-th non-frozen s
+    !                     (equals 1 if it is the bottom of outer window.
+    !                      The indexes are reordered after excluding
+    !                      low-projectability states.)
+    !     nfirstwin(nkp) index of lowest band inside outer window at nkp-th
+    ! MODIFIED:
+    !     eigval_opt(nb,nkp) At input it contains a large set of eigenvalues. At
+    !                    it is slimmed down to contain only those inside the
+    !                    energy window, stored in nb=1,...,ndimwin(nkp)
+
+    implicit none
+
+    ! arguments
+    type(dis_spheres_type), intent(in)     :: dis_spheres
+    type(dis_manifold_type), intent(inout) :: dis_manifold ! ndimwin alone is modified
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90comm_type), intent(in) :: comm
+
+    integer, intent(in) :: iprint, timing_level
+    integer, intent(in) :: stdout
+    integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
+    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: num_nodes, my_node_id
+    integer, intent(inout) :: ndimfroz(:)
+    integer, intent(inout) :: indxfroz(:, :)
+    integer, intent(inout) :: indxnfroz(:, :)
+    integer, intent(inout) :: nfirstwin(:)
+
+    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
+    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3)
+    real(kind=dp), intent(inout) :: eigval_opt(:, :)
+
+    logical, intent(in) :: on_root
+    logical, intent(inout) :: linner
+    logical, intent(inout) :: lfrozen(:, :)
+
+    ! local variables
+    integer :: indxkeep(num_bands, num_kpts)
+    !     indxkeep(i,nkp) original outer-window band index for the i-th state
+    !                     included in disentanglement, i.e. frozen + non-frozen state.
+    !                     This is used to allow excluding states in the middle of
+    !                     orignal outter window, and to generate a new outter window.
+    !                     (equals 1 if it is the bottom of outer window)
+
+    integer :: nkp, nn, nkp2, nkp_global, ierr
+    integer :: i, j, k, l
+    real(kind=dp) :: projs(num_bands)
+    integer :: invindxkeep(num_bands)
+    ! Needed to split m_matrix_orig on different nodes
+    integer, dimension(0:num_nodes - 1) :: counts
+    integer, dimension(0:num_nodes - 1) :: displs
+
+    if (timing_level > 1 .and. on_root) call io_stopwatch_start('dis: windows_proj', timer)
+
+    call comms_array_split(num_kpts, counts, displs, comm)
+
+    linner = .false.
+
+    if (on_root) write (stdout, '(1x,a)') &
+      '+----------------------------------------------------------------------------+'
+    if (on_root) write (stdout, '(1x,a)') &
+      '|                              Energy  Windows                               |'
+    if (on_root) write (stdout, '(1x,a)') &
+      '|                              ---------------                               |'
+    if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+      '|                   Outer: ', dis_manifold%win_min, '  to ', dis_manifold%win_max, &
+      '  (eV)                   |'
+    if (dis_manifold%frozen_states) then
+      if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+        '|                   Inner: ', dis_manifold%froz_min, '  to ', dis_manifold%froz_max, &
+        '  (eV)                   |'
+    else
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                   No frozen states were specified                          |'
+    endif
+    if (on_root) write (stdout, '(1x,a)') &
+      '|----------------------------------------------------------------------------|'
+    if (on_root) write (stdout, '(1x,a)') &
+      '|                          Projectability  Windows                           |'
+    if (on_root) write (stdout, '(1x,a)') &
+      '|                          -----------------------                           |'
+    if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+      '|               Discarded: ', 0.0_dp, '  to ', dis_manifold%proj_min, &
+      '                         |'
+    if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+      '|            Disentangled: ', dis_manifold%proj_min, '  to ', 1.0_dp, &
+      '                         |'
+    if (dis_manifold%frozen_proj) then
+      if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
+        '|                  Frozen: ', dis_manifold%proj_max, '  to ', 1.0_dp, &
+        '                         |'
+    else
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                   No frozen states were specified                          |'
+    endif
+    if (on_root) write (stdout, '(1x,a)') &
+      '+----------------------------------------------------------------------------+'
+
+    do nkp = 1, num_kpts
+      ! Generate the projectability array
+      projs = 0.0_dp
+      do i = 1, num_bands
+        do j = 1, num_wann
+          projs(i) = projs(i) + real(a_matrix(i, j, nkp), dp)**2 + aimag(a_matrix(i, j, nkp))**2
+        enddo
+        if ((projs(i) < 0.0_dp) .or. (projs(i) > 1.0_dp)) then
+          if (on_root) write (stdout, *) ' Error at k-point: ', nkp, '  band: ', i
+          if (on_root) write (stdout, 411) (eigval_opt(j, nkp), j=1, num_bands)
+411       format('Bands (eV): ', 10(F10.5, 1X))
+          if (on_root) write (stdout, 412) (projs(j), j=1, num_bands)
+412       format('Projectability: ', 10(F10.5, 1X))
+          call set_error_fatal(error, 'dis_windows_proj: projectability < 0.0 or > 1.0', comm)
+          return
+        endif
+      enddo
+
+      ! Check which eigenvalues fall within the inner/outer windows
+      !
+      ! Inside this subroutine, I just use indxkeep which is more flexible that
+      ! allows me to exclude states in the middle of the outer window; outside
+      ! of this subroutine, since I have already slimmed down the a_matrix
+      ! and m_matrix, so nfirstwin = 1 is fine.
+      nfirstwin(nkp) = 1
+      indxkeep(:, nkp) = 0
+      indxfroz(:, nkp) = 0
+      indxnfroz(:, nkp) = 0
+      lfrozen(:, nkp) = .false.
+      dis_manifold%lwindow(:, nkp) = .false.
+      j = 0 ! counter for all keep states
+      k = 0 ! counter for frozen states
+      l = 0 ! counter for non-frozen states
+      do i = 1, num_bands
+        ! exclude states outside disentanglement energy window
+        if ((eigval_opt(i, nkp) < dis_manifold%win_min) .or. &
+            (eigval_opt(i, nkp) > dis_manifold%win_max)) cycle
+        ! freeze high-proj states + states inside frozen energy window, i.e. their union
+        if ((projs(i) >= dis_manifold%proj_max) .or. &
+            (dis_manifold%frozen_states .and. ((eigval_opt(i, nkp) >= dis_manifold%froz_min) &
+                                               .and. (eigval_opt(i, nkp) <= dis_manifold%froz_max)))) then
+          j = j + 1
+          ! Inside outer window, relative to bottom of outer window, however the bottom is 1
+          indxkeep(j, nkp) = i
+          k = k + 1
+          indxfroz(k, nkp) = i
+          lfrozen(j, nkp) = .true.
+          ! Relative to the total num_bands
+          dis_manifold%lwindow(i, nkp) = .true.
+        else if ((projs(i) >= dis_manifold%proj_min) .and. (projs(i) < dis_manifold%proj_max)) then
+          j = j + 1
+          indxkeep(j, nkp) = i
+          l = l + 1
+          indxnfroz(l, nkp) = i
+          ! Relative to the total num_bands
+          dis_manifold%lwindow(i, nkp) = .true.
+        end if
+      enddo
+      dis_manifold%ndimwin(nkp) = j
+      ndimfroz(nkp) = k
+
+      if (j /= k + l) then
+        if (on_root) write (stdout, *) ' ERROR AT K-POINT: ', nkp
+        if (on_root) write (stdout, '(3(a,i5))') ' ndimwin: ', dis_manifold%ndimwin(nkp), &
+          ' ndimfroz: ', ndimfroz(nkp), ' ndimnfroz: ', l
+        call set_error_fatal(error, 'dis_windows_proj: (ndimfroz + ndimnfroz) /= ndimwin at this k-point', comm)
+        return
+      endif
+
+      if (dis_manifold%ndimwin(nkp) == 0) then
+        if (on_root) write (stdout, *) ' ERROR AT K-POINT: ', nkp
+        if (on_root) write (stdout, *) ' dis_proj_min:     ', dis_manifold%proj_min
+        if (on_root) write (stdout, *) ' EIGENVALUE projectability: [', &
+          minval(projs), ', ', maxval(projs), ']'
+        call set_error_fatal(error, 'dis_windows_proj: The outer energy window contains no eigenvalues' &
+                             //', consider decreasing dis_proj_min/increasing dis_win_max?', comm)
+        return
+      endif
+
+      if (dis_manifold%ndimwin(nkp) < num_wann) then
+        if (on_root) write (stdout, '(1x,a17,i4,a8,i3,a9,i3)') 'ERROR AT K-POINT ', &
+          nkp, '  ndimwin=', dis_manifold%ndimwin(nkp), '  num_wann=', num_wann
+        if (on_root) write (stdout, '(a)') 'Bands (eV):'
+        if (on_root) write (stdout, 411) (eigval_opt(j, nkp), j=1, num_bands)
+        if (on_root) write (stdout, '(a)') 'Projectability:'
+        if (on_root) write (stdout, 412) (projs(j), j=1, num_bands)
+        call set_error_fatal(error, 'dis_windows_proj: Energy window contains fewer states than number of target WFs' &
+                             //', consider decreasing dis_proj_min/increasing dis_win_max?', comm)
+        return
+      endif
+
+      if (ndimfroz(nkp) > num_wann) then
+        if (on_root) write (stdout, 413) nkp, ndimfroz(nkp), num_wann
+413     format(' ERROR AT K-POINT ', i4, ' THERE ARE ', i2, &
+               ' BANDS INSIDE THE INNER WINDOW AND ONLY', i2, &
+               ' TARGET BANDS')
+        if (on_root) write (stdout, 414) (eigval_opt(indxfroz(i, nkp), nkp), i=1, ndimfroz(nkp))
+414     format('BANDS: (eV)', 10(F10.5, 1X))
+        call set_error_fatal(error, 'dis_windows_proj: More states in the frozen window than target WFs', comm)
+        return
+      endif
+
+      if (ndimfroz(nkp) > 0) linner = .true.
+      ! DEBUG
+      !         write(*,'(a,i4,a,i2,a,i2)') 'k point ',nkp,
+      !     &    ' lowest band in outer win is # ',imin,
+      !     &    '   # frozen states is ',ndimfroz(nkp)
+      ! ENDDEBUG
+
+      ! Slim down eigval vector at present k, i.e. remove low-projectability states
+      do i = 1, dis_manifold%ndimwin(nkp)
+        j = indxkeep(i, nkp)
+        if (j == i) cycle
+        eigval_opt(i, nkp) = eigval_opt(j, nkp)
+      end do
+      eigval_opt(dis_manifold%ndimwin(nkp) + 1:num_bands, nkp) = 0.0_dp
+      ! slim down a_matrix
+      if (dis_manifold%ndimwin(nkp) .ne. num_bands) then
+        do j = 1, num_wann
+          do i = 1, dis_manifold%ndimwin(nkp)
+            a_matrix(i, j, nkp) = a_matrix(indxkeep(i, nkp), j, nkp)
+          enddo
+          a_matrix(dis_manifold%ndimwin(nkp) + 1:num_bands, j, nkp) = cmplx_0
+        enddo
+      endif
+      ! No need to slim u_matrix_opt, it is calculated from a_matrix in dis_project().
+      ! Reorder the indexes.
+      ! Find the reverse mapping.
+      invindxkeep = 0
+      do i = 1, dis_manifold%ndimwin(nkp)
+        invindxkeep(indxkeep(i, nkp)) = i
+      end do
+      ! Reorder the indexes, to remove low-projectability states (which are excluded
+      ! from disentanglement) that are in the middle of high-projectability states
+      ! (which are included in disentanglement). So now these indexes are for the
+      ! slimmed matrices, instead of the original num_bands-sized matrices.
+      do i = 1, ndimfroz(nkp)
+        j = indxfroz(i, nkp)
+        indxfroz(i, nkp) = invindxkeep(j)
+      end do
+      indxfroz((ndimfroz(nkp) + 1):num_bands, nkp) = 0
+      do i = 1, dis_manifold%ndimwin(nkp) - ndimfroz(nkp)
+        j = indxnfroz(i, nkp)
+        indxnfroz(i, nkp) = invindxkeep(j)
+      end do
+      indxnfroz((dis_manifold%ndimwin(nkp) - ndimfroz(nkp) + 1):num_bands, nkp) = 0
+
+    enddo
+    ! [k-point loop (nkp)]
+
+    ! slim down m_matrix since some states in the middle might be removed due to
+    ! low projectability. I remove them here so that I can use the local variable
+    ! indxkeep, then I will skip the interl_slim_m step which is for removing
+    ! states outside of energy outer window.
+    !
+    ! slim down m_matrix_orig
+    if (on_root) then
+      ! this is done outside of previous do loop since we need indxkeep on nn kpoint nkp2
+      ! I also slim down m_matrix_orig here to be safe: make
+      ! sure it is consistent with m_matrix_orig_local
+      do nkp = 1, num_kpts
+        do nn = 1, nntot
+          nkp2 = nnlist(nkp, nn)
+          do j = 1, dis_manifold%ndimwin(nkp2)
+            do i = 1, dis_manifold%ndimwin(nkp)
+              m_matrix_orig(i, j, nn, nkp) = m_matrix_orig( &
+                                             indxkeep(i, nkp), indxkeep(j, nkp2), nn, nkp)
+            end do
+          end do
+          m_matrix_orig(dis_manifold%ndimwin(nkp) + 1:num_bands, &
+                        dis_manifold%ndimwin(nkp2) + 1:num_bands, nn, nkp) = cmplx_0
+        end do
+      end do
+    endif
+    ! slim down m_matrix_orig_local
+    do nkp = 1, counts(my_node_id)
+      nkp_global = nkp + displs(my_node_id)
+      do nn = 1, nntot
+        nkp2 = nnlist(nkp_global, nn)
+        do j = 1, dis_manifold%ndimwin(nkp2)
+          do i = 1, dis_manifold%ndimwin(nkp_global)
+            m_matrix_orig_local(i, j, nn, nkp) = m_matrix_orig_local( &
+                                                 indxkeep(i, nkp_global), indxkeep(j, nkp2), nn, nkp)
+          end do
+        end do
+        m_matrix_orig_local(dis_manifold%ndimwin(nkp_global) + 1:num_bands, &
+                            dis_manifold%ndimwin(nkp2) + 1:num_bands, nn, nkp) = cmplx_0
+      end do
+    end do
+
+    if (iprint > 1) then
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                        K-points with Frozen States                         |'
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                        ---------------------------                         |'
+      i = 0
+      do nkp = 1, num_kpts
+        if (ndimfroz(nkp) .gt. 0) then
+          i = i + 1
+          if (i .eq. 1) then
+            if (on_root) write (stdout, '(1x,a,i6)', advance='no') '|', nkp
+          else if ((i .gt. 1) .and. (i .lt. 12)) then
+            if (on_root) write (stdout, '(i6)', advance='no') nkp
+          else if (i .eq. 12) then
+            if (on_root) write (stdout, '(i6,a)') nkp, '    |'
+            i = 0
+          endif
+        endif
+      enddo
+      if (i .ne. 0) then
+        do j = 1, 12 - i
+          if (on_root) write (stdout, '(6x)', advance='no')
+        enddo
+        if (on_root) write (stdout, '(a)') '    |'
+      endif
+      if (on_root) write (stdout, '(1x,a)') &
+        '+----------------------------------------------------------------------------+'
+    endif
+
+    if (on_root) write (stdout, '(3x,a,i4)') 'Number of target bands to extract: ', num_wann
+    if (iprint > 1) then
+      if (on_root) write (stdout, '(1x,a)') &
+        '+----------------------------------------------------------------------------+'
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                                  Windows                                   |'
+      if (on_root) write (stdout, '(1x,a)') &
+        '|                                  -------                                   |'
+      if (on_root) write (stdout, '(1x,a)') &
+        '|               K-point      Ndimwin     Ndimfroz    Nfirstwin               |'
+      if (on_root) write (stdout, '(1x,a)') &
+        '|               ----------------------------------------------               |'
+      do nkp = 1, num_kpts
+        if (on_root) write (stdout, 415) nkp, dis_manifold%ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
+      enddo
+415   format(1x, '|', 14x, i6, 7x, i6, 7x, i6, 6x, i6, 18x, '|')
+      if (on_root) write (stdout, '(1x,a)') &
+        '+----------------------------------------------------------------------------+'
+    endif
+
+    if (iprint > 2) then
+      if (on_root) then
+        write (stdout, '(1x,a)') &
+          '+----------------------------------------------------------------------------+'
+        write (stdout, '(1x,a)') &
+          '|                         Kept bands at each K-point                         |'
+        write (stdout, '(1x,a)') &
+          '|               ----------------------------------------------               |'
+        do nkp = 1, num_kpts
+          write (stdout, '(1x,"|")', advance="no")
+          do i = 1, dis_manifold%ndimwin(nkp)
+            write (stdout, '(1x,i0)', advance="no") indxkeep(i, nkp)
+          end do
+          write (stdout, '(1x,"|")')
+        end do
+        write (stdout, '(1x,a)') &
+          '+----------------------------------------------------------------------------+'
+      end if
+    endif
+
+    if (iprint > 2) then
+      if (on_root) then
+        write (stdout, '(1x,a)') &
+          '+----------------------------------------------------------------------------+'
+        write (stdout, '(1x,a)') &
+          '|                       Frozen bands at each K-point                         |'
+        write (stdout, '(1x,a)') &
+          '|               ----------------------------------------------               |'
+        do nkp = 1, num_kpts
+          write (stdout, '(1x,"|")', advance="no")
+          do i = 1, ndimfroz(nkp)
+            write (stdout, '(1x,i0)', advance="no") indxfroz(i, nkp)
+          end do
+          write (stdout, '(1x,"|")')
+        end do
+        write (stdout, '(1x,a)') &
+          '+----------------------------------------------------------------------------+'
+      end if
+    endif
+
+    if (timing_level > 1) call io_stopwatch_stop('dis: windows_proj', timer)
+
+    return
+  end subroutine dis_windows_proj
 
   subroutine dis_project(a_matrix, u_matrix_opt, ndimwin, nfirstwin, num_bands, num_kpts, &
                          num_wann, timing_level, on_root, timer, error, stdout, comm)

@@ -226,6 +226,9 @@ The selected columns of the density matrix (SCDM) method~\cite{LinLin-ArXiv2017}
 
 Moreover, also the automatic generation of initial projections with spinor WFs is implemented in the {\tt pw2wannier90} interface. See Example 31 in the \wannier\ tutorial that shows how to use it.
 
+Another automatic projection method is projectability-disentangled Wannier function (PDWF) \cite{Qiao2023-pdwf}, which uses pseudo-atomic orbitals inside pseudopotentials as initial guesses.
+See Example 34 and 35.
+
 
 
 \subsection{An example of projections}\label{sec:proj_example}
@@ -574,6 +577,14 @@ When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is requir
 Default is \verb#.false.#
 (only relevant if \verb#write_dmn=.true.#). 
 
+
+\item \verb#atom_proj# -- Set to \verb#.true.# to use pseudo-atomic orbitals for computing \verb#amn#. Default is \verb#.false.#.
+
+\item \verb#atom_proj_exclude# -- A list of integers specifying the indices of pseudo-atomic projectors to be excluded from computing \verb#amn#. Used only when \verb#atom_proj = .true.#. No default.
+
+\item \verb#atom_proj_ext# -- Set to \verb#.true.# to use external pseudo-atomic orbitals for computing \verb#amn#, will read data files from directory \verb#atom_proj_dir#. Used only when \verb#atom_proj = .true.#. Default is \verb#.false.#.
+
+\item \verb#atom_proj_dir# -- A string specifying the directory for external pseudo-atomic projectors. Used only when \verb#atom_proj = .true.# and \verb#atom_proj_ext = .true.#. No default.
 
 
 \end{itemize}

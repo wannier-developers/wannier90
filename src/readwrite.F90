@@ -664,6 +664,40 @@ contains
       endif
     endif
     ! ndimwin/lwindow are not read
+
+    ! default not using projectability disentanglement, since it works the best
+    ! with AMN generated from pseudo-atomic projections.
+    ! However, here upon reading AMN we do not know where it comes from.
+    ! So we still use energy disentanglement by default.
+    dis_manifold%frozen_proj = .false.
+    call w90_readwrite_get_keyword('dis_froz_proj', found, error, comm, &
+                                   l_value=dis_manifold%frozen_proj)
+    if (allocated(error)) return
+
+    ! default values for proj_min and proj_max
+    dis_manifold%proj_min = 0.01_dp; dis_manifold%proj_max = 0.95_dp
+    call w90_readwrite_get_keyword('dis_proj_min', found, error, comm, &
+                                   r_value=dis_manifold%proj_min)
+    if (allocated(error)) return
+    if (found) then
+      if ((dis_manifold%proj_min < 0.0_dp) .or. (dis_manifold%proj_min > 1.0_dp)) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_min < 0.0 or > 1.0', comm)
+        return
+      endif
+    endif
+    call w90_readwrite_get_keyword('dis_proj_max', found2, error, comm, &
+                                   r_value=dis_manifold%proj_max)
+    if (allocated(error)) return
+    if (found2) then
+      if ((dis_manifold%proj_max < 0.0_dp) .or. (dis_manifold%proj_max > 1.0_dp)) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < 0.0 or > 1.0', comm)
+        return
+      endif
+    endif
+    if (dis_manifold%proj_max < dis_manifold%proj_min) then
+      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < dis_proj_min', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_dis_manifold
 
   subroutine w90_readwrite_read_kmesh_data(kmesh_input, error, comm)
@@ -917,6 +951,9 @@ contains
     call w90_readwrite_get_keyword('dis_conv_window', found, error, comm)
     call w90_readwrite_get_keyword('dis_froz_max', found, error, comm)
     call w90_readwrite_get_keyword('dis_froz_min', found, error, comm)
+    call w90_readwrite_get_keyword('dis_froz_proj', found, error, comm)
+    call w90_readwrite_get_keyword('dis_proj_max', found, error, comm)
+    call w90_readwrite_get_keyword('dis_proj_min', found, error, comm)
     call w90_readwrite_get_keyword('dis_mix_ratio', found, error, comm)
     call w90_readwrite_get_keyword('dis_num_iter', found, error, comm)
     call w90_readwrite_get_keyword('dis_spheres_first_wann', found, error, comm)

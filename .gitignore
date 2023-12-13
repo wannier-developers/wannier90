@@ -11,3 +11,4 @@ libwannier.dylib
 *~
 *.x.dSYM
 .vscode
+*.mod

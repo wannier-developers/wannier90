@@ -183,6 +183,12 @@ program = WANNIER90_CUBE
 inputs_args = ('gaas.win', '')
 output = gaas_00001.cube
 
+# Graphene, PDWF
+[testw90_graphene_pdwf]
+program = WANNIER90_WOUT_OK
+inputs_args = ('graphene.win', '')
+output = graphene.wout
+
 # Test of disentanglement in spheres in k-space
 [testpostw90_si_geninterp/]
 program = POSTW90_GENINTERPDAT_OK

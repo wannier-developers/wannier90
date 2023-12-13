@@ -303,3 +303,21 @@ you do not want to rerun \texttt{pw2wannier90.x}, then
 \texttt{w90spn2spn.x} can be useful. 
 Also, once a ``formatted'' \verb|seedname.spn| has been generated, the step 4 can be skipped if 
 \texttt{spn\_formatted} is set to \texttt{true} in \postw\ input file \verb|seedname.win|.
+
+\section{{\tt write\_pdwf\_projectors.py}}
+
+A python script to extract projectors from a \verb#UPF# file
+and write them into a \verb#pw2wannier90.x#-recognizable
+\verb#dat# file, which can be used to compute \verb#amn# using pseudo-atomic orbital
+projection.
+
+Usage:\newline
+
+\verb|path/write_pdwf_projectors.py UPF_filename|\newline
+
+where \verb|path| is the path of \verb|utility| folder,
+\verb|UPF_filename| is the path of a \verb#UPF# file.
+
+The script serves as a reference for writing the \verb#dat# file,
+you can generate your own pseudo-atomic orbitals by some other
+codes and use them to compute \verb#amn#.

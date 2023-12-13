@@ -442,3 +442,107 @@ The following keywords need to be specified in the {\tt pw2wannier90.x} input fi
 \verb#scdm_mu#
 \verb#scdm_sigma#
 \noindent
+
+\section{Projections via pseudo-atomic orbitals in pw2wannier90} \label{sec:proj_pdwf}
+
+When generating pseudopotentials, often the atomic wavefunctions of isolated atom
+are pseudized and bundled together with the pseudopotential files.
+These orbitals are often used for computing the projectabilities, for instance,
+measuring orbital contributions to band structures.
+Instead of manually specifying the initial projections in the \verb#projections#
+block, one can use these pseudo-atomic orbitals to automate the initial projection
+process.
+
+Currently (July 2023), this functionality is implemented in the \QE{} interface, but
+in principle it can be done in any other interface as well.
+In the following, we will use the \QE{} interface as an example to illustrate
+the whole procedure.
+
+To activate pseudo-atomic orbital projection, one needs to set
+\verb#auto_projections = .true.# in
+the \verb#win# file, and remove the \verb#projections# block.
+
+Then in the \verb#pw2wannier90# input file, one needs to add an additional
+tag \verb#atom_proj = .true.#. This will ask \verb#pw2wannier90# to read the
+pseudo-atomic orbitals from the pseudopotential files, and use them to compute
+the \verb#amn# file.
+
+Some times, one may want to exclude semi-core states from Wannierisation, for
+such cases, one can inspect the stdout of \verb#pw2wannier90#, which will print
+the orbitals used for computing \verb#amn#, e.g.,
+
+{\tt
+\begin{quote}
+-------------------------------------\\
+*** Compute  A with atomic projectors\\
+-------------------------------------\\
+Use atomic projectors from UPF\\
+\\
+   (read from pseudopotential files):\\
+   state \#   1: atom   1 (C  ), wfc  1 (l=0 m= 1)\\
+   state \#   2: atom   1 (C  ), wfc  2 (l=1 m= 1)\\
+   state \#   3: atom   1 (C  ), wfc  2 (l=1 m= 2)\\
+   state \#   4: atom   1 (C  ), wfc  2 (l=1 m= 3)\\
+   state \#   5: atom   2 (C  ), wfc  1 (l=0 m= 1)\\
+   state \#   6: atom   2 (C  ), wfc  2 (l=1 m= 1)\\
+   state \#   7: atom   2 (C  ), wfc  2 (l=1 m= 2)\\
+   state \#   8: atom   2 (C  ), wfc  2 (l=1 m= 3)\\
+\end{quote}
+}
+
+Here it shows that there are two carbon atoms, each with one $s$ and three $p$
+orbitals. If one wants to exclude specific orbital(s), there is an additional
+input \verb#atom_proj_exclude#, which accept a list of integers, e.g.,
+
+{\tt atom\_proj\_exclude = 1 5}
+
+which will exclude the two $s$ orbitals from computing \verb#amn#.
+
+\subsubsection*{Advanced usage}
+If the pseudopotential orbitals are not enough, one could also generate a
+custom set of orbitals, and ask \verb#pw2wannier90# to use them for computing
+\verb#amn#. This can be done by setting
+
+{\tt atom\_proj\_dir = './ext\_proj'}
+
+where the directory \verb#ext_proj# contains the orbitals for all the atomic
+species used in the calculation. For example, for a silicon calculation, the
+directory \verb#ext_proj# should contain a file named \verb#Si.dat#.
+The format of the file is:
+\begin{enumerate}
+  \item The first line contains two integers: the number of radial grid points ($n_g$)
+  and the number of projectors ($n_p$), e.g.,
+  \begin{verbatim}
+1141 2
+  \end{verbatim}
+  which means the radial grid has $n_g = 1141$ points, and there are $n_p = 3$ projectors.
+
+  \item The second line contains $n_p$ integers specifying the angular momentums
+  of all the projectors, e.g.,
+  \begin{verbatim}
+0 1
+  \end{verbatim}
+  standing for the two projectors having $s$ and $p$ characters, respectively.
+
+  \item The rest of the file contains $n_g$ rows of the radial wavefunctions of the projectors. There are $2+n_p$ columns: the first
+  column is the $x$-grid, the second column is the $r$-grid
+  in Bohr unit,
+  and they are related by $r = \exp(x)$. The rest are
+  $n_p$ columns of the radial wavefunctions of the projectors,
+  \begin{verbatim}
+-9.639057329615259 0.000065134426111 3.32211124436945e-05 1.86840239681223e-09
+-9.626557329615258 0.000065953716334 3.363898259696903e-05 1.915701228607072e-09
+-9.614057329615258 0.000066783311958 3.406210890972733e-05 1.964197436025957e-09
+...
+  \end{verbatim}
+
+  Inside \verb#pw2wannier90.x#, the radial wavefunction will be read and multiplied by spherical
+  harmonics to form the actual projectors.
+
+  For a practical example of extracting pseudo-atomic orbitals
+  from UPF file and writing to a \verb#pw2wannier90#-recognizable \verb#.dat# file, see the script
+  \verb#utility/write_pdwf_projectors.py#.
+
+  For an actual example of a \verb#Si.dat# file for silicon,
+  see the file \verb#examples/example35/ext_proj/Si.dat#.
+\end{enumerate}
