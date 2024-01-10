@@ -95,6 +95,12 @@ The Wannier90 Developer Group includes:
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
 
+In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4.x are:
+
+* Jerome Jackson    (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
+* Leon Petit        (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
+* Barry G. Searle   (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design, python interface
+
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 
 * Ryotaro Arita (Riken and U. Tokyo, JP): Symmetry-adapted Wannier functions
