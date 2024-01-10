@@ -92,7 +92,7 @@ contains
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp) :: bweight(max_shells)
-    real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
+    real(kind=dp) :: dist, bb1, bbn, ddelta
     !real(kind=dp) :: dnn(kmesh_input%search_shells)
     real(kind=dp), allocatable :: dnn(:)
     real(kind=dp) :: recip_lattice(3, 3), volume
