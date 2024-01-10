@@ -219,9 +219,11 @@ contains
 
     if (present(prod2) .and. present(eigval)) then
       ! tmp = diag(eigval).tmp
-      forall (i=1:nb, j=1:mc)
-      tmp(i, j) = eigval(i)*tmp(i, j)
-      end forall
+      do j = 1, mc
+        do i = 1, nb
+          tmp(i, j) = eigval(i)*tmp(i, j)
+        enddo
+      enddo
       ! prod2 = op(a).tmp
       call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
