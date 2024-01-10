@@ -365,23 +365,19 @@ contains
     endif
 
     ierr = 0
-    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
-                                              wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
-                                              common_data%exclude_bands, common_data%fermi_energy_list, &
-                                              wannier_data%fermi_surface_data, common_data%kmesh_input, &
-                                              common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
-                                              wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
-                                              wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
-                                              common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
-                                              common_data%print_output, wannier_data%wann_plot, io_params, &
-                                              common_data%ws_region, wannier_data%w90_calculation, &
+    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, &
+                                              common_data%kmesh_input, common_data%kmesh_info, &
+                                              common_data%kpt_latt, wannier_data%wann_control, &
+                                              wannier_data%proj, wannier_data%proj_input, &
+                                              wannier_data%select_proj, common_data%w90_system, &
+                                              wannier_data%w90_calculation, &
                                               common_data%real_lattice, common_data%physics%bohr, &
-                                              wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
-                                              common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                                              common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
-                                              cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
-                                              wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
-                                              istdout, error, common_data%comm)
+                                              common_data%mp_grid, common_data%num_bands, &
+                                              common_data%num_kpts, wannier_data%num_proj, &
+                                              common_data%num_wann, common_data%gamma_only, &
+                                              wannier_data%lhasproj, &
+                                              wannier_data%use_bloch_phases, istdout, error, &
+                                              common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -426,23 +422,23 @@ contains
 
     ! all other variables
     ierr = 0
-    call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
-                                      wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
-                                      common_data%exclude_bands, common_data%fermi_energy_list, &
-                                      wannier_data%fermi_surface_data, common_data%kmesh_input, &
-                                      common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
-                                      wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
-                                      wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
-                                      common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
+    call w90_wannier90_readwrite_read(common_data%settings, wannier_data%band_plot, &
+                                      wannier_data%dis_control, wannier_data%dis_spheres, &
+                                      common_data%dis_manifold, common_data%exclude_bands, &
+                                      common_data%fermi_energy_list, &
+                                      wannier_data%fermi_surface_data, wannier_data%output_file, &
+                                      wannier_data%wvfn_read, wannier_data%wann_control, &
+                                      wannier_data%real_space_ham, common_data%kpoint_path, &
+                                      common_data%w90_system, wannier_data%tran, &
                                       common_data%print_output, wannier_data%wann_plot, io_params, &
                                       common_data%ws_region, wannier_data%w90_calculation, &
-                                      common_data%real_lattice, common_data%physics%bohr, &
-                                      wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
-                                      common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                                      common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
-                                      cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
-                                      wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
-                                      istdout, error, common_data%comm)
+                                      common_data%physics%bohr, &
+                                      wannier_data%sitesym%symmetrize_eps, common_data%num_bands, &
+                                      common_data%num_kpts, common_data%num_wann, &
+                                      wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
+                                      common_data%gamma_only, wannier_data%lsitesymmetry, &
+                                      wannier_data%use_bloch_phases, seedname, istdout, error, &
+                                      common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -495,23 +491,23 @@ contains
 
     ! set options corresponding to string array from .win file
     ierr = 0
-    call w90_wannier90_readwrite_read(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
-                                      wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
-                                      common_data%exclude_bands, common_data%fermi_energy_list, &
-                                      wannier_data%fermi_surface_data, common_data%kmesh_input, &
-                                      common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
-                                      wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
-                                      wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
-                                      common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
+    call w90_wannier90_readwrite_read(common_data%settings, wannier_data%band_plot, &
+                                      wannier_data%dis_control, wannier_data%dis_spheres, &
+                                      common_data%dis_manifold, common_data%exclude_bands, &
+                                      common_data%fermi_energy_list, &
+                                      wannier_data%fermi_surface_data, wannier_data%output_file, &
+                                      wannier_data%wvfn_read, wannier_data%wann_control, &
+                                      wannier_data%real_space_ham, common_data%kpoint_path, &
+                                      common_data%w90_system, wannier_data%tran, &
                                       common_data%print_output, wannier_data%wann_plot, io_params, &
                                       common_data%ws_region, wannier_data%w90_calculation, &
-                                      common_data%real_lattice, common_data%physics%bohr, &
-                                      wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
-                                      common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                                      common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
-                                      cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
-                                      wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
-                                      istdout, error, common_data%comm)
+                                      common_data%physics%bohr, &
+                                      wannier_data%sitesym%symmetrize_eps, common_data%num_bands, &
+                                      common_data%num_kpts, common_data%num_wann, &
+                                      wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
+                                      common_data%gamma_only, wannier_data%lsitesymmetry, &
+                                      wannier_data%use_bloch_phases, seedname, istdout, error, &
+                                      common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -548,8 +544,7 @@ contains
 
     ! local
     type(w90_error_type), allocatable :: error
-    type(w90_extra_io_type) :: io_params
-    logical :: cp_pp, disentanglement
+    logical :: disentanglement
 
     ierr = 0
 
@@ -561,23 +556,19 @@ contains
     endif
 
     ierr = 0
-    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, wannier_data%band_plot, &
-                                              wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, &
-                                              common_data%exclude_bands, common_data%fermi_energy_list, &
-                                              wannier_data%fermi_surface_data, common_data%kmesh_input, &
-                                              common_data%kmesh_info, common_data%kpt_latt, wannier_data%output_file, &
-                                              wannier_data%wvfn_read, wannier_data%wann_control, wannier_data%proj, &
-                                              wannier_data%proj_input, wannier_data%real_space_ham, wannier_data%select_proj, &
-                                              common_data%kpoint_path, common_data%w90_system, wannier_data%tran, &
-                                              common_data%print_output, wannier_data%wann_plot, io_params, &
-                                              common_data%ws_region, wannier_data%w90_calculation, &
+    call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, &
+                                              common_data%kmesh_input, common_data%kmesh_info, &
+                                              common_data%kpt_latt, wannier_data%wann_control, &
+                                              wannier_data%proj, wannier_data%proj_input, &
+                                              wannier_data%select_proj, common_data%w90_system, &
+                                              wannier_data%w90_calculation, &
                                               common_data%real_lattice, common_data%physics%bohr, &
-                                              wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
-                                              common_data%num_bands, common_data%num_kpts, wannier_data%num_proj, &
-                                              common_data%num_wann, wannier_data%optimisation, wannier_data%calc_only_A, &
-                                              cp_pp, common_data%gamma_only, wannier_data%lhasproj, &
-                                              wannier_data%lsitesymmetry, wannier_data%use_bloch_phases, seedname, &
-                                              istdout, error, common_data%comm)
+                                              common_data%mp_grid, common_data%num_bands, &
+                                              common_data%num_kpts, wannier_data%num_proj, &
+                                              common_data%num_wann, common_data%gamma_only, &
+                                              wannier_data%lhasproj, &
+                                              wannier_data%use_bloch_phases, istdout, error, &
+                                              common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
