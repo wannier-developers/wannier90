@@ -2319,7 +2319,7 @@ contains
                                                  kpt_latt, num_kpts, dis_manifold, num_bands, &
                                                  num_wann, u_matrix, u_matrix_opt, m_matrix, &
                                                  mp_grid, real_lattice, omega_invariant, &
-                                                 have_disentangled, stdout, seedname)
+                                                 have_disentangled, iprint, stdout, seedname)
     !================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -2352,7 +2352,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
+    integer, intent(in) :: stdout, iprint
 
     character(len=*), intent(in)  :: seedname
     character(len=*), intent(in) :: chkpt
@@ -2366,7 +2366,7 @@ contains
     character(len=33) :: header
     character(len=20) :: chkpt1
 
-    write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
+    if (iprint > 0) write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -2406,7 +2406,7 @@ contains
     write (chk_unit) (wannier_data%spreads(i), i=1, num_wann)
     close (chk_unit)
 
-    write (stdout, '(a/)') ' done'
+    if (iprint > 0) write (stdout, '(a/)') ' done'
 
     return
 
