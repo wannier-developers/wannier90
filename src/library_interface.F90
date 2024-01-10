@@ -359,9 +359,13 @@ contains
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
 
+    ! fixme JJ use error method
     if (allocated(common_data%settings%in_data)) then
       write (istderr, *) ' readinput and setopt clash'
       stop
+    else if (.not. allocated(common_data%settings%entries)) then
+      write (istderr, *) ' setopt called with no input?'
+      return
     endif
 
     ierr = 0
@@ -431,8 +435,8 @@ contains
                                       wannier_data%real_space_ham, common_data%kpoint_path, &
                                       common_data%w90_system, wannier_data%tran, &
                                       common_data%print_output, wannier_data%wann_plot, io_params, &
-                                      common_data%ws_region, wannier_data%w90_calculation, &
-                                      common_data%physics%bohr, &
+                                      common_data%ws_region, common_data%real_lattice, &
+                                      wannier_data%w90_calculation, common_data%physics%bohr, &
                                       wannier_data%sitesym%symmetrize_eps, common_data%num_bands, &
                                       common_data%num_kpts, common_data%num_wann, &
                                       wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
@@ -449,7 +453,7 @@ contains
     common_data%seedname = seedname
 
     ! clear any settings (from settings interface --entries--)
-    if (allocated(common_data%settings%entries)) deallocate (common_data%settings%entries)
+    deallocate (common_data%settings%entries)
 
   end subroutine input_setopt
 
@@ -500,8 +504,8 @@ contains
                                       wannier_data%real_space_ham, common_data%kpoint_path, &
                                       common_data%w90_system, wannier_data%tran, &
                                       common_data%print_output, wannier_data%wann_plot, io_params, &
-                                      common_data%ws_region, wannier_data%w90_calculation, &
-                                      common_data%physics%bohr, &
+                                      common_data%ws_region, common_data%real_lattice, &
+                                      wannier_data%w90_calculation, common_data%physics%bohr, &
                                       wannier_data%sitesym%symmetrize_eps, common_data%num_bands, &
                                       common_data%num_kpts, common_data%num_wann, &
                                       wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
@@ -624,6 +628,59 @@ contains
     if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine input_reader_special
 
+  subroutine input_print_details(common_data, wannier_data, seedname, istdout, istderr, ierr)
+    use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write, w90_extra_io_type
+    use w90_readwrite, only: w90_readwrite_write_header
+    use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_input, set_error_fatal, set_error_alloc
+    use w90_comms, only: mpirank, comms_sync_err
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_wannier_type), intent(inout) :: wannier_data
+
+    ! local
+    type(w90_error_type), allocatable :: error
+    type(w90_extra_io_type) :: io_params ! what is this?
+
+    ! write jazzy header info
+    call w90_readwrite_write_header(common_data%physics%bohr_version_str, &
+                                    common_data%physics%constants_version_str1, &
+                                    common_data%physics%constants_version_str2, istdout)
+
+    ierr = 0
+    call w90_wannier90_readwrite_write(common_data%atom_data, wannier_data%band_plot, &
+                                       wannier_data%dis_control, wannier_data%dis_spheres, &
+                                       common_data%fermi_energy_list, &
+                                       wannier_data%fermi_surface_data, common_data%kpt_latt, &
+                                       wannier_data%output_file, wannier_data%wvfn_read, &
+                                       wannier_data%wann_control, wannier_data%proj, &
+                                       wannier_data%proj_input, wannier_data%real_space_ham, &
+                                       wannier_data%select_proj, common_data%kpoint_path, &
+                                       wannier_data%tran, common_data%print_output, &
+                                       common_data%wannier_data, & ! really?  wann_dat in comm_dat? fixme jj
+                                       wannier_data%wann_plot, io_params, &
+                                       wannier_data%w90_calculation, common_data%real_lattice, &
+                                       wannier_data%sitesym%symmetrize_eps, common_data%mp_grid, &
+                                       common_data%num_bands, common_data%num_kpts, &
+                                       wannier_data%num_proj, common_data%num_wann, &
+                                       wannier_data%optimisation, .false., &
+                                       common_data%gamma_only, wannier_data%lsitesymmetry, &
+                                       common_data%w90_system%spinors, &
+                                       wannier_data%use_bloch_phases, istdout)
+
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    endif
+  end subroutine input_print_details
+
   subroutine create_kmesh(common_data, istdout, istderr, ierr)
     use w90_kmesh, only: kmesh_get
     use w90_error_base, only: w90_error_type
@@ -706,7 +763,6 @@ contains
       return
     endif
 
-    ! fixme jj checkit
     if (common_data%num_bands > common_data%num_wann) then ! disentanglement case
       if ((.not. associated(wannier_data%a_matrix)) .or. (.not. associated(wannier_data%m_orig))) then
         write (istderr, *) 'Matrices not set for overlap call (disentanglement case)'
@@ -754,7 +810,7 @@ contains
 
     ! local
     type(w90_error_type), allocatable :: error
-    integer :: optimisation = 3
+    ! integer :: optimisation = 3 ! why was this shadowing the usual variable? jj fixme
 
     ierr = 0
 
@@ -792,7 +848,7 @@ contains
     ! copy to m_matrix_local from m_matrix_orig_local (aka m_orig)
     call setup_m_loc(common_data%kmesh_info, common_data%print_output, wannier_data%m_matrix_local, wannier_data%m_orig, &
                      common_data%u_matrix, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
-                     optimisation, common_data%timer, common_data%dist_kpoints, error, common_data%comm)
+                     wannier_data%optimisation, common_data%timer, common_data%dist_kpoints, error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -880,10 +936,12 @@ contains
 
     if (common_data%gamma_only) then
       if (mpirank(common_data%comm) == 0) then
-        call wann_main_gamma(common_data%kmesh_info, wannier_data%wann_control, wannier_data%omega, &
-                             common_data%print_output, common_data%wannier_data, wannier_data%m_matrix_local, &
-                             common_data%u_matrix, common_data%real_lattice, common_data%num_kpts, common_data%num_wann, &
-                             istdout, common_data%timer, error, common_data%comm)
+        call wann_main_gamma(common_data%kmesh_info, wannier_data%wann_control, &
+                             wannier_data%omega, common_data%print_output, &
+                             common_data%wannier_data, wannier_data%m_matrix_local, &
+                             common_data%u_matrix, common_data%real_lattice, common_data%num_kpts, &
+                             common_data%num_wann, istdout, common_data%timer, error, &
+                             common_data%comm)
         if (allocated(error)) then
           call prterr(error, ierr, istdout, istderr, common_data%comm)
           return
@@ -895,15 +953,18 @@ contains
         return
       endif
     else
-      call wann_main(wannier_data%ham_logical, common_data%kmesh_info, common_data%kpt_latt, wannier_data%wann_control, &
-                     wannier_data%omega, wannier_data%sitesym, common_data%print_output, common_data%wannier_data, &
-                     common_data%ws_region, wannier_data%w90_calculation, wannier_data%ham_k, wannier_data%ham_r, &
+      call wann_main(wannier_data%ham_logical, common_data%kmesh_info, common_data%kpt_latt, &
+                     wannier_data%wann_control, wannier_data%omega, wannier_data%sitesym, &
+                     common_data%print_output, common_data%wannier_data, common_data%ws_region, &
+                     wannier_data%w90_calculation, wannier_data%ham_k, wannier_data%ham_r, &
                      wannier_data%m_matrix_local, common_data%u_matrix, common_data%real_lattice, &
-                     wannier_data%wannier_centres_translated, wannier_data%irvec, common_data%mp_grid, wannier_data%ndegen, &
-                     wannier_data%nrpts, common_data%num_kpts, wannier_data%num_proj, common_data%num_wann, &
-                     wannier_data%optimisation, wannier_data%rpt_origin, wannier_data%band_plot%mode, wannier_data%tran%mode, &
-                     wannier_data%lsitesymmetry, istdout, common_data%timer, common_data%dist_kpoints, error, &
-                     common_data%comm)
+                     wannier_data%wannier_centres_translated, wannier_data%irvec, &
+                     common_data%mp_grid, wannier_data%ndegen, wannier_data%nrpts, &
+                     common_data%num_kpts, wannier_data%num_proj, common_data%num_wann, &
+                     wannier_data%optimisation, wannier_data%rpt_origin, &
+                     wannier_data%band_plot%mode, wannier_data%tran%mode, &
+                     wannier_data%lsitesymmetry, istdout, common_data%timer, &
+                     common_data%dist_kpoints, error, common_data%comm)
     endif
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)

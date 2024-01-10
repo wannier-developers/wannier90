@@ -416,14 +416,9 @@ contains
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if (wann_control%guiding_centres%enable) then
       do n = 1, num_proj
-        call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), &
-                                  rguide(:, n), real_lattice)
+        call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
+                                  real_lattice)
       enddo
-!       if(spinors) then ! not needed with new changes to spinor proj 2013 JRY
-!          do n=1,num_proj
-!             call utility_frac_to_cart(proj_site(:,n),rguide(:,n+num_proj),real_lattice)
-!          enddo
-!       end if
     end if
 
     if (print_output%iprint > 0) then
@@ -2691,6 +2686,7 @@ contains
     ! JJ this function is entirely serial
     ! note that the scaling may be inferior to the non-gamma case
     ! so this is not necessarily the quicker branch
+    ! JJ surely numkpts==1 identically???
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
@@ -2746,7 +2742,8 @@ contains
 
     if (mpirank(comm) > 0) then
       ! this cannot happen under ordinary circumstances
-      call set_error_alloc(error, 'wann_main_gamma called by non-root rank', comm)
+      call set_error_alloc(error, &
+                           'wann_main_gamma called by non-root rank (but the algorithm is serial)', comm)
       return
     endif
 
@@ -2754,14 +2751,11 @@ contains
 
     first_pass = .true.
 
-    ! Allocate stuff
-
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating history in wann_main_gamma', comm)
       return
     endif
-
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb in wann_main_gamma', comm)
@@ -2776,7 +2770,6 @@ contains
     rnkb = 0.0_dp
     tnntot = 2*kmesh_info%nntot
 
-    ! sub vars passed into other subs
     allocate (m_w(num_wann, num_wann, tnntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_w in wann_main_gamma', comm)
@@ -2816,7 +2809,6 @@ contains
     csheet = cmplx_1
     sheet = 0.0_dp; rave = 0.0_dp; r2ave = 0.0_dp; rave2 = 0.0_dp; rguide = 0.0_dp
 
-    ! sub vars not passed into other subs
     allocate (u0(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0 in wann_main_gamma', comm)
@@ -2857,18 +2849,13 @@ contains
 
 !~    lguide = .false.
     ! guiding centres are not neede for orthorhombic systems
-    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false.
+    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false. ! JJ fixme, this requires more documentation
 
     if (wann_control%guiding_centres%enable) then
-      ! initialise rguide to projection centres (Cartesians in units of Ang)
-!~       if ( use_bloch_phases) then
-!~          lguide = .true.
-!~       else
       do n = 1, num_wann
         call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
       enddo
-!~       endif
     endif
 
     write (stdout, *)

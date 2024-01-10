@@ -69,6 +69,10 @@ program libv2
   call input_reader(common_data, wannier_data, seedname, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
+  ! write useful info (includes jazzy header info)
+  call input_print_details(common_data, wannier_data, seedname, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
   ! test mpi error handling using "unlucky" input token
   if (common_data%print_output%timing_level < 0 &
       .and. rank == abs(common_data%print_output%timing_level)) then
@@ -80,11 +84,6 @@ program libv2
 !    call prterr(error, ierr, istdout, istderr, common_data%comm)
   endif
   !!!!! end unlucky code
-
-  ! write jazzy header info
-  call w90_readwrite_write_header(common_data%physics%bohr_version_str, &
-                                  common_data%physics%constants_version_str1, &
-                                  common_data%physics%constants_version_str2, stdout) ! (not a library call)
 
   ! setup k mesh
   if (.not. common_data%kmesh_info%explicit_nnkpts) then
